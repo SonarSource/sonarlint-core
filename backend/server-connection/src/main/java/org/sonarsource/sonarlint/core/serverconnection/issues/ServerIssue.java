@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection.issues;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -30,12 +31,12 @@ public abstract class ServerIssue<G extends ServerIssue<G>> implements ServerFin
   private boolean resolved;
   private String ruleKey;
   private String message;
-  private String filePath;
+  private Path filePath;
   private Instant creationDate;
   private IssueSeverity userSeverity;
   private RuleType type;
 
-  protected ServerIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant creationDate, @Nullable IssueSeverity userSeverity, RuleType type) {
+  protected ServerIssue(String key, boolean resolved, String ruleKey, String message, Path filePath, Instant creationDate, @Nullable IssueSeverity userSeverity, RuleType type) {
     this.key = key;
     this.resolved = resolved;
     this.ruleKey = ruleKey;
@@ -63,7 +64,7 @@ public abstract class ServerIssue<G extends ServerIssue<G>> implements ServerFin
     return message;
   }
 
-  public String getFilePath() {
+  public Path getFilePath() {
     return filePath;
   }
 
@@ -95,7 +96,7 @@ public abstract class ServerIssue<G extends ServerIssue<G>> implements ServerFin
     return (G) this;
   }
 
-  public G setFilePath(String filePath) {
+  public G setFilePath(Path filePath) {
     this.filePath = filePath;
     return (G) this;
   }

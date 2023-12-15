@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.hotspot;
 
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
@@ -29,7 +30,7 @@ class ServerHotspotDetailsTests {
   @Test
   void it_should_populate_fields_with_constructor_parameters() {
     var hotspot = new ServerHotspotDetails("message",
-      "path",
+      Path.of("path"),
       new TextRange(0, 1, 2, 3),
       "author",
       ServerHotspotDetails.Status.TO_REVIEW,
@@ -44,7 +45,7 @@ class ServerHotspotDetailsTests {
       "some code \n content", true);
 
     assertThat(hotspot.message).isEqualTo("message");
-    assertThat(hotspot.filePath).isEqualTo("path");
+    assertThat(hotspot.filePath).isEqualTo(Path.of("path"));
     assertThat(hotspot.textRange.getStartLine()).isZero();
     assertThat(hotspot.textRange.getStartLineOffset()).isEqualTo(1);
     assertThat(hotspot.textRange.getEndLine()).isEqualTo(2);

@@ -28,7 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
@@ -60,8 +59,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.Configur
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.GetPathTranslationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
@@ -69,13 +66,11 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWit
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
 import static its.utils.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.CODE_SMELL;
 
@@ -162,40 +157,6 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
       // Project has 5 modules: B, B/B1, B/B2, A, A/A1 and A/A2
       analyzeMavenProject(ORCHESTRATOR, "multi-modules-sample");
     }
-
-    @Test
-    void should_translate_path_prefixes_for_idePath_with_prefix() {
-      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
-        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID,
-          MULTI_MODULE_PROJECT_KEY, true)))));
-      await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
-
-      var idePath = Path.of("src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
-      var clientFileDto = new ClientFileDto(idePath.toUri(), idePath, CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(),
-        idePath.toAbsolutePath(), null);
-      var didUpdateFileSystemParams = new DidUpdateFileSystemParams(List.of(), List.of(clientFileDto));
-      backend.getFileService().didUpdateFileSystem(didUpdateFileSystemParams);
-
-      await().untilAsserted(() -> assertThat(backend.getFileService().getPathTranslation(new GetPathTranslationParams(CONFIG_SCOPE_ID)).get().getServerPathPrefix()).isEqualTo("module_b/module_b1"));
-      await().untilAsserted(() -> assertThat(backend.getFileService().getPathTranslation(new GetPathTranslationParams(CONFIG_SCOPE_ID)).get().getIdePathPrefix()).isEmpty());
-    }
-
-    @Test
-    void should_translate_path_prefixes_for_idePath_without_prefix() {
-      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
-        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "projectName", new BindingConfigurationDto(CONNECTION_ID,
-          MULTI_MODULE_PROJECT_KEY, true)))));
-      await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
-
-      var entireIdePath = Path.of("module_b/module_b1/src/main/java/com/sonar/it/samples/modules/b1/HelloB1.java");
-      var clientFileDto = new ClientFileDto(entireIdePath.toUri(), entireIdePath, CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(),
-        entireIdePath.toAbsolutePath(), null);
-      var didUpdateFileSystemParams = new DidUpdateFileSystemParams(List.of(), List.of(clientFileDto));
-      backend.getFileService().didUpdateFileSystem(didUpdateFileSystemParams);
-
-      await().untilAsserted(() -> assertThat(backend.getFileService().getPathTranslation(new GetPathTranslationParams(CONFIG_SCOPE_ID)).get().getServerPathPrefix()).isEmpty());
-      await().untilAsserted(() -> assertThat(backend.getFileService().getPathTranslation(new GetPathTranslationParams(CONFIG_SCOPE_ID)).get().getIdePathPrefix()).isEmpty());
-    }
   }
 
   @Nested
@@ -231,7 +192,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
         null, "python:PrintStatementUsage", "Replace print statement by built-in function.");
       var trackWithServerIssuesParams = new TrackWithServerIssuesParams("CONFIG_SCOPE_ID", Map.of("src/main/java/foo/Foo.java",
         List.of(javaClientTrackedFindingDto), "src/main/java/foo/main.py", List.of(pythonClientTrackedFindingDto)), true);
-      var issuesByServerRelativePath = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByServerRelativePath();
+      var issuesByServerRelativePath = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByIdeRelativePath();
 
       var mainPyIssues = issuesByServerRelativePath.get("src/main/java/foo/main.py");
       assertThat(mainPyIssues).hasSize(1);

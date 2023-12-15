@@ -19,6 +19,7 @@
  */
 package testutils;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
@@ -33,7 +34,7 @@ public class LocalOnlyIssueFixtures {
   public static LocalOnlyIssue aLocalOnlyIssueResolvedWithoutTextAndLineRange() {
     return new LocalOnlyIssue(
       UUID.randomUUID(),
-      "file/path",
+      Path.of("file/path"),
       null,
       null,
       "ruleKey",
@@ -57,7 +58,7 @@ public class LocalOnlyIssueFixtures {
   public static LocalOnlyIssue aLocalOnlyIssueResolved(UUID id, Instant resolutionDate) {
     return new LocalOnlyIssue(
       id,
-      "file/path",
+      Path.of("file/path"),
       new TextRangeWithHash(1, 2, 3, 4, "ab12"),
       new LineWithHash(1, "linehash"),
       "ruleKey",

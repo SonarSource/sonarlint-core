@@ -39,6 +39,8 @@ import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.net.URIBuilder;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.file.FilePathTranslation;
+import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
@@ -64,13 +66,15 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
   private final ServerApiProvider serverApiProvider;
   private final TelemetryService telemetryService;
   private final RequestHandlerBindingAssistant requestHandlerBindingAssistant;
+  private final PathTranslationService pathTranslationService;
 
   public ShowIssueRequestHandler(SonarLintRpcClient client, ServerApiProvider serverApiProvider, TelemetryService telemetryService,
-    RequestHandlerBindingAssistant requestHandlerBindingAssistant) {
+    RequestHandlerBindingAssistant requestHandlerBindingAssistant, PathTranslationService pathTranslationService) {
     this.client = client;
     this.serverApiProvider = serverApiProvider;
     this.telemetryService = telemetryService;
     this.requestHandlerBindingAssistant = requestHandlerBindingAssistant;
+    this.pathTranslationService = pathTranslationService;
   }
 
   @Override
@@ -92,15 +96,18 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
 
   private void showIssueForScope(String connectionId, String configScopeId, String issueKey, String projectKey,
     String branch, @Nullable String pullRequest) {
-    tryFetchIssue(connectionId, issueKey, projectKey, branch, pullRequest)
-      .ifPresentOrElse(
-        issueDetails -> client.showIssue(getShowIssueParams(issueDetails, connectionId, configScopeId, branch, pullRequest)),
-        () -> client.showMessage(new ShowMessageParams(MessageType.ERROR, "Could not show the issue. See logs for more details")));
+    var translationOpt = pathTranslationService.getPathTranslation(configScopeId);
+    var issueDetailsOpt = tryFetchIssue(connectionId, issueKey, projectKey, branch, pullRequest);
+    if (translationOpt.isPresent() && issueDetailsOpt.isPresent()) {
+      client.showIssue(getShowIssueParams(issueDetailsOpt.get(), connectionId, configScopeId, branch, pullRequest, translationOpt.get()));
+    } else {
+      client.showMessage(new ShowMessageParams(MessageType.ERROR, "Could not show the issue. See logs for more details"));
+    }
   }
 
   @VisibleForTesting
   ShowIssueParams getShowIssueParams(IssueApi.ServerIssueDetails issueDetails, String connectionId,
-    String configScopeId, String branch, @Nullable String pullRequest) {
+    String configScopeId, String branch, @Nullable String pullRequest, FilePathTranslation translation) {
     var flowLocations = issueDetails.flowList.stream().map(flow -> {
       var locations = flow.getLocationsList().stream().map(location -> {
         var locationComponent = issueDetails.componentsList.stream().filter(component -> component.getKey().equals(location.getComponent())).findFirst();
@@ -120,7 +127,7 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
 
     var isTaint = isIssueTaint(issueDetails.ruleKey);
 
-    return new ShowIssueParams(configScopeId, new IssueDetailsDto(textRangeDto, issueDetails.ruleKey, issueDetails.key, issueDetails.path,
+    return new ShowIssueParams(configScopeId, new IssueDetailsDto(textRangeDto, issueDetails.ruleKey, issueDetails.key, translation.serverToIdePath(issueDetails.path),
       branch, pullRequest, issueDetails.message, issueDetails.creationDate, issueDetails.codeSnippet, isTaint,
       flowLocations));
   }
@@ -129,7 +136,7 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
     return RulesApi.TAINT_REPOS.stream().anyMatch(ruleKey::startsWith);
   }
 
-  private Optional<IssueApi.ServerIssueDetails> tryFetchIssue(String connectionId, String issueKey, String projectKey, String branch, String pullRequest) {
+  private Optional<IssueApi.ServerIssueDetails> tryFetchIssue(String connectionId, String issueKey, String projectKey, String branch, @Nullable String pullRequest) {
     var serverApi = serverApiProvider.getServerApiOrThrow(connectionId);
     return serverApi.issue().fetchServerIssue(issueKey, projectKey, branch, pullRequest);
   }

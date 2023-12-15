@@ -19,6 +19,7 @@
  */
 package mediumtest.hotspots;
 
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
@@ -190,7 +191,7 @@ class HotspotEventsMediumTests {
   }
 
   private Collection<ServerHotspot> readHotspots(String connectionId, String projectKey, String branchName, String filePath) {
-    return backend.getIssueStorageService().connection(connectionId).project(projectKey).findings().loadHotspots(branchName, filePath);
+    return backend.getIssueStorageService().connection(connectionId).project(projectKey).findings().loadHotspots(branchName, Path.of(filePath));
   }
 
   private static void mockEvent(ServerFixture.Server server, String projectKey, String eventPayload) {

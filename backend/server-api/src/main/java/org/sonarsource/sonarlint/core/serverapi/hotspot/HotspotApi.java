@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.serverapi.hotspot;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -154,14 +155,14 @@ public class HotspotApi {
 
   private Collection<ServerHotspot> searchHotspots(String searchUrl, ProgressMonitor progress) {
     Collection<ServerHotspot> hotspots = new ArrayList<>();
-    Map<String, String> componentPathsByKey = new HashMap<>();
+    Map<String, Path> componentPathsByKey = new HashMap<>();
     helper.getPaginated(
       searchUrl,
       Hotspots.SearchWsResponse::parseFrom,
       r -> r.getPaging().getTotal(),
       r -> {
         componentPathsByKey.clear();
-        componentPathsByKey.putAll(r.getComponentsList().stream().collect(Collectors.toMap(Hotspots.Component::getKey, Hotspots.Component::getPath)));
+        componentPathsByKey.putAll(r.getComponentsList().stream().collect(Collectors.toMap(Hotspots.Component::getKey, component -> Path.of(component.getPath()))));
         return r.getHotspotsList();
       },
       hotspot -> {
@@ -221,7 +222,7 @@ public class HotspotApi {
   private static ServerHotspotDetails adapt(Hotspots.ShowWsResponse hotspot, @Nullable String codeSnippet) {
     return new ServerHotspotDetails(
       hotspot.getMessage(),
-      hotspot.getComponent().getPath(),
+      Path.of(hotspot.getComponent().getPath()),
       convertTextRange(hotspot.getTextRange()),
       hotspot.getAuthor(),
       ServerHotspotDetails.Status.valueOf(hotspot.getStatus()),
@@ -236,7 +237,7 @@ public class HotspotApi {
       rule.getRiskDescription(), rule.getVulnerabilityDescription(), rule.getFixRecommendations());
   }
 
-  private static ServerHotspot adapt(Hotspots.SearchWsResponse.Hotspot hotspot, String filePath) {
+  private static ServerHotspot adapt(Hotspots.SearchWsResponse.Hotspot hotspot, Path filePath) {
     return new ServerHotspot(
       hotspot.getKey(),
       hotspot.getRuleKey(),

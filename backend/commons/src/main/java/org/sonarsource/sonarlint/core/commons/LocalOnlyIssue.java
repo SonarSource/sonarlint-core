@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.commons;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.UUID;
 import javax.annotation.CheckForNull;
@@ -26,7 +27,7 @@ import javax.annotation.Nullable;
 
 public class LocalOnlyIssue {
   private final UUID id;
-  private final String serverRelativePath;
+  private final Path serverRelativePath;
   private final TextRangeWithHash textRangeWithHash;
   private final LineWithHash lineWithHash;
   private final String ruleKey;
@@ -36,7 +37,7 @@ public class LocalOnlyIssue {
   /**
    * @param resolution is null when the issue is not resolved
    */
-  public LocalOnlyIssue(UUID id, String serverRelativePath, @Nullable TextRangeWithHash textRangeWithHash, @Nullable LineWithHash lineWithHash, String ruleKey,
+  public LocalOnlyIssue(UUID id, Path serverRelativePath, @Nullable TextRangeWithHash textRangeWithHash, @Nullable LineWithHash lineWithHash, String ruleKey,
     String message, @Nullable LocalOnlyIssueResolution resolution) {
     this.id = id;
     this.serverRelativePath = serverRelativePath;
@@ -51,7 +52,7 @@ public class LocalOnlyIssue {
     return id;
   }
 
-  public String getServerRelativePath() {
+  public Path getServerRelativePath() {
     return serverRelativePath;
   }
 

@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
@@ -170,7 +171,7 @@ class TaintIssueDownloaderTests {
     var taintIssue = issues.get(0);
 
     assertThat(taintIssue.getMessage()).isEqualTo("Primary message 2");
-    assertThat(taintIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(taintIssue.getFilePath()).isEqualTo(Path.of("foo/bar/Hello.java"));
     assertThat(taintIssue.getType()).isEqualTo(RuleType.VULNERABILITY);
     assertThat(taintIssue.getSeverity()).isEqualTo(IssueSeverity.INFO);
     assertThat(taintIssue.getCleanCodeAttribute()).hasValue(CleanCodeAttribute.COMPLETE);
@@ -182,7 +183,7 @@ class TaintIssueDownloaderTests {
     assertThat(taintIssue.getFlows().get(0).locations()).hasSize(4);
 
     var flowLocation11 = taintIssue.getFlows().get(0).locations().get(0);
-    assertThat(flowLocation11.getFilePath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(flowLocation11.getFilePath()).isEqualTo(Path.of("foo/bar/Hello.java"));
 
     assertTextRange(flowLocation11.getTextRange(), 5, 1, 5, 6, hash("After"));
 
@@ -281,7 +282,7 @@ class TaintIssueDownloaderTests {
     var serverTaintIssue = result.getChangedTaintIssues().get(0);
     assertThat(serverTaintIssue.getSonarServerKey()).isEqualTo("uuid1");
     assertThat(serverTaintIssue.getMessage()).isEqualTo("Primary message");
-    assertThat(serverTaintIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(serverTaintIssue.getFilePath()).isEqualTo(Path.of("foo/bar/Hello.java"));
     assertThat(serverTaintIssue.getSeverity()).isEqualTo(IssueSeverity.MAJOR);
     assertThat(serverTaintIssue.getType()).isEqualTo(RuleType.VULNERABILITY);
     assertThat(serverTaintIssue.getCleanCodeAttribute()).hasValue(CleanCodeAttribute.COMPLETE);
@@ -293,7 +294,7 @@ class TaintIssueDownloaderTests {
     assertThat(serverTaintIssue.getFlows().get(0).locations()).hasSize(3);
 
     var flowLocation11 = serverTaintIssue.getFlows().get(0).locations().get(0);
-    assertThat(flowLocation11.getFilePath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(flowLocation11.getFilePath()).isEqualTo(Path.of("foo/bar/Hello.java"));
     assertTextRange(flowLocation11.getTextRange(),5, 1, 5, 6, "hashLocation11");
 
     // No text range
@@ -303,7 +304,7 @@ class TaintIssueDownloaderTests {
 
     var taintIssueNoRange = result.getChangedTaintIssues().get(1);
     assertThat(taintIssueNoRange.getSonarServerKey()).isEqualTo("uuid2");
-    assertThat(taintIssueNoRange.getFilePath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(taintIssueNoRange.getFilePath()).isEqualTo(Path.of("foo/bar/Hello.java"));
     assertThat(taintIssueNoRange.getTextRange()).isNull();
 
     assertThat(serverTaintIssue.getRuleDescriptionContextKey()).isEqualTo("context");

@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.sync;
 
+import java.nio.file.Path;
 import java.util.LinkedHashSet;
 import java.util.stream.Collectors;
 import javax.inject.Named;
@@ -106,12 +107,12 @@ public class IssueSynchronizationService {
     issuesUpdater.update(serverApi, projectKey, branchName, serverApi.isSonarCloud(), serverVersion);
   }
 
-  public void fetchFileIssues(Binding binding, String serverFileRelativePath, String activeBranch) {
+  public void fetchFileIssues(Binding binding, Path serverFileRelativePath, String activeBranch) {
     serverApiProvider.getServerApi(binding.getConnectionId())
       .ifPresent(serverApi -> downloadServerIssuesForFile(binding.getConnectionId(), serverApi, binding.getSonarProjectKey(), serverFileRelativePath, activeBranch));
   }
 
-  public void downloadServerIssuesForFile(String connectionId, ServerApi serverApi, String projectKey, String serverFileRelativePath, String branchName) {
+  public void downloadServerIssuesForFile(String connectionId, ServerApi serverApi, String projectKey, Path serverFileRelativePath, String branchName) {
     var storage = storageService.getStorageFacade().connection(connectionId);
     var serverVersion = getSonarServerVersion(serverApi, storage);
     var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(Language::shouldSyncInConnectedMode)

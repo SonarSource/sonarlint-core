@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.serverconnection;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -117,9 +118,9 @@ public class TaintIssueDownloader {
 
   @CheckForNull
   private static ServerTaintIssue convertTaintVulnerability(SourceApi sourceApi, Issue taintVulnerabilityFromWs,
-    Map<String, String> componentsByKey, Map<String, String> sourceCodeByKey) {
+    Map<String, Path> componentPathsByKey, Map<String, String> sourceCodeByKey) {
     var ruleKey = RuleKey.parse(taintVulnerabilityFromWs.getRule());
-    var primaryLocation = convertPrimaryLocation(sourceApi, taintVulnerabilityFromWs, componentsByKey, sourceCodeByKey);
+    var primaryLocation = convertPrimaryLocation(sourceApi, taintVulnerabilityFromWs, componentPathsByKey, sourceCodeByKey);
     var filePath = primaryLocation.getFilePath();
     if (filePath == null) {
       // Ignore project level issues
@@ -142,7 +143,7 @@ public class TaintIssueDownloader {
       RuleType.valueOf(taintVulnerabilityFromWs.getType().name()),
       primaryLocation.getTextRange(), ruleDescriptionContextKey,
       cleanCodeAttribute, impacts)
-        .setFlows(convertFlows(sourceApi, taintVulnerabilityFromWs.getFlowsList(), componentsByKey, sourceCodeByKey));
+        .setFlows(convertFlows(sourceApi, taintVulnerabilityFromWs.getFlowsList(), componentPathsByKey, sourceCodeByKey));
   }
 
   @CheckForNull
@@ -179,7 +180,7 @@ public class TaintIssueDownloader {
     return ImpactSeverity.valueOf(protoImpact.getSeverity().name());
   }
 
-  private static List<ServerTaintIssue.Flow> convertFlows(SourceApi sourceApi, List<Flow> flowsList, Map<String, String> componentPathsByKey,
+  private static List<ServerTaintIssue.Flow> convertFlows(SourceApi sourceApi, List<Flow> flowsList, Map<String, Path> componentPathsByKey,
     Map<String, String> sourceCodeByKey) {
     return flowsList.stream()
       .map(flowFromWs -> new ServerTaintIssue.Flow(flowFromWs.getLocationsList().stream().map(locationFromWs -> {
@@ -207,7 +208,7 @@ public class TaintIssueDownloader {
   private static ServerTaintIssue convertLiteTaintIssue(TaintVulnerabilityLite liteTaintIssueFromWs) {
     var mainLocation = liteTaintIssueFromWs.getMainLocation();
     // We have filtered out issues without file path earlier
-    var filePath = mainLocation.getFilePath();
+    var filePath = Path.of(mainLocation.getFilePath());
     var creationDate = Instant.ofEpochMilli(liteTaintIssueFromWs.getCreationDate());
     ServerTaintIssue taintIssue;
     var severity = IssueSeverity.valueOf(liteTaintIssueFromWs.getSeverity().name());
@@ -235,7 +236,7 @@ public class TaintIssueDownloader {
 
   private static ServerTaintIssue.Flow convertFlows(Issues.Flow flowFromWs) {
     return new ServerTaintIssue.Flow(flowFromWs.getLocationsList().stream().map(locationFromWs -> {
-      var filePath = locationFromWs.hasFilePath() ? locationFromWs.getFilePath() : null;
+      var filePath = locationFromWs.hasFilePath() ? Path.of(locationFromWs.getFilePath()) : null;
       if (locationFromWs.hasTextRange()) {
         return new ServerTaintIssue.ServerIssueLocation(filePath, toServerTaintIssueTextRange(locationFromWs.getTextRange()), locationFromWs.getMessage());
       } else {
@@ -244,7 +245,7 @@ public class TaintIssueDownloader {
     }).collect(Collectors.toList()));
   }
 
-  private static ServerTaintIssue.ServerIssueLocation convertPrimaryLocation(SourceApi sourceApi, Issue issueFromWs, Map<String, String> componentPathsByKey,
+  private static ServerTaintIssue.ServerIssueLocation convertPrimaryLocation(SourceApi sourceApi, Issue issueFromWs, Map<String, Path> componentPathsByKey,
     Map<String, String> sourceCodeByKey) {
     var componentPath = componentPathsByKey.get(issueFromWs.getComponent());
     if (issueFromWs.hasTextRange()) {

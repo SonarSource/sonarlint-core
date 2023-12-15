@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import com.google.common.util.concurrent.MoreExecutors;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.LinkedList;
 import java.util.List;
@@ -46,6 +47,8 @@ import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.file.FilePathTranslation;
+import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.issue.matching.IssueMatcher;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.newcode.NewCodeService;
@@ -76,12 +79,13 @@ public class IssueMatchingService {
   private final LocalOnlyIssueRepository localOnlyIssueRepository;
   private final LocalOnlyIssueStorageService localOnlyIssueStorageService;
   private final NewCodeService newCodeService;
+  private final PathTranslationService pathTranslationService;
   private final ExecutorService executorService;
 
   public IssueMatchingService(ConfigurationRepository configurationRepository, StorageService storageService,
     SonarProjectBranchTrackingService branchTrackingService, IssueSynchronizationService issueSynchronizationService,
     LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
-    NewCodeService newCodeService) {
+    NewCodeService newCodeService, PathTranslationService pathTranslationService) {
     this.configurationRepository = configurationRepository;
     this.storageService = storageService;
     this.branchTrackingService = branchTrackingService;
@@ -89,16 +93,18 @@ public class IssueMatchingService {
     this.localOnlyIssueRepository = localOnlyIssueRepository;
     this.localOnlyIssueStorageService = localOnlyIssueStorageService;
     this.newCodeService = newCodeService;
+    this.pathTranslationService = pathTranslationService;
     this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-server-tracking-issue-updater"));
   }
 
   public Map<String, List<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>> trackWithServerIssues(String configurationScopeId,
-    Map<String, List<ClientTrackedFindingDto>> clientTrackedIssuesByServerRelativePath,
+    Map<String, List<ClientTrackedFindingDto>> clientTrackedIssuesByIdeRelativePath,
     boolean shouldFetchIssuesFromServer, CancelChecker cancelChecker) {
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     var activeBranchOpt = branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId);
-    if (effectiveBindingOpt.isEmpty() || activeBranchOpt.isEmpty()) {
-      return clientTrackedIssuesByServerRelativePath.entrySet().stream()
+    var translationOpt = pathTranslationService.getPathTranslation(configurationScopeId);
+    if (effectiveBindingOpt.isEmpty() || activeBranchOpt.isEmpty() || translationOpt.isEmpty()) {
+      return clientTrackedIssuesByIdeRelativePath.entrySet().stream()
         .map(e -> Map.entry(e.getKey(), e.getValue().stream()
           .map(issue -> Either.<ServerMatchedIssueDto, LocalOnlyIssueDto>forRight(
             new LocalOnlyIssueDto(UUID.randomUUID(), null))).collect(Collectors.toList())))
@@ -106,13 +112,14 @@ public class IssueMatchingService {
     }
     var binding = effectiveBindingOpt.get();
     var activeBranch = activeBranchOpt.get();
+    var translation = translationOpt.get();
     if (shouldFetchIssuesFromServer) {
-      refreshServerIssues(cancelChecker, binding, activeBranch, clientTrackedIssuesByServerRelativePath);
+      refreshServerIssues(cancelChecker, binding, activeBranch, clientTrackedIssuesByIdeRelativePath, translation);
     }
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId)
       .orElse(NewCodeDefinition.withAlwaysNew());
-    return clientTrackedIssuesByServerRelativePath.entrySet().stream().map(e -> {
-      var serverRelativePath = e.getKey();
+    return clientTrackedIssuesByIdeRelativePath.entrySet().stream().map(e -> {
+      var serverRelativePath = translation.ideToServerPath(Path.of(e.getKey()));
       var serverIssues = storageService.binding(binding).findings().load(activeBranch, serverRelativePath);
       var localOnlyIssues = localOnlyIssueStorageService.get().loadForFile(configurationScopeId, serverRelativePath);
       var matches = matchIssues(serverRelativePath, serverIssues, localOnlyIssues, e.getValue())
@@ -132,13 +139,14 @@ public class IssueMatchingService {
               new LocalOnlyIssueDto(localOnlyIssue.getId(), resolution == null ? null : ResolutionStatus.valueOf(resolution.getStatus().name())));
           }
         }).collect(Collectors.toList());
-      return Map.entry(serverRelativePath, matches);
+      return Map.entry(serverRelativePath.toString(), matches);
     }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   private void refreshServerIssues(CancelChecker cancelChecker, Binding binding, String activeBranch,
-    Map<String, List<ClientTrackedFindingDto>> clientTrackedIssuesByServerRelativePath) {
-    var serverFileRelativePaths = clientTrackedIssuesByServerRelativePath.keySet();
+    Map<String, List<ClientTrackedFindingDto>> clientTrackedIssuesByIdeRelativePath, FilePathTranslation translation) {
+    var serverFileRelativePaths = clientTrackedIssuesByIdeRelativePath.keySet()
+      .stream().map((String serverFilePath) -> translation.serverToIdePath(Path.of(serverFilePath))).collect(Collectors.toSet());
     var downloadAllIssuesAtOnce = serverFileRelativePaths.size() > FETCH_ALL_ISSUES_THRESHOLD;
     var fetchTasks = new LinkedList<Future<?>>();
     if (downloadAllIssuesAtOnce) {
@@ -152,7 +160,7 @@ public class IssueMatchingService {
     FutureUtils.waitForTask(cancelChecker, waitForTasksTask, "Wait for server issues (global timeout)", Duration.ofSeconds(60));
   }
 
-  private List<Either<ServerIssue<?>, LocalOnlyIssue>> matchIssues(String serverRelativePath, List<ServerIssue<?>> serverIssues,
+  private List<Either<ServerIssue<?>, LocalOnlyIssue>> matchIssues(Path serverRelativePath, List<ServerIssue<?>> serverIssues,
     List<LocalOnlyIssue> localOnlyIssues, List<ClientTrackedFindingDto> clientTrackedIssues) {
     var serverIssueMatcher = new IssueMatcher<>(new ClientTrackedFindingMatchingAttributeMapper(), new ServerIssueMatchingAttributesMapper());
     var serverMatchingResult = serverIssueMatcher.match(clientTrackedIssues, serverIssues);
@@ -173,7 +181,7 @@ public class IssueMatchingService {
   }
 
   @NotNull
-  private static LocalOnlyIssue newLocalOnlyIssue(String serverRelativePath, ClientTrackedFindingDto clientTrackedIssue) {
+  private static LocalOnlyIssue newLocalOnlyIssue(Path serverRelativePath, ClientTrackedFindingDto clientTrackedIssue) {
     return new LocalOnlyIssue(UUID.randomUUID(), serverRelativePath, adapt(clientTrackedIssue.getTextRangeWithHash()), adapt(clientTrackedIssue.getLineWithHash()),
       clientTrackedIssue.getRuleKey(), clientTrackedIssue.getMessage(), null);
   }

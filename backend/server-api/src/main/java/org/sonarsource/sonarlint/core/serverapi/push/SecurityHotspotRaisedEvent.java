@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.push;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
@@ -92,7 +93,7 @@ public class SecurityHotspotRaisedEvent implements ServerHotspotEvent {
   }
 
   @Override
-  public String getFilePath() {
+  public Path getFilePath() {
     return mainLocation.getFilePath();
   }
 }

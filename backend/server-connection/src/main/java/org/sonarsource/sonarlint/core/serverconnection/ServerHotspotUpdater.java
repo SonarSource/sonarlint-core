@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.nio.file.Path;
 import java.util.Set;
 import java.util.function.Supplier;
 import org.sonarsource.sonarlint.core.commons.Language;
@@ -50,13 +51,13 @@ public class ServerHotspotUpdater {
     }
   }
 
-  public void updateForFile(HotspotApi hotspotApi, String projectKey, String serverFilePath, String branchName, Supplier<Version> serverVersionSupplier) {
+  public void updateForFile(HotspotApi hotspotApi, String projectKey, Path serverFilePath, String branchName, Supplier<Version> serverVersionSupplier) {
     if (hotspotApi.supportHotspotsPull(serverVersionSupplier)) {
       LOG.debug("Skip downloading file hotspots on SonarQube 10.1+");
       return;
     }
     if (hotspotApi.permitsTracking(serverVersionSupplier)) {
-      var fileHotspots = hotspotApi.getFromFile(projectKey, serverFilePath, branchName);
+      var fileHotspots = hotspotApi.getFromFile(projectKey, serverFilePath.toString(), branchName);
       storage.project(projectKey).findings().replaceAllHotspotsOfFile(branchName, serverFilePath, fileHotspots);
     } else {
       LOG.info("Skip downloading hotspots for file, not supported");

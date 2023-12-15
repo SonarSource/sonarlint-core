@@ -100,10 +100,10 @@ public class XodusLocalOnlyIssueStore {
     });
   }
 
-  public List<LocalOnlyIssue> loadForFile(String configurationScopeId, String filePath) {
+  public List<LocalOnlyIssue> loadForFile(String configurationScopeId, Path filePath) {
     return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, CONFIGURATION_SCOPE_ID_ENTITY_TYPE, NAME_PROPERTY_NAME, configurationScopeId)
       .map(configScopeId -> configScopeId.getLinks(CONFIGURATION_SCOPE_ID_TO_FILES_LINK_NAME))
-      .flatMap(files -> findUniqueAmong(files, PATH_PROPERTY_NAME, filePath))
+      .flatMap(files -> findUniquePathAmong(files, PATH_PROPERTY_NAME, filePath))
       .map(fileToLoad -> fileToLoad.getLinks(XodusLocalOnlyIssueStore.FILE_TO_ISSUES_LINK_NAME))
       .map(issueEntities -> StreamSupport.stream(issueEntities.spliterator(), false)
         .map(XodusLocalOnlyIssueStore::adapt)
@@ -154,7 +154,7 @@ public class XodusLocalOnlyIssueStore {
     });
   }
 
-  public boolean removeAllIssuesForFile(String configurationScopeId, String filePath) {
+  public boolean removeAllIssuesForFile(String configurationScopeId, Path filePath) {
     return entityStore.computeInTransaction(txn -> {
       var configurationScope = getOrCreateConfigurationScopeId(configurationScopeId, txn);
       var fileEntity = getOrCreateFile(configurationScope, filePath, txn);
@@ -190,7 +190,7 @@ public class XodusLocalOnlyIssueStore {
     }
     return new LocalOnlyIssue(
       uuid,
-      filePath,
+      Path.of(filePath),
       textRange,
       lineWithHash,
       ruleKey,
@@ -220,6 +220,12 @@ public class XodusLocalOnlyIssueStore {
       .findFirst();
   }
 
+  private static Optional<Entity> findUniquePathAmong(EntityIterable iterable, String propertyName, Path path) {
+    return StreamSupport.stream(iterable.spliterator(), false)
+      .filter(e -> path.toString().equals(e.getProperty(propertyName)))
+      .findFirst();
+  }
+
   private static Entity getOrCreateConfigurationScopeId(String configurationScopeId, StoreTransaction txn) {
     return findUnique(txn, CONFIGURATION_SCOPE_ID_ENTITY_TYPE, NAME_PROPERTY_NAME, configurationScopeId)
       .orElseGet(() -> {
@@ -229,11 +235,11 @@ public class XodusLocalOnlyIssueStore {
       });
   }
 
-  private static Entity getOrCreateFile(Entity moduleEntity, String filePath, StoreTransaction txn) {
-    return findUniqueAmong(moduleEntity.getLinks(CONFIGURATION_SCOPE_ID_TO_FILES_LINK_NAME), PATH_PROPERTY_NAME, filePath)
+  private static Entity getOrCreateFile(Entity moduleEntity, Path filePath, StoreTransaction txn) {
+    return findUniquePathAmong(moduleEntity.getLinks(CONFIGURATION_SCOPE_ID_TO_FILES_LINK_NAME), PATH_PROPERTY_NAME, filePath)
       .orElseGet(() -> {
         var file = txn.newEntity(FILE_ENTITY_TYPE);
-        file.setProperty(PATH_PROPERTY_NAME, filePath);
+        file.setProperty(PATH_PROPERTY_NAME, filePath.toString());
         moduleEntity.addLink(CONFIGURATION_SCOPE_ID_TO_FILES_LINK_NAME, file);
         return file;
       });

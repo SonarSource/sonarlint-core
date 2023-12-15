@@ -105,7 +105,7 @@ public class ConfigurationScopeStorageFixture {
             });
 
             scopeEntity.setProperty("name", configScopeId);
-            fileEntity.setProperty("path", filePath);
+            fileEntity.setProperty("path", filePath.toString());
             scopeEntity.addLink("files", fileEntity);
           });
       });

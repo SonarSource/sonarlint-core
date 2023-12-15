@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import com.google.common.util.concurrent.MoreExecutors;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -40,6 +41,8 @@ import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
+import org.sonarsource.sonarlint.core.file.FilePathTranslation;
+import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.issue.matching.IssueMatcher;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -69,24 +72,28 @@ public class SecurityHotspotMatchingService {
   private final StorageService storageService;
   private final SonarProjectBranchTrackingService branchTrackingService;
   private final HotspotSynchronizationService hotspotSynchronizationService;
+  private final PathTranslationService pathTranslationService;
   private final ExecutorService executorService;
 
   public SecurityHotspotMatchingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, StorageService storageService,
-    SonarProjectBranchTrackingService branchTrackingService, HotspotSynchronizationService hotspotSynchronizationService) {
+    SonarProjectBranchTrackingService branchTrackingService, HotspotSynchronizationService hotspotSynchronizationService,
+    PathTranslationService pathTranslationService) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.storageService = storageService;
     this.branchTrackingService = branchTrackingService;
     this.hotspotSynchronizationService = hotspotSynchronizationService;
+    this.pathTranslationService = pathTranslationService;
     this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-server-tracking-hotspot-updater"));
   }
 
   public Map<String, List<Either<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>>> matchWithServerSecurityHotspots(String configurationScopeId,
-    Map<String, List<ClientTrackedFindingDto>> clientTrackedHotspotsByServerRelativePath, boolean shouldFetchHotspotsFromServer, CancelChecker cancelChecker) {
+    Map<String, List<ClientTrackedFindingDto>> clientTrackedHotspotsByIdeRelativePath, boolean shouldFetchHotspotsFromServer, CancelChecker cancelChecker) {
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     var activeBranchOpt = branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId);
-    if (effectiveBindingOpt.isEmpty() || activeBranchOpt.isEmpty()) {
-      return clientTrackedHotspotsByServerRelativePath.entrySet().stream()
+    var translationOpt = pathTranslationService.getPathTranslation(configurationScopeId);
+    if (effectiveBindingOpt.isEmpty() || activeBranchOpt.isEmpty() || translationOpt.isEmpty()) {
+      return clientTrackedHotspotsByIdeRelativePath.entrySet().stream()
         .map(e -> Map.entry(e.getKey(), e.getValue().stream()
           .map(issue -> Either.<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>forRight(
             new LocalOnlySecurityHotspotDto(UUID.randomUUID())))
@@ -96,12 +103,12 @@ public class SecurityHotspotMatchingService {
     var binding = effectiveBindingOpt.get();
     var activeBranch = activeBranchOpt.get();
     if (shouldFetchHotspotsFromServer) {
-      refreshServerSecurityHotspots(cancelChecker, binding, activeBranch, clientTrackedHotspotsByServerRelativePath);
+      refreshServerSecurityHotspots(cancelChecker, binding, activeBranch, clientTrackedHotspotsByIdeRelativePath, translationOpt.get());
     }
     var newCodeDefinition = storageService.binding(binding).newCodeDefinition().read();
-    return clientTrackedHotspotsByServerRelativePath.entrySet().stream().map(e -> {
+    return clientTrackedHotspotsByIdeRelativePath.entrySet().stream().map(e -> {
       var serverRelativePath = e.getKey();
-      var serverHotspots = storageService.binding(binding).findings().loadHotspots(activeBranch, serverRelativePath);
+      var serverHotspots = storageService.binding(binding).findings().loadHotspots(activeBranch, Path.of(serverRelativePath));
       var matches = matchSecurityHotspots(serverHotspots, e.getValue())
         .stream().map(result -> {
           if (result.isLeft()) {
@@ -120,8 +127,9 @@ public class SecurityHotspotMatchingService {
   }
 
   private void refreshServerSecurityHotspots(CancelChecker cancelChecker, Binding binding, String activeBranch,
-    Map<String, List<ClientTrackedFindingDto>> clientTrackedHotspotsByServerRelativePath) {
-    var serverFileRelativePaths = clientTrackedHotspotsByServerRelativePath.keySet();
+    Map<String, List<ClientTrackedFindingDto>> clientTrackedHotspotsByIdeRelativePath, FilePathTranslation translation) {
+    var serverFileRelativePaths = clientTrackedHotspotsByIdeRelativePath.keySet()
+      .stream().map(path -> translation.ideToServerPath(Path.of(path))).collect(Collectors.toSet());
     var downloadAllSecurityHotspotsAtOnce = serverFileRelativePaths.size() > FETCH_ALL_SECURITY_HOTSPOTS_THRESHOLD;
     var fetchTasks = new LinkedList<Future<?>>();
     if (downloadAllSecurityHotspotsAtOnce) {
@@ -175,13 +183,13 @@ public class SecurityHotspotMatchingService {
       null);
     var projectKey = event.getProjectKey();
     storageService.connection(connectionId).project(projectKey).findings().insert(event.getBranch(), hotspot);
-    client.didReceiveServerHotspotEvent(new DidReceiveServerHotspotEvent(connectionId, projectKey, event.getFilePath()));
+    client.didReceiveServerHotspotEvent(new DidReceiveServerHotspotEvent(connectionId, projectKey, event.getFilePath().toString()));
   }
 
   private void updateStorageAndNotifyClient(String connectionId, SecurityHotspotClosedEvent event) {
     var projectKey = event.getProjectKey();
     storageService.connection(connectionId).project(projectKey).findings().deleteHotspot(event.getHotspotKey());
-    client.didReceiveServerHotspotEvent(new DidReceiveServerHotspotEvent(connectionId, projectKey, event.getFilePath()));
+    client.didReceiveServerHotspotEvent(new DidReceiveServerHotspotEvent(connectionId, projectKey, event.getFilePath().toString()));
   }
 
   private void updateStorageAndNotifyClient(String connectionId, SecurityHotspotChangedEvent event) {
@@ -196,7 +204,7 @@ public class SecurityHotspotMatchingService {
         hotspot.setAssignee(assignee);
       }
     });
-    client.didReceiveServerHotspotEvent(new DidReceiveServerHotspotEvent(connectionId, projectKey, event.getFilePath()));
+    client.didReceiveServerHotspotEvent(new DidReceiveServerHotspotEvent(connectionId, projectKey, event.getFilePath().toString()));
   }
 
   @PreDestroy

@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.hotspot;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
@@ -29,7 +30,7 @@ public class ServerHotspot {
   private final String key;
   private final String ruleKey;
   private final String message;
-  private String filePath;
+  private Path filePath;
   private final TextRange textRange;
   private final Instant creationDate;
   private HotspotReviewStatus status;
@@ -40,7 +41,7 @@ public class ServerHotspot {
   public ServerHotspot(String key,
     String ruleKey,
     String message,
-    String filePath,
+    Path filePath,
     TextRange textRange,
     Instant creationDate,
     HotspotReviewStatus status,
@@ -57,7 +58,7 @@ public class ServerHotspot {
     this.assignee = assignee;
   }
 
-  public void setFilePath(String filePath) {
+  public void setFilePath(Path filePath) {
     this.filePath = filePath;
   }
 
@@ -73,7 +74,7 @@ public class ServerHotspot {
     return message;
   }
 
-  public String getFilePath() {
+  public Path getFilePath() {
     return filePath;
   }
 

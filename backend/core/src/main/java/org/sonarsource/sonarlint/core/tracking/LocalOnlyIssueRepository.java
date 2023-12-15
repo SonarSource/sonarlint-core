@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -31,9 +32,9 @@ import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 @Named
 @Singleton
 public class LocalOnlyIssueRepository {
-  private final Map<String, List<LocalOnlyIssue>> localOnlyIssuesByRelativePath = new ConcurrentHashMap<>();
+  private final Map<Path, List<LocalOnlyIssue>> localOnlyIssuesByRelativePath = new ConcurrentHashMap<>();
 
-  public void save(String serverRelativePath, List<LocalOnlyIssue> localOnlyIssues) {
+  public void save(Path serverRelativePath, List<LocalOnlyIssue> localOnlyIssues) {
     localOnlyIssuesByRelativePath.put(serverRelativePath, localOnlyIssues);
   }
 

@@ -670,7 +670,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
             null, "java:S106", "Replace this use of System.out by a logger."))),
           true)).get();
 
-        var fooIssues = issuesResponse.getIssuesByServerRelativePath().get("src/main/java/foo/Foo.java");
+        var fooIssues = issuesResponse.getIssuesByIdeRelativePath().get("src/main/java/foo/Foo.java");
         assertThat(fooIssues).hasSize(1);
         assertThat(fooIssues.get(0).isLeft()).isTrue();
         assertThat(fooIssues.get(0).getLeft().isResolved()).isTrue();
@@ -746,7 +746,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         null, "java:S106", "Replace this use of System.out by a logger."); // not resolved on both branches
       var trackWithServerIssuesParams = new TrackWithServerIssuesParams(CONFIG_SCOPE_ID, Map.of("src/main/java/foo/Foo.java",
         List.of(clientTrackedDto_s100, clientTrackedDto_s1172, clientTrackedDto_s106)), true);
-      var issuesOnMainBranch = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByServerRelativePath();
+      var issuesOnMainBranch = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByIdeRelativePath();
 
       var fooIssuesMainBranch = issuesOnMainBranch.get("src/main/java/foo/Foo.java");
       assertThat(fooIssuesMainBranch).hasSize(3);
@@ -767,7 +767,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           .isEqualTo(featureBranch));
       await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
 
-      var issuesOnFeatureBranch = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByServerRelativePath();
+      var issuesOnFeatureBranch = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByIdeRelativePath();
 
       var fooIssuesFeatureBranch = issuesOnFeatureBranch.get("src/main/java/foo/Foo.java");
       assertThat(fooIssuesFeatureBranch).hasSize(3);
@@ -870,7 +870,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         .containsExactly(CONFIG_SCOPE_ID, emptySet(), emptyList());
       assertThat(firstTaintChangedEvent.getAddedTaintVulnerabilities())
         .extracting(TaintVulnerabilityDto::getSonarServerKey, TaintVulnerabilityDto::isResolved, TaintVulnerabilityDto::getRuleKey, TaintVulnerabilityDto::getMessage,
-          TaintVulnerabilityDto::getFilePath, TaintVulnerabilityDto::getSeverity, TaintVulnerabilityDto::getType, TaintVulnerabilityDto::isOnNewCode)
+          TaintVulnerabilityDto::getIdeFilePath, TaintVulnerabilityDto::getSeverity, TaintVulnerabilityDto::getType, TaintVulnerabilityDto::isOnNewCode)
         .containsExactly(tuple(issueKey, false, "javasecurity:S3649", "Change this code to not construct SQL queries directly from user-controlled data.",
           Paths.get("src/main/java/foo/DbHelper.java"), org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.MAJOR,
           org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.VULNERABILITY, true));
@@ -892,7 +892,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var taintIssues = backend.getTaintVulnerabilityTrackingService().listAll(new ListAllParams(CONFIG_SCOPE_ID)).get().getTaintVulnerabilities();
       assertThat(taintIssues)
         .extracting(TaintVulnerabilityDto::getSonarServerKey, TaintVulnerabilityDto::isResolved, TaintVulnerabilityDto::getRuleKey, TaintVulnerabilityDto::getMessage,
-          TaintVulnerabilityDto::getFilePath, TaintVulnerabilityDto::getSeverity, TaintVulnerabilityDto::getType, TaintVulnerabilityDto::isOnNewCode)
+          TaintVulnerabilityDto::getIdeFilePath, TaintVulnerabilityDto::getSeverity, TaintVulnerabilityDto::getType, TaintVulnerabilityDto::isOnNewCode)
         .containsExactly(tuple(issueKey, false, "javasecurity:S3649", "Change this code to not construct SQL queries directly from user-controlled data.",
           Paths.get("src/main/java/foo/DbHelper.java"), org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.MAJOR,
           org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.VULNERABILITY, true));
@@ -1010,7 +1010,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var actualHotspot = captor.getValue();
       assertThat(actualHotspot.getKey()).isEqualTo(hotspotKey);
       assertThat(actualHotspot.getMessage()).isEqualTo("Make sure that this logger's configuration is safe.");
-      assertThat(actualHotspot.getFilePath()).isEqualTo("src/main/java/foo/Foo.java");
+      assertThat(actualHotspot.getFilePath()).isEqualTo(Path.of("src/main/java/foo/Foo.java"));
       assertThat(actualHotspot.getTextRange()).usingRecursiveComparison().isEqualTo(new TextRangeDto(9, 4, 9, 45));
       assertThat(actualHotspot.getAuthor()).isEmpty();
       assertThat(actualHotspot.getStatus()).isEqualTo("TO_REVIEW");

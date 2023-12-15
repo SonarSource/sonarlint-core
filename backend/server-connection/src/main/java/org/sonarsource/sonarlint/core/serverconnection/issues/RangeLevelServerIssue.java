@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection.issues;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
@@ -31,7 +32,7 @@ import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 public class RangeLevelServerIssue extends ServerIssue<RangeLevelServerIssue> {
   private TextRangeWithHash textRange;
 
-  public RangeLevelServerIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant creationDate,
+  public RangeLevelServerIssue(String key, boolean resolved, String ruleKey, String message, Path filePath, Instant creationDate,
     @Nullable IssueSeverity userSeverity, RuleType type, TextRangeWithHash textRange) {
     super(key, resolved, ruleKey, message, filePath, creationDate, userSeverity, type);
     this.textRange = textRange;
