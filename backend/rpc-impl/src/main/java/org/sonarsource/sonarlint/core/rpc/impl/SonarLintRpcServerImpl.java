@@ -22,9 +22,6 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Path;
-import java.time.Instant;
-import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -33,10 +30,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import jetbrains.exodus.core.execution.JobProcessor;
 import jetbrains.exodus.core.execution.ThreadJobProcessorPool;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
-import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
-import org.sonarsource.sonarlint.core.spring.SpringApplicationContextInitializer;
 import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
@@ -44,12 +39,10 @@ import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SingleThreadedMessageConsumer;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintLauncherBuilder;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
-import org.sonarsource.sonarlint.core.rpc.protocol.adapter.InstantTypeAdapter;
-import org.sonarsource.sonarlint.core.rpc.protocol.adapter.PathTypeAdapter;
-import org.sonarsource.sonarlint.core.rpc.protocol.adapter.UuidTypeAdapter;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.BindingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.SonarProjectBranchRpcService;
@@ -66,6 +59,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.IssueTrackin
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.SecurityHotspotMatchingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityTrackingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.usertoken.UserTokenRpcService;
+import org.sonarsource.sonarlint.core.spring.SpringApplicationContextInitializer;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ConfigurableApplicationContext;
 
@@ -82,16 +76,12 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   public SonarLintRpcServerImpl(InputStream in, OutputStream out, ExecutorService messageReaderExecutor, ExecutorService messageWriterExecutor) {
     this.requestAndNotificationsSequentialExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint Server RPC sequential executor"));
     this.requestsExecutor = Executors.newCachedThreadPool(r -> new Thread(r, "SonarLint Server RPC request executor"));
-    var launcher = new Launcher.Builder<SonarLintRpcClient>()
+    var launcher = new SonarLintLauncherBuilder<SonarLintRpcClient>()
       .setLocalService(this)
       .setRemoteInterface(SonarLintRpcClient.class)
       .setInput(in)
       .setOutput(out)
       .setExecutorService(messageReaderExecutor)
-      .configureGson(gsonBuilder -> gsonBuilder
-        .registerTypeHierarchyAdapter(Path.class, new PathTypeAdapter())
-        .registerTypeHierarchyAdapter(Instant.class, new InstantTypeAdapter())
-        .registerTypeHierarchyAdapter(UUID.class, new UuidTypeAdapter()))
       .wrapMessages(m -> new SingleThreadedMessageConsumer(m, messageWriterExecutor, System.err::println))
       .create();
 
