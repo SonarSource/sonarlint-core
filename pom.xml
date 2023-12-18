@@ -25,7 +25,10 @@
 
   <modules>
     <module>backend/analysis-engine</module>
+    <module>backend/cli</module>
     <module>backend/commons</module>
+    <module>backend/core</module>
+    <module>backend/embedded</module>
     <module>backend/http</module>
     <module>backend/plugin-api</module>
     <module>backend/plugin-commons</module>
@@ -38,9 +41,6 @@
     <module>client/java-client-legacy</module>
     <module>client/java-client-utils</module>
     <module>client/rpc-java-client</module>
-    <module>backend-embedded</module>
-    <module>backend-cli</module>
-    <module>core</module>
     <module>medium-tests</module>
     <module>osgi</module>
     <module>report-aggregate</module>
