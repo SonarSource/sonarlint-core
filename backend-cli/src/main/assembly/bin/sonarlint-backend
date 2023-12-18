@@ -35,7 +35,6 @@ while getopts "j:" opt; do
 done
 
 if [ -z "$javaHomeArg" ]; then
-  echo "Using bundled jre"
   JAVACMD=$APP_HOME/jre/bin/java
 fi
 

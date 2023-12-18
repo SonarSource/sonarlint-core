@@ -50,10 +50,8 @@ IF NOT "%1"=="" (
 )
 
 if defined JAVA_HOME_ARG (
-    echo Using Java from %JAVA_HOME_ARG%
     set JAVA_EXE=%JAVA_HOME_ARG%\bin\java.exe
 ) else (
-    echo Using bundled jre
     set JAVA_EXE=%APP_HOME%\jre\bin\java.exe
 )
 
