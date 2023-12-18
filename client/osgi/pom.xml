@@ -4,11 +4,12 @@
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-parent</artifactId>
     <version>10.0-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
   </parent>
-  <artifactId>sonarlint-core-osgi</artifactId>
-  <name>SonarLint Core - OSGi bundle</name>
+  <artifactId>sonarlint-core-client-osgi</artifactId>
+  <name>SonarLint Core - Client OSGi bundle</name>
   <packaging>bundle</packaging>
-  <description>Common SonarLint features bundled for OSGi</description>
+  <description>SonarLint Client bundled for OSGi</description>
 
   <properties>
     <jarsigner.skip>true</jarsigner.skip>
@@ -17,12 +18,12 @@
   <dependencies>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>sonarlint-backend-embedded</artifactId>
+      <artifactId>sonarlint-client-embedded</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>sonarlint-backend-embedded</artifactId>
+      <artifactId>sonarlint-client-embedded</artifactId>
       <version>${project.version}</version>
       <classifier>sources</classifier>
     </dependency>
@@ -58,10 +59,7 @@
               org.slf4j.spi;version="1.2.3",
             </Import-Package>
             <Export-Package>
-              org.sonarsource.sonarlint.core.*;version="${project.version}",
-              org.sonarsource.sonarlint.shaded.com.google.gson.*;version="${gson.version}",
-              com.google.protobuf;version="${protobuf.version}",
-              org.eclipse.lsp4j.jsonrpc.*;version="${lsp4j.version}",
+              org.sonarsource.sonarlint.core.client.*;version="${project.version}",
             </Export-Package>
             <_failok>true</_failok>
             <_nouses>true</_nouses>

@@ -38,11 +38,12 @@
     <module>backend/server-connection</module>
     <module>backend/slf4j-sonar-log</module>
     <module>backend/telemetry</module>
+    <module>client/embedded</module>
     <module>client/java-client-legacy</module>
     <module>client/java-client-utils</module>
+    <module>client/osgi</module>
     <module>client/rpc-java-client</module>
     <module>medium-tests</module>
-    <module>osgi</module>
     <module>report-aggregate</module>
     <module>rpc-protocol</module>
     <module>rule-extractor-cli</module>
