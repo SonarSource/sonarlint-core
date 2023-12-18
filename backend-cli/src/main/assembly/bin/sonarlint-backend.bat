@@ -29,8 +29,6 @@ if "%DIRNAME%"=="" set DIRNAME=.
 @rem This is normally unused
 set APP_BASE_NAME=%~n0
 set APP_HOME=%DIRNAME%..
-@rem set DEFAULT_JVM_OPTS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=1044"
-set DEFAULT_JVM_OPTS=
 
 @rem Resolve any "." and ".." in APP_HOME to make it shorter.
 for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
@@ -58,7 +56,7 @@ if defined JAVA_HOME_ARG (
 set CLASSPATH=%APP_HOME%\lib\*;
 
 @rem Execute SLCORE
-"%JAVA_EXE%" %DEFAULT_JVM_OPTS% -classpath "%CLASSPATH%" org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli %args%
+"%JAVA_EXE%" %SONARLINT_VM_OPTS% -classpath "%CLASSPATH%" org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli %args%
 
 @rem End local scope for the variables with windows NT shell
 if %ERRORLEVEL% equ 0 goto mainEnd
