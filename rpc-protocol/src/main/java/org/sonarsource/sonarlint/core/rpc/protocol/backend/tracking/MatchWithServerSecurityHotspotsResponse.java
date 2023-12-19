@@ -24,9 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherServerOrLocalSecurityHotspotDtoAdapter;
 
 public class MatchWithServerSecurityHotspotsResponse {
@@ -54,11 +52,11 @@ public class MatchWithServerSecurityHotspotsResponse {
       return wrapped;
     }
 
-    public static ServerOrLocalSecurityHotspotDto forLeft(@NonNull ServerMatchedSecurityHotspotDto left) {
+    public static ServerOrLocalSecurityHotspotDto forLeft(ServerMatchedSecurityHotspotDto left) {
       return new ServerOrLocalSecurityHotspotDto(Either.forLeft(left));
     }
 
-    public static ServerOrLocalSecurityHotspotDto forRight(@NonNull LocalOnlySecurityHotspotDto right) {
+    public static ServerOrLocalSecurityHotspotDto forRight(LocalOnlySecurityHotspotDto right) {
       return new ServerOrLocalSecurityHotspotDto(Either.forRight(right));
     }
 
@@ -79,8 +77,8 @@ public class MatchWithServerSecurityHotspotsResponse {
     }
 
     public <T> T map(
-      @NonNull Function<? super ServerMatchedSecurityHotspotDto, ? extends T> mapLeft,
-      @NonNull Function<? super LocalOnlySecurityHotspotDto, ? extends T> mapRight) {
+      Function<? super ServerMatchedSecurityHotspotDto, ? extends T> mapLeft,
+      Function<? super LocalOnlySecurityHotspotDto, ? extends T> mapRight) {
       return wrapped.map(mapLeft, mapRight);
     }
 

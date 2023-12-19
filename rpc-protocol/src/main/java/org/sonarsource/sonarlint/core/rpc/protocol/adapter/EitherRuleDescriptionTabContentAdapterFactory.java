@@ -38,8 +38,8 @@ public class EitherRuleDescriptionTabContentAdapterFactory implements TypeAdapte
   @SuppressWarnings("unchecked")
   @Override
   public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-    Predicate<JsonElement> leftChecker = new EitherTypeAdapter.PropertyChecker("htmlContent");
-    Predicate<JsonElement> rightChecker = new EitherTypeAdapter.PropertyChecker("defaultContextKey");
-    return (TypeAdapter<T>) new EitherTypeAdapter<>(gson, ELEMENT_TYPE, leftChecker, rightChecker);
+    Predicate<JsonElement> contextualChecker = new EitherTypeAdapter.PropertyChecker("defaultContextKey");
+    Predicate<JsonElement> nonContextualChecker = Predicate.not(contextualChecker);
+    return (TypeAdapter<T>) new EitherTypeAdapter<>(gson, ELEMENT_TYPE, nonContextualChecker, contextualChecker);
   }
 }

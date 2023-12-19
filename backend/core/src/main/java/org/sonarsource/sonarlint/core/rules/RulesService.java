@@ -90,13 +90,15 @@ public class RulesService {
   }
 
   RulesService(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository, StorageService storageService,
-    SynchronizationService synchronizationService, Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey) {
+    SynchronizationService synchronizationService, @Nullable Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey) {
     this.serverApiProvider = serverApiProvider;
     this.configurationRepository = configurationRepository;
     this.rulesRepository = rulesRepository;
     this.storageService = storageService;
     this.synchronizationService = synchronizationService;
-    this.standaloneRuleConfig.putAll(standaloneRuleConfigByKey);
+    if (standaloneRuleConfigByKey != null) {
+      this.standaloneRuleConfig.putAll(standaloneRuleConfigByKey);
+    }
   }
 
   public EffectiveRuleDetailsDto getEffectiveRuleDetails(String configurationScopeId, String ruleKey, @Nullable String contextKey) throws RuleNotFoundException {

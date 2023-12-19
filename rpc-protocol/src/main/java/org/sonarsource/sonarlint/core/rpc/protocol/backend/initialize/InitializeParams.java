@@ -33,9 +33,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 public class InitializeParams {
   private final ClientConstantInfoDto clientConstantInfo;
   private final FeatureFlagsDto featureFlags;
-
   private final Path storageRoot;
-  @Nullable
   private final Path workDir;
   private final Set<Path> embeddedPluginPaths;
   private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey;
@@ -55,10 +53,22 @@ public class InitializeParams {
    * @param sonarlintUserHome           Path to SonarLint user home directory. If null, will default to ~/.sonarlint
    * @param standaloneRuleConfigByKey   Local rule configuration for standalone analysis. This configuration will override defaults rule activation and parameters.
    */
-  public InitializeParams(ClientConstantInfoDto clientConstantInfo, TelemetryClientConstantAttributesDto telemetryConstantAttributes, FeatureFlagsDto featureFlags, Path storageRoot, @Nullable Path workDir, Set<Path> embeddedPluginPaths,
-    Map<String, Path> connectedModeEmbeddedPluginPathsByKey, Set<Language> enabledLanguagesInStandaloneMode, Set<Language> extraEnabledLanguagesInConnectedMode,
-    List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections, @Nullable String sonarlintUserHome,
-    Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey, boolean isFocusOnNewCode, @Nullable Path clientNodeJsPath) {
+  public InitializeParams(
+    ClientConstantInfoDto clientConstantInfo,
+    TelemetryClientConstantAttributesDto telemetryConstantAttributes,
+    FeatureFlagsDto featureFlags,
+    Path storageRoot,
+    @Nullable Path workDir,
+    @Nullable Set<Path> embeddedPluginPaths,
+    @Nullable Map<String, Path> connectedModeEmbeddedPluginPathsByKey,
+    @Nullable Set<Language> enabledLanguagesInStandaloneMode,
+    @Nullable Set<Language> extraEnabledLanguagesInConnectedMode,
+    @Nullable List<SonarQubeConnectionConfigurationDto> sonarQubeConnections,
+    @Nullable List<SonarCloudConnectionConfigurationDto> sonarCloudConnections,
+    @Nullable String sonarlintUserHome,
+    @Nullable Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey,
+    boolean isFocusOnNewCode,
+    @Nullable Path clientNodeJsPath) {
     this.clientConstantInfo = clientConstantInfo;
     this.telemetryConstantAttributes = telemetryConstantAttributes;
     this.featureFlags = featureFlags;
@@ -98,27 +108,27 @@ public class InitializeParams {
   }
 
   public Set<Path> getEmbeddedPluginPaths() {
-    return embeddedPluginPaths;
+    return embeddedPluginPaths != null ? embeddedPluginPaths : Set.of();
   }
 
   public Map<String, Path> getConnectedModeEmbeddedPluginPathsByKey() {
-    return connectedModeEmbeddedPluginPathsByKey;
+    return connectedModeEmbeddedPluginPathsByKey != null ? connectedModeEmbeddedPluginPathsByKey : Map.of();
   }
 
   public Set<Language> getEnabledLanguagesInStandaloneMode() {
-    return enabledLanguagesInStandaloneMode;
+    return enabledLanguagesInStandaloneMode != null ? enabledLanguagesInStandaloneMode : Set.of();
   }
 
   public Set<Language> getExtraEnabledLanguagesInConnectedMode() {
-    return extraEnabledLanguagesInConnectedMode;
+    return extraEnabledLanguagesInConnectedMode != null ? extraEnabledLanguagesInConnectedMode : Set.of();
   }
 
   public List<SonarQubeConnectionConfigurationDto> getSonarQubeConnections() {
-    return sonarQubeConnections;
+    return sonarQubeConnections != null ? sonarQubeConnections : List.of();
   }
 
   public List<SonarCloudConnectionConfigurationDto> getSonarCloudConnections() {
-    return sonarCloudConnections;
+    return sonarCloudConnections != null ? sonarCloudConnections : List.of();
   }
 
   @CheckForNull
@@ -127,13 +137,14 @@ public class InitializeParams {
   }
 
   public Map<String, StandaloneRuleConfigDto> getStandaloneRuleConfigByKey() {
-    return standaloneRuleConfigByKey;
+    return standaloneRuleConfigByKey != null ? standaloneRuleConfigByKey : Map.of();
   }
 
   public boolean isFocusOnNewCode() {
     return isFocusOnNewCode;
   }
 
+  @CheckForNull
   public Path getClientNodeJsPath() {
     return clientNodeJsPath;
   }

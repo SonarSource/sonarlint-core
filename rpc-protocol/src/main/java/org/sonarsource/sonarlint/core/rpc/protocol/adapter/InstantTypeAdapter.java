@@ -25,12 +25,13 @@ import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.time.Instant;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class InstantTypeAdapter extends TypeAdapter<Instant> {
 
   @Override
-  public void write(JsonWriter out, @Nullable Instant value) throws IOException {
+  public void write(@Nonnull JsonWriter out, @Nullable Instant value) throws IOException {
     if (value == null) {
       out.nullValue();
     } else {
@@ -39,7 +40,7 @@ public class InstantTypeAdapter extends TypeAdapter<Instant> {
   }
 
   @Override
-  public Instant read(JsonReader in) throws IOException {
+  public Instant read(@Nonnull JsonReader in) throws IOException {
     var peek = in.peek();
     if (peek == JsonToken.NULL) {
       in.nextNull();

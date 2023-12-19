@@ -19,26 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding;
 
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
-
 public class DidUpdateBindingParams {
 
   private final String configScopeId;
-  @NonNull
   private final BindingConfigurationDto updatedBinding;
 
 
-  public DidUpdateBindingParams(@NonNull String configScopeId, @NonNull BindingConfigurationDto updatedBinding) {
+  public DidUpdateBindingParams(String configScopeId, BindingConfigurationDto updatedBinding) {
     this.configScopeId = configScopeId;
     this.updatedBinding = updatedBinding;
   }
 
-  @NonNull
   public String getConfigScopeId() {
     return configScopeId;
   }
 
-  @NonNull
   public BindingConfigurationDto getUpdatedBinding() {
     return updatedBinding;
   }

@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
 
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 
 /**
@@ -36,12 +35,11 @@ public class ClientConstantInfoDto {
    */
   private final String userAgent;
 
-  public ClientConstantInfoDto(@NonNull String name, @NonNull String userAgent) {
+  public ClientConstantInfoDto(String name, String userAgent) {
     this.name = name;
     this.userAgent = userAgent;
   }
 
-  @NonNull
   public String getName() {
     return name;
   }

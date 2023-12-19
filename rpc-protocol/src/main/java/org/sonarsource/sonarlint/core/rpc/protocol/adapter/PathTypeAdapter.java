@@ -25,11 +25,12 @@ import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.nio.file.Path;
+import javax.annotation.Nullable;
 
 public class PathTypeAdapter extends TypeAdapter<Path> {
 
   @Override
-  public void write(JsonWriter out, Path value) throws IOException {
+  public void write(JsonWriter out, @Nullable Path value) throws IOException {
     if (value == null) {
       out.nullValue();
     } else {

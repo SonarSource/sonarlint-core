@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.rpc.protocol.client.progress;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
 public class StartProgressParams {
   /**
@@ -34,15 +33,13 @@ public class StartProgressParams {
    * Could be null for a task that does not relate to a configuration scope in particular,
    * or if several configuration scopes are involved.
    */
-  @CheckForNull
   private final String configurationScopeId;
   private final String title;
-  @CheckForNull
   private final String message;
   private final boolean indeterminate;
   private final boolean cancellable;
 
-  public StartProgressParams(@NonNull String taskId, @Nullable String configurationScopeId, @NonNull String title, @Nullable String message, boolean indeterminate,
+  public StartProgressParams(String taskId, @Nullable String configurationScopeId, String title, @Nullable String message, boolean indeterminate,
     boolean cancellable) {
     this.taskId = taskId;
     this.configurationScopeId = configurationScopeId;

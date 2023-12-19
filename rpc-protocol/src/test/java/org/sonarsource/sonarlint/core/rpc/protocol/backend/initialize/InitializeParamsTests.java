@@ -17,29 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.client.event;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
 
-public class DidReceiveServerHotspotEvent {
+import org.junit.jupiter.api.Test;
 
-  private final String connectionId;
-  private final String sonarProjectKey;
-  private final String serverFilePath;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-  public DidReceiveServerHotspotEvent(String connectionId, String sonarProjectKey, String serverFilePath) {
-    this.connectionId = connectionId;
-    this.sonarProjectKey = sonarProjectKey;
-    this.serverFilePath = serverFilePath;
+class InitializeParamsTests {
+
+  @Test
+  void should_replace_null_collections_by_empty() {
+    var params = new InitializeParams(null, null, null, null, null, null, null, null, null, null, null, null, null, false, null);
+    assertNotNull(params.getEmbeddedPluginPaths());
+    assertNotNull(params.getConnectedModeEmbeddedPluginPathsByKey());
+    assertNotNull(params.getEnabledLanguagesInStandaloneMode());
+    assertNotNull(params.getExtraEnabledLanguagesInConnectedMode());
+    assertNotNull(params.getSonarQubeConnections());
+    assertNotNull(params.getSonarCloudConnections());
+    assertNotNull(params.getStandaloneRuleConfigByKey());
   }
 
-  public String getConnectionId() {
-    return connectionId;
-  }
-
-  public String getSonarProjectKey() {
-    return sonarProjectKey;
-  }
-
-  public String getServerFilePath() {
-    return serverFilePath;
-  }
 }

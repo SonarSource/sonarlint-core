@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.common;
 
+
 public class TokenDto {
 
   private final String token;

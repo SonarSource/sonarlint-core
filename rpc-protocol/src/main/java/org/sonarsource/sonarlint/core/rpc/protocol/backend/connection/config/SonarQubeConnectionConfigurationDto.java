@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config;
 
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
-
 public class SonarQubeConnectionConfigurationDto {
 
   /**
@@ -30,7 +28,7 @@ public class SonarQubeConnectionConfigurationDto {
   private final String serverUrl;
   private final boolean disableNotifications;
 
-  public SonarQubeConnectionConfigurationDto(@NonNull String connectionId, @NonNull String serverUrl, boolean disableNotifications) {
+  public SonarQubeConnectionConfigurationDto(String connectionId, String serverUrl, boolean disableNotifications) {
     this.connectionId = connectionId;
     this.serverUrl = serverUrl;
     this.disableNotifications = disableNotifications;

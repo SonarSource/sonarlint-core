@@ -20,23 +20,17 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification;
 
 import java.util.Set;
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
 public class ShowSmartNotificationParams {
 
-  @NonNull
   private final String category;
-  @NonNull
   private final String connectionId;
-  @NonNull
   private final String link;
-  @NonNull
   private final Set<String> scopeIds;
-  @NonNull
   private final String text;
 
-  public ShowSmartNotificationParams(@NonNull String text, @NonNull String link,
-    @NonNull Set<String> scopeIds, @NonNull String category, @NonNull String connectionId) {
+  public ShowSmartNotificationParams(String text, String link,
+    Set<String> scopeIds, String category, String connectionId) {
     this.text = text;
     this.link = link;
     this.scopeIds = scopeIds;

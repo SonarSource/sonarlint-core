@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config;
 
+
 public class DidChangeCredentialsParams {
   private final String connectionId;
 

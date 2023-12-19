@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.message;
 
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
-
 /**
  * The one-time message should be displayed as a warning containing the following elements:
  * <ul>
@@ -31,14 +29,11 @@ import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
  */
 public class ShowSoonUnsupportedMessageParams {
 
-  @NonNull
   private final String doNotShowAgainId;
-  @NonNull
   private final String configurationScopeId;
-  @NonNull
   private final String text;
 
-  public ShowSoonUnsupportedMessageParams(@NonNull String doNotShowAgainId, @NonNull String configurationScopeId, @NonNull String text) {
+  public ShowSoonUnsupportedMessageParams(String doNotShowAgainId, String configurationScopeId, String text) {
     this.doNotShowAgainId = doNotShowAgainId;
     this.configurationScopeId = configurationScopeId;
     this.text = text;
