@@ -26,6 +26,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -65,7 +67,7 @@ public class PathTranslationService {
 
   private final ExecutorService executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-path-translation"));
 
-  private final AsyncLoadingCache<String, FilePathTranslation> cachedPaths = Caffeine.newBuilder()
+  private final AsyncLoadingCache<String, FilePathTranslation> cachedPathsTranslationByConfigScope = Caffeine.newBuilder()
     .executor(executorService)
     .buildAsync(this::computePaths);
 
@@ -77,6 +79,7 @@ public class PathTranslationService {
 
   @CheckForNull
   private FilePathTranslation computePaths(String configScopeId) {
+    LOG.debug("Computing paths translation for config scope '{}'", configScopeId);
     var fileMatcher = new FileTreeMatcher();
     var boundScope = configurationRepository.getBoundScope(configScopeId);
     if (boundScope == null) {
@@ -134,15 +137,27 @@ public class PathTranslationService {
   }
 
   private void cancelAndInvalidate(String configScopeId) {
-    var cachedFuture = cachedPaths.getIfPresent(configScopeId);
+    var cachedFuture = cachedPathsTranslationByConfigScope.getIfPresent(configScopeId);
     if (cachedFuture != null) {
       cachedFuture.cancel(true);
     }
-    cachedPaths.synchronous().invalidate(configScopeId);
+    cachedPathsTranslationByConfigScope.synchronous().invalidate(configScopeId);
   }
 
   public Optional<FilePathTranslation> getPathTranslation(String configurationScopeId) {
-    return Optional.ofNullable(cachedPaths.get(configurationScopeId).join());
+    try {
+      return Optional.ofNullable(cachedPathsTranslationByConfigScope.get(configurationScopeId).get());
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      LOG.debug("Interrupted!", e);
+      return Optional.empty();
+    } catch (CancellationException e) {
+      LOG.debug("Computation was canceled, wait for the next one", e);
+      return getPathTranslation(configurationScopeId);
+    } catch (ExecutionException e) {
+      LOG.error("Unable to compute paths translation", e);
+      throw new IllegalStateException("Unable to compute paths translation", e);
+    }
   }
 
   @PreDestroy
