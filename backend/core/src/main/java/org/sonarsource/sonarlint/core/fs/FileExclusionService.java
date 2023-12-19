@@ -86,7 +86,7 @@ public class FileExclusionService {
     var exclusionFilters = new ServerFileExclusions(settings.asConfig());
     exclusionFilters.prepare();
     var idePath = clientFile.getClientRelativePath();
-    var pathTranslation = pathTranslationService.getPathTranslation(configScope);
+    var pathTranslation = pathTranslationService.getOrComputePathTranslation(configScope);
     Path serverPath;
     if (pathTranslation.isPresent()) {
       serverPath = IssueStorePaths.idePathToServerPath(pathTranslation.get().getIdePathPrefix(), pathTranslation.get().getServerPathPrefix(), idePath);
