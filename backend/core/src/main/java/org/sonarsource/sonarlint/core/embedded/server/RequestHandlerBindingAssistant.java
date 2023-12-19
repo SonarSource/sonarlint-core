@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.embedded.server;
 
 import com.google.common.util.concurrent.MoreExecutors;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -64,27 +65,18 @@ public class RequestHandlerBindingAssistant {
     executorService.submit(() -> assistConnectionAndBindingIfNeeded(serverUrl, tokenName, tokenValue, projectKey, andThen));
   }
 
+
   private void assistConnectionAndBindingIfNeeded(String serverUrl, @Nullable String tokenName, @Nullable String tokenValue, String projectKey,
     BiConsumer<String, String> andThen) {
+    LOG.debug("Assist connection and binding if needed for project {} and server {}", projectKey, serverUrl);
     try {
       var connectionsMatchingOrigin = connectionConfigurationRepository.findByUrl(serverUrl);
       if (connectionsMatchingOrigin.isEmpty()) {
         startFullBindingProcess();
         try {
-          var assistNewConnectionResult = assistCreatingConnection(serverUrl, tokenName, tokenValue);
-
-          var assistNewBindingResult = assistBinding(assistNewConnectionResult.getNewConnectionId(), projectKey);
-
-          // Wait 5s for the connection to be created in the repository. This is happening asynchronously by the
-          // ConnectionService::didUpdateConnections event
-          for (int i = 50; i >= 0; i--) {
-            if (connectionConfigurationRepository.getConnectionsById().containsKey(assistNewConnectionResult.getNewConnectionId())) {
-              break;
-            }
-            Thread.sleep(100);
-          }
+          var assistNewConnectionResult = assistCreatingConnectionAndWaitForRepositoryUpdate(serverUrl, tokenName, tokenValue);
+          var assistNewBindingResult = assistBindingAndWaitForRepositoryUpdate(assistNewConnectionResult.getNewConnectionId(), projectKey);
           andThen.accept(assistNewConnectionResult.getNewConnectionId(), assistNewBindingResult.getConfigurationScopeId());
-
         } finally {
           endFullBindingProcess();
         }
@@ -98,15 +90,56 @@ public class RequestHandlerBindingAssistant {
     }
   }
 
-  private void assistBindingIfNeeded(String connectionId, String projectKey, BiConsumer<String, String> andThen) {
+  private AssistCreatingConnectionResponse assistCreatingConnectionAndWaitForRepositoryUpdate(String serverUrl, @Nullable String tokenName, @Nullable String tokenValue)
+    throws InterruptedException {
+    var assistNewConnectionResult = assistCreatingConnection(serverUrl, tokenName, tokenValue);
+
+    // Wait 5s for the connection to be created in the repository. This is happening asynchronously by the
+    // ConnectionService::didUpdateConnections event
+    LOG.debug("Waiting for connection creation notification...");
+    for (var i = 50; i >= 0; i--) {
+      if (connectionConfigurationRepository.getConnectionsById().containsKey(assistNewConnectionResult.getNewConnectionId())) {
+        break;
+      }
+      Thread.sleep(100);
+    }
+    if (!connectionConfigurationRepository.getConnectionsById().containsKey(assistNewConnectionResult.getNewConnectionId())) {
+      LOG.warn("Did not receive connection creation notification on a timely manner");
+      throw new CancellationException();
+    }
+
+    return assistNewConnectionResult;
+  }
+
+  private void assistBindingIfNeeded(String connectionId, String projectKey, BiConsumer<String, String> andThen) throws InterruptedException {
     var scopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, projectKey);
     if (scopes.isEmpty()) {
-      var assistNewBindingResult = assistBinding(connectionId, projectKey);
+      var assistNewBindingResult = assistBindingAndWaitForRepositoryUpdate(connectionId, projectKey);
       andThen.accept(connectionId, assistNewBindingResult.getConfigurationScopeId());
     } else {
       // we pick the first bound scope but this could lead to issues later if there were several matches (make the user select the right one?)
       andThen.accept(connectionId, scopes.iterator().next().getConfigScopeId());
     }
+  }
+
+  private NewBinding assistBindingAndWaitForRepositoryUpdate(String connectionId, String projectKey) throws InterruptedException {
+    var assistNewBindingResult = assistBinding(connectionId, projectKey);
+
+    // Wait 5s for the binding to be created in the repository. This is happening asynchronously by the
+    // ConfigurationService::didUpdateBinding event
+    LOG.debug("Waiting for binding creation notification...");
+    for (var i = 50; i >= 0; i--) {
+      if (configurationRepository.getEffectiveBinding(assistNewBindingResult.configurationScopeId).isPresent()) {
+        break;
+      }
+      Thread.sleep(100);
+    }
+    if (configurationRepository.getEffectiveBinding(assistNewBindingResult.configurationScopeId).isEmpty()) {
+      LOG.warn("Did not receive binding creation notification on a timely manner");
+      throw new CancellationException();
+    }
+
+    return assistNewBindingResult;
   }
 
   void startFullBindingProcess() {
