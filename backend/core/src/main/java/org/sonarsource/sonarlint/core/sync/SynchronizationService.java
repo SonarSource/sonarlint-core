@@ -54,8 +54,10 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidUpdatePluginsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverconnection.FileExclusionChangedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.ServerConnection;
 import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
 import static java.util.Objects.requireNonNull;
@@ -84,13 +86,15 @@ public class SynchronizationService {
   private final IssueSynchronizationService issueSynchronizationService;
   private final HotspotSynchronizationService hotspotSynchronizationService;
   private final SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService;
+  private final ApplicationEventPublisher applicationEventPublisher;
   private ScheduledExecutorService scheduledSynchronizer;
 
   public SynchronizationService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
     ServerApiProvider serverApiProvider, StorageService storageService, InitializeParams params,
     SynchronizationTimestampRepository synchronizationTimestampRepository, TaintSynchronizationService taintSynchronizationService,
     IssueSynchronizationService issueSynchronizationService, HotspotSynchronizationService hotspotSynchronizationService,
-    SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService) {
+    SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService,
+    ApplicationEventPublisher applicationEventPublisher) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
@@ -105,6 +109,7 @@ public class SynchronizationService {
     this.issueSynchronizationService = issueSynchronizationService;
     this.hotspotSynchronizationService = hotspotSynchronizationService;
     this.sonarProjectBranchesSynchronizationService = sonarProjectBranchesSynchronizationService;
+    this.applicationEventPublisher = applicationEventPublisher;
   }
 
   @PostConstruct
@@ -112,8 +117,10 @@ public class SynchronizationService {
     if (!branchSpecificSynchronizationEnabled) {
       return;
     }
+    var initialDelay = Long.parseLong(System.getProperty("sonarlint.internal.synchronization.initialDelay", "3600"));
+    var syncPeriod = Long.parseLong(System.getProperty("sonarlint.internal.synchronization.period", "3600"));
     scheduledSynchronizer = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "SonarLint Local Storage Synchronizer"));
-    scheduledSynchronizer.scheduleAtFixedRate(this::safeAutoSync, 3600L, 3600L, TimeUnit.SECONDS);
+    scheduledSynchronizer.scheduleAtFixedRate(this::safeAutoSync, initialDelay, syncPeriod, TimeUnit.SECONDS);
   }
 
   // we must catch errors for the scheduling to not stop
@@ -166,6 +173,7 @@ public class SynchronizationService {
         taintSynchronizationService.synchronizeTaintVulnerabilities(connectionId, sonarProjectKey);
         hotspotSynchronizationService.syncServerHotspotsForProject(connectionId, sonarProjectKey);
         synchronizedConfScopeIds.addAll(entry.getValue().stream().map(BoundScope::getConfigScopeId).collect(toSet()));
+        synchronizeConnectionAndProjectsIfNeeded(connectionId, serverApi, entry.getValue());
         subProgress += subProgressGap;
       }
     });
@@ -240,7 +248,12 @@ public class SynchronizationService {
       var scopesPerProjectKey = scopesToSync.stream().collect(groupingBy(BoundScope::getSonarProjectKey, mapping(BoundScope::getConfigScopeId, toSet())));
       scopesPerProjectKey.forEach((projectKey, configScopeIds) -> {
         LOG.debug("Synchronizing storage of Sonar project '{}' for connection '{}'", projectKey, connectionId);
-        serverConnection.sync(serverApi, projectKey);
+        var analyzerConfigUpdateSummary = serverConnection.sync(serverApi, projectKey);
+        if(analyzerConfigUpdateSummary != null) {
+          if(analyzerConfigUpdateSummary.isExcludeFilesUpdated()) {
+            applicationEventPublisher.publishEvent(new FileExclusionChangedEvent(configScopeIds));
+          }
+        }
         sonarProjectBranchesSynchronizationService.sync(connectionId, projectKey);
       });
       synchronizeProjects(
@@ -252,8 +265,9 @@ public class SynchronizationService {
   }
 
   private boolean shouldSynchronizeScope(BoundScope configScope) {
+    var syncPeriod = Long.parseLong(System.getProperty("sonarlint.internal.synchronization.scope.period", "300"));
     var result = synchronizationTimestampRepository.getLastSynchronizationDate(configScope.getConfigScopeId())
-      .map(lastSync -> lastSync.isBefore(Instant.now().minus(5, ChronoUnit.MINUTES)))
+      .map(lastSync -> lastSync.isBefore(Instant.now().minus(syncPeriod, ChronoUnit.SECONDS)))
       .orElse(true);
     if (!result) {
       LOG.debug("Skipping synchronization of configuration scope '{}' because it was synchronized recently", configScope.getConfigScopeId());
