@@ -67,8 +67,8 @@ public class ServerConnection {
     return storageSynchronizer.synchronize(serverApi);
   }
 
-  public void sync(ServerApi serverApi, String projectKey) {
-    storageSynchronizer.synchronize(serverApi, projectKey);
+  public AnalyzerConfigUpdateSummary sync(ServerApi serverApi, String projectKey) {
+    return storageSynchronizer.synchronize(serverApi, projectKey);
   }
 
   public SynchronizationResult sync(ServerApi serverApi, Set<String> projectKeys, ProgressMonitor monitor) {

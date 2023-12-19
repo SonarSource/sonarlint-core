@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.FileStatusDto;
 import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
+import org.sonarsource.sonarlint.core.serverconnection.FileExclusionChangedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.IssueStorePaths;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 import org.sonarsource.sonarlint.core.storage.StorageService;
@@ -112,6 +113,12 @@ public class FileExclusionService {
     // We could try to be more efficient by looking at changed files, and deciding if we need to invalidate or not based on changed
     // attributes (relative path, isTest). But it's probably not worth the effort.
     event.getAddedOrUpdated().forEach(f -> serverExclusionByUri.invalidate(f.getUri()));
+  }
+
+  @EventListener
+  public void onFileExclusionSettingsChanged(FileExclusionChangedEvent event) {
+    event.getConfigScopeIds().forEach(configScopeId -> clientFileSystemService.getFiles(configScopeId)
+      .forEach(f -> serverExclusionByUri.invalidate(f.getUri())));
   }
 
   public Map<URI, FileStatusDto> getFilesStatus(Map<String, List<URI>> fileUrisByConfigScope) {
