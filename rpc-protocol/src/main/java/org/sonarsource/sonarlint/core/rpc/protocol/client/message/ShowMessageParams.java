@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.message;
 
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
-
 /**
  * The message contains a type and the text. The type can be one of:
  * <ul>
@@ -30,12 +28,10 @@ import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
  * </ul>
  */
 public class ShowMessageParams {
-  @NonNull
   private final MessageType type;
-  @NonNull
   private final String text;
 
-  public ShowMessageParams(@NonNull MessageType type, @NonNull String text) {
+  public ShowMessageParams(MessageType type, String text) {
     this.type = type;
     this.text = text;
   }

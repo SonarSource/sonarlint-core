@@ -19,30 +19,26 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.rules;
 
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
 public class RuleContextualSectionDto {
   private final String htmlContent;
   private final String contextKey;
   private final String displayName;
 
-  public RuleContextualSectionDto(@NonNull String htmlContent, @NonNull String contextKey, @NonNull String displayName) {
+  public RuleContextualSectionDto(String htmlContent, String contextKey, String displayName) {
     this.htmlContent = htmlContent;
     this.contextKey = contextKey;
     this.displayName = displayName;
   }
 
-  @NonNull
   public String getHtmlContent() {
     return htmlContent;
   }
 
-  @NonNull
   public String getContextKey() {
     return contextKey;
   }
 
-  @NonNull
   public String getDisplayName() {
     return displayName;
   }

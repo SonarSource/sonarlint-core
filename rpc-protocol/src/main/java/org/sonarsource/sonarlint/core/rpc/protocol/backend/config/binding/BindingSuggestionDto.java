@@ -19,30 +19,26 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding;
 
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
 public class BindingSuggestionDto {
   private final String connectionId;
   private final String sonarProjectKey;
   private final String sonarProjectName;
 
-  public BindingSuggestionDto(@NonNull String connectionId, @NonNull String sonarProjectKey, @NonNull String sonarProjectName) {
+  public BindingSuggestionDto(String connectionId, String sonarProjectKey, String sonarProjectName) {
     this.connectionId = connectionId;
     this.sonarProjectKey = sonarProjectKey;
     this.sonarProjectName = sonarProjectName;
   }
 
-  @NonNull
   public String getConnectionId() {
     return connectionId;
   }
 
-  @NonNull
   public String getSonarProjectKey() {
     return sonarProjectKey;
   }
 
-  @NonNull
   public String getSonarProjectName() {
     return sonarProjectName;
   }

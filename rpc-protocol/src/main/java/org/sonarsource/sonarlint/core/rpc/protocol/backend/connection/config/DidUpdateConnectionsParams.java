@@ -32,10 +32,10 @@ public class DidUpdateConnectionsParams {
   }
 
   public List<SonarQubeConnectionConfigurationDto> getSonarQubeConnections() {
-    return sonarQubeConnections;
+    return sonarQubeConnections != null ? sonarQubeConnections : List.of();
   }
 
   public List<SonarCloudConnectionConfigurationDto> getSonarCloudConnections() {
-    return sonarCloudConnections;
+    return sonarCloudConnections != null ? sonarCloudConnections : List.of();
   }
 }

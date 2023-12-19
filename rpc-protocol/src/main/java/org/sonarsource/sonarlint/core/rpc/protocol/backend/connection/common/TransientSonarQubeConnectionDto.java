@@ -21,20 +21,18 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common;
 
 import com.google.gson.annotations.JsonAdapter;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherCredentialsAdapterFactory;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
 public class TransientSonarQubeConnectionDto {
 
-  @NonNull
   private final String serverUrl;
 
   @JsonAdapter(EitherCredentialsAdapterFactory.class)
   private final Either<TokenDto, UsernamePasswordDto> credentials;
 
-  public TransientSonarQubeConnectionDto(@NonNull String serverUrl, Either<TokenDto, UsernamePasswordDto> credentials) {
+  public TransientSonarQubeConnectionDto(String serverUrl, Either<TokenDto, UsernamePasswordDto> credentials) {
     this.serverUrl = serverUrl;
     this.credentials = credentials;
   }

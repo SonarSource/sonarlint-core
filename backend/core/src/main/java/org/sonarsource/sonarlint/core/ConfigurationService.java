@@ -23,9 +23,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
@@ -73,12 +73,13 @@ public class ConfigurationService {
     return repository.addOrReplace(configScopeInReferential, bindingConfigInReferential);
   }
 
-  @NotNull
-  private static BindingConfiguration adapt(BindingConfigurationDto dto) {
+  private static BindingConfiguration adapt(@Nullable BindingConfigurationDto dto) {
+    if (dto == null) {
+      return new BindingConfiguration(null, null, false);
+    }
     return new BindingConfiguration(dto.getConnectionId(), dto.getSonarProjectKey(), dto.isBindingSuggestionDisabled());
   }
 
-  @NotNull
   private static ConfigurationScope adapt(ConfigurationScopeDto dto) {
     return new ConfigurationScope(dto.getId(), dto.getParentId(), dto.isBindable(), dto.getName());
   }

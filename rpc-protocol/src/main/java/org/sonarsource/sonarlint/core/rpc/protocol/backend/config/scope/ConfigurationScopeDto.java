@@ -19,24 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 
 public class ConfigurationScopeDto {
 
-  @NonNull
   private final String id;
   private final String parentId;
   private final boolean bindable;
   /**
    * The name of this configuration scope. Used for auto-binding.
    */
-  @NonNull
   private final String name;
   private final BindingConfigurationDto binding;
 
-  public ConfigurationScopeDto(@NonNull String id, @Nullable String parentId, boolean bindable, @NonNull String name, @NonNull BindingConfigurationDto binding) {
+  public ConfigurationScopeDto(String id, @Nullable String parentId, boolean bindable, String name, @Nullable BindingConfigurationDto binding) {
     this.id = id;
     this.parentId = parentId;
     this.bindable = bindable;
@@ -44,11 +42,11 @@ public class ConfigurationScopeDto {
     this.binding = binding;
   }
 
-  @NonNull
   public String getId() {
     return id;
   }
 
+  @CheckForNull
   public String getParentId() {
     return parentId;
   }
@@ -57,11 +55,11 @@ public class ConfigurationScopeDto {
     return bindable;
   }
 
-  @NonNull
   public String getName() {
     return name;
   }
 
+  @CheckForNull
   public BindingConfigurationDto getBinding() {
     return binding;
   }

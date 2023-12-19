@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.rpc.protocol.client.progress;
 
 import com.google.gson.annotations.JsonAdapter;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherProgressNotificationAdapterFactory;
 
 public class ReportProgressParams {
@@ -34,15 +33,15 @@ public class ReportProgressParams {
   @JsonAdapter(EitherProgressNotificationAdapterFactory.class)
   private final Either<ProgressUpdateNotification, ProgressEndNotification> notification;
 
-  public ReportProgressParams(@NonNull String taskId, @NonNull ProgressUpdateNotification notification) {
+  public ReportProgressParams(String taskId, ProgressUpdateNotification notification) {
     this(taskId, Either.forLeft(notification));
   }
 
-  public ReportProgressParams(@NonNull String taskId, @NonNull ProgressEndNotification notification) {
+  public ReportProgressParams(String taskId, ProgressEndNotification notification) {
     this(taskId, Either.forRight(notification));
   }
 
-  public ReportProgressParams(@NonNull String taskId, @NonNull Either<ProgressUpdateNotification, ProgressEndNotification> notification) {
+  public ReportProgressParams(String taskId, Either<ProgressUpdateNotification, ProgressEndNotification> notification) {
     this.taskId = taskId;
     this.notification = notification;
   }

@@ -19,17 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope;
 
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
 public class DidRemoveConfigurationScopeParams {
-  @NonNull
   private final String removedId;
 
-  public DidRemoveConfigurationScopeParams(@NonNull String removedId) {
+  public DidRemoveConfigurationScopeParams(String removedId) {
     this.removedId = removedId;
   }
 
-  @NonNull
   public String getRemovedId() {
     return removedId;
   }

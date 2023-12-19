@@ -19,16 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.rules;
 
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
-
 public class RuleNonContextualSectionDto {
   private final String htmlContent;
 
-  public RuleNonContextualSectionDto(@NonNull String htmlContent) {
+  public RuleNonContextualSectionDto(String htmlContent) {
     this.htmlContent = htmlContent;
   }
 
-  @NonNull
   public String getHtmlContent() {
     return htmlContent;
   }

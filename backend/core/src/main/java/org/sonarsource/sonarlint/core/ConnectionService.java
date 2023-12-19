@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -81,14 +82,18 @@ public class ConnectionService {
   }
 
   ConnectionService(ApplicationEventPublisher applicationEventPublisher, ConnectionConfigurationRepository repository,
-    List<SonarQubeConnectionConfigurationDto> initSonarQubeConnections, List<SonarCloudConnectionConfigurationDto> initSonarCloudConnections,
+    @Nullable List<SonarQubeConnectionConfigurationDto> initSonarQubeConnections, @Nullable List<SonarCloudConnectionConfigurationDto> initSonarCloudConnections,
     HttpClientProvider httpClientProvider, TokenGeneratorHelper tokenGeneratorHelper) {
     this.applicationEventPublisher = applicationEventPublisher;
     this.repository = repository;
     this.httpClientProvider = httpClientProvider;
     this.tokenGeneratorHelper = tokenGeneratorHelper;
-    initSonarQubeConnections.forEach(c -> repository.addOrReplace(adapt(c)));
-    initSonarCloudConnections.forEach(c -> repository.addOrReplace(adapt(c)));
+    if (initSonarQubeConnections != null) {
+      initSonarQubeConnections.forEach(c -> repository.addOrReplace(adapt(c)));
+    }
+    if (initSonarCloudConnections != null) {
+      initSonarCloudConnections.forEach(c -> repository.addOrReplace(adapt(c)));
+    }
   }
 
   private static SonarQubeConnectionConfiguration adapt(SonarQubeConnectionConfigurationDto sqDto) {
@@ -96,7 +101,7 @@ public class ConnectionService {
   }
 
   private static SonarCloudConnectionConfiguration adapt(SonarCloudConnectionConfigurationDto scDto) {
-    return new SonarCloudConnectionConfiguration(scDto.getConnectionId(), scDto.getOrganization(), scDto.getDisableNotifications());
+    return new SonarCloudConnectionConfiguration(scDto.getConnectionId(), scDto.getOrganization(), scDto.isDisableNotifications());
   }
 
   private static void putAndLogIfDuplicateId(Map<String, AbstractConnectionConfiguration> map, AbstractConnectionConfiguration config) {

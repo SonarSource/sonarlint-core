@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config;
 
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
-
 public class SonarCloudConnectionConfigurationDto {
 
   /**
@@ -30,7 +28,7 @@ public class SonarCloudConnectionConfigurationDto {
   private final String organization;
   private final boolean disableNotifications;
 
-  public SonarCloudConnectionConfigurationDto(@NonNull String connectionId, @NonNull String organization, boolean disableNotifications) {
+  public SonarCloudConnectionConfigurationDto(String connectionId, String organization, boolean disableNotifications) {
     this.connectionId = connectionId;
     this.organization = organization;
     this.disableNotifications = disableNotifications;
@@ -44,7 +42,7 @@ public class SonarCloudConnectionConfigurationDto {
     return organization;
   }
 
-  public boolean getDisableNotifications() {
+  public boolean isDisableNotifications() {
     return disableNotifications;
   }
 }

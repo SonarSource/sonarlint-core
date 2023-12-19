@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.rpc.protocol.client.log;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
 public class LogParams {
 
@@ -29,7 +28,7 @@ public class LogParams {
   private final String message;
   private final String configScopeId;
 
-  public LogParams(@NonNull LogLevel level, @NonNull String message, @Nullable String configScopeId) {
+  public LogParams(LogLevel level, String message, @Nullable String configScopeId) {
     this.level = level;
     this.message = message;
     this.configScopeId = configScopeId;
