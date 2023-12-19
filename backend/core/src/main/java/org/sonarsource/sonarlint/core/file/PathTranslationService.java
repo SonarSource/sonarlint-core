@@ -71,6 +71,10 @@ public class PathTranslationService {
     .executor(executorService)
     .buildAsync(this::computePaths);
 
+  private Integer pathComputationCounter = 0;
+  private static final Integer PATH_COMPUTATIONS_LIMIT = 3;
+  private static final String UNABLE_TO_COMPUTE_PATHS = "Unable to compute paths translation";
+
   public PathTranslationService(ClientFileSystemService clientFs, ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository) {
     this.clientFs = clientFs;
     this.serverApiProvider = serverApiProvider;
@@ -146,17 +150,21 @@ public class PathTranslationService {
 
   public Optional<FilePathTranslation> getOrComputePathTranslation(String configurationScopeId) {
     try {
+      pathComputationCounter++;
       return Optional.ofNullable(cachedPathsTranslationByConfigScope.get(configurationScopeId).get());
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       LOG.debug("Interrupted!", e);
       return Optional.empty();
     } catch (CancellationException e) {
+      if (pathComputationCounter > PATH_COMPUTATIONS_LIMIT) {
+        throw new IllegalStateException(UNABLE_TO_COMPUTE_PATHS);
+      }
       LOG.debug("Computation was canceled, wait for the next one", e);
       return getOrComputePathTranslation(configurationScopeId);
     } catch (ExecutionException e) {
-      LOG.error("Unable to compute paths translation", e);
-      throw new IllegalStateException("Unable to compute paths translation", e);
+      LOG.error(UNABLE_TO_COMPUTE_PATHS, e);
+      throw new IllegalStateException(UNABLE_TO_COMPUTE_PATHS, e);
     }
   }
 

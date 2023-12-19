@@ -91,7 +91,7 @@ public class SecurityHotspotMatchingService {
     Map<String, List<ClientTrackedFindingDto>> clientTrackedHotspotsByIdeRelativePath, boolean shouldFetchHotspotsFromServer, CancelChecker cancelChecker) {
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     var activeBranchOpt = branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId);
-    var translationOpt = pathTranslationService.getPathTranslation(configurationScopeId);
+    var translationOpt = pathTranslationService.getOrComputePathTranslation(configurationScopeId);
     if (effectiveBindingOpt.isEmpty() || activeBranchOpt.isEmpty() || translationOpt.isEmpty()) {
       return clientTrackedHotspotsByIdeRelativePath.entrySet().stream()
         .map(e -> Map.entry(e.getKey(), e.getValue().stream()

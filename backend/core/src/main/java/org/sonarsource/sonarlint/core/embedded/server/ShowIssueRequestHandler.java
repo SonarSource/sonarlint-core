@@ -96,8 +96,8 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
 
   private void showIssueForScope(String connectionId, String configScopeId, String issueKey, String projectKey,
     String branch, @Nullable String pullRequest) {
-    var translationOpt = pathTranslationService.getPathTranslation(configScopeId);
     var issueDetailsOpt = tryFetchIssue(connectionId, issueKey, projectKey, branch, pullRequest);
+    var translationOpt = pathTranslationService.getOrComputePathTranslation(configScopeId);
     if (translationOpt.isPresent() && issueDetailsOpt.isPresent()) {
       client.showIssue(getShowIssueParams(issueDetailsOpt.get(), connectionId, configScopeId, branch, pullRequest, translationOpt.get()));
     } else {

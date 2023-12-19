@@ -102,7 +102,7 @@ public class IssueMatchingService {
     boolean shouldFetchIssuesFromServer, CancelChecker cancelChecker) {
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     var activeBranchOpt = branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId);
-    var translationOpt = pathTranslationService.getPathTranslation(configurationScopeId);
+    var translationOpt = pathTranslationService.getOrComputePathTranslation(configurationScopeId);
     if (effectiveBindingOpt.isEmpty() || activeBranchOpt.isEmpty() || translationOpt.isEmpty()) {
       return clientTrackedIssuesByIdeRelativePath.entrySet().stream()
         .map(e -> Map.entry(e.getKey(), e.getValue().stream()
