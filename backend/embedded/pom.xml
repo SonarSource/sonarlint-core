@@ -64,7 +64,6 @@
                     <include>com.google.gson.**</include>
                     <include>org.springframework.**</include>
                     <include>org.sonarqube.ws.**</include>
-                    <include>org.eclipse.lsp4j.**</include>
                     <include>org.sonarsource.sonarlint.core.rpc.protocol.**</include>
                   </includes>
                   <excludes>
