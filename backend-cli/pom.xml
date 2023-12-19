@@ -59,13 +59,14 @@
             </plugins>
           </build>
       </profile>
+
       <profile>
         <activation>
           <os>
             <family>windows</family>
           </os>
         </activation>
-        <id>dist-windows</id>
+        <id>dist-windows_x64</id>
           <build>
             <plugins>
               <plugin>
@@ -73,7 +74,7 @@
                 <artifactId>download-maven-plugin</artifactId>
                 <executions>
                   <execution>
-                    <id>unpack-windows</id>
+                    <id>unpack-windows_x64</id>
                     <phase>package</phase>
                     <goals>
                       <goal>wget</goal>
@@ -87,12 +88,11 @@
                   </execution>
                 </executions>
               </plugin>
-
               <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <executions>
                   <execution>
-                    <id>assemble-windows</id>
+                    <id>assemble-windows_x64</id>
                     <phase>package</phase>
                     <goals>
                       <goal>single</goal>
@@ -100,7 +100,7 @@
                     <configuration>
                       <escapeString>\</escapeString>
                       <descriptors>
-                        <descriptor>src/main/assembly/dist-windows.xml</descriptor>
+                        <descriptor>src/main/assembly/dist-windows_x64.xml</descriptor>
                       </descriptors>
                     </configuration>
                   </execution>
@@ -109,6 +109,7 @@
             </plugins>
           </build>
       </profile>
+
       <profile>
         <activation>
           <os>
@@ -123,7 +124,7 @@
                 <artifactId>download-maven-plugin</artifactId>
                 <executions>
                   <execution>
-                    <id>unpack-linux-x64</id>
+                    <id>unpack-linux_x64</id>
                     <phase>package</phase>
                     <goals>
                       <goal>wget</goal>
@@ -137,7 +138,6 @@
                   </execution>
                 </executions>
               </plugin>
-
               <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <executions>
@@ -159,6 +159,7 @@
             </plugins>
           </build>
       </profile>
+
       <profile>
         <id>dist-linux_aarch64</id>
           <build>
@@ -168,7 +169,7 @@
                 <artifactId>download-maven-plugin</artifactId>
                 <executions>
                   <execution>
-                    <id>unpack-linux-aarch64</id>
+                    <id>unpack-linux_aarch64</id>
                     <phase>package</phase>
                     <goals>
                       <goal>wget</goal>
@@ -182,7 +183,6 @@
                   </execution>
                 </executions>
               </plugin>
-
               <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <executions>
@@ -204,6 +204,7 @@
             </plugins>
           </build>
       </profile>
+
       <profile>
       <id>dist-macosx_x64</id>
       <build>
@@ -239,7 +240,7 @@
                 <configuration>
                   <escapeString>\</escapeString>
                   <descriptors>
-                    <descriptor>src/main/assembly/dist-macosx-x86_64.xml</descriptor>
+                    <descriptor>src/main/assembly/dist-macosx_x64.xml</descriptor>
                   </descriptors>
                 </configuration>
               </execution>
@@ -248,7 +249,8 @@
         </plugins>
       </build>
     </profile>
-      <profile>
+
+    <profile>
       <id>dist-macosx_aarch64</id>
       <build>
         <plugins>
@@ -283,7 +285,7 @@
                 <configuration>
                   <escapeString>\</escapeString>
                   <descriptors>
-                    <descriptor>src/main/assembly/dist-macosx-aarch64.xml</descriptor>
+                    <descriptor>src/main/assembly/dist-macosx_aarch64.xml</descriptor>
                   </descriptors>
                 </configuration>
               </execution>
