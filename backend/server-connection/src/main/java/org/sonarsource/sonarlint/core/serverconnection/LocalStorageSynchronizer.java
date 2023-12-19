@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -74,12 +75,28 @@ public class LocalStorageSynchronizer {
     return pluginsSynchronizer.synchronize(serverApi, new ProgressMonitor(null));
   }
 
-  public void synchronize(ServerApi serverApi, String projectKey) {
-    var analyzerConfiguration = synchronizeAnalyzerConfig(serverApi, projectKey, new ProgressMonitor(null));
-    storage.project(projectKey).analyzerConfiguration().store(analyzerConfiguration);
+  public AnalyzerConfigUpdateSummary synchronize(ServerApi serverApi, String projectKey) {
+    var updatedAnalyzerConfiguration = synchronizeAnalyzerConfig(serverApi, projectKey, new ProgressMonitor(null));
+    AnalyzerConfigUpdateSummary configUpdateSummary;
+    try {
+      var originalAnalyzerConfiguration = storage.project(projectKey).analyzerConfiguration().read();
+      configUpdateSummary = diffAnalyzerConfiguration(originalAnalyzerConfiguration, updatedAnalyzerConfiguration);
+    } catch (StorageException e) {
+      configUpdateSummary = null;
+    }
+
+    storage.project(projectKey).analyzerConfiguration().store(updatedAnalyzerConfiguration);
     var version = storage.serverInfo().read().orElseThrow().getVersion();
     serverApi.newCodeApi().getNewCodeDefinition(projectKey, null, version)
       .ifPresent(ncd -> storage.project(projectKey).newCodeDefinition().store(ncd));
+    return configUpdateSummary;
+  }
+
+  private static AnalyzerConfigUpdateSummary diffAnalyzerConfiguration(AnalyzerConfiguration original, AnalyzerConfiguration updated) {
+    var originalFileExclusions = original.getSettings().getAll().get("sonar.exclusions");
+    var updatedFileExclusions = updated.getSettings().getAll().get("sonar.exclusions");
+    var excludedFilesUpdated = !Objects.equals(originalFileExclusions, updatedFileExclusions);
+    return new AnalyzerConfigUpdateSummary(excludedFilesUpdated);
   }
 
   private AnalyzerConfiguration synchronizeAnalyzerConfig(ServerApi serverApi, String projectKey, ProgressMonitor progressMonitor) {
