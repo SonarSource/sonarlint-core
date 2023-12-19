@@ -6,7 +6,7 @@
     <version>10.0-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
-  <artifactId>sonarlint-core-client-osgi</artifactId>
+  <artifactId>sonarlint-client-embedded-osgi</artifactId>
   <name>SonarLint Core - Client OSGi bundle</name>
   <packaging>bundle</packaging>
   <description>SonarLint Client bundled for OSGi</description>
