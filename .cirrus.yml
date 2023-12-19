@@ -74,7 +74,7 @@ build_task:
   <<: *MAVEN_CACHE_DEFINITION
   build_script:
     - source cirrus-env BUILD
-    - regular_mvn_build_deploy_analyze -P dist-no-arch,dist-windows,dist-linux_x64,dist-linux_aarch64,dist-macosx_x64,dist-macosx_aarch64 -Dmaven.test.skip=true -Dsonar.skip=true
+    - regular_mvn_build_deploy_analyze -P dist-no-arch,dist-windows_x64,dist-linux_x64,dist-linux_aarch64,dist-macosx_x64,dist-macosx_aarch64 -Dmaven.test.skip=true -Dsonar.skip=true
   cache_script:
     - mvn -B -e -V -Pits dependency:go-offline # populate cache including ITs deps too
   cleanup_before_cache_script: cleanup_maven_repository
