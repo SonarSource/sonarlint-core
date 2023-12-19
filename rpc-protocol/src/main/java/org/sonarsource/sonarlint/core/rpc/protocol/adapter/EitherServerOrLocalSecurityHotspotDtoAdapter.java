@@ -28,6 +28,7 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.util.function.Predicate;
+import javax.annotation.Nonnull;
 import org.eclipse.lsp4j.jsonrpc.json.adapters.EitherTypeAdapter;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlySecurityHotspotDto;
@@ -48,7 +49,7 @@ public class EitherServerOrLocalSecurityHotspotDtoAdapter extends TypeAdapter<Ma
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> typeToken) {
+    public <T> TypeAdapter<T> create(Gson gson, @Nonnull TypeToken<T> typeToken) {
       if (!MatchWithServerSecurityHotspotsResponse.ServerOrLocalSecurityHotspotDto.class.isAssignableFrom(typeToken.getRawType())) {
         return null;
       }
@@ -64,7 +65,7 @@ public class EitherServerOrLocalSecurityHotspotDtoAdapter extends TypeAdapter<Ma
   }
 
   @Override
-  public void write(JsonWriter out, MatchWithServerSecurityHotspotsResponse.ServerOrLocalSecurityHotspotDto value) throws IOException {
+  public void write(JsonWriter out, @Nonnull MatchWithServerSecurityHotspotsResponse.ServerOrLocalSecurityHotspotDto value) throws IOException {
     wrappedAdapter.write(out, value.getWrapped());
   }
 
@@ -73,6 +74,5 @@ public class EitherServerOrLocalSecurityHotspotDtoAdapter extends TypeAdapter<Ma
     var wrapped = wrappedAdapter.read(in);
     return new MatchWithServerSecurityHotspotsResponse.ServerOrLocalSecurityHotspotDto(wrapped);
   }
-
 
 }

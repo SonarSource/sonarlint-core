@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherServerOrLocalIssueDtoAdapter;
 
 public class TrackWithServerIssuesResponse {
@@ -53,11 +52,11 @@ public class TrackWithServerIssuesResponse {
       return wrapped;
     }
 
-    public static ServerOrLocalIssueDto forLeft(@NonNull ServerMatchedIssueDto left) {
+    public static ServerOrLocalIssueDto forLeft(ServerMatchedIssueDto left) {
       return new ServerOrLocalIssueDto(Either.forLeft(left));
     }
 
-    public static ServerOrLocalIssueDto forRight(@NonNull LocalOnlyIssueDto right) {
+    public static ServerOrLocalIssueDto forRight(LocalOnlyIssueDto right) {
       return new ServerOrLocalIssueDto(Either.forRight(right));
     }
 
@@ -78,8 +77,8 @@ public class TrackWithServerIssuesResponse {
     }
 
     public <T> T map(
-      @NonNull Function<? super ServerMatchedIssueDto, ? extends T> mapLeft,
-      @NonNull Function<? super LocalOnlyIssueDto, ? extends T> mapRight) {
+      Function<? super ServerMatchedIssueDto, ? extends T> mapLeft,
+      Function<? super LocalOnlyIssueDto, ? extends T> mapRight) {
       return wrapped.map(mapLeft, mapRight);
     }
 

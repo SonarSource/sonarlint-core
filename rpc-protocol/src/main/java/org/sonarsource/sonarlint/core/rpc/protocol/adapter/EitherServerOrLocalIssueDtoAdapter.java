@@ -28,13 +28,11 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.util.function.Predicate;
+import javax.annotation.Nonnull;
 import org.eclipse.lsp4j.jsonrpc.json.adapters.EitherTypeAdapter;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlyIssueDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlySecurityHotspotDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.MatchWithServerSecurityHotspotsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ServerMatchedIssueDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ServerMatchedSecurityHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesResponse;
 
 import static java.util.function.Predicate.not;
@@ -51,7 +49,7 @@ public class EitherServerOrLocalIssueDtoAdapter extends TypeAdapter<TrackWithSer
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> typeToken) {
+    public <T> TypeAdapter<T> create(Gson gson, @Nonnull TypeToken<T> typeToken) {
       if (!TrackWithServerIssuesResponse.ServerOrLocalIssueDto.class.isAssignableFrom(typeToken.getRawType())) {
         return null;
       }
@@ -67,7 +65,7 @@ public class EitherServerOrLocalIssueDtoAdapter extends TypeAdapter<TrackWithSer
   }
 
   @Override
-  public void write(JsonWriter out, TrackWithServerIssuesResponse.ServerOrLocalIssueDto value) throws IOException {
+  public void write(JsonWriter out, @Nonnull TrackWithServerIssuesResponse.ServerOrLocalIssueDto value) throws IOException {
     wrappedAdapter.write(out, value.getWrapped());
   }
 
@@ -76,6 +74,5 @@ public class EitherServerOrLocalIssueDtoAdapter extends TypeAdapter<TrackWithSer
     var wrapped = wrappedAdapter.read(in);
     return new TrackWithServerIssuesResponse.ServerOrLocalIssueDto(wrapped);
   }
-
 
 }

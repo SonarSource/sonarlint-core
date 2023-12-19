@@ -25,12 +25,13 @@ import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.util.UUID;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class UuidTypeAdapter extends TypeAdapter<UUID> {
 
   @Override
-  public void write(JsonWriter out, @Nullable UUID value) throws IOException {
+  public void write(@Nonnull JsonWriter out, @Nullable UUID value) throws IOException {
     if (value == null) {
       out.nullValue();
     } else {
@@ -39,7 +40,7 @@ public class UuidTypeAdapter extends TypeAdapter<UUID> {
   }
 
   @Override
-  public UUID read(JsonReader in) throws IOException {
+  public UUID read(@Nonnull JsonReader in) throws IOException {
     var peek = in.peek();
     if (peek == JsonToken.NULL) {
       in.nextNull();

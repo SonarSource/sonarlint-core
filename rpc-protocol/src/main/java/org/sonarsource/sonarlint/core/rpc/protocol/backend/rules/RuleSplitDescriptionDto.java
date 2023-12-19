@@ -22,13 +22,12 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.rules;
 import java.util.List;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
 public class RuleSplitDescriptionDto {
   private final String introductionHtmlContent;
   private final List<RuleDescriptionTabDto> tabs;
 
-  public RuleSplitDescriptionDto(@Nullable String introductionHtmlContent, @NonNull List<RuleDescriptionTabDto> tabs) {
+  public RuleSplitDescriptionDto(@Nullable String introductionHtmlContent, List<RuleDescriptionTabDto> tabs) {
     this.introductionHtmlContent = introductionHtmlContent;
     this.tabs = tabs;
   }
@@ -38,7 +37,6 @@ public class RuleSplitDescriptionDto {
     return introductionHtmlContent;
   }
 
-  @NonNull
   public List<RuleDescriptionTabDto> getTabs() {
     return tabs;
   }

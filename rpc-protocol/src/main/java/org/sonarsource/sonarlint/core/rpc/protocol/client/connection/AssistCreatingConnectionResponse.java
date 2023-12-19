@@ -19,16 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.connection;
 
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
-
 public class AssistCreatingConnectionResponse {
   private final String newConnectionId;
 
-  public AssistCreatingConnectionResponse(@NonNull String newConnectionId) {
+  public AssistCreatingConnectionResponse(String newConnectionId) {
     this.newConnectionId = newConnectionId;
   }
 
-  @NonNull
   public String getNewConnectionId() {
     return newConnectionId;
   }

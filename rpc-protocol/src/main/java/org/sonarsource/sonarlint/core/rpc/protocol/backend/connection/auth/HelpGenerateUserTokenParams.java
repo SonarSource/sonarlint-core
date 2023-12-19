@@ -19,13 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth;
 
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
 public class HelpGenerateUserTokenParams {
   private final String serverUrl;
   private final boolean isSonarCloud;
 
-  public HelpGenerateUserTokenParams(@NonNull String serverUrl, boolean isSonarCloud) {
+  public HelpGenerateUserTokenParams(String serverUrl, boolean isSonarCloud) {
     this.serverUrl = serverUrl;
     this.isSonarCloud = isSonarCloud;
   }

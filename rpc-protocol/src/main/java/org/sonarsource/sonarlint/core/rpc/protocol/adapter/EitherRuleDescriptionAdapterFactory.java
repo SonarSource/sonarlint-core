@@ -38,8 +38,8 @@ public class EitherRuleDescriptionAdapterFactory implements TypeAdapterFactory {
   @SuppressWarnings("unchecked")
   @Override
   public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-    Predicate<JsonElement> monolithChecker = new EitherTypeAdapter.PropertyChecker("htmlContent");
     Predicate<JsonElement> tabsChecker = new EitherTypeAdapter.PropertyChecker("tabs");
+    Predicate<JsonElement> monolithChecker = Predicate.not(tabsChecker);
     return (TypeAdapter<T>) new EitherTypeAdapter<>(gson, ELEMENT_TYPE, monolithChecker, tabsChecker);
   }
 }

@@ -19,13 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
 public class BindingConfigurationDto {
 
   private final String connectionId;
   private final String sonarProjectKey;
-  private boolean bindingSuggestionDisabled;
+  private final boolean bindingSuggestionDisabled;
 
   public BindingConfigurationDto(@Nullable String connectionId, @Nullable String sonarProjectKey, boolean bindingSuggestionDisabled) {
     this.connectionId = connectionId;
@@ -33,10 +34,12 @@ public class BindingConfigurationDto {
     this.bindingSuggestionDisabled = bindingSuggestionDisabled;
   }
 
+  @CheckForNull
   public String getConnectionId() {
     return connectionId;
   }
 
+  @CheckForNull
   public String getSonarProjectKey() {
     return sonarProjectKey;
   }

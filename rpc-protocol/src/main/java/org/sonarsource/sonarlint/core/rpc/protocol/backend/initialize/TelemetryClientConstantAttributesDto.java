@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
 
 import java.util.Map;
+import javax.annotation.Nullable;
 
 public class TelemetryClientConstantAttributesDto {
 
@@ -30,7 +31,7 @@ public class TelemetryClientConstantAttributesDto {
   private final Map<String, Object> additionalAttributes;
 
   public TelemetryClientConstantAttributesDto(String productKey, String productName, String productVersion, String ideVersion,
-    Map<String, Object> additionalAttributes) {
+    @Nullable Map<String, Object> additionalAttributes) {
     this.productKey = productKey;
     this.productName = productName;
     this.productVersion = productVersion;
@@ -55,6 +56,6 @@ public class TelemetryClientConstantAttributesDto {
   }
 
   public Map<String, Object> getAdditionalAttributes() {
-    return additionalAttributes;
+    return additionalAttributes != null ? additionalAttributes : Map.of();
   }
 }

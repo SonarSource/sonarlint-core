@@ -17,29 +17,18 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.client.event;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
 
-public class DidReceiveServerHotspotEvent {
+import org.junit.jupiter.api.Test;
 
-  private final String connectionId;
-  private final String sonarProjectKey;
-  private final String serverFilePath;
+import static org.junit.jupiter.api.Assertions.*;
 
-  public DidReceiveServerHotspotEvent(String connectionId, String sonarProjectKey, String serverFilePath) {
-    this.connectionId = connectionId;
-    this.sonarProjectKey = sonarProjectKey;
-    this.serverFilePath = serverFilePath;
+class TelemetryClientConstantAttributesDtoTests {
+
+  @Test
+  void should_replace_null_collections_by_empty() {
+    var params = new TelemetryClientConstantAttributesDto(null, null, null, null, null);
+    assertNotNull(params.getAdditionalAttributes());
   }
 
-  public String getConnectionId() {
-    return connectionId;
-  }
-
-  public String getSonarProjectKey() {
-    return sonarProjectKey;
-  }
-
-  public String getServerFilePath() {
-    return serverFilePath;
-  }
 }

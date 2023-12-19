@@ -20,18 +20,15 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope;
 
 import java.util.List;
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
 public class DidAddConfigurationScopesParams {
 
-  @NonNull
   private final List<ConfigurationScopeDto> addedScopes;
 
-  public DidAddConfigurationScopesParams(@NonNull List<ConfigurationScopeDto> addedScopes) {
+  public DidAddConfigurationScopesParams(List<ConfigurationScopeDto> addedScopes) {
     this.addedScopes = addedScopes;
   }
 
-  @NonNull
   public List<ConfigurationScopeDto> getAddedScopes() {
     return addedScopes;
   }

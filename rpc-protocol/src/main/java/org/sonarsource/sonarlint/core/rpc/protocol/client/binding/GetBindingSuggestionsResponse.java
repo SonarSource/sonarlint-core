@@ -21,18 +21,16 @@ package org.sonarsource.sonarlint.core.rpc.protocol.client.binding;
 
 import java.util.List;
 import java.util.Map;
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
 
 public class GetBindingSuggestionsResponse {
 
   private final Map<String, List<BindingSuggestionDto>> suggestions;
 
-  public GetBindingSuggestionsResponse(@NonNull Map<String, List<BindingSuggestionDto>> suggestions) {
+  public GetBindingSuggestionsResponse(Map<String, List<BindingSuggestionDto>> suggestions) {
     this.suggestions = suggestions;
   }
 
-  @NonNull
   public Map<String, List<BindingSuggestionDto>> getSuggestions() {
     return suggestions;
   }
