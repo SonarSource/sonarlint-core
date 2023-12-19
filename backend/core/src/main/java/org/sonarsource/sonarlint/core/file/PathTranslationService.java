@@ -144,7 +144,7 @@ public class PathTranslationService {
     cachedPathsTranslationByConfigScope.synchronous().invalidate(configScopeId);
   }
 
-  public Optional<FilePathTranslation> getPathTranslation(String configurationScopeId) {
+  public Optional<FilePathTranslation> getOrComputePathTranslation(String configurationScopeId) {
     try {
       return Optional.ofNullable(cachedPathsTranslationByConfigScope.get(configurationScopeId).get());
     } catch (InterruptedException e) {
@@ -153,7 +153,7 @@ public class PathTranslationService {
       return Optional.empty();
     } catch (CancellationException e) {
       LOG.debug("Computation was canceled, wait for the next one", e);
-      return getPathTranslation(configurationScopeId);
+      return getOrComputePathTranslation(configurationScopeId);
     } catch (ExecutionException e) {
       LOG.error("Unable to compute paths translation", e);
       throw new IllegalStateException("Unable to compute paths translation", e);
