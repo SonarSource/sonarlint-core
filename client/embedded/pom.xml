@@ -60,7 +60,6 @@
                   <shadedPattern>org.sonarsource.sonarlint.core.client.shaded.</shadedPattern>
                   <includes>
                     <include>com.google.gson.**</include>
-                    <include>org.eclipse.lsp4j.**</include>
                   </includes>
                 </relocation>
               </relocations>
