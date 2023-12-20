@@ -19,15 +19,24 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
-public class AnalyzerConfigUpdateSummary {
+import java.util.Map;
+import java.util.Set;
 
-  private final boolean excludeFilesUpdated;
+public class SonarServerSettingsChangedEvent {
 
-  public AnalyzerConfigUpdateSummary(boolean excludeFilesUpdated) {
-    this.excludeFilesUpdated = excludeFilesUpdated;
+  private final Set<String> configScopeIds;
+  private final Map<String, String> updatedSettingsValueByKey;
+
+  public SonarServerSettingsChangedEvent(Set<String> configScopeIds, Map<String, String> updatedSettingsValueByKey) {
+    this.configScopeIds = configScopeIds;
+    this.updatedSettingsValueByKey = updatedSettingsValueByKey;
   }
 
-  public boolean isExcludeFilesUpdated() {
-    return excludeFilesUpdated;
+  public Set<String> getConfigScopeIds() {
+    return configScopeIds;
+  }
+
+  public Map<String, String> getUpdatedSettingsValueByKey() {
+    return updatedSettingsValueByKey;
   }
 }

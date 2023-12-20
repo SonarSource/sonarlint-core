@@ -54,8 +54,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidUpdatePluginsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverconnection.FileExclusionChangedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.ServerConnection;
+import org.sonarsource.sonarlint.core.serverconnection.SonarServerSettingsChangedEvent;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
@@ -249,10 +249,10 @@ public class SynchronizationService {
       scopesPerProjectKey.forEach((projectKey, configScopeIds) -> {
         LOG.debug("Synchronizing storage of Sonar project '{}' for connection '{}'", projectKey, connectionId);
         var analyzerConfigUpdateSummary = serverConnection.sync(serverApi, projectKey);
-        if(analyzerConfigUpdateSummary != null) {
-          if(analyzerConfigUpdateSummary.isExcludeFilesUpdated()) {
-            applicationEventPublisher.publishEvent(new FileExclusionChangedEvent(configScopeIds));
-          }
+        if (analyzerConfigUpdateSummary != null && !analyzerConfigUpdateSummary.getUpdatedSettingsValueByKey().isEmpty()) {
+          applicationEventPublisher.publishEvent(
+            new SonarServerSettingsChangedEvent(configScopeIds, analyzerConfigUpdateSummary.getUpdatedSettingsValueByKey())
+          );
         }
         sonarProjectBranchesSynchronizationService.sync(connectionId, projectKey);
       });

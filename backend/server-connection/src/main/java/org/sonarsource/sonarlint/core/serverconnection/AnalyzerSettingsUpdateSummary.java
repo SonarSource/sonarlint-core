@@ -19,17 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
-import java.util.Set;
+import java.util.Map;
 
-public class FileExclusionChangedEvent {
+public class AnalyzerSettingsUpdateSummary {
 
-  private final Set<String> configScopeIds;
+  private final Map<String, String> updatedSettingsValueByKey;
 
-  public FileExclusionChangedEvent(Set<String> configScopeIds) {
-    this.configScopeIds = configScopeIds;
+  public AnalyzerSettingsUpdateSummary(Map<String, String> updatedSettingsValueByKey) {
+    this.updatedSettingsValueByKey = updatedSettingsValueByKey;
   }
 
-  public Set<String> getConfigScopeIds() {
-    return configScopeIds;
+  public Map<String, String> getUpdatedSettingsValueByKey() {
+    return updatedSettingsValueByKey;
   }
 }

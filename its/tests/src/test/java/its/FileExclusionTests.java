@@ -170,16 +170,6 @@ class FileExclusionTests extends AbstractConnectedTests {
     await().atMost(10, SECONDS).untilAsserted(() ->
       assertThat(backend.getFileService().getFilesStatus(getFilesStatusParams).get().getFileStatuses().get(filePath.toUri()).isExcluded()).isFalse());
 
-    // Change file exclusion settings on SQ which should not affect Foo.java
-    adminWsClient.settings().set(new SetRequest()
-      .setKey("sonar.exclusions")
-      .setValues(singletonList("**/*.js"))
-      .setComponent(projectKey));
-
-    // Check Foo.java is still included
-    await().atMost(10, SECONDS).untilAsserted(() ->
-      assertThat(backend.getFileService().getFilesStatus(getFilesStatusParams).get().getFileStatuses().get(filePath.toUri()).isExcluded()).isFalse());
-
     // Change file exclusion settings on SQ which should affect Foo.java
     adminWsClient.settings().set(new SetRequest()
       .setKey("sonar.exclusions")
@@ -190,9 +180,29 @@ class FileExclusionTests extends AbstractConnectedTests {
     await().atMost(30, SECONDS).untilAsserted(() ->
       assertThat(backend.getFileService().getFilesStatus(getFilesStatusParams).get().getFileStatuses().get(filePath.toUri()).isExcluded()).isTrue());
 
-    // Reset file exclusion settings on SQ
+    // Change file exclusion settings on SQ which should not affect Foo.java
+    adminWsClient.settings().set(new SetRequest()
+      .setKey("sonar.exclusions")
+      .setValues(singletonList("**/*.js"))
+      .setComponent(projectKey));
+
+    // Check Foo.java is included
+    await().atMost(30, SECONDS).untilAsserted(() ->
+      assertThat(backend.getFileService().getFilesStatus(getFilesStatusParams).get().getFileStatuses().get(filePath.toUri()).isExcluded()).isFalse());
+
+    // Change file inclusion settings on SQ to include only .js files
+    adminWsClient.settings().set(new SetRequest()
+      .setKey("sonar.inclusions")
+      .setValues(singletonList("**/*.js"))
+      .setComponent(projectKey));
+
+    // Check Foo.java is excluded
+    await().atMost(30, SECONDS).untilAsserted(() ->
+      assertThat(backend.getFileService().getFilesStatus(getFilesStatusParams).get().getFileStatuses().get(filePath.toUri()).isExcluded()).isTrue());
+
+    // Reset file inclusions/exclusion settings on SQ
     adminWsClient.settings().reset(new ResetRequest()
-      .setKeys(Collections.singletonList("sonar.exclusions"))
+      .setKeys(List.of("sonar.exclusions", "sonar.inclusions"))
       .setComponent(projectKey));
 
     // Check Foo.java is included again
