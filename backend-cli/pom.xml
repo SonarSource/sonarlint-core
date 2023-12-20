@@ -48,10 +48,34 @@
                       <goal>single</goal>
                     </goals>
                     <configuration>
+                      <attach>false</attach>
                       <escapeString>\</escapeString>
                       <descriptors>
                         <descriptor>src/main/assembly/dist-no-arch.xml</descriptor>
                       </descriptors>
+                    </configuration>
+                  </execution>
+                </executions>
+              </plugin>
+              <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <executions>
+                  <execution>
+                    <id>deploy-no-arch</id>
+                    <phase>deploy</phase>
+                    <goals>
+                      <goal>deploy-file</goal>
+                    </goals>
+                    <configuration>
+                      <file>${project.build.directory}/${project.artifactId}-${project.version}-no-arch.tar.gz</file>
+                      <groupId>${project.groupId}</groupId>
+                      <artifactId>${project.artifactId}</artifactId>
+                      <version>${project.version}</version>
+                      <classifier>no-arch</classifier>
+                      <packaging>tar.gz</packaging>
+                      <generatePom>true</generatePom>
+                      <url>${project.distributionManagement.snapshotRepository.url}</url>
+                      <repositoryId>${project.distributionManagement.snapshotRepository.id}</repositoryId>
                     </configuration>
                   </execution>
                 </executions>
@@ -98,10 +122,34 @@
                       <goal>single</goal>
                     </goals>
                     <configuration>
+                      <attach>false</attach>
                       <escapeString>\</escapeString>
                       <descriptors>
                         <descriptor>src/main/assembly/dist-windows_x64.xml</descriptor>
                       </descriptors>
+                    </configuration>
+                  </execution>
+                </executions>
+              </plugin>
+              <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <executions>
+                  <execution>
+                    <id>deploy-windows_x64</id>
+                    <phase>deploy</phase>
+                    <goals>
+                      <goal>deploy-file</goal>
+                    </goals>
+                    <configuration>
+                      <file>${project.build.directory}/${project.artifactId}-${project.version}-windows_x64.zip</file>
+                      <groupId>${project.groupId}</groupId>
+                      <artifactId>${project.artifactId}</artifactId>
+                      <version>${project.version}</version>
+                      <classifier>windows_x64</classifier>
+                      <packaging>zip</packaging>
+                      <generatePom>true</generatePom>
+                      <url>${project.distributionManagement.snapshotRepository.url}</url>
+                      <repositoryId>${project.distributionManagement.snapshotRepository.id}</repositoryId>
                     </configuration>
                   </execution>
                 </executions>
@@ -148,10 +196,34 @@
                       <goal>single</goal>
                     </goals>
                     <configuration>
+                      <attach>false</attach>
                       <escapeString>\</escapeString>
                       <descriptors>
                         <descriptor>src/main/assembly/dist-linux_x64.xml</descriptor>
                       </descriptors>
+                    </configuration>
+                  </execution>
+                </executions>
+              </plugin>
+              <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <executions>
+                  <execution>
+                    <id>deploy-linux_x64</id>
+                    <phase>deploy</phase>
+                    <goals>
+                      <goal>deploy-file</goal>
+                    </goals>
+                    <configuration>
+                      <file>${project.build.directory}/${project.artifactId}-${project.version}-linux_x64.tar.gz</file>
+                      <groupId>${project.groupId}</groupId>
+                      <artifactId>${project.artifactId}</artifactId>
+                      <version>${project.version}</version>
+                      <classifier>linux_x64</classifier>
+                      <packaging>tar.gz</packaging>
+                      <generatePom>true</generatePom>
+                      <url>${project.distributionManagement.snapshotRepository.url}</url>
+                      <repositoryId>${project.distributionManagement.snapshotRepository.id}</repositoryId>
                     </configuration>
                   </execution>
                 </executions>
@@ -193,10 +265,34 @@
                       <goal>single</goal>
                     </goals>
                     <configuration>
+                      <attach>false</attach>
                       <escapeString>\</escapeString>
                       <descriptors>
                         <descriptor>src/main/assembly/dist-linux_aarch64.xml</descriptor>
                       </descriptors>
+                    </configuration>
+                  </execution>
+                </executions>
+              </plugin>
+              <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <executions>
+                  <execution>
+                    <id>deploy-linux_aarch64</id>
+                    <phase>deploy</phase>
+                    <goals>
+                      <goal>deploy-file</goal>
+                    </goals>
+                    <configuration>
+                      <file>${project.build.directory}/${project.artifactId}-${project.version}-linux_aarch64.tar.gz</file>
+                      <groupId>${project.groupId}</groupId>
+                      <artifactId>${project.artifactId}</artifactId>
+                      <version>${project.version}</version>
+                      <classifier>linux_aarch64</classifier>
+                      <packaging>tar.gz</packaging>
+                      <generatePom>true</generatePom>
+                      <url>${project.distributionManagement.snapshotRepository.url}</url>
+                      <repositoryId>${project.distributionManagement.snapshotRepository.id}</repositoryId>
                     </configuration>
                   </execution>
                 </executions>
@@ -238,10 +334,34 @@
                   <goal>single</goal>
                 </goals>
                 <configuration>
+                  <attach>false</attach>
                   <escapeString>\</escapeString>
                   <descriptors>
                     <descriptor>src/main/assembly/dist-macosx_x64.xml</descriptor>
                   </descriptors>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <artifactId>maven-deploy-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>deploy-macosx_x64</id>
+                <phase>deploy</phase>
+                <goals>
+                  <goal>deploy-file</goal>
+                </goals>
+                <configuration>
+                  <file>${project.build.directory}/${project.artifactId}-${project.version}-macosx_x64.tar.gz</file>
+                  <groupId>${project.groupId}</groupId>
+                  <artifactId>${project.artifactId}</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>macosx_x64</classifier>
+                  <packaging>tar.gz</packaging>
+                  <generatePom>true</generatePom>
+                  <url>${project.distributionManagement.snapshotRepository.url}</url>
+                  <repositoryId>${project.distributionManagement.snapshotRepository.id}</repositoryId>
                 </configuration>
               </execution>
             </executions>
@@ -283,10 +403,34 @@
                   <goal>single</goal>
                 </goals>
                 <configuration>
+                  <attach>false</attach>
                   <escapeString>\</escapeString>
                   <descriptors>
                     <descriptor>src/main/assembly/dist-macosx_aarch64.xml</descriptor>
                   </descriptors>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <artifactId>maven-deploy-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>deploy-macosx_aarch64</id>
+                <phase>deploy</phase>
+                <goals>
+                  <goal>deploy-file</goal>
+                </goals>
+                <configuration>
+                  <file>${project.build.directory}/${project.artifactId}-${project.version}-macosx_aarch64.tar.gz</file>
+                  <groupId>${project.groupId}</groupId>
+                  <artifactId>${project.artifactId}</artifactId>
+                  <version>${project.version}</version>
+                  <classifier>macosx_aarch64</classifier>
+                  <packaging>tar.gz</packaging>
+                  <generatePom>true</generatePom>
+                  <url>${project.distributionManagement.snapshotRepository.url}</url>
+                  <repositoryId>${project.distributionManagement.snapshotRepository.id}</repositoryId>
                 </configuration>
               </execution>
             </executions>
@@ -334,5 +478,4 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
 </project>
