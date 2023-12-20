@@ -36,8 +36,8 @@ import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.FileStatusDto;
 import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
-import org.sonarsource.sonarlint.core.serverconnection.FileExclusionChangedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.IssueStorePaths;
+import org.sonarsource.sonarlint.core.serverconnection.SonarServerSettingsChangedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.event.EventListener;
@@ -115,10 +115,20 @@ public class FileExclusionService {
     event.getAddedOrUpdated().forEach(f -> serverExclusionByUri.invalidate(f.getUri()));
   }
 
+  private static boolean isFileExclusionSettingsDifferent(Map<String, String> updatedSettingsValueByKey) {
+    return updatedSettingsValueByKey.containsKey("sonar.exclusions") ||
+      updatedSettingsValueByKey.containsKey("sonar.inclusions") ||
+      updatedSettingsValueByKey.containsKey("sonar.test.exclusions") ||
+      updatedSettingsValueByKey.containsKey("sonar.test.inclusions");
+  }
+
   @EventListener
-  public void onFileExclusionSettingsChanged(FileExclusionChangedEvent event) {
-    event.getConfigScopeIds().forEach(configScopeId -> clientFileSystemService.getFiles(configScopeId)
-      .forEach(f -> serverExclusionByUri.invalidate(f.getUri())));
+  public void onFileExclusionSettingsChanged(SonarServerSettingsChangedEvent event) {
+    var settingsDiff = event.getUpdatedSettingsValueByKey();
+    if (isFileExclusionSettingsDifferent(settingsDiff)) {
+      event.getConfigScopeIds().forEach(configScopeId -> clientFileSystemService.getFiles(configScopeId)
+        .forEach(f -> serverExclusionByUri.invalidate(f.getUri())));
+    }
   }
 
   public Map<URI, FileStatusDto> getFilesStatus(Map<String, List<URI>> fileUrisByConfigScope) {

@@ -19,8 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import com.google.common.collect.MapDifference;
+import com.google.common.collect.Maps;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -75,9 +76,20 @@ public class LocalStorageSynchronizer {
     return pluginsSynchronizer.synchronize(serverApi, new ProgressMonitor(null));
   }
 
-  public AnalyzerConfigUpdateSummary synchronize(ServerApi serverApi, String projectKey) {
+  private static AnalyzerSettingsUpdateSummary diffAnalyzerConfiguration(AnalyzerConfiguration original, AnalyzerConfiguration updated) {
+    Map<String, String> originalSettings = original.getSettings().getAll();
+    Map<String, String> updatedSettings = updated.getSettings().getAll();
+    MapDifference<String, String> diff = Maps.difference(originalSettings, updatedSettings);
+    var updatedSettingsValueByKey = diff.entriesDiffering().entrySet().stream()
+      .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().rightValue()));
+    updatedSettingsValueByKey.putAll(diff.entriesOnlyOnRight());
+    updatedSettingsValueByKey.putAll(diff.entriesOnlyOnLeft().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> "")));
+    return new AnalyzerSettingsUpdateSummary(updatedSettingsValueByKey);
+  }
+
+  public AnalyzerSettingsUpdateSummary synchronize(ServerApi serverApi, String projectKey) {
     var updatedAnalyzerConfiguration = synchronizeAnalyzerConfig(serverApi, projectKey, new ProgressMonitor(null));
-    AnalyzerConfigUpdateSummary configUpdateSummary;
+    AnalyzerSettingsUpdateSummary configUpdateSummary;
     try {
       var originalAnalyzerConfiguration = storage.project(projectKey).analyzerConfiguration().read();
       configUpdateSummary = diffAnalyzerConfiguration(originalAnalyzerConfiguration, updatedAnalyzerConfiguration);
@@ -90,13 +102,6 @@ public class LocalStorageSynchronizer {
     serverApi.newCodeApi().getNewCodeDefinition(projectKey, null, version)
       .ifPresent(ncd -> storage.project(projectKey).newCodeDefinition().store(ncd));
     return configUpdateSummary;
-  }
-
-  private static AnalyzerConfigUpdateSummary diffAnalyzerConfiguration(AnalyzerConfiguration original, AnalyzerConfiguration updated) {
-    var originalFileExclusions = original.getSettings().getAll().get("sonar.exclusions");
-    var updatedFileExclusions = updated.getSettings().getAll().get("sonar.exclusions");
-    var excludedFilesUpdated = !Objects.equals(originalFileExclusions, updatedFileExclusions);
-    return new AnalyzerConfigUpdateSummary(excludedFilesUpdated);
   }
 
   private AnalyzerConfiguration synchronizeAnalyzerConfig(ServerApi serverApi, String projectKey, ProgressMonitor progressMonitor) {
