@@ -19,29 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.adapter;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.TypeAdapter;
-import com.google.gson.TypeAdapterFactory;
 import com.google.gson.reflect.TypeToken;
-import java.util.function.Predicate;
 import org.eclipse.lsp4j.jsonrpc.json.adapters.EitherTypeAdapter;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
-import static java.util.function.Predicate.not;
-
-public class EitherCredentialsAdapterFactory implements TypeAdapterFactory {
+public class EitherCredentialsAdapterFactory extends CustomEitherAdapterFactory<TokenDto, UsernamePasswordDto> {
 
   private static final TypeToken<Either<TokenDto, UsernamePasswordDto>> ELEMENT_TYPE = new TypeToken<>() {
   };
 
-  @SuppressWarnings("unchecked")
-  @Override
-  public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-    Predicate<JsonElement> tokenChecker = new EitherTypeAdapter.PropertyChecker("token");
-    Predicate<JsonElement> usernameChecker = not(tokenChecker);
-    return (TypeAdapter<T>) new EitherTypeAdapter<>(gson, ELEMENT_TYPE, tokenChecker, usernameChecker);
+  public EitherCredentialsAdapterFactory() {
+    super(ELEMENT_TYPE, TokenDto.class, UsernamePasswordDto.class, new EitherTypeAdapter.PropertyChecker("token"));
   }
+
 }

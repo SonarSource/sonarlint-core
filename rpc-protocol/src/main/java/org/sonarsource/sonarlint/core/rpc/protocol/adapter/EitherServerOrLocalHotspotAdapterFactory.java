@@ -22,16 +22,16 @@ package org.sonarsource.sonarlint.core.rpc.protocol.adapter;
 import com.google.gson.reflect.TypeToken;
 import org.eclipse.lsp4j.jsonrpc.json.adapters.EitherTypeAdapter;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleContextualSectionWithDefaultContextKeyDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleNonContextualSectionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlySecurityHotspotDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ServerMatchedSecurityHotspotDto;
 
-public class EitherRuleDescriptionTabContentAdapterFactory extends CustomEitherAdapterFactory<RuleNonContextualSectionDto, RuleContextualSectionWithDefaultContextKeyDto> {
+public class EitherServerOrLocalHotspotAdapterFactory extends CustomEitherAdapterFactory<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto> {
 
-  private static final TypeToken<Either<RuleNonContextualSectionDto, RuleContextualSectionWithDefaultContextKeyDto>> ELEMENT_TYPE = new TypeToken<>() {
+  private static final TypeToken<Either<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>> ELEMENT_TYPE = new TypeToken<>() {
   };
 
-  public EitherRuleDescriptionTabContentAdapterFactory() {
-    super(ELEMENT_TYPE, RuleNonContextualSectionDto.class, RuleContextualSectionWithDefaultContextKeyDto.class, new EitherTypeAdapter.PropertyChecker("htmlContent"));
+  public EitherServerOrLocalHotspotAdapterFactory() {
+    super(ELEMENT_TYPE, ServerMatchedSecurityHotspotDto.class, LocalOnlySecurityHotspotDto.class, new EitherTypeAdapter.PropertyChecker("serverKey"));
   }
 
 }

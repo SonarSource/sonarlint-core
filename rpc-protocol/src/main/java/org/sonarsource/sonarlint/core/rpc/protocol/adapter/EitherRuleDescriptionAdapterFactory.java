@@ -19,27 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.adapter;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.TypeAdapter;
-import com.google.gson.TypeAdapterFactory;
 import com.google.gson.reflect.TypeToken;
-import java.util.function.Predicate;
 import org.eclipse.lsp4j.jsonrpc.json.adapters.EitherTypeAdapter;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleMonolithicDescriptionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleSplitDescriptionDto;
 
-public class EitherRuleDescriptionAdapterFactory implements TypeAdapterFactory {
+public class EitherRuleDescriptionAdapterFactory extends CustomEitherAdapterFactory<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> {
 
   private static final TypeToken<Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto>> ELEMENT_TYPE = new TypeToken<>() {
   };
 
-  @SuppressWarnings("unchecked")
-  @Override
-  public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-    Predicate<JsonElement> tabsChecker = new EitherTypeAdapter.PropertyChecker("tabs");
-    Predicate<JsonElement> monolithChecker = Predicate.not(tabsChecker);
-    return (TypeAdapter<T>) new EitherTypeAdapter<>(gson, ELEMENT_TYPE, monolithChecker, tabsChecker);
+  public EitherRuleDescriptionAdapterFactory() {
+    super(ELEMENT_TYPE, RuleMonolithicDescriptionDto.class, RuleSplitDescriptionDto.class, new EitherTypeAdapter.PropertyChecker("htmlContent"));
   }
+
 }

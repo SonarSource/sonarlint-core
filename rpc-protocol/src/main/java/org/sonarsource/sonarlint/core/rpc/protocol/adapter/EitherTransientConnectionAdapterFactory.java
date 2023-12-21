@@ -19,29 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.adapter;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.TypeAdapter;
-import com.google.gson.TypeAdapterFactory;
 import com.google.gson.reflect.TypeToken;
-import java.util.function.Predicate;
 import org.eclipse.lsp4j.jsonrpc.json.adapters.EitherTypeAdapter;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
 
-import static java.util.function.Predicate.not;
-
-public class EitherTransientConnectionAdapterFactory implements TypeAdapterFactory {
+public class EitherTransientConnectionAdapterFactory extends CustomEitherAdapterFactory<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> {
 
   private static final TypeToken<Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto>> ELEMENT_TYPE = new TypeToken<>() {
   };
 
-  @SuppressWarnings("unchecked")
-  @Override
-  public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-    Predicate<JsonElement> sqChecker = new EitherTypeAdapter.PropertyChecker("serverUrl");
-    Predicate<JsonElement> scChecker = not(sqChecker);
-    return (TypeAdapter<T>) new EitherTypeAdapter<>(gson, ELEMENT_TYPE, sqChecker, scChecker);
+  public EitherTransientConnectionAdapterFactory() {
+    super(ELEMENT_TYPE, TransientSonarQubeConnectionDto.class, TransientSonarCloudConnectionDto.class, new EitherTypeAdapter.PropertyChecker("serverUrl"));
   }
+
 }
