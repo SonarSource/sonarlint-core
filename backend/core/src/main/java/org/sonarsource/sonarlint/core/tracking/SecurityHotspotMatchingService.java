@@ -46,7 +46,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlySecurityHotspotDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.MatchWithServerSecurityHotspotsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ServerMatchedSecurityHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
@@ -82,14 +81,15 @@ public class SecurityHotspotMatchingService {
     this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-server-tracking-hotspot-updater"));
   }
 
-  public Map<String, List<MatchWithServerSecurityHotspotsResponse.ServerOrLocalSecurityHotspotDto>> matchWithServerSecurityHotspots(String configurationScopeId,
+  public Map<String, List<Either<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>>> matchWithServerSecurityHotspots(String configurationScopeId,
     Map<String, List<ClientTrackedFindingDto>> clientTrackedHotspotsByServerRelativePath, boolean shouldFetchHotspotsFromServer, CancelChecker cancelChecker) {
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     var activeBranchOpt = branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId);
     if (effectiveBindingOpt.isEmpty() || activeBranchOpt.isEmpty()) {
       return clientTrackedHotspotsByServerRelativePath.entrySet().stream()
         .map(e -> Map.entry(e.getKey(), e.getValue().stream()
-          .map(issue -> MatchWithServerSecurityHotspotsResponse.ServerOrLocalSecurityHotspotDto.forRight(new LocalOnlySecurityHotspotDto(UUID.randomUUID())))
+          .map(issue -> Either.<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>forRight(
+            new LocalOnlySecurityHotspotDto(UUID.randomUUID())))
           .collect(Collectors.toList())))
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
@@ -108,11 +108,11 @@ public class SecurityHotspotMatchingService {
             var serverSecurityHotspot = result.getLeft();
             var creationDate = serverSecurityHotspot.getCreationDate();
             var isOnNewCode = newCodeDefinition.map(definition -> definition.isOnNewCode(creationDate.toEpochMilli())).orElse(true);
-            return MatchWithServerSecurityHotspotsResponse.ServerOrLocalSecurityHotspotDto
-              .forLeft(new ServerMatchedSecurityHotspotDto(UUID.randomUUID(), serverSecurityHotspot.getKey(), creationDate.toEpochMilli(),
+            return Either.<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>forLeft(
+              new ServerMatchedSecurityHotspotDto(UUID.randomUUID(), serverSecurityHotspot.getKey(), creationDate.toEpochMilli(),
                 HotspotStatus.valueOf(serverSecurityHotspot.getStatus().name()), isOnNewCode));
           } else {
-            return MatchWithServerSecurityHotspotsResponse.ServerOrLocalSecurityHotspotDto.forRight(new LocalOnlySecurityHotspotDto(result.getRight().getId()));
+            return Either.<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>forRight(new LocalOnlySecurityHotspotDto(result.getRight().getId()));
           }
         }).collect(Collectors.toList());
       return Map.entry(serverRelativePath, matches);

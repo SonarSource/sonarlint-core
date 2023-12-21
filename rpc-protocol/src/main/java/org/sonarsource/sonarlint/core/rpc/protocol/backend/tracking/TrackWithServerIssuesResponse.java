@@ -19,80 +19,20 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking;
 
-import com.google.gson.annotations.JsonAdapter;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.function.Function;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherServerOrLocalIssueDtoAdapter;
 
 public class TrackWithServerIssuesResponse {
 
-  private final Map<String, List<ServerOrLocalIssueDto>> issuesByServerRelativePath;
+  private final Map<String, List<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>> issuesByServerRelativePath;
 
-  public TrackWithServerIssuesResponse(Map<String, List<ServerOrLocalIssueDto>> issuesByServerRelativePath) {
+  public TrackWithServerIssuesResponse(Map<String, List<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>> issuesByServerRelativePath) {
     this.issuesByServerRelativePath = issuesByServerRelativePath;
   }
 
-  public Map<String, List<ServerOrLocalIssueDto>> getIssuesByServerRelativePath() {
+  public Map<String, List<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>> getIssuesByServerRelativePath() {
     return issuesByServerRelativePath;
   }
 
-  @JsonAdapter(EitherServerOrLocalIssueDtoAdapter.Factory.class)
-  public static class ServerOrLocalIssueDto {
-
-    private Either<ServerMatchedIssueDto, LocalOnlyIssueDto> wrapped;
-
-    public ServerOrLocalIssueDto(Either<ServerMatchedIssueDto, LocalOnlyIssueDto> wrapped) {
-      this.wrapped = wrapped;
-    }
-
-    public Either<ServerMatchedIssueDto, LocalOnlyIssueDto> getWrapped() {
-      return wrapped;
-    }
-
-    public static ServerOrLocalIssueDto forLeft(ServerMatchedIssueDto left) {
-      return new ServerOrLocalIssueDto(Either.forLeft(left));
-    }
-
-    public static ServerOrLocalIssueDto forRight(LocalOnlyIssueDto right) {
-      return new ServerOrLocalIssueDto(Either.forRight(right));
-    }
-
-    public ServerMatchedIssueDto getLeft() {
-      return wrapped.getLeft();
-    }
-
-    public LocalOnlyIssueDto getRight() {
-      return wrapped.getRight();
-    }
-
-    public boolean isLeft() {
-      return wrapped.isLeft();
-    }
-
-    public boolean isRight() {
-      return wrapped.isRight();
-    }
-
-    public <T> T map(
-      Function<? super ServerMatchedIssueDto, ? extends T> mapLeft,
-      Function<? super LocalOnlyIssueDto, ? extends T> mapRight) {
-      return wrapped.map(mapLeft, mapRight);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (o == null || getClass() != o.getClass()) return false;
-      ServerOrLocalIssueDto that = (ServerOrLocalIssueDto) o;
-      return Objects.equals(wrapped, that.wrapped);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(wrapped);
-    }
-  }
 }

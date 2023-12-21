@@ -27,11 +27,10 @@ import java.util.UUID;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.json.JsonRpcMethod;
 import org.eclipse.lsp4j.jsonrpc.json.MessageJsonHandler;
-import org.eclipse.lsp4j.jsonrpc.json.adapters.CollectionTypeAdapter;
 import org.eclipse.lsp4j.jsonrpc.json.adapters.EitherTypeAdapter;
 import org.eclipse.lsp4j.jsonrpc.json.adapters.MessageTypeAdapter;
-import org.eclipse.lsp4j.jsonrpc.json.adapters.ThrowableTypeAdapter;
-import org.eclipse.lsp4j.jsonrpc.json.adapters.TupleTypeAdapters;
+import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherServerOrLocalHotspotAdapterFactory;
+import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherServerOrLocalIssueAdapterFactory;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.InstantTypeAdapter;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.PathTypeAdapter;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.UuidTypeAdapter;
@@ -49,10 +48,11 @@ public class SonarLintLauncherBuilder<T> extends Launcher.Builder<T> {
       public GsonBuilder getDefaultGsonBuilder() {
         // We don't want the EnumTypeAdapter from lsp4j, as we want to serialize enums as string (this is the default in Gson)
         return new GsonBuilder()
-          .registerTypeAdapterFactory(new CollectionTypeAdapter.Factory())
-          .registerTypeAdapterFactory(new ThrowableTypeAdapter.Factory())
           .registerTypeAdapterFactory(new EitherTypeAdapter.Factory())
-          .registerTypeAdapterFactory(new TupleTypeAdapters.TwoTypeAdapterFactory())
+          // We need to register those adapters globally, because we can't use the @JsonAdapter annotation on generic types
+          .registerTypeAdapterFactory(new EitherServerOrLocalHotspotAdapterFactory())
+          .registerTypeAdapterFactory(new EitherServerOrLocalIssueAdapterFactory())
+
           .registerTypeAdapterFactory(new MessageTypeAdapter.Factory(this))
           .registerTypeHierarchyAdapter(Path.class, new PathTypeAdapter())
           .registerTypeHierarchyAdapter(Instant.class, new InstantTypeAdapter())

@@ -56,7 +56,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LineWithHash
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlyIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ServerMatchedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesResponse;
 import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.storage.StorageService;
@@ -93,7 +92,7 @@ public class IssueMatchingService {
     this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-server-tracking-issue-updater"));
   }
 
-  public Map<String, List<TrackWithServerIssuesResponse.ServerOrLocalIssueDto>> trackWithServerIssues(String configurationScopeId,
+  public Map<String, List<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>> trackWithServerIssues(String configurationScopeId,
     Map<String, List<ClientTrackedFindingDto>> clientTrackedIssuesByServerRelativePath,
     boolean shouldFetchIssuesFromServer, CancelChecker cancelChecker) {
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
@@ -101,7 +100,8 @@ public class IssueMatchingService {
     if (effectiveBindingOpt.isEmpty() || activeBranchOpt.isEmpty()) {
       return clientTrackedIssuesByServerRelativePath.entrySet().stream()
         .map(e -> Map.entry(e.getKey(), e.getValue().stream()
-          .map(issue -> TrackWithServerIssuesResponse.ServerOrLocalIssueDto.forRight(new LocalOnlyIssueDto(UUID.randomUUID(), null))).collect(Collectors.toList())))
+          .map(issue -> Either.<ServerMatchedIssueDto, LocalOnlyIssueDto>forRight(
+            new LocalOnlyIssueDto(UUID.randomUUID(), null))).collect(Collectors.toList())))
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
     var binding = effectiveBindingOpt.get();
@@ -122,14 +122,14 @@ public class IssueMatchingService {
             var creationDate = serverIssue.getCreationDate().toEpochMilli();
             var isOnNewCode = newCodeDefinition.isOnNewCode(creationDate);
             var userSeverity = serverIssue.getUserSeverity();
-            return TrackWithServerIssuesResponse.ServerOrLocalIssueDto
-              .forLeft(new ServerMatchedIssueDto(UUID.randomUUID(), serverIssue.getKey(), creationDate, serverIssue.isResolved(),
+            return Either.<ServerMatchedIssueDto, LocalOnlyIssueDto>forLeft(
+              new ServerMatchedIssueDto(UUID.randomUUID(), serverIssue.getKey(), creationDate, serverIssue.isResolved(),
                 userSeverity != null ? RuleDetailsAdapter.adapt(userSeverity) : null, RuleDetailsAdapter.adapt(serverIssue.getType()), isOnNewCode));
           } else {
             var localOnlyIssue = result.getRight();
             var resolution = localOnlyIssue.getResolution();
-            return TrackWithServerIssuesResponse.ServerOrLocalIssueDto
-              .forRight(new LocalOnlyIssueDto(localOnlyIssue.getId(), resolution == null ? null : ResolutionStatus.valueOf(resolution.getStatus().name())));
+            return Either.<ServerMatchedIssueDto, LocalOnlyIssueDto>forRight(
+              new LocalOnlyIssueDto(localOnlyIssue.getId(), resolution == null ? null : ResolutionStatus.valueOf(resolution.getStatus().name())));
           }
         }).collect(Collectors.toList());
       return Map.entry(serverRelativePath, matches);

@@ -19,27 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.adapter;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.TypeAdapter;
-import com.google.gson.TypeAdapterFactory;
 import com.google.gson.reflect.TypeToken;
-import java.util.function.Predicate;
 import org.eclipse.lsp4j.jsonrpc.json.adapters.EitherTypeAdapter;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ProgressEndNotification;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ProgressUpdateNotification;
 
-public class EitherProgressNotificationAdapterFactory implements TypeAdapterFactory {
+public class EitherProgressNotificationAdapterFactory extends CustomEitherAdapterFactory<ProgressUpdateNotification, ProgressEndNotification> {
 
   private static final TypeToken<Either<ProgressUpdateNotification, ProgressEndNotification>> ELEMENT_TYPE = new TypeToken<>() {
   };
 
-  @SuppressWarnings("unchecked")
-  @Override
-  public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-    Predicate<JsonElement> leftChecker = new EitherTypeAdapter.PropertyChecker("percentage");
-    Predicate<JsonElement> rightChecker = Predicate.not(leftChecker);
-    return (TypeAdapter<T>) new EitherTypeAdapter<>(gson, ELEMENT_TYPE, leftChecker, rightChecker);
+  public EitherProgressNotificationAdapterFactory() {
+    super(ELEMENT_TYPE, ProgressUpdateNotification.class, ProgressEndNotification.class, new EitherTypeAdapter.PropertyChecker("percentage"));
   }
 }

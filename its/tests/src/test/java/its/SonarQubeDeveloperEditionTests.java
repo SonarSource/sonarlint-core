@@ -791,10 +791,10 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       assertThat(fooIssuesMainBranch).hasSize(3);
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
         // On main branch, all issues were matched and no issues are resolved
-        assertThat(fooIssuesMainBranch.stream().filter(TrackWithServerIssuesResponse.ServerOrLocalIssueDto::isLeft).count()).isEqualTo(3);
+        assertThat(fooIssuesMainBranch.stream().filter(Either::isLeft).count()).isEqualTo(3);
         assertThat(fooIssuesMainBranch.stream().filter(issue -> issue.getLeft().isResolved()).count()).isZero();
       } else {
-        assertThat(fooIssuesMainBranch.stream().filter(TrackWithServerIssuesResponse.ServerOrLocalIssueDto::isRight).count()).isEqualTo(3);
+        assertThat(fooIssuesMainBranch.stream().filter(Either::isRight).count()).isEqualTo(3);
       }
 
       didSynchronizeConfigurationScopes.clear();
@@ -812,10 +812,10 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       assertThat(fooIssuesFeatureBranch).hasSize(3);
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
         // On feature branch, all issues were matched and one issue is resolved
-        assertThat(fooIssuesFeatureBranch.stream().filter(TrackWithServerIssuesResponse.ServerOrLocalIssueDto::isLeft).count()).isEqualTo(3);
+        assertThat(fooIssuesFeatureBranch.stream().filter(Either::isLeft).count()).isEqualTo(3);
         assertThat(fooIssuesFeatureBranch.stream().filter(issue -> issue.getLeft().isResolved()).count()).isEqualTo(1);
       } else {
-        assertThat(fooIssuesFeatureBranch.stream().filter(TrackWithServerIssuesResponse.ServerOrLocalIssueDto::isRight).count()).isEqualTo(3);
+        assertThat(fooIssuesFeatureBranch.stream().filter(Either::isRight).count()).isEqualTo(3);
       }
     }
   }

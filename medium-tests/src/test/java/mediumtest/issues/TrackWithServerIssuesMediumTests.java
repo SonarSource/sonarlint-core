@@ -98,8 +98,8 @@ class TrackWithServerIssuesMediumTests {
       .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
         .hasEntrySatisfying("file/path", issues -> {
           assertThat(issues).hasSize(1).allSatisfy(issue -> assertThat(issue.isRight()).isTrue());
-          assertThat(issues).usingRecursiveComparison().ignoringFields("wrapped.right.id")
-            .isEqualTo(List.of(new TrackWithServerIssuesResponse.ServerOrLocalIssueDto(Either.forRight(new LocalOnlyIssueDto(null, null)))));
+          assertThat(issues).usingRecursiveComparison().ignoringFields("right.id")
+            .isEqualTo(List.of(Either.forRight(new LocalOnlyIssueDto(null, null))));
         }));
   }
 
@@ -119,8 +119,8 @@ class TrackWithServerIssuesMediumTests {
       .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
         .hasEntrySatisfying("file/path", issues -> {
           assertThat(issues).hasSize(1).allSatisfy(issue -> assertThat(issue.isRight()).isTrue());
-          assertThat(issues).usingRecursiveComparison().ignoringFields("wrapped.right.id")
-            .isEqualTo(List.of(new TrackWithServerIssuesResponse.ServerOrLocalIssueDto(Either.forRight(new LocalOnlyIssueDto(null, null)))));
+          assertThat(issues).usingRecursiveComparison().ignoringFields("right.id")
+            .isEqualTo(List.of(Either.forRight(new LocalOnlyIssueDto(null, null))));
         }));
   }
 
@@ -140,16 +140,16 @@ class TrackWithServerIssuesMediumTests {
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
-        .hasEntrySatisfying("file/path", issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("wrapped.left.id")
+        .hasEntrySatisfying("file/path", issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("left.id")
           .isEqualTo(
-            List.of((new TrackWithServerIssuesResponse.ServerOrLocalIssueDto(Either.forLeft(new ServerMatchedIssueDto(null, "issueKey", 1000L, false, null, BUG, true))))))));
+            List.of((Either.forLeft(new ServerMatchedIssueDto(null, "issueKey", 1000L, false, null, BUG, true)))))));
   }
 
   @Test
   void it_should_track_with_a_server_only_issue_when_fetching_from_legacy_server_requested() {
     server = ServerFixture.newSonarQubeServer("9.5").withProject("projectKey",
-      project -> project.withBranch("main",
-        branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, Instant.now(), new TextRange(1, 2, 3, 4))))
+        project -> project.withBranch("main",
+          branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, Instant.now(), new TextRange(1, 2, 3, 4))))
       .start();
     var client = newFakeClient().build();
     backend = newBackend()
@@ -166,16 +166,16 @@ class TrackWithServerIssuesMediumTests {
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
-        .hasEntrySatisfying("file/path", issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("wrapped.left.id")
+        .hasEntrySatisfying("file/path", issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("left.id")
           .isEqualTo(
-            List.of(new TrackWithServerIssuesResponse.ServerOrLocalIssueDto(Either.forLeft(new ServerMatchedIssueDto(null, "issueKey", 123456789L, false, null, BUG, true)))))));
+            List.of(Either.forLeft(new ServerMatchedIssueDto(null, "issueKey", 123456789L, false, null, BUG, true))))));
   }
 
   @Test
   void it_should_download_all_issues_at_once_when_tracking_issues_from_more_than_10_files() {
     server = ServerFixture.newSonarQubeServer("9.5").withProject("projectKey",
-      project -> project.withBranch("main",
-        branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, Instant.now(), new TextRange(1, 2, 3, 4))))
+        project -> project.withBranch("main",
+          branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, Instant.now(), new TextRange(1, 2, 3, 4))))
       .start();
     var client = newFakeClient().build();
     backend = newBackend()
