@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import mediumtest.fixtures.ServerFixture;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
@@ -93,8 +94,8 @@ class MatchWithServerHotspotsMediumTests {
       .satisfies(result -> assertThat(result.getSecurityHotspotsByServerRelativePath())
         .hasEntrySatisfying("file/path", hotspots -> {
           assertThat(hotspots).hasSize(1).allSatisfy(hotspot -> assertThat(hotspot.isRight()).isTrue());
-          assertThat(hotspots).usingRecursiveComparison().ignoringFields("wrapped.right.id")
-            .isEqualTo(List.of(MatchWithServerSecurityHotspotsResponse.ServerOrLocalSecurityHotspotDto.forRight(new LocalOnlySecurityHotspotDto(null))));
+          assertThat(hotspots).usingRecursiveComparison().ignoringFields("right.id")
+            .isEqualTo(List.of(Either.forRight(new LocalOnlySecurityHotspotDto(null))));
         }));
   }
 
@@ -114,8 +115,8 @@ class MatchWithServerHotspotsMediumTests {
       .satisfies(result -> assertThat(result.getSecurityHotspotsByServerRelativePath())
         .hasEntrySatisfying("file/path", hotspots -> {
           assertThat(hotspots).hasSize(1).allSatisfy(hotspot -> assertThat(hotspot.isRight()).isTrue());
-          assertThat(hotspots).usingRecursiveComparison().ignoringFields("wrapped.right.id")
-            .isEqualTo(List.of(MatchWithServerSecurityHotspotsResponse.ServerOrLocalSecurityHotspotDto.forRight(new LocalOnlySecurityHotspotDto(null))));
+          assertThat(hotspots).usingRecursiveComparison().ignoringFields("right.id")
+            .isEqualTo(List.of(Either.forRight(new LocalOnlySecurityHotspotDto(null))));
         }));
   }
 
@@ -137,18 +138,18 @@ class MatchWithServerHotspotsMediumTests {
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getSecurityHotspotsByServerRelativePath())
-        .hasEntrySatisfying("file/path", hotspots -> assertThat(hotspots).usingRecursiveComparison().ignoringFields("wrapped.left.id")
-          .isEqualTo(List.of(MatchWithServerSecurityHotspotsResponse.ServerOrLocalSecurityHotspotDto.forLeft(
+        .hasEntrySatisfying("file/path", hotspots -> assertThat(hotspots).usingRecursiveComparison().ignoringFields("left.id")
+          .isEqualTo(List.of(Either.forLeft(
             new ServerMatchedSecurityHotspotDto(null, "hotspotKey", 1000L, HotspotStatus.SAFE, true))))));
   }
 
   @Test
   void it_should_track_with_a_server_only_hotspot_when_fetching_from_legacy_server_requested() {
     server = ServerFixture.newSonarQubeServer("10.0").withProject("projectKey",
-      project -> project.withBranch("main", branch -> branch.withHotspot("hotspotKey",
-        hotspot -> hotspot.withRuleKey("rule:key").withMessage("message").withFilePath("file/path").withAuthor("author").withStatus(HotspotReviewStatus.TO_REVIEW)
-          .withCreationDate(Instant.ofEpochMilli(123456789))
-          .withTextRange(new TextRange(1, 2, 3, 4)))))
+        project -> project.withBranch("main", branch -> branch.withHotspot("hotspotKey",
+          hotspot -> hotspot.withRuleKey("rule:key").withMessage("message").withFilePath("file/path").withAuthor("author").withStatus(HotspotReviewStatus.TO_REVIEW)
+            .withCreationDate(Instant.ofEpochMilli(123456789))
+            .withTextRange(new TextRange(1, 2, 3, 4)))))
       .start();
     var client = newFakeClient().build();
     backend = newBackend()
@@ -165,16 +166,16 @@ class MatchWithServerHotspotsMediumTests {
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getSecurityHotspotsByServerRelativePath())
-        .hasEntrySatisfying("file/path", hotspots -> assertThat(hotspots).usingRecursiveComparison().ignoringFields("wrapped.left.id")
-          .isEqualTo(List.of(MatchWithServerSecurityHotspotsResponse.ServerOrLocalSecurityHotspotDto.forLeft(
+        .hasEntrySatisfying("file/path", hotspots -> assertThat(hotspots).usingRecursiveComparison().ignoringFields("left.id")
+          .isEqualTo(List.of(Either.forLeft(
             new ServerMatchedSecurityHotspotDto(null, "hotspotKey", 123456000L, HotspotStatus.TO_REVIEW, true))))));
   }
 
   @Test
   void it_should_download_all_hotspots_at_once_when_tracking_hotspots_from_more_than_10_files() {
     server = ServerFixture.newSonarQubeServer("10.0").withProject("projectKey",
-      project -> project.withBranch("main",
-        branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, Instant.now(), new TextRange(1, 2, 3, 4))))
+        project -> project.withBranch("main",
+          branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, Instant.now(), new TextRange(1, 2, 3, 4))))
       .start();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage.withServerVersion("9.5"))
