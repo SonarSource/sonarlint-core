@@ -55,6 +55,7 @@ import static org.sonarsource.sonarlint.core.http.HttpClient.FORM_URL_ENCODED_CO
 import static org.sonarsource.sonarlint.core.http.HttpClient.JSON_CONTENT_TYPE;
 import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 import static org.sonarsource.sonarlint.core.serverapi.util.ProtobufUtil.readMessages;
+import static org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils.toSonarQubePath;
 
 public class IssueApi {
 
@@ -334,7 +335,7 @@ public class IssueApi {
       lineHash = lineWithHash.getHash();
     }
     var resolution = requireNonNull(issue.getResolution());
-    return new IssueAnticipatedTransition(issue.getServerRelativePath().toString(), lineNumber, lineHash, issue.getRuleKey(), issue.getMessage(),
+    return new IssueAnticipatedTransition(toSonarQubePath(issue.getServerRelativePath()), lineNumber, lineHash, issue.getRuleKey(), issue.getMessage(),
       transitionByStatus.get(resolution.getStatus()).getStatus(), resolution.getComment());
   }
 

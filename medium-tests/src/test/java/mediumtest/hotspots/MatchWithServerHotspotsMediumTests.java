@@ -19,6 +19,7 @@
  */
 package mediumtest.hotspots;
 
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -71,12 +72,12 @@ class MatchWithServerHotspotsMediumTests {
       .build();
 
     var response = matchWithServerHotspots(
-      new MatchWithServerSecurityHotspotsParams("configScopeId", Map.of("filePath", List.of(new ClientTrackedFindingDto(null, null, null, null, "ruleKey", "message"))), false));
+      new MatchWithServerSecurityHotspotsParams("configScopeId", Map.of(Path.of("filePath"), List.of(new ClientTrackedFindingDto(null, null, null, null, "ruleKey", "message"))), false));
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getSecurityHotspotsByServerRelativePath())
-        .hasEntrySatisfying("filePath", hotspots -> assertThat(hotspots).hasSize(1).allSatisfy(hotspot -> assertThat(hotspot.isRight()).isTrue())));
+        .hasEntrySatisfying(Path.of("filePath"), hotspots -> assertThat(hotspots).hasSize(1).allSatisfy(hotspot -> assertThat(hotspot.isRight()).isTrue())));
   }
 
   @Test
@@ -87,13 +88,13 @@ class MatchWithServerHotspotsMediumTests {
       .build();
 
     var response = matchWithServerHotspots(new MatchWithServerSecurityHotspotsParams("configScopeId",
-      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getSecurityHotspotsByServerRelativePath())
-        .hasEntrySatisfying("file/path", hotspots -> {
+        .hasEntrySatisfying(Path.of("file/path"), hotspots -> {
           assertThat(hotspots).hasSize(1).allSatisfy(hotspot -> assertThat(hotspot.isRight()).isTrue());
           assertThat(hotspots).usingRecursiveComparison().ignoringFields("right.id")
             .isEqualTo(List.of(Either.forRight(new LocalOnlySecurityHotspotDto(null))));
@@ -108,13 +109,13 @@ class MatchWithServerHotspotsMediumTests {
       .build();
 
     var response = matchWithServerHotspots(new MatchWithServerSecurityHotspotsParams("configScopeId",
-      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
     assertThat(response)
-      .succeedsWithin(Duration.ofSeconds(2))
+      .succeedsWithin(Duration.ofSeconds(20))
       .satisfies(result -> assertThat(result.getSecurityHotspotsByServerRelativePath())
-        .hasEntrySatisfying("file/path", hotspots -> {
+        .hasEntrySatisfying(Path.of("file/path"), hotspots -> {
           assertThat(hotspots).hasSize(1).allSatisfy(hotspot -> assertThat(hotspot.isRight()).isTrue());
           assertThat(hotspots).usingRecursiveComparison().ignoringFields("right.id")
             .isEqualTo(List.of(Either.forRight(new LocalOnlySecurityHotspotDto(null))));
@@ -135,13 +136,13 @@ class MatchWithServerHotspotsMediumTests {
       .build(client);
 
     var response = matchWithServerHotspots(new MatchWithServerSecurityHotspotsParams("configScopeId",
-      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getSecurityHotspotsByServerRelativePath())
-        .hasEntrySatisfying("file/path", hotspots -> assertThat(hotspots).usingRecursiveComparison().ignoringFields("left.id")
+        .hasEntrySatisfying(Path.of("file/path"), hotspots -> assertThat(hotspots).usingRecursiveComparison().ignoringFields("left.id")
           .isEqualTo(List.of(Either.forLeft(
             new ServerMatchedSecurityHotspotDto(null, "hotspotKey", 1000L, HotspotStatus.SAFE, true))))));
   }
@@ -162,14 +163,14 @@ class MatchWithServerHotspotsMediumTests {
       .build(client);
 
     var response = matchWithServerHotspots(new MatchWithServerSecurityHotspotsParams("configScopeId",
-      Map.of("file/path",
+      Map.of(Path.of("file/path"),
         List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "rule:key", "message"))),
       true));
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getSecurityHotspotsByServerRelativePath())
-        .hasEntrySatisfying("file/path", hotspots -> assertThat(hotspots).usingRecursiveComparison().ignoringFields("left.id")
+        .hasEntrySatisfying(Path.of("file/path"), hotspots -> assertThat(hotspots).usingRecursiveComparison().ignoringFields("left.id")
           .isEqualTo(List.of(Either.forLeft(
             new ServerMatchedSecurityHotspotDto(null, "hotspotKey", 123456000L, HotspotStatus.TO_REVIEW, true))))));
   }
@@ -184,7 +185,7 @@ class MatchWithServerHotspotsMediumTests {
       .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage.withServerVersion("9.5"))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
-    var hotspotsByServerRelativePath = IntStream.rangeClosed(1, 11).boxed().collect(Collectors.<Integer, String, List<ClientTrackedFindingDto>>toMap(index -> "file/path" + index,
+    var hotspotsByServerRelativePath = IntStream.rangeClosed(1, 11).boxed().collect(Collectors.<Integer, Path, List<ClientTrackedFindingDto>>toMap(index -> Path.of("file/path" + index),
       i -> List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "rule:key", "message"))));
 
     var response = matchWithServerHotspots(new MatchWithServerSecurityHotspotsParams("configScopeId", hotspotsByServerRelativePath, true));

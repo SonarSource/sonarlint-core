@@ -20,6 +20,7 @@
 package mediumtest.issues;
 
 import com.google.protobuf.Message;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -225,10 +226,10 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .build(client);
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
     Thread.sleep(2000);
-    var localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get("file/path").get(0).getRight();
+    var localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(Path.of("file/path")).get(0).getRight();
 
     var response = checkStatusChangePermitted("connectionId", localOnlyIssue.getId().toString());
 
@@ -251,10 +252,10 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .build(client);
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
     Thread.sleep(2000);
-    var localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get("file/path").get(0).getRight();
+    var localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(Path.of("file/path")).get(0).getRight();
 
     var response = checkStatusChangePermitted("connectionId", localOnlyIssue.getId().toString());
 
@@ -278,10 +279,10 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .build(client);
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
-    var localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get("file/path").get(0).getRight();
+    var localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(Path.of("file/path")).get(0).getRight();
 
     var response = checkStatusChangePermitted("connectionId", localOnlyIssue.getId().toString());
 
@@ -302,12 +303,12 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .build();
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
     LocalOnlyIssueDto localOnlyIssue = null;
     try {
-      localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get("file/path").get(0).getRight();
+      localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(Path.of("file/path")).get(0).getRight();
     } catch (Exception e) {
       fail();
     }

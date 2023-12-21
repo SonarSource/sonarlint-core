@@ -57,7 +57,7 @@ public class ServerHotspotUpdater {
       return;
     }
     if (hotspotApi.permitsTracking(serverVersionSupplier)) {
-      var fileHotspots = hotspotApi.getFromFile(projectKey, serverFilePath.toString(), branchName);
+      var fileHotspots = hotspotApi.getFromFile(projectKey, serverFilePath, branchName);
       storage.project(projectKey).findings().replaceAllHotspotsOfFile(branchName, serverFilePath, fileHotspots);
     } else {
       LOG.info("Skip downloading hotspots for file, not supported");

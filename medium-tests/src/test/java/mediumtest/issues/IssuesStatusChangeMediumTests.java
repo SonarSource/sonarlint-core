@@ -162,10 +162,10 @@ class IssuesStatusChangeMediumTests {
     client.waitForSynchronization();
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
-    LocalOnlyIssueDto localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get("file/path").get(0).getRight();
+    LocalOnlyIssueDto localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(Path.of("file/path")).get(0).getRight();
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", localOnlyIssue.getId().toString(),
       ResolutionStatus.WONT_FIX, false));
@@ -191,10 +191,10 @@ class IssuesStatusChangeMediumTests {
     client.waitForSynchronization();
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
-    LocalOnlyIssueDto localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get("file/path").get(0).getRight();
+    LocalOnlyIssueDto localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(Path.of("file/path")).get(0).getRight();
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", localOnlyIssue.getId().toString(),
       ResolutionStatus.WONT_FIX, false));
@@ -225,10 +225,10 @@ class IssuesStatusChangeMediumTests {
     client.waitForSynchronization();
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
-    LocalOnlyIssueDto localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get("file/path").get(0).getRight();
+    LocalOnlyIssueDto localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(Path.of("file/path")).get(0).getRight();
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", localOnlyIssue.getId().toString(),
       ResolutionStatus.WONT_FIX, false));

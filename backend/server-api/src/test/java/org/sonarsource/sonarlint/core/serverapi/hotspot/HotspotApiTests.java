@@ -311,7 +311,7 @@ class HotspotApiTests {
       .addComponents(Hotspots.Component.newBuilder().setKey("component:path/to/file.ext").setPath("path/to/file.ext").build())
       .build());
 
-    var hotspots = underTest.getFromFile("p", "path/to/file.ext", "branch");
+    var hotspots = underTest.getFromFile("p", Path.of("path/to/file.ext"), "branch");
 
     assertThat(hotspots)
       .extracting("key", "ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "creationDate",

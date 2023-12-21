@@ -190,8 +190,8 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
         null, "java:S106", "Replace this use of System.out by a logger.");
       var pythonClientTrackedFindingDto = new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(2, 4, 2, 9, "hashedHash"),
         null, "python:PrintStatementUsage", "Replace print statement by built-in function.");
-      var trackWithServerIssuesParams = new TrackWithServerIssuesParams("CONFIG_SCOPE_ID", Map.of("src/main/java/foo/Foo.java",
-        List.of(javaClientTrackedFindingDto), "src/main/java/foo/main.py", List.of(pythonClientTrackedFindingDto)), true);
+      var trackWithServerIssuesParams = new TrackWithServerIssuesParams("CONFIG_SCOPE_ID", Map.of(Path.of("src/main/java/foo/Foo.java"),
+        List.of(javaClientTrackedFindingDto), Path.of("src/main/java/foo/main.py"), List.of(pythonClientTrackedFindingDto)), true);
       var issuesByServerRelativePath = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByIdeRelativePath();
 
       var mainPyIssues = issuesByServerRelativePath.get("src/main/java/foo/main.py");

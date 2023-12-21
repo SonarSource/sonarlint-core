@@ -665,7 +665,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
         var issuesResponse = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams(CONFIG_SCOPE_ID, Map.of(
-          "src/main/java/foo/Foo.java",
+          Path.of("src/main/java/foo/Foo.java"),
           List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(14, 4, 14, 14, "hashedHash"),
             null, "java:S106", "Replace this use of System.out by a logger."))),
           true)).get();
@@ -744,7 +744,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         null, ruleKey_s1172, "Remove this unused method parameter \"i\".");
       var clientTrackedDto_s106 = new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(14, 4, 14, 14, "hashedHash"),
         null, "java:S106", "Replace this use of System.out by a logger."); // not resolved on both branches
-      var trackWithServerIssuesParams = new TrackWithServerIssuesParams(CONFIG_SCOPE_ID, Map.of("src/main/java/foo/Foo.java",
+      var trackWithServerIssuesParams = new TrackWithServerIssuesParams(CONFIG_SCOPE_ID, Map.of(Path.of("src/main/java/foo/Foo.java"),
         List.of(clientTrackedDto_s100, clientTrackedDto_s1172, clientTrackedDto_s106)), true);
       var issuesOnMainBranch = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByIdeRelativePath();
 
@@ -1081,9 +1081,9 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var textRangeWithHash = new TextRangeWithHashDto(9, 4, 9, 45, "qwer");
       var clientTrackedHotspotsByServerRelativePath = Map.of(
-        "src/main/java/foo/Foo.java",
+        Path.of("src/main/java/foo/Foo.java"),
         List.of(new ClientTrackedFindingDto(null, null, textRangeWithHash, null, "java:S4792", "Make sure that this logger's configuration is safe.")),
-        "src/main/java/bar/Bar.java", List.of(new ClientTrackedFindingDto(null, null, textRangeWithHash, null, "java:S1234", "Some other rule")));
+        Path.of("src/main/java/bar/Bar.java"), List.of(new ClientTrackedFindingDto(null, null, textRangeWithHash, null, "java:S1234", "Some other rule")));
 
       var matchWithServerSecurityHotspotsResponse = backend.getSecurityHotspotMatchingService()
         .matchWithServerSecurityHotspots(new MatchWithServerSecurityHotspotsParams(CONFIG_SCOPE_ID, clientTrackedHotspotsByServerRelativePath, true)).get();

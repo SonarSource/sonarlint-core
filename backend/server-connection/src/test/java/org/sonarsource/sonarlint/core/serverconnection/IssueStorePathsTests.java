@@ -38,7 +38,7 @@ class IssueStorePathsTests {
   void local_path_to_fileKey() {
     var projectBinding = new ProjectBinding("projectKey", "project", "ide");
     var fileKey = IssueStorePaths.idePathToFileKey(projectBinding, Paths.get("ide/B/path1"));
-    assertThat(fileKey).isEqualTo("projectKey:" + Path.of("project/B/path1"));
+    assertThat(fileKey).isEqualTo("projectKey:project/B/path1");
   }
 
   @Test

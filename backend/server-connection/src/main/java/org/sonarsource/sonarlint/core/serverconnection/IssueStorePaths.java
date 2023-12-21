@@ -22,8 +22,8 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import javax.annotation.CheckForNull;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
+
+import static org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils.toSonarQubePath;
 
 public class IssueStorePaths {
 
@@ -46,7 +46,7 @@ public class IssueStorePaths {
   }
 
   public static String componentKey(String projectKey, Path serverFilePath) {
-    return projectKey + ":" + serverFilePath;
+    return projectKey + ":" + toSonarQubePath(serverFilePath);
   }
 
   @CheckForNull

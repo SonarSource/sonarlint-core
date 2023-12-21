@@ -87,8 +87,8 @@ public class SecurityHotspotMatchingService {
     this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-server-tracking-hotspot-updater"));
   }
 
-  public Map<String, List<Either<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>>> matchWithServerSecurityHotspots(String configurationScopeId,
-    Map<String, List<ClientTrackedFindingDto>> clientTrackedHotspotsByIdeRelativePath, boolean shouldFetchHotspotsFromServer, CancelChecker cancelChecker) {
+  public Map<Path, List<Either<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>>> matchWithServerSecurityHotspots(String configurationScopeId,
+    Map<Path, List<ClientTrackedFindingDto>> clientTrackedHotspotsByIdeRelativePath, boolean shouldFetchHotspotsFromServer, CancelChecker cancelChecker) {
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     var activeBranchOpt = branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId);
     var translationOpt = pathTranslationService.getOrComputePathTranslation(configurationScopeId);
@@ -108,7 +108,7 @@ public class SecurityHotspotMatchingService {
     var newCodeDefinition = storageService.binding(binding).newCodeDefinition().read();
     return clientTrackedHotspotsByIdeRelativePath.entrySet().stream().map(e -> {
       var serverRelativePath = e.getKey();
-      var serverHotspots = storageService.binding(binding).findings().loadHotspots(activeBranch, Path.of(serverRelativePath));
+      var serverHotspots = storageService.binding(binding).findings().loadHotspots(activeBranch, serverRelativePath);
       var matches = matchSecurityHotspots(serverHotspots, e.getValue())
         .stream().map(result -> {
           if (result.isLeft()) {
@@ -127,9 +127,9 @@ public class SecurityHotspotMatchingService {
   }
 
   private void refreshServerSecurityHotspots(CancelChecker cancelChecker, Binding binding, String activeBranch,
-    Map<String, List<ClientTrackedFindingDto>> clientTrackedHotspotsByIdeRelativePath, FilePathTranslation translation) {
+    Map<Path, List<ClientTrackedFindingDto>> clientTrackedHotspotsByIdeRelativePath, FilePathTranslation translation) {
     var serverFileRelativePaths = clientTrackedHotspotsByIdeRelativePath.keySet()
-      .stream().map(path -> translation.ideToServerPath(Path.of(path))).collect(Collectors.toSet());
+      .stream().map(translation::ideToServerPath).collect(Collectors.toSet());
     var downloadAllSecurityHotspotsAtOnce = serverFileRelativePaths.size() > FETCH_ALL_SECURITY_HOTSPOTS_THRESHOLD;
     var fetchTasks = new LinkedList<Future<?>>();
     if (downloadAllSecurityHotspotsAtOnce) {

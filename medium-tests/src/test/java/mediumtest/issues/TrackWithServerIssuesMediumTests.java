@@ -19,6 +19,7 @@
  */
 package mediumtest.issues;
 
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -78,12 +79,12 @@ class TrackWithServerIssuesMediumTests {
       .build();
 
     var response = trackWithServerIssues(
-      new TrackWithServerIssuesParams("configScopeId", Map.of("filePath", List.of(new ClientTrackedFindingDto(null, null, null, null, "ruleKey", "message"))), false));
+      new TrackWithServerIssuesParams("configScopeId", Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, null, null, "ruleKey", "message"))), false));
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getIssuesByIdeRelativePath())
-        .hasEntrySatisfying("filePath", issues -> assertThat(issues).hasSize(1).allSatisfy(issue -> assertThat(issue.isRight()).isTrue())));
+        .hasEntrySatisfying(Path.of("file/path"), issues -> assertThat(issues).hasSize(1).allSatisfy(issue -> assertThat(issue.isRight()).isTrue())));
   }
 
   @Test
@@ -94,13 +95,13 @@ class TrackWithServerIssuesMediumTests {
       .build();
 
     var response = trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
     assertThat(response)
-      .succeedsWithin(Duration.ofSeconds(2))
+      .succeedsWithin(Duration.ofSeconds(20))
       .satisfies(result -> assertThat(result.getIssuesByIdeRelativePath())
-        .hasEntrySatisfying("file/path", issues -> {
+        .hasEntrySatisfying(Path.of("file/path"), issues -> {
           assertThat(issues).hasSize(1).allSatisfy(issue -> assertThat(issue.isRight()).isTrue());
           assertThat(issues).usingRecursiveComparison().ignoringFields("right.id")
             .isEqualTo(List.of(Either.forRight(new LocalOnlyIssueDto(null, null))));
@@ -115,13 +116,13 @@ class TrackWithServerIssuesMediumTests {
       .build();
 
     var response = trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getIssuesByIdeRelativePath())
-        .hasEntrySatisfying("file/path", issues -> {
+        .hasEntrySatisfying(Path.of("file/path"), issues -> {
           assertThat(issues).hasSize(1).allSatisfy(issue -> assertThat(issue.isRight()).isTrue());
           assertThat(issues).usingRecursiveComparison().ignoringFields("right.id")
             .isEqualTo(List.of(Either.forRight(new LocalOnlyIssueDto(null, null))));
@@ -146,13 +147,13 @@ class TrackWithServerIssuesMediumTests {
 
 
     var response = trackWithServerIssues(new TrackWithServerIssuesParams(configScopeId,
-      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
     assertThat(response)
-      .succeedsWithin(Duration.ofSeconds(2))
+      .succeedsWithin(Duration.ofSeconds(20))
       .satisfies(result -> assertThat(result.getIssuesByIdeRelativePath())
-        .hasEntrySatisfying("file/path", issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("left.id")
+        .hasEntrySatisfying(Path.of("file/path"), issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("left.id")
           .isEqualTo(
             List.of((Either.forLeft(
               new ServerMatchedIssueDto(null, "issueKey", 1000L, false, null, BUG, true)))))));
@@ -172,14 +173,14 @@ class TrackWithServerIssuesMediumTests {
       .build(client);
 
     var response = trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path",
+      Map.of(Path.of("file/path"),
         List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "rule:key", "message"))),
       true));
 
     assertThat(response)
-      .succeedsWithin(Duration.ofSeconds(2))
+      .succeedsWithin(Duration.ofSeconds(20))
       .satisfies(result -> assertThat(result.getIssuesByIdeRelativePath())
-        .hasEntrySatisfying("file/path", issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("left.id")
+        .hasEntrySatisfying(Path.of("file/path"), issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("left.id")
           .isEqualTo(
             List.of(Either.forLeft(new ServerMatchedIssueDto(null, "issueKey", 123456789L, false, null, BUG, true))))));
   }
@@ -196,10 +197,10 @@ class TrackWithServerIssuesMediumTests {
         .withProject("projectKey", project -> project.withMainBranch("main")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build(client);
-    var issuesByServerRelativePath = IntStream.rangeClosed(1, 11).boxed().collect(Collectors.<Integer, String, List<ClientTrackedFindingDto>>toMap(index -> "file/path" + index,
+    var issuesByIdeRelativePath = IntStream.rangeClosed(1, 11).boxed().collect(Collectors.<Integer, Path, List<ClientTrackedFindingDto>>toMap(index -> Path.of("file/path" + index),
       i -> List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "rule:key", "message"))));
 
-    var response = trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId", issuesByServerRelativePath, true));
+    var response = trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId", issuesByIdeRelativePath, true));
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(4))

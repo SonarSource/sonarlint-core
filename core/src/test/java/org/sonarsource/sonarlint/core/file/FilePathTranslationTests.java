@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,23 +17,29 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking;
+package org.sonarsource.sonarlint.core.file;
 
-import java.util.List;
-import java.util.Map;
 import java.nio.file.Path;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.junit.jupiter.api.Test;
 
-public class MatchWithServerSecurityHotspotsResponse {
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-  private final Map<Path, List<Either<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>>> securityHotspotsByServerRelativePath;
+class FilePathTranslationTests {
 
-  public MatchWithServerSecurityHotspotsResponse(Map<Path, List<Either<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>>> hotspotsByServerRelativePath) {
-    this.securityHotspotsByServerRelativePath = hotspotsByServerRelativePath;
+  @Test
+  void serverToPathTranslation() {
+    var underTest = new FilePathTranslation(Path.of("/foo"), Path.of("/bar"));
+
+    assertThat(underTest.serverToIdePath(Path.of("/baz"))).isEqualTo(Path.of("/baz"));
+    assertThat(underTest.serverToIdePath(Path.of("/bar/baz"))).isEqualTo(Path.of("/foo/baz"));
   }
 
-  public Map<Path, List<Either<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>>> getSecurityHotspotsByServerRelativePath() {
-    return securityHotspotsByServerRelativePath;
+  @Test
+  void ideToServerPathTranslation() {
+    var underTest = new FilePathTranslation(Path.of("/foo"), Path.of("/bar"));
+
+    assertThat(underTest.ideToServerPath(Path.of("/baz"))).isEqualTo(Path.of("/baz"));
+    assertThat(underTest.ideToServerPath(Path.of("/bar/baz"))).isEqualTo(Path.of("/bar/baz"));
   }
 
 }

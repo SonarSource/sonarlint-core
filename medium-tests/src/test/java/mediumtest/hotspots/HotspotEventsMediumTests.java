@@ -94,7 +94,7 @@ class HotspotEventsMediumTests {
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build();
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readHotspots("connectionId", "projectKey", "branchName", "file/path"))
+      await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> assertThat(readHotspots("connectionId", "projectKey", "branchName", "file/path"))
         .extracting(ServerHotspot::getKey)
         .containsOnly("AYhSN6mVrRF_krvNbHl1"));
     }

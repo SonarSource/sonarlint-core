@@ -50,6 +50,7 @@ import org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils;
 import static org.sonarsource.sonarlint.core.http.HttpClient.FORM_URL_ENCODED_CONTENT_TYPE;
 import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 import static org.sonarsource.sonarlint.core.serverapi.util.ProtobufUtil.readMessages;
+import static org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils.toSonarQubePath;
 
 public class HotspotApi {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -95,7 +96,7 @@ public class HotspotApi {
     return searchHotspots(getSearchUrl(projectKey, null, branchName), progress);
   }
 
-  public Collection<ServerHotspot> getFromFile(String projectKey, String filePath, String branchName) {
+  public Collection<ServerHotspot> getFromFile(String projectKey, Path filePath, String branchName) {
     return searchHotspots(getSearchUrl(projectKey, filePath, branchName), new ProgressMonitor(null));
   }
 
@@ -178,10 +179,10 @@ public class HotspotApi {
     return hotspots;
   }
 
-  private static String getSearchUrl(String projectKey, @Nullable String filePath, String branchName) {
+  private static String getSearchUrl(String projectKey, @Nullable Path filePath, String branchName) {
     return HOTSPOTS_SEARCH_API_URL
       + PROJECT_KEY_QUERY_PARAM + urlEncode(projectKey)
-      + (filePath != null ? ("&files=" + urlEncode(filePath)) : "")
+      + (filePath != null ? ("&files=" + urlEncode(toSonarQubePath(filePath))) : "")
       + "&branch=" + urlEncode(branchName);
   }
 

@@ -97,8 +97,8 @@ public class IssueMatchingService {
     this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-server-tracking-issue-updater"));
   }
 
-  public Map<String, List<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>> trackWithServerIssues(String configurationScopeId,
-    Map<String, List<ClientTrackedFindingDto>> clientTrackedIssuesByIdeRelativePath,
+  public Map<Path, List<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>> trackWithServerIssues(String configurationScopeId,
+    Map<Path, List<ClientTrackedFindingDto>> clientTrackedIssuesByIdeRelativePath,
     boolean shouldFetchIssuesFromServer, CancelChecker cancelChecker) {
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     var activeBranchOpt = branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId);
@@ -119,7 +119,7 @@ public class IssueMatchingService {
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId)
       .orElse(NewCodeDefinition.withAlwaysNew());
     return clientTrackedIssuesByIdeRelativePath.entrySet().stream().map(e -> {
-      var serverRelativePath = translation.ideToServerPath(Path.of(e.getKey()));
+      var serverRelativePath = translation.ideToServerPath(e.getKey());
       var serverIssues = storageService.binding(binding).findings().load(activeBranch, serverRelativePath);
       var localOnlyIssues = localOnlyIssueStorageService.get().loadForFile(configurationScopeId, serverRelativePath);
       var matches = matchIssues(serverRelativePath, serverIssues, localOnlyIssues, e.getValue())
@@ -139,14 +139,14 @@ public class IssueMatchingService {
               new LocalOnlyIssueDto(localOnlyIssue.getId(), resolution == null ? null : ResolutionStatus.valueOf(resolution.getStatus().name())));
           }
         }).collect(Collectors.toList());
-      return Map.entry(serverRelativePath.toString(), matches);
+      return Map.entry(serverRelativePath, matches);
     }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   private void refreshServerIssues(CancelChecker cancelChecker, Binding binding, String activeBranch,
-    Map<String, List<ClientTrackedFindingDto>> clientTrackedIssuesByIdeRelativePath, FilePathTranslation translation) {
+    Map<Path, List<ClientTrackedFindingDto>> clientTrackedIssuesByIdeRelativePath, FilePathTranslation translation) {
     var serverFileRelativePaths = clientTrackedIssuesByIdeRelativePath.keySet()
-      .stream().map((String serverFilePath) -> translation.serverToIdePath(Path.of(serverFilePath))).collect(Collectors.toSet());
+      .stream().map(translation::serverToIdePath).collect(Collectors.toSet());
     var downloadAllIssuesAtOnce = serverFileRelativePaths.size() > FETCH_ALL_ISSUES_THRESHOLD;
     var fetchTasks = new LinkedList<Future<?>>();
     if (downloadAllIssuesAtOnce) {

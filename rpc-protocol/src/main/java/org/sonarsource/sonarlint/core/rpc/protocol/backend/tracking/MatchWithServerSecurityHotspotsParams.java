@@ -19,15 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
 public class MatchWithServerSecurityHotspotsParams {
   private final String configurationScopeId;
-  private final Map<String, List<ClientTrackedFindingDto>> clientTrackedHotspotsByIdeRelativePath;
+  private final Map<Path, List<ClientTrackedFindingDto>> clientTrackedHotspotsByIdeRelativePath;
   private final boolean shouldFetchHotspotsFromServer;
 
-  public MatchWithServerSecurityHotspotsParams(String configurationScopeId, Map<String, List<ClientTrackedFindingDto>> clientTrackedHotspotsByIdeRelativePath,
+  public MatchWithServerSecurityHotspotsParams(String configurationScopeId, Map<Path, List<ClientTrackedFindingDto>> clientTrackedHotspotsByIdeRelativePath,
     boolean shouldFetchHotspotsFromServer) {
     this.configurationScopeId = configurationScopeId;
     this.clientTrackedHotspotsByIdeRelativePath = clientTrackedHotspotsByIdeRelativePath;
@@ -38,7 +39,7 @@ public class MatchWithServerSecurityHotspotsParams {
     return configurationScopeId;
   }
 
-  public Map<String, List<ClientTrackedFindingDto>> getClientTrackedHotspotsByIdeRelativePath() {
+  public Map<Path, List<ClientTrackedFindingDto>> getClientTrackedHotspotsByIdeRelativePath() {
     return clientTrackedHotspotsByIdeRelativePath;
   }
 
