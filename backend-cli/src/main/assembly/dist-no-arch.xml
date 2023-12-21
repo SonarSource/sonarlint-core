@@ -2,14 +2,14 @@
 <!--    Generate a distribution archive which contains executable application with dependencies and supporting files
         - The actual jar
         - the dependencies
-        - the JRE
-        - the launcher script
+        - the launcher scripts
           -->
 <assembly>
   <id>no-arch</id>
   <includeBaseDirectory>false</includeBaseDirectory>
   <formats>
-    <format>tar.gz</format>
+    <!-- ZIP archive as Windows cannot work with tar.gz out of the box but Unix can work with zip out of the box  -->
+    <format>zip</format>
   </formats>
 
   <!-- The dependencies -->
@@ -34,7 +34,7 @@
       </includes>
     </fileSet>
 
-    <!-- The launcher script-->
+    <!-- The launcher scripts (we don't know the environment, so package both and let the client decide) -->
     <fileSet>
       <directory>src/main/assembly/bin</directory>
       <outputDirectory>bin</outputDirectory>
@@ -43,6 +43,17 @@
       <filtered>true</filtered>
       <includes>
         <include>sonarlint-backend</include>
+      </includes>
+    </fileSet>
+
+    <fileSet>
+      <directory>src/main/assembly/bin</directory>
+      <outputDirectory>bin</outputDirectory>
+      <fileMode>0755</fileMode>
+      <lineEnding>dos</lineEnding>
+      <filtered>true</filtered>
+      <includes>
+        <include>sonarlint-backend.bat</include>
       </includes>
     </fileSet>
   </fileSets>
