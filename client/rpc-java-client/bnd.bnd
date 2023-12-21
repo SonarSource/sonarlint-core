@@ -1,0 +1,2 @@
+-include: ../../shared.bnd
+Export-Package: org.sonarsource.sonarlint.core.rpc.client.*;version="${project.version}"

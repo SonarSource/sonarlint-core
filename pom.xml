@@ -41,7 +41,6 @@
     <module>client/embedded</module>
     <module>client/java-client-legacy</module>
     <module>client/java-client-utils</module>
-    <module>client/osgi</module>
     <module>client/rpc-java-client</module>
     <module>medium-tests</module>
     <module>report-aggregate</module>
@@ -220,6 +219,11 @@
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
           <version>5.1.8</version>
+        </plugin>
+        <plugin>
+          <groupId>biz.aQute.bnd</groupId>
+          <artifactId>bnd-maven-plugin</artifactId>
+          <version>6.4.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>

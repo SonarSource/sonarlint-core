@@ -96,13 +96,6 @@
                     <include>**</include>
                   </includes>
                 </filter>
-                <filter>
-                  <!-- Shade protobuf (avoids minimization) as it is used by IDEs -->
-                  <artifact>com.google.protobuf:protobuf-java</artifact>
-                  <includes>
-                    <include>**</include>
-                  </includes>
-                </filter>
               </filters>
             </configuration>
           </execution>
