@@ -24,6 +24,7 @@ import java.time.Instant;
 import java.util.UUID;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 
 public class LocalOnlyIssue {
   private final UUID id;

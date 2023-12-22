@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.serverapi.hotspot;
 
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 
 import static org.assertj.core.api.Assertions.assertThat;

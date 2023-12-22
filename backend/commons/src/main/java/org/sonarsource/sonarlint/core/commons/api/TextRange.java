@@ -17,29 +17,43 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons;
+package org.sonarsource.sonarlint.core.commons.api;
 
 import java.util.Objects;
 
-public class TextRangeWithHash extends TextRange {
+public class TextRange {
 
-  private final String hash;
+  private final int startLine;
+  private final int startLineOffset;
+  private final int endLine;
+  private final int endLineOffset;
 
-  public TextRangeWithHash(int startLine, int startLineOffset, int endLine, int endLineOffset, String hash) {
-    super(startLine, startLineOffset, endLine, endLineOffset);
-    this.hash = hash;
+  public TextRange(int startLine, int startLineOffset, int endLine, int endLineOffset) {
+    this.startLine = startLine;
+    this.startLineOffset = startLineOffset;
+    this.endLine = endLine;
+    this.endLineOffset = endLineOffset;
   }
 
-  public String getHash() {
-    return hash;
+  public int getStartLine() {
+    return startLine;
+  }
+
+  public int getStartLineOffset() {
+    return startLineOffset;
+  }
+
+  public int getEndLine() {
+    return endLine;
+  }
+
+  public int getEndLineOffset() {
+    return endLineOffset;
   }
 
   @Override
   public int hashCode() {
-    final var prime = 31;
-    int result = super.hashCode();
-    result = prime * result + Objects.hash(hash);
-    return result;
+    return Objects.hash(endLine, endLineOffset, startLine, startLineOffset);
   }
 
   @Override
@@ -47,14 +61,10 @@ public class TextRangeWithHash extends TextRange {
     if (this == obj) {
       return true;
     }
-    if (!super.equals(obj)) {
+    if (!(obj instanceof TextRange)) {
       return false;
     }
-    if (!(obj instanceof TextRangeWithHash)) {
-      return false;
-    }
-    TextRangeWithHash other = (TextRangeWithHash) obj;
-    return Objects.equals(hash, other.hash);
+    TextRange other = (TextRange) obj;
+    return endLine == other.endLine && endLineOffset == other.endLineOffset && startLine == other.startLine && startLineOffset == other.startLineOffset;
   }
-
 }

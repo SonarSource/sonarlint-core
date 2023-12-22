@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.tracking;
 import java.util.Optional;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
-import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.issue.matching.MatchingAttributesMapper;
 
 public class LocalOnlyIssueMatchingAttributesMapper implements MatchingAttributesMapper<LocalOnlyIssue> {

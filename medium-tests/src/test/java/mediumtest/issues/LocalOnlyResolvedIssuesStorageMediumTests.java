@@ -27,7 +27,7 @@ import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.RuleType;
-import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 
 import static mediumtest.fixtures.LocalOnlyIssueFixtures.aLocalOnlyIssueResolved;
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;

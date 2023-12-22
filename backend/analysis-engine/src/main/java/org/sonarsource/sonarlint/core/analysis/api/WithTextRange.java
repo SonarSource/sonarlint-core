@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.analysis.api;
 
 import javax.annotation.CheckForNull;
-import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.commons.api.TextRange;
 
 public interface WithTextRange {
 
