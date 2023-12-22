@@ -29,7 +29,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -68,7 +68,7 @@ class RuleExtractorMediumTests {
 
   @Test
   void extractAllRules() {
-    var enabledLanguages = Set.of(Language.values());
+    var enabledLanguages = Set.of(SonarLanguage.values());
     var config = new PluginsLoader.Configuration(allJars, enabledLanguages, false, empty());
     var result = new PluginsLoader().load(config);
 
@@ -90,7 +90,7 @@ class RuleExtractorMediumTests {
       assertThat(rule.getKey()).isEqualTo("python:S139");
       assertThat(rule.getType()).isEqualTo(RuleType.CODE_SMELL);
       assertThat(rule.getDefaultSeverity()).isEqualTo(IssueSeverity.MINOR);
-      assertThat(rule.getLanguage()).isEqualTo(Language.PYTHON);
+      assertThat(rule.getLanguage()).isEqualTo(SonarLanguage.PYTHON);
       assertThat(rule.getName()).isEqualTo("Comments should not be located at the end of lines of code");
       assertThat(rule.isActiveByDefault()).isFalse();
       assertThat(rule.getParams())
@@ -118,7 +118,7 @@ class RuleExtractorMediumTests {
 
   @Test
   void extractAllRules_include_rule_templates() throws Exception {
-    var enabledLanguages = Set.of(Language.values());
+    var enabledLanguages = Set.of(SonarLanguage.values());
     var config = new PluginsLoader.Configuration(allJars, enabledLanguages, false, empty());
     var result = new PluginsLoader().load(config);
 
@@ -138,7 +138,7 @@ class RuleExtractorMediumTests {
 
   @Test
   void extractAllRules_include_security_hotspots() throws Exception {
-    var enabledLanguages = Set.of(Language.values());
+    var enabledLanguages = Set.of(SonarLanguage.values());
     var config = new PluginsLoader.Configuration(allJars, enabledLanguages, false, empty());
     var result = new PluginsLoader().load(config);
 
@@ -158,16 +158,16 @@ class RuleExtractorMediumTests {
 
   @Test
   void onlyLoadRulesOfEnabledLanguages() throws Exception {
-    Set<Language> enabledLanguages = EnumSet.of(
-      Language.JAVA,
+    Set<SonarLanguage> enabledLanguages = EnumSet.of(
+      SonarLanguage.JAVA,
       // Enable JS but not TS
-      Language.JS,
-      Language.PHP,
-      Language.PYTHON);
+      SonarLanguage.JS,
+      SonarLanguage.PHP,
+      SonarLanguage.PYTHON);
 
     if (COMMERCIAL_ENABLED) {
       // Enable C but not C++
-      enabledLanguages.add(Language.C);
+      enabledLanguages.add(SonarLanguage.C);
     }
     var config = new PluginsLoader.Configuration(allJars, enabledLanguages, false, empty());
     var result = new PluginsLoader().load(config);
@@ -180,7 +180,7 @@ class RuleExtractorMediumTests {
 
   @Test
   void loadNoRuleIfThereIsNoPlugin() {
-    var enabledLanguages = Set.of(Language.values());
+    var enabledLanguages = Set.of(SonarLanguage.values());
     var config = new PluginsLoader.Configuration(Set.of(), enabledLanguages, false, empty());
     var result = new PluginsLoader().load(config);
     var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, false, false);

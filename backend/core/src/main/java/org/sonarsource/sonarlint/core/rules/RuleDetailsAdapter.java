@@ -32,6 +32,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleParamDto;
@@ -242,7 +243,7 @@ public class RuleDetailsAdapter {
     return org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.valueOf(t.name());
   }
 
-  public static Language adapt(org.sonarsource.sonarlint.core.commons.Language l) {
+  public static Language adapt(SonarLanguage l) {
     return Language.valueOf(l.name());
   }
 

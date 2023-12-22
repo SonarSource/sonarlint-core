@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -43,8 +43,8 @@ public class LocalStorageSynchronizer {
   private final ServerInfoSynchronizer serverInfoSynchronizer;
   private final PluginsSynchronizer pluginsSynchronizer;
 
-  public LocalStorageSynchronizer(Set<Language> enabledLanguages, Set<String> embeddedPluginKeys, ServerInfoSynchronizer serverInfoSynchronizer, ConnectionStorage storage) {
-    this.enabledLanguageKeys = enabledLanguages.stream().map(Language::getLanguageKey).collect(toSet());
+  public LocalStorageSynchronizer(Set<SonarLanguage> enabledLanguages, Set<String> embeddedPluginKeys, ServerInfoSynchronizer serverInfoSynchronizer, ConnectionStorage storage) {
+    this.enabledLanguageKeys = enabledLanguages.stream().map(SonarLanguage::getSonarLanguageKey).collect(toSet());
     this.storage = storage;
     this.pluginsSynchronizer = new PluginsSynchronizer(enabledLanguages, storage, embeddedPluginKeys);
     this.serverInfoSynchronizer = serverInfoSynchronizer;

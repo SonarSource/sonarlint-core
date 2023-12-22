@@ -25,7 +25,7 @@ import java.util.Objects;
 import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 
 public interface SkipReason {
 
@@ -40,13 +40,13 @@ public interface SkipReason {
   }
 
   class LanguagesNotEnabled implements SkipReason {
-    private final Set<Language> languages;
+    private final Set<SonarLanguage> languages;
 
-    public LanguagesNotEnabled(Collection<Language> languages) {
+    public LanguagesNotEnabled(Collection<SonarLanguage> languages) {
       this.languages = new LinkedHashSet<>(languages);
     }
 
-    public Set<Language> getNotEnabledLanguages() {
+    public Set<SonarLanguage> getNotEnabledLanguages() {
       return languages;
     }
 

@@ -30,7 +30,7 @@ import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.LocalOnlyIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.event.ServerIssueStatusChangedEvent;
@@ -193,7 +193,7 @@ public class TelemetryService {
 
   public void analysisDoneOnSingleLanguage(@Nullable org.sonarsource.sonarlint.core.rpc.protocol.common.Language language, int analysisTimeMs) {
     if (isEnabled()){
-      var coreLanguage = Objects.nonNull(language) ? Language.valueOf(language.name()) : null;
+      var coreLanguage = Objects.nonNull(language) ? SonarLanguage.valueOf(language.name()) : null;
       telemetryManager.analysisDoneOnSingleLanguage(coreLanguage, analysisTimeMs);
     }
   }

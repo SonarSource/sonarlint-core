@@ -28,7 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -73,7 +73,7 @@ class LocalStorageSynchronizerTests {
     mockApiProjectBranchesList();
 
     var storage = new ConnectionStorage(tmpDir, tmpDir, "connectionId");
-    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new ServerInfoSynchronizer(storage), storage);
+    var synchronizer = new LocalStorageSynchronizer(Set.of(SonarLanguage.JS), emptySet(), new ServerInfoSynchronizer(storage), storage);
 
     synchronizer.synchronize(serverApi, Set.of("projectKey"), progressMonitor);
 
@@ -82,8 +82,8 @@ class LocalStorageSynchronizerTests {
     var analyzerConfiguration = ProtobufFileUtil.readFile(analyzerConfigFile, Sonarlint.AnalyzerConfiguration.parser());
     assertThat(analyzerConfiguration.getSettingsMap()).containsEntry("settingKey", "settingValue");
     var ruleSetsByLanguageKeyMap = analyzerConfiguration.getRuleSetsByLanguageKeyMap();
-    assertThat(ruleSetsByLanguageKeyMap).containsKey(Language.JS.getLanguageKey());
-    var ruleSet = ruleSetsByLanguageKeyMap.get(Language.JS.getLanguageKey());
+    assertThat(ruleSetsByLanguageKeyMap).containsKey(SonarLanguage.JS.getSonarLanguageKey());
+    var ruleSet = ruleSetsByLanguageKeyMap.get(SonarLanguage.JS.getSonarLanguageKey());
     assertThat(ruleSet.getRuleCount()).isEqualTo(1);
     var activeRule = ruleSet.getRuleList().get(0);
     assertThat(activeRule.getRuleKey()).isEqualTo("ruleKey");
@@ -105,7 +105,7 @@ class LocalStorageSynchronizerTests {
     ProtobufFileUtil.writeToFile(Sonarlint.AnalyzerConfiguration.newBuilder()
       .setSchemaVersion(AnalyzerConfiguration.CURRENT_SCHEMA_VERSION)
       // js is not part of profiles in the storage, so it should be sync
-      .putAllRuleSetsByLanguageKey(Map.of(Language.JAVA.getLanguageKey(), Sonarlint.RuleSet.newBuilder()
+      .putAllRuleSetsByLanguageKey(Map.of(SonarLanguage.JAVA.getSonarLanguageKey(), Sonarlint.RuleSet.newBuilder()
         .setLastModified(DATE_T0)
         .build()))
       .build(), storageFile);
@@ -117,17 +117,17 @@ class LocalStorageSynchronizerTests {
     mockApiProjectBranchesList();
 
     var storage = new ConnectionStorage(tmpDir, tmpDir, "connectionId");
-    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS, Language.JAVA), emptySet(), new ServerInfoSynchronizer(storage), storage);
+    var synchronizer = new LocalStorageSynchronizer(Set.of(SonarLanguage.JS, SonarLanguage.JAVA), emptySet(), new ServerInfoSynchronizer(storage), storage);
 
     synchronizer.synchronize(serverApi, Set.of("projectKey"), progressMonitor);
 
     assertThat(storageFile).exists();
     var analyzerConfiguration = ProtobufFileUtil.readFile(storageFile, Sonarlint.AnalyzerConfiguration.parser());
     var ruleSetsByLanguageKeyMap = analyzerConfiguration.getRuleSetsByLanguageKeyMap();
-    assertThat(ruleSetsByLanguageKeyMap).containsOnlyKeys(Language.JS.getLanguageKey(), Language.JAVA.getLanguageKey());
-    var ruleSetJs = ruleSetsByLanguageKeyMap.get(Language.JS.getLanguageKey());
+    assertThat(ruleSetsByLanguageKeyMap).containsOnlyKeys(SonarLanguage.JS.getSonarLanguageKey(), SonarLanguage.JAVA.getSonarLanguageKey());
+    var ruleSetJs = ruleSetsByLanguageKeyMap.get(SonarLanguage.JS.getSonarLanguageKey());
     assertThat(ruleSetJs.getRuleCount()).isEqualTo(1);
-    var ruleSetJava = ruleSetsByLanguageKeyMap.get(Language.JAVA.getLanguageKey());
+    var ruleSetJava = ruleSetsByLanguageKeyMap.get(SonarLanguage.JAVA.getSonarLanguageKey());
     assertThat(ruleSetJava.getRuleCount()).isZero();
   }
 
@@ -137,10 +137,10 @@ class LocalStorageSynchronizerTests {
     FileUtils.mkdirs(storageFile.getParent());
     ProtobufFileUtil.writeToFile(Sonarlint.AnalyzerConfiguration.newBuilder()
       .setSchemaVersion(AnalyzerConfiguration.CURRENT_SCHEMA_VERSION)
-      .putAllRuleSetsByLanguageKey(Map.of(Language.JAVA.getLanguageKey(), Sonarlint.RuleSet.newBuilder()
+      .putAllRuleSetsByLanguageKey(Map.of(SonarLanguage.JAVA.getSonarLanguageKey(), Sonarlint.RuleSet.newBuilder()
         .setLastModified(DATE_T0)
         .build()))
-      .putAllRuleSetsByLanguageKey(Map.of(Language.JS.getLanguageKey(), Sonarlint.RuleSet.newBuilder()
+      .putAllRuleSetsByLanguageKey(Map.of(SonarLanguage.JS.getSonarLanguageKey(), Sonarlint.RuleSet.newBuilder()
         .setLastModified(DATE_T0)
         .build()))
       .build(), storageFile);
@@ -151,17 +151,17 @@ class LocalStorageSynchronizerTests {
     // 404 if trying to fetch Java rules
     mockApiProjectBranchesList();
     var storage = new ConnectionStorage(tmpDir, tmpDir, "connectionId");
-    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS, Language.JAVA), emptySet(), new ServerInfoSynchronizer(storage), storage);
+    var synchronizer = new LocalStorageSynchronizer(Set.of(SonarLanguage.JS, SonarLanguage.JAVA), emptySet(), new ServerInfoSynchronizer(storage), storage);
 
     synchronizer.synchronize(serverApi, Set.of("projectKey"), progressMonitor);
 
     assertThat(storageFile).exists();
     var analyzerConfiguration = ProtobufFileUtil.readFile(storageFile, Sonarlint.AnalyzerConfiguration.parser());
     var ruleSetsByLanguageKeyMap = analyzerConfiguration.getRuleSetsByLanguageKeyMap();
-    assertThat(ruleSetsByLanguageKeyMap).containsOnlyKeys(Language.JS.getLanguageKey(), Language.JAVA.getLanguageKey());
-    var ruleSetJs = ruleSetsByLanguageKeyMap.get(Language.JS.getLanguageKey());
+    assertThat(ruleSetsByLanguageKeyMap).containsOnlyKeys(SonarLanguage.JS.getSonarLanguageKey(), SonarLanguage.JAVA.getSonarLanguageKey());
+    var ruleSetJs = ruleSetsByLanguageKeyMap.get(SonarLanguage.JS.getSonarLanguageKey());
     assertThat(ruleSetJs.getRuleCount()).isEqualTo(1);
-    var ruleSetJava = ruleSetsByLanguageKeyMap.get(Language.JAVA.getLanguageKey());
+    var ruleSetJava = ruleSetsByLanguageKeyMap.get(SonarLanguage.JAVA.getSonarLanguageKey());
     assertThat(ruleSetJava.getRuleCount()).isZero();
   }
 
@@ -171,7 +171,7 @@ class LocalStorageSynchronizerTests {
     FileUtils.mkdirs(storageFile.getParent());
     ProtobufFileUtil.writeToFile(Sonarlint.AnalyzerConfiguration.newBuilder()
       // No schema version defined, this is equivalent to "0"
-      .putAllRuleSetsByLanguageKey(Map.of(Language.JS.getLanguageKey(), Sonarlint.RuleSet.newBuilder()
+      .putAllRuleSetsByLanguageKey(Map.of(SonarLanguage.JS.getSonarLanguageKey(), Sonarlint.RuleSet.newBuilder()
         .setLastModified(DATE_T0)
         .build()))
       .build(), storageFile);
@@ -181,15 +181,15 @@ class LocalStorageSynchronizerTests {
     mockApiRulesSearchReturnsOneRule(JS_QP_KEY);
     mockApiProjectBranchesList();
     var storage = new ConnectionStorage(tmpDir, tmpDir, "connectionId");
-    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new ServerInfoSynchronizer(storage), storage);
+    var synchronizer = new LocalStorageSynchronizer(Set.of(SonarLanguage.JS), emptySet(), new ServerInfoSynchronizer(storage), storage);
 
     synchronizer.synchronize(serverApi, Set.of("projectKey"), progressMonitor);
 
     assertThat(storageFile).exists();
     var analyzerConfiguration = ProtobufFileUtil.readFile(storageFile, Sonarlint.AnalyzerConfiguration.parser());
     var ruleSetsByLanguageKeyMap = analyzerConfiguration.getRuleSetsByLanguageKeyMap();
-    assertThat(ruleSetsByLanguageKeyMap).containsKey(Language.JS.getLanguageKey());
-    var ruleSet = ruleSetsByLanguageKeyMap.get(Language.JS.getLanguageKey());
+    assertThat(ruleSetsByLanguageKeyMap).containsKey(SonarLanguage.JS.getSonarLanguageKey());
+    var ruleSet = ruleSetsByLanguageKeyMap.get(SonarLanguage.JS.getSonarLanguageKey());
     assertThat(ruleSet.getRuleCount()).isEqualTo(1);
   }
 
@@ -197,7 +197,7 @@ class LocalStorageSynchronizerTests {
   void should_fail_synchronization_when_server_is_down(@TempDir Path tmpDir) {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"1\", \"status\": \"DOWN\", \"version\": \"1\"}");
     var storage = new ConnectionStorage(tmpDir, tmpDir, "connectionId");
-    var synchronizer = new LocalStorageSynchronizer(Set.of(Language.JS), emptySet(), new ServerInfoSynchronizer(storage), storage);
+    var synchronizer = new LocalStorageSynchronizer(Set.of(SonarLanguage.JS), emptySet(), new ServerInfoSynchronizer(storage), storage);
 
     var throwable = catchThrowable(() -> synchronizer.synchronize(serverApi, Set.of("projectKey"), progressMonitor));
 
@@ -226,7 +226,7 @@ class LocalStorageSynchronizerTests {
     return Qualityprofiles.SearchWsResponse.QualityProfile.newBuilder()
       .setKey(JS_QP_KEY)
       .setName("SonarWay JS")
-      .setLanguage(Language.JS.getLanguageKey())
+      .setLanguage(SonarLanguage.JS.getSonarLanguageKey())
       .setLanguageName("JavaScript")
       .setRulesUpdatedAt(rulesUpdatedAt)
       .build();
@@ -237,7 +237,7 @@ class LocalStorageSynchronizerTests {
     return Qualityprofiles.SearchWsResponse.QualityProfile.newBuilder()
       .setKey(JAVA_QP_KEY)
       .setName("SonarWay Java")
-      .setLanguage(Language.JAVA.getLanguageKey())
+      .setLanguage(SonarLanguage.JAVA.getSonarLanguageKey())
       .setLanguageName("Java")
       .setRulesUpdatedAt(rulesUpdatedAt)
       .build();

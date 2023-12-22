@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.PluginsMinVersions;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -40,7 +40,7 @@ public class PluginsSynchronizer {
   private final Set<String> embeddedPluginKeys;
   private final PluginsMinVersions pluginsMinVersions = new PluginsMinVersions();
 
-  public PluginsSynchronizer(Set<Language> enabledLanguages, ConnectionStorage storage, Set<String> embeddedPluginKeys) {
+  public PluginsSynchronizer(Set<SonarLanguage> enabledLanguages, ConnectionStorage storage, Set<String> embeddedPluginKeys) {
     this.sonarSourceDisabledPluginKeys = getSonarSourceDisabledPluginKeys(enabledLanguages);
     this.storage = storage;
     this.embeddedPluginKeys = embeddedPluginKeys;
@@ -103,13 +103,13 @@ public class PluginsSynchronizer {
 
   private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
 
-  private static Set<String> getSonarSourceDisabledPluginKeys(Set<Language> enabledLanguages) {
-    var languagesByPluginKey = Arrays.stream(Language.values()).collect(Collectors.groupingBy(Language::getPluginKey));
+  private static Set<String> getSonarSourceDisabledPluginKeys(Set<SonarLanguage> enabledLanguages) {
+    var languagesByPluginKey = Arrays.stream(SonarLanguage.values()).collect(Collectors.groupingBy(SonarLanguage::getPluginKey));
     var disabledPluginKeys = languagesByPluginKey.entrySet().stream()
       .filter(e -> Collections.disjoint(enabledLanguages, e.getValue()))
       .map(Map.Entry::getKey)
       .collect(Collectors.toSet());
-    if (!enabledLanguages.contains(Language.TS)) {
+    if (!enabledLanguages.contains(SonarLanguage.TS)) {
       // Special case for old TS plugin
       disabledPluginKeys.add(OLD_SONARTS_PLUGIN_KEY);
     }

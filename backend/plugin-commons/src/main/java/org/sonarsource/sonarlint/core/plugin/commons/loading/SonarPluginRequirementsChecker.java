@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.PluginsMinVersions;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -55,7 +55,7 @@ public class SonarPluginRequirementsChecker {
   /**
    * Attempt to read JAR manifests, load metadata, and check all requirements to ensure the plugin can be instantiated.
    */
-  public Map<String, PluginRequirementsCheckResult> checkRequirements(Set<Path> pluginJarLocations, Set<Language> enabledLanguages, Version jreCurrentVersion,
+  public Map<String, PluginRequirementsCheckResult> checkRequirements(Set<Path> pluginJarLocations, Set<SonarLanguage> enabledLanguages, Version jreCurrentVersion,
     boolean shouldCheckNodeVersion, Optional<Version> nodeCurrentVersion) {
     Map<String, PluginRequirementsCheckResult> resultsByKey = new HashMap<>();
 
@@ -83,14 +83,14 @@ public class SonarPluginRequirementsChecker {
     return resultsByKey;
   }
 
-  private PluginRequirementsCheckResult checkIfSkippedAndPopulateReason(PluginInfo plugin, Set<Language> enabledLanguages, Version jreCurrentVersion,
+  private PluginRequirementsCheckResult checkIfSkippedAndPopulateReason(PluginInfo plugin, Set<SonarLanguage> enabledLanguages, Version jreCurrentVersion,
     boolean shouldCheckNodeVersion, Optional<Version> nodeCurrentVersion) {
     var pluginKey = plugin.getKey();
-    var languages = Language.getLanguagesByPluginKey(pluginKey);
+    var languages = SonarLanguage.getLanguagesByPluginKey(pluginKey);
     if (!languages.isEmpty() && enabledLanguages.stream().noneMatch(languages::contains)) {
       if (languages.size() > 1) {
         LOG.debug("Plugin '{}' is excluded because none of languages '{}' are enabled. Skip loading it.", plugin.getName(),
-          languages.stream().map(Language::toString).collect(Collectors.joining(",")));
+          languages.stream().map(SonarLanguage::toString).collect(Collectors.joining(",")));
       } else {
         LOG.debug("Plugin '{}' is excluded because language '{}' is not enabled. Skip loading it.", plugin.getName(),
           languages.iterator().next());
@@ -154,7 +154,7 @@ public class SonarPluginRequirementsChecker {
     Map<String, PluginRequirementsCheckResult> currentResultsByKey) {
     var plugin = currentResult.getPlugin();
     for (RequiredPlugin required : plugin.getRequiredPlugins()) {
-      if ("license".equals(required.getKey()) || (Language.JS.getPluginKey().equals(plugin.getKey()) && OLD_SONARTS_PLUGIN_KEY.equals(required.getKey()))) {
+      if ("license".equals(required.getKey()) || (SonarLanguage.JS.getPluginKey().equals(plugin.getKey()) && OLD_SONARTS_PLUGIN_KEY.equals(required.getKey()))) {
         // Workaround for SLCORE-259
         // This dependency was added to ease migration on SonarQube, but can be ignored on SonarLint
         // Note: The dependency was removed in SonarJS 6.3 but we should still keep the workaround as long as we want to support older

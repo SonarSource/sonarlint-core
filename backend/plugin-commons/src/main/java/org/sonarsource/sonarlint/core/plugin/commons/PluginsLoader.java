@@ -26,7 +26,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.sonar.api.utils.System2;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInfo;
@@ -46,12 +46,12 @@ public class PluginsLoader {
 
   public static class Configuration {
     private final Set<Path> pluginJarLocations;
-    private final Set<Language> enabledLanguages;
+    private final Set<SonarLanguage> enabledLanguages;
     private final boolean shouldCheckNodeVersion;
     private final Optional<Version> nodeCurrentVersion;
     private final boolean enableDataflowBugDetection;
 
-    public Configuration(Set<Path> pluginJarLocations, Set<Language> enabledLanguages, boolean enableDataflowBugDetection) {
+    public Configuration(Set<Path> pluginJarLocations, Set<SonarLanguage> enabledLanguages, boolean enableDataflowBugDetection) {
       this.pluginJarLocations = pluginJarLocations;
       this.enabledLanguages = enabledLanguages;
       this.nodeCurrentVersion = Optional.empty();
@@ -59,7 +59,7 @@ public class PluginsLoader {
       this.shouldCheckNodeVersion = false;
     }
 
-    public Configuration(Set<Path> pluginJarLocations, Set<Language> enabledLanguages, boolean enableDataflowBugDetection, Optional<Version> nodeCurrentVersion) {
+    public Configuration(Set<Path> pluginJarLocations, Set<SonarLanguage> enabledLanguages, boolean enableDataflowBugDetection, Optional<Version> nodeCurrentVersion) {
       this.pluginJarLocations = pluginJarLocations;
       this.enabledLanguages = enabledLanguages;
       this.nodeCurrentVersion = nodeCurrentVersion;

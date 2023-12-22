@@ -27,37 +27,37 @@ import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.jetbrains.annotations.NotNull;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 
 @Named
 @Singleton
 public class LanguageSupportRepository {
-  private static final EnumSet<Language> LANGUAGES_RAISING_TAINT_VULNERABILITIES = EnumSet.of(Language.CS, Language.JAVA, Language.JS, Language.TS, Language.PHP, Language.PYTHON);
-  private final EnumSet<Language> enabledLanguagesInStandaloneMode;
-  private final EnumSet<Language> enabledLanguagesInConnectedMode;
+  private static final EnumSet<SonarLanguage> LANGUAGES_RAISING_TAINT_VULNERABILITIES = EnumSet.of(SonarLanguage.CS, SonarLanguage.JAVA, SonarLanguage.JS, SonarLanguage.TS, SonarLanguage.PHP, SonarLanguage.PYTHON);
+  private final EnumSet<SonarLanguage> enabledLanguagesInStandaloneMode;
+  private final EnumSet<SonarLanguage> enabledLanguagesInConnectedMode;
 
   public LanguageSupportRepository(InitializeParams params) {
     this.enabledLanguagesInStandaloneMode = toEnumSet(
-      adaptLanguage(params.getEnabledLanguagesInStandaloneMode()), Language.class);
+      adaptLanguage(params.getEnabledLanguagesInStandaloneMode()), SonarLanguage.class);
     this.enabledLanguagesInConnectedMode = EnumSet.copyOf(this.enabledLanguagesInStandaloneMode);
     this.enabledLanguagesInConnectedMode.addAll(adaptLanguage(params.getExtraEnabledLanguagesInConnectedMode()));
   }
 
   @NotNull
-  private static List<Language> adaptLanguage(Set<org.sonarsource.sonarlint.core.rpc.protocol.common.Language> languagesDto) {
-    return languagesDto.stream().map(e -> Language.valueOf(e.name())).collect(Collectors.toList());
+  private static List<SonarLanguage> adaptLanguage(Set<org.sonarsource.sonarlint.core.rpc.protocol.common.Language> languagesDto) {
+    return languagesDto.stream().map(e -> SonarLanguage.valueOf(e.name())).collect(Collectors.toList());
   }
 
   private static <T extends Enum<T>> EnumSet<T> toEnumSet(Collection<T> collection, Class<T> clazz) {
     return collection.isEmpty() ? EnumSet.noneOf(clazz) : EnumSet.copyOf(collection);
   }
 
-  public Set<Language> getEnabledLanguagesInStandaloneMode() {
+  public Set<SonarLanguage> getEnabledLanguagesInStandaloneMode() {
     return enabledLanguagesInStandaloneMode;
   }
 
-  public Set<Language> getEnabledLanguagesInConnectedMode() {
+  public Set<SonarLanguage> getEnabledLanguagesInConnectedMode() {
     return enabledLanguagesInConnectedMode;
   }
 

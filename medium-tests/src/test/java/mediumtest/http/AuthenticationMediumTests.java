@@ -31,7 +31,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 
@@ -69,7 +69,7 @@ class AuthenticationMediumTests {
       .build();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+        projectStorage -> projectStorage.withRuleSet(SonarLanguage.PYTHON.getSonarLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
@@ -95,7 +95,7 @@ class AuthenticationMediumTests {
       .build();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+        projectStorage -> projectStorage.withRuleSet(SonarLanguage.PYTHON.getSonarLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)

@@ -25,7 +25,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.TaintVulnerabilitiesSynchronizedEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
@@ -89,7 +89,7 @@ public class TaintSynchronizationService {
     var storage = storageService.getStorageFacade().connection(connectionId);
     var serverInfoSynchronizer = new ServerInfoSynchronizer(storage);
     var serverVersion = serverInfoSynchronizer.readOrSynchronizeServerInfo(serverApi).getVersion();
-    var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(Language::shouldSyncInConnectedMode)
+    var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
       .collect(Collectors.toCollection(LinkedHashSet::new));
     var issuesUpdater = new ServerIssueUpdater(storage, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
     if (IssueApi.supportIssuePull(serverApi.isSonarCloud(), serverVersion)) {

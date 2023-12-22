@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 
 public class ServerRule {
@@ -33,7 +33,7 @@ public class ServerRule {
   private final String htmlNote;
   private final IssueSeverity severity;
   private final RuleType type;
-  private final Language language;
+  private final SonarLanguage language;
   private final Set<String> educationPrincipleKeys;
 
   public ServerRule(String name, IssueSeverity severity, RuleType type, String language, String htmlDesc, List<DescriptionSection> descriptionSections, String htmlNote,
@@ -41,7 +41,7 @@ public class ServerRule {
     this.name = name;
     this.severity = severity;
     this.type = type;
-    this.language = Language.forKey(language).orElseThrow(() -> new IllegalArgumentException("Unknown language with key: " + language));
+    this.language = SonarLanguage.forKey(language).orElseThrow(() -> new IllegalArgumentException("Unknown language with key: " + language));
     this.htmlDesc = htmlDesc;
     this.descriptionSections = descriptionSections;
     this.htmlNote = htmlNote;
@@ -72,7 +72,7 @@ public class ServerRule {
     return type;
   }
 
-  public Language getLanguage() {
+  public SonarLanguage getLanguage() {
     return language;
   }
 

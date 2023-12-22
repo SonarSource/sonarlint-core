@@ -23,19 +23,19 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.serverapi.push.SonarServerEvent;
 import org.sonarsource.sonarlint.core.serverapi.stream.EventStream;
 
 public class SonarQubeEventStream {
   private EventStream eventStream;
   private final Set<String> subscribedProjectKeys = new LinkedHashSet<>();
-  private final Set<Language> enabledLanguages;
+  private final Set<SonarLanguage> enabledLanguages;
   private final String connectionId;
   private final ServerApiProvider serverApiProvider;
   private final Consumer<SonarServerEvent> eventConsumer;
 
-  public SonarQubeEventStream(Set<Language> enabledLanguages, String connectionId, ServerApiProvider serverApiProvider, Consumer<SonarServerEvent> eventConsumer) {
+  public SonarQubeEventStream(Set<SonarLanguage> enabledLanguages, String connectionId, ServerApiProvider serverApiProvider, Consumer<SonarServerEvent> eventConsumer) {
     this.enabledLanguages = enabledLanguages;
     this.connectionId = connectionId;
     this.serverApiProvider = serverApiProvider;

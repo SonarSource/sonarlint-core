@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -48,7 +48,7 @@ public class RuleExtractorCli implements Callable<Integer> {
   Set<Path> pluginsJarPaths = Set.of();
 
   @CommandLine.Option(names = {"-l", "--languages"}, split = ",", description = "enabled languages. Valid values: ${COMPLETION-CANDIDATES}")
-  Set<Language> enabledLanguages = Set.of();
+  Set<SonarLanguage> enabledLanguages = Set.of();
 
   @CommandLine.Option(names = "--include-templates", description = "include template rules")
   boolean templates;

@@ -23,7 +23,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -60,7 +60,7 @@ public class ServerIssueUpdater {
     }
   }
 
-  public void sync(ServerApi serverApi, String projectKey, String branchName, Set<Language> enabledLanguages) {
+  public void sync(ServerApi serverApi, String projectKey, String branchName, Set<SonarLanguage> enabledLanguages) {
     var lastSync = storage.project(projectKey).findings().getLastIssueSyncTimestamp(branchName);
 
     lastSync = computeLastSync(enabledLanguages, lastSync, storage.project(projectKey).findings().getLastIssueEnabledLanguages(branchName));
@@ -70,7 +70,7 @@ public class ServerIssueUpdater {
       result.getQueryTimestamp(), enabledLanguages);
   }
 
-  public UpdateSummary<ServerTaintIssue> syncTaints(ServerApi serverApi, String projectKey, String branchName, Set<Language> enabledLanguages) {
+  public UpdateSummary<ServerTaintIssue> syncTaints(ServerApi serverApi, String projectKey, String branchName, Set<SonarLanguage> enabledLanguages) {
     var serverIssueStore = storage.project(projectKey).findings();
 
     var lastSync = serverIssueStore.getLastTaintSyncTimestamp(branchName);

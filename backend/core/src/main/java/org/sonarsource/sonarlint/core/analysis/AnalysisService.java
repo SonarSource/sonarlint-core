@@ -35,7 +35,7 @@ import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.MultivalueProperty;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.Version;
@@ -94,7 +94,7 @@ public class AnalysisService {
 
   public List<String> getSupportedFilePatterns(String configScopeId) {
     var effectiveBinding = configurationRepository.getEffectiveBinding(configScopeId);
-    Set<Language> enabledLanguages;
+    Set<SonarLanguage> enabledLanguages;
     Map<String, String> analysisSettings;
     if (effectiveBinding.isEmpty()) {
       enabledLanguages = languageSupportRepository.getEnabledLanguagesInStandaloneMode();
@@ -109,10 +109,10 @@ public class AnalysisService {
   }
 
   @NotNull
-  private static List<String> getPatterns(Set<Language> enabledLanguages, Map<String, String> analysisSettings) {
+  private static List<String> getPatterns(Set<SonarLanguage> enabledLanguages, Map<String, String> analysisSettings) {
     List<String> patterns = new ArrayList<>();
 
-    for (Language language : enabledLanguages) {
+    for (SonarLanguage language : enabledLanguages) {
       String propertyValue = analysisSettings.get(language.getFileSuffixesPropKey());
       String[] extensions;
       if (propertyValue == null) {
@@ -147,7 +147,7 @@ public class AnalysisService {
   }
 
   @NotNull
-  private static org.sonarsource.sonarlint.core.rpc.protocol.common.Language toDto(Language language) {
+  private static org.sonarsource.sonarlint.core.rpc.protocol.common.Language toDto(SonarLanguage language) {
     return org.sonarsource.sonarlint.core.rpc.protocol.common.Language.valueOf(language.name());
   }
 
@@ -167,7 +167,7 @@ public class AnalysisService {
     var ruleSetByLanguageKey = analyzerConfig.getRuleSetByLanguageKey();
     var result = new ArrayList<ActiveRuleDto>();
     ruleSetByLanguageKey.entrySet()
-      .stream().filter(e -> Language.forKey(e.getKey()).filter(l -> languageSupportRepository.getEnabledLanguagesInConnectedMode().contains(l)).isPresent())
+      .stream().filter(e -> SonarLanguage.forKey(e.getKey()).filter(l -> languageSupportRepository.getEnabledLanguagesInConnectedMode().contains(l)).isPresent())
       .forEach(e -> {
         var languageKey = e.getKey();
         var ruleSet = e.getValue();
@@ -199,7 +199,7 @@ public class AnalysisService {
     var supportSecretAnalysis = supportsSecretAnalysis(binding.getConnectionId());
     if (!supportSecretAnalysis) {
       rulesRepository.getRules(binding.getConnectionId()).stream()
-        .filter(ruleDefinition -> ruleDefinition.getLanguage() == Language.SECRETS)
+        .filter(ruleDefinition -> ruleDefinition.getLanguage() == SonarLanguage.SECRETS)
         .filter(r -> shouldIncludeRuleForAnalysis(binding.getConnectionId(), r))
         .forEach(r -> result.add(buildActiveRuleDto(r)));
     }
@@ -208,7 +208,7 @@ public class AnalysisService {
 
   public ActiveRuleDto buildActiveRuleDto(SonarLintRuleDefinition ruleOrTemplateDefinition, ServerActiveRule activeRule) {
     return new ActiveRuleDto(activeRule.getRuleKey(),
-      ruleOrTemplateDefinition.getLanguage().getLanguageKey(),
+      ruleOrTemplateDefinition.getLanguage().getSonarLanguageKey(),
       getEffectiveParams(ruleOrTemplateDefinition, activeRule),
       trimToNull(activeRule.getTemplateKey()));
   }
@@ -226,7 +226,7 @@ public class AnalysisService {
   }
 
   public ActiveRuleDto buildActiveRuleDto(SonarLintRuleDefinition rule) {
-    return new ActiveRuleDto(rule.getKey(), rule.getLanguage().getLanguageKey(), rule.getDefaultParams(), null);
+    return new ActiveRuleDto(rule.getKey(), rule.getLanguage().getSonarLanguageKey(), rule.getDefaultParams(), null);
   }
 
   private boolean shouldIncludeRuleForAnalysis(String connectionId, SonarLintRuleDefinition ruleDefinition) {
@@ -307,7 +307,7 @@ public class AnalysisService {
       Map<String, String> effectiveParams = new HashMap<>(rd.getDefaultParams());
       Optional.ofNullable(standaloneRuleConfig.get(rd.getKey())).ifPresent(config -> effectiveParams.putAll(config.getParamValueByKey()));
       // No template rules in standalone mode
-      return new ActiveRuleDto(rd.getKey(), rd.getLanguage().getLanguageKey(), effectiveParams, null);
+      return new ActiveRuleDto(rd.getKey(), rd.getLanguage().getSonarLanguageKey(), effectiveParams, null);
     }).collect(Collectors.toList());
   }
 

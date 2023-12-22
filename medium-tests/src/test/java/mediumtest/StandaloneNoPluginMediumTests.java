@@ -37,7 +37,7 @@ import org.sonarsource.sonarlint.core.client.legacy.analysis.AnalysisConfigurati
 import org.sonarsource.sonarlint.core.client.legacy.analysis.EngineConfiguration;
 import org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine;
 import org.sonarsource.sonarlint.core.client.utils.ClientLogOutput;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import testutils.TestUtils;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
@@ -83,7 +83,7 @@ class StandaloneNoPluginMediumTests {
       }, null, null, CONFIGURATION_SCOPE_ID);
 
     assertThat(results.indexedFileCount()).isEqualTo(1);
-    assertThat(results.languagePerFile()).containsEntry(inputFile, Language.JS);
+    assertThat(results.languagePerFile()).containsEntry(inputFile, SonarLanguage.JS);
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {

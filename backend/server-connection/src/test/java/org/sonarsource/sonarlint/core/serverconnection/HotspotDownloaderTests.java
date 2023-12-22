@@ -27,7 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -51,7 +51,7 @@ class HotspotDownloaderTests {
 
   @BeforeEach
   void prepare() {
-    underTest = new HotspotDownloader(Set.of(Language.JAVA));
+    underTest = new HotspotDownloader(Set.of(SonarLanguage.JAVA));
     serverApi = new ServerApi(mockServer.serverApiHelper());
   }
 

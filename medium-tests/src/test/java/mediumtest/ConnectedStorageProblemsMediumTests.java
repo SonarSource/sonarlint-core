@@ -38,7 +38,7 @@ import org.sonarsource.sonarlint.core.client.legacy.analysis.AnalysisConfigurati
 import org.sonarsource.sonarlint.core.client.legacy.analysis.EngineConfiguration;
 import org.sonarsource.sonarlint.core.client.legacy.analysis.RawIssue;
 import org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import testutils.TestUtils;
 
@@ -89,9 +89,9 @@ class ConnectedStorageProblemsMediumTests {
     var backend = newBackend()
       .withSonarQubeConnection(CONNECTION_ID, storage -> storage
         .withPlugin(TestPlugin.JAVA)
-        .withPlugin(Language.JS.getPluginKey(), createFakePlugin(), "hash")
+        .withPlugin(SonarLanguage.JS.getPluginKey(), createFakePlugin(), "hash")
         .withProject(CONFIG_SCOPE_ID,
-          project -> project.withRuleSet(Language.JS.getLanguageKey(),
+          project -> project.withRuleSet(SonarLanguage.JS.getSonarLanguageKey(),
             ruleSet -> ruleSet.withActiveRule("java:S106", "BLOCKER"))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, CONFIG_SCOPE_ID)
       .withEnabledLanguageInStandaloneMode(org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA)

@@ -35,7 +35,7 @@ import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRulesAdapter;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultSensorDescriptor;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import testutils.TestInputFileBuilder;
 
@@ -73,7 +73,7 @@ class SensorOptimizerTests {
       .onlyOnLanguages("java", "php");
     assertThat(optimizer.shouldExecute(descriptor)).isFalse();
 
-    inputFileCache.doAdd(new TestInputFileBuilder("src/Foo.java").setLanguage(Language.JAVA).build());
+    inputFileCache.doAdd(new TestInputFileBuilder("src/Foo.java").setLanguage(SonarLanguage.JAVA).build());
     assertThat(optimizer.shouldExecute(descriptor)).isTrue();
   }
 
@@ -97,11 +97,11 @@ class SensorOptimizerTests {
       .onlyOnFileType(InputFile.Type.MAIN);
     assertThat(optimizer.shouldExecute(descriptor)).isFalse();
 
-    inputFileCache.doAdd(new TestInputFileBuilder("tests/FooTest.java").setLanguage(Language.JAVA).setType(InputFile.Type.TEST).build());
-    inputFileCache.doAdd(new TestInputFileBuilder("src/Foo.cbl").setLanguage(Language.COBOL).setType(InputFile.Type.MAIN).build());
+    inputFileCache.doAdd(new TestInputFileBuilder("tests/FooTest.java").setLanguage(SonarLanguage.JAVA).setType(InputFile.Type.TEST).build());
+    inputFileCache.doAdd(new TestInputFileBuilder("src/Foo.cbl").setLanguage(SonarLanguage.COBOL).setType(InputFile.Type.MAIN).build());
     assertThat(optimizer.shouldExecute(descriptor)).isFalse();
 
-    inputFileCache.doAdd(new TestInputFileBuilder("src/Foo.java").setLanguage(Language.JAVA).setType(InputFile.Type.MAIN).build());
+    inputFileCache.doAdd(new TestInputFileBuilder("src/Foo.java").setLanguage(SonarLanguage.JAVA).setType(InputFile.Type.MAIN).build());
     assertThat(optimizer.shouldExecute(descriptor)).isTrue();
   }
 

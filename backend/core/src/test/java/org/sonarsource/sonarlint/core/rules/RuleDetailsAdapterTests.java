@@ -24,7 +24,7 @@ import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttributeCategory;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 
@@ -67,7 +67,7 @@ class RuleDetailsAdapterTests {
 
   @Test
   void it_should_adapt_all_language_enum_values() {
-    for (var l : Language.values()) {
+    for (var l : SonarLanguage.values()) {
       var adapted = adapt(l);
       assertThat(adapted.name()).isEqualTo(l.name());
     }

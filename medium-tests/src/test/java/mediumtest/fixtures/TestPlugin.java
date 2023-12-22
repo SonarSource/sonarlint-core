@@ -21,6 +21,7 @@ package mediumtest.fixtures;
 
 import java.nio.file.Path;
 import java.util.Set;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import testutils.PluginLocator;
 
@@ -54,7 +55,7 @@ public enum TestPlugin {
   }
 
   public String getPluginKey() {
-    return org.sonarsource.sonarlint.core.commons.Language.valueOf(languages.iterator().next().name()).getPluginKey();
+    return SonarLanguage.valueOf(languages.iterator().next().name()).getPluginKey();
   }
 
   public Path getPath() {

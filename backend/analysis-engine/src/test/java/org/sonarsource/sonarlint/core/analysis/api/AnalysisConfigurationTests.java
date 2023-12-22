@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import testutils.TestClientInputFile;
 
 import static java.nio.file.Files.createDirectory;
@@ -44,8 +44,8 @@ class AnalysisConfigurationTests {
     final var srcFile2 = createDirectory(temp.resolve("src2"));
     final var srcFile3 = createDirectory(temp.resolve("src3"));
     ClientInputFile inputFile = new TestClientInputFile(temp, srcFile1, false, StandardCharsets.UTF_8, null);
-    ClientInputFile inputFileWithLanguage = new TestClientInputFile(temp, srcFile2, false, StandardCharsets.UTF_8, Language.JAVA);
-    ClientInputFile testInputFile = new TestClientInputFile(temp, srcFile3, true, null, Language.PHP);
+    ClientInputFile inputFileWithLanguage = new TestClientInputFile(temp, srcFile2, false, StandardCharsets.UTF_8, SonarLanguage.JAVA);
+    ClientInputFile testInputFile = new TestClientInputFile(temp, srcFile3, true, null, SonarLanguage.PHP);
     var baseDir = createDirectory(temp.resolve("baseDir"));
     var activeRuleWithParams = new ActiveRule("php:S123", null);
     activeRuleWithParams.setParams(Map.of("param1", "value1"));

@@ -95,7 +95,7 @@ public class AnalysisConfiguration {
       }
       var language = inputFile.language();
       if (language != null) {
-        sb.append(" [" + language.getLanguageKey() + "]");
+        sb.append(" [" + language.getSonarLanguageKey() + "]");
       }
       sb.append("\n");
     }

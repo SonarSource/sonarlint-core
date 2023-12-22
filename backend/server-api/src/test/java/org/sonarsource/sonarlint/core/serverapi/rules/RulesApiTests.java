@@ -25,7 +25,7 @@ import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -66,7 +66,7 @@ class RulesApiTests {
           .setName("name")
           .setSeverity("MINOR")
           .setType(Common.RuleType.VULNERABILITY)
-          .setLang(Language.PYTHON.getLanguageKey())
+          .setLang(SonarLanguage.PYTHON.getSonarLanguageKey())
           .setHtmlDesc("htmlDesc")
           .setHtmlNote("htmlNote")
           .build())
@@ -77,7 +77,7 @@ class RulesApiTests {
     var rule = rulesApi.getRule("java:S1234").get();
 
     assertThat(rule).extracting("name", "severity", "type", "language", "htmlDesc", "htmlNote")
-      .contains("name", IssueSeverity.MINOR, RuleType.VULNERABILITY, Language.PYTHON, "htmlDesc", "htmlNote");
+      .contains("name", IssueSeverity.MINOR, RuleType.VULNERABILITY, SonarLanguage.PYTHON, "htmlDesc", "htmlNote");
   }
 
   @Test
@@ -88,7 +88,7 @@ class RulesApiTests {
           .setName("name")
           .setSeverity("MINOR")
           .setType(Common.RuleType.VULNERABILITY)
-          .setLang(Language.PYTHON.getLanguageKey())
+          .setLang(SonarLanguage.PYTHON.getSonarLanguageKey())
           .setHtmlDesc("htmlDesc")
           .setDescriptionSections(Rules.Rule.DescriptionSections.newBuilder()
             .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder().setKey("sectionKey").setContent("htmlContent").build())
@@ -105,7 +105,7 @@ class RulesApiTests {
     var rule = rulesApi.getRule("java:S1234").get();
 
     assertThat(rule).extracting("name", "severity", "type", "language", "htmlDesc", "htmlNote")
-      .contains("name", IssueSeverity.MINOR, RuleType.VULNERABILITY, Language.PYTHON, "htmlDesc", "htmlNote");
+      .contains("name", IssueSeverity.MINOR, RuleType.VULNERABILITY, SonarLanguage.PYTHON, "htmlDesc", "htmlNote");
 
     var sections = rule.getDescriptionSections();
     assertThat(sections).hasSize(2);
@@ -128,7 +128,7 @@ class RulesApiTests {
           .setName("name")
           .setSeverity("MAJOR")
           .setType(Common.RuleType.VULNERABILITY)
-          .setLang(Language.PYTHON.getLanguageKey())
+          .setLang(SonarLanguage.PYTHON.getSonarLanguageKey())
           .setHtmlDesc("htmlDesc")
           .setHtmlNote("htmlNote")
           .build())
@@ -139,7 +139,7 @@ class RulesApiTests {
     var rule = rulesApi.getRule("java:S1234").get();
 
     assertThat(rule).extracting("name", "severity", "type", "language", "htmlDesc", "htmlNote")
-      .contains("name", IssueSeverity.MAJOR, RuleType.VULNERABILITY, Language.PYTHON, "htmlDesc", "htmlNote");
+      .contains("name", IssueSeverity.MAJOR, RuleType.VULNERABILITY, SonarLanguage.PYTHON, "htmlDesc", "htmlNote");
   }
 
   @Test

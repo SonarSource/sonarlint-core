@@ -33,7 +33,7 @@ import org.sonar.markdown.Markdown;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
@@ -54,7 +54,7 @@ public class SonarLintRuleDefinition {
   private final Map<String, SonarLintRuleParamDefinition> params;
   private final Map<String, String> defaultParams = new HashMap<>();
   private final boolean isActiveByDefault;
-  private final Language language;
+  private final SonarLanguage language;
   private final String[] tags;
   private final Set<String> deprecatedKeys;
   private final Set<String> educationPrincipleKeys;
@@ -84,7 +84,7 @@ public class SonarLintRuleDefinition {
     }
 
     this.isActiveByDefault = rule.activatedByDefault();
-    this.language = Language.forKey(rule.repository().language()).orElseThrow(() -> new IllegalStateException("Unknown language with key: " + rule.repository().language()));
+    this.language = SonarLanguage.forKey(rule.repository().language()).orElseThrow(() -> new IllegalStateException("Unknown language with key: " + rule.repository().language()));
     this.tags = rule.tags().toArray(new String[0]);
     this.deprecatedKeys = rule.deprecatedRuleKeys().stream().map(RuleKey::toString).collect(toSet());
     this.educationPrincipleKeys = rule.educationPrincipleKeys();
@@ -148,7 +148,7 @@ public class SonarLintRuleDefinition {
     return descriptionSections;
   }
 
-  public Language getLanguage() {
+  public SonarLanguage getLanguage() {
     return language;
   }
 

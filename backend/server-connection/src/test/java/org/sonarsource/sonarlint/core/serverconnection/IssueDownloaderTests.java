@@ -30,7 +30,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonar.scanner.protocol.Constants.Severity;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -61,7 +61,7 @@ class IssueDownloaderTests {
 
   @BeforeEach
   void prepare() {
-    underTest = new IssueDownloader(Set.of(Language.JAVA));
+    underTest = new IssueDownloader(Set.of(SonarLanguage.JAVA));
     serverApi = new ServerApi(mockServer.serverApiHelper());
   }
 

@@ -30,7 +30,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.stubbing.Answer;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 
 import static java.util.Collections.emptyMap;
@@ -186,7 +186,7 @@ class TelemetryManagerTests {
     var data = storage.tryRead();
 
     // note: the manager hasn't seen the saved data
-    manager.analysisDoneOnSingleLanguage(Language.JAVA, 1000);
+    manager.analysisDoneOnSingleLanguage(SonarLanguage.JAVA, 1000);
 
     var reloaded = storage.tryRead();
     assertThat(reloaded.enabled()).isEqualTo(data.enabled());

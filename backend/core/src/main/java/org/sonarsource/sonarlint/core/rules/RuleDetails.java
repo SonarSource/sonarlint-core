@@ -34,7 +34,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleC
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
@@ -120,7 +120,7 @@ public class RuleDetails {
   }
 
   private final String key;
-  private final Language language;
+  private final SonarLanguage language;
   private final String name;
   private final String htmlDescription;
   private final Map<String, List<DescriptionSection>> descriptionSectionsByKey;
@@ -133,7 +133,7 @@ public class RuleDetails {
   private final Set<String> educationPrincipleKeys;
   private final VulnerabilityProbability vulnerabilityProbability;
 
-  public RuleDetails(String key, Language language, String name, String htmlDescription, Map<String, List<DescriptionSection>> descriptionSectionsByKey,
+  public RuleDetails(String key, SonarLanguage language, String name, String htmlDescription, Map<String, List<DescriptionSection>> descriptionSectionsByKey,
     IssueSeverity defaultSeverity, RuleType type, @Nullable CleanCodeAttribute cleanCodeAttribute, Map<SoftwareQuality, ImpactSeverity> defaultImpacts,
     @Nullable String extendedDescription, Collection<EffectiveRuleParam> params, Set<String> educationPrincipleKeys,
     @Nullable VulnerabilityProbability vulnerabilityProbability) {
@@ -156,7 +156,7 @@ public class RuleDetails {
     return key;
   }
 
-  public Language getLanguage() {
+  public SonarLanguage getLanguage() {
     return language;
   }
 

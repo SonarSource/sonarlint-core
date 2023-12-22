@@ -29,7 +29,7 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -43,7 +43,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anySet;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -118,10 +117,10 @@ class ServerIssueUpdaterTest {
     List<ServerIssue<?>> issues = Collections.singletonList(issue);
     var queryTimestamp = Instant.now();
     var lastSync = Optional.of(Instant.ofEpochMilli(123456789));
-    var lastIssueEnabledLanguages = Set.of(Language.C, Language.GO);
+    var lastIssueEnabledLanguages = Set.of(SonarLanguage.C, SonarLanguage.GO);
     when(issueStore.getLastIssueEnabledLanguages("master")).thenReturn(lastIssueEnabledLanguages);
     when(issueStore.getLastIssueSyncTimestamp("master")).thenReturn(lastSync);
-    when(downloader.getEnabledLanguages()).thenReturn(Set.of(Language.C, Language.GO));
+    when(downloader.getEnabledLanguages()).thenReturn(Set.of(SonarLanguage.C, SonarLanguage.GO));
     when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", lastSync)).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
 
     updater.update(serverApi, projectBinding.projectKey(), "master", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL);
@@ -135,10 +134,10 @@ class ServerIssueUpdaterTest {
     List<ServerIssue<?>> issues = Collections.singletonList(issue);
     var queryTimestamp = Instant.now();
     var lastSync = Optional.of(Instant.ofEpochMilli(123456789));
-    var lastIssueEnabledLanguages = new HashSet<Language>();
+    var lastIssueEnabledLanguages = new HashSet<SonarLanguage>();
     when(issueStore.getLastIssueSyncTimestamp("master")).thenReturn(lastSync);
     when(issueStore.getLastIssueEnabledLanguages("master")).thenReturn(lastIssueEnabledLanguages);
-    when(downloader.getEnabledLanguages()).thenReturn(Set.of(Language.C));
+    when(downloader.getEnabledLanguages()).thenReturn(Set.of(SonarLanguage.C));
     when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty())).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
     updater.update(serverApi, projectBinding.projectKey(), "master", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL);
     verify(downloader).downloadFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty());
@@ -150,10 +149,10 @@ class ServerIssueUpdaterTest {
     List<ServerIssue<?>> issues = Collections.singletonList(issue);
     var queryTimestamp = Instant.now();
     var lastSync = Optional.of(Instant.ofEpochMilli(123456789));
-    var lastIssueEnabledLanguages = Set.of(Language.C, Language.GO);
+    var lastIssueEnabledLanguages = Set.of(SonarLanguage.C, SonarLanguage.GO);
     when(issueStore.getLastIssueSyncTimestamp("master")).thenReturn(lastSync);
     when(issueStore.getLastIssueEnabledLanguages("master")).thenReturn(lastIssueEnabledLanguages);
-    when(downloader.getEnabledLanguages()).thenReturn(Set.of(Language.C));
+    when(downloader.getEnabledLanguages()).thenReturn(Set.of(SonarLanguage.C));
     when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty())).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
     updater.update(serverApi, projectBinding.projectKey(), "master", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL);
     verify(downloader).downloadFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty());
@@ -165,10 +164,10 @@ class ServerIssueUpdaterTest {
     List<ServerIssue<?>> issues = Collections.singletonList(issue);
     var queryTimestamp = Instant.now();
     var lastSync = Optional.of(Instant.ofEpochMilli(123456789));
-    var lastIssueEnabledLanguages = Set.of(Language.C, Language.GO);
+    var lastIssueEnabledLanguages = Set.of(SonarLanguage.C, SonarLanguage.GO);
     when(issueStore.getLastIssueSyncTimestamp("master")).thenReturn(lastSync);
     when(issueStore.getLastIssueEnabledLanguages("master")).thenReturn(lastIssueEnabledLanguages);
-    when(downloader.getEnabledLanguages()).thenReturn(Set.of(Language.C, Language.GO));
+    when(downloader.getEnabledLanguages()).thenReturn(Set.of(SonarLanguage.C, SonarLanguage.GO));
     when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", lastSync)).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
     updater.update(serverApi, projectBinding.projectKey(), "master", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL);
     verify(downloader).downloadFromPull(serverApi, projectBinding.projectKey(), "master", lastSync);
@@ -180,12 +179,12 @@ class ServerIssueUpdaterTest {
     List<ServerTaintIssue> issues = Collections.singletonList(issue);
     var queryTimestamp = Instant.now();
     var lastSync = Optional.of(Instant.ofEpochMilli(123456789));
-    var lastIssueEnabledLanguages = new HashSet<Language>();
+    var lastIssueEnabledLanguages = new HashSet<SonarLanguage>();
     when(issueStore.getLastTaintSyncTimestamp("master")).thenReturn(lastSync);
     when(issueStore.getLastTaintEnabledLanguages("master")).thenReturn(lastIssueEnabledLanguages);
     when(taintDownloader.downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty())).thenReturn(new TaintIssueDownloader.PullTaintResult(queryTimestamp, issues, Set.of()));
 
-    updater.syncTaints(serverApi, projectBinding.projectKey(), "master", Set.of(Language.C));
+    updater.syncTaints(serverApi, projectBinding.projectKey(), "master", Set.of(SonarLanguage.C));
     verify(taintDownloader).downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty());
   }
 
@@ -195,12 +194,12 @@ class ServerIssueUpdaterTest {
     List<ServerTaintIssue> issues = Collections.singletonList(issue);
     var queryTimestamp = Instant.now();
     var lastSync = Optional.of(Instant.ofEpochMilli(123456789));
-    var lastIssueEnabledLanguages = Set.of(Language.C, Language.GO);
+    var lastIssueEnabledLanguages = Set.of(SonarLanguage.C, SonarLanguage.GO);
     when(issueStore.getLastTaintSyncTimestamp("master")).thenReturn(lastSync);
     when(issueStore.getLastTaintEnabledLanguages("master")).thenReturn(lastIssueEnabledLanguages);
     when(taintDownloader.downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty())).thenReturn(new TaintIssueDownloader.PullTaintResult(queryTimestamp, issues, Set.of()));
 
-    updater.syncTaints(serverApi, projectBinding.projectKey(), "master", Set.of(Language.C));
+    updater.syncTaints(serverApi, projectBinding.projectKey(), "master", Set.of(SonarLanguage.C));
     verify(taintDownloader).downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty());
   }
 
@@ -210,12 +209,12 @@ class ServerIssueUpdaterTest {
     List<ServerTaintIssue> issues = Collections.singletonList(issue);
     var queryTimestamp = Instant.now();
     var lastSync = Optional.of(Instant.ofEpochMilli(123456789));
-    var lastIssueEnabledLanguages = Set.of(Language.C, Language.GO);
+    var lastIssueEnabledLanguages = Set.of(SonarLanguage.C, SonarLanguage.GO);
     when(issueStore.getLastTaintSyncTimestamp("master")).thenReturn(lastSync);
     when(issueStore.getLastTaintEnabledLanguages("master")).thenReturn(lastIssueEnabledLanguages);
     when(taintDownloader.downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", lastSync)).thenReturn(new TaintIssueDownloader.PullTaintResult(queryTimestamp, issues, Set.of()));
 
-    updater.syncTaints(serverApi, projectBinding.projectKey(), "master", Set.of(Language.C, Language.GO));
+    updater.syncTaints(serverApi, projectBinding.projectKey(), "master", Set.of(SonarLanguage.C, SonarLanguage.GO));
     verify(taintDownloader).downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", lastSync);
   }
 

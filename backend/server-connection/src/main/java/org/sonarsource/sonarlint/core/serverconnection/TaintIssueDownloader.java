@@ -39,7 +39,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
@@ -64,9 +64,9 @@ public class TaintIssueDownloader {
   private static final Pattern MATCH_ALL_WHITESPACES = Pattern.compile("\\s");
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private final Set<Language> enabledLanguages;
+  private final Set<SonarLanguage> enabledLanguages;
 
-  public TaintIssueDownloader(Set<Language> enabledLanguages) {
+  public TaintIssueDownloader(Set<SonarLanguage> enabledLanguages) {
     this.enabledLanguages = enabledLanguages;
   }
 
@@ -75,7 +75,7 @@ public class TaintIssueDownloader {
 
     List<ServerTaintIssue> result = new ArrayList<>();
 
-    Set<String> taintRuleKeys = serverApi.rules().getAllTaintRules(List.of(Language.values()), progress);
+    Set<String> taintRuleKeys = serverApi.rules().getAllTaintRules(List.of(SonarLanguage.values()), progress);
     Map<String, String> sourceCodeByKey = new HashMap<>();
     var downloadVulnerabilitiesForRules = issueApi.downloadVulnerabilitiesForRules(key, taintRuleKeys, branchName, progress);
     downloadVulnerabilitiesForRules.getIssues()

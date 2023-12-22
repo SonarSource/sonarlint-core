@@ -42,7 +42,7 @@ import org.sonarsource.sonarlint.core.analysis.command.NotifyModuleEventCommand;
 import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
 import org.sonarsource.sonarlint.core.analysis.command.UnregisterModuleCommand;
 import org.sonarsource.sonarlint.core.client.utils.ClientLogOutput;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -104,7 +104,7 @@ public final class SonarLintAnalysisEngine {
     var globalConfigFromRpc = globalConfigFuture.join();
 
     var config = new PluginsLoader.Configuration(Set.copyOf(globalConfigFromRpc.getPluginPaths()),
-      globalConfigFromRpc.getEnabledLanguages().stream().map(l -> Language.valueOf(l.name())).collect(Collectors.toSet()),
+      globalConfigFromRpc.getEnabledLanguages().stream().map(l -> SonarLanguage.valueOf(l.name())).collect(Collectors.toSet()),
       globalConfigFromRpc.isDataflowBugDetectionEnabled(),
       Optional.ofNullable(globalConfigFromRpc.getNodeJsVersion()).map(Version::create));
     var loadingResult = new PluginsLoader().load(config);

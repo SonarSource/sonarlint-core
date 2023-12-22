@@ -34,7 +34,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerFinding;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
@@ -68,7 +68,7 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void mergeIssues(String branchName, List<ServerIssue<?>> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp, Set<Language> enabledLanguages) {
+  public void mergeIssues(String branchName, List<ServerIssue<?>> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp, Set<SonarLanguage> enabledLanguages) {
     var issuesToMergeByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
     // does not handle issue moving file (e.g. file renaming)
     issuesByFileByBranch
@@ -85,7 +85,7 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
 
   @Override
   public void mergeTaintIssues(String branchName, List<ServerTaintIssue> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp,
-    Set<Language> enabledLanguages) {
+    Set<SonarLanguage> enabledLanguages) {
     var issuesToMergeByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(serverTaintIssue -> serverTaintIssue.getFilePath()));
     // does not handle issue moving file (e.g. file renaming)
     taintIssuesByFileByBranch
@@ -101,7 +101,7 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void mergeHotspots(String branchName, List<ServerHotspot> hotspotsToMerge, Set<String> closedHotspotKeysToDelete, Instant syncTimestamp, Set<Language> enabledLanguages) {
+  public void mergeHotspots(String branchName, List<ServerHotspot> hotspotsToMerge, Set<String> closedHotspotKeysToDelete, Instant syncTimestamp, Set<SonarLanguage> enabledLanguages) {
     var hotspotsToMergeByFilePath = hotspotsToMerge.stream().collect(Collectors.groupingBy(ServerHotspot::getFilePath));
     // does not handle hotspot moving file (e.g. file renaming)
     hotspotsByFileByBranch
@@ -117,10 +117,10 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @NotNull
-  private static String getSerializedLanguages(Set<Language> enabledLanguages) {
-    List<Language> languagesList = new ArrayList<>();
+  private static String getSerializedLanguages(Set<SonarLanguage> enabledLanguages) {
+    List<SonarLanguage> languagesList = new ArrayList<>();
     languagesList.addAll(enabledLanguages);
-    return languagesList.stream().map(Language::getLanguageKey)
+    return languagesList.stream().map(SonarLanguage::getSonarLanguageKey)
       .collect(Collectors.joining(","));
   }
 
@@ -130,19 +130,19 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public Set<Language> getLastIssueEnabledLanguages(String branchName) {
+  public Set<SonarLanguage> getLastIssueEnabledLanguages(String branchName) {
     var lastEnabledLanguages = ofNullable(lastIssueEnabledLanguagesByBranch.get(branchName));
     return deserializeLanguages(lastEnabledLanguages);
   }
 
   @Override
-  public Set<Language> getLastTaintEnabledLanguages(String branchName) {
+  public Set<SonarLanguage> getLastTaintEnabledLanguages(String branchName) {
     var lastEnabledLanguages = ofNullable(lastTaintEnabledLanguagesByBranch.get(branchName));
     return deserializeLanguages(lastEnabledLanguages);
   }
 
   @Override
-  public Set<Language> getLastHotspotEnabledLanguages(String branchName) {
+  public Set<SonarLanguage> getLastHotspotEnabledLanguages(String branchName) {
     var lastEnabledLanguages = ofNullable(lastHotspotEnabledLanguagesByBranch.get(branchName));
     return deserializeLanguages(lastEnabledLanguages);
   }

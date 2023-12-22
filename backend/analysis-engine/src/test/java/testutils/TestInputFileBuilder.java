@@ -32,7 +32,7 @@ import org.sonar.api.utils.PathUtils;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.FileMetadata;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputFile;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 
 /**
  * Intended to be used in unit tests that need to create {@link InputFile}s.
@@ -54,7 +54,7 @@ public class TestInputFileBuilder {
   private final String relativePath;
   @CheckForNull
   private Path baseDir;
-  private Language language;
+  private SonarLanguage language;
   private InputFile.Type type = InputFile.Type.MAIN;
   private int lines = -1;
   private int[] originalLineStartOffsets = new int[0];
@@ -89,7 +89,7 @@ public class TestInputFileBuilder {
     return this;
   }
 
-  public TestInputFileBuilder setLanguage(@Nullable Language language) {
+  public TestInputFileBuilder setLanguage(@Nullable SonarLanguage language) {
     this.language = language;
     return this;
   }

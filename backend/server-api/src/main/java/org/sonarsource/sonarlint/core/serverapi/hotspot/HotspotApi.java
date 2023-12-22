@@ -33,7 +33,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
@@ -100,7 +100,7 @@ public class HotspotApi {
     return searchHotspots(getSearchUrl(projectKey, filePath, branchName), new ProgressMonitor(null));
   }
 
-  public HotspotApi.HotspotsPullResult pullHotspots(String projectKey, String branchName, Set<Language> enabledLanguages, @Nullable Long changedSince) {
+  public HotspotApi.HotspotsPullResult pullHotspots(String projectKey, String branchName, Set<SonarLanguage> enabledLanguages, @Nullable Long changedSince) {
     return ServerApiHelper.processTimed(
       () -> helper.get(getPullHotspotsUrl(projectKey, branchName, enabledLanguages, changedSince)),
       response -> {
@@ -129,8 +129,8 @@ public class HotspotApi {
     }
   }
 
-  private static String getPullHotspotsUrl(String projectKey, String branchName, Set<Language> enabledLanguages, @Nullable Long changedSince) {
-    var enabledLanguageKeys = enabledLanguages.stream().map(Language::getLanguageKey).collect(Collectors.joining(","));
+  private static String getPullHotspotsUrl(String projectKey, String branchName, Set<SonarLanguage> enabledLanguages, @Nullable Long changedSince) {
+    var enabledLanguageKeys = enabledLanguages.stream().map(SonarLanguage::getSonarLanguageKey).collect(Collectors.joining(","));
     var url = new StringBuilder()
       .append(HOTSPOTS_PULL_API_URL)
       .append(PROJECT_KEY_QUERY_PARAM)

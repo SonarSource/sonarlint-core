@@ -29,6 +29,7 @@ import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.resources.Language;
 import org.sonar.api.utils.MessageException;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import testutils.TestInputFileBuilder;
 
@@ -54,14 +55,14 @@ class LanguageDetectionTests {
   void search_by_file_extension() throws Exception {
     var detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
 
-    assertThat(detection.language(newInputFile("Foo.java"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.JAVA);
-    assertThat(detection.language(newInputFile("src/Foo.java"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.JAVA);
-    assertThat(detection.language(newInputFile("Foo.JAVA"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.JAVA);
-    assertThat(detection.language(newInputFile("Foo.jav"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.JAVA);
-    assertThat(detection.language(newInputFile("Foo.Jav"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.JAVA);
+    assertThat(detection.language(newInputFile("Foo.java"))).isEqualTo(SonarLanguage.JAVA);
+    assertThat(detection.language(newInputFile("src/Foo.java"))).isEqualTo(SonarLanguage.JAVA);
+    assertThat(detection.language(newInputFile("Foo.JAVA"))).isEqualTo(SonarLanguage.JAVA);
+    assertThat(detection.language(newInputFile("Foo.jav"))).isEqualTo(SonarLanguage.JAVA);
+    assertThat(detection.language(newInputFile("Foo.Jav"))).isEqualTo(SonarLanguage.JAVA);
 
-    assertThat(detection.language(newInputFile("abc.abap"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.ABAP);
-    assertThat(detection.language(newInputFile("abc.ABAP"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.ABAP);
+    assertThat(detection.language(newInputFile("abc.abap"))).isEqualTo(SonarLanguage.ABAP);
+    assertThat(detection.language(newInputFile("abc.ABAP"))).isEqualTo(SonarLanguage.ABAP);
 
     assertThat(detection.language(newInputFile("abc.truc"))).isNull();
     assertThat(detection.language(newInputFile("abap"))).isNull();
@@ -71,13 +72,13 @@ class LanguageDetectionTests {
   void recognise_yaml_files() throws IOException {
     var detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
 
-    assertThat(detection.language(newInputFile("lambda.yaml"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.YAML);
-    assertThat(detection.language(newInputFile("lambda.yml"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.YAML);
-    assertThat(detection.language(newInputFile("config/lambda.yml"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.YAML);
-    assertThat(detection.language(newInputFile("config/lambda.YAML"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.YAML);
+    assertThat(detection.language(newInputFile("lambda.yaml"))).isEqualTo(SonarLanguage.YAML);
+    assertThat(detection.language(newInputFile("lambda.yml"))).isEqualTo(SonarLanguage.YAML);
+    assertThat(detection.language(newInputFile("config/lambda.yml"))).isEqualTo(SonarLanguage.YAML);
+    assertThat(detection.language(newInputFile("config/lambda.YAML"))).isEqualTo(SonarLanguage.YAML);
 
     assertThat(detection.language(newInputFile("wrong.ylm"))).isNull();
-    assertThat(detection.language(newInputFile("config.js"))).isNotEqualTo(org.sonarsource.sonarlint.core.commons.Language.YAML);
+    assertThat(detection.language(newInputFile("config.js"))).isNotEqualTo(SonarLanguage.YAML);
 
   }
 
@@ -85,9 +86,9 @@ class LanguageDetectionTests {
   void recognise_css_files() throws IOException {
     var detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
 
-    assertThat(detection.language(newInputFile("style.css"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.CSS);
-    assertThat(detection.language(newInputFile("style.less"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.CSS);
-    assertThat(detection.language(newInputFile("style.scss"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.CSS);
+    assertThat(detection.language(newInputFile("style.css"))).isEqualTo(SonarLanguage.CSS);
+    assertThat(detection.language(newInputFile("style.less"))).isEqualTo(SonarLanguage.CSS);
+    assertThat(detection.language(newInputFile("style.scss"))).isEqualTo(SonarLanguage.CSS);
 
     assertThat(detection.language(newInputFile("style.stylus"))).isNull();
   }
@@ -96,8 +97,8 @@ class LanguageDetectionTests {
   void recognise_go_file() throws IOException {
     var detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
 
-    assertThat(detection.language(newInputFile("myFile.go"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.GO);
-    assertThat(detection.language(newInputFile("folder/myFile.go"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.GO);
+    assertThat(detection.language(newInputFile("myFile.go"))).isEqualTo(SonarLanguage.GO);
+    assertThat(detection.language(newInputFile("folder/myFile.go"))).isEqualTo(SonarLanguage.GO);
 
     assertThat(detection.language(newInputFile("style.nogo"))).isNull();
   }
@@ -106,8 +107,8 @@ class LanguageDetectionTests {
   void recognise_terraform_file() throws IOException {
     var detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
 
-    assertThat(detection.language(newInputFile("myFile.tf"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.TERRAFORM);
-    assertThat(detection.language(newInputFile("folder/myFile.tf"))).isEqualTo(org.sonarsource.sonarlint.core.commons.Language.TERRAFORM);
+    assertThat(detection.language(newInputFile("myFile.tf"))).isEqualTo(SonarLanguage.TERRAFORM);
+    assertThat(detection.language(newInputFile("folder/myFile.tf"))).isEqualTo(SonarLanguage.TERRAFORM);
 
     assertThat(detection.language(newInputFile("style.notf"))).isNull();
   }
@@ -120,8 +121,8 @@ class LanguageDetectionTests {
 
   @Test
   void fail_if_conflicting_language_suffix() throws Exception {
-    var settings = new MapSettings(Map.of(org.sonarsource.sonarlint.core.commons.Language.XML.getFileSuffixesPropKey(), "xhtml",
-      org.sonarsource.sonarlint.core.commons.Language.HTML.getFileSuffixesPropKey(), "xhtml"));
+    var settings = new MapSettings(Map.of(SonarLanguage.XML.getFileSuffixesPropKey(), "xhtml",
+      SonarLanguage.HTML.getFileSuffixesPropKey(), "xhtml"));
     var detection = new LanguageDetection(settings.asConfig());
     var inputFile = newInputFile("abc.xhtml");
     var e = assertThrows(MessageException.class, () -> detection.language(inputFile));

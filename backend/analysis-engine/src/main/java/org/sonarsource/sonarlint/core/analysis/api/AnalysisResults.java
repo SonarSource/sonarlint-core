@@ -25,12 +25,12 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 
 public class AnalysisResults {
   private final Set<ClientInputFile> failedAnalysisFiles = new LinkedHashSet<>();
   private int indexedFileCount;
-  private final Map<ClientInputFile, Language> languagePerFile = new LinkedHashMap<>();
+  private final Map<ClientInputFile, SonarLanguage> languagePerFile = new LinkedHashMap<>();
 
   public AnalysisResults setIndexedFileCount(int indexedFileCount) {
     this.indexedFileCount = indexedFileCount;
@@ -45,11 +45,11 @@ public class AnalysisResults {
    * Detected languages for each file.
    * The values in the map can be null if no language was detected for some files.
    */
-  public Map<ClientInputFile, Language> languagePerFile() {
+  public Map<ClientInputFile, SonarLanguage> languagePerFile() {
     return languagePerFile;
   }
 
-  public void setLanguageForFile(ClientInputFile file, @Nullable Language language) {
+  public void setLanguageForFile(ClientInputFile file, @Nullable SonarLanguage language) {
     this.languagePerFile.put(file, language);
   }
 

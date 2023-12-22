@@ -39,7 +39,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.utils.ZipUtils;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.PluginsMinVersions;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput.Level;
@@ -61,7 +61,7 @@ class SonarPluginRequirementsCheckerTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
-  private static final Set<Language> NONE = Set.of();
+  private static final Set<SonarLanguage> NONE = Set.of();
 
   private static final String V1_0 = "1.0";
 
@@ -138,36 +138,36 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_plugin_skip_not_enabled_languages(@TempDir Path storage) throws IOException {
-    var fakePlugin = fakePlugin(storage, "sonarphp.jar", path -> createPluginManifest(path, Language.PHP.getPluginKey(), V1_0));
+    var fakePlugin = fakePlugin(storage, "sonarphp.jar", path -> createPluginManifest(path, SonarLanguage.PHP.getPluginKey(), V1_0));
     Set<Path> jars = Set.of(fakePlugin);
 
-    var loadedPlugins = underTest.checkRequirements(jars, Set.of(Language.TS), null, true, null);
+    var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.TS), null, true, null);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
-      .containsOnly(tuple("php", true, new SkipReason.LanguagesNotEnabled(new HashSet<>(asList(Language.PHP)))));
+      .containsOnly(tuple("php", true, new SkipReason.LanguagesNotEnabled(new HashSet<>(asList(SonarLanguage.PHP)))));
     assertThat(logsWithoutStartStop()).contains("Plugin 'php' is excluded because language 'PHP' is not enabled. Skip loading it.");
   }
 
   @Test
   void load_plugin_skip_not_enabled_languages_multiple(@TempDir Path storage) throws IOException {
-    var fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, Language.C.getPluginKey(), V1_0));
+    var fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, SonarLanguage.C.getPluginKey(), V1_0));
     Set<Path> jars = Set.of(fakePlugin);
-    doReturn(V1_0).when(pluginMinVersions).getMinimumVersion(Language.C.getPluginKey());
+    doReturn(V1_0).when(pluginMinVersions).getMinimumVersion(SonarLanguage.C.getPluginKey());
 
-    var loadedPlugins = underTest.checkRequirements(jars, Set.of(Language.JS), null, true, null);
+    var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.JS), null, true, null);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
-      .containsOnly(tuple("cpp", true, new SkipReason.LanguagesNotEnabled(new HashSet<>(asList(Language.C, Language.CPP, Language.OBJC)))));
+      .containsOnly(tuple("cpp", true, new SkipReason.LanguagesNotEnabled(new HashSet<>(asList(SonarLanguage.C, SonarLanguage.CPP, SonarLanguage.OBJC)))));
     assertThat(logsWithoutStartStop()).contains("Plugin 'cpp' is excluded because none of languages 'C,CPP,OBJC' are enabled. Skip loading it.");
   }
 
   @Test
   void load_plugin_load_even_if_only_one_language_enabled(@TempDir Path storage) throws IOException {
-    var fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, Language.C.getPluginKey(), V1_0));
+    var fakePlugin = fakePlugin(storage, "sonarjs.jar", path -> createPluginManifest(path, SonarLanguage.C.getPluginKey(), V1_0));
     Set<Path> jars = Set.of(fakePlugin);
-    doReturn(V1_0).when(pluginMinVersions).getMinimumVersion(Language.CPP.getPluginKey());
+    doReturn(V1_0).when(pluginMinVersions).getMinimumVersion(SonarLanguage.CPP.getPluginKey());
 
-    var loadedPlugins = underTest.checkRequirements(jars, Set.of(Language.CPP), null, true, null);
+    var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.CPP), null, true, null);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("cpp", false, null));
@@ -176,7 +176,7 @@ class SonarPluginRequirementsCheckerTests {
   @Test
   void load_plugin_skip_plugins_having_missing_base_plugin(@TempDir Path storage) throws IOException {
     var fakePlugin = fakePlugin(storage, "fake.jar",
-      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withBasePlugin(Language.JS.getPluginKey())));
+      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withBasePlugin(SonarLanguage.JS.getPluginKey())));
     Set<Path> jars = Set.of(fakePlugin);
 
     var loadedPlugins = underTest.checkRequirements(jars, NONE, null, true, null);
@@ -189,15 +189,15 @@ class SonarPluginRequirementsCheckerTests {
   @Test
   void load_plugin_skip_plugins_having_skipped_base_plugin(@TempDir Path storage) throws IOException {
     var fakePlugin = fakePlugin(storage, "fake.jar",
-      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withBasePlugin(Language.JS.getPluginKey())));
+      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withBasePlugin(SonarLanguage.JS.getPluginKey())));
     var fakeBasePlugin = fakePlugin(storage, "base.jar",
-      path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0));
+      path -> createPluginManifest(path, SonarLanguage.JS.getPluginKey(), V1_0));
     Set<Path> jars = Set.of(fakePlugin, fakeBasePlugin);
 
     // Ensure base plugin is skipped because of min version
-    doReturn("2.0").when(pluginMinVersions).getMinimumVersion(Language.JS.getPluginKey());
+    doReturn("2.0").when(pluginMinVersions).getMinimumVersion(SonarLanguage.JS.getPluginKey());
 
-    var loadedPlugins = underTest.checkRequirements(jars, Set.of(Language.JS), null, true, null);
+    var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.JS), null, true, null);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(
@@ -209,15 +209,15 @@ class SonarPluginRequirementsCheckerTests {
   @Test
   void load_plugin_having_base_plugin(@TempDir Path storage) throws IOException {
     var fakePlugin = fakePlugin(storage, "fake.jar",
-      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withBasePlugin(Language.JS.getPluginKey())));
+      path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withBasePlugin(SonarLanguage.JS.getPluginKey())));
     var fakeBasePlugin = fakePlugin(storage, "base.jar",
-      path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0));
+      path -> createPluginManifest(path, SonarLanguage.JS.getPluginKey(), V1_0));
     Set<Path> jars = Set.of(fakePlugin, fakeBasePlugin);
 
     // Ensure base plugin is not skipped
-    doReturn(V1_0).when(pluginMinVersions).getMinimumVersion(Language.JS.getPluginKey());
+    doReturn(V1_0).when(pluginMinVersions).getMinimumVersion(SonarLanguage.JS.getPluginKey());
 
-    var loadedPlugins = underTest.checkRequirements(jars, Set.of(Language.JS), null, true, null);
+    var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.JS), null, true, null);
 
     assertThat(loadedPlugins.values())
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
@@ -276,15 +276,15 @@ class SonarPluginRequirementsCheckerTests {
   @Test
   void load_plugin_ignore_dependency_between_sonarjs_and_sonarts(@TempDir Path storage) throws IOException {
     var fakePlugin = fakePlugin(storage, "sonarjs.jar",
-      path -> createPluginManifest(path, Language.JS.getPluginKey(), V1_0, withRequiredPlugins("typescript:1.0")));
+      path -> createPluginManifest(path, SonarLanguage.JS.getPluginKey(), V1_0, withRequiredPlugins("typescript:1.0")));
     Set<Path> jars = Set.of(fakePlugin);
-    doReturn(true).when(pluginMinVersions).isVersionSupported(Language.JS.getPluginKey(), Version.create(V1_0));
+    doReturn(true).when(pluginMinVersions).isVersionSupported(SonarLanguage.JS.getPluginKey(), Version.create(V1_0));
 
-    var loadedPlugins = underTest.checkRequirements(jars, Set.of(Language.JS), null, true, null);
+    var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.JS), null, true, null);
 
     assertThat(loadedPlugins.values()).as(logsWithoutStartStop().collect(Collectors.joining("\n")))
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped)
-      .containsOnly(tuple(Language.JS.getPluginKey(), false));
+      .containsOnly(tuple(SonarLanguage.JS.getPluginKey(), false));
   }
 
   @Test
