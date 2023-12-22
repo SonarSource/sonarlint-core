@@ -748,7 +748,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         List.of(clientTrackedDto_s100, clientTrackedDto_s1172, clientTrackedDto_s106)), true);
       var issuesOnMainBranch = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByIdeRelativePath();
 
-      var fooIssuesMainBranch = issuesOnMainBranch.get("src/main/java/foo/Foo.java");
+      var fooIssuesMainBranch = issuesOnMainBranch.get(Path.of("src/main/java/foo/Foo.java"));
       assertThat(fooIssuesMainBranch).hasSize(3);
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
         // On main branch, all issues were matched and no issues are resolved
@@ -769,7 +769,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var issuesOnFeatureBranch = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByIdeRelativePath();
 
-      var fooIssuesFeatureBranch = issuesOnFeatureBranch.get("src/main/java/foo/Foo.java");
+      var fooIssuesFeatureBranch = issuesOnFeatureBranch.get(Path.of("src/main/java/foo/Foo.java"));
       assertThat(fooIssuesFeatureBranch).hasSize(3);
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
         // On feature branch, all issues were matched and one issue is resolved

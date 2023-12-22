@@ -194,11 +194,11 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
         List.of(javaClientTrackedFindingDto), Path.of("src/main/java/foo/main.py"), List.of(pythonClientTrackedFindingDto)), true);
       var issuesByServerRelativePath = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByIdeRelativePath();
 
-      var mainPyIssues = issuesByServerRelativePath.get("src/main/java/foo/main.py");
+      var mainPyIssues = issuesByServerRelativePath.get(Path.of("src/main/java/foo/main.py"));
       assertThat(mainPyIssues).hasSize(1);
       assertThat(mainPyIssues.get(0).isRight()).isTrue();
 
-      var fooJavaIssues = issuesByServerRelativePath.get("src/main/java/foo/Foo.java");
+      var fooJavaIssues = issuesByServerRelativePath.get(Path.of("src/main/java/foo/Foo.java"));
       assertThat(fooJavaIssues).hasSize(1);
 
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
