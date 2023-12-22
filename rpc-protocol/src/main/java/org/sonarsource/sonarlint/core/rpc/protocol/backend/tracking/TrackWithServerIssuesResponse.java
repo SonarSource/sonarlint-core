@@ -19,19 +19,20 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 public class TrackWithServerIssuesResponse {
 
-  private final Map<String, List<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>> issuesByServerRelativePath;
+  private final Map<Path, List<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>> issuesByServerRelativePath;
 
-  public TrackWithServerIssuesResponse(Map<String, List<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>> issuesByServerRelativePath) {
+  public TrackWithServerIssuesResponse(Map<Path, List<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>> issuesByServerRelativePath) {
     this.issuesByServerRelativePath = issuesByServerRelativePath;
   }
 
-  public Map<String, List<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>> getIssuesByServerRelativePath() {
+  public Map<Path, List<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>> getIssuesByServerRelativePath() {
     return issuesByServerRelativePath;
   }
 

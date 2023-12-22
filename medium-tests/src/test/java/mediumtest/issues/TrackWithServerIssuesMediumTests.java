@@ -83,7 +83,7 @@ class TrackWithServerIssuesMediumTests {
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
-      .satisfies(result -> assertThat(result.getIssuesByIdeRelativePath())
+      .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
         .hasEntrySatisfying(Path.of("file/path"), issues -> assertThat(issues).hasSize(1).allSatisfy(issue -> assertThat(issue.isRight()).isTrue())));
   }
 
@@ -100,7 +100,7 @@ class TrackWithServerIssuesMediumTests {
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(20))
-      .satisfies(result -> assertThat(result.getIssuesByIdeRelativePath())
+      .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
         .hasEntrySatisfying(Path.of("file/path"), issues -> {
           assertThat(issues).hasSize(1).allSatisfy(issue -> assertThat(issue.isRight()).isTrue());
           assertThat(issues).usingRecursiveComparison().ignoringFields("right.id")
@@ -121,7 +121,7 @@ class TrackWithServerIssuesMediumTests {
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
-      .satisfies(result -> assertThat(result.getIssuesByIdeRelativePath())
+      .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
         .hasEntrySatisfying(Path.of("file/path"), issues -> {
           assertThat(issues).hasSize(1).allSatisfy(issue -> assertThat(issue.isRight()).isTrue());
           assertThat(issues).usingRecursiveComparison().ignoringFields("right.id")
@@ -152,7 +152,7 @@ class TrackWithServerIssuesMediumTests {
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(20))
-      .satisfies(result -> assertThat(result.getIssuesByIdeRelativePath())
+      .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
         .hasEntrySatisfying(Path.of("file/path"), issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("left.id")
           .isEqualTo(
             List.of((Either.forLeft(
@@ -179,7 +179,7 @@ class TrackWithServerIssuesMediumTests {
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(20))
-      .satisfies(result -> assertThat(result.getIssuesByIdeRelativePath())
+      .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
         .hasEntrySatisfying(Path.of("file/path"), issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("left.id")
           .isEqualTo(
             List.of(Either.forLeft(new ServerMatchedIssueDto(null, "issueKey", 123456789L, false, null, BUG, true))))));
@@ -204,7 +204,7 @@ class TrackWithServerIssuesMediumTests {
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(4))
-      .satisfies(result -> assertThat(result.getIssuesByIdeRelativePath())
+      .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
         .hasSize(11));
     waitAtMost(2, SECONDS).untilAsserted(() -> server.getMockServer().verify(getRequestedFor(urlEqualTo("/batch/issues?key=projectKey&branch=main"))));
   }
