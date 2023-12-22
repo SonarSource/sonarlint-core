@@ -552,12 +552,12 @@ class SonarCloudTests extends AbstractConnectedTests {
         Path.of("src/main/java/bar/Bar.java"), List.of(new ClientTrackedFindingDto(null, null, textRangeWithHash, null, "java:S1234", "Some other rule")));
       var matchWithServerSecurityHotspotsResponse = backend.getSecurityHotspotMatchingService()
         .matchWithServerSecurityHotspots(new MatchWithServerSecurityHotspotsParams(CONFIG_SCOPE_ID, clientTrackedHotspotsByServerRelativePath, true)).get();
-      assertThat(matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByServerRelativePath()).hasSize(2);
-      var fooSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByServerRelativePath().get(Path.of("src/main/java/foo/Foo.java"));
+      assertThat(matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByIdeRelativePath()).hasSize(2);
+      var fooSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByIdeRelativePath().get(Path.of("src/main/java/foo/Foo.java"));
       assertThat(fooSecurityHotspots).hasSize(1);
       assertThat(fooSecurityHotspots.get(0).isLeft()).isTrue();
       assertThat(fooSecurityHotspots.get(0).getLeft().getStatus()).isEqualTo(HotspotStatus.TO_REVIEW);
-      var barSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByServerRelativePath().get(Path.of("src/main/java/bar/Bar.java"));
+      var barSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByIdeRelativePath().get(Path.of("src/main/java/bar/Bar.java"));
       assertThat(barSecurityHotspots).hasSize(1);
       assertThat(barSecurityHotspots.get(0).isRight()).isTrue();
     }

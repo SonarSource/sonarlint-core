@@ -390,7 +390,7 @@ class IssuesStatusChangeMediumTests {
     assertThat(storedIssues).extracting(LocalOnlyIssue::getId).containsOnly(issueId1, issueId2, otherFileIssueId);
 
     var response = backend.getIssueService()
-      .reopenAllIssuesForFile(new ReopenAllIssuesForFileParams("configScopeId", "file/path"));
+      .reopenAllIssuesForFile(new ReopenAllIssuesForFileParams("configScopeId", Path.of("file/path")));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     assertThat(response.get().isSuccess()).isTrue();

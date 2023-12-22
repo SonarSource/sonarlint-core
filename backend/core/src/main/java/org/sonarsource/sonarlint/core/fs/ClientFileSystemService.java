@@ -75,7 +75,7 @@ public class ClientFileSystemService {
     var dtoCharset = clientFileDto.getCharset();
     var charset = dtoCharset != null ? Charset.forName(dtoCharset) : null;
     var file = new ClientFile(clientFileDto.getUri(), clientFileDto.getConfigScopeId(),
-      clientFileDto.getRelativePath(),
+      clientFileDto.getIdeRelativePath(),
       clientFileDto.isTest(),
       charset,
       clientFileDto.getFsPath());

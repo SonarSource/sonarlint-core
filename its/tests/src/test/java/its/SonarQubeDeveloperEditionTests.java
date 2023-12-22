@@ -1087,20 +1087,20 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var matchWithServerSecurityHotspotsResponse = backend.getSecurityHotspotMatchingService()
         .matchWithServerSecurityHotspots(new MatchWithServerSecurityHotspotsParams(CONFIG_SCOPE_ID, clientTrackedHotspotsByServerRelativePath, true)).get();
-      assertThat(matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByServerRelativePath()).hasSize(2);
+      assertThat(matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByIdeRelativePath()).hasSize(2);
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
-        var fooSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByServerRelativePath().get("src/main/java/foo/Foo.java");
+        var fooSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByIdeRelativePath().get("src/main/java/foo/Foo.java");
         assertThat(fooSecurityHotspots).hasSize(1);
         assertThat(fooSecurityHotspots.get(0).isLeft()).isTrue();
         assertThat(fooSecurityHotspots.get(0).getLeft().getStatus()).isEqualTo(HotspotStatus.TO_REVIEW);
-        var barSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByServerRelativePath().get("src/main/java/bar/Bar.java");
+        var barSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByIdeRelativePath().get("src/main/java/bar/Bar.java");
         assertThat(barSecurityHotspots).hasSize(1);
         assertThat(barSecurityHotspots.get(0).isRight()).isTrue();
       } else {
-        var fooSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByServerRelativePath().get("src/main/java/foo/Foo.java");
+        var fooSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByIdeRelativePath().get("src/main/java/foo/Foo.java");
         assertThat(fooSecurityHotspots).hasSize(1);
         assertThat(fooSecurityHotspots.get(0).isRight()).isTrue();
-        var barSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByServerRelativePath().get("src/main/java/bar/Bar.java");
+        var barSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByIdeRelativePath().get("src/main/java/bar/Bar.java");
         assertThat(barSecurityHotspots).hasSize(1);
         assertThat(barSecurityHotspots.get(0).isRight()).isTrue();
       }

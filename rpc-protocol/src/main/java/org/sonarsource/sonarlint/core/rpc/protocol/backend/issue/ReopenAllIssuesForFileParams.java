@@ -19,18 +19,20 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.issue;
 
+import java.nio.file.Path;
+
 public class ReopenAllIssuesForFileParams {
 
   private final String configurationScopeId;
-  private final String relativePath;
+  private final Path ideRelativePath;
 
-  public ReopenAllIssuesForFileParams(String configurationScopeId, String relativePath) {
+  public ReopenAllIssuesForFileParams(String configurationScopeId, Path ideRelativePath) {
     this.configurationScopeId = configurationScopeId;
-    this.relativePath = relativePath;
+    this.ideRelativePath = ideRelativePath;
   }
 
-  public String getRelativePath() {
-    return relativePath;
+  public Path getIdeRelativePath() {
+    return ideRelativePath;
   }
 
   public String getConfigurationScopeId() {

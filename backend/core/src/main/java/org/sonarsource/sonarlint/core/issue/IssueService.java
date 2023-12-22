@@ -239,10 +239,10 @@ public class IssueService {
 
   public boolean reopenAllIssuesForFile(ReopenAllIssuesForFileParams params, CancelChecker cancelChecker) {
     var configurationScopeId = params.getConfigurationScopeId();
-    var filePath = Path.of(params.getRelativePath());
+    var ideRelativePath = params.getIdeRelativePath();
     var localOnlyIssueStore = localOnlyIssueStorageService.get();
-    removeAllIssuesForFile(localOnlyIssueStore, configurationScopeId, filePath, cancelChecker);
-    return localOnlyIssueStorageService.get().removeAllIssuesForFile(configurationScopeId, filePath);
+    removeAllIssuesForFile(localOnlyIssueStore, configurationScopeId, ideRelativePath, cancelChecker);
+    return localOnlyIssueStorageService.get().removeAllIssuesForFile(configurationScopeId, ideRelativePath);
   }
 
   private void removeAllIssuesForFile(XodusLocalOnlyIssueStore localOnlyIssueStore,

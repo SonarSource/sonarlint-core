@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.file;
 
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public class FilePathTranslation {
   private final Path idePathPrefix;
