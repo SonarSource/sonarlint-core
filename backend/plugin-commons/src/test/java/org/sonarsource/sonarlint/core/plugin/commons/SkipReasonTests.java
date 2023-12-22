@@ -21,12 +21,12 @@ package org.sonarsource.sonarlint.core.plugin.commons;
 
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.Language;
-import org.sonarsource.sonarlint.core.plugin.commons.SkipReason.IncompatiblePluginApi;
-import org.sonarsource.sonarlint.core.plugin.commons.SkipReason.IncompatiblePluginVersion;
-import org.sonarsource.sonarlint.core.plugin.commons.SkipReason.LanguagesNotEnabled;
-import org.sonarsource.sonarlint.core.plugin.commons.SkipReason.UnsatisfiedDependency;
-import org.sonarsource.sonarlint.core.plugin.commons.SkipReason.UnsatisfiedRuntimeRequirement;
-import org.sonarsource.sonarlint.core.plugin.commons.SkipReason.UnsatisfiedRuntimeRequirement.RuntimeRequirement;
+import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason.IncompatiblePluginApi;
+import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason.IncompatiblePluginVersion;
+import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason.LanguagesNotEnabled;
+import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason.UnsatisfiedDependency;
+import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason.UnsatisfiedRuntimeRequirement;
+import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason.UnsatisfiedRuntimeRequirement.RuntimeRequirement;
 
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
