@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.commons.IssueStatus;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.Transition;
 import org.sonarsource.sonarlint.core.commons.Version;
@@ -163,8 +163,8 @@ public class IssueApi {
     return "/batch/issues?key=" + UrlUtils.urlEncode(key);
   }
 
-  private static String getPullIssuesUrl(String projectKey, String branchName, Set<Language> enabledLanguages, @Nullable Long changedSince) {
-    var enabledLanguageKeys = enabledLanguages.stream().map(Language::getLanguageKey).collect(Collectors.joining(","));
+  private static String getPullIssuesUrl(String projectKey, String branchName, Set<SonarLanguage> enabledLanguages, @Nullable Long changedSince) {
+    var enabledLanguageKeys = enabledLanguages.stream().map(SonarLanguage::getSonarLanguageKey).collect(Collectors.joining(","));
     var url = new StringBuilder()
       .append("/api/issues/pull?projectKey=")
       .append(UrlUtils.urlEncode(projectKey)).append("&branchName=").append(UrlUtils.urlEncode(branchName));
@@ -177,7 +177,7 @@ public class IssueApi {
     return url.toString();
   }
 
-  public IssuesPullResult pullIssues(String projectKey, String branchName, Set<Language> enabledLanguages, @Nullable Long changedSince) {
+  public IssuesPullResult pullIssues(String projectKey, String branchName, Set<SonarLanguage> enabledLanguages, @Nullable Long changedSince) {
     return ServerApiHelper.processTimed(
       () -> serverApiHelper.get(getPullIssuesUrl(projectKey, branchName, enabledLanguages, changedSince)),
       response -> {
@@ -206,8 +206,8 @@ public class IssueApi {
     }
   }
 
-  private static String getPullTaintIssuesUrl(String projectKey, String branchName, Set<Language> enabledLanguages, @Nullable Long changedSince) {
-    var enabledLanguageKeys = enabledLanguages.stream().map(Language::getLanguageKey).collect(Collectors.joining(","));
+  private static String getPullTaintIssuesUrl(String projectKey, String branchName, Set<SonarLanguage> enabledLanguages, @Nullable Long changedSince) {
+    var enabledLanguageKeys = enabledLanguages.stream().map(SonarLanguage::getSonarLanguageKey).collect(Collectors.joining(","));
     var url = new StringBuilder()
       .append("/api/issues/pull_taint?projectKey=")
       .append(UrlUtils.urlEncode(projectKey)).append("&branchName=").append(UrlUtils.urlEncode(branchName));
@@ -220,7 +220,7 @@ public class IssueApi {
     return url.toString();
   }
 
-  public TaintIssuesPullResult pullTaintIssues(String projectKey, String branchName, Set<Language> enabledLanguages, @Nullable Long changedSince) {
+  public TaintIssuesPullResult pullTaintIssues(String projectKey, String branchName, Set<SonarLanguage> enabledLanguages, @Nullable Long changedSince) {
     return ServerApiHelper.processTimed(
       () -> serverApiHelper.get(getPullTaintIssuesUrl(projectKey, branchName, enabledLanguages, changedSince)),
       response -> {

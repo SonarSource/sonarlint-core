@@ -27,7 +27,7 @@ import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.Binding;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -77,7 +77,7 @@ public class HotspotSynchronizationService {
   private void syncServerHotspotsForProject(ServerApi serverApi, String connectionId, String projectKey, String branchName) {
     var storage = storageService.getStorageFacade().connection(connectionId);
     var serverVersion = getSonarServerVersion(serverApi, storage);
-    var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(Language::shouldSyncInConnectedMode)
+    var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
       .collect(Collectors.toCollection(LinkedHashSet::new));
     var hotspotsUpdater = new ServerHotspotUpdater(storage, new HotspotDownloader(enabledLanguagesToSync));
     if (HotspotApi.supportHotspotsPull(serverApi.isSonarCloud(), serverVersion)) {
@@ -101,7 +101,7 @@ public class HotspotSynchronizationService {
   private void downloadAllServerHotspots(String connectionId, ServerApi serverApi, String projectKey, String branchName, ProgressMonitor progress) {
     var storage = storageService.getStorageFacade().connection(connectionId);
     var serverVersion = getSonarServerVersion(serverApi, storage);
-    var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(Language::shouldSyncInConnectedMode)
+    var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
       .collect(Collectors.toCollection(LinkedHashSet::new));
     var hotspotsUpdater = new ServerHotspotUpdater(storage, new HotspotDownloader(enabledLanguagesToSync));
     hotspotsUpdater.updateAll(serverApi.hotspot(), projectKey, branchName, () -> serverVersion, progress);
@@ -115,7 +115,7 @@ public class HotspotSynchronizationService {
   private void downloadAllServerHotspotsForFile(String connectionId, ServerApi serverApi, String projectKey, Path serverRelativeFilePath, String branchName) {
     var storage = storageService.getStorageFacade().connection(connectionId);
     var serverVersion = getSonarServerVersion(serverApi, storage);
-    var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(Language::shouldSyncInConnectedMode)
+    var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
       .collect(Collectors.toCollection(LinkedHashSet::new));
     var hotspotsUpdater = new ServerHotspotUpdater(storage, new HotspotDownloader(enabledLanguagesToSync));
     hotspotsUpdater.updateForFile(serverApi.hotspot(), projectKey, serverRelativeFilePath, branchName, () -> serverVersion);

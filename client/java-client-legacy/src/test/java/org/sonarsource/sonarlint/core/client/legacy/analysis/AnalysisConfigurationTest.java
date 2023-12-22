@@ -24,7 +24,7 @@ import java.nio.file.Paths;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.client.legacy.testutils.OnDiskTestClientInputFile;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -33,7 +33,7 @@ class AnalysisConfigurationTest {
   void it_should_generate_a_readable_toString() {
     var filePath = Paths.get("filePath");
     var configuration = AnalysisConfiguration.builder()
-      .addInputFile(new OnDiskTestClientInputFile(filePath, "relativePath", false, StandardCharsets.UTF_8, Language.ABAP))
+      .addInputFile(new OnDiskTestClientInputFile(filePath, "relativePath", false, StandardCharsets.UTF_8, SonarLanguage.ABAP))
       .putAllExtraProperties(Map.of("key", "value"))
       .setBaseDir(Paths.get("baseDir"))
       .setModuleKey("moduleKey")

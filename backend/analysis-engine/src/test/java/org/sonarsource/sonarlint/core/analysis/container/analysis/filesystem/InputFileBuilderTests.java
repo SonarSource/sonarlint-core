@@ -30,9 +30,8 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.issue.ignore.scanner.IssueExclusionsLoader;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import testutils.FileUtils;
 import testutils.OnDiskTestClientInputFile;
 
@@ -57,7 +56,7 @@ class InputFileBuilderTests {
 
   @Test
   void testCreate() throws IOException {
-    when(langDetection.language(any(InputFile.class))).thenReturn(Language.JAVA);
+    when(langDetection.language(any(InputFile.class))).thenReturn(SonarLanguage.JAVA);
 
     var path = tempDir.resolve("file");
     Files.write(path, "test".getBytes(StandardCharsets.ISO_8859_1));
@@ -80,7 +79,7 @@ class InputFileBuilderTests {
   void testCreateWithLanguageSet() throws IOException {
     var path = tempDir.resolve("file");
     Files.write(path, "test".getBytes(StandardCharsets.ISO_8859_1));
-    ClientInputFile file = new OnDiskTestClientInputFile(path, "file", true, StandardCharsets.ISO_8859_1, Language.CPP);
+    ClientInputFile file = new OnDiskTestClientInputFile(path, "file", true, StandardCharsets.ISO_8859_1, SonarLanguage.CPP);
 
     var builder = new InputFileBuilder(langDetection, metadata, issueExclusionsLoader);
     var inputFile = builder.create(file);
@@ -91,7 +90,7 @@ class InputFileBuilderTests {
 
   @Test
   void testCreate_lazy_error() throws IOException {
-    when(langDetection.language(any(InputFile.class))).thenReturn(Language.JAVA);
+    when(langDetection.language(any(InputFile.class))).thenReturn(SonarLanguage.JAVA);
     ClientInputFile file = new OnDiskTestClientInputFile(Paths.get("INVALID"), "INVALID", true, StandardCharsets.ISO_8859_1);
 
     var builder = new InputFileBuilder(langDetection, metadata, issueExclusionsLoader);

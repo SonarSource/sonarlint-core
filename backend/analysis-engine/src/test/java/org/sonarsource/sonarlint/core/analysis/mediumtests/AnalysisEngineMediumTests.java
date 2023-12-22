@@ -50,7 +50,7 @@ import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.analysis.command.Command;
 import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -71,7 +71,7 @@ class AnalysisEngineMediumTests {
 
   @BeforeEach
   void prepare(@TempDir Path workDir) throws IOException {
-    var enabledLanguages = Set.of(Language.PYTHON);
+    var enabledLanguages = Set.of(SonarLanguage.PYTHON);
     var analysisGlobalConfig = AnalysisEngineConfiguration.builder()
       .setClientPid(1234L)
       .setWorkDir(workDir)
@@ -222,7 +222,7 @@ class AnalysisEngineMediumTests {
   private ClientInputFile preparePythonInputFile(Path baseDir, String content) throws IOException {
     final var file = new File(baseDir.toFile(), "file.py");
     FileUtils.write(file, content, StandardCharsets.UTF_8);
-    return new OnDiskTestClientInputFile(file.toPath(), "file.py", false, StandardCharsets.UTF_8, Language.PYTHON);
+    return new OnDiskTestClientInputFile(file.toPath(), "file.py", false, StandardCharsets.UTF_8, SonarLanguage.PYTHON);
   }
 
   private static Path findPythonJarPath() throws IOException {

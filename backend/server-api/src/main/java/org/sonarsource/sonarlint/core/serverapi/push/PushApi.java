@@ -24,7 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
@@ -58,16 +58,16 @@ public class PushApi {
     this.helper = helper;
   }
 
-  public EventStream subscribe(Set<String> projectKeys, Set<Language> enabledLanguages, Consumer<SonarServerEvent> serverEventConsumer) {
+  public EventStream subscribe(Set<String> projectKeys, Set<SonarLanguage> enabledLanguages, Consumer<SonarServerEvent> serverEventConsumer) {
     return new EventStream(helper, rawEvent -> handleRawEvent(rawEvent, serverEventConsumer))
       .connect(getWsPath(projectKeys, enabledLanguages));
   }
 
-  private static String getWsPath(Set<String> projectKeys, Set<Language> enabledLanguages) {
+  private static String getWsPath(Set<String> projectKeys, Set<SonarLanguage> enabledLanguages) {
     return API_PATH + "?projectKeys=" +
       projectKeys.stream().map(UrlUtils::urlEncode).collect(Collectors.joining(",")) +
       "&languages=" +
-      enabledLanguages.stream().map(Language::getLanguageKey).map(UrlUtils::urlEncode).collect(Collectors.joining(","));
+      enabledLanguages.stream().map(SonarLanguage::getSonarLanguageKey).map(UrlUtils::urlEncode).collect(Collectors.joining(","));
   }
 
   private static void handleRawEvent(Event rawEvent, Consumer<SonarServerEvent> serverEventConsumer) {

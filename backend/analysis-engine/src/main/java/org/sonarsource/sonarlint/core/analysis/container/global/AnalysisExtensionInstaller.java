@@ -24,7 +24,7 @@ import org.sonar.api.config.Configuration;
 import org.sonar.api.utils.AnnotationUtils;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.analysis.container.ContainerLifespan;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.plugin.commons.ExtensionInstaller;
 import org.sonarsource.sonarlint.core.plugin.commons.ExtensionUtils;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
@@ -64,7 +64,7 @@ public class AnalysisExtensionInstaller extends ExtensionInstaller {
   }
 
   private boolean onlySonarSourceSensor(String pluginKey, Object extension) {
-    return Language.containsPlugin(pluginKey) || loadedPlugins.getAdditionalAllowedPlugins().contains(pluginKey) || isNotSensor(extension);
+    return SonarLanguage.containsPlugin(pluginKey) || loadedPlugins.getAdditionalAllowedPlugins().contains(pluginKey) || isNotSensor(extension);
   }
 
   private static boolean isNotSensor(Object extension) {

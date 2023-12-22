@@ -24,7 +24,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -35,19 +35,19 @@ public class ServerConnection {
 
   private static final Version CLEAN_CODE_TAXONOMY_MIN_SQ_VERSION = Version.create("10.2");
 
-  private final Set<Language> enabledLanguagesToSync;
+  private final Set<SonarLanguage> enabledLanguagesToSync;
   private final LocalStorageSynchronizer storageSynchronizer;
   private final boolean isSonarCloud;
   private final ServerInfoSynchronizer serverInfoSynchronizer;
   private final ConnectionStorage storage;
 
-  public ServerConnection(Path globalStorageRoot, String connectionId, boolean isSonarCloud, Set<Language> enabledLanguages, Set<String> embeddedPluginKeys, Path workDir) {
+  public ServerConnection(Path globalStorageRoot, String connectionId, boolean isSonarCloud, Set<SonarLanguage> enabledLanguages, Set<String> embeddedPluginKeys, Path workDir) {
     this(StorageFacadeCache.get().getOrCreate(globalStorageRoot, workDir), connectionId, isSonarCloud, enabledLanguages, embeddedPluginKeys);
   }
 
-  public ServerConnection(StorageFacade storageFacade, String connectionId, boolean isSonarCloud, Set<Language> enabledLanguages, Set<String> embeddedPluginKeys) {
+  public ServerConnection(StorageFacade storageFacade, String connectionId, boolean isSonarCloud, Set<SonarLanguage> enabledLanguages, Set<String> embeddedPluginKeys) {
     this.isSonarCloud = isSonarCloud;
-    this.enabledLanguagesToSync = enabledLanguages.stream().filter(Language::shouldSyncInConnectedMode).collect(Collectors.toCollection(LinkedHashSet::new));
+    this.enabledLanguagesToSync = enabledLanguages.stream().filter(SonarLanguage::shouldSyncInConnectedMode).collect(Collectors.toCollection(LinkedHashSet::new));
 
     this.storage = storageFacade.connection(connectionId);
     serverInfoSynchronizer = new ServerInfoSynchronizer(storage);
@@ -100,7 +100,7 @@ public class ServerConnection {
       .orElse(false);
   }
 
-  public Set<Language> getEnabledLanguagesToSync() {
+  public Set<SonarLanguage> getEnabledLanguagesToSync() {
     return enabledLanguagesToSync;
   }
 }

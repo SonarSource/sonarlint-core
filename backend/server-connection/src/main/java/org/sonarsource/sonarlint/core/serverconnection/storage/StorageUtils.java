@@ -25,13 +25,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 
 public class StorageUtils {
 
-  public static Set<Language> deserializeLanguages(Optional<String> lastEnabledLanguages) {
+  public static Set<SonarLanguage> deserializeLanguages(Optional<String> lastEnabledLanguages) {
     Set<String> lastIssueEnabledLanguagesStringSet = Collections.emptySet();
-    Set<Language> lastIssueEnabledLanguagesSet = new HashSet<>();
+    Set<SonarLanguage> lastIssueEnabledLanguagesSet = new HashSet<>();
 
     if (lastEnabledLanguages.isPresent()) {
       lastIssueEnabledLanguagesStringSet = Stream.of(lastEnabledLanguages.get().split(",", -1))
@@ -39,7 +39,7 @@ public class StorageUtils {
     }
 
     for(String languageString : lastIssueEnabledLanguagesStringSet){
-      var language = Language.getLanguageByLanguageKey(languageString);
+      var language = SonarLanguage.getLanguageByLanguageKey(languageString);
       if(language.isPresent()){
         lastIssueEnabledLanguagesSet.add(language.get());
       }

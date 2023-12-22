@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordAuthenticationResponse;
@@ -109,7 +109,7 @@ class ProxyMediumTests {
 
     backend = newBackend()
       .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+        projectStorage -> projectStorage.withRuleSet(SonarLanguage.PYTHON.getSonarLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
@@ -136,7 +136,7 @@ class ProxyMediumTests {
 
     backend = newBackend()
       .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+        projectStorage -> projectStorage.withRuleSet(SonarLanguage.PYTHON.getSonarLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
@@ -168,7 +168,7 @@ class ProxyMediumTests {
 
     backend = newBackend()
       .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+        projectStorage -> projectStorage.withRuleSet(SonarLanguage.PYTHON.getSonarLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
@@ -199,7 +199,7 @@ class ProxyMediumTests {
 
     backend = newBackend()
       .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+        projectStorage -> projectStorage.withRuleSet(SonarLanguage.PYTHON.getSonarLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
@@ -230,7 +230,7 @@ class ProxyMediumTests {
 
     backend = newBackend()
       .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+        projectStorage -> projectStorage.withRuleSet(SonarLanguage.PYTHON.getSonarLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
@@ -262,7 +262,7 @@ class ProxyMediumTests {
 
     backend = newBackend()
       .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
-        projectStorage -> projectStorage.withRuleSet(Language.PYTHON.getLanguageKey(),
+        projectStorage -> projectStorage.withRuleSet(SonarLanguage.PYTHON.getSonarLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)

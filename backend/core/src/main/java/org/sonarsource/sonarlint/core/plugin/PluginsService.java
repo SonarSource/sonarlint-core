@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
@@ -95,7 +95,7 @@ public class PluginsService {
     return Set.copyOf(pluginsToLoadByKey.values());
   }
 
-  private static PluginsLoadResult loadPlugins(Set<Language> enabledLanguages, Set<Path> pluginPaths, boolean enableDataflowBugDetection) {
+  private static PluginsLoadResult loadPlugins(Set<SonarLanguage> enabledLanguages, Set<Path> pluginPaths, boolean enableDataflowBugDetection) {
     // not interested in the Node.js path at the moment
     var config = new PluginsLoader.Configuration(pluginPaths, enabledLanguages, enableDataflowBugDetection);
     return new PluginsLoader().load(config);

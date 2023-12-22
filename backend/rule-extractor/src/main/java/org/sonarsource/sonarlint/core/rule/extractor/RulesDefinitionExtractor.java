@@ -27,11 +27,11 @@ import org.sonar.api.Plugin;
 import org.sonar.api.rules.RuleType;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.api.server.rule.RulesDefinition.Context;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 
 public class RulesDefinitionExtractor {
 
-  public List<SonarLintRuleDefinition> extractRules(Map<String, Plugin> pluginInstancesByKeys, Set<Language> enabledLanguages,
+  public List<SonarLintRuleDefinition> extractRules(Map<String, Plugin> pluginInstancesByKeys, Set<SonarLanguage> enabledLanguages,
     boolean includeTemplateRules, boolean includeSecurityHotspots) {
     Context context;
     try {
@@ -48,7 +48,7 @@ public class RulesDefinitionExtractor {
       if (repoDef.isExternal()) {
         continue;
       }
-      var repoLanguage = Language.forKey(repoDef.language());
+      var repoLanguage = SonarLanguage.forKey(repoDef.language());
       if (repoLanguage.isEmpty() || !enabledLanguages.contains(repoLanguage.get())) {
         continue;
       }

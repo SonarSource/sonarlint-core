@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -45,13 +45,13 @@ import static java.util.function.Predicate.not;
 
 public class IssueDownloader {
 
-  private final Set<Language> enabledLanguages;
+  private final Set<SonarLanguage> enabledLanguages;
 
-  public Set<Language> getEnabledLanguages() {
+  public Set<SonarLanguage> getEnabledLanguages() {
     return enabledLanguages;
   }
 
-  public IssueDownloader(Set<Language> enabledLanguages) {
+  public IssueDownloader(Set<SonarLanguage> enabledLanguages) {
     this.enabledLanguages = enabledLanguages;
   }
 

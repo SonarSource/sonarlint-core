@@ -31,7 +31,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -47,13 +47,13 @@ public class RulesApi {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  public static final Map<Language, String> TAINT_REPOS_BY_LANGUAGE = Map.of(
-    Language.CS, "roslyn.sonaranalyzer.security.cs",
-    Language.JAVA, "javasecurity",
-    Language.JS, "jssecurity",
-    Language.TS, "tssecurity",
-    Language.PHP, "phpsecurity",
-    Language.PYTHON, "pythonsecurity");
+  public static final Map<SonarLanguage, String> TAINT_REPOS_BY_LANGUAGE = Map.of(
+    SonarLanguage.CS, "roslyn.sonaranalyzer.security.cs",
+    SonarLanguage.JAVA, "javasecurity",
+    SonarLanguage.JS, "jssecurity",
+    SonarLanguage.TS, "tssecurity",
+    SonarLanguage.PHP, "phpsecurity",
+    SonarLanguage.PYTHON, "pythonsecurity");
 
   public static final Set<String> TAINT_REPOS = Set.copyOf(TAINT_REPOS_BY_LANGUAGE.values());
 
@@ -133,7 +133,7 @@ public class RulesApi {
     return builder.toString();
   }
 
-  public Set<String> getAllTaintRules(List<Language> enabledLanguages, ProgressMonitor progress) {
+  public Set<String> getAllTaintRules(List<SonarLanguage> enabledLanguages, ProgressMonitor progress) {
     Set<String> taintRules = new HashSet<>();
     serverApiHelper.getPaginated(getSearchByRepoUrl(enabledLanguages.stream().map(TAINT_REPOS_BY_LANGUAGE::get).filter(Objects::nonNull).collect(toList())),
       Rules.SearchResponse::parseFrom,

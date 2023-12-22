@@ -28,7 +28,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.serverconnection.ServerConnection;
 
@@ -64,9 +64,9 @@ class NotebookLanguageMediumTests {
 
   @Test
   void should_not_enable_sync_for_notebook_python_language() {
-    var serverConnection = new ServerConnection(backend.getStorageRoot(), CONNECTION_ID, false, Set.of(Language.JAVA, Language.JS,
-      Language.IPYTHON), Set.of(), backend.getWorkDir());
-    assertThat(serverConnection.getEnabledLanguagesToSync()).containsOnly(Language.JAVA, Language.JS);
+    var serverConnection = new ServerConnection(backend.getStorageRoot(), CONNECTION_ID, false, Set.of(SonarLanguage.JAVA, SonarLanguage.JS,
+      SonarLanguage.IPYTHON), Set.of(), backend.getWorkDir());
+    assertThat(serverConnection.getEnabledLanguagesToSync()).containsOnly(SonarLanguage.JAVA, SonarLanguage.JS);
   }
 
 }

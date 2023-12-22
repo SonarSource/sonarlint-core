@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import testutils.TestInputFileBuilder;
 
@@ -57,8 +57,8 @@ class SonarLintFileSystemTests {
   void add_languages() {
     assertThat(fs.languages()).isEmpty();
 
-    inputFileCache.doAdd(new TestInputFileBuilder("src/Foo.php").setLanguage(Language.PHP).build());
-    inputFileCache.doAdd(new TestInputFileBuilder("src/Bar.java").setLanguage(Language.JAVA).build());
+    inputFileCache.doAdd(new TestInputFileBuilder("src/Foo.php").setLanguage(SonarLanguage.PHP).build());
+    inputFileCache.doAdd(new TestInputFileBuilder("src/Bar.java").setLanguage(SonarLanguage.JAVA).build());
 
     assertThat(fs.languages()).containsOnly("java", "php");
   }
@@ -67,10 +67,10 @@ class SonarLintFileSystemTests {
   void files() {
     assertThat(fs.inputFiles(fs.predicates().all())).isEmpty();
 
-    var inputFile = new TestInputFileBuilder("src/Foo.php").setBaseDir(basedir).setLanguage(Language.PHP).build();
+    var inputFile = new TestInputFileBuilder("src/Foo.php").setBaseDir(basedir).setLanguage(SonarLanguage.PHP).build();
     inputFileCache.doAdd(inputFile);
-    inputFileCache.doAdd(new TestInputFileBuilder("src/Bar.java").setBaseDir(basedir).setLanguage(Language.JAVA).build());
-    inputFileCache.doAdd(new TestInputFileBuilder("src/Baz.java").setBaseDir(basedir).setLanguage(Language.JAVA).build());
+    inputFileCache.doAdd(new TestInputFileBuilder("src/Bar.java").setBaseDir(basedir).setLanguage(SonarLanguage.JAVA).build());
+    inputFileCache.doAdd(new TestInputFileBuilder("src/Baz.java").setBaseDir(basedir).setLanguage(SonarLanguage.JAVA).build());
 
     // no language
     inputFileCache.doAdd(new TestInputFileBuilder("src/readme.txt").setBaseDir(basedir).build());
@@ -105,8 +105,8 @@ class SonarLintFileSystemTests {
 
   @Test
   void input_file_fails_if_too_many_results() {
-    inputFileCache.doAdd(new TestInputFileBuilder("src/Bar.java").setLanguage(Language.JAVA).build());
-    inputFileCache.doAdd(new TestInputFileBuilder("src/Baz.java").setLanguage(Language.JAVA).build());
+    inputFileCache.doAdd(new TestInputFileBuilder("src/Bar.java").setLanguage(SonarLanguage.JAVA).build());
+    inputFileCache.doAdd(new TestInputFileBuilder("src/Baz.java").setLanguage(SonarLanguage.JAVA).build());
 
     var thrown = assertThrows(IllegalArgumentException.class, () -> fs.inputFile(fs.predicates().all()));
     assertThat(thrown).hasMessageStartingWith("expected one element");
@@ -114,7 +114,7 @@ class SonarLintFileSystemTests {
 
   @Test
   void input_file_supports_non_indexed_predicates() {
-    inputFileCache.doAdd(new TestInputFileBuilder("src/Bar.java").setLanguage(Language.JAVA).build());
+    inputFileCache.doAdd(new TestInputFileBuilder("src/Bar.java").setLanguage(SonarLanguage.JAVA).build());
 
     // it would fail if more than one java file
     assertThat(fs.inputFile(fs.predicates().hasLanguage("java"))).isNotNull();

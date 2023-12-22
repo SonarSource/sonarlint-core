@@ -29,7 +29,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public enum Language {
+public enum SonarLanguage {
 
   ABAP("abap", "abap", new String[]{".abap", ".ab4", ".flow", ".asprog"}, "sonar.abap.file.suffixes"),
   APEX("apex", "sonarapex", new String[]{".cls", ".trigger"}, "sonar.apex.file.suffixes"),
@@ -67,30 +67,34 @@ public enum Language {
   KUBERNETES("kubernetes", "iac", new String[0], "sonar.kubernetes.file.suffixes"),
   TERRAFORM("terraform", "iac", new String[]{".tf"}, "sonar.terraform.file.suffixes"),
   AZURERESOURCEMANAGER("azureresourcemanager", "iac", new String[]{".bicep"}, Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE);
-  private final String languageKey;
+  private final String sonarLanguageKey;
+
+  /**
+   * The Sonar Plugin declaring this language
+   */
   private final String pluginKey;
   private final String[] defaultFileSuffixes;
   private final String fileSuffixesPropKey;
 
-  private static final Map<String, Language> mMap = Collections.unmodifiableMap(initializeMapping());
+  private static final Map<String, SonarLanguage> mMap = Collections.unmodifiableMap(initializeMapping());
 
-  private static Map<String, Language> initializeMapping() {
-    Map<String, Language> mMap = new HashMap<>();
-    for (Language l : Language.values()) {
-      mMap.put(l.languageKey, l);
+  private static Map<String, SonarLanguage> initializeMapping() {
+    Map<String, SonarLanguage> mMap = new HashMap<>();
+    for (SonarLanguage l : SonarLanguage.values()) {
+      mMap.put(l.sonarLanguageKey, l);
     }
     return mMap;
   }
 
-  Language(String languageKey, String pluginKey, String[] defaultFileSuffixes, String fileSuffixesPropKey) {
-    this.languageKey = languageKey;
+  SonarLanguage(String sonarLanguageKey, String pluginKey, String[] defaultFileSuffixes, String fileSuffixesPropKey) {
+    this.sonarLanguageKey = sonarLanguageKey;
     this.pluginKey = pluginKey;
     this.defaultFileSuffixes = defaultFileSuffixes;
     this.fileSuffixesPropKey = fileSuffixesPropKey;
   }
 
-  public String getLanguageKey() {
-    return languageKey;
+  public String getSonarLanguageKey() {
+    return sonarLanguageKey;
   }
 
   public String getPluginKey() {
@@ -106,15 +110,15 @@ public enum Language {
   }
 
   public boolean shouldSyncInConnectedMode() {
-    return !equals(Language.IPYTHON);
+    return !equals(SonarLanguage.IPYTHON);
   }
 
-  public static Set<Language> getLanguagesByPluginKey(String pluginKey) {
+  public static Set<SonarLanguage> getLanguagesByPluginKey(String pluginKey) {
     return Stream.of(values()).filter(l -> l.getPluginKey().equals(pluginKey)).collect(Collectors.toCollection(LinkedHashSet::new));
   }
 
-  public static Optional<Language> getLanguageByLanguageKey(String languageKey) {
-    var languages = Stream.of(values()).filter(l -> l.getLanguageKey().equals(languageKey)).collect(Collectors.toCollection(ArrayList::new));
+  public static Optional<SonarLanguage> getLanguageByLanguageKey(String languageKey) {
+    var languages = Stream.of(values()).filter(l -> l.getSonarLanguageKey().equals(languageKey)).collect(Collectors.toCollection(ArrayList::new));
     return languages.isEmpty() ? Optional.empty() : Optional.of(languages.get(0));
   }
 
@@ -122,7 +126,7 @@ public enum Language {
     return Stream.of(values()).anyMatch(l -> l.getPluginKey().equals(pluginKey));
   }
 
-  public static Optional<Language> forKey(String languageKey) {
+  public static Optional<SonarLanguage> forKey(String languageKey) {
     return Optional.ofNullable(mMap.get(languageKey));
   }
 

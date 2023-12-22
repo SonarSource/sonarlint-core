@@ -27,16 +27,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 
 public class TestClientInputFile implements ClientInputFile {
   private Path path;
   private boolean isTest;
   private Charset encoding;
-  private Language language;
+  private SonarLanguage language;
   private Path baseDir;
 
-  public TestClientInputFile(final Path baseDir, final Path path, final boolean isTest, final Charset encoding, @Nullable Language language) {
+  public TestClientInputFile(final Path baseDir, final Path path, final boolean isTest, final Charset encoding, @Nullable SonarLanguage language) {
     this.baseDir = baseDir;
     this.path = path;
     this.isTest = isTest;
@@ -80,7 +80,7 @@ public class TestClientInputFile implements ClientInputFile {
   }
 
   @Override
-  public Language language() {
+  public SonarLanguage language() {
     return language;
   }
 

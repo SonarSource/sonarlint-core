@@ -33,7 +33,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput.Level;
@@ -520,30 +520,30 @@ class XodusServerIssueStoreTests {
 
   @Test
   void should_get_last_enabled_languages_for_issues() {
-    store.mergeIssues("branch", List.of(aServerIssue()), Set.of(), Instant.ofEpochMilli(123456789), Set.of(Language.C, Language.GO));
+    store.mergeIssues("branch", List.of(aServerIssue()), Set.of(), Instant.ofEpochMilli(123456789), Set.of(SonarLanguage.C, SonarLanguage.GO));
 
     var lastEnabledLanguages = store.getLastIssueEnabledLanguages("branch");
 
-    assertThat(lastEnabledLanguages).isEqualTo(Set.of(Language.C, Language.GO));
+    assertThat(lastEnabledLanguages).isEqualTo(Set.of(SonarLanguage.C, SonarLanguage.GO));
   }
 
   @Test
   void should_get_last_enabled_languages_for_hotspots() {
-    store.mergeHotspots("branch", List.of(aServerHotspot()), Set.of(), Instant.ofEpochMilli(123456789), Set.of(Language.C, Language.GO));
+    store.mergeHotspots("branch", List.of(aServerHotspot()), Set.of(), Instant.ofEpochMilli(123456789), Set.of(SonarLanguage.C, SonarLanguage.GO));
 
     var lastEnabledLanguages = store.getLastHotspotEnabledLanguages("branch");
 
-    assertThat(lastEnabledLanguages).isEqualTo(Set.of(Language.C, Language.GO));
+    assertThat(lastEnabledLanguages).isEqualTo(Set.of(SonarLanguage.C, SonarLanguage.GO));
   }
 
   @Test
   void should_get_last_enabled_languages_for_taints() {
-    store.mergeTaintIssues("branch", List.of(aServerTaintIssue()), Set.of(), Instant.ofEpochMilli(123456789), Set.of(Language.C,
-      Language.GO));
+    store.mergeTaintIssues("branch", List.of(aServerTaintIssue()), Set.of(), Instant.ofEpochMilli(123456789), Set.of(SonarLanguage.C,
+      SonarLanguage.GO));
 
     var lastEnabledLanguages = store.getLastTaintEnabledLanguages("branch");
 
-    assertThat(lastEnabledLanguages).isEqualTo(Set.of(Language.C, Language.GO));
+    assertThat(lastEnabledLanguages).isEqualTo(Set.of(SonarLanguage.C, SonarLanguage.GO));
   }
 
   @Test

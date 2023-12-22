@@ -55,7 +55,7 @@ import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
@@ -345,7 +345,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void mergeIssues(String branchName, List<ServerIssue<?>> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp, Set<Language> enabledLanguages) {
+  public void mergeIssues(String branchName, List<ServerIssue<?>> issuesToMerge, Set<String> closedIssueKeysToDelete, Instant syncTimestamp, Set<SonarLanguage> enabledLanguages) {
     var issuesByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
     timed(mergedMessage(issuesToMerge.size(), closedIssueKeysToDelete.size(), ISSUES), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
@@ -364,7 +364,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
 
   @Override
   public void mergeTaintIssues(String branchName, List<ServerTaintIssue> issuesToMerge, Set<String> closedIssueKeysToDelete,
-    Instant syncTimestamp, Set<Language> enabledLanguages) {
+    Instant syncTimestamp, Set<SonarLanguage> enabledLanguages) {
     var issuesByFilePath = issuesToMerge.stream().collect(Collectors.groupingBy(ServerTaintIssue::getFilePath));
     timed(mergedMessage(issuesToMerge.size(), closedIssueKeysToDelete.size(), "taint issues"), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
@@ -382,7 +382,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void mergeHotspots(String branchName, List<ServerHotspot> hotspotsToMerge, Set<String> closedHotspotKeysToDelete, Instant syncTimestamp, Set<Language> enabledLanguages) {
+  public void mergeHotspots(String branchName, List<ServerHotspot> hotspotsToMerge, Set<String> closedHotspotKeysToDelete, Instant syncTimestamp, Set<SonarLanguage> enabledLanguages) {
     var hotspotsByFilePath = hotspotsToMerge.stream().collect(Collectors.groupingBy(ServerHotspot::getFilePath));
     timed(mergedMessage(hotspotsToMerge.size(), closedHotspotKeysToDelete.size(), HOTSPOTS), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
@@ -414,7 +414,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public Set<Language> getLastIssueEnabledLanguages(String branchName) {
+  public Set<SonarLanguage> getLastIssueEnabledLanguages(String branchName) {
     var lastEnabledLanguages = entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
       .map(branch -> (String) branch.getProperty(LAST_ISSUE_ENABLED_LANGUAGES)));
 
@@ -422,7 +422,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public Set<Language> getLastTaintEnabledLanguages(String branchName) {
+  public Set<SonarLanguage> getLastTaintEnabledLanguages(String branchName) {
     var lastEnabledLanguages = entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
       .map(branch -> (String) branch.getProperty(LAST_TAINT_ENABLED_LANGUAGES)));
 
@@ -430,7 +430,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public Set<Language> getLastHotspotEnabledLanguages(String branchName) {
+  public Set<SonarLanguage> getLastHotspotEnabledLanguages(String branchName) {
     var lastEnabledLanguages = entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
       .map(branch -> (String) branch.getProperty(LAST_HOTSPOT_ENABLED_LANGUAGES)));
     return deserializeLanguages(lastEnabledLanguages);
@@ -519,8 +519,8 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     hotspots.forEach(hotspot -> updateOrCreateHotspot(fileEntity, hotspot, txn));
   }
 
-  private static String getSerializedLanguages(Set<Language> enabledLanguages) {
-    return enabledLanguages.stream().map(Language::getLanguageKey).collect(joining(","));
+  private static String getSerializedLanguages(Set<SonarLanguage> enabledLanguages) {
+    return enabledLanguages.stream().map(SonarLanguage::getSonarLanguageKey).collect(joining(","));
   }
 
   private static void updateOrCreateHotspot(Entity fileEntity, ServerHotspot hotspot, StoreTransaction transaction) {

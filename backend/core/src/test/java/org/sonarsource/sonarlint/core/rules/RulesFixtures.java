@@ -23,13 +23,13 @@ import org.sonar.api.rules.CleanCodeAttribute;
 import org.sonar.api.rules.RuleType;
 import org.sonar.api.server.rule.RuleParamType;
 import org.sonar.api.server.rule.RulesDefinition;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 
 public class RulesFixtures {
   public static SonarLintRuleDefinition aRule() {
     RulesDefinition.Context c = new RulesDefinition.Context();
-    var repository = c.createRepository("repo", Language.JAVA.getLanguageKey());
+    var repository = c.createRepository("repo", SonarLanguage.JAVA.getSonarLanguageKey());
     repository.createRule("ruleKey")
       .setName("ruleName")
       .setType(RuleType.BUG)

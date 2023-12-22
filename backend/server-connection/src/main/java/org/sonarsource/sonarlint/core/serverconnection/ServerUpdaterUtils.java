@@ -22,15 +22,15 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 
 public class ServerUpdaterUtils {
 
   /**
    * @return empty if there is no exact match for languages to indicate all issues must be fetched
    */
-  public static Optional<Instant> computeLastSync(Set<Language> enabledLanguages, Optional<Instant> lastSync,
-    Set<Language> lastEnabledLanguages) {
+  public static Optional<Instant> computeLastSync(Set<SonarLanguage> enabledLanguages, Optional<Instant> lastSync,
+    Set<SonarLanguage> lastEnabledLanguages) {
     if (lastEnabledLanguages.isEmpty() || (!lastEnabledLanguages.equals(enabledLanguages))) {
       lastSync = Optional.empty();
     }

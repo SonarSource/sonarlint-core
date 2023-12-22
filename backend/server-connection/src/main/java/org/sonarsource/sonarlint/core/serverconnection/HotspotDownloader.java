@@ -26,7 +26,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
@@ -37,9 +37,9 @@ import static java.util.function.Predicate.not;
 
 public class HotspotDownloader {
 
-  private final Set<Language> enabledLanguages;
+  private final Set<SonarLanguage> enabledLanguages;
 
-  public HotspotDownloader(Set<Language> enabledLanguages) {
+  public HotspotDownloader(Set<SonarLanguage> enabledLanguages) {
     this.enabledLanguages = enabledLanguages;
   }
 

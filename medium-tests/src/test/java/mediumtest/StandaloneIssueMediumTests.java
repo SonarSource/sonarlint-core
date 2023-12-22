@@ -59,7 +59,7 @@ import org.sonarsource.sonarlint.core.client.legacy.analysis.AnalysisConfigurati
 import org.sonarsource.sonarlint.core.client.legacy.analysis.EngineConfiguration;
 import org.sonarsource.sonarlint.core.client.legacy.analysis.RawIssue;
 import org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.CanceledException;
@@ -301,7 +301,7 @@ class StandaloneIssueMediumTests {
     // prepareInputFile("foo.h", "", false, StandardCharsets.UTF_8, Language.C);
     // prepareInputFile("foo2.h", "", false, StandardCharsets.UTF_8, Language.C);
     var inputFile = prepareInputFile("foo.c", "#import \"foo.h\"\n"
-      + "#import \"foo2.h\" //NOSONAR\n", false, StandardCharsets.UTF_8, Language.C);
+      + "#import \"foo2.h\" //NOSONAR\n", false, StandardCharsets.UTF_8, SonarLanguage.C);
 
     var buildWrapperContent = "{\"version\":0,\"captures\":[" +
       "{" +
@@ -388,7 +388,7 @@ class StandaloneIssueMediumTests {
         .addInputFile(inputFile)
         .build(),
       issues::add, null, null, CONFIGURATION_SCOPE_ID);
-    assertThat(results.languagePerFile()).containsExactly(entry(inputFile, Language.PHP));
+    assertThat(results.languagePerFile()).containsExactly(entry(inputFile, SonarLanguage.PHP));
   }
 
   @Test
@@ -1031,7 +1031,7 @@ class StandaloneIssueMediumTests {
     }
   }
 
-  private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding, @Nullable Language language) throws IOException {
+  private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding, @Nullable SonarLanguage language) throws IOException {
     final var file = new File(baseDir, relativePath);
     FileUtils.write(file, content, encoding);
     return new OnDiskTestClientInputFile(file.toPath(), relativePath, isTest, encoding, language);

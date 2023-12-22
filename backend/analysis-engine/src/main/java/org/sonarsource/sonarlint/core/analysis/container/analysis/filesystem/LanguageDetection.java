@@ -30,7 +30,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.utils.MessageException;
-import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 import static java.util.stream.Collectors.joining;
@@ -45,10 +45,10 @@ public class LanguageDetection {
   /**
    * Lower-case extension -> languages
    */
-  private final Map<Language, String[]> extensionsByLanguage = new LinkedHashMap<>();
+  private final Map<SonarLanguage, String[]> extensionsByLanguage = new LinkedHashMap<>();
 
   public LanguageDetection(Configuration config) {
-    for (Language language : Language.values()) {
+    for (SonarLanguage language : SonarLanguage.values()) {
       var extensions = config.get(language.getFileSuffixesPropKey()).isPresent() ? config.getStringArray(language.getFileSuffixesPropKey())
         : language.getDefaultFileSuffixes();
       for (var i = 0; i < extensions.length; i++) {
@@ -60,9 +60,9 @@ public class LanguageDetection {
   }
 
   @CheckForNull
-  public Language language(InputFile inputFile) {
-    Language detectedLanguage = null;
-    for (Entry<Language, String[]> languagePatterns : extensionsByLanguage.entrySet()) {
+  public SonarLanguage language(InputFile inputFile) {
+    SonarLanguage detectedLanguage = null;
+    for (Entry<SonarLanguage, String[]> languagePatterns : extensionsByLanguage.entrySet()) {
       if (isCandidateForLanguage(inputFile, languagePatterns.getValue())) {
         if (detectedLanguage == null) {
           detectedLanguage = languagePatterns.getKey();
@@ -89,7 +89,7 @@ public class LanguageDetection {
     return false;
   }
 
-  private String getDetails(Language detectedLanguage) {
+  private String getDetails(SonarLanguage detectedLanguage) {
     return detectedLanguage + ": "
       + Arrays.stream(extensionsByLanguage.get(detectedLanguage))
         .collect(joining(","));
