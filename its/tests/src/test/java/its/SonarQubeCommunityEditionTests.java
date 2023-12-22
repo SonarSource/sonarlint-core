@@ -192,7 +192,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
         null, "python:PrintStatementUsage", "Replace print statement by built-in function.");
       var trackWithServerIssuesParams = new TrackWithServerIssuesParams("CONFIG_SCOPE_ID", Map.of(Path.of("src/main/java/foo/Foo.java"),
         List.of(javaClientTrackedFindingDto), Path.of("src/main/java/foo/main.py"), List.of(pythonClientTrackedFindingDto)), true);
-      var issuesByServerRelativePath = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByIdeRelativePath();
+      var issuesByServerRelativePath = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByServerRelativePath();
 
       var mainPyIssues = issuesByServerRelativePath.get(Path.of("src/main/java/foo/main.py"));
       assertThat(mainPyIssues).hasSize(1);

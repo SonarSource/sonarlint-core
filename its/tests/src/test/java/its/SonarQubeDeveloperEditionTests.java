@@ -670,7 +670,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
             null, "java:S106", "Replace this use of System.out by a logger."))),
           true)).get();
 
-        var fooIssues = issuesResponse.getIssuesByIdeRelativePath().get(Path.of("src/main/java/foo/Foo.java"));
+        var fooIssues = issuesResponse.getIssuesByServerRelativePath().get(Path.of("src/main/java/foo/Foo.java"));
         assertThat(fooIssues).hasSize(1);
         assertThat(fooIssues.get(0).isLeft()).isTrue();
         assertThat(fooIssues.get(0).getLeft().isResolved()).isTrue();
@@ -746,7 +746,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         null, "java:S106", "Replace this use of System.out by a logger."); // not resolved on both branches
       var trackWithServerIssuesParams = new TrackWithServerIssuesParams(CONFIG_SCOPE_ID, Map.of(Path.of("src/main/java/foo/Foo.java"),
         List.of(clientTrackedDto_s100, clientTrackedDto_s1172, clientTrackedDto_s106)), true);
-      var issuesOnMainBranch = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByIdeRelativePath();
+      var issuesOnMainBranch = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByServerRelativePath();
 
       var fooIssuesMainBranch = issuesOnMainBranch.get(Path.of("src/main/java/foo/Foo.java"));
       assertThat(fooIssuesMainBranch).hasSize(3);
@@ -767,7 +767,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           .isEqualTo(featureBranch));
       await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
 
-      var issuesOnFeatureBranch = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByIdeRelativePath();
+      var issuesOnFeatureBranch = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByServerRelativePath();
 
       var fooIssuesFeatureBranch = issuesOnFeatureBranch.get(Path.of("src/main/java/foo/Foo.java"));
       assertThat(fooIssuesFeatureBranch).hasSize(3);

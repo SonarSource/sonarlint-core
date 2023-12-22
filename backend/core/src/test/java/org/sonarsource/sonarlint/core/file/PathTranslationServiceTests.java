@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.file;
 
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.ServerApiProvider;

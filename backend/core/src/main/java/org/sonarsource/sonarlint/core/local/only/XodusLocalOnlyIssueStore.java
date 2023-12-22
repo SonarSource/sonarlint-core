@@ -222,7 +222,7 @@ public class XodusLocalOnlyIssueStore {
 
   private static Optional<Entity> findUniquePathAmong(EntityIterable iterable, String propertyName, Path path) {
     return StreamSupport.stream(iterable.spliterator(), false)
-      .filter(e -> path.toString().equals(e.getProperty(propertyName)))
+      .filter(e -> path.equals(Path.of((String) e.getProperty(propertyName))))
       .findFirst();
   }
 

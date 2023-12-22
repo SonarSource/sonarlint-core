@@ -86,9 +86,9 @@ public class ShowHotspotRequestHandler implements HttpRequestHandler {
 
   private void showHotspotForScope(String connectionId, String configurationScopeId, String hotspotKey) {
     var hotspotOpt = tryFetchHotspot(connectionId, hotspotKey);
-    var translationOpt = pathTranslationService.getOrComputePathTranslation(configurationScopeId);
-    if (translationOpt.isPresent() && hotspotOpt.isPresent()) {
-      client.showHotspot(new ShowHotspotParams(configurationScopeId, adapt(hotspotKey, hotspotOpt.get(), translationOpt.get())));
+    if (hotspotOpt.isPresent()) {
+      pathTranslationService.getOrComputePathTranslation(configurationScopeId)
+          .ifPresent(translation -> client.showHotspot(new ShowHotspotParams(configurationScopeId, adapt(hotspotKey, hotspotOpt.get(), translation))));
     } else {
       client.showMessage(new ShowMessageParams(MessageType.ERROR, "Could not show the hotspot. See logs for more details"));
     }

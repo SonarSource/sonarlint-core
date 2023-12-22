@@ -157,11 +157,7 @@ public class PathTranslationService {
       LOG.debug("Interrupted!", e);
       return Optional.empty();
     } catch (CancellationException e) {
-      if (pathComputationCounter > PATH_COMPUTATIONS_LIMIT) {
-        throw new IllegalStateException(UNABLE_TO_COMPUTE_PATHS);
-      }
-      LOG.debug("Computation was canceled, wait for the next one", e);
-      return getOrComputePathTranslation(configurationScopeId);
+      throw new IllegalStateException(UNABLE_TO_COMPUTE_PATHS);
     } catch (ExecutionException e) {
       LOG.error(UNABLE_TO_COMPUTE_PATHS, e);
       throw new IllegalStateException(UNABLE_TO_COMPUTE_PATHS, e);
