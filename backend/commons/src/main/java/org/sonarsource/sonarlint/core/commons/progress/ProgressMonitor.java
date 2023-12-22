@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.commons.progress;
 
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.api.progress.CanceledException;
+import org.sonarsource.sonarlint.core.commons.api.progress.ClientProgressMonitor;
 
 public class ProgressMonitor {
 

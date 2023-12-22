@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import java.nio.file.Path;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 
 import static org.sonarsource.sonarlint.core.telemetry.TelemetryUtils.dayChanged;
 

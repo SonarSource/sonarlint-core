@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
-import org.sonarsource.sonarlint.core.commons.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 
 public class ServerUpdaterUtils {
 

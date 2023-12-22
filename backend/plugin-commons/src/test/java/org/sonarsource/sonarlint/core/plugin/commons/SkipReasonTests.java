@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.plugin.commons;
 
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.commons.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason.IncompatiblePluginApi;
 import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason.IncompatiblePluginVersion;
 import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason.LanguagesNotEnabled;

@@ -2,7 +2,7 @@
 Export-Package: org.sonarsource.sonarlint.core.client.legacy.*;version="${project.version}",\
   org.sonarsource.sonarlint.core.analysis.api.*;version="${project.version}",\
   org.sonarsource.sonarlint.core.plugin.commons.api.*;version="${project.version}",\
-  org.sonarsource.sonarlint.core.commons.progress.*;version="${project.version}"
+  org.sonarsource.sonarlint.core.commons.api.*;version="${project.version}"
 Import-Package: org.sonarsource.sonarlint.core.rpc.protocol.*;version="${project.version}",\
   org.sonarsource.sonarlint.core.client.utils.*;version="${project.version}"
 -includeresource: lib/guava.jar=guava-*.jar;lib:=true,\
