@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.client.legacy.analysis;
 import java.util.Optional;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
+import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason;
 
 public class PluginDetails {
   private final String key;

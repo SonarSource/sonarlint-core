@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.client.legacy.analysis;
 
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
+import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

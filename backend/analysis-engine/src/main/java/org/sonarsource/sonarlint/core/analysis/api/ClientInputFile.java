@@ -52,7 +52,7 @@ public interface ClientInputFile {
   Charset getCharset();
 
   /**
-   * Language key of the file. If not null, language detection based on the file name suffix is skipped. The file will be analyzed by a analyzer that can
+   * Language key of the file. If not null, language detection based on the file name suffix is skipped. The file will be analyzed by an analyzer that can
    * handle the language.
    */
   @CheckForNull

@@ -17,35 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.plugin.commons.loading;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.plugin.commons.api;
 
-import java.util.Optional;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason;
-
-public class PluginRequirementsCheckResult {
-
-  private final PluginInfo plugin;
-
-  @CheckForNull
-  private final SkipReason skipReason;
-
-  public PluginRequirementsCheckResult(PluginInfo plugin, @Nullable SkipReason skipReason) {
-    this.plugin = plugin;
-    this.skipReason = skipReason;
-  }
-
-  public PluginInfo getPlugin() {
-    return plugin;
-  }
-
-  public Optional<SkipReason> getSkipReason() {
-    return Optional.ofNullable(skipReason);
-  }
-
-  public boolean isSkipped() {
-    return skipReason != null;
-  }
-
-}
+import javax.annotation.ParametersAreNonnullByDefault;
