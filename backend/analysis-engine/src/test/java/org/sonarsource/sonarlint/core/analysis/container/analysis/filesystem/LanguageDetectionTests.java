@@ -29,7 +29,7 @@ import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.resources.Language;
 import org.sonar.api.utils.MessageException;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
-import org.sonarsource.sonarlint.core.commons.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import testutils.TestInputFileBuilder;
 

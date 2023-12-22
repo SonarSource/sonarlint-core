@@ -26,7 +26,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.sonar.api.utils.System2;
-import org.sonarsource.sonarlint.core.commons.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInfo;

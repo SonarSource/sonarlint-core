@@ -37,7 +37,7 @@ import org.sonarsource.sonarlint.core.client.legacy.analysis.AnalysisConfigurati
 import org.sonarsource.sonarlint.core.client.legacy.analysis.EngineConfiguration;
 import org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine;
 import org.sonarsource.sonarlint.core.client.utils.ClientLogOutput;
-import org.sonarsource.sonarlint.core.commons.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import testutils.TestUtils;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;

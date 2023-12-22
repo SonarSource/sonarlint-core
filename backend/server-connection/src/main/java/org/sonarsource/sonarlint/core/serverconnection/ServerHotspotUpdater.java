@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.function.Supplier;
-import org.sonarsource.sonarlint.core.commons.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;

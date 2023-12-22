@@ -40,7 +40,7 @@ import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.utils.PathUtils;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.FileMetadata.Metadata;
-import org.sonarsource.sonarlint.core.commons.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 
 public class SonarLintInputFile implements InputFile {
 

@@ -21,7 +21,7 @@ package mediumtest.fixtures;
 
 import java.nio.file.Path;
 import java.util.Set;
-import org.sonarsource.sonarlint.core.commons.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import testutils.PluginLocator;
 

@@ -24,7 +24,7 @@ import java.nio.file.Paths;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.client.legacy.testutils.OnDiskTestClientInputFile;
-import org.sonarsource.sonarlint.core.commons.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

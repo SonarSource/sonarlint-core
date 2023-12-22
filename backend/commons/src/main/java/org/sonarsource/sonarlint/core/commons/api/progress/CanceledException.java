@@ -17,38 +17,10 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons.progress;
+package org.sonarsource.sonarlint.core.commons.api.progress;
 
-public interface ClientProgressMonitor {
-  /**
-   * Returns true if the task should be cancelled as soon as possible.
-   */
-  default boolean isCanceled() {
-    return false;
-  }
+import org.sonarsource.sonarlint.core.commons.SonarLintException;
 
-  /**
-   * Handles a message regarding the current action
-   */
-  void setMessage(String msg);
-
-  /**
-   * Handles the approximate fraction of the task completed.
-   * @param fraction Number between 0.0f and 1.0f
-   */
-  void setFraction(float fraction);
-
-  /**
-   * Handles whether the task in progress can determinate the fraction of its progress.
-   * If not set, it should be assumed false
-   */
-  void setIndeterminate(boolean indeterminate);
-
-  /**
-   * Execute a section of code that can't be canceled
-   */
-  default void executeNonCancelableSection(Runnable nonCancelable) {
-    nonCancelable.run();
-  }
+public class CanceledException extends SonarLintException {
 
 }
