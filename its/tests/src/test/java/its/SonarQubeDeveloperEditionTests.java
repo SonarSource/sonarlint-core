@@ -1010,7 +1010,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var actualHotspot = captor.getValue();
       assertThat(actualHotspot.getKey()).isEqualTo(hotspotKey);
       assertThat(actualHotspot.getMessage()).isEqualTo("Make sure that this logger's configuration is safe.");
-      assertThat(actualHotspot.getFilePath()).isEqualTo(Path.of("src/main/java/foo/Foo.java"));
+      assertThat(actualHotspot.getIdeFilePath()).isEqualTo(Path.of("src/main/java/foo/Foo.java"));
       assertThat(actualHotspot.getTextRange()).usingRecursiveComparison().isEqualTo(new TextRangeDto(9, 4, 9, 45));
       assertThat(actualHotspot.getAuthor()).isEmpty();
       assertThat(actualHotspot.getStatus()).isEqualTo("TO_REVIEW");
