@@ -670,7 +670,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
             null, "java:S106", "Replace this use of System.out by a logger."))),
           true)).get();
 
-        var fooIssues = issuesResponse.getIssuesByIdeRelativePath().get("src/main/java/foo/Foo.java");
+        var fooIssues = issuesResponse.getIssuesByIdeRelativePath().get(Path.of("src/main/java/foo/Foo.java"));
         assertThat(fooIssues).hasSize(1);
         assertThat(fooIssues.get(0).isLeft()).isTrue();
         assertThat(fooIssues.get(0).getLeft().isResolved()).isTrue();
