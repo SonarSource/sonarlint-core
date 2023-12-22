@@ -78,6 +78,9 @@
             <goals>
               <goal>jar</goal>
             </goals>
+            <configuration>
+              <classifier>osgi</classifier>
+            </configuration>
           </execution>
         </executions>
       </plugin>
