@@ -26,7 +26,9 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
+import org.sonar.api.CoreProperties;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonarsource.sonarlint.core.ServerFileExclusions;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
@@ -47,6 +49,15 @@ import static java.util.stream.Collectors.toMap;
 public class FileExclusionService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+
+  // See org.sonar.api.scan.filesystem.FileExclusions
+  private static final Set<String> ALL_EXCLUSION_RELATED_SETTINGS = Set.of(
+    CoreProperties.PROJECT_INCLUSIONS_PROPERTY,
+    CoreProperties.PROJECT_TEST_INCLUSIONS_PROPERTY,
+    CoreProperties.GLOBAL_EXCLUSIONS_PROPERTY,
+    CoreProperties.PROJECT_EXCLUSIONS_PROPERTY,
+    CoreProperties.GLOBAL_TEST_EXCLUSIONS_PROPERTY,
+    CoreProperties.PROJECT_TEST_EXCLUSIONS_PROPERTY);
 
   private final ConfigurationRepository configRepo;
   private final StorageService storageService;
@@ -116,10 +127,7 @@ public class FileExclusionService {
   }
 
   private static boolean isFileExclusionSettingsDifferent(Map<String, String> updatedSettingsValueByKey) {
-    return updatedSettingsValueByKey.containsKey("sonar.exclusions") ||
-      updatedSettingsValueByKey.containsKey("sonar.inclusions") ||
-      updatedSettingsValueByKey.containsKey("sonar.test.exclusions") ||
-      updatedSettingsValueByKey.containsKey("sonar.test.inclusions");
+    return ALL_EXCLUSION_RELATED_SETTINGS.stream().anyMatch(updatedSettingsValueByKey::containsKey);
   }
 
   @EventListener
