@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.analysis.api;
 
-import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.commons.api.TextRange;
 
 public class TextEdit {
   private final TextRange range;

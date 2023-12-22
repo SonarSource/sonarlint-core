@@ -19,13 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.analysis.issue;
 
+import org.sonarsource.sonarlint.core.commons.api.TextRange;
+
 public class TextRangeUtils {
 
   private TextRangeUtils() {
   }
 
-  public static org.sonarsource.sonarlint.core.commons.TextRange convert(org.sonar.api.batch.fs.TextRange analyzerTextRange) {
-    return new org.sonarsource.sonarlint.core.commons.TextRange(
+  public static TextRange convert(org.sonar.api.batch.fs.TextRange analyzerTextRange) {
+    return new TextRange(
       analyzerTextRange.start().line(),
       analyzerTextRange.start().lineOffset(),
       analyzerTextRange.end().line(),

@@ -24,7 +24,7 @@ import java.time.Instant;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
-import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 
 /**
  * Issues with precise location (from api/issues/pull, SQ >= 9.6)

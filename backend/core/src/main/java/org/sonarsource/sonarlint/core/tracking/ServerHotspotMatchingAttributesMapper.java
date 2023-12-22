@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import java.util.Optional;
-import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.issue.matching.MatchingAttributesMapper;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 

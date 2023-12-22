@@ -58,7 +58,7 @@ import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
-import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
@@ -262,11 +262,11 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     var endLine = (Integer) storedHotspot.getProperty(END_LINE_PROPERTY_NAME);
     var endLineOffset = (Integer) storedHotspot.getProperty(END_LINE_OFFSET_PROPERTY_NAME);
     var hash = (String) storedHotspot.getProperty(RANGE_HASH_PROPERTY_NAME);
-    org.sonarsource.sonarlint.core.commons.TextRange textRange;
+    org.sonarsource.sonarlint.core.commons.api.TextRange textRange;
     if (hash != null && !hash.isEmpty()) {
       textRange = new TextRangeWithHash(startLine, startLineOffset, endLine, endLineOffset, hash);
     } else {
-      textRange = new org.sonarsource.sonarlint.core.commons.TextRange(startLine, startLineOffset, endLine, endLineOffset);
+      textRange = new org.sonarsource.sonarlint.core.commons.api.TextRange(startLine, startLineOffset, endLine, endLineOffset);
     }
     var vulnerabilityProbability = VulnerabilityProbability.valueOf((String) storedHotspot.getProperty(VULNERABILITY_PROBABILITY_PROPERTY_NAME));
     var assignee = (String) storedHotspot.getProperty(ASSIGNEE_PROPERTY_NAME);

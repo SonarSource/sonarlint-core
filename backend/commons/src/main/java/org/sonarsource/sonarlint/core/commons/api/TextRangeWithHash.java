@@ -17,43 +17,29 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons;
+package org.sonarsource.sonarlint.core.commons.api;
 
 import java.util.Objects;
 
-public class TextRange {
+public class TextRangeWithHash extends TextRange {
 
-  private final int startLine;
-  private final int startLineOffset;
-  private final int endLine;
-  private final int endLineOffset;
+  private final String hash;
 
-  public TextRange(int startLine, int startLineOffset, int endLine, int endLineOffset) {
-    this.startLine = startLine;
-    this.startLineOffset = startLineOffset;
-    this.endLine = endLine;
-    this.endLineOffset = endLineOffset;
+  public TextRangeWithHash(int startLine, int startLineOffset, int endLine, int endLineOffset, String hash) {
+    super(startLine, startLineOffset, endLine, endLineOffset);
+    this.hash = hash;
   }
 
-  public int getStartLine() {
-    return startLine;
-  }
-
-  public int getStartLineOffset() {
-    return startLineOffset;
-  }
-
-  public int getEndLine() {
-    return endLine;
-  }
-
-  public int getEndLineOffset() {
-    return endLineOffset;
+  public String getHash() {
+    return hash;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(endLine, endLineOffset, startLine, startLineOffset);
+    final var prime = 31;
+    int result = super.hashCode();
+    result = prime * result + Objects.hash(hash);
+    return result;
   }
 
   @Override
@@ -61,10 +47,14 @@ public class TextRange {
     if (this == obj) {
       return true;
     }
-    if (!(obj instanceof TextRange)) {
+    if (!super.equals(obj)) {
       return false;
     }
-    TextRange other = (TextRange) obj;
-    return endLine == other.endLine && endLineOffset == other.endLineOffset && startLine == other.startLine && startLineOffset == other.startLineOffset;
+    if (!(obj instanceof TextRangeWithHash)) {
+      return false;
+    }
+    TextRangeWithHash other = (TextRangeWithHash) obj;
+    return Objects.equals(hash, other.hash);
   }
+
 }

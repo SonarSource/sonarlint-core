@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.analysis.api;
 
 import javax.annotation.Nullable;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.commons.api.TextRange;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
