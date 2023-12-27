@@ -31,7 +31,6 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -49,11 +48,11 @@ class OpenHotspotInBrowserMediumTests {
   void it_should_open_hotspot_in_sonarqube() throws MalformedURLException {
     var fakeClient = newFakeClient().build();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", "http://localhost:12345")
+      .withSonarQubeConnection("connectionId", "http://localhost:12345", storage -> storage.withProject("projectKey", project -> project.withMainBranch("master")))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .build(fakeClient);
 
-    this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "master", "ab12ef45"));
+    this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "ab12ef45"));
 
     verify(fakeClient, timeout(5000)).openUrlInBrowser(new URL("http://localhost:12345/security_hotspots?id=projectKey&branch=master&hotspots=ab12ef45"));
 
@@ -67,7 +66,7 @@ class OpenHotspotInBrowserMediumTests {
       .withUnboundConfigScope("scopeId")
       .build(fakeClient);
 
-    this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "master", "ab12ef45"));
+    this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "ab12ef45"));
 
     Thread.sleep(100);
 

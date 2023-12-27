@@ -104,13 +104,13 @@ class TelemetryMediumTests {
   void it_should_not_create_telemetry_file_if_telemetry_disabled_by_system_property() throws ExecutionException, InterruptedException {
     System.setProperty("sonarlint.telemetry.disabled", "true");
     backend = newBackend()
-      .withSonarQubeConnection("connectionId")
+      .withSonarQubeConnection("connectionId", "http://localhost:12345", storage -> storage.withProject("projectKey", project -> project.withMainBranch("master")))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .build();
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isFalse();
 
-    this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "master", "ab12ef45"));
+    this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "ab12ef45"));
     assertThat(backend.telemetryFilePath()).doesNotExist();
   }
 
@@ -123,11 +123,11 @@ class TelemetryMediumTests {
       .build();
 
     backend = newBackend()
-      .withSonarQubeConnection("connectionId")
+      .withSonarQubeConnection("connectionId", "http://localhost:12345", storage -> storage.withProject("projectKey", project -> project.withMainBranch("master")))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .build(fakeClient);
 
-    this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "master", "ab12ef45"));
+    this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "ab12ef45"));
     await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).isNotEmptyFile());
 
     await().untilAsserted(() -> telemetryEndpointMock.verify(postRequestedFor(urlEqualTo("/sonarlint-telemetry"))
