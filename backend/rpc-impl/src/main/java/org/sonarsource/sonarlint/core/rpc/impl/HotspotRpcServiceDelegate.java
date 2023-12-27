@@ -39,7 +39,7 @@ class HotspotRpcServiceDelegate extends AbstractRpcServiceDelegate implements Ho
 
   @Override
   public void openHotspotInBrowser(OpenHotspotInBrowserParams params) {
-    notify(() -> getBean(HotspotService.class).openHotspotInBrowser(params.getConfigScopeId(), params.getBranch(), params.getHotspotKey()), params.getConfigScopeId());
+    notify(() -> getBean(HotspotService.class).openHotspotInBrowser(params.getConfigScopeId(), params.getHotspotKey()), params.getConfigScopeId());
   }
 
   @Override
