@@ -28,6 +28,7 @@ import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
@@ -66,27 +67,35 @@ public class HotspotService {
 
   private final ServerApiProvider serverApiProvider;
   private final TelemetryService telemetryService;
+  private final SonarProjectBranchTrackingService branchTrackingService;
   private final StorageService storageService;
 
   public HotspotService(SonarLintRpcClient client, StorageService storageService, ConfigurationRepository configurationRepository,
-    ConnectionConfigurationRepository connectionRepository, ServerApiProvider serverApiProvider, TelemetryService telemetryService) {
+    ConnectionConfigurationRepository connectionRepository, ServerApiProvider serverApiProvider, TelemetryService telemetryService,
+    SonarProjectBranchTrackingService branchTrackingService) {
     this.client = client;
     this.storageService = storageService;
     this.configurationRepository = configurationRepository;
     this.connectionRepository = connectionRepository;
     this.serverApiProvider = serverApiProvider;
     this.telemetryService = telemetryService;
+    this.branchTrackingService = branchTrackingService;
   }
 
-  public void openHotspotInBrowser(String configScopeId, String branch, String hotspotKey) {
+  public void openHotspotInBrowser(String configScopeId, String hotspotKey) {
     var effectiveBinding = configurationRepository.getEffectiveBinding(configScopeId);
     var endpointParams = effectiveBinding.flatMap(binding -> connectionRepository.getEndpointParams(binding.getConnectionId()));
     if (effectiveBinding.isEmpty() || endpointParams.isEmpty()) {
       LOG.warn("Configuration scope {} is not bound properly, unable to open hotspot", configScopeId);
       return;
     }
+    var branchName = branchTrackingService.awaitEffectiveSonarProjectBranch(configScopeId);
+    if (branchName.isEmpty()) {
+      LOG.warn("Configuration scope {} has no matching branch, unable to open hotspot", configScopeId);
+      return;
+    }
 
-    var url = buildHotspotUrl(effectiveBinding.get().getSonarProjectKey(), branch, hotspotKey, endpointParams.get());
+    var url = buildHotspotUrl(effectiveBinding.get().getSonarProjectKey(), branchName.get(), hotspotKey, endpointParams.get());
 
     client.openUrlInBrowser(new OpenUrlInBrowserParams(url));
 

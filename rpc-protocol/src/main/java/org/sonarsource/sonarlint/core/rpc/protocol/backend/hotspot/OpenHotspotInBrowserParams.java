@@ -20,26 +20,16 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot;
 
 public class OpenHotspotInBrowserParams {
-
   private final String configScopeId;
-
-  private final String branch;
   private final String hotspotKey;
 
-
-
-  public OpenHotspotInBrowserParams(String configScopeId, String branch, String hotspotKey) {
+  public OpenHotspotInBrowserParams(String configScopeId, String hotspotKey) {
     this.configScopeId = configScopeId;
-    this.branch = branch;
     this.hotspotKey = hotspotKey;
   }
 
   public String getConfigScopeId() {
     return configScopeId;
-  }
-
-  public String getBranch() {
-    return branch;
   }
 
   public String getHotspotKey() {
