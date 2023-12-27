@@ -23,12 +23,11 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class CleanCodeAttributeTests {
-
+class HotspotStatusTest {
   @Test
   void should_convert_all_enum_values() {
-    for (var rpcEnum : org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute.values()) {
-      var converted = CleanCodeAttribute.fromDto(rpcEnum);
+    for (var rpcEnum : org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus.values()) {
+      var converted = HotspotStatus.fromDto(rpcEnum);
       assertEquals(rpcEnum.name(), converted.name());
     }
   }
