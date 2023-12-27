@@ -21,33 +21,39 @@ package org.sonarsource.sonarlint.core.client.utils;
 
 public enum CleanCodeAttribute {
 
-  CONVENTIONAL("Not conventional"),
-  FORMATTED("Not formatted"),
-  IDENTIFIABLE("Not identifiable"),
+  CONVENTIONAL("Not conventional", CleanCodeAttributeCategory.CONSISTENT),
+  FORMATTED("Not formatted", CleanCodeAttributeCategory.CONSISTENT),
+  IDENTIFIABLE("Not identifiable", CleanCodeAttributeCategory.CONSISTENT),
 
-  CLEAR("Not clear"),
-  COMPLETE("Not complete"),
-  EFFICIENT("Not efficient"),
-  LOGICAL("Not logical"),
+  CLEAR("Not clear", CleanCodeAttributeCategory.INTENTIONAL),
+  COMPLETE("Not complete", CleanCodeAttributeCategory.INTENTIONAL),
+  EFFICIENT("Not efficient", CleanCodeAttributeCategory.INTENTIONAL),
+  LOGICAL("Not logical", CleanCodeAttributeCategory.INTENTIONAL),
 
-  DISTINCT("Not distinct"),
-  FOCUSED("Not focused"),
-  MODULAR("Not modular"),
-  TESTED("Not tested"),
+  DISTINCT("Not distinct", CleanCodeAttributeCategory.ADAPTABLE),
+  FOCUSED("Not focused", CleanCodeAttributeCategory.ADAPTABLE),
+  MODULAR("Not modular", CleanCodeAttributeCategory.ADAPTABLE),
+  TESTED("Not tested", CleanCodeAttributeCategory.ADAPTABLE),
 
-  LAWFUL("Not lawful"),
-  RESPECTFUL("Not respectful"),
-  TRUSTWORTHY("Not trustworthy");
+  LAWFUL("Not lawful", CleanCodeAttributeCategory.RESPONSIBLE),
+  RESPECTFUL("Not respectful", CleanCodeAttributeCategory.RESPONSIBLE),
+  TRUSTWORTHY("Not trustworthy", CleanCodeAttributeCategory.RESPONSIBLE);
 
 
   private final String label;
+  private final CleanCodeAttributeCategory category;
 
-  CleanCodeAttribute(String label) {
+  CleanCodeAttribute(String label, CleanCodeAttributeCategory category) {
     this.label = label;
+    this.category = category;
   }
 
   public String getLabel() {
     return label;
+  }
+
+  public CleanCodeAttributeCategory getCategory() {
+    return category;
   }
 
   public static CleanCodeAttribute fromDto(org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute rpcEnum) {
