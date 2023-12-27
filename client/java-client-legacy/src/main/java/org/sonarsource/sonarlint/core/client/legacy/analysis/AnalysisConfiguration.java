@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.client.legacy.analysis;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -109,6 +110,11 @@ public class AnalysisConfiguration {
     private final Map<String, String> extraProperties = new HashMap<>();
     private Path baseDir;
     private Object moduleKey;
+
+    public Builder addInputFiles(Collection<ClientInputFile> inputFiles) {
+      this.inputFiles.addAll(inputFiles);
+      return this;
+    }
 
     public Builder addInputFiles(ClientInputFile... inputFiles) {
       Collections.addAll(this.inputFiles, inputFiles);
