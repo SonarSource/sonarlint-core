@@ -50,7 +50,7 @@ public class FilePathTranslation {
   }
 
   public Path ideToServerPath(Path idePath) {
-    if (!idePath.startsWith(serverPathPrefix)) {
+    if (!idePath.startsWith(idePathPrefix)) {
       return idePath;
     }
     var localPrefixLen = idePathPrefix.toString().length();

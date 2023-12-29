@@ -39,7 +39,7 @@ class FilePathTranslationTests {
     var underTest = new FilePathTranslation(Path.of("/foo"), Path.of("/bar"));
 
     assertThat(underTest.ideToServerPath(Path.of("/baz"))).isEqualTo(Path.of("/baz"));
-    assertThat(underTest.ideToServerPath(Path.of("/bar/baz"))).isEqualTo(Path.of("/bar/baz"));
+    assertThat(underTest.ideToServerPath(Path.of("/foo/baz"))).isEqualTo(Path.of("/bar/baz"));
   }
 
 }
