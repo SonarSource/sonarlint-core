@@ -60,6 +60,7 @@ import static java.util.stream.Collectors.toList;
 @Singleton
 public class PathTranslationService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private static final int COMPUTE_PATHS_RETRY_LIMIT = 3;
 
   private final ClientFileSystemService clientFs;
   private final ServerApiProvider serverApiProvider;
@@ -146,6 +147,11 @@ public class PathTranslationService {
   }
 
   public Optional<FilePathTranslation> getOrComputePathTranslation(String configurationScopeId) {
+    return getOrComputePathTranslation(configurationScopeId, this.cachedPathsTranslationByConfigScope, 0);
+  }
+
+  Optional<FilePathTranslation> getOrComputePathTranslation(String configurationScopeId,
+    AsyncLoadingCache<String, FilePathTranslation> cachedPathsTranslationByConfigScope, int retryCounter) {
     try {
       return Optional.ofNullable(cachedPathsTranslationByConfigScope.get(configurationScopeId).get());
     } catch (InterruptedException e) {
@@ -153,7 +159,10 @@ public class PathTranslationService {
       LOG.debug("Interrupted!", e);
       return Optional.empty();
     } catch (CancellationException e) {
-      throw new IllegalStateException(UNABLE_TO_COMPUTE_PATHS);
+      if (retryCounter > COMPUTE_PATHS_RETRY_LIMIT) {
+        throw new IllegalStateException(UNABLE_TO_COMPUTE_PATHS);
+      }
+      return getOrComputePathTranslation(configurationScopeId, cachedPathsTranslationByConfigScope, retryCounter + 1);
     } catch (ExecutionException e) {
       LOG.error(UNABLE_TO_COMPUTE_PATHS, e);
       throw new IllegalStateException(UNABLE_TO_COMPUTE_PATHS, e);
