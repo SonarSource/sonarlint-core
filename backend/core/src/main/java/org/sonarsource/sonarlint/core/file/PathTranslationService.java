@@ -70,9 +70,6 @@ public class PathTranslationService {
   private final AsyncLoadingCache<String, FilePathTranslation> cachedPathsTranslationByConfigScope = Caffeine.newBuilder()
     .executor(executorService)
     .buildAsync(this::computePaths);
-
-  private Integer pathComputationCounter = 0;
-  private static final Integer PATH_COMPUTATIONS_LIMIT = 3;
   private static final String UNABLE_TO_COMPUTE_PATHS = "Unable to compute paths translation";
 
   public PathTranslationService(ClientFileSystemService clientFs, ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository) {
@@ -150,7 +147,6 @@ public class PathTranslationService {
 
   public Optional<FilePathTranslation> getOrComputePathTranslation(String configurationScopeId) {
     try {
-      pathComputationCounter++;
       return Optional.ofNullable(cachedPathsTranslationByConfigScope.get(configurationScopeId).get());
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
