@@ -183,13 +183,13 @@ public class SecurityHotspotMatchingService {
       null);
     var projectKey = event.getProjectKey();
     storageService.connection(connectionId).project(projectKey).findings().insert(event.getBranch(), hotspot);
-    client.didReceiveServerHotspotEvent(new DidReceiveServerHotspotEvent(connectionId, projectKey, event.getFilePath().toString()));
+    client.didReceiveServerHotspotEvent(new DidReceiveServerHotspotEvent(connectionId, projectKey, event.getFilePath()));
   }
 
   private void updateStorageAndNotifyClient(String connectionId, SecurityHotspotClosedEvent event) {
     var projectKey = event.getProjectKey();
     storageService.connection(connectionId).project(projectKey).findings().deleteHotspot(event.getHotspotKey());
-    client.didReceiveServerHotspotEvent(new DidReceiveServerHotspotEvent(connectionId, projectKey, event.getFilePath().toString()));
+    client.didReceiveServerHotspotEvent(new DidReceiveServerHotspotEvent(connectionId, projectKey, event.getFilePath()));
   }
 
   private void updateStorageAndNotifyClient(String connectionId, SecurityHotspotChangedEvent event) {
@@ -204,7 +204,7 @@ public class SecurityHotspotMatchingService {
         hotspot.setAssignee(assignee);
       }
     });
-    client.didReceiveServerHotspotEvent(new DidReceiveServerHotspotEvent(connectionId, projectKey, event.getFilePath().toString()));
+    client.didReceiveServerHotspotEvent(new DidReceiveServerHotspotEvent(connectionId, projectKey, event.getFilePath()));
   }
 
   @PreDestroy
