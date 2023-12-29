@@ -76,7 +76,7 @@ class MatchWithServerHotspotsMediumTests {
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
-      .satisfies(result -> assertThat(result.getSecurityHotspotsByServerRelativePath())
+      .satisfies(result -> assertThat(result.getSecurityHotspotsByIdeRelativePath())
         .hasEntrySatisfying(Path.of("filePath"), hotspots -> assertThat(hotspots).hasSize(1).allSatisfy(hotspot -> assertThat(hotspot.isRight()).isTrue())));
   }
 
@@ -93,7 +93,7 @@ class MatchWithServerHotspotsMediumTests {
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
-      .satisfies(result -> assertThat(result.getSecurityHotspotsByServerRelativePath())
+      .satisfies(result -> assertThat(result.getSecurityHotspotsByIdeRelativePath())
         .hasEntrySatisfying(Path.of("file/path"), hotspots -> {
           assertThat(hotspots).hasSize(1).allSatisfy(hotspot -> assertThat(hotspot.isRight()).isTrue());
           assertThat(hotspots).usingRecursiveComparison().ignoringFields("right.id")
@@ -114,7 +114,7 @@ class MatchWithServerHotspotsMediumTests {
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(20))
-      .satisfies(result -> assertThat(result.getSecurityHotspotsByServerRelativePath())
+      .satisfies(result -> assertThat(result.getSecurityHotspotsByIdeRelativePath())
         .hasEntrySatisfying(Path.of("file/path"), hotspots -> {
           assertThat(hotspots).hasSize(1).allSatisfy(hotspot -> assertThat(hotspot.isRight()).isTrue());
           assertThat(hotspots).usingRecursiveComparison().ignoringFields("right.id")
@@ -141,7 +141,7 @@ class MatchWithServerHotspotsMediumTests {
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
-      .satisfies(result -> assertThat(result.getSecurityHotspotsByServerRelativePath())
+      .satisfies(result -> assertThat(result.getSecurityHotspotsByIdeRelativePath())
         .hasEntrySatisfying(Path.of("file/path"), hotspots -> assertThat(hotspots).usingRecursiveComparison().ignoringFields("left.id")
           .isEqualTo(List.of(Either.forLeft(
             new ServerMatchedSecurityHotspotDto(null, "hotspotKey", 1000L, HotspotStatus.SAFE, true))))));
@@ -169,7 +169,7 @@ class MatchWithServerHotspotsMediumTests {
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
-      .satisfies(result -> assertThat(result.getSecurityHotspotsByServerRelativePath())
+      .satisfies(result -> assertThat(result.getSecurityHotspotsByIdeRelativePath())
         .hasEntrySatisfying(Path.of("file/path"), hotspots -> assertThat(hotspots).usingRecursiveComparison().ignoringFields("left.id")
           .isEqualTo(List.of(Either.forLeft(
             new ServerMatchedSecurityHotspotDto(null, "hotspotKey", 123456000L, HotspotStatus.TO_REVIEW, true))))));
@@ -192,7 +192,7 @@ class MatchWithServerHotspotsMediumTests {
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(4))
-      .satisfies(result -> assertThat(result.getSecurityHotspotsByServerRelativePath())
+      .satisfies(result -> assertThat(result.getSecurityHotspotsByIdeRelativePath())
         .hasSize(11));
   }
 

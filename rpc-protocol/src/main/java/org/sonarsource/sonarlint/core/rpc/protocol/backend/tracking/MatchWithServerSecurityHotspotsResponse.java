@@ -26,14 +26,14 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 public class MatchWithServerSecurityHotspotsResponse {
 
-  private final Map<Path, List<Either<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>>> securityHotspotsByServerRelativePath;
+  private final Map<Path, List<Either<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>>> securityHotspotsByIdeRelativePath;
 
   public MatchWithServerSecurityHotspotsResponse(Map<Path, List<Either<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>>> hotspotsByServerRelativePath) {
-    this.securityHotspotsByServerRelativePath = hotspotsByServerRelativePath;
+    this.securityHotspotsByIdeRelativePath = hotspotsByServerRelativePath;
   }
 
-  public Map<Path, List<Either<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>>> getSecurityHotspotsByServerRelativePath() {
-    return securityHotspotsByServerRelativePath;
+  public Map<Path, List<Either<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>>> getSecurityHotspotsByIdeRelativePath() {
+    return securityHotspotsByIdeRelativePath;
   }
 
 }
