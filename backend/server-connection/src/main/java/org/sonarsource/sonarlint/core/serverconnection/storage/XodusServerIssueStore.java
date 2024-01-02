@@ -318,7 +318,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   private <G> List<G> loadIssue(String branchName, Path filePath, String linkName, Function<Entity, G> adapter) {
     return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
       .map(branch -> branch.getLinks(BRANCH_TO_FILES_LINK_NAME))
-      .flatMap(files -> findUniquePathAmong(files, PATH_PROPERTY_NAME, filePath))
+      .flatMap(files -> findUniqueAmong(files, PATH_PROPERTY_NAME, filePath.toString()))
       .map(fileToLoad -> fileToLoad.getLinks(linkName))
       .map(issueEntities -> StreamSupport.stream(issueEntities.spliterator(), false)
         .map(adapter)
@@ -607,7 +607,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   private static Entity getOrCreateFile(Entity branchEntity, Path filePath, StoreTransaction txn) {
-    return findUniquePathAmong(branchEntity.getLinks(BRANCH_TO_FILES_LINK_NAME), PATH_PROPERTY_NAME, filePath)
+    return findUniqueAmong(branchEntity.getLinks(BRANCH_TO_FILES_LINK_NAME), PATH_PROPERTY_NAME, filePath.toString())
       .orElseGet(() -> {
         var file = txn.newEntity(FILE_ENTITY_TYPE);
         file.setProperty(PATH_PROPERTY_NAME, filePath.toString());
@@ -715,13 +715,6 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       .filter(e -> caseSensitivePropertyValue.equals(e.getProperty(propertyName)))
       .findFirst();
   }
-
-  private static Optional<Entity> findUniquePathAmong(EntityIterable iterable, String propertyName, Path path) {
-    return StreamSupport.stream(iterable.spliterator(), false)
-      .filter(e -> path.equals(Path.of((String) e.getProperty(propertyName))))
-      .findFirst();
-  }
-
 
   private static void remove(String issueKey, @NotNull StoreTransaction txn) {
     findUnique(txn, ISSUE_ENTITY_TYPE, KEY_PROPERTY_NAME, issueKey)

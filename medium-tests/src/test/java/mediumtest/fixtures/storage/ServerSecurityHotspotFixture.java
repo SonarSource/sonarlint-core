@@ -19,6 +19,7 @@
  */
 package mediumtest.fixtures.storage;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
@@ -74,7 +75,7 @@ public class ServerSecurityHotspotFixture {
     }
 
     public ServerHotspot build() {
-      return new ServerHotspot(key, ruleKey, "message", "file/path", introductionDate, null, textRangeWithHash, status, vulnerabilityProbability, assignee);
+      return new ServerHotspot(key, ruleKey, "message", Path.of("file/path").toString(), introductionDate, null, textRangeWithHash, status, vulnerabilityProbability, assignee);
     }
   }
 

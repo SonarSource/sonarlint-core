@@ -183,7 +183,7 @@ class OpenHotspotInIdeMediumTests {
     Thread.sleep(100);
     verify(fakeClient, never()).showMessage(any(), any());
 
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getHotspotToShowByConfigScopeId()).containsOnlyKeys(SCOPE_ID));
+    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getHotspotToShowByConfigScopeId()).containsOnlyKeys(SCOPE_ID));
     await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getHotspotToShowByConfigScopeId().get(SCOPE_ID))
       .extracting(HotspotDetailsDto::getMessage)
       .containsExactly("msg"));

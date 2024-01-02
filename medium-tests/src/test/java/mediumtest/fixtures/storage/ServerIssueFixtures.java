@@ -19,6 +19,7 @@
  */
 package mediumtest.fixtures.storage;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -52,7 +53,7 @@ public class ServerIssueFixtures {
     }
 
     public ServerIssue build() {
-      return new ServerIssue(key, resolved, ruleKey, "message", "file/path", introductionDate, issueSeverity, ruleType, textRangeWithHash);
+      return new ServerIssue(key, resolved, ruleKey, "message", Path.of("file/path").toString(), introductionDate, issueSeverity, ruleType, textRangeWithHash);
     }
   }
 
@@ -71,7 +72,7 @@ public class ServerIssueFixtures {
     }
 
     public ServerIssue build() {
-      return new ServerIssue(key, resolved, "ruleKey", "message", "file/path", introductionDate, issueSeverity, ruleType, lineNumber, lineHash);
+      return new ServerIssue(key, resolved, "ruleKey", "message", Path.of("file/path").toString(), introductionDate, issueSeverity, ruleType, lineNumber, lineHash);
     }
   }
 

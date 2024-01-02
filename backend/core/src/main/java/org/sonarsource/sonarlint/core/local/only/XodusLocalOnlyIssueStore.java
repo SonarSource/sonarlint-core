@@ -103,7 +103,7 @@ public class XodusLocalOnlyIssueStore {
   public List<LocalOnlyIssue> loadForFile(String configurationScopeId, Path filePath) {
     return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, CONFIGURATION_SCOPE_ID_ENTITY_TYPE, NAME_PROPERTY_NAME, configurationScopeId)
       .map(configScopeId -> configScopeId.getLinks(CONFIGURATION_SCOPE_ID_TO_FILES_LINK_NAME))
-      .flatMap(files -> findUniquePathAmong(files, PATH_PROPERTY_NAME, filePath))
+      .flatMap(files -> findUniqueAmong(files, PATH_PROPERTY_NAME, filePath.toString()))
       .map(fileToLoad -> fileToLoad.getLinks(XodusLocalOnlyIssueStore.FILE_TO_ISSUES_LINK_NAME))
       .map(issueEntities -> StreamSupport.stream(issueEntities.spliterator(), false)
         .map(XodusLocalOnlyIssueStore::adapt)
@@ -220,17 +220,6 @@ public class XodusLocalOnlyIssueStore {
       .findFirst();
   }
 
-  private static Optional<Entity> findUniquePathAmong(EntityIterable iterable, String propertyName, Path path) {
-    return StreamSupport.stream(iterable.spliterator(), false)
-      .filter(e -> {
-        var pathFromStorage = (String) e.getProperty(propertyName);
-        if (pathFromStorage == null) return false;
-        var pathFromStorageAsPath = Path.of(pathFromStorage);
-        return path.equals(pathFromStorageAsPath);
-      })
-      .findFirst();
-  }
-
   private static Entity getOrCreateConfigurationScopeId(String configurationScopeId, StoreTransaction txn) {
     return findUnique(txn, CONFIGURATION_SCOPE_ID_ENTITY_TYPE, NAME_PROPERTY_NAME, configurationScopeId)
       .orElseGet(() -> {
@@ -241,7 +230,7 @@ public class XodusLocalOnlyIssueStore {
   }
 
   private static Entity getOrCreateFile(Entity moduleEntity, Path filePath, StoreTransaction txn) {
-    return findUniquePathAmong(moduleEntity.getLinks(CONFIGURATION_SCOPE_ID_TO_FILES_LINK_NAME), PATH_PROPERTY_NAME, filePath)
+    return findUniqueAmong(moduleEntity.getLinks(CONFIGURATION_SCOPE_ID_TO_FILES_LINK_NAME), PATH_PROPERTY_NAME, filePath.toString())
       .orElseGet(() -> {
         var file = txn.newEntity(FILE_ENTITY_TYPE);
         file.setProperty(PATH_PROPERTY_NAME, filePath.toString());
