@@ -19,15 +19,32 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.client.connection;
 
+import javax.annotation.Nullable;
+
 public class AssistCreatingConnectionParams {
   private final String serverUrl;
+  @Nullable
+  private final String tokenName;
+  @Nullable
+  private final String tokenValue;
 
-  public AssistCreatingConnectionParams(String serverUrl) {
+  public AssistCreatingConnectionParams(String serverUrl, @Nullable String tokenName, @Nullable String tokenValue) {
     this.serverUrl = serverUrl;
+    this.tokenName = tokenName;
+    this.tokenValue = tokenValue;
   }
 
   public String getServerUrl() {
     return serverUrl;
   }
 
+  @Nullable
+  public String getTokenName() {
+    return tokenName;
+  }
+
+  @Nullable
+  public String getTokenValue() {
+    return tokenValue;
+  }
 }

@@ -129,24 +129,44 @@ class ShowIssueRequestHandlerTest {
   }
 
   @Test
-  void should_extract_query_from_request() {
+  void should_extract_query_from_request_without_token() {
     var issueQuery = ShowIssueRequestHandler.extractQuery(new BasicClassicHttpRequest("GET", "/sonarlint/api/issues/show?server=" +
       "https%3A%2F%2Fnext.sonarqube.com%2Fsonarqube&project=org.sonarsource.sonarlint" +
       ".core%3Asonarlint-core-parent&issue=AX2VL6pgAvx3iwyNtLyr"));
     assertThat(issueQuery.getServerUrl()).isEqualTo("https://next.sonarqube.com/sonarqube");
     assertThat(issueQuery.getProjectKey()).isEqualTo("org.sonarsource.sonarlint.core:sonarlint-core-parent");
     assertThat(issueQuery.getIssueKey()).isEqualTo("AX2VL6pgAvx3iwyNtLyr");
+    assertThat(issueQuery.getTokenName()).isNull();
+    assertThat(issueQuery.getTokenValue()).isNull();
+  }
+
+  @Test
+  void should_extract_query_from_request_with_token() {
+    var issueQuery = ShowIssueRequestHandler.extractQuery(new BasicClassicHttpRequest("GET", "/sonarlint/api/issues/show?server=" +
+      "https%3A%2F%2Fnext.sonarqube.com%2Fsonarqube&project=org.sonarsource.sonarlint" +
+      ".core%3Asonarlint-core-parent&issue=AX2VL6pgAvx3iwyNtLyr&tokenName=abc&tokenValue=123"));
+    assertThat(issueQuery.getServerUrl()).isEqualTo("https://next.sonarqube.com/sonarqube");
+    assertThat(issueQuery.getProjectKey()).isEqualTo("org.sonarsource.sonarlint.core:sonarlint-core-parent");
+    assertThat(issueQuery.getIssueKey()).isEqualTo("AX2VL6pgAvx3iwyNtLyr");
+    assertThat(issueQuery.getTokenName()).isEqualTo("abc");
+    assertThat(issueQuery.getTokenValue()).isEqualTo("123");
   }
 
   @Test
   void should_validate_issue_query() {
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest").isValid()).isTrue();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", null, null).isValid()).isTrue();
 
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("", "project", "issue", "branch", "pullRequest").isValid()).isFalse();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "", "issue", "branch", "pullRequest").isValid()).isFalse();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "", "branch", "pullRequest").isValid()).isFalse();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "", "").isValid()).isFalse();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", null).isValid()).isTrue();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("", "project", "issue", "branch", "pullRequest", null, null).isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "", "issue", "branch", "pullRequest", null, null).isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "", "branch", "pullRequest", null, null).isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "", "", null, null).isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", null, null, null).isValid()).isTrue();
+
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "name", null).isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", null, "value").isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "name", "").isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "", "value").isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "name", "value").isValid()).isTrue();
   }
 
   @Test

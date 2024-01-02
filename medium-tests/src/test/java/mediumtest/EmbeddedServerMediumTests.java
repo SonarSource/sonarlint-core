@@ -53,7 +53,7 @@ class EmbeddedServerMediumTests {
 
     assertThat(response)
       .extracting(HttpResponse::statusCode, HttpResponse::body)
-      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"\"}");
+      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"\",\"needsToken\":true}");
   }
 
   @Test
@@ -69,7 +69,7 @@ class EmbeddedServerMediumTests {
 
     assertThat(response)
       .extracting(HttpResponse::statusCode, HttpResponse::body)
-      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"\"}");
+      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"\",\"needsToken\":true}");
   }
 
   @Test
@@ -85,7 +85,7 @@ class EmbeddedServerMediumTests {
 
     assertThat(response)
       .extracting(HttpResponse::statusCode, HttpResponse::body)
-      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"WorkspaceTitle\"}");
+      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"WorkspaceTitle\",\"needsToken\":false}");
   }
 
   @Test
