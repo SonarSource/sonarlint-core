@@ -19,12 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.util;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.TextRange;
 
@@ -71,6 +74,21 @@ public class ServerApiUtils {
     } catch (DateTimeParseException e) {
       throw new IllegalStateException("The date '" + s + "' does not respect format '" + DATETIME_FORMAT + "'", e);
     }
+  }
+
+  /**
+   * Converts path to format used by SonarQube
+   *
+   * @param path path string in the local OS
+   * @return SonarQube path
+   */
+  public static String toSonarQubePath(Path path) {
+    var pathAsString = path.toString();
+    var sonarQubeSeparatorChar = '/';
+    if (File.separatorChar != sonarQubeSeparatorChar) {
+      return pathAsString.replaceAll(Pattern.quote(File.separator), String.valueOf(sonarQubeSeparatorChar));
+    }
+    return pathAsString;
   }
 
   private ServerApiUtils() {

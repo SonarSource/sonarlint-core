@@ -37,6 +37,8 @@ import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.net.URIBuilder;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.file.FilePathTranslation;
+import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.ShowHotspotParams;
@@ -55,13 +57,15 @@ public class ShowHotspotRequestHandler implements HttpRequestHandler {
   private final ServerApiProvider serverApiProvider;
   private final TelemetryService telemetryService;
   private final RequestHandlerBindingAssistant requestHandlerBindingAssistant;
+  private final PathTranslationService pathTranslationService;
 
   public ShowHotspotRequestHandler(SonarLintRpcClient client, ServerApiProvider serverApiProvider, TelemetryService telemetryService,
-    RequestHandlerBindingAssistant requestHandlerBindingAssistant) {
+    RequestHandlerBindingAssistant requestHandlerBindingAssistant, PathTranslationService pathTranslationService) {
     this.client = client;
     this.serverApiProvider = serverApiProvider;
     this.telemetryService = telemetryService;
     this.requestHandlerBindingAssistant = requestHandlerBindingAssistant;
+    this.pathTranslationService = pathTranslationService;
   }
 
   @Override
@@ -81,10 +85,13 @@ public class ShowHotspotRequestHandler implements HttpRequestHandler {
   }
 
   private void showHotspotForScope(String connectionId, String configurationScopeId, String hotspotKey) {
-    tryFetchHotspot(connectionId, hotspotKey)
-      .ifPresentOrElse(
-        hotspot -> client.showHotspot(new ShowHotspotParams(configurationScopeId, adapt(hotspotKey, hotspot))),
-        () -> client.showMessage(new ShowMessageParams(MessageType.ERROR, "Could not show the hotspot. See logs for more details")));
+    var hotspotOpt = tryFetchHotspot(connectionId, hotspotKey);
+    if (hotspotOpt.isPresent()) {
+      pathTranslationService.getOrComputePathTranslation(configurationScopeId)
+          .ifPresent(translation -> client.showHotspot(new ShowHotspotParams(configurationScopeId, adapt(hotspotKey, hotspotOpt.get(), translation))));
+    } else {
+      client.showMessage(new ShowMessageParams(MessageType.ERROR, "Could not show the hotspot. See logs for more details"));
+    }
   }
 
   private Optional<ServerHotspotDetails> tryFetchHotspot(String connectionId, String hotspotKey) {
@@ -96,11 +103,11 @@ public class ShowHotspotRequestHandler implements HttpRequestHandler {
     return serverApi.get().hotspot().fetch(hotspotKey);
   }
 
-  private static HotspotDetailsDto adapt(String hotspotKey, ServerHotspotDetails hotspot) {
+  private static HotspotDetailsDto adapt(String hotspotKey, ServerHotspotDetails hotspot, FilePathTranslation translation) {
     return new HotspotDetailsDto(
       hotspotKey,
       hotspot.message,
-      hotspot.filePath,
+      translation.serverToIdePath(hotspot.filePath),
       adapt(hotspot.textRange),
       hotspot.author,
       hotspot.status.toString(),

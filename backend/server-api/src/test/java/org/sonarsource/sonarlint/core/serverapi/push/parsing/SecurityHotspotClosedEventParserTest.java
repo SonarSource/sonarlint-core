@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.push.parsing;
 
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -60,6 +61,6 @@ class SecurityHotspotClosedEventParserTest {
     assertThat(parsedResult).isPresent();
     assertThat(parsedResult.get().getHotspotKey()).isEqualTo("AYhSN6mVrRF_krvNbHl1");
     assertThat(parsedResult.get().getProjectKey()).isEqualTo("test");
-    assertThat(parsedResult.get().getFilePath()).isEqualTo("/project/path/to/file");
+    assertThat(parsedResult.get().getFilePath()).isEqualTo(Path.of("/project/path/to/file"));
   }
 }

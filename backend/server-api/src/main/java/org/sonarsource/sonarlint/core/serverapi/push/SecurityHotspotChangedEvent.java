@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.push;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 
@@ -28,9 +29,9 @@ public class SecurityHotspotChangedEvent implements ServerHotspotEvent {
   private final Instant updateDate;
   private final HotspotReviewStatus status;
   private final String assignee;
-  private final String filePath;
+  private final Path filePath;
 
-  public SecurityHotspotChangedEvent(String hotspotKey, String projectKey, Instant updateDate, HotspotReviewStatus status, String assignee, String filePath) {
+  public SecurityHotspotChangedEvent(String hotspotKey, String projectKey, Instant updateDate, HotspotReviewStatus status, String assignee, Path filePath) {
     this.hotspotKey = hotspotKey;
     this.projectKey = projectKey;
     this.updateDate = updateDate;
@@ -61,7 +62,7 @@ public class SecurityHotspotChangedEvent implements ServerHotspotEvent {
   }
 
   @Override
-  public String getFilePath() {
+  public Path getFilePath() {
     return filePath;
   }
 }

@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.hotspot;
 
+import java.nio.file.Path;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.TextRange;
@@ -28,7 +29,7 @@ public class ServerHotspotDetails {
 
   @Deprecated(forRemoval = true)
   public final String message;
-  public final String filePath;
+  public final Path filePath;
   @Deprecated(forRemoval = true)
   public final TextRange textRange;
   @Deprecated(forRemoval = true)
@@ -46,7 +47,7 @@ public class ServerHotspotDetails {
   public final boolean canChangeStatus;
 
   public ServerHotspotDetails(String message,
-    String filePath,
+    Path filePath,
     TextRange textRange,
     String author,
     Status status,

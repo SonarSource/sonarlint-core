@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,25 +17,29 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.issue;
+package org.sonarsource.sonarlint.core.file;
 
 import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
 
-public class ReopenAllIssuesForFileParams {
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-  private final String configurationScopeId;
-  private final Path ideRelativePath;
+class FilePathTranslationTests {
 
-  public ReopenAllIssuesForFileParams(String configurationScopeId, Path ideRelativePath) {
-    this.configurationScopeId = configurationScopeId;
-    this.ideRelativePath = ideRelativePath;
+  @Test
+  void serverToPathTranslation() {
+    var underTest = new FilePathTranslation(Path.of("/foo"), Path.of("/bar"));
+
+    assertThat(underTest.serverToIdePath(Path.of("/baz"))).isEqualTo(Path.of("/baz"));
+    assertThat(underTest.serverToIdePath(Path.of("/bar/baz"))).isEqualTo(Path.of("/foo/baz"));
   }
 
-  public Path getIdeRelativePath() {
-    return ideRelativePath;
+  @Test
+  void ideToServerPathTranslation() {
+    var underTest = new FilePathTranslation(Path.of("/foo"), Path.of("/bar"));
+
+    assertThat(underTest.ideToServerPath(Path.of("/baz"))).isEqualTo(Path.of("/baz"));
+    assertThat(underTest.ideToServerPath(Path.of("/foo/baz"))).isEqualTo(Path.of("/bar/baz"));
   }
 
-  public String getConfigurationScopeId() {
-    return configurationScopeId;
-  }
 }

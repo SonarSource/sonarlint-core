@@ -20,6 +20,7 @@
 package mediumtest.issues;
 
 import com.github.tomakehurst.wiremock.client.WireMock;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -33,13 +34,11 @@ import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssueResolution;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.DidVcsRepositoryChangeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.AddIssueCommentParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ChangeIssueStatusParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssuesForFileParams;
@@ -63,10 +62,6 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static mediumtest.fixtures.storage.ServerIssueFixtures.aServerIssue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
 
 class IssuesStatusChangeMediumTests {
 
@@ -167,16 +162,16 @@ class IssuesStatusChangeMediumTests {
     client.waitForSynchronization();
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
-    LocalOnlyIssueDto localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get("file/path").get(0).getRight();
+    LocalOnlyIssueDto localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get(Path.of("file/path")).get(0).getRight();
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", localOnlyIssue.getId().toString(),
       ResolutionStatus.WONT_FIX, false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    var issueLoaded = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", "file/path");
+    var issueLoaded = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", Path.of("file/path"));
     assertThat(issueLoaded).hasSize(1);
     assertThat(issueLoaded.get(0).getId()).isEqualTo(localOnlyIssue.getId());
     assertThat(issueLoaded.get(0).getResolution().getStatus()).isEqualTo(org.sonarsource.sonarlint.core.commons.IssueStatus.WONT_FIX);
@@ -196,10 +191,10 @@ class IssuesStatusChangeMediumTests {
     client.waitForSynchronization();
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
-    LocalOnlyIssueDto localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get("file/path").get(0).getRight();
+    LocalOnlyIssueDto localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get(Path.of("file/path")).get(0).getRight();
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", localOnlyIssue.getId().toString(),
       ResolutionStatus.WONT_FIX, false));
@@ -230,10 +225,10 @@ class IssuesStatusChangeMediumTests {
     client.waitForSynchronization();
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
-    LocalOnlyIssueDto localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get("file/path").get(0).getRight();
+    LocalOnlyIssueDto localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get(Path.of("file/path")).get(0).getRight();
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", localOnlyIssue.getId().toString(),
       ResolutionStatus.WONT_FIX, false));
@@ -295,7 +290,7 @@ class IssuesStatusChangeMediumTests {
       "serious issue"));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", "file/path");
+    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", Path.of("file/path"));
     assertThat(storedIssues)
       .extracting(LocalOnlyIssue::getResolution)
       .extracting(LocalOnlyIssueResolution::getComment)
@@ -352,7 +347,7 @@ class IssuesStatusChangeMediumTests {
         storage -> storage
           .withLocalOnlyIssue(new LocalOnlyIssue(
             otherFileIssueId,
-            "file/path1",
+            Path.of("file/path1"),
             new TextRangeWithHash(1, 2, 3, 4, "ab12"),
             new LineWithHash(1, "linehash"),
             "ruleKey",
@@ -362,8 +357,8 @@ class IssuesStatusChangeMediumTests {
           .withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId2)))
       .build();
 
-    var issuesForFile = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", "file/path");
-    var issuesForOtherFile = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", "file/path1");
+    var issuesForFile = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", Path.of("file/path"));
+    var issuesForOtherFile = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", Path.of("file/path1"));
     var allIssues = backend.getLocalOnlyIssueStorageService().get().loadAll("configScopeId");
     assertThat(issuesForFile).extracting(LocalOnlyIssue::getId).containsOnly(issueId1, issueId2);
     assertThat(issuesForOtherFile).extracting(LocalOnlyIssue::getId).containsOnly(otherFileIssueId);
@@ -384,7 +379,7 @@ class IssuesStatusChangeMediumTests {
           .withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId2))
           .withLocalOnlyIssue(new LocalOnlyIssue(
             otherFileIssueId,
-            "file/path1",
+            Path.of("file/path1"),
             new TextRangeWithHash(1, 2, 3, 4, "ab12"),
             new LineWithHash(1, "linehash"),
             "ruleKey",
@@ -395,7 +390,7 @@ class IssuesStatusChangeMediumTests {
     assertThat(storedIssues).extracting(LocalOnlyIssue::getId).containsOnly(issueId1, issueId2, otherFileIssueId);
 
     var response = backend.getIssueService()
-      .reopenAllIssuesForFile(new ReopenAllIssuesForFileParams("configScopeId", "file/path"));
+      .reopenAllIssuesForFile(new ReopenAllIssuesForFileParams("configScopeId", Path.of("file/path")));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     assertThat(response.get().isSuccess()).isTrue();
@@ -417,7 +412,7 @@ class IssuesStatusChangeMediumTests {
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     assertThat(response.get().isSuccess()).isFalse();
-    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", "file/path");
+    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", Path.of("file/path"));
     assertThat(storedIssues).extracting(LocalOnlyIssue::getId).containsOnly(issueId);
   }
 
@@ -435,7 +430,7 @@ class IssuesStatusChangeMediumTests {
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     assertThat(response.get().isSuccess()).isFalse();
-    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", "file/path");
+    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", Path.of("file/path"));
     assertThat(storedIssues)
       .extracting(LocalOnlyIssue::getId)
       .containsOnly(issueId);

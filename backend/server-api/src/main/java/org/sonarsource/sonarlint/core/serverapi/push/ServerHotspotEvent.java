@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.push;
 
+import java.nio.file.Path;
+
 public interface ServerHotspotEvent extends SonarProjectEvent {
-  String getFilePath();
+  Path getFilePath();
 }

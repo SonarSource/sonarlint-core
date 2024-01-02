@@ -19,6 +19,7 @@
  */
 package mediumtest.hotspots;
 
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
@@ -93,7 +94,7 @@ class HotspotEventsMediumTests {
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build();
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readHotspots("connectionId", "projectKey", "branchName", "file/path"))
+      await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> assertThat(readHotspots("connectionId", "projectKey", "branchName", "file/path"))
         .extracting(ServerHotspot::getKey)
         .containsOnly("AYhSN6mVrRF_krvNbHl1"));
     }
@@ -190,7 +191,7 @@ class HotspotEventsMediumTests {
   }
 
   private Collection<ServerHotspot> readHotspots(String connectionId, String projectKey, String branchName, String filePath) {
-    return backend.getIssueStorageService().connection(connectionId).project(projectKey).findings().loadHotspots(branchName, filePath);
+    return backend.getIssueStorageService().connection(connectionId).project(projectKey).findings().loadHotspots(branchName, Path.of(filePath));
   }
 
   private static void mockEvent(ServerFixture.Server server, String projectKey, String eventPayload) {

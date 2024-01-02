@@ -19,18 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
 public class TrackWithServerIssuesParams {
   private final String configurationScopeId;
-  private final Map<String, List<ClientTrackedFindingDto>> clientTrackedIssuesByServerRelativePath;
+  private final Map<Path, List<ClientTrackedFindingDto>> clientTrackedIssuesByIdeRelativePath;
   private final boolean shouldFetchIssuesFromServer;
 
-  public TrackWithServerIssuesParams(String configurationScopeId, Map<String, List<ClientTrackedFindingDto>> clientTrackedIssuesByServerRelativePath,
+  public TrackWithServerIssuesParams(String configurationScopeId, Map<Path, List<ClientTrackedFindingDto>> clientTrackedIssuesByIdeRelativePath,
     boolean shouldFetchIssuesFromServer) {
     this.configurationScopeId = configurationScopeId;
-    this.clientTrackedIssuesByServerRelativePath = clientTrackedIssuesByServerRelativePath;
+    this.clientTrackedIssuesByIdeRelativePath = clientTrackedIssuesByIdeRelativePath;
     this.shouldFetchIssuesFromServer = shouldFetchIssuesFromServer;
   }
 
@@ -38,8 +39,8 @@ public class TrackWithServerIssuesParams {
     return configurationScopeId;
   }
 
-  public Map<String, List<ClientTrackedFindingDto>> getClientTrackedIssuesByServerRelativePath() {
-    return clientTrackedIssuesByServerRelativePath;
+  public Map<Path, List<ClientTrackedFindingDto>> getClientTrackedIssuesByIdeRelativePath() {
+    return clientTrackedIssuesByIdeRelativePath;
   }
 
   public boolean shouldFetchIssuesFromServer() {

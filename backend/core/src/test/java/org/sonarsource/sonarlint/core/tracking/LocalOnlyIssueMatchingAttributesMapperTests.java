@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,7 +45,7 @@ class LocalOnlyIssueMatchingAttributesMapperTests {
     when(localOnlyIssue.getMessage()).thenReturn("msg");
     when(localOnlyIssue.getResolution()).thenReturn(new LocalOnlyIssueResolution(IssueStatus.WONT_FIX, Instant.now(), null));
     when(localOnlyIssue.getRuleKey()).thenReturn("ruleKey");
-    when(localOnlyIssue.getServerRelativePath()).thenReturn("file/path");
+    when(localOnlyIssue.getServerRelativePath()).thenReturn(Path.of("file/path"));
     when(localOnlyIssue.getTextRangeWithHash()).thenReturn(new TextRangeWithHash(1, 2, 3, 4, "rangehash"));
     when(localOnlyIssue.getLineWithHash()).thenReturn(new LineWithHash(1, "linehash"));
   }

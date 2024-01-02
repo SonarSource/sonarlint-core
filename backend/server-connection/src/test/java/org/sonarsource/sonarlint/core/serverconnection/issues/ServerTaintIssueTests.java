@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection.issues;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
@@ -37,7 +38,7 @@ class ServerTaintIssueTests {
     var issue = aServerTaintIssue();
     var i1 = Instant.ofEpochMilli(100_000_000);
     assertThat(issue.setCreationDate(i1).getCreationDate()).isEqualTo(i1);
-    assertThat(issue.setFilePath("path1").getFilePath()).isEqualTo("path1");
+    assertThat(issue.setFilePath(Path.of("path1")).getFilePath()).isEqualTo(Path.of("path1"));
     assertThat(issue.setKey("key1").getSonarServerKey()).isEqualTo("key1");
     issue.setTextRange(new TextRangeWithHash(1,
       2,
@@ -59,7 +60,7 @@ class ServerTaintIssueTests {
       .extracting("message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "textRange.hash")
       .containsOnly(
         // flow 1
-        tuple("message", "file/path", 5, 6, 7, 8, "rangeHash"));
+        tuple("message", Path.of("file/path"), 5, 6, 7, 8, "rangeHash"));
 
     issue.setFlows(Arrays.asList(mock(ServerTaintIssue.Flow.class), mock(ServerTaintIssue.Flow.class)));
     assertThat(issue.getFlows()).hasSize(2);

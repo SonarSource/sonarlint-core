@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.push.parsing;
 
+import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -147,7 +148,7 @@ class SecurityHotspotRaisedEventParserTest {
     assertThat(parsedResult.get().getHotspotKey()).isEqualTo("AYhSN6mVrRF_krvNbHl1");
     assertThat(parsedResult.get().getStatus()).isEqualTo(TO_REVIEW);
     assertThat(parsedResult.get().getProjectKey()).isEqualTo("test");
-    assertThat(parsedResult.get().getMainLocation().getFilePath()).isEqualTo("src/main/java/org/example/Main.java");
+    assertThat(parsedResult.get().getMainLocation().getFilePath()).isEqualTo(Path.of("src/main/java/org/example/Main.java"));
     assertThat(parsedResult.get().getBranch()).isEqualTo("some-branch");
     assertThat(parsedResult.get().getRuleKey()).isEqualTo("java:S2245");
     assertThat(parsedResult.get().getMainLocation().getMessage()).isEqualTo("Make sure that using this pseudorandom number generator is safe here.");

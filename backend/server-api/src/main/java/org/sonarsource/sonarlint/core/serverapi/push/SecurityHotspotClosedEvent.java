@@ -19,12 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.push;
 
+import java.nio.file.Path;
+
 public class SecurityHotspotClosedEvent implements ServerHotspotEvent {
   private final String projectKey;
   private final String hotspotKey;
-  private String filePath;
+  private Path filePath;
 
-  public SecurityHotspotClosedEvent(String projectKey, String hotspotKey, String filePath) {
+  public SecurityHotspotClosedEvent(String projectKey, String hotspotKey, Path filePath) {
     this.projectKey = projectKey;
     this.hotspotKey = hotspotKey;
     this.filePath = filePath;
@@ -37,7 +39,7 @@ public class SecurityHotspotClosedEvent implements ServerHotspotEvent {
     return hotspotKey;
   }
   @Override
-  public String getFilePath() {
+  public Path getFilePath() {
     return filePath;
   }
 }

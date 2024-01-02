@@ -665,12 +665,12 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
         var issuesResponse = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams(CONFIG_SCOPE_ID, Map.of(
-          "src/main/java/foo/Foo.java",
+          Path.of("src/main/java/foo/Foo.java"),
           List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(14, 4, 14, 14, "hashedHash"),
             null, "java:S106", "Replace this use of System.out by a logger."))),
           true)).get();
 
-        var fooIssues = issuesResponse.getIssuesByServerRelativePath().get("src/main/java/foo/Foo.java");
+        var fooIssues = issuesResponse.getIssuesByServerRelativePath().get(Path.of("src/main/java/foo/Foo.java"));
         assertThat(fooIssues).hasSize(1);
         assertThat(fooIssues.get(0).isLeft()).isTrue();
         assertThat(fooIssues.get(0).getLeft().isResolved()).isTrue();
@@ -744,11 +744,11 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         null, ruleKey_s1172, "Remove this unused method parameter \"i\".");
       var clientTrackedDto_s106 = new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(14, 4, 14, 14, "hashedHash"),
         null, "java:S106", "Replace this use of System.out by a logger."); // not resolved on both branches
-      var trackWithServerIssuesParams = new TrackWithServerIssuesParams(CONFIG_SCOPE_ID, Map.of("src/main/java/foo/Foo.java",
+      var trackWithServerIssuesParams = new TrackWithServerIssuesParams(CONFIG_SCOPE_ID, Map.of(Path.of("src/main/java/foo/Foo.java"),
         List.of(clientTrackedDto_s100, clientTrackedDto_s1172, clientTrackedDto_s106)), true);
       var issuesOnMainBranch = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByServerRelativePath();
 
-      var fooIssuesMainBranch = issuesOnMainBranch.get("src/main/java/foo/Foo.java");
+      var fooIssuesMainBranch = issuesOnMainBranch.get(Path.of("src/main/java/foo/Foo.java"));
       assertThat(fooIssuesMainBranch).hasSize(3);
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
         // On main branch, all issues were matched and no issues are resolved
@@ -769,7 +769,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var issuesOnFeatureBranch = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByServerRelativePath();
 
-      var fooIssuesFeatureBranch = issuesOnFeatureBranch.get("src/main/java/foo/Foo.java");
+      var fooIssuesFeatureBranch = issuesOnFeatureBranch.get(Path.of("src/main/java/foo/Foo.java"));
       assertThat(fooIssuesFeatureBranch).hasSize(3);
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
         // On feature branch, all issues were matched and one issue is resolved
@@ -870,7 +870,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         .containsExactly(CONFIG_SCOPE_ID, emptySet(), emptyList());
       assertThat(firstTaintChangedEvent.getAddedTaintVulnerabilities())
         .extracting(TaintVulnerabilityDto::getSonarServerKey, TaintVulnerabilityDto::isResolved, TaintVulnerabilityDto::getRuleKey, TaintVulnerabilityDto::getMessage,
-          TaintVulnerabilityDto::getFilePath, TaintVulnerabilityDto::getSeverity, TaintVulnerabilityDto::getType, TaintVulnerabilityDto::isOnNewCode)
+          TaintVulnerabilityDto::getIdeFilePath, TaintVulnerabilityDto::getSeverity, TaintVulnerabilityDto::getType, TaintVulnerabilityDto::isOnNewCode)
         .containsExactly(tuple(issueKey, false, "javasecurity:S3649", "Change this code to not construct SQL queries directly from user-controlled data.",
           Paths.get("src/main/java/foo/DbHelper.java"), org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.MAJOR,
           org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.VULNERABILITY, true));
@@ -892,7 +892,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var taintIssues = backend.getTaintVulnerabilityTrackingService().listAll(new ListAllParams(CONFIG_SCOPE_ID)).get().getTaintVulnerabilities();
       assertThat(taintIssues)
         .extracting(TaintVulnerabilityDto::getSonarServerKey, TaintVulnerabilityDto::isResolved, TaintVulnerabilityDto::getRuleKey, TaintVulnerabilityDto::getMessage,
-          TaintVulnerabilityDto::getFilePath, TaintVulnerabilityDto::getSeverity, TaintVulnerabilityDto::getType, TaintVulnerabilityDto::isOnNewCode)
+          TaintVulnerabilityDto::getIdeFilePath, TaintVulnerabilityDto::getSeverity, TaintVulnerabilityDto::getType, TaintVulnerabilityDto::isOnNewCode)
         .containsExactly(tuple(issueKey, false, "javasecurity:S3649", "Change this code to not construct SQL queries directly from user-controlled data.",
           Paths.get("src/main/java/foo/DbHelper.java"), org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.MAJOR,
           org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.VULNERABILITY, true));
@@ -1010,7 +1010,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var actualHotspot = captor.getValue();
       assertThat(actualHotspot.getKey()).isEqualTo(hotspotKey);
       assertThat(actualHotspot.getMessage()).isEqualTo("Make sure that this logger's configuration is safe.");
-      assertThat(actualHotspot.getFilePath()).isEqualTo("src/main/java/foo/Foo.java");
+      assertThat(actualHotspot.getIdeFilePath()).isEqualTo(Path.of("src/main/java/foo/Foo.java"));
       assertThat(actualHotspot.getTextRange()).usingRecursiveComparison().isEqualTo(new TextRangeDto(9, 4, 9, 45));
       assertThat(actualHotspot.getAuthor()).isEmpty();
       assertThat(actualHotspot.getStatus()).isEqualTo("TO_REVIEW");
@@ -1081,26 +1081,26 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var textRangeWithHash = new TextRangeWithHashDto(9, 4, 9, 45, "qwer");
       var clientTrackedHotspotsByServerRelativePath = Map.of(
-        "src/main/java/foo/Foo.java",
+        Path.of("src/main/java/foo/Foo.java"),
         List.of(new ClientTrackedFindingDto(null, null, textRangeWithHash, null, "java:S4792", "Make sure that this logger's configuration is safe.")),
-        "src/main/java/bar/Bar.java", List.of(new ClientTrackedFindingDto(null, null, textRangeWithHash, null, "java:S1234", "Some other rule")));
+        Path.of("src/main/java/bar/Bar.java"), List.of(new ClientTrackedFindingDto(null, null, textRangeWithHash, null, "java:S1234", "Some other rule")));
 
       var matchWithServerSecurityHotspotsResponse = backend.getSecurityHotspotMatchingService()
         .matchWithServerSecurityHotspots(new MatchWithServerSecurityHotspotsParams(CONFIG_SCOPE_ID, clientTrackedHotspotsByServerRelativePath, true)).get();
-      assertThat(matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByServerRelativePath()).hasSize(2);
+      assertThat(matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByIdeRelativePath()).hasSize(2);
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
-        var fooSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByServerRelativePath().get("src/main/java/foo/Foo.java");
+        var fooSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByIdeRelativePath().get(Path.of("src/main/java/foo/Foo.java"));
         assertThat(fooSecurityHotspots).hasSize(1);
         assertThat(fooSecurityHotspots.get(0).isLeft()).isTrue();
         assertThat(fooSecurityHotspots.get(0).getLeft().getStatus()).isEqualTo(HotspotStatus.TO_REVIEW);
-        var barSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByServerRelativePath().get("src/main/java/bar/Bar.java");
+        var barSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByIdeRelativePath().get(Path.of("src/main/java/bar/Bar.java"));
         assertThat(barSecurityHotspots).hasSize(1);
         assertThat(barSecurityHotspots.get(0).isRight()).isTrue();
       } else {
-        var fooSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByServerRelativePath().get("src/main/java/foo/Foo.java");
+        var fooSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByIdeRelativePath().get(Path.of("src/main/java/foo/Foo.java"));
         assertThat(fooSecurityHotspots).hasSize(1);
         assertThat(fooSecurityHotspots.get(0).isRight()).isTrue();
-        var barSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByServerRelativePath().get("src/main/java/bar/Bar.java");
+        var barSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByIdeRelativePath().get(Path.of("src/main/java/bar/Bar.java"));
         assertThat(barSecurityHotspots).hasSize(1);
         assertThat(barSecurityHotspots.get(0).isRight()).isTrue();
       }

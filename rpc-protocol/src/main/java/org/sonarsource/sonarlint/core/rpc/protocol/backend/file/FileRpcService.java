@@ -27,15 +27,6 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
 @JsonSegment("file")
 public interface FileRpcService {
 
-  /**
-   * Users can open a different folder than the one analyzed on SonarCloud/SonarQube, e.g. a subproject.
-   * As a consequence, relative file paths on the client side might differ from server relative file paths.
-   * The process called 'path matching' consists in identifying what are the IDE and server path prefixes,
-   * that can be used to translate one path to another.
-   */
-  @JsonRequest
-  CompletableFuture<GetPathTranslationResponse> getPathTranslation(GetPathTranslationParams params);
-
   @JsonRequest
   CompletableFuture<GetFilesStatusResponse> getFilesStatus(GetFilesStatusParams params);
 

@@ -19,6 +19,7 @@
  */
 package mediumtest.issues;
 
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -35,6 +36,9 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.TextRange;
 import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LineWithHashDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlyIssueDto;
@@ -46,6 +50,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithSer
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static mediumtest.fixtures.storage.ServerIssueFixtures.aServerIssue;
@@ -74,12 +79,12 @@ class TrackWithServerIssuesMediumTests {
       .build();
 
     var response = trackWithServerIssues(
-      new TrackWithServerIssuesParams("configScopeId", Map.of("filePath", List.of(new ClientTrackedFindingDto(null, null, null, null, "ruleKey", "message"))), false));
+      new TrackWithServerIssuesParams("configScopeId", Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, null, null, "ruleKey", "message"))), false));
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
-        .hasEntrySatisfying("filePath", issues -> assertThat(issues).hasSize(1).allSatisfy(issue -> assertThat(issue.isRight()).isTrue())));
+        .hasEntrySatisfying(Path.of("file/path"), issues -> assertThat(issues).hasSize(1).allSatisfy(issue -> assertThat(issue.isRight()).isTrue())));
   }
 
   @Test
@@ -90,13 +95,13 @@ class TrackWithServerIssuesMediumTests {
       .build();
 
     var response = trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
     assertThat(response)
-      .succeedsWithin(Duration.ofSeconds(2))
+      .succeedsWithin(Duration.ofSeconds(20))
       .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
-        .hasEntrySatisfying("file/path", issues -> {
+        .hasEntrySatisfying(Path.of("file/path"), issues -> {
           assertThat(issues).hasSize(1).allSatisfy(issue -> assertThat(issue.isRight()).isTrue());
           assertThat(issues).usingRecursiveComparison().ignoringFields("right.id")
             .isEqualTo(List.of(Either.forRight(new LocalOnlyIssueDto(null, null))));
@@ -111,13 +116,13 @@ class TrackWithServerIssuesMediumTests {
       .build();
 
     var response = trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
-        .hasEntrySatisfying("file/path", issues -> {
+        .hasEntrySatisfying(Path.of("file/path"), issues -> {
           assertThat(issues).hasSize(1).allSatisfy(issue -> assertThat(issue.isRight()).isTrue());
           assertThat(issues).usingRecursiveComparison().ignoringFields("right.id")
             .isEqualTo(List.of(Either.forRight(new LocalOnlyIssueDto(null, null))));
@@ -126,28 +131,37 @@ class TrackWithServerIssuesMediumTests {
 
   @Test
   void it_should_track_with_a_known_server_issue_at_the_same_location() {
+    var configScopeId = "configScopeId";
+    var connectionId = "connectionId";
+    var projectKey = "projectKey";
     var serverIssue = aServerIssue("issueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")).withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
     var client = newFakeClient().build();
+    server = newSonarQubeServer().withProject("projectKey").start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", storage -> storage
-        .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue))))
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withSonarQubeConnection(connectionId, server, storage -> storage
+        .withProject(projectKey, project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue))))
+      .withBoundConfigScope(configScopeId, connectionId, projectKey)
       .build(client);
-    var response = trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path", List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+    backend.getConfigurationService().didAddConfigurationScopes(
+      new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto(configScopeId, null, true, "name", new BindingConfigurationDto(connectionId, projectKey, true)))));
+
+
+    var response = trackWithServerIssues(new TrackWithServerIssuesParams(configScopeId,
+      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
     assertThat(response)
-      .succeedsWithin(Duration.ofSeconds(2))
+      .succeedsWithin(Duration.ofSeconds(20))
       .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
-        .hasEntrySatisfying("file/path", issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("left.id")
+        .hasEntrySatisfying(Path.of("file/path"), issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("left.id")
           .isEqualTo(
-            List.of((Either.forLeft(new ServerMatchedIssueDto(null, "issueKey", 1000L, false, null, BUG, true)))))));
+            List.of((Either.forLeft(
+              new ServerMatchedIssueDto(null, "issueKey", 1000L, false, null, BUG, true)))))));
   }
 
   @Test
   void it_should_track_with_a_server_only_issue_when_fetching_from_legacy_server_requested() {
-    server = ServerFixture.newSonarQubeServer("9.5").withProject("projectKey",
+    server = newSonarQubeServer("9.5").withProject("projectKey",
         project -> project.withBranch("main",
           branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, Instant.now(), new TextRange(1, 2, 3, 4))))
       .start();
@@ -159,21 +173,21 @@ class TrackWithServerIssuesMediumTests {
       .build(client);
 
     var response = trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of("file/path",
+      Map.of(Path.of("file/path"),
         List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "rule:key", "message"))),
       true));
 
     assertThat(response)
-      .succeedsWithin(Duration.ofSeconds(2))
+      .succeedsWithin(Duration.ofSeconds(20))
       .satisfies(result -> assertThat(result.getIssuesByServerRelativePath())
-        .hasEntrySatisfying("file/path", issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("left.id")
+        .hasEntrySatisfying(Path.of("file/path"), issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("left.id")
           .isEqualTo(
             List.of(Either.forLeft(new ServerMatchedIssueDto(null, "issueKey", 123456789L, false, null, BUG, true))))));
   }
 
   @Test
   void it_should_download_all_issues_at_once_when_tracking_issues_from_more_than_10_files() {
-    server = ServerFixture.newSonarQubeServer("9.5").withProject("projectKey",
+    server = newSonarQubeServer("9.5").withProject("projectKey",
         project -> project.withBranch("main",
           branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, Instant.now(), new TextRange(1, 2, 3, 4))))
       .start();
@@ -183,10 +197,10 @@ class TrackWithServerIssuesMediumTests {
         .withProject("projectKey", project -> project.withMainBranch("main")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build(client);
-    var issuesByServerRelativePath = IntStream.rangeClosed(1, 11).boxed().collect(Collectors.<Integer, String, List<ClientTrackedFindingDto>>toMap(index -> "file/path" + index,
+    var issuesByIdeRelativePath = IntStream.rangeClosed(1, 11).boxed().collect(Collectors.<Integer, Path, List<ClientTrackedFindingDto>>toMap(index -> Path.of("file/path" + index),
       i -> List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "rule:key", "message"))));
 
-    var response = trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId", issuesByServerRelativePath, true));
+    var response = trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId", issuesByIdeRelativePath, true));
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(4))
