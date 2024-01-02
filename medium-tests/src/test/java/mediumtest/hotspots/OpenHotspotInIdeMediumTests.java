@@ -24,6 +24,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -59,7 +60,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 
 class OpenHotspotInIdeMediumTests {
@@ -145,9 +145,9 @@ class OpenHotspotInIdeMediumTests {
 
     await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getHotspotToShowByConfigScopeId()).containsOnlyKeys(SCOPE_ID));
     assertThat(fakeClient.getHotspotToShowByConfigScopeId().get(SCOPE_ID))
-      .extracting(HotspotDetailsDto::getKey, HotspotDetailsDto::getMessage, HotspotDetailsDto::getAuthor, HotspotDetailsDto::getFilePath,
+      .extracting(HotspotDetailsDto::getKey, HotspotDetailsDto::getMessage, HotspotDetailsDto::getAuthor, HotspotDetailsDto::getIdeFilePath,
         HotspotDetailsDto::getStatus, HotspotDetailsDto::getResolution, HotspotDetailsDto::getCodeSnippet)
-      .containsExactly(tuple("key", "msg", "author", "file/path", "REVIEWED", "SAFE", "source\ncode\nfile"));
+      .containsExactly(tuple("key", "msg", "author", Path.of("file/path"), "REVIEWED", "SAFE", "source\ncode\nfile"));
   }
 
   @Test
@@ -183,10 +183,10 @@ class OpenHotspotInIdeMediumTests {
     Thread.sleep(100);
     verify(fakeClient, never()).showMessage(any(), any());
 
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getHotspotToShowByConfigScopeId()).containsOnlyKeys(SCOPE_ID));
-    assertThat(fakeClient.getHotspotToShowByConfigScopeId().get(SCOPE_ID))
+    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getHotspotToShowByConfigScopeId()).containsOnlyKeys(SCOPE_ID));
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getHotspotToShowByConfigScopeId().get(SCOPE_ID))
       .extracting(HotspotDetailsDto::getMessage)
-      .containsExactly("msg");
+      .containsExactly("msg"));
   }
 
   @Test

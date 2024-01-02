@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection.issues;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +41,7 @@ public class ServerTaintIssue implements ServerFinding {
   private boolean resolved;
   private String ruleKey;
   private String message;
-  private String filePath;
+  private Path filePath;
   private Instant creationDate;
   private IssueSeverity severity;
   private RuleType type;
@@ -52,7 +53,7 @@ public class ServerTaintIssue implements ServerFinding {
   private final CleanCodeAttribute cleanCodeAttribute;
   private final Map<SoftwareQuality, ImpactSeverity> impacts;
 
-  public ServerTaintIssue(UUID id, String key, boolean resolved, String ruleKey, String message, String filePath, Instant creationDate, IssueSeverity severity, RuleType type,
+  public ServerTaintIssue(UUID id, String key, boolean resolved, String ruleKey, String message, Path filePath, Instant creationDate, IssueSeverity severity, RuleType type,
                           @Nullable TextRangeWithHash textRange, @Nullable String ruleDescriptionContextKey, @Nullable CleanCodeAttribute cleanCodeAttribute,
                           Map<SoftwareQuality, ImpactSeverity> impacts) {
     this.id = id;
@@ -91,7 +92,7 @@ public class ServerTaintIssue implements ServerFinding {
     return message;
   }
 
-  public String getFilePath() {
+  public Path getFilePath() {
     return filePath;
   }
 
@@ -149,7 +150,7 @@ public class ServerTaintIssue implements ServerFinding {
     return this;
   }
 
-  public ServerTaintIssue setFilePath(String filePath) {
+  public ServerTaintIssue setFilePath(Path filePath) {
     this.filePath = filePath;
     return this;
   }
@@ -193,17 +194,17 @@ public class ServerTaintIssue implements ServerFinding {
 
   public static class ServerIssueLocation {
     private final String message;
-    private final String filePath;
+    private final Path filePath;
     private final TextRangeWithHash textRange;
 
-    public ServerIssueLocation(@Nullable String filePath, @Nullable TextRangeWithHash textRange, @Nullable String message) {
+    public ServerIssueLocation(@Nullable Path filePath, @Nullable TextRangeWithHash textRange, @Nullable String message) {
       this.textRange = textRange;
       this.filePath = filePath;
       this.message = message;
     }
 
     @CheckForNull
-    public String getFilePath() {
+    public Path getFilePath() {
       return filePath;
     }
 

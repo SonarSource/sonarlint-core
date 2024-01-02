@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.issue;
 
+import java.nio.file.Path;
 import java.util.Set;
 import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -121,7 +122,7 @@ class IssueApiTests {
       .extracting("key")
       .containsOnly("issueKey");
     assertThat(result.getComponentPathsByKey())
-      .containsOnly(entry("componentKey", "componentPath"));
+      .containsOnly(entry("componentKey", Path.of("componentPath")));
   }
 
   @Test
@@ -138,7 +139,7 @@ class IssueApiTests {
     var serverIssueDetails = underTest.fetchServerIssue(issueKey, projectKey, "", "");
     assertThat(serverIssueDetails).isPresent();
     assertThat(serverIssueDetails.get().key).isEqualTo(issueKey);
-    assertThat(serverIssueDetails.get().path).isEqualTo(path);
+    assertThat(serverIssueDetails.get().path).isEqualTo(Path.of(path));
   }
 
   @Test
@@ -183,7 +184,7 @@ class IssueApiTests {
     var serverIssueDetails = underTest.fetchServerIssue(issueKey, projectKey, branch, "");
     assertThat(serverIssueDetails).isPresent();
     assertThat(serverIssueDetails.get().key).isEqualTo(issueKey);
-    assertThat(serverIssueDetails.get().path).isEqualTo(path);
+    assertThat(serverIssueDetails.get().path).isEqualTo(Path.of(path));
   }
 
   @Test
@@ -204,7 +205,7 @@ class IssueApiTests {
     var serverIssueDetails = underTest.fetchServerIssue(issueKey, projectKey, "prbranch", pullRequest);
     assertThat(serverIssueDetails).isPresent();
     assertThat(serverIssueDetails.get().key).isEqualTo(issueKey);
-    assertThat(serverIssueDetails.get().path).isEqualTo(path);
+    assertThat(serverIssueDetails.get().path).isEqualTo(Path.of(path));
   }
 
 }

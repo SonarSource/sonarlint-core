@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection.issues;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
@@ -33,7 +34,7 @@ class ServerIssueTests {
     var issue = aServerIssue();
     var i1 = Instant.ofEpochMilli(100_000_000);
     assertThat(issue.setCreationDate(i1).getCreationDate()).isEqualTo(i1);
-    assertThat(issue.setFilePath("path1").getFilePath()).isEqualTo("path1");
+    assertThat(issue.setFilePath(Path.of("path1")).getFilePath()).isEqualTo(Path.of("path1"));
     assertThat(issue.setKey("key1").getKey()).isEqualTo("key1");
     assertThat(issue.setUserSeverity(IssueSeverity.MAJOR).getUserSeverity()).isEqualTo(IssueSeverity.MAJOR);
     assertThat(issue.setRuleKey("rule1").getRuleKey()).isEqualTo("rule1");

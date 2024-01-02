@@ -19,12 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.embedded.server;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import org.apache.hc.core5.http.message.BasicClassicHttpRequest;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.file.FilePathTranslation;
+import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -52,6 +55,7 @@ class ShowIssueRequestHandlerTests {
     var sonarLintClient = mock(SonarLintRpcClient.class);
     var serverApi = mock(ServerApi.class);
     var issueApi = mock(IssueApi.class);
+    var pathTranslationService = mock(PathTranslationService.class);
 
     var connectionId = "connectionId";
     var configScopeId = "configScopeId";
@@ -77,7 +81,7 @@ class ShowIssueRequestHandlerTests {
     when(issueApi.getCodeSnippet(eq(locationComponentKey_1), any(), any(), any())).thenReturn(Optional.of(locationCodeSnippet_1));
 
     var showIssueRequestHandler = new ShowIssueRequestHandler(sonarLintClient, serverApiProvider, telemetryService,
-      new RequestHandlerBindingAssistant(bindingSuggestionProvider, sonarLintClient, repository, configurationRepository));
+      new RequestHandlerBindingAssistant(bindingSuggestionProvider, sonarLintClient, repository, configurationRepository), pathTranslationService);
 
     var flow = Common.Flow.newBuilder()
       .addLocations(Common.Location.newBuilder().setTextRange(locationTextRange_1).setComponent(locationComponentKey_1).setMsg(locationMessage_1))
@@ -96,9 +100,10 @@ class ShowIssueRequestHandlerTests {
       Issues.Component.newBuilder().setKey(issueComponentKey).setPath(issuePath).build(),
       Issues.Component.newBuilder().setKey(locationComponentKey_1).setPath(flowLocationPath_1).build(),
       Issues.Component.newBuilder().setKey(locationComponentKey_2).setPath(flowLocationPath_2).build());
-    var serverIssueDetails = new IssueApi.ServerIssueDetails(issue, issuePath, components, codeSnippet);
+    var serverIssueDetails = new IssueApi.ServerIssueDetails(issue, Path.of(issuePath), components, codeSnippet);
 
-    var showIssueParams = showIssueRequestHandler.getShowIssueParams(serverIssueDetails, connectionId, configScopeId, "branch", "");
+    var showIssueParams = showIssueRequestHandler.getShowIssueParams(serverIssueDetails, connectionId, configScopeId, "branch", "",
+      new FilePathTranslation(Path.of(""), Path.of("")));
     assertThat(showIssueParams.getConfigurationScopeId()).isEqualTo(configScopeId);
     var issueDetails = showIssueParams.getIssueDetails();
     assertThat(issueDetails.getIssueKey()).isEqualTo(issueKey);
@@ -110,7 +115,7 @@ class ShowIssueRequestHandlerTests {
     assertThat(issueDetails.getTextRange().getEndLine()).isEqualTo(2);
     assertThat(issueDetails.getTextRange().getStartLineOffset()).isEqualTo(3);
     assertThat(issueDetails.getTextRange().getEndLineOffset()).isEqualTo(4);
-    assertThat(issueDetails.getServerRelativeFilePath()).isEqualTo(issuePath);
+    assertThat(issueDetails.getIdeFilePath()).isEqualTo(Path.of(issuePath));
     assertThat(issueDetails.getFlows()).hasSize(1);
     assertThat(issueDetails.getCodeSnippet()).isEqualTo(codeSnippet);
 

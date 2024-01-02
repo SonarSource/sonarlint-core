@@ -33,6 +33,6 @@ public class IssueTrackingRpcServiceDelegate extends AbstractRpcServiceDelegate 
   @Override
   public CompletableFuture<TrackWithServerIssuesResponse> trackWithServerIssues(TrackWithServerIssuesParams params) {
     return requestAsync(cancelChecker -> new TrackWithServerIssuesResponse(getBean(IssueMatchingService.class).trackWithServerIssues(params.getConfigurationScopeId(),
-      params.getClientTrackedIssuesByServerRelativePath(), params.shouldFetchIssuesFromServer(), cancelChecker)), params.getConfigurationScopeId());
+      params.getClientTrackedIssuesByIdeRelativePath(), params.shouldFetchIssuesFromServer(), cancelChecker)), params.getConfigurationScopeId());
   }
 }

@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -60,23 +61,23 @@ class IssueStoreReaderTests {
     // test
 
     // matches path
-    assertThat(issueStoreReader.getServerIssues(projectBinding, "branch", "src/path1"))
+    assertThat(issueStoreReader.getServerIssues(projectBinding, "branch", Path.of("src/path1")))
       .usingElementComparator(simpleComparator)
       .containsOnly(createServerIssue("src/path1"));
 
     // no file found
-    assertThat(issueStoreReader.getServerIssues(projectBinding, "branch", "src/path3")).isEmpty();
+    assertThat(issueStoreReader.getServerIssues(projectBinding, "branch", Path.of("src/path3"))).isEmpty();
 
     // invalid prefixes
     var bindingWithPrefix = new ProjectBinding(PROJECT_KEY, "", "src");
-    assertThat(issueStoreReader.getServerIssues(bindingWithPrefix, "branch", "src2/path2")).isEmpty();
+    assertThat(issueStoreReader.getServerIssues(bindingWithPrefix, "branch", Path.of("src2/path2"))).isEmpty();
   }
 
   @Test
   void return_empty_list_if_local_path_is_invalid() {
     var projectBinding = new ProjectBinding(PROJECT_KEY, "", "local");
     issueStore.replaceAllIssuesOfBranch("branch", Collections.singletonList(createServerIssue("src/path1")));
-    assertThat(issueStoreReader.getServerIssues(projectBinding, "branch", "src/path1"))
+    assertThat(issueStoreReader.getServerIssues(projectBinding, "branch", Path.of("src/path1")))
       .isEmpty();
   }
 
@@ -90,7 +91,7 @@ class IssueStoreReaderTests {
     // test
 
     // matches path
-    assertThat(issueStoreReader.getServerIssues(projectBinding, "branch", "local/src/path1"))
+    assertThat(issueStoreReader.getServerIssues(projectBinding, "branch", Path.of("local/src/path1")))
       .usingElementComparator(simpleComparator)
       .containsOnly(createServerIssue("local/src/path1"));
   }
@@ -105,7 +106,7 @@ class IssueStoreReaderTests {
     // test
 
     // matches path
-    assertThat(issueStoreReader.getServerIssues(projectBinding, "branch", "local/src/path1"))
+    assertThat(issueStoreReader.getServerIssues(projectBinding, "branch", Path.of("local/src/path1")))
       .usingElementComparator(simpleComparator)
       .containsOnly(createServerIssue("local/src/path1"));
   }
@@ -120,7 +121,7 @@ class IssueStoreReaderTests {
     // test
 
     // matches path
-    assertThat(issueStoreReader.getServerIssues(projectBinding, "branch", "src/path1"))
+    assertThat(issueStoreReader.getServerIssues(projectBinding, "branch", Path.of("src/path1")))
       .usingElementComparator(simpleComparator)
       .containsOnly(createServerIssue("src/path1"));
   }
@@ -134,6 +135,6 @@ class IssueStoreReaderTests {
 
   private ServerIssue createServerIssue(String filePath) {
     return aServerIssue()
-      .setFilePath(filePath);
+      .setFilePath(Path.of(filePath));
   }
 }

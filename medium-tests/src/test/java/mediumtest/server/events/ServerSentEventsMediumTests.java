@@ -218,6 +218,8 @@ class ServerSentEventsMediumTests {
 
       await().atMost(Duration.ofSeconds(2))
         .untilAsserted(() -> assertThat(requestedPaths()).containsExactly("/api/push/sonarlint_events?projectKeys=projectKey&languages=java,js"));
+      var paths = requestedPaths();
+      assertThat(paths).isNotEmpty();
     }
 
     @Test

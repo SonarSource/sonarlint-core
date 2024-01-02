@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
@@ -92,7 +93,7 @@ class IssueDownloaderTests {
     assertThat(serverIssue.getUserSeverity()).isNull();
     assertThat(((LineLevelServerIssue) serverIssue).getLineHash()).isEqualTo("hash");
     assertThat(serverIssue.getMessage()).isEqualTo("Primary message");
-    assertThat(serverIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(serverIssue.getFilePath()).isEqualTo(Path.of("foo/bar/Hello.java"));
     assertThat(((LineLevelServerIssue) serverIssue).getLine()).isEqualTo(1);
   }
 
@@ -142,7 +143,7 @@ class IssueDownloaderTests {
     assertThat(serverIssue).isInstanceOf(FileLevelServerIssue.class);
     assertThat(serverIssue.getKey()).isEqualTo("uuid");
     assertThat(serverIssue.getMessage()).isEqualTo("Primary message");
-    assertThat(serverIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(serverIssue.getFilePath()).isEqualTo(Path.of("foo/bar/Hello.java"));
   }
 
   @Test
@@ -168,7 +169,7 @@ class IssueDownloaderTests {
     assertThat(serverIssue).isInstanceOf(RangeLevelServerIssue.class);
     assertThat(serverIssue.getKey()).isEqualTo("uuid");
     assertThat(serverIssue.getMessage()).isEqualTo("Primary message");
-    assertThat(serverIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(serverIssue.getFilePath()).isEqualTo(Path.of("foo/bar/Hello.java"));
     assertThat(serverIssue.getUserSeverity()).isNull();
     assertThat(serverIssue.getType()).isEqualTo(RuleType.BUG);
     assertThat(((RangeLevelServerIssue) serverIssue).getTextRange().getStartLine()).isEqualTo(1);
@@ -223,7 +224,7 @@ class IssueDownloaderTests {
     assertThat(serverIssue).isInstanceOf(FileLevelServerIssue.class);
     assertThat(serverIssue.getKey()).isEqualTo("uuid");
     assertThat(serverIssue.getMessage()).isEqualTo("Primary message");
-    assertThat(serverIssue.getFilePath()).isEqualTo("foo/bar/Hello.java");
+    assertThat(serverIssue.getFilePath()).isEqualTo(Path.of("foo/bar/Hello.java"));
     assertThat(serverIssue.getType()).isEqualTo(RuleType.BUG);
   }
 

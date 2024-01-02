@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.serverapi.push.parsing;
 
 import com.google.gson.Gson;
+import java.nio.file.Path;
 import java.util.Optional;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotClosedEvent;
@@ -38,7 +39,7 @@ public class SecurityHotspotClosedEventParser implements EventParser<SecurityHot
       LOG.error("Invalid payload for 'SecurityHotspotClosed' event: {}", jsonData);
       return Optional.empty();
     }
-    return Optional.of(new SecurityHotspotClosedEvent(payload.projectKey, payload.key, payload.filePath));
+    return Optional.of(new SecurityHotspotClosedEvent(payload.projectKey, payload.key, Path.of(payload.filePath)));
   }
 
   private static class HotspotClosedEventPayload {

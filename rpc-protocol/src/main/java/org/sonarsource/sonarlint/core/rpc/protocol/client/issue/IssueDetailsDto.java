@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.issue;
 
+import java.nio.file.Path;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.FlowDto;
@@ -27,7 +28,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 public class IssueDetailsDto {
   private final String issueKey;
   private final String ruleKey;
-  private final String serverRelativeFilePath;
+  private final Path ideFilePath;
   private final String branch;
   @Nullable
   private final String pullRequest;
@@ -39,12 +40,12 @@ public class IssueDetailsDto {
   private final TextRangeDto textRange;
 
   public IssueDetailsDto(TextRangeDto textRange, String ruleKey, String issueKey,
-    String serverRelativeFilePath, String branch, @Nullable String pullRequest, String message, String creationDate,
+    Path ideFilePath, String branch, @Nullable String pullRequest, String message, String creationDate,
     String codeSnippet, boolean isTaint, List<FlowDto> flows) {
     this.issueKey = issueKey;
     this.ruleKey = ruleKey;
     this.textRange = textRange;
-    this.serverRelativeFilePath = serverRelativeFilePath;
+    this.ideFilePath = ideFilePath;
     this.branch = branch;
     this.pullRequest = pullRequest;
     this.message = message;
@@ -70,8 +71,8 @@ public class IssueDetailsDto {
     return creationDate;
   }
 
-  public String getServerRelativeFilePath() {
-    return serverRelativeFilePath;
+  public Path getIdeFilePath() {
+    return ideFilePath;
   }
 
   public String getBranch() {

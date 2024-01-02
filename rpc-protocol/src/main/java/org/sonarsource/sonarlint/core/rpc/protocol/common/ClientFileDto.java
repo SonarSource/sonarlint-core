@@ -26,7 +26,7 @@ import javax.annotation.Nullable;
 public class ClientFileDto {
 
   private final URI uri;
-  private final Path relativePath;
+  private final Path ideRelativePath;
   private final String configScopeId;
   @Nullable
   private final Boolean isTest;
@@ -39,7 +39,7 @@ public class ClientFileDto {
 
   public ClientFileDto(URI uri, Path relativePath, String configScopeId, @Nullable Boolean isTest, @Nullable String charset, @Nullable Path fsPath, @Nullable String content) {
     this.uri = uri;
-    this.relativePath = relativePath;
+    this.ideRelativePath = relativePath;
     this.configScopeId = configScopeId;
     this.isTest = isTest;
     this.charset = charset;
@@ -51,8 +51,8 @@ public class ClientFileDto {
     return uri;
   }
 
-  public Path getRelativePath() {
-    return relativePath;
+  public Path getIdeRelativePath() {
+    return ideRelativePath;
   }
 
   public String getConfigScopeId() {

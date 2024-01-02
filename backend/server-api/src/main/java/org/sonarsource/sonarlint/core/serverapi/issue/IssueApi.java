@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.serverapi.issue;
 
 import com.google.gson.Gson;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -54,6 +55,7 @@ import static org.sonarsource.sonarlint.core.http.HttpClient.FORM_URL_ENCODED_CO
 import static org.sonarsource.sonarlint.core.http.HttpClient.JSON_CONTENT_TYPE;
 import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 import static org.sonarsource.sonarlint.core.serverapi.util.ProtobufUtil.readMessages;
+import static org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils.toSonarQubePath;
 
 public class IssueApi {
 
@@ -91,14 +93,15 @@ public class IssueApi {
     serverApiHelper.getOrganizationKey()
       .ifPresent(org -> searchUrl.append(ORGANIZATION_PARAM).append(UrlUtils.urlEncode(org)));
     List<Issue> result = new ArrayList<>();
-    Map<String, String> componentsPathByKey = new HashMap<>();
+    Map<String, Path> componentsPathByKey = new HashMap<>();
     serverApiHelper.getPaginated(searchUrl.toString(),
       Issues.SearchWsResponse::parseFrom,
       r -> r.getPaging().getTotal(),
       r -> {
         componentsPathByKey.clear();
         // Ignore project level issues
-        componentsPathByKey.putAll(r.getComponentsList().stream().filter(Component::hasPath).collect(Collectors.toMap(Component::getKey, Component::getPath)));
+        componentsPathByKey.putAll(r.getComponentsList().stream().filter(Component::hasPath)
+          .collect(Collectors.toMap(Component::getKey, component -> Path.of(component.getPath()))));
         return r.getIssuesList();
       },
       result::add,
@@ -110,9 +113,9 @@ public class IssueApi {
 
   public static class DownloadIssuesResult {
     private final List<Issue> issues;
-    private final Map<String, String> componentPathsByKey;
+    private final Map<String, Path> componentPathsByKey;
 
-    private DownloadIssuesResult(List<Issue> issues, Map<String, String> componentPathsByKey) {
+    private DownloadIssuesResult(List<Issue> issues, Map<String, Path> componentPathsByKey) {
       this.issues = issues;
       this.componentPathsByKey = componentPathsByKey;
     }
@@ -121,7 +124,7 @@ public class IssueApi {
       return issues;
     }
 
-    public Map<String, String> getComponentPathsByKey() {
+    public Map<String, Path> getComponentPathsByKey() {
       return componentPathsByKey;
     }
 
@@ -290,7 +293,7 @@ public class IssueApi {
       var fileKey = issue.getComponent();
       var codeSnippet = getCodeSnippet(fileKey, issue.getTextRange(), branch, pullRequest);
 
-      return Optional.of(new ServerIssueDetails(issue, optionalComponentWithPath.get().getPath(), response.getComponentsList(), codeSnippet.orElse("")));
+      return Optional.of(new ServerIssueDetails(issue, Path.of(optionalComponentWithPath.get().getPath()), response.getComponentsList(), codeSnippet.orElse("")));
     } catch (Exception e) {
       LOG.warn("Error while fetching issue", e.getMessage());
       return Optional.empty();
@@ -332,7 +335,7 @@ public class IssueApi {
       lineHash = lineWithHash.getHash();
     }
     var resolution = requireNonNull(issue.getResolution());
-    return new IssueAnticipatedTransition(issue.getServerRelativePath(), lineNumber, lineHash, issue.getRuleKey(), issue.getMessage(),
+    return new IssueAnticipatedTransition(toSonarQubePath(issue.getServerRelativePath()), lineNumber, lineHash, issue.getRuleKey(), issue.getMessage(),
       transitionByStatus.get(resolution.getStatus()).getStatus(), resolution.getComment());
   }
 
@@ -360,12 +363,12 @@ public class IssueApi {
     public final String codeSnippet;
     public final String creationDate;
     public final String message;
-    public final String path;
+    public final Path path;
     public final Common.TextRange textRange;
     public final List<Common.Flow> flowList;
     public final List<Component> componentsList;
 
-    public ServerIssueDetails(Issue issue, String path, List<Component> componentsList, String codeSnippet) {
+    public ServerIssueDetails(Issue issue, Path path, List<Component> componentsList, String codeSnippet) {
       this.key = issue.getKey();
       this.ruleKey = issue.getRule();
       this.textRange = issue.getTextRange();

@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.serverapi.hotspot;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -49,6 +50,7 @@ import org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils;
 import static org.sonarsource.sonarlint.core.http.HttpClient.FORM_URL_ENCODED_CONTENT_TYPE;
 import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 import static org.sonarsource.sonarlint.core.serverapi.util.ProtobufUtil.readMessages;
+import static org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils.toSonarQubePath;
 
 public class HotspotApi {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -94,7 +96,7 @@ public class HotspotApi {
     return searchHotspots(getSearchUrl(projectKey, null, branchName), progress);
   }
 
-  public Collection<ServerHotspot> getFromFile(String projectKey, String filePath, String branchName) {
+  public Collection<ServerHotspot> getFromFile(String projectKey, Path filePath, String branchName) {
     return searchHotspots(getSearchUrl(projectKey, filePath, branchName), new ProgressMonitor(null));
   }
 
@@ -154,14 +156,14 @@ public class HotspotApi {
 
   private Collection<ServerHotspot> searchHotspots(String searchUrl, ProgressMonitor progress) {
     Collection<ServerHotspot> hotspots = new ArrayList<>();
-    Map<String, String> componentPathsByKey = new HashMap<>();
+    Map<String, Path> componentPathsByKey = new HashMap<>();
     helper.getPaginated(
       searchUrl,
       Hotspots.SearchWsResponse::parseFrom,
       r -> r.getPaging().getTotal(),
       r -> {
         componentPathsByKey.clear();
-        componentPathsByKey.putAll(r.getComponentsList().stream().collect(Collectors.toMap(Hotspots.Component::getKey, Hotspots.Component::getPath)));
+        componentPathsByKey.putAll(r.getComponentsList().stream().collect(Collectors.toMap(Hotspots.Component::getKey, component -> Path.of(component.getPath()))));
         return r.getHotspotsList();
       },
       hotspot -> {
@@ -177,10 +179,10 @@ public class HotspotApi {
     return hotspots;
   }
 
-  private static String getSearchUrl(String projectKey, @Nullable String filePath, String branchName) {
+  private static String getSearchUrl(String projectKey, @Nullable Path filePath, String branchName) {
     return HOTSPOTS_SEARCH_API_URL
       + PROJECT_KEY_QUERY_PARAM + urlEncode(projectKey)
-      + (filePath != null ? ("&files=" + urlEncode(filePath)) : "")
+      + (filePath != null ? ("&files=" + urlEncode(toSonarQubePath(filePath))) : "")
       + "&branch=" + urlEncode(branchName);
   }
 
@@ -221,7 +223,7 @@ public class HotspotApi {
   private static ServerHotspotDetails adapt(Hotspots.ShowWsResponse hotspot, @Nullable String codeSnippet) {
     return new ServerHotspotDetails(
       hotspot.getMessage(),
-      hotspot.getComponent().getPath(),
+      Path.of(hotspot.getComponent().getPath()),
       convertTextRange(hotspot.getTextRange()),
       hotspot.getAuthor(),
       ServerHotspotDetails.Status.valueOf(hotspot.getStatus()),
@@ -236,7 +238,7 @@ public class HotspotApi {
       rule.getRiskDescription(), rule.getVulnerabilityDescription(), rule.getFixRecommendations());
   }
 
-  private static ServerHotspot adapt(Hotspots.SearchWsResponse.Hotspot hotspot, String filePath) {
+  private static ServerHotspot adapt(Hotspots.SearchWsResponse.Hotspot hotspot, Path filePath) {
     return new ServerHotspot(
       hotspot.getKey(),
       hotspot.getRuleKey(),

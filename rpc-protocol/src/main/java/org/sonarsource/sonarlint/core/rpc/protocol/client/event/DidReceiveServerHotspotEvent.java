@@ -19,16 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.event;
 
+import java.nio.file.Path;
+
 public class DidReceiveServerHotspotEvent {
 
   private final String connectionId;
   private final String sonarProjectKey;
-  private final String serverFilePath;
+  private final Path ideFilePath;
 
-  public DidReceiveServerHotspotEvent(String connectionId, String sonarProjectKey, String serverFilePath) {
+  public DidReceiveServerHotspotEvent(String connectionId, String sonarProjectKey, Path serverFilePath) {
     this.connectionId = connectionId;
     this.sonarProjectKey = sonarProjectKey;
-    this.serverFilePath = serverFilePath;
+    this.ideFilePath = serverFilePath;
   }
 
   public String getConnectionId() {
@@ -39,7 +41,7 @@ public class DidReceiveServerHotspotEvent {
     return sonarProjectKey;
   }
 
-  public String getServerFilePath() {
-    return serverFilePath;
+  public Path getIdeFilePath() {
+    return ideFilePath;
   }
 }

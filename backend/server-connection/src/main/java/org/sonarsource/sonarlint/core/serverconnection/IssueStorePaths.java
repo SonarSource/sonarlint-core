@@ -22,8 +22,8 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import javax.annotation.CheckForNull;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
+
+import static org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils.toSonarQubePath;
 
 public class IssueStorePaths {
 
@@ -32,7 +32,7 @@ public class IssueStorePaths {
   }
 
   @CheckForNull
-  public static String idePathToFileKey(ProjectBinding projectBinding, String ideFilePath) {
+  public static String idePathToFileKey(ProjectBinding projectBinding, Path ideFilePath) {
     var serverFilePath = idePathToServerPath(projectBinding, ideFilePath);
 
     if (serverFilePath == null) {
@@ -41,22 +41,17 @@ public class IssueStorePaths {
     return componentKey(projectBinding, serverFilePath);
   }
 
-  public static String componentKey(ProjectBinding projectBinding, String serverFilePath) {
+  public static String componentKey(ProjectBinding projectBinding, Path serverFilePath) {
     return componentKey(projectBinding.projectKey(), serverFilePath);
   }
 
-  public static String componentKey(String projectKey, String serverFilePath) {
-    return projectKey + ":" + serverFilePath;
+  public static String componentKey(String projectKey, Path serverFilePath) {
+    return projectKey + ":" + toSonarQubePath(serverFilePath);
   }
 
   @CheckForNull
-  public static String idePathToServerPath(ProjectBinding projectBinding, String ideFilePathStr) {
-    var ideFilePath = Paths.get(ideFilePathStr);
-    var path = idePathToServerPath(Paths.get(projectBinding.idePathPrefix()), Paths.get(projectBinding.serverPathPrefix()), ideFilePath);
-    if (path == null) {
-      return null;
-    }
-    return FilenameUtils.separatorsToUnix(path.toString());
+  public static Path idePathToServerPath(ProjectBinding projectBinding, Path ideFilePath) {
+    return idePathToServerPath(Paths.get(projectBinding.idePathPrefix()), Paths.get(projectBinding.serverPathPrefix()), ideFilePath);
   }
 
   @CheckForNull

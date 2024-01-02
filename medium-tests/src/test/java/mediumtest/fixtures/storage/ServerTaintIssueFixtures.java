@@ -19,6 +19,7 @@
  */
 package mediumtest.fixtures.storage;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,7 +57,7 @@ public class ServerTaintIssueFixtures {
     }
 
     public ServerTaintIssue build() {
-      return new ServerTaintIssue(key, resolved, ruleKey, "message", "file/path", introductionDate,
+      return new ServerTaintIssue(key, resolved, ruleKey, "message", Path.of("file/path").toString(), introductionDate,
         issueSeverity, ruleType, textRangeWithHash, "contextKey", CleanCodeAttribute.CONVENTIONAL, Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM));
     }
   }

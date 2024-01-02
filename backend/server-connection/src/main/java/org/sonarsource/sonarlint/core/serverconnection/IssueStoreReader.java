@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
@@ -30,7 +31,7 @@ public class IssueStoreReader {
     this.storage = storage;
   }
 
-  public List<ServerIssue<?>> getServerIssues(ProjectBinding projectBinding, String branchName, String ideFilePath) {
+  public List<ServerIssue<?>> getServerIssues(ProjectBinding projectBinding, String branchName, Path ideFilePath) {
     var sqPath = IssueStorePaths.idePathToServerPath(projectBinding, ideFilePath);
     if (sqPath == null) {
       return Collections.emptyList();

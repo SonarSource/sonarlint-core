@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection.storage;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
@@ -42,7 +43,7 @@ public interface ProjectServerIssueStore {
 
   void replaceAllHotspotsOfBranch(String branchName, Collection<ServerHotspot> serverHotspots);
 
-  void replaceAllHotspotsOfFile(String branchName, String serverFilePath, Collection<ServerHotspot> serverHotspots);
+  void replaceAllHotspotsOfFile(String branchName, Path serverFilePath, Collection<ServerHotspot> serverHotspots);
 
   /**
    * Update the resolution status of a hotspot by its key.
@@ -53,7 +54,7 @@ public interface ProjectServerIssueStore {
   /**
    * Store issues for a single file by replacing existing ones and moving issues if necessary.
    */
-  void replaceAllIssuesOfFile(String branchName, String serverFilePath, List<ServerIssue<?>> issues);
+  void replaceAllIssuesOfFile(String branchName, Path serverFilePath, List<ServerIssue<?>> issues);
 
   /**
    * Merge provided issues to stored ones for the given project:
@@ -123,7 +124,7 @@ public interface ProjectServerIssueStore {
    * @param sqFilePath the relative path to the base of project, in SonarQube
    * @return issues, possibly empty
    */
-  List<ServerIssue<?>> load(String branchName, String sqFilePath);
+  List<ServerIssue<?>> load(String branchName, Path sqFilePath);
 
   /**
    * Store taint issues for a branch.
@@ -136,7 +137,7 @@ public interface ProjectServerIssueStore {
    * @param serverFilePath the relative path to the base of project, from the server point of view
    * @return issues, possibly empty
    */
-  Collection<ServerHotspot> loadHotspots(String branchName, String serverFilePath);
+  Collection<ServerHotspot> loadHotspots(String branchName, Path serverFilePath);
 
   /**
    * Load all taint issues stored for a branch.

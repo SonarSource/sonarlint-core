@@ -193,7 +193,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     var userSeverity = (IssueSeverity) storedIssue.getProperty(USER_SEVERITY_PROPERTY_NAME);
     var type = (RuleType) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME));
     if (startLine == null) {
-      return new FileLevelServerIssue(key, resolved, ruleKey, msg, filePath, creationDate, userSeverity, type);
+      return new FileLevelServerIssue(key, resolved, ruleKey, msg, Path.of(filePath), creationDate, userSeverity, type);
     } else {
       var rangeHash = storedIssue.getBlobString(RANGE_HASH_PROPERTY_NAME);
       if (rangeHash != null) {
@@ -206,7 +206,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
           resolved,
           ruleKey,
           msg,
-          filePath,
+          Path.of(filePath),
           creationDate,
           userSeverity,
           type,
@@ -218,7 +218,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
           ruleKey,
           msg,
           storedIssue.getBlobString(LINE_HASH_PROPERTY_NAME),
-          filePath,
+          Path.of(filePath),
           creationDate,
           userSeverity,
           type,
@@ -245,7 +245,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       Boolean.TRUE.equals(storedIssue.getProperty(RESOLVED_PROPERTY_NAME)),
       (String) requireNonNull(storedIssue.getProperty(RULE_KEY_PROPERTY_NAME)),
       requireNonNull(storedIssue.getBlobString(MESSAGE_BLOB_NAME)),
-      filePath,
+      Path.of(filePath),
       (Instant) requireNonNull(storedIssue.getProperty(CREATION_DATE_PROPERTY_NAME)),
       (IssueSeverity) requireNonNull(storedIssue.getProperty(SEVERITY_PROPERTY_NAME)),
       (RuleType) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME)),
@@ -280,7 +280,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       (String) requireNonNull(storedHotspot.getProperty(KEY_PROPERTY_NAME)),
       (String) requireNonNull(storedHotspot.getProperty(RULE_KEY_PROPERTY_NAME)),
       requireNonNull(storedHotspot.getBlobString(MESSAGE_BLOB_NAME)),
-      filePath,
+      Path.of(filePath),
       textRange,
       (Instant) requireNonNull(storedHotspot.getProperty(CREATION_DATE_PROPERTY_NAME)),
       status,
@@ -306,19 +306,19 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public List<ServerIssue<?>> load(String branchName, String filePath) {
+  public List<ServerIssue<?>> load(String branchName, Path filePath) {
     return loadIssue(branchName, filePath, FILE_TO_ISSUES_LINK_NAME, XodusServerIssueStore::adapt);
   }
 
   @Override
-  public Collection<ServerHotspot> loadHotspots(String branchName, String serverFilePath) {
+  public Collection<ServerHotspot> loadHotspots(String branchName, Path serverFilePath) {
     return loadIssue(branchName, serverFilePath, FILE_TO_HOTSPOTS_LINK_NAME, XodusServerIssueStore::adaptHotspot);
   }
 
-  private <G> List<G> loadIssue(String branchName, String filePath, String linkName, Function<Entity, G> adapter) {
+  private <G> List<G> loadIssue(String branchName, Path filePath, String linkName, Function<Entity, G> adapter) {
     return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
       .map(branch -> branch.getLinks(BRANCH_TO_FILES_LINK_NAME))
-      .flatMap(files -> findUniqueAmong(files, PATH_PROPERTY_NAME, filePath))
+      .flatMap(files -> findUniqueAmong(files, PATH_PROPERTY_NAME, filePath.toString()))
       .map(fileToLoad -> fileToLoad.getLinks(linkName))
       .map(issueEntities -> StreamSupport.stream(issueEntities.spliterator(), false)
         .map(adapter)
@@ -336,7 +336,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void replaceAllIssuesOfFile(String branchName, String serverFilePath, List<ServerIssue<?>> issues) {
+  public void replaceAllIssuesOfFile(String branchName, Path serverFilePath, List<ServerIssue<?>> issues) {
     timed(wroteMessage(issues.size(), ISSUES), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
       var fileEntity = getOrCreateFile(branch, serverFilePath, txn);
@@ -454,7 +454,8 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     timed(wroteMessage(issues.size(), ISSUES), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
       branch.getLinks(BRANCH_TO_FILES_LINK_NAME).forEach(fileEntity -> {
-        var entityFilePath = fileEntity.getProperty(PATH_PROPERTY_NAME);
+        var entityFilePathStr = ((String) fileEntity.getProperty(PATH_PROPERTY_NAME));
+        var entityFilePath = entityFilePathStr != null ? Path.of(entityFilePathStr) : null;
         if (!issuesByFile.containsKey(entityFilePath)) {
           deleteAllIssuesOfFile(txn, fileEntity);
         }
@@ -474,7 +475,8 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     timed(wroteMessage(serverHotspots.size(), HOTSPOTS), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
       branch.getLinks(BRANCH_TO_FILES_LINK_NAME).forEach(fileEntity -> {
-        var entityFilePath = fileEntity.getProperty(PATH_PROPERTY_NAME);
+        var entityFilePathStr = ((String) fileEntity.getProperty(PATH_PROPERTY_NAME));
+        var entityFilePath = entityFilePathStr != null ? Path.of(entityFilePathStr) : null;
         if (!hotspotsByFile.containsKey(entityFilePath)) {
           deleteAllHotspotsOfFile(txn, fileEntity);
         }
@@ -489,7 +491,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
-  public void replaceAllHotspotsOfFile(String branchName, String serverFilePath, Collection<ServerHotspot> serverHotspots) {
+  public void replaceAllHotspotsOfFile(String branchName, Path serverFilePath, Collection<ServerHotspot> serverHotspots) {
     timed(wroteMessage(serverHotspots.size(), HOTSPOTS), () -> entityStore.executeInTransaction(txn -> {
       var branch = getOrCreateBranch(branchName, txn);
       var fileEntity = getOrCreateFile(branch, serverFilePath, txn);
@@ -550,7 +552,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     replaceAllIssuesOfFile(List.of(), txn, fileEntity);
   }
 
-  private static void deleteAllTaintsOfBranch(Entity branchEntity, Set<String> filePaths) {
+  private static void deleteAllTaintsOfBranch(Entity branchEntity, Set<Path> filePaths) {
     branchEntity.getLinks(BRANCH_TO_FILES_LINK_NAME).forEach(fileEntity -> {
       var entityFilePath = fileEntity.getProperty(PATH_PROPERTY_NAME);
       if (!filePaths.contains(entityFilePath)) {
@@ -604,11 +606,11 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       });
   }
 
-  private static Entity getOrCreateFile(Entity branchEntity, String filePath, StoreTransaction txn) {
-    return findUniqueAmong(branchEntity.getLinks(BRANCH_TO_FILES_LINK_NAME), PATH_PROPERTY_NAME, filePath)
+  private static Entity getOrCreateFile(Entity branchEntity, Path filePath, StoreTransaction txn) {
+    return findUniqueAmong(branchEntity.getLinks(BRANCH_TO_FILES_LINK_NAME), PATH_PROPERTY_NAME, filePath.toString())
       .orElseGet(() -> {
         var file = txn.newEntity(FILE_ENTITY_TYPE);
-        file.setProperty(PATH_PROPERTY_NAME, filePath);
+        file.setProperty(PATH_PROPERTY_NAME, filePath.toString());
         branchEntity.addLink(BRANCH_TO_FILES_LINK_NAME, file);
         return file;
       });
@@ -908,7 +910,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   private static ServerIssueLocation toJavaLocation(Location locationProto) {
-    return new ServerIssueLocation(locationProto.hasFilePath() ? locationProto.getFilePath() : null,
+    return new ServerIssueLocation(locationProto.hasFilePath() ? Path.of(locationProto.getFilePath()) : null,
       locationProto.hasTextRange() ? toTextRangeJava(locationProto.getTextRange()) : null, locationProto.getMessage());
   }
 
@@ -931,9 +933,9 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
 
   private static Location toProtoLocation(ServerIssueLocation l) {
     var location = Location.newBuilder();
-    String filePath = l.getFilePath();
+    var filePath = l.getFilePath();
     if (filePath != null) {
-      location.setFilePath(filePath);
+      location.setFilePath(filePath.toString());
     }
     location.setMessage(l.getMessage());
     var textRange = l.getTextRange();

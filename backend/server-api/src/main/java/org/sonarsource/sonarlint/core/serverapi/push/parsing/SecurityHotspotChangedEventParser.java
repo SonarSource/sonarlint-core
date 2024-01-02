@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.serverapi.push.parsing;
 
 import com.google.gson.Gson;
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Optional;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
@@ -46,7 +47,7 @@ public class SecurityHotspotChangedEventParser implements EventParser<SecurityHo
       Instant.ofEpochMilli(payload.updateDate),
       HotspotReviewStatus.fromStatusAndResolution(payload.status, payload.resolution),
       payload.assignee,
-      payload.filePath));
+      Path.of(payload.filePath)));
   }
 
   private static class HotspotChangedEventPayload {

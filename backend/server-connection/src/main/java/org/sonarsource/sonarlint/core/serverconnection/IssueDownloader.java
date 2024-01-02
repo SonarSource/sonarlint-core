@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -112,7 +113,7 @@ public class IssueDownloader {
   private static ServerIssue<?> convertBatchIssue(ScannerInput.ServerIssue batchIssueFromWs) {
     var ruleKey = batchIssueFromWs.getRuleRepository() + ":" + batchIssueFromWs.getRuleKey();
     // We have filtered out issues without file path earlier
-    var filePath = batchIssueFromWs.getPath();
+    var filePath = Path.of(batchIssueFromWs.getPath());
     var creationDate = Instant.ofEpochMilli(batchIssueFromWs.getCreationDate());
     var userSeverity = batchIssueFromWs.getManualSeverity() ? IssueSeverity.valueOf(batchIssueFromWs.getSeverity().name()) : null;
     var ruleType = RuleType.valueOf(batchIssueFromWs.getType());
@@ -128,7 +129,7 @@ public class IssueDownloader {
   private static ServerIssue<?> convertLiteIssue(IssueLite liteIssueFromWs) {
     var mainLocation = liteIssueFromWs.getMainLocation();
     // We have filtered out issues without file path earlier
-    var filePath = mainLocation.getFilePath();
+    var filePath = Path.of(mainLocation.getFilePath());
     var creationDate = Instant.ofEpochMilli(liteIssueFromWs.getCreationDate());
     var userSeverity = liteIssueFromWs.hasUserSeverity() ? IssueSeverity.valueOf(liteIssueFromWs.getUserSeverity().name()) : null;
     var ruleType = RuleType.valueOf(liteIssueFromWs.getType().name());

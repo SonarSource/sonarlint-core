@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashSet;
@@ -39,6 +40,7 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -139,7 +141,7 @@ class ServerIssueUpdaterTest {
     when(downloader.getEnabledLanguages()).thenReturn(Set.of(Language.C));
     when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty())).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
     updater.update(serverApi, projectBinding.projectKey(), "master", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL);
-    verify(downloader).downloadFromPull(eq(serverApi), eq(projectBinding.projectKey()), eq("master"), eq(Optional.empty()));
+    verify(downloader).downloadFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty());
   }
 
   @Test
@@ -154,7 +156,7 @@ class ServerIssueUpdaterTest {
     when(downloader.getEnabledLanguages()).thenReturn(Set.of(Language.C));
     when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty())).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
     updater.update(serverApi, projectBinding.projectKey(), "master", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL);
-    verify(downloader).downloadFromPull(eq(serverApi), eq(projectBinding.projectKey()), eq("master"), eq(Optional.empty()));
+    verify(downloader).downloadFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty());
   }
 
   @Test
@@ -169,7 +171,7 @@ class ServerIssueUpdaterTest {
     when(downloader.getEnabledLanguages()).thenReturn(Set.of(Language.C, Language.GO));
     when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", lastSync)).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
     updater.update(serverApi, projectBinding.projectKey(), "master", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL);
-    verify(downloader).downloadFromPull(eq(serverApi), eq(projectBinding.projectKey()), eq("master"), eq(lastSync));
+    verify(downloader).downloadFromPull(serverApi, projectBinding.projectKey(), "master", lastSync);
   }
 
   @Test
@@ -184,7 +186,7 @@ class ServerIssueUpdaterTest {
     when(taintDownloader.downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty())).thenReturn(new TaintIssueDownloader.PullTaintResult(queryTimestamp, issues, Set.of()));
 
     updater.syncTaints(serverApi, projectBinding.projectKey(), "master", Set.of(Language.C));
-    verify(taintDownloader).downloadTaintFromPull(eq(serverApi), eq(projectBinding.projectKey()), eq("master"), eq(Optional.empty()));
+    verify(taintDownloader).downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty());
   }
 
   @Test
@@ -199,7 +201,7 @@ class ServerIssueUpdaterTest {
     when(taintDownloader.downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty())).thenReturn(new TaintIssueDownloader.PullTaintResult(queryTimestamp, issues, Set.of()));
 
     updater.syncTaints(serverApi, projectBinding.projectKey(), "master", Set.of(Language.C));
-    verify(taintDownloader).downloadTaintFromPull(eq(serverApi), eq(projectBinding.projectKey()), eq("master"), eq(Optional.empty()));
+    verify(taintDownloader).downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty());
   }
 
   @Test
@@ -214,14 +216,14 @@ class ServerIssueUpdaterTest {
     when(taintDownloader.downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", lastSync)).thenReturn(new TaintIssueDownloader.PullTaintResult(queryTimestamp, issues, Set.of()));
 
     updater.syncTaints(serverApi, projectBinding.projectKey(), "master", Set.of(Language.C, Language.GO));
-    verify(taintDownloader).downloadTaintFromPull(eq(serverApi), eq(projectBinding.projectKey()), eq("master"), eq(lastSync));
+    verify(taintDownloader).downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", lastSync);
   }
 
   @Test
   void update_file_issues_for_unknown_file() {
     projectBinding = new ProjectBinding(PROJECT_KEY, "", "ide_prefix");
 
-    updater.updateFileIssues(serverApi, projectBinding, "not_ide_prefix", null, false, Version.create("8.9"));
+    updater.updateFileIssues(serverApi, projectBinding, Path.of("not_ide_prefix"), null, false, Version.create("8.9"));
 
     verifyNoInteractions(downloader);
     verifyNoInteractions(issueStore);
@@ -231,8 +233,9 @@ class ServerIssueUpdaterTest {
   void error_downloading_file_issues() {
     when(downloader.downloadFromBatch(serverApi, "module:file", null)).thenThrow(IllegalArgumentException.class);
     // when(issueStorePaths.idePathToFileKey(projectBinding, "file")).thenReturn("module:file");
-
-    assertThrows(DownloadException.class, () -> updater.updateFileIssues(serverApi, projectBinding, "file", null, false, Version.create("8.9")));
+    var filePath = Path.of("file");
+    var version = Version.create("8.9");
+    assertThrows(DownloadException.class, () -> updater.updateFileIssues(serverApi, projectBinding, filePath, null, false, version));
   }
 
   @Test
@@ -242,9 +245,9 @@ class ServerIssueUpdaterTest {
 
     when(downloader.downloadFromBatch(serverApi, projectBinding.projectKey() + ":src/main/Foo.java", null)).thenReturn(issues);
 
-    updater.updateFileIssues(serverApi, projectBinding, "src/main/Foo.java", "branch", false, Version.create("8.9"));
+    updater.updateFileIssues(serverApi, projectBinding, Path.of("src/main/Foo.java"), "branch", false, Version.create("8.9"));
 
-    verify(issueStore).replaceAllIssuesOfFile(eq("branch"), eq("src/main/Foo.java"), anyList());
+    verify(issueStore).replaceAllIssuesOfFile(eq("branch"), eq(Path.of("src/main/Foo.java")), anyList());
   }
 
   @Test
@@ -254,15 +257,15 @@ class ServerIssueUpdaterTest {
 
     when(downloader.downloadFromBatch(serverApi, projectBinding.projectKey() + ":src/main/Foo.java", null)).thenReturn(issues);
 
-    updater.updateFileIssues(serverApi, projectBinding, "src/main/Foo.java", "branch", true, Version.create("99.9"));
+    updater.updateFileIssues(serverApi, projectBinding, Path.of("src/main/Foo.java"), "branch", true, Version.create("99.9"));
 
-    verify(issueStore).replaceAllIssuesOfFile(eq("branch"), eq("src/main/Foo.java"), anyList());
+    verify(issueStore).replaceAllIssuesOfFile(eq("branch"), eq(Path.of("src/main/Foo.java")), anyList());
   }
 
   @Test
   void dont_update_file_issues_with_pull() {
-    updater.updateFileIssues(serverApi, projectBinding, "src/main/Foo.java", "branch", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL);
+    updater.updateFileIssues(serverApi, projectBinding, Path.of("src/main/Foo.java"), "branch", false, IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL);
 
-    verify(issueStore, never()).replaceAllIssuesOfFile(eq("branch"), anyString(), anyList());
+    verify(issueStore, never()).replaceAllIssuesOfFile(eq("branch"), any(), anyList());
   }
 }
