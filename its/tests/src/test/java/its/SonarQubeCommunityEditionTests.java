@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -61,6 +62,7 @@ import org.sonarqube.ws.client.issues.SearchRequest;
 import org.sonarqube.ws.client.issues.SetSeverityRequest;
 import org.sonarqube.ws.client.issues.SetTypeRequest;
 import org.sonarqube.ws.client.users.CreateRequest;
+import org.sonarqube.ws.client.usertokens.GenerateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
@@ -72,6 +74,7 @@ import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.usertoken.RevokeTokenParams;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResponse;
@@ -150,6 +153,24 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
   static void createSonarLintUser() {
     adminWsClient = newAdminWsClient(ORCHESTRATOR);
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
+  }
+
+  @Test
+  void test_revoke_token() {
+    var tokenName = "testTokenForRevoking";
+
+    var testToken = adminWsClient.userTokens()
+      .generate(new GenerateRequest().setName(tokenName));
+    assertThat(testToken.getName()).isEqualTo(tokenName);
+
+    // Using the credentials we used throughout the test, we want to remove the additional token!
+    assertThat(backend
+      .getUserTokenService()
+      .revokeToken(new RevokeTokenParams(ORCHESTRATOR.getServer().getUrl(), testToken.getName(), testToken.getToken())))
+      .succeedsWithin(Duration.ofSeconds(10));
+
+    var searchResult = adminWsClient.userTokens().search(new org.sonarqube.ws.client.usertokens.SearchRequest().setLogin(testToken.getLogin()));
+    assertThat(searchResult.getUserTokensCount()).isZero();
   }
 
   @Nested

@@ -57,6 +57,7 @@ import org.sonarsource.sonarlint.core.http.AskClientCertificatePredicate;
 import org.sonarsource.sonarlint.core.http.ClientProxyCredentialsProvider;
 import org.sonarsource.sonarlint.core.http.ClientProxySelector;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
+import org.sonarsource.sonarlint.core.http.ConnectionUnawareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.issue.IssueServiceImpl;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
@@ -78,6 +79,7 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
 import org.sonarsource.sonarlint.core.tracking.IssueTrackingServiceImpl;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
 import org.sonarsource.sonarlint.core.tracking.SecurityHotspotMatchingServiceImpl;
+import org.sonarsource.sonarlint.core.usertoken.UserTokenServiceImpl;
 import org.sonarsource.sonarlint.core.websocket.WebSocketService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -92,6 +94,7 @@ import org.springframework.context.annotation.Import;
   ClientProxySelector.class,
   ClientProxyCredentialsProvider.class,
   ConnectionAwareHttpClientProvider.class,
+  ConnectionUnawareHttpClientProvider.class,
   ConfigurationServiceImpl.class,
   ConfigurationRepository.class,
   RulesServiceImpl.class,
@@ -128,7 +131,8 @@ import org.springframework.context.annotation.Import;
   LocalOnlyIssueStorageService.class,
   StorageService.class,
   NewCodeServiceImpl.class,
-  SecurityHotspotMatchingServiceImpl.class
+  SecurityHotspotMatchingServiceImpl.class,
+  UserTokenServiceImpl.class
 })
 public class SonarLintSpringAppConfig {
 

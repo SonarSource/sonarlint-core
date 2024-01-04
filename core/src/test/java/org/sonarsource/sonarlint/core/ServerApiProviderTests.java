@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
+import org.sonarsource.sonarlint.core.http.ConnectionUnawareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
@@ -34,15 +35,16 @@ import static org.mockito.Mockito.when;
 class ServerApiProviderTests {
 
   private final ConnectionConfigurationRepository connectionRepository = mock(ConnectionConfigurationRepository.class);
-  private final ConnectionAwareHttpClientProvider httpClientProvider = mock(ConnectionAwareHttpClientProvider.class);
-  private final ServerApiProvider underTest = new ServerApiProvider(connectionRepository, httpClientProvider);
+  private final ConnectionAwareHttpClientProvider awareHttpClientProvider = mock(ConnectionAwareHttpClientProvider.class);
+  private final ConnectionUnawareHttpClientProvider unawareHttpClientProvider = mock(ConnectionUnawareHttpClientProvider.class);
+  private final ServerApiProvider underTest = new ServerApiProvider(connectionRepository, awareHttpClientProvider, unawareHttpClientProvider);
 
   @Test
   void getServerApi_for_sonarqube() {
     var endpointParams = mock(EndpointParams.class);
     when(connectionRepository.getEndpointParams("sq1")).thenReturn(Optional.of(endpointParams));
     var httpClient = mock(HttpClient.class);
-    when(httpClientProvider.getHttpClient("sq1")).thenReturn(httpClient);
+    when(awareHttpClientProvider.getHttpClient("sq1")).thenReturn(httpClient);
 
     var serverApi = underTest.getServerApi("sq1");
 
@@ -50,11 +52,20 @@ class ServerApiProviderTests {
   }
 
   @Test
+  void getServerApi_for_sonarqube_notConnected() {
+    var httpClient = mock(HttpClient.class);
+    when(unawareHttpClientProvider.getHttpClient("token")).thenReturn(httpClient);
+
+    var serverApi = underTest.getServerApi("sq_notConnected", null, "token");
+    assertThat(serverApi.isSonarCloud()).isFalse();
+  }
+
+  @Test
   void getServerApi_for_sonarcloud() {
     var endpointParams = mock(EndpointParams.class);
     when(connectionRepository.getEndpointParams("sc1")).thenReturn(Optional.of(endpointParams));
     var httpClient = mock(HttpClient.class);
-    when(httpClientProvider.getHttpClient("sc1")).thenReturn(httpClient);
+    when(awareHttpClientProvider.getHttpClient("sc1")).thenReturn(httpClient);
 
     var serverApi = underTest.getServerApi("sc1");
 
@@ -62,10 +73,19 @@ class ServerApiProviderTests {
   }
 
   @Test
+  void getServerApi_for_sonarcloud_notConnected() {
+    var httpClient = mock(HttpClient.class);
+    when(unawareHttpClientProvider.getHttpClient("token")).thenReturn(httpClient);
+
+    var serverApi = underTest.getServerApi(SonarCloudConnectionConfiguration.getSonarCloudUrl(), "organization", "token");
+    assertThat(serverApi.isSonarCloud()).isTrue();
+  }
+
+  @Test
   void getServerApi_returns_empty_if_connection_doesnt_exists() {
     when(connectionRepository.getConnectionById("sc1")).thenReturn(null);
     var httpClient = mock(HttpClient.class);
-    when(httpClientProvider.getHttpClient("sc1")).thenReturn(httpClient);
+    when(awareHttpClientProvider.getHttpClient("sc1")).thenReturn(httpClient);
 
     var serverApi = underTest.getServerApi("sc1");
 
@@ -75,7 +95,7 @@ class ServerApiProviderTests {
   @Test
   void getServerApi_returns_empty_if_client_cant_provide_httpclient() {
     when(connectionRepository.getConnectionById("sc1")).thenReturn(new SonarCloudConnectionConfiguration("sc1", "myorg", true));
-    when(httpClientProvider.getHttpClient("sc1")).thenReturn(null);
+    when(awareHttpClientProvider.getHttpClient("sc1")).thenReturn(null);
 
     var serverApi = underTest.getServerApi("sc1");
 
