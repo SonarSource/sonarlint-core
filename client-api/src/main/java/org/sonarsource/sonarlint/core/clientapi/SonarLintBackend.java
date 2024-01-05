@@ -35,6 +35,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.rules.RulesService;
 import org.sonarsource.sonarlint.core.clientapi.backend.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.IssueTrackingService;
 import org.sonarsource.sonarlint.core.clientapi.backend.tracking.SecurityHotspotMatchingService;
+import org.sonarsource.sonarlint.core.clientapi.backend.usertoken.UserTokenService;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 
 public interface SonarLintBackend {
@@ -80,6 +81,9 @@ public interface SonarLintBackend {
 
   @JsonDelegate
   NewCodeService getNewCodeService();
+
+  @JsonDelegate
+  UserTokenService getUserTokenService();
 
   @JsonRequest
   CompletableFuture<Void> shutdown();

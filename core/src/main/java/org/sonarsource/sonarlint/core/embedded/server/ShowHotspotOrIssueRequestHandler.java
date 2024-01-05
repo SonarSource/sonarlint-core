@@ -26,6 +26,8 @@ import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingPara
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
 
+import javax.annotation.Nullable;
+
 public class ShowHotspotOrIssueRequestHandler {
   private final BindingSuggestionProviderImpl bindingSuggestionProvider;
   private final SonarLintClient client;
@@ -47,7 +49,12 @@ public class ShowHotspotOrIssueRequestHandler {
   }
 
   CompletableFuture<AssistCreatingConnectionResponse> assistCreatingConnection(String serverUrl) {
-    return client.assistCreatingConnection(new AssistCreatingConnectionParams(serverUrl));
+    return assistCreatingConnection(serverUrl, null, null);
+  }
+
+  CompletableFuture<AssistCreatingConnectionResponse> assistCreatingConnection(String serverUrl,
+    @Nullable String tokenName, @Nullable String tokenValue) {
+    return client.assistCreatingConnection(new AssistCreatingConnectionParams(serverUrl, tokenName, tokenValue));
   }
 
   CompletableFuture<NewBinding> assistBinding(String connectionId, String projectKey) {

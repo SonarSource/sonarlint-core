@@ -67,8 +67,12 @@ public class StatusRequestHandler implements HttpRequestHandler {
       .map(Header::getValue)
       .map(this::isTrustedServer)
       .orElse(false);
+
+    // We need a token when the requesting server is not a trusted one (in order to automatically create a connection).
     getDescription(trustedServer)
-      .thenAccept(description -> response.setEntity(new StringEntity(new Gson().toJson(new StatusResponse(clientInfo.getName(), description)), ContentType.APPLICATION_JSON)));
+      .thenAccept(description -> response.setEntity(
+        new StringEntity(new Gson().toJson(new StatusResponse(clientInfo.getName(), description, !trustedServer)),
+        ContentType.APPLICATION_JSON)));
 
   }
 
@@ -88,10 +92,13 @@ public class StatusRequestHandler implements HttpRequestHandler {
     private final String ideName;
     @Expose
     private final String description;
+    @Expose
+    private final boolean needsToken;
 
-    public StatusResponse(String ideName, String description) {
+    public StatusResponse(String ideName, String description, boolean needsToken) {
       this.ideName = ideName;
       this.description = description;
+      this.needsToken = needsToken;
     }
   }
 }

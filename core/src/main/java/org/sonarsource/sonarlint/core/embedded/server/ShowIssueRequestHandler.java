@@ -100,7 +100,7 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
     var connectionsMatchingOrigin = repository.findByUrl(query.serverUrl);
     if (connectionsMatchingOrigin.isEmpty()) {
       startFullBindingProcess();
-      assistCreatingConnection(query.serverUrl)
+      assistCreatingConnection(query.serverUrl, query.tokenName, query.tokenValue)
         .thenCompose(response -> assistBinding(response.getNewConnectionId(), query.projectKey))
         .thenAccept(response -> showIssueForScope(response.getConnectionId(), response.getConfigurationScopeId(),
           query.issueKey, query.projectKey, query.branch, query.pullRequest))
@@ -192,7 +192,8 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
     } catch (URISyntaxException e) {
       // Ignored
     }
-    return new ShowIssueQuery(params.get("server"), params.get("project"), params.get("issue"), params.get("branch"), params.get("pullRequest"));
+    return new ShowIssueQuery(params.get("server"), params.get("project"), params.get("issue"), params.get("branch"),
+      params.get("pullRequest"), params.get("tokenName"), params.get("tokenValue"));
   }
 
   @VisibleForTesting
@@ -203,17 +204,25 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
     private final String branch;
     @Nullable
     private final String pullRequest;
+    @Nullable
+    private final String tokenName;
+    @Nullable
+    private final String tokenValue;
 
-    public ShowIssueQuery(String serverUrl, String projectKey, String issueKey, String branch, @Nullable String pullRequest) {
+    public ShowIssueQuery(String serverUrl, String projectKey, String issueKey, String branch,
+      @Nullable String pullRequest, @Nullable String tokenName, @Nullable String tokenValue) {
       this.serverUrl = serverUrl;
       this.projectKey = projectKey;
       this.issueKey = issueKey;
       this.branch = branch;
       this.pullRequest = pullRequest;
+      this.tokenName = tokenName;
+      this.tokenValue = tokenValue;
     }
 
     public boolean isValid() {
-      return isNotBlank(serverUrl) && isNotBlank(projectKey) && isNotBlank(issueKey) && isNotBlank(branch) && isPullRequestParamValid();
+      return isNotBlank(serverUrl) && isNotBlank(projectKey) && isNotBlank(issueKey) && isNotBlank(branch)
+        && isPullRequestParamValid() && isTokenValid();
     }
 
     public boolean isPullRequestParamValid() {
@@ -221,6 +230,15 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
         return isNotEmpty(pullRequest);
       }
       return true;
+    }
+
+    /** Either we get a token combination or we don't get a token combination: There is nothing in between */
+    public boolean isTokenValid() {
+      if (tokenName != null && tokenValue != null) {
+        return isNotEmpty(tokenName) && isNotEmpty(tokenValue);
+      }
+
+      return tokenName == null && tokenValue == null;
     }
 
     public String getServerUrl() {
@@ -242,6 +260,16 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
     @Nullable
     public String getPullRequest() {
       return pullRequest;
+    }
+
+    @Nullable
+    public String getTokenName() {
+      return tokenName;
+    }
+
+    @Nullable
+    public String getTokenValue() {
+      return tokenValue;
     }
   }
 }

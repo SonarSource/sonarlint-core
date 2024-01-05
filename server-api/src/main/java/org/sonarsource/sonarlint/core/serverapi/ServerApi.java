@@ -34,6 +34,7 @@ import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
 import org.sonarsource.sonarlint.core.serverapi.settings.SettingsApi;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 import org.sonarsource.sonarlint.core.serverapi.system.SystemApi;
+import org.sonarsource.sonarlint.core.serverapi.usertokens.UserTokensApi;
 
 public class ServerApi {
   private final ServerApiHelper helper;
@@ -88,6 +89,10 @@ public class ServerApi {
 
   public SystemApi system() {
     return new SystemApi(helper);
+  }
+
+  public UserTokensApi userTokens() {
+    return new UserTokensApi(helper);
   }
 
   public ProjectBranchesApi branches() {

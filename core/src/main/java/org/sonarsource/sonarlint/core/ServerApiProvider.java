@@ -20,11 +20,15 @@
 package org.sonarsource.sonarlint.core;
 
 import java.util.Optional;
+import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
+import org.sonarsource.sonarlint.core.http.ConnectionUnawareHttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 
 @Named
@@ -33,11 +37,15 @@ public class ServerApiProvider {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final ConnectionConfigurationRepository connectionRepository;
-  private final ConnectionAwareHttpClientProvider httpClientProvider;
+  private final ConnectionAwareHttpClientProvider awareHttpClientProvider;
+  private final ConnectionUnawareHttpClientProvider unawareHttpClientProvider;
 
-  public ServerApiProvider(ConnectionConfigurationRepository connectionRepository, ConnectionAwareHttpClientProvider httpClientProvider) {
+  public ServerApiProvider(ConnectionConfigurationRepository connectionRepository,
+    ConnectionAwareHttpClientProvider awareHttpClientProvider,
+    ConnectionUnawareHttpClientProvider unawareHttpClientProvider) {
     this.connectionRepository = connectionRepository;
-    this.httpClientProvider = httpClientProvider;
+    this.awareHttpClientProvider = awareHttpClientProvider;
+    this.unawareHttpClientProvider = unawareHttpClientProvider;
   }
 
   public Optional<ServerApi> getServerApi(String connectionId) {
@@ -46,7 +54,11 @@ public class ServerApiProvider {
       LOG.debug("Connection '{}' is gone", connectionId);
       return Optional.empty();
     }
-    return Optional.of(new ServerApi(params.get(), httpClientProvider.getHttpClient(connectionId)));
+    return Optional.of(new ServerApi(params.get(), awareHttpClientProvider.getHttpClient(connectionId)));
   }
 
+  public ServerApi getServerApi(String baseUrl, @Nullable String organization, String token) {
+    var params = new EndpointParams(baseUrl, SonarCloudConnectionConfiguration.getSonarCloudUrl().equals(baseUrl), organization);
+    return new ServerApi(params, unawareHttpClientProvider.getHttpClient(token));
+  }
 }

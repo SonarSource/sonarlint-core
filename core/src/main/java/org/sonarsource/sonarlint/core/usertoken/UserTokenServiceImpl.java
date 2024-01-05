@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,34 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.client.connection;
+package org.sonarsource.sonarlint.core.usertoken;
 
-import javax.annotation.Nullable;
+import java.util.concurrent.CompletableFuture;
+import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.clientapi.backend.usertoken.RevokeTokenParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.usertoken.UserTokenService;
 
-public class AssistCreatingConnectionParams {
-  private final String serverUrl;
-  @Nullable
-  private final String tokenName;
-  @Nullable
-  private final String tokenValue;
+public class UserTokenServiceImpl implements UserTokenService {
+  private final ServerApiProvider serverApiProvider;
 
-  public AssistCreatingConnectionParams(String serverUrl, @Nullable String tokenName, @Nullable String tokenValue) {
-    this.serverUrl = serverUrl;
-    this.tokenName = tokenName;
-    this.tokenValue = tokenValue;
+  public UserTokenServiceImpl(ServerApiProvider serverApiProvider) {
+    this.serverApiProvider = serverApiProvider;
   }
 
-  public String getServerUrl() {
-    return serverUrl;
-  }
-
-  @Nullable
-  public String getTokenName() {
-    return tokenName;
-  }
-
-  @Nullable
-  public String getTokenValue() {
-    return tokenValue;
+  @Override
+  public CompletableFuture<Void> revokeToken(RevokeTokenParams params) {
+    return serverApiProvider.getServerApi(params.getBaseUrl(), null, params.getTokenValue())
+      .userTokens()
+      .revoke(params.getTokenName());
   }
 }

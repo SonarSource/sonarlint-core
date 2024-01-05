@@ -17,34 +17,27 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.client.connection;
+package org.sonarsource.sonarlint.core.clientapi.backend.usertoken;
 
-import javax.annotation.Nullable;
+import java.util.concurrent.CompletableFuture;
+import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 
-public class AssistCreatingConnectionParams {
-  private final String serverUrl;
-  @Nullable
-  private final String tokenName;
-  @Nullable
-  private final String tokenValue;
-
-  public AssistCreatingConnectionParams(String serverUrl, @Nullable String tokenName, @Nullable String tokenValue) {
-    this.serverUrl = serverUrl;
-    this.tokenName = tokenName;
-    this.tokenValue = tokenValue;
-  }
-
-  public String getServerUrl() {
-    return serverUrl;
-  }
-
-  @Nullable
-  public String getTokenName() {
-    return tokenName;
-  }
-
-  @Nullable
-  public String getTokenValue() {
-    return tokenValue;
-  }
+public interface UserTokenService {
+  /**
+   *  <p> It revokes a user token that is existing on the server and was handed over to the client.
+   *  It silently deals with the following conditions:
+   *  <ul>
+   *    <li>the token provided by name (identified by {@link RevokeTokenParams#getTokenName()} exists</li>
+   *  </ul>
+   *  In those cases a completed future will be returned.
+   *  </p>
+   *  <p>
+   *  It returns a failed future if:
+   *  <ul>
+   *    <li>there is a communication problem with the server: network outage, server is down, unauthorized</li>
+   *  </ul>
+   *  </p>
+   */
+  @JsonRequest
+  CompletableFuture<Void> revokeToken(RevokeTokenParams params);
 }

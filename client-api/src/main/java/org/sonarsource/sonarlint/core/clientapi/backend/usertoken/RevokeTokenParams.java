@@ -17,33 +17,27 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.client.connection;
+package org.sonarsource.sonarlint.core.clientapi.backend.usertoken;
 
-import javax.annotation.Nullable;
-
-public class AssistCreatingConnectionParams {
-  private final String serverUrl;
-  @Nullable
+public class RevokeTokenParams {
+  private final String baseUrl;
   private final String tokenName;
-  @Nullable
   private final String tokenValue;
 
-  public AssistCreatingConnectionParams(String serverUrl, @Nullable String tokenName, @Nullable String tokenValue) {
-    this.serverUrl = serverUrl;
+  public RevokeTokenParams(String baseUrl, String tokenName, String tokenValue) {
+    this.baseUrl = baseUrl;
     this.tokenName = tokenName;
     this.tokenValue = tokenValue;
   }
 
-  public String getServerUrl() {
-    return serverUrl;
+  public String getBaseUrl() {
+    return baseUrl;
   }
 
-  @Nullable
   public String getTokenName() {
     return tokenName;
   }
 
-  @Nullable
   public String getTokenValue() {
     return tokenValue;
   }

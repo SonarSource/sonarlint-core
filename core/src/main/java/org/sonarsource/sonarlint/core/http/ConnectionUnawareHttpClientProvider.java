@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Client API
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,34 +17,21 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.clientapi.client.connection;
+package org.sonarsource.sonarlint.core.http;
 
-import javax.annotation.Nullable;
+import javax.inject.Named;
+import javax.inject.Singleton;
 
-public class AssistCreatingConnectionParams {
-  private final String serverUrl;
-  @Nullable
-  private final String tokenName;
-  @Nullable
-  private final String tokenValue;
+@Named
+@Singleton
+public class ConnectionUnawareHttpClientProvider {
+  private final HttpClientProvider httpClientProvider;
 
-  public AssistCreatingConnectionParams(String serverUrl, @Nullable String tokenName, @Nullable String tokenValue) {
-    this.serverUrl = serverUrl;
-    this.tokenName = tokenName;
-    this.tokenValue = tokenValue;
+  public ConnectionUnawareHttpClientProvider(HttpClientProvider httpClientProvider) {
+    this.httpClientProvider = httpClientProvider;
   }
 
-  public String getServerUrl() {
-    return serverUrl;
-  }
-
-  @Nullable
-  public String getTokenName() {
-    return tokenName;
-  }
-
-  @Nullable
-  public String getTokenValue() {
-    return tokenValue;
+  public HttpClient getHttpClient(String token) {
+    return httpClientProvider.getHttpClientWithPreemptiveAuth(token, null);
   }
 }
