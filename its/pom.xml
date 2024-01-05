@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-parent</artifactId>
-    <version>9.6.1-SNAPSHOT</version>
+    <version>9.7-SNAPSHOT</version>
   </parent>
   <artifactId>sonarlint-core-its</artifactId>
   <name>SonarLint Core - ITs</name>
