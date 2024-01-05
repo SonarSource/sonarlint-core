@@ -25,20 +25,21 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Language;
 import org.sonarsource.sonarlint.core.commons.PluginsMinVersions;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.commons.ApiVersions;
+import org.sonarsource.sonarlint.core.plugin.commons.DataflowBugDetection;
 import org.sonarsource.sonarlint.core.plugin.commons.SkipReason;
 import org.sonarsource.sonarlint.core.plugin.commons.SkipReason.UnsatisfiedRuntimeRequirement.RuntimeRequirement;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.SonarPluginManifest.RequiredPlugin;
 
 public class SonarPluginRequirementsChecker {
 
-  private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
-
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
 
   private final PluginsMinVersions pluginMinVersions;
   private final Version implementedPluginApiVersion;
@@ -56,7 +57,7 @@ public class SonarPluginRequirementsChecker {
    * Attempt to read JAR manifests, load metadata, and check all requirements to ensure the plugin can be instantiated.
    */
   public Map<String, PluginRequirementsCheckResult> checkRequirements(Set<Path> pluginJarLocations, Set<Language> enabledLanguages, Version jreCurrentVersion,
-    boolean shouldCheckNodeVersion, Optional<Version> nodeCurrentVersion) {
+    boolean shouldCheckNodeVersion, Optional<Version> nodeCurrentVersion, boolean enableDataflowBugDetection) {
     Map<String, PluginRequirementsCheckResult> resultsByKey = new HashMap<>();
 
     for (Path jarLocation : pluginJarLocations) {
@@ -77,7 +78,7 @@ public class SonarPluginRequirementsChecker {
     // Second pass of checks
     for (PluginRequirementsCheckResult result : resultsByKey.values()) {
       if (!result.isSkipped()) {
-        resultsByKey.put(result.getPlugin().getKey(), checkUnsatisfiedPluginDependency(result, resultsByKey));
+        resultsByKey.put(result.getPlugin().getKey(), checkUnsatisfiedPluginDependency(result, resultsByKey, enableDataflowBugDetection));
       }
     }
     return resultsByKey;
@@ -110,12 +111,10 @@ public class SonarPluginRequirementsChecker {
       return new PluginRequirementsCheckResult(plugin, new SkipReason.IncompatiblePluginVersion(pluginMinVersion));
     }
     var jreMinVersion = plugin.getJreMinVersion();
-    if (jreMinVersion != null) {
-      if (!jreCurrentVersion.satisfiesMinRequirement(jreMinVersion)) {
-        LOG.debug("Plugin '{}' requires JRE {} while current is {}. Skip loading it.", plugin.getName(), jreMinVersion, jreCurrentVersion);
-        return new PluginRequirementsCheckResult(plugin,
-          new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.JRE, jreCurrentVersion.toString(), jreMinVersion.toString()));
-      }
+    if (jreMinVersion != null && !jreCurrentVersion.satisfiesMinRequirement(jreMinVersion)) {
+      LOG.debug("Plugin '{}' requires JRE {} while current is {}. Skip loading it.", plugin.getName(), jreMinVersion, jreCurrentVersion);
+      return new PluginRequirementsCheckResult(plugin,
+        new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.JRE, jreCurrentVersion.toString(), jreMinVersion.toString()));
     }
     if (shouldCheckNodeVersion) {
       var nodeMinVersion = plugin.getNodeJsMinVersion();
@@ -130,6 +129,7 @@ public class SonarPluginRequirementsChecker {
         }
       }
     }
+
     return new PluginRequirementsCheckResult(plugin, null);
   }
 
@@ -151,7 +151,7 @@ public class SonarPluginRequirementsChecker {
   }
 
   private static PluginRequirementsCheckResult checkUnsatisfiedPluginDependency(PluginRequirementsCheckResult currentResult,
-    Map<String, PluginRequirementsCheckResult> currentResultsByKey) {
+    Map<String, PluginRequirementsCheckResult> currentResultsByKey, boolean enableDataflowBugDetection) {
     var plugin = currentResult.getPlugin();
     for (RequiredPlugin required : plugin.getRequiredPlugins()) {
       if ("license".equals(required.getKey()) || (Language.JS.getPluginKey().equals(plugin.getKey()) && OLD_SONARTS_PLUGIN_KEY.equals(required.getKey()))) {
@@ -168,19 +168,35 @@ public class SonarPluginRequirementsChecker {
       // If we evaluate A before B, then A might be wrongly included
       // But I'm not aware of such case in real life.
       if (depInfo == null || depInfo.isSkipped()) {
-        LOG.debug("Plugin '{}' dependency on '{}' is unsatisfied. Skip loading it.", currentResult.getPlugin().getName(), required.getKey());
-        return new PluginRequirementsCheckResult(currentResult.getPlugin(), new SkipReason.UnsatisfiedDependency(required.getKey()));
+        return processUnsatisfiedDependency(currentResult.getPlugin(), required.getKey());
       }
     }
     var basePluginKey = plugin.getBasePlugin();
-    if (basePluginKey != null) {
-      var baseInfo = currentResultsByKey.get(basePluginKey);
-      if (baseInfo == null || baseInfo.isSkipped()) {
-        LOG.debug("Plugin '{}' dependency on '{}' is unsatisfied. Skip loading it.", currentResult.getPlugin().getName(), basePluginKey);
-        return new PluginRequirementsCheckResult(currentResult.getPlugin(), new SkipReason.UnsatisfiedDependency(basePluginKey));
+    if (basePluginKey != null && checkForPluginSkipped(currentResultsByKey.get(basePluginKey))) {
+      return processUnsatisfiedDependency(currentResult.getPlugin(), basePluginKey);
+    }
+    if (DataflowBugDetection.PLUGIN_ALLOW_LIST.contains(plugin.getKey())) {
+      // Workaround for SLCORE-667
+      // dbd and dbdpythonfrontend require Python to be working
+      if (!enableDataflowBugDetection) {
+        LOG.debug("Plugin '{}' is not supported. Skip loading it.", plugin.getName());
+        return new PluginRequirementsCheckResult(plugin, SkipReason.UnsupportedPlugin.INSTANCE);
+      }
+      var pythonPluginResult = currentResultsByKey.get(Language.PYTHON.getPluginKey());
+      if (checkForPluginSkipped(pythonPluginResult)) {
+        return processUnsatisfiedDependency(currentResult.getPlugin(), Language.PYTHON.getPluginKey());
       }
     }
     return currentResult;
+  }
+
+  private static boolean checkForPluginSkipped(@Nullable PluginRequirementsCheckResult plugin) {
+    return plugin == null || plugin.isSkipped();
+  }
+
+  private static PluginRequirementsCheckResult processUnsatisfiedDependency(PluginInfo plugin, String pluginKeyDependency) {
+    LOG.debug("Plugin '{}' dependency on '{}' is unsatisfied. Skip loading it.", plugin.getName(), pluginKeyDependency);
+    return new PluginRequirementsCheckResult(plugin, new SkipReason.UnsatisfiedDependency(pluginKeyDependency));
   }
 
 }

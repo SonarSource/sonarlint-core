@@ -21,13 +21,13 @@ package org.sonarsource.sonarlint.core.plugin.commons;
 
 import java.util.Set;
 
-class DataflowBugDetection {
+public class DataflowBugDetection {
 
   private DataflowBugDetection() {
     // Static stuff only
   }
 
-  private static final Set<String> PLUGIN_ALLOW_LIST = Set.of("dbd", "dbdpythonfrontend");
+  public static final Set<String> PLUGIN_ALLOW_LIST = Set.of("dbd", "dbdpythonfrontend");
 
   static Set<String> getPluginAllowList(boolean isDataflowBugDetectionEnabled) {
     return isDataflowBugDetectionEnabled ? PLUGIN_ALLOW_LIST : Set.of();

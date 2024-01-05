@@ -71,7 +71,7 @@ public class PluginsLoader {
   public PluginsLoadResult load(Configuration configuration) {
     var javaSpecVersion = Objects.requireNonNull(System2.INSTANCE.property("java.specification.version"), "Missing Java property 'java.specification.version'");
     var pluginCheckResultByKeys = requirementsChecker.checkRequirements(configuration.pluginJarLocations, configuration.enabledLanguages, Version.create(javaSpecVersion),
-      configuration.shouldCheckNodeVersion, configuration.nodeCurrentVersion);
+      configuration.shouldCheckNodeVersion, configuration.nodeCurrentVersion, configuration.enableDataflowBugDetection);
 
     var nonSkippedPlugins = getNonSkippedPlugins(pluginCheckResultByKeys);
     logPlugins(nonSkippedPlugins);
