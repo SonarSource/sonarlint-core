@@ -29,6 +29,16 @@ import org.sonarsource.sonarlint.core.commons.Language;
 
 public interface SkipReason {
 
+  class UnsupportedPlugin implements SkipReason {
+
+    public static final UnsupportedPlugin INSTANCE = new UnsupportedPlugin();
+
+    private UnsupportedPlugin() {
+      // Singleton
+    }
+
+  }
+
   class IncompatiblePluginApi implements SkipReason {
 
     public static final IncompatiblePluginApi INSTANCE = new IncompatiblePluginApi();
