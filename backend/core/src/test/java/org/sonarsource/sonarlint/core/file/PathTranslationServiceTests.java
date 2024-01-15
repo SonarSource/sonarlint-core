@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.file;
 
 import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -30,7 +29,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -56,8 +55,7 @@ class PathTranslationServiceTests {
   void shouldRethrowOnExecutionException() {
     when(cachedPathsTranslationByConfigScope.get(anyString())).thenThrow(new CancellationException());
 
-    assertThrows(IllegalStateException.class, () -> underTest
-      .getOrComputePathTranslation("scope", cachedPathsTranslationByConfigScope, 0));
+    assertThat(underTest.getOrComputePathTranslation("scope", cachedPathsTranslationByConfigScope, 0)).isEmpty();
     verify(cachedPathsTranslationByConfigScope, times(5)).get(anyString());
   }
 
@@ -65,8 +63,7 @@ class PathTranslationServiceTests {
   void shouldThrowWhenCounterHigherThanLimit() {
     when(cachedPathsTranslationByConfigScope.get(anyString())).thenThrow(new CancellationException());
 
-    assertThrows(IllegalStateException.class, () -> underTest
-      .getOrComputePathTranslation("scope", cachedPathsTranslationByConfigScope, 4));
+    assertThat(underTest.getOrComputePathTranslation("scope", cachedPathsTranslationByConfigScope, 4)).isEmpty();
     verify(cachedPathsTranslationByConfigScope, times(1)).get(anyString());
   }
 

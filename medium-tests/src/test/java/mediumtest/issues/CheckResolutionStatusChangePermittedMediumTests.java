@@ -55,6 +55,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 class CheckResolutionStatusChangePermittedMediumTests {
 
+  private static final Path FILE_PATH = Path.of("file/path");
   private SonarLintRpcServer backend;
   private ServerFixture.Server server;
   @RegisterExtension
@@ -226,10 +227,10 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .build(client);
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of(FILE_PATH, List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
     Thread.sleep(2000);
-    var localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get(Path.of("file/path")).get(0).getRight();
+    var localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get(FILE_PATH).get(0).getRight();
 
     var response = checkStatusChangePermitted("connectionId", localOnlyIssue.getId().toString());
 
@@ -252,10 +253,10 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .build(client);
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of(FILE_PATH, List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
     Thread.sleep(2000);
-    var localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get(Path.of("file/path")).get(0).getRight();
+    var localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get(FILE_PATH).get(0).getRight();
 
     var response = checkStatusChangePermitted("connectionId", localOnlyIssue.getId().toString());
 
@@ -279,10 +280,10 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .build(client);
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of(FILE_PATH, List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
-    var localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get(Path.of("file/path")).get(0).getRight();
+    var localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get(FILE_PATH).get(0).getRight();
 
     var response = checkStatusChangePermitted("connectionId", localOnlyIssue.getId().toString());
 
@@ -301,14 +302,13 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .withSonarQubeConnection("connectionId", server, storage -> storage.withServerVersion("10.4").withProject("projectKey", project -> project.withMainBranch("main")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
-
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of(FILE_PATH, List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
     LocalOnlyIssueDto localOnlyIssue = null;
     try {
-      localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get(Path.of("file/path")).get(0).getRight();
+      localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get(FILE_PATH).get(0).getRight();
     } catch (Exception e) {
       fail();
     }

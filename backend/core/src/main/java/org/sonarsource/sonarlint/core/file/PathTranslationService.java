@@ -160,12 +160,13 @@ public class PathTranslationService {
       return Optional.empty();
     } catch (CancellationException e) {
       if (retryCounter > COMPUTE_PATHS_RETRY_LIMIT) {
-        throw new IllegalStateException(UNABLE_TO_COMPUTE_PATHS);
+        LOG.error(UNABLE_TO_COMPUTE_PATHS, e);
+        return Optional.empty();
       }
       return getOrComputePathTranslation(configurationScopeId, cachedPathsTranslationByConfigScope, retryCounter + 1);
     } catch (ExecutionException e) {
       LOG.error(UNABLE_TO_COMPUTE_PATHS, e);
-      throw new IllegalStateException(UNABLE_TO_COMPUTE_PATHS, e);
+      return Optional.empty();
     }
   }
 
