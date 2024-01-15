@@ -38,6 +38,8 @@ public class ServerIssueFixtures {
     private TextRangeWithHash textRangeWithHash = new TextRangeWithHash(1, 2, 3, 4, "rangeHash");
     private String ruleKey = "ruleKey";
 
+    private String filePath = "file/path";
+
     public ServerIssueBuilder(String key) {
       super(key);
     }
@@ -52,8 +54,13 @@ public class ServerIssueFixtures {
       return this;
     }
 
+    public ServerIssueBuilder withFilePath(String filePath) {
+      this.filePath = filePath;
+      return this;
+    }
+
     public ServerIssue build() {
-      return new ServerIssue(key, resolved, ruleKey, "message", Path.of("file/path").toString(), introductionDate, issueSeverity, ruleType, textRangeWithHash);
+      return new ServerIssue(key, resolved, ruleKey, "message", Path.of(filePath).toString(), introductionDate, issueSeverity, ruleType, textRangeWithHash);
     }
   }
 

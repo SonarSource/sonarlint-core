@@ -26,14 +26,14 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 public class TrackWithServerIssuesResponse {
 
-  private final Map<Path, List<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>> issuesByServerRelativePath;
+  private final Map<Path, List<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>> issuesByIdeRelativePath;
 
-  public TrackWithServerIssuesResponse(Map<Path, List<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>> issuesByServerRelativePath) {
-    this.issuesByServerRelativePath = issuesByServerRelativePath;
+  public TrackWithServerIssuesResponse(Map<Path, List<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>> issuesByIdeRelativePath) {
+    this.issuesByIdeRelativePath = issuesByIdeRelativePath;
   }
 
-  public Map<Path, List<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>> getIssuesByServerRelativePath() {
-    return issuesByServerRelativePath;
+  public Map<Path, List<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>> getIssuesByIdeRelativePath() {
+    return issuesByIdeRelativePath;
   }
 
 }
