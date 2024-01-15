@@ -119,7 +119,8 @@ public class IssueMatchingService {
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId)
       .orElse(NewCodeDefinition.withAlwaysNew());
     return clientTrackedIssuesByIdeRelativePath.entrySet().stream().map(e -> {
-      var serverRelativePath = translation.ideToServerPath(e.getKey());
+      var ideRelativePath = e.getKey();
+      var serverRelativePath = translation.ideToServerPath(ideRelativePath);
       var serverIssues = storageService.binding(binding).findings().load(activeBranch, serverRelativePath);
       var localOnlyIssues = localOnlyIssueStorageService.get().loadForFile(configurationScopeId, serverRelativePath);
       var matches = matchIssues(serverRelativePath, serverIssues, localOnlyIssues, e.getValue())
@@ -139,7 +140,7 @@ public class IssueMatchingService {
               new LocalOnlyIssueDto(localOnlyIssue.getId(), resolution == null ? null : ResolutionStatus.valueOf(resolution.getStatus().name())));
           }
         }).collect(Collectors.toList());
-      return Map.entry(serverRelativePath, matches);
+      return Map.entry(ideRelativePath, matches);
     }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 

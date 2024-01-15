@@ -28,8 +28,8 @@ public interface IssueTrackingRpcService {
   /**
    * Warning: this method will eventually become internal to the backend. It is exposed as an intermediate step during migration.
    *
-   * <p>This method accepts a list of raw issues grouped by the server relative file path in which they were detected.
-   * This method returns a list of tracked issues grouped by the server relative file path in which they were detected.
+   * <p>This method accepts a list of raw issues grouped by the ide relative file path in which they were detected.
+   * This method returns a list of tracked issues grouped by the ide relative file path in which they were detected.
    * It is guaranteed that the size and order of the tracked issues list in the response will be the same as the locally tracked issues list in the parameters.
    * If the provided configuration scope is not bound, the issues are still tracked and assigned a unique identifier if they don't have one.
    * </p>

@@ -230,7 +230,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       Map.of(FILE_PATH, List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
     Thread.sleep(2000);
-    var localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get(FILE_PATH).get(0).getRight();
+    var localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(FILE_PATH).get(0).getRight();
 
     var response = checkStatusChangePermitted("connectionId", localOnlyIssue.getId().toString());
 
@@ -256,7 +256,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       Map.of(FILE_PATH, List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
     Thread.sleep(2000);
-    var localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get(FILE_PATH).get(0).getRight();
+    var localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(FILE_PATH).get(0).getRight();
 
     var response = checkStatusChangePermitted("connectionId", localOnlyIssue.getId().toString());
 
@@ -283,7 +283,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       Map.of(FILE_PATH, List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
-    var localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get(FILE_PATH).get(0).getRight();
+    var localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(FILE_PATH).get(0).getRight();
 
     var response = checkStatusChangePermitted("connectionId", localOnlyIssue.getId().toString());
 
@@ -308,7 +308,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
 
     LocalOnlyIssueDto localOnlyIssue = null;
     try {
-      localOnlyIssue = trackedIssues.get().getIssuesByServerRelativePath().get(FILE_PATH).get(0).getRight();
+      localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(FILE_PATH).get(0).getRight();
     } catch (Exception e) {
       fail();
     }
