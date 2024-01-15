@@ -140,10 +140,10 @@ public class PathTranslationService {
 
   private void cancelAndInvalidate(String configScopeId) {
     var cachedFuture = cachedPathsTranslationByConfigScope.getIfPresent(configScopeId);
+    cachedPathsTranslationByConfigScope.synchronous().invalidate(configScopeId);
     if (cachedFuture != null) {
       cachedFuture.cancel(true);
     }
-    cachedPathsTranslationByConfigScope.synchronous().invalidate(configScopeId);
   }
 
   public Optional<FilePathTranslation> getOrComputePathTranslation(String configurationScopeId) {
