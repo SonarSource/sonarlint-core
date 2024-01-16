@@ -22,12 +22,15 @@ package org.sonarsource.sonarlint.core.file;
 import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.common.util.concurrent.MoreExecutors;
+import dev.failsafe.ExecutionContext;
+import dev.failsafe.Failsafe;
+import dev.failsafe.Fallback;
+import dev.failsafe.RetryPolicy;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -39,7 +42,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.branch.MatchedSonarProjectBranchChangedEvent;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
@@ -60,8 +62,6 @@ import static java.util.stream.Collectors.toList;
 @Singleton
 public class PathTranslationService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final int COMPUTE_PATHS_RETRY_LIMIT = 3;
-
   private final ClientFileSystemService clientFs;
   private final ServerApiProvider serverApiProvider;
   private final ConfigurationRepository configurationRepository;
@@ -70,7 +70,14 @@ public class PathTranslationService {
 
   private final AsyncLoadingCache<String, FilePathTranslation> cachedPathsTranslationByConfigScope = Caffeine.newBuilder()
     .executor(executorService)
-    .buildAsync(this::computePaths);
+    .buildAsync((key, executor) -> {
+      var currentThreadOutput = SonarLintLogger.getTargetForCopy();
+      return Failsafe.none().with(executor).getAsync(ctx -> {
+        SonarLintLogger.setTarget(currentThreadOutput);
+        return computePaths(key, ctx);
+      });
+    });
+
   private static final String UNABLE_TO_COMPUTE_PATHS = "Unable to compute paths translation";
 
   public PathTranslationService(ClientFileSystemService clientFs, ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository) {
@@ -80,22 +87,24 @@ public class PathTranslationService {
   }
 
   @CheckForNull
-  private FilePathTranslation computePaths(String configScopeId) {
-    LOG.debug("Computing paths translation for config scope '{}'", configScopeId);
+  private FilePathTranslation computePaths(String configScopeId, ExecutionContext<FilePathTranslation> ctx) {
+    LOG.debug("Computing paths translation for config scope '{}'...", configScopeId);
     var fileMatcher = new FileTreeMatcher();
     var boundScope = configurationRepository.getBoundScope(configScopeId);
     if (boundScope == null) {
-      return null;
+      throw new IllegalStateException("Config scope '" + configScopeId + "' does not exist or is not bound");
     }
     var serverApiOpt = serverApiProvider.getServerApi(boundScope.getConnectionId());
     if (serverApiOpt.isEmpty()) {
-      return null;
+      throw new IllegalStateException("Connection '" + boundScope.getConnectionId() + "' does not exist");
     }
     List<Path> serverFilePaths;
     try {
-      serverFilePaths = listAllFilePathsFromServer(serverApiOpt.get(), boundScope.getSonarProjectKey());
+      serverFilePaths = listAllFilePathsFromServer(serverApiOpt.get(), boundScope.getSonarProjectKey(), ctx);
+    } catch (CancellationException e) {
+      throw e;
     } catch (Exception e) {
-      LOG.debug("Error while getter server file paths for project '{}'", boundScope.getSonarProjectKey(), e);
+      LOG.debug("Error while getting server file paths for project '{}'", boundScope.getSonarProjectKey(), e);
       return null;
     }
     return matchPaths(boundScope.getConfigScopeId(), fileMatcher, serverFilePaths);
@@ -114,9 +123,9 @@ public class PathTranslationService {
     return new FilePathTranslation(match.idePrefix(), match.sqPrefix());
   }
 
-  private static List<Path> listAllFilePathsFromServer(ServerApi serverApi, String projectKey) {
-    return serverApi.component().getAllFileKeys(projectKey, new ProgressMonitor(null)).stream()
-      .map(fileKey -> fileKey.substring(StringUtils.lastIndexOf(fileKey, ":") + 1))
+  private static List<Path> listAllFilePathsFromServer(ServerApi serverApi, String projectKey, ExecutionContext<FilePathTranslation> ctx) {
+    return serverApi.component().getAllFileKeys(projectKey, ctx).stream()
+      .map(fileKey -> StringUtils.substringAfterLast(fileKey, ":"))
       .map(Paths::get)
       .collect(toList());
   }
@@ -142,32 +151,27 @@ public class PathTranslationService {
     var cachedFuture = cachedPathsTranslationByConfigScope.getIfPresent(configScopeId);
     cachedPathsTranslationByConfigScope.synchronous().invalidate(configScopeId);
     if (cachedFuture != null) {
-      cachedFuture.cancel(true);
+      cachedFuture.cancel(false);
     }
   }
 
   public Optional<FilePathTranslation> getOrComputePathTranslation(String configurationScopeId) {
-    return getOrComputePathTranslation(configurationScopeId, this.cachedPathsTranslationByConfigScope, 0);
-  }
-
-  Optional<FilePathTranslation> getOrComputePathTranslation(String configurationScopeId,
-    AsyncLoadingCache<String, FilePathTranslation> cachedPathsTranslationByConfigScope, int retryCounter) {
-    try {
-      return Optional.ofNullable(cachedPathsTranslationByConfigScope.get(configurationScopeId).get());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      LOG.debug("Interrupted!", e);
-      return Optional.empty();
-    } catch (CancellationException e) {
-      if (retryCounter > COMPUTE_PATHS_RETRY_LIMIT) {
-        LOG.error(UNABLE_TO_COMPUTE_PATHS, e);
-        return Optional.empty();
-      }
-      return getOrComputePathTranslation(configurationScopeId, cachedPathsTranslationByConfigScope, retryCounter + 1);
-    } catch (ExecutionException e) {
-      LOG.error(UNABLE_TO_COMPUTE_PATHS, e);
-      return Optional.empty();
-    }
+    var currentThreadOutput = SonarLintLogger.getTargetForCopy();
+    var retryOnCancelPolicy = RetryPolicy.<FilePathTranslation>builder()
+      .handle(CancellationException.class)
+      .withMaxRetries(3)
+      .onRetry(e -> {
+        SonarLintLogger.setTarget(currentThreadOutput);
+        LOG.debug("Retrying to compute paths translation for config scope '{}'", configurationScopeId, e);
+      })
+      .build();
+    return Optional.ofNullable(
+      Failsafe.with(Fallback.of((FilePathTranslation) null), retryOnCancelPolicy)
+        .onFailure(e -> LOG.error(UNABLE_TO_COMPUTE_PATHS, e.getException()))
+        .getStageAsync(ctx -> {
+          SonarLintLogger.setTarget(currentThreadOutput);
+          return cachedPathsTranslationByConfigScope.get(configurationScopeId);
+        }).join());
   }
 
   @PreDestroy

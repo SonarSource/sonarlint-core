@@ -21,13 +21,11 @@ package org.sonarsource.sonarlint.core.rpc.client;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
-import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
@@ -67,6 +65,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.Show
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.utils.FutureAndShutdownCancelChecker;
 
 /**
  * Implementation of {@link SonarLintRpcClient} that delegates to {@link SonarLintRpcClientDelegate} in order to simplify Java clients and avoid
@@ -90,27 +89,39 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
     this.requestAndNotificationsSequentialExecutor = requestAndNotificationsSequentialExecutor;
   }
 
-  private <R> CompletableFuture<R> requestAsync(Function<CancelChecker, R> code) {
-    return CompletableFutures.computeAsync(requestAndNotificationsSequentialExecutor, cancelChecker -> {
-      var wrapper = new CancelCheckerWrapper(cancelChecker);
-      wrapper.checkCanceled();
-      return wrapper;
-    }).thenApplyAsync(cancelChecker -> {
+  protected <R> CompletableFuture<R> requestAsync(Function<CancelChecker, R> code) {
+    CompletableFuture<CancelChecker> start = new CompletableFuture<>();
+    // First we schedule the processing of the request on the sequential executor, to maintain ordering of notifications, requests, responses, and cancellations
+    var sequentialFuture = start.thenApplyAsync(cancelChecker -> {
+      // We can maybe cancel early
+      cancelChecker.checkCanceled();
+      return cancelChecker;
+    }, requestAndNotificationsSequentialExecutor);
+    // Then requests are processed asynchronously to not block the processing of notifications, responses and cancellations
+    var requestFuture = sequentialFuture.thenApplyAsync(cancelChecker -> {
       cancelChecker.checkCanceled();
       return code.apply(cancelChecker);
     }, requestsExecutor);
+    start.complete(new FutureAndShutdownCancelChecker(requestsExecutor, requestFuture));
+    return requestFuture;
   }
 
-  private CompletableFuture<Void> runAsync(Consumer<CancelChecker> code) {
-    return CompletableFutures.computeAsync(requestAndNotificationsSequentialExecutor, cancelChecker -> {
-      var wrapper = new CancelCheckerWrapper(cancelChecker);
-      wrapper.checkCanceled();
-      return wrapper;
-    }).thenApplyAsync(cancelChecker -> {
+  protected CompletableFuture<Void> runAsync(Consumer<CancelChecker> code) {
+    CompletableFuture<CancelChecker> start = new CompletableFuture<>();
+    // First we schedule the processing of the request on the sequential executor, to maintain ordering of notifications, requests, responses, and cancellations
+    var sequentialFuture = start.thenApplyAsync(cancelChecker -> {
+      // We can maybe cancel early
+      cancelChecker.checkCanceled();
+      return cancelChecker;
+    }, requestAndNotificationsSequentialExecutor);
+    // Then requests are processed asynchronously to not block the processing of notifications, responses and cancellations
+    var requestFuture = sequentialFuture.<Void>thenApplyAsync(cancelChecker -> {
       cancelChecker.checkCanceled();
       code.accept(cancelChecker);
       return null;
     }, requestsExecutor);
+    start.complete(new FutureAndShutdownCancelChecker(requestsExecutor, requestFuture));
+    return requestFuture;
   }
 
   protected void notify(Runnable code) {
@@ -196,7 +207,7 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   @Override
   public void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params) {
-    notify(() -> delegate.didSynchronizeConfigurationScopes(params));
+    notify(() -> delegate.didSynchronizeConfigurationScopes(params.getConfigurationScopeIds()));
   }
 
   @Override
@@ -286,20 +297,4 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
     notify(() -> delegate.didChangeNodeJs(params.getNodeJsPath(), params.getVersion()));
   }
 
-  private class CancelCheckerWrapper implements CancelChecker {
-
-    private final CancelChecker wrapped;
-
-    private CancelCheckerWrapper(CancelChecker wrapped) {
-      this.wrapped = wrapped;
-    }
-
-    @Override
-    public void checkCanceled() {
-      wrapped.checkCanceled();
-      if (requestsExecutor.isShutdown()) {
-        throw new CancellationException("Client is shutting down");
-      }
-    }
-  }
 }

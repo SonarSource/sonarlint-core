@@ -23,7 +23,6 @@ import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -50,28 +49,7 @@ public class LocalStorageSynchronizer {
     this.serverInfoSynchronizer = serverInfoSynchronizer;
   }
 
-  public SynchronizationResult synchronize(ServerApi serverApi, Set<String> projectKeys, ProgressMonitor progressMonitor) {
-    serverInfoSynchronizer.synchronize(serverApi);
-    var version = storage.serverInfo().read().orElseThrow().getVersion();
-
-    var anyPluginUpdated = pluginsSynchronizer.synchronize(serverApi, progressMonitor);
-    projectKeys.stream()
-      .collect(Collectors.toMap(Function.identity(), projectKey -> synchronizeAnalyzerConfig(serverApi, projectKey, progressMonitor)))
-      .forEach((projectKey, analyzerConfig) -> storage.project(projectKey).analyzerConfiguration().store(analyzerConfig));
-    var branchByProjectKey = projectKeys.stream()
-      .collect(Collectors.toMap(Function.identity(), projectKey -> synchronizeProjectBranches(serverApi, projectKey)));
-    branchByProjectKey
-      .forEach((projectKey, branches) -> storage.project(projectKey).branches().store(branches));
-    projectKeys.forEach(projectKey -> {
-      progressMonitor.checkCancel();
-      serverApi.newCodeApi().getNewCodeDefinition(projectKey, null, version)
-        .ifPresent(ncd -> storage.project(projectKey).newCodeDefinition().store(ncd));
-    });
-
-    return new SynchronizationResult(anyPluginUpdated);
-  }
-
-  public boolean synchronize(ServerApi serverApi) {
+  public boolean synchronizeServerInfosAndPlugins(ServerApi serverApi) {
     serverInfoSynchronizer.synchronize(serverApi);
     return pluginsSynchronizer.synchronize(serverApi, new ProgressMonitor(null));
   }
@@ -87,7 +65,7 @@ public class LocalStorageSynchronizer {
     return new AnalyzerSettingsUpdateSummary(updatedSettingsValueByKey);
   }
 
-  public AnalyzerSettingsUpdateSummary synchronize(ServerApi serverApi, String projectKey) {
+  public AnalyzerSettingsUpdateSummary synchronizeAnalyzerConfig(ServerApi serverApi, String projectKey) {
     var updatedAnalyzerConfiguration = synchronizeAnalyzerConfig(serverApi, projectKey, new ProgressMonitor(null));
     AnalyzerSettingsUpdateSummary configUpdateSummary;
     try {

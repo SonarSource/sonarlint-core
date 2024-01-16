@@ -55,9 +55,9 @@ class SonarProjectBranchTrackingServiceTests {
   public static final String PROJECT_KEY = "projectKey";
   public static final String CONFIG_SCOPE_ID = "configScopeId";
   private SonarProjectBranchTrackingService underTest;
-  private SonarLintRpcClient sonarLintRpcClient = mock(SonarLintRpcClient.class);
-  private StorageService storageService = mock(StorageService.class);
-  private ConfigurationRepository configurationRepository = mock(ConfigurationRepository.class);
+  private final SonarLintRpcClient sonarLintRpcClient = mock(SonarLintRpcClient.class);
+  private final StorageService storageService = mock(StorageService.class);
+  private final ConfigurationRepository configurationRepository = mock(ConfigurationRepository.class);
   private ProjectBranchesStorage projectBranchesStorage;
 
   @BeforeEach
@@ -98,7 +98,6 @@ class SonarProjectBranchTrackingServiceTests {
 
     assertThat(underTest.awaitEffectiveSonarProjectBranch(CONFIG_SCOPE_ID)).contains("feature");
 
-    assertThat(logTester.logs()).contains("Cancelled previous matching job for configuration scope 'configScopeId'");
     assertThat(firstFuture).isCancelled();
   }
 

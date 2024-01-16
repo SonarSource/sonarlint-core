@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.component;
 
+import dev.failsafe.ExecutionContext;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -38,7 +39,7 @@ public class ComponentApi {
     this.helper = helper;
   }
 
-  public List<String> getAllFileKeys(String projectKey, ProgressMonitor progress) {
+  public List<String> getAllFileKeys(String projectKey, ExecutionContext<?> failsafeCtx) {
     var path = buildAllFileKeysPath(projectKey);
     List<String> files = new ArrayList<>();
 
@@ -46,7 +47,7 @@ public class ComponentApi {
       Components.TreeWsResponse::parseFrom,
       r -> r.getPaging().getTotal(),
       Components.TreeWsResponse::getComponentsList,
-      component -> files.add(component.getKey()), false, progress);
+      component -> files.add(component.getKey()), false, failsafeCtx);
     return files;
   }
 

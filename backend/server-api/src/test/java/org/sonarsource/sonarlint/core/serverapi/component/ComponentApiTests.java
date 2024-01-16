@@ -19,6 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.component;
 
+import dev.failsafe.Execution;
+import dev.failsafe.Policy;
+import dev.failsafe.RetryPolicy;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -52,7 +56,7 @@ class ComponentApiTests {
   void should_get_files() {
     mockServer.addResponseFromResource("/api/components/tree.protobuf?qualifiers=FIL,UTS&component=project1&ps=500&p=1", "/update/component_tree.pb");
 
-    var files = underTest.getAllFileKeys(PROJECT_KEY, progress);
+    var files = underTest.getAllFileKeys(PROJECT_KEY, Execution.of(RetryPolicy.ofDefaults()));
 
     assertThat(files).hasSize(187);
     assertThat(files.get(0)).isEqualTo("org.sonarsource.sonarlint.intellij:sonarlint-intellij:src/main/java/org/sonarlint/intellij/ui/AbstractIssuesPanel.java");
@@ -63,7 +67,7 @@ class ComponentApiTests {
     underTest = new ComponentApi(mockServer.serverApiHelper("myorg"));
     mockServer.addResponseFromResource("/api/components/tree.protobuf?qualifiers=FIL,UTS&component=project1&organization=myorg&ps=500&p=1", "/update/component_tree.pb");
 
-    var files = underTest.getAllFileKeys(PROJECT_KEY, progress);
+    var files = underTest.getAllFileKeys(PROJECT_KEY, Execution.of(RetryPolicy.ofDefaults()));
 
     assertThat(files).hasSize(187);
     assertThat(files.get(0)).isEqualTo("org.sonarsource.sonarlint.intellij:sonarlint-intellij:src/main/java/org/sonarlint/intellij/ui/AbstractIssuesPanel.java");
@@ -73,7 +77,7 @@ class ComponentApiTests {
   void should_get_empty_files_if_tree_is_empty() {
     mockServer.addResponseFromResource("/api/components/tree.protobuf?qualifiers=FIL,UTS&component=project1&ps=500&p=1", "/update/empty_component_tree.pb");
 
-    var files = underTest.getAllFileKeys(PROJECT_KEY, progress);
+    var files = underTest.getAllFileKeys(PROJECT_KEY, Execution.of(RetryPolicy.ofDefaults()));
 
     assertThat(files).isEmpty();
   }

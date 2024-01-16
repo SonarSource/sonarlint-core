@@ -19,19 +19,25 @@
  */
 package org.sonarsource.sonarlint.core.branch;
 
+import com.github.benmanes.caffeine.cache.AsyncCacheLoader;
+import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.common.util.concurrent.MoreExecutors;
-import java.util.Map;
+import dev.failsafe.ExecutionContext;
+import dev.failsafe.Failsafe;
+import dev.failsafe.Fallback;
+import dev.failsafe.RetryPolicy;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -62,8 +68,29 @@ public class SonarProjectBranchTrackingService {
   private final ConfigurationRepository configurationRepository;
   private final ApplicationEventPublisher applicationEventPublisher;
   private final ExecutorService executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-branch-matcher"));
-  private final Map<String, Future<?>> matchingJobPerConfigScopeId = new ConcurrentHashMap<>();
-  private final Map<String, CompletableFuture<String>> matchingResultPerConfigScopeId = new ConcurrentHashMap<>();
+  private final AsyncLoadingCache<String, String> cachedMatchingBranchByConfigScope = Caffeine.newBuilder()
+    .executor(executorService)
+    .buildAsync(new AsyncCacheLoader<>() {
+      @Override
+      public CompletableFuture<? extends String> asyncLoad(String key, Executor executor) throws Exception {
+        return asyncLoadWithFailsafe(key, null, executor);
+      }
+
+      @Override
+      public CompletableFuture<? extends String> asyncReload(String key, String oldValue, Executor executor) throws Exception {
+        return asyncLoadWithFailsafe(key, oldValue, executor);
+      }
+
+      private CompletableFuture<String> asyncLoadWithFailsafe(String key, @Nullable String oldValue, Executor executor) {
+        var currentThreadOutput = SonarLintLogger.getTargetForCopy();
+        return Failsafe.none().with(executor)
+          .onFailure(e -> LOG.error("Error while matching Sonar project branch for configuration scope '" + key + "'", e.getException()))
+          .getAsync(ctx -> {
+          SonarLintLogger.setTarget(currentThreadOutput);
+          return matchSonarProjectBranch(key, oldValue, ctx);
+        });
+      }
+    });
 
   public SonarProjectBranchTrackingService(SonarLintRpcClient client, StorageService storageService,
     ConfigurationRepository configurationRepository, ApplicationEventPublisher applicationEventPublisher) {
@@ -74,40 +101,29 @@ public class SonarProjectBranchTrackingService {
   }
 
   public Optional<String> awaitEffectiveSonarProjectBranch(String configurationScopeId) {
-    var currentConfigScopeId = configurationScopeId;
-    do {
-      var configurationScope = configurationRepository.getConfigurationScope(currentConfigScopeId);
-      if (configurationScope == null) {
-        // the scope might have been deleted in the meantime
-        break;
-      }
-      var maybeBranchResult = matchingResultPerConfigScopeId.get(currentConfigScopeId);
-      if (maybeBranchResult == null) {
-        maybeBranchResult = queueBranchMatching(currentConfigScopeId);
-      }
-      try {
-        var maybeBranch = maybeBranchResult.get();
-        if (maybeBranch != null) {
-          return Optional.of(maybeBranch);
-        }
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        LOG.debug("Interrupted!", e);
-        return Optional.empty();
-      } catch (ExecutionException e) {
-        LOG.error("Error while matching Sonar project branch for configuration scope '{}'", currentConfigScopeId, e);
-        return Optional.empty();
-      }
-      currentConfigScopeId = configurationScope.getParentId();
-    } while (currentConfigScopeId != null);
-    return Optional.empty();
+    var currentThreadOutput = SonarLintLogger.getTargetForCopy();
+    var retryOnCancelPolicy = RetryPolicy.<String>builder()
+      .handle(CancellationException.class)
+      .withMaxRetries(3)
+      .onRetry(e -> {
+        SonarLintLogger.setTarget(currentThreadOutput);
+        LOG.debug("Retrying to compute paths translation for config scope '{}'", configurationScopeId, e);
+      })
+      .build();
+    return Optional.ofNullable(
+      Failsafe.with(Fallback.of((String) null), retryOnCancelPolicy)
+        .onFailure(e -> LOG.error("Error while matching Sonar project branch for configuration scope '" + configurationScopeId + "'", e.getException()))
+        .getStageAsync(ctx ->  {
+          SonarLintLogger.setTarget(currentThreadOutput);
+          return cachedMatchingBranchByConfigScope.get(configurationScopeId);
+        }).join());
   }
 
   @EventListener
   public void onConfigurationScopeRemoved(ConfigurationScopeRemovedEvent event) {
     var removedConfigScopeId = event.getRemovedConfigurationScopeId();
     LOG.debug("Configuration scope '{}' removed, clearing matched branch", removedConfigScopeId);
-    cancelAndClear(removedConfigScopeId);
+    cancelAndInvalidate(removedConfigScopeId);
   }
 
   @EventListener
@@ -119,7 +135,7 @@ public class SonarProjectBranchTrackingService {
         var branchesStorage = storageService.binding(effectiveBinding.get()).branches();
         if (branchesStorage.exists()) {
           LOG.debug("Bound configuration scope '{}' added with an existing storage, queuing matching of the Sonar project branch...", configScopeId);
-          queueBranchMatching(configScopeId);
+          cancelAndRefresh(configScopeId);
         }
       }
     });
@@ -130,10 +146,10 @@ public class SonarProjectBranchTrackingService {
     var configScopeId = bindingChanged.getConfigScopeId();
     if (!bindingChanged.getNewConfig().isBound()) {
       LOG.debug("Configuration scope '{}' unbound, clearing matched branch", configScopeId);
-      cancelAndClear(configScopeId);
+      cancelAndInvalidate(configScopeId);
     } else {
       LOG.debug("Configuration scope '{}' binding changed, queuing matching of the Sonar project branch...", configScopeId);
-      queueBranchMatching(configScopeId);
+      cancelAndRefresh(configScopeId);
     }
   }
 
@@ -142,124 +158,90 @@ public class SonarProjectBranchTrackingService {
     var configScopeIds = configurationRepository.getBoundScopesToConnectionAndSonarProject(event.getConnectionId(), event.getSonarProjectKey());
     configScopeIds.forEach(boundScope -> {
       LOG.debug("Sonar project branch changed for configuration scope '{}', queuing matching of the Sonar project branch...", boundScope.getConfigScopeId());
-      queueBranchMatching(boundScope.getConfigScopeId());
+      cancelAndRefresh(boundScope.getConfigScopeId());
     });
   }
 
-  private void cancelAndClear(String configScopeId) {
-    var futureJob = matchingJobPerConfigScopeId.remove(configScopeId);
-    if (futureJob != null) {
-      futureJob.cancel(true);
+  private void cancelAndInvalidate(String configScopeId) {
+    CompletableFuture<?> cachedFuture;
+    synchronized (cachedMatchingBranchByConfigScope) {
+      cachedFuture = cachedMatchingBranchByConfigScope.getIfPresent(configScopeId);
+      cachedMatchingBranchByConfigScope.synchronous().invalidate(configScopeId);
     }
-    clearResult(configScopeId);
-  }
-
-  private void clearResult(String configScopeId) {
-    synchronized (matchingResultPerConfigScopeId) {
-      var existing = matchingResultPerConfigScopeId.remove(configScopeId);
-      if (existing != null && !existing.isDone()) {
-        existing.complete(null);
-      }
+    if (cachedFuture != null) {
+      cachedFuture.cancel(false);
     }
   }
 
-  public void didVcsRepositoryChange(String configurationScopeId) {
-    LOG.debug("VCS repository changed for configuration scope '{}', queuing matching of the Sonar project branch...", configurationScopeId);
-    queueBranchMatching(configurationScopeId);
-  }
-
-  private CompletableFuture<String> queueBranchMatching(String configurationScopeId) {
-    synchronized (matchingJobPerConfigScopeId) {
-      var future = matchingResultPerConfigScopeId.computeIfAbsent(configurationScopeId, k -> new CompletableFuture<>());
-      var previousMatchingJob = matchingJobPerConfigScopeId.get(configurationScopeId);
-      if (previousMatchingJob != null && previousMatchingJob.cancel(true)) {
-        LOG.debug("Cancelled previous matching job for configuration scope '{}'", configurationScopeId);
-        try {
-          previousMatchingJob.get();
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          return future;
-        } catch (CancellationException expected) {
-          LOG.debug("Cancellation successful");
-        } catch (ExecutionException e) {
-          LOG.debug("Failed to cancel previous matching job for configuration scope '{}'", configurationScopeId, e);
-        }
-      }
-      matchingJobPerConfigScopeId.put(configurationScopeId, executorService.submit(() -> {
-        try {
-          matchSonarProjectBranch(configurationScopeId);
-        } catch (Exception e) {
-          LOG.error("Error while matching Sonar project branch for configuration scope '{}'", configurationScopeId, e);
-        }
-      }));
-      return future;
+  private void cancelAndRefresh(String configScopeId) {
+    CompletableFuture<?> cachedFuture;
+    synchronized (cachedMatchingBranchByConfigScope) {
+      cachedFuture = cachedMatchingBranchByConfigScope.getIfPresent(configScopeId);
+      cachedMatchingBranchByConfigScope.synchronous().refresh(configScopeId);
+    }
+    if (cachedFuture != null) {
+      cachedFuture.cancel(false);
     }
   }
 
-  private void matchSonarProjectBranch(String configurationScopeId) {
+  public void didVcsRepositoryChange(String configScopeId) {
+    LOG.debug("VCS repository changed for configuration scope '{}', queuing matching of the Sonar project branch...", configScopeId);
+    cancelAndRefresh(configScopeId);
+  }
+
+  private String matchSonarProjectBranch(String configurationScopeId, @Nullable String oldValue, ExecutionContext<String> ctx) {
     LOG.debug("Matching Sonar project branch for configuration scope '{}'", configurationScopeId);
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     if (effectiveBindingOpt.isEmpty()) {
       LOG.debug("No binding for configuration scope '{}'", configurationScopeId);
-      clearResult(configurationScopeId);
-      return;
+      return null;
     }
     var effectiveBinding = effectiveBindingOpt.get();
 
-    var previousSonarProjectBranch = matchingResultPerConfigScopeId.get(configurationScopeId).getNow(null);
     var branchesStorage = storageService.binding(effectiveBinding).branches();
     if (!branchesStorage.exists()) {
-      clearResult(configurationScopeId);
       client.log(new LogParams(LogLevel.INFO, "Cannot match Sonar branch, storage is empty", configurationScopeId));
-      return;
+      return null;
     }
     var storedBranches = branchesStorage.read();
     var mainBranchName = storedBranches.getMainBranchName();
-    String matchedSonarBranch;
-    try {
-      matchedSonarBranch = requestClientToMatchSonarProjectBranch(configurationScopeId, mainBranchName, storedBranches.getBranchNames());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      return;
-    }
+    var matchedSonarBranch = requestClientToMatchSonarProjectBranch(configurationScopeId, mainBranchName, storedBranches.getBranchNames(), ctx);
     if (matchedSonarBranch == null) {
       matchedSonarBranch = mainBranchName;
     }
-    if (!matchedSonarBranch.equals(previousSonarProjectBranch)) {
-      LOG.debug("Matched Sonar project branch for configuration scope '{}' changed from '{}' to '{}'", configurationScopeId, previousSonarProjectBranch, matchedSonarBranch);
-      setMatchedBranchName(configurationScopeId, matchedSonarBranch);
+    if (!matchedSonarBranch.equals(oldValue)) {
       client.didChangeMatchedSonarProjectBranch(
         new DidChangeMatchedSonarProjectBranchParams(configurationScopeId, matchedSonarBranch));
       applicationEventPublisher.publishEvent(new MatchedSonarProjectBranchChangedEvent(configurationScopeId, matchedSonarBranch));
+      LOG.debug("Matched Sonar project branch for configuration scope '{}' changed from '{}' to '{}'", configurationScopeId, oldValue, matchedSonarBranch);
     } else {
       LOG.debug("Matched Sonar project branch for configuration scope '{}' is still '{}'", configurationScopeId, matchedSonarBranch);
     }
-  }
-
-  void setMatchedBranchName(String configScopeId, String newBranchName) {
-    synchronized (matchingResultPerConfigScopeId) {
-      var previous = matchingResultPerConfigScopeId.get(configScopeId);
-      if (previous != null && !previous.isDone()) {
-        previous.complete(newBranchName);
-      } else {
-        matchingResultPerConfigScopeId.put(configScopeId, CompletableFuture.completedFuture(newBranchName));
-      }
-    }
+    return matchedSonarBranch;
   }
 
   @CheckForNull
-  private String requestClientToMatchSonarProjectBranch(String configurationScopeId, String mainSonarBranchName, Set<String> allSonarBranchesNames) throws InterruptedException {
+  private String requestClientToMatchSonarProjectBranch(String configurationScopeId, String mainSonarBranchName, Set<String> allSonarBranchesNames, ExecutionContext<?> ctx) {
     var matchSonarProjectBranchResponseCompletableFuture = client
       .matchSonarProjectBranch(new MatchSonarProjectBranchParams(configurationScopeId, mainSonarBranchName, allSonarBranchesNames));
     try {
+      ctx.onCancel(() -> {
+        if (!matchSonarProjectBranchResponseCompletableFuture.isDone()) {
+          System.out.println("Cancelling matchSonarProjectBranch");
+          matchSonarProjectBranchResponseCompletableFuture.cancel(true);
+        }
+      });
+      matchSonarProjectBranchResponseCompletableFuture.thenAccept(r -> ctx.onCancel(null));
       return matchSonarProjectBranchResponseCompletableFuture.get().getMatchedSonarProjectBranch();
     } catch (InterruptedException e) {
       // Cancel the RPC call if it's still running
       matchSonarProjectBranchResponseCompletableFuture.cancel(true);
       LOG.debug("matchSonarProjectBranch interrupted!");
-      throw e;
+      Thread.currentThread().interrupt();
     } catch (ExecutionException e) {
       LOG.warn("Unable to get matched branch from the client", e);
+    } finally {
+      ctx.onCancel(null);
     }
     return null;
   }
@@ -269,6 +251,5 @@ public class SonarProjectBranchTrackingService {
     if (!MoreExecutors.shutdownAndAwaitTermination(executorService, 1, TimeUnit.SECONDS)) {
       LOG.warn("Unable to stop branch matching executor service in a timely manner");
     }
-    matchingResultPerConfigScopeId.values().forEach(future -> future.cancel(true));
   }
 }

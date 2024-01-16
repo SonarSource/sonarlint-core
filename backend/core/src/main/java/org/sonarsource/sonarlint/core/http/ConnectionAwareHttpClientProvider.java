@@ -78,22 +78,14 @@ public class ConnectionAwareHttpClientProvider {
   }
 
   private Optional<Either<TokenDto, UsernamePasswordDto>> queryClientForConnectionCredentials(String connectionId) {
-    try {
-      var response = client.getCredentials(new GetCredentialsParams(connectionId)).get(1, TimeUnit.MINUTES);
-      var credentials = response.getCredentials();
-      if (credentials == null) {
-        LOG.debug("No credentials for connection '{}'", connectionId);
-        return Optional.empty();
-      } else {
-        return Optional.of(credentials);
-      }
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      LOG.debug("Interrupted!", e);
-    } catch (Exception e) {
-      LOG.error("Error getting credentials for connection '{}'", connectionId, e);
+    var response = client.getCredentials(new GetCredentialsParams(connectionId)).join();
+    var credentials = response.getCredentials();
+    if (credentials == null) {
+      LOG.debug("No credentials for connection '{}'", connectionId);
+      return Optional.empty();
+    } else {
+      return Optional.of(credentials);
     }
-    return Optional.empty();
   }
 
   @PreDestroy

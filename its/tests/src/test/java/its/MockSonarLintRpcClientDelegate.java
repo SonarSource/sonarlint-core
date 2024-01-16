@@ -125,7 +125,7 @@ public class MockSonarLintRpcClientDelegate implements SonarLintRpcClientDelegat
   }
 
   @Override
-  public void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params) {
+  public void didSynchronizeConfigurationScopes(Set<String> configurationScopeIds) {
 
   }
 

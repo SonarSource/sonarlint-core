@@ -24,13 +24,16 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import mediumtest.fixtures.ServerFixture;
+import mediumtest.fixtures.SonarLintBackendFixture;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Mockito;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
@@ -40,11 +43,15 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Settings;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.awaitility.Awaitility.await;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 import static testutils.TestUtils.protobufBody;
 
 class ConnectedFileExclusionsMediumTests {
@@ -77,6 +84,7 @@ class ConnectedFileExclusionsMediumTests {
     var testFile2Dto = new ClientFileDto(testFile2.toUri(), tmp.resolve(testFile2), CONFIG_SCOPE_ID, true, StandardCharsets.UTF_8.name(), testFile2, null);
 
     var fakeClient = newFakeClient()
+      .printLogsToStdOut()
       .withInitialFs(CONFIG_SCOPE_ID,
         List.of(mainFile1Dto, mainFile2Dto, testFile1Dto, testFile2Dto))
       .build();
@@ -85,11 +93,14 @@ class ConnectedFileExclusionsMediumTests {
       .withSonarQubeConnection(MYSONAR, server)
       .withBoundConfigScope(CONFIG_SCOPE_ID, MYSONAR, PROJECT_KEY)
       .withFullSynchronization()
+      .withProjectSynchronization()
       .build(fakeClient);
 
-    var future = backend.getFileService().getFilesStatus(new GetFilesStatusParams(Map.of(CONFIG_SCOPE_ID, List.of(mainFile1.toUri(), mainFile2.toUri(), testFile1.toUri(), testFile2.toUri()))));
-    assertThat(future).succeedsWithin(5, TimeUnit.SECONDS);
-    assertThat(future.get().getFileStatuses().entrySet())
+    verify(fakeClient, timeout(5000).times(1)).didSynchronizeConfigurationScopes(Set.of(CONFIG_SCOPE_ID));
+
+    var future1 = backend.getFileService().getFilesStatus(new GetFilesStatusParams(Map.of(CONFIG_SCOPE_ID, List.of(mainFile1.toUri(), mainFile2.toUri(), testFile1.toUri(), testFile2.toUri()))));
+    assertThat(future1).succeedsWithin(5, TimeUnit.SECONDS);
+    assertThat(future1.get().getFileStatuses().entrySet())
       .extracting(Map.Entry::getKey, e -> e.getValue().isExcluded())
       .containsExactlyInAnyOrder(
         tuple(mainFile1.toUri(), false),
@@ -98,81 +109,84 @@ class ConnectedFileExclusionsMediumTests {
         tuple(testFile2.toUri(), false));
 
     mockSonarProjectSettings(server, Map.of("sonar.inclusions", "src/**"));
-    forceSyncOfConfigScope();
+    forceSyncOfConfigScope(fakeClient);
 
-    future = backend.getFileService().getFilesStatus(new GetFilesStatusParams(Map.of(CONFIG_SCOPE_ID, List.of(mainFile1.toUri(), mainFile2.toUri(), testFile1.toUri(), testFile2.toUri()))));
-    assertThat(future.get().getFileStatuses().entrySet())
+    var future2 = backend.getFileService().getFilesStatus(new GetFilesStatusParams(Map.of(CONFIG_SCOPE_ID, List.of(mainFile1.toUri(), mainFile2.toUri(), testFile1.toUri(), testFile2.toUri()))));
+    await().untilAsserted(() -> assertThat(future2.get().getFileStatuses().entrySet())
       .extracting(Map.Entry::getKey, e -> e.getValue().isExcluded())
       .containsExactlyInAnyOrder(
         tuple(mainFile1.toUri(), true),
         tuple(mainFile2.toUri(), false),
         tuple(testFile1.toUri(), false),
-        tuple(testFile2.toUri(), false));
+        tuple(testFile2.toUri(), false)));
 
     mockSonarProjectSettings(server, Map.of("sonar.inclusions", "file:**/src/**"));
-    forceSyncOfConfigScope();
+    forceSyncOfConfigScope(fakeClient);
 
-    future = backend.getFileService().getFilesStatus(new GetFilesStatusParams(Map.of(CONFIG_SCOPE_ID, List.of(mainFile1.toUri(), mainFile2.toUri(), testFile1.toUri(), testFile2.toUri()))));
-    assertThat(future.get().getFileStatuses().entrySet())
+    var future3 = backend.getFileService().getFilesStatus(new GetFilesStatusParams(Map.of(CONFIG_SCOPE_ID, List.of(mainFile1.toUri(), mainFile2.toUri(), testFile1.toUri(), testFile2.toUri()))));
+    await().untilAsserted(() -> assertThat(future3.get().getFileStatuses().entrySet())
       .extracting(Map.Entry::getKey, e -> e.getValue().isExcluded())
       .containsExactlyInAnyOrder(
         tuple(mainFile1.toUri(), true),
         tuple(mainFile2.toUri(), false),
         tuple(testFile1.toUri(), false),
-        tuple(testFile2.toUri(), false));
+        tuple(testFile2.toUri(), false)));
 
     mockSonarProjectSettings(server, Map.of("sonar.exclusions", "src/**"));
-    forceSyncOfConfigScope();
+    forceSyncOfConfigScope(fakeClient);
 
-    future = backend.getFileService().getFilesStatus(new GetFilesStatusParams(Map.of(CONFIG_SCOPE_ID, List.of(mainFile1.toUri(), mainFile2.toUri(), testFile1.toUri(), testFile2.toUri()))));
-    assertThat(future.get().getFileStatuses().entrySet())
+    var future4 = backend.getFileService().getFilesStatus(new GetFilesStatusParams(Map.of(CONFIG_SCOPE_ID, List.of(mainFile1.toUri(), mainFile2.toUri(), testFile1.toUri(), testFile2.toUri()))));
+    await().untilAsserted(() -> assertThat(future4.get().getFileStatuses().entrySet())
       .extracting(Map.Entry::getKey, e -> e.getValue().isExcluded())
       .containsExactlyInAnyOrder(
         tuple(mainFile1.toUri(), false),
         tuple(mainFile2.toUri(), true),
         tuple(testFile1.toUri(), false),
-        tuple(testFile2.toUri(), false));
+        tuple(testFile2.toUri(), false)));
 
     mockSonarProjectSettings(server, Map.of("sonar.test.inclusions", "test/**"));
-    forceSyncOfConfigScope();
+    forceSyncOfConfigScope(fakeClient);
 
-    future = backend.getFileService().getFilesStatus(new GetFilesStatusParams(Map.of(CONFIG_SCOPE_ID, List.of(mainFile1.toUri(), mainFile2.toUri(), testFile1.toUri(), testFile2.toUri()))));
-    assertThat(future.get().getFileStatuses().entrySet())
+    var future5 = backend.getFileService().getFilesStatus(new GetFilesStatusParams(Map.of(CONFIG_SCOPE_ID, List.of(mainFile1.toUri(), mainFile2.toUri(), testFile1.toUri(), testFile2.toUri()))));
+    await().untilAsserted(() -> assertThat(future5.get().getFileStatuses().entrySet())
       .extracting(Map.Entry::getKey, e -> e.getValue().isExcluded())
       .containsExactlyInAnyOrder(
         tuple(mainFile1.toUri(), false),
         tuple(mainFile2.toUri(), false),
         tuple(testFile1.toUri(), true),
-        tuple(testFile2.toUri(), false));
+        tuple(testFile2.toUri(), false)));
 
     mockSonarProjectSettings(server, Map.of("sonar.test.exclusions", "test/**"));
-    forceSyncOfConfigScope();
+    forceSyncOfConfigScope(fakeClient);
 
-    future = backend.getFileService().getFilesStatus(new GetFilesStatusParams(Map.of(CONFIG_SCOPE_ID, List.of(mainFile1.toUri(), mainFile2.toUri(), testFile1.toUri(), testFile2.toUri()))));
-    assertThat(future.get().getFileStatuses().entrySet())
+    var future6 = backend.getFileService().getFilesStatus(new GetFilesStatusParams(Map.of(CONFIG_SCOPE_ID, List.of(mainFile1.toUri(), mainFile2.toUri(), testFile1.toUri(), testFile2.toUri()))));
+    await().untilAsserted(() -> assertThat(future6.get().getFileStatuses().entrySet())
       .extracting(Map.Entry::getKey, e -> e.getValue().isExcluded())
       .containsExactlyInAnyOrder(
         tuple(mainFile1.toUri(), false),
         tuple(mainFile2.toUri(), false),
         tuple(testFile1.toUri(), false),
-        tuple(testFile2.toUri(), true));
+        tuple(testFile2.toUri(), true)));
 
     mockSonarProjectSettings(server, Map.of("sonar.inclusions", "file:**/src/**", "sonar.test.exclusions", "**/*Test.*"));
-    forceSyncOfConfigScope();
+    forceSyncOfConfigScope(fakeClient);
 
-    future = backend.getFileService().getFilesStatus(new GetFilesStatusParams(Map.of(CONFIG_SCOPE_ID, List.of(mainFile1.toUri(), mainFile2.toUri(), testFile1.toUri(), testFile2.toUri()))));
-    assertThat(future.get().getFileStatuses().entrySet())
+    var future7 = backend.getFileService().getFilesStatus(new GetFilesStatusParams(Map.of(CONFIG_SCOPE_ID, List.of(mainFile1.toUri(), mainFile2.toUri(), testFile1.toUri(), testFile2.toUri()))));
+    await().untilAsserted(() -> assertThat(future7.get().getFileStatuses().entrySet())
       .extracting(Map.Entry::getKey, e -> e.getValue().isExcluded())
       .containsExactlyInAnyOrder(
         tuple(mainFile1.toUri(), true),
         tuple(mainFile2.toUri(), false),
         tuple(testFile1.toUri(), true),
-        tuple(testFile2.toUri(), true));
+        tuple(testFile2.toUri(), true)));
   }
 
-  private void forceSyncOfConfigScope() {
+  private void forceSyncOfConfigScope(SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient) throws InterruptedException {
+    Thread.sleep(100);
+    Mockito.clearInvocations(fakeClient);
     backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID, new BindingConfigurationDto(null, null, true)));
     backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID, new BindingConfigurationDto(MYSONAR, PROJECT_KEY, true)));
+    verify(fakeClient, timeout(5000).atLeastOnce()).didSynchronizeConfigurationScopes(Set.of(CONFIG_SCOPE_ID));
   }
 
   private void mockSonarProjectSettings(ServerFixture.Server server, Map<String, String> settings) {

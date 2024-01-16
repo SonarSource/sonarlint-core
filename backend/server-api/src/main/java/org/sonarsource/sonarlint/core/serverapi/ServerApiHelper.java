@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.serverapi;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import dev.failsafe.ExecutionContext;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -108,6 +109,26 @@ public class ServerApiHelper {
     return response;
   }
 
+  /**
+   * Execute GET and don't check response
+   */
+  public HttpClient.Response rawGet(String relativePath, ExecutionContext<?> failsafeCtx) {
+    var startTime = Instant.now();
+    var url = buildEndpointUrl(relativePath);
+
+    var httpFuture = client.getAsync(url);
+    failsafeCtx.onCancel(() -> httpFuture.cancel(true));
+    // In case the context is cancelled before we register the callback
+    if (failsafeCtx.isCancelled()) {
+      httpFuture.cancel(true);
+    }
+    return httpFuture
+      .whenComplete((response, error) -> logTime(startTime, url, response != null ? response.code() : -1)).join();
+  }
+
+  /**
+   * Execute GET and don't check response
+   */
   public CompletableFuture<HttpClient.Response> rawGetAsync(String relativePath) {
     var startTime = Instant.now();
     var url = buildEndpointUrl(relativePath);
@@ -201,6 +222,24 @@ public class ServerApiHelper {
     } while (!stop.get());
   }
 
+  public <G, F> void getPaginated(String relativeUrlWithoutPaginationParams, CheckedFunction<InputStream, G> responseParser, Function<G, Number> getPagingTotal,
+    Function<G, List<F>> itemExtractor, Consumer<F> itemConsumer, boolean limitToTwentyPages, ExecutionContext<?> failsafeCtx) {
+    var page = new AtomicInteger(0);
+    var stop = new AtomicBoolean(false);
+    var loaded = new AtomicInteger(0);
+    do {
+      page.incrementAndGet();
+      var fullUrl = new StringBuilder(relativeUrlWithoutPaginationParams);
+      fullUrl.append(relativeUrlWithoutPaginationParams.contains("?") ? "&" : "?");
+      fullUrl.append("ps=" + PAGE_SIZE + "&p=").append(page);
+      ServerApiHelper.consumeTimed(
+        () -> rawGet(fullUrl.toString(), failsafeCtx),
+        response -> processPage(relativeUrlWithoutPaginationParams, responseParser, getPagingTotal, itemExtractor, itemConsumer, limitToTwentyPages, page, stop, loaded,
+          response),
+        duration -> LOG.debug("Page downloaded in {}ms", duration));
+    } while (!stop.get() && !failsafeCtx.isCancelled());
+  }
+
   private static <F, G> void processPage(String baseUrl, CheckedFunction<InputStream, G> responseParser, Function<G, Number> getPagingTotal, Function<G, List<F>> itemExtractor,
     Consumer<F> itemConsumer, boolean limitToTwentyPages, ProgressMonitor progress, AtomicInteger page, AtomicBoolean stop, AtomicInteger loaded,
     HttpClient.Response response)
@@ -228,6 +267,33 @@ public class ServerApiHelper {
     }
 
     progress.setProgressAndCheckCancel("Page " + page, loaded.get() / (float) pagingTotal);
+  }
+
+  private static <F, G> void processPage(String baseUrl, CheckedFunction<InputStream, G> responseParser, Function<G, Number> getPagingTotal, Function<G, List<F>> itemExtractor,
+    Consumer<F> itemConsumer, boolean limitToTwentyPages, AtomicInteger page, AtomicBoolean stop, AtomicInteger loaded,
+    HttpClient.Response response)
+    throws IOException {
+    if (!response.isSuccessful()) {
+      throw handleError(response);
+    }
+    G protoBufResponse;
+    try (var body = response.bodyAsStream()) {
+      protoBufResponse = responseParser.apply(body);
+    }
+
+    var items = itemExtractor.apply(protoBufResponse);
+    for (F item : items) {
+      itemConsumer.accept(item);
+      loaded.incrementAndGet();
+    }
+    var isEmpty = items.isEmpty();
+    var pagingTotal = getPagingTotal.apply(protoBufResponse).longValue();
+    // SONAR-9150 Some WS used to miss the paging information, so iterate until response is empty
+    stop.set(isEmpty || (pagingTotal > 0 && page.get() * PAGE_SIZE >= pagingTotal));
+    if (!stop.get() && limitToTwentyPages && page.get() >= MAX_PAGES) {
+      stop.set(true);
+      LOG.debug("Limiting number of requested pages from '{}' to {}. Some of the data won't be fetched", baseUrl, MAX_PAGES);
+    }
   }
 
   public HttpClient.AsyncRequest getEventStream(String path, HttpConnectionListener connectionListener, Consumer<String> messageConsumer) {

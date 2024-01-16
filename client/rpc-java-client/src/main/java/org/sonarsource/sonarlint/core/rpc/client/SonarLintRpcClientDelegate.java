@@ -123,7 +123,7 @@ public interface SonarLintRpcClientDelegate {
    */
   void reportProgress(ReportProgressParams params);
 
-  void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params);
+  void didSynchronizeConfigurationScopes(Set<String> configurationScopeIds);
 
   /**
    * @throws ConnectionNotFoundException if the connection doesn't exist on the client side

@@ -33,7 +33,6 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -99,11 +98,10 @@ class ConnectedIssueExclusionsMediumTests {
 
   @BeforeEach
   void restoreConfig() {
-    storeProjectSettings(Map.of());
+    updateIssueExclusionsSettings(Map.of());
   }
 
   @Test
-  @Disabled("Reaction to exclusion changes is not fully implemented in the new backend, see SLCORE-650")
   void issueExclusions() throws Exception {
     var inputFile1 = prepareJavaInputFile1();
     var inputFile2 = prepareJavaInputFile2();
@@ -119,12 +117,12 @@ class ConnectedIssueExclusionsMediumTests {
         tuple("java:S1220", null, FILE2_PATH),
         tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), FILE2_PATH));
 
-    storeProjectSettings(Map.of("sonar.issue.ignore.multicriteria", "1",
+    updateIssueExclusionsSettings(Map.of("sonar.issue.ignore.multicriteria", "1",
       "sonar.issue.ignore.multicriteria.1.resourceKey", "*",
       "sonar.issue.ignore.multicriteria.1.ruleKey", "*"));
     assertThat(collectIssues(inputFile1, inputFile2)).isEmpty();
 
-    storeProjectSettings(Map.of("sonar.issue.ignore.multicriteria", "1",
+    updateIssueExclusionsSettings(Map.of("sonar.issue.ignore.multicriteria", "1",
       "sonar.issue.ignore.multicriteria.1.resourceKey", "*",
       "sonar.issue.ignore.multicriteria.1.ruleKey", "*S1481"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath())
@@ -135,7 +133,7 @@ class ConnectedIssueExclusionsMediumTests {
         tuple("java:S106", new TextRangeDto(4, 4, 4, 14), FILE2_PATH),
         tuple("java:S1220", null, FILE2_PATH));
 
-    storeProjectSettings(Map.of("sonar.issue.ignore.multicriteria", "1",
+    updateIssueExclusionsSettings(Map.of("sonar.issue.ignore.multicriteria", "1",
       "sonar.issue.ignore.multicriteria.1.resourceKey", FILE2_PATH,
       "sonar.issue.ignore.multicriteria.1.ruleKey", "*"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath())
@@ -145,7 +143,7 @@ class ConnectedIssueExclusionsMediumTests {
         tuple("java:S1220", null, FILE1_PATH),
         tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), FILE1_PATH));
 
-    storeProjectSettings(Map.of("sonar.issue.ignore.multicriteria", "1,2",
+    updateIssueExclusionsSettings(Map.of("sonar.issue.ignore.multicriteria", "1,2",
       "sonar.issue.ignore.multicriteria.1.resourceKey", FILE2_PATH,
       "sonar.issue.ignore.multicriteria.1.ruleKey", "java:S1481",
       "sonar.issue.ignore.multicriteria.2.resourceKey", FILE1_PATH,
@@ -160,7 +158,6 @@ class ConnectedIssueExclusionsMediumTests {
   }
 
   @Test
-  @Disabled("Reaction to exclusion changes is not fully implemented in the new backend, see SLCORE-650")
   void issueExclusionsByRegexp() throws Exception {
     var inputFile1 = prepareJavaInputFile1();
     var inputFile2 = prepareJavaInputFile2();
@@ -175,7 +172,7 @@ class ConnectedIssueExclusionsMediumTests {
         tuple("java:S1220", null, FILE2_PATH),
         tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), FILE2_PATH));
 
-    storeProjectSettings(Map.of("sonar.issue.ignore.allfile", "1",
+    updateIssueExclusionsSettings(Map.of("sonar.issue.ignore.allfile", "1",
       "sonar.issue.ignore.allfile.1.fileRegexp", "NOSL1"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath())
       .usingRecursiveFieldByFieldElementComparator()
@@ -184,13 +181,12 @@ class ConnectedIssueExclusionsMediumTests {
         tuple("java:S1220", null, FILE2_PATH),
         tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), FILE2_PATH));
 
-    storeProjectSettings(Map.of("sonar.issue.ignore.allfile", "1",
+    updateIssueExclusionsSettings(Map.of("sonar.issue.ignore.allfile", "1",
       "sonar.issue.ignore.allfile.1.fileRegexp", "NOSL(1|2)"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath()).isEmpty();
   }
 
   @Test
-  @Disabled("Reaction to exclusion changes is not fully implemented in the new backend, see SLCORE-650")
   void issueExclusionsByBlock() throws Exception {
     var inputFile1 = prepareJavaInputFile1();
     var inputFile2 = prepareJavaInputFile2();
@@ -205,7 +201,7 @@ class ConnectedIssueExclusionsMediumTests {
         tuple("java:S1220", null, FILE2_PATH),
         tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), FILE2_PATH));
 
-    storeProjectSettings(Map.of("sonar.issue.ignore.block", "1",
+    updateIssueExclusionsSettings(Map.of("sonar.issue.ignore.block", "1",
       "sonar.issue.ignore.block.1.beginBlockRegexp", "SON.*-OFF",
       "sonar.issue.ignore.block.1.endBlockRegexp", "SON.*-ON"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath())
@@ -223,7 +219,7 @@ class ConnectedIssueExclusionsMediumTests {
     var inputFile1 = prepareJavaInputFile1();
     var inputFile2 = prepareJavaInputFile2();
 
-    storeProjectSettings(Map.of("sonar.issue.enforce.multicriteria", "1",
+    updateIssueExclusionsSettings(Map.of("sonar.issue.enforce.multicriteria", "1",
       "sonar.issue.enforce.multicriteria.1.resourceKey", "Foo*.java",
       "sonar.issue.enforce.multicriteria.1.ruleKey", "*"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath())
@@ -236,7 +232,7 @@ class ConnectedIssueExclusionsMediumTests {
         tuple("java:S1220", null, FILE2_PATH),
         tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), FILE2_PATH));
 
-    storeProjectSettings(Map.of("sonar.issue.enforce.multicriteria", "1",
+    updateIssueExclusionsSettings(Map.of("sonar.issue.enforce.multicriteria", "1",
       "sonar.issue.enforce.multicriteria.1.resourceKey", FILE2_PATH,
       "sonar.issue.enforce.multicriteria.1.ruleKey", "*S1481"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath())
@@ -248,7 +244,7 @@ class ConnectedIssueExclusionsMediumTests {
         tuple("java:S1220", null, FILE2_PATH),
         tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), FILE2_PATH));
 
-    storeProjectSettings(Map.of("sonar.issue.enforce.multicriteria", "1",
+    updateIssueExclusionsSettings(Map.of("sonar.issue.enforce.multicriteria", "1",
       "sonar.issue.enforce.multicriteria.1.resourceKey", FILE2_PATH,
       "sonar.issue.enforce.multicriteria.1.ruleKey", "*"));
     assertThat(collectIssues(inputFile1, inputFile2)).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath())
@@ -258,7 +254,7 @@ class ConnectedIssueExclusionsMediumTests {
         tuple("java:S1220", null, FILE2_PATH),
         tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), FILE2_PATH));
 
-    storeProjectSettings(Map.of("sonar.issue.enforce.multicriteria", "1,2",
+    updateIssueExclusionsSettings(Map.of("sonar.issue.enforce.multicriteria", "1,2",
       "sonar.issue.enforce.multicriteria.1.resourceKey", FILE2_PATH,
       "sonar.issue.enforce.multicriteria.1.ruleKey", "java:S1481",
       "sonar.issue.enforce.multicriteria.2.resourceKey", FILE1_PATH,
@@ -283,12 +279,12 @@ class ConnectedIssueExclusionsMediumTests {
     return issues;
   }
 
-  private void storeProjectSettings(Map<String, String> settings) {
-    // XXX find a better way to change the settings that triggers a recomputation of the exclusions
+  private void updateIssueExclusionsSettings(Map<String, String> settings) {
     var analyzerConfigPath = backend.getStorageRoot().resolve(encodeForFs(CONNECTION_ID)).resolve("projects").resolve(encodeForFs(JAVA_MODULE_KEY)).resolve("analyzer_config.pb");
     Sonarlint.AnalyzerConfiguration.Builder analyzerConfigurationBuilder;
     if (Files.exists(analyzerConfigPath)) {
       analyzerConfigurationBuilder = Sonarlint.AnalyzerConfiguration.newBuilder(ProtobufFileUtil.readFile(analyzerConfigPath, Sonarlint.AnalyzerConfiguration.parser()));
+      analyzerConfigurationBuilder.clearSettings();
     } else {
       analyzerConfigurationBuilder = Sonarlint.AnalyzerConfiguration.newBuilder();
     }

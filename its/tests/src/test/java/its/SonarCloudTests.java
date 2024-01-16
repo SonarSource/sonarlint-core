@@ -733,8 +733,8 @@ class SonarCloudTests extends AbstractConnectedTests {
       }
 
       @Override
-      public void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params) {
-        didSynchronizeConfigurationScopes.addAll(params.getConfigurationScopeIds());
+      public void didSynchronizeConfigurationScopes(Set<String> configurationScopeIds) {
+        didSynchronizeConfigurationScopes.addAll(configurationScopeIds);
       }
 
       @Override

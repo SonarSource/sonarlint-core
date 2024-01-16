@@ -27,11 +27,13 @@ public class LogParams {
   private final LogLevel level;
   private final String message;
   private final String configScopeId;
+  private final String threadName;
 
   public LogParams(LogLevel level, String message, @Nullable String configScopeId) {
     this.level = level;
     this.message = message;
     this.configScopeId = configScopeId;
+    this.threadName = Thread.currentThread().getName();
   }
 
   public LogLevel getLevel() {
@@ -49,5 +51,9 @@ public class LogParams {
   @CheckForNull
   public String getConfigScopeId() {
     return configScopeId;
+  }
+
+  public String getThreadName() {
+    return threadName;
   }
 }
