@@ -60,7 +60,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSys
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.GetFilesStatusParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
@@ -140,7 +139,7 @@ class FileExclusionTests extends AbstractConnectedTests {
     backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(CONFIG_SCOPE_ID));
   }
 
-    @AfterAll
+  @AfterAll
   static void stop() throws ExecutionException, InterruptedException {
     serverLauncher.getJavaImpl().shutdown().get();
     System.clearProperty("sonarlint.internal.synchronization.initialDelay");
@@ -222,8 +221,8 @@ class FileExclusionTests extends AbstractConnectedTests {
       }
 
       @Override
-      public void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params) {
-        didSynchronizeConfigurationScopes.addAll(params.getConfigurationScopeIds());
+      public void didSynchronizeConfigurationScopes(Set<String> configurationScopeIds) {
+        didSynchronizeConfigurationScopes.addAll(configurationScopeIds);
       }
 
     };

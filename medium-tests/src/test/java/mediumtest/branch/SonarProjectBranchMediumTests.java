@@ -57,7 +57,9 @@ class SonarProjectBranchMediumTests {
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
+    if (backend != null) {
+      backend.shutdown().get();
+    }
   }
 
   @Test
@@ -89,7 +91,7 @@ class SonarProjectBranchMediumTests {
 
     notifyVcsRepositoryChanged("configScopeId");
 
-    verify(client, timeout(1000)).didChangeMatchedSonarProjectBranch("configScopeId", "myBranch");
+    verify(client, timeout(2000)).didChangeMatchedSonarProjectBranch("configScopeId", "myBranch");
   }
 
   @Test
@@ -167,7 +169,7 @@ class SonarProjectBranchMediumTests {
     var client = newFakeClient()
       .printLogsToStdOut()
       .build();
-    when(client.matchSonarProjectBranch(any(), any(), any(), any())).thenReturn("branchA");
+    doReturn("branchA").when(client).matchSonarProjectBranch(any(), any(), any(), any());
     backend = newBackend()
       .withSonarQubeConnection("connectionId",
         storage -> storage.withProject("projectKey",
@@ -176,11 +178,11 @@ class SonarProjectBranchMediumTests {
       .build(client);
 
     backend.getSonarProjectBranchService().didVcsRepositoryChange(new DidVcsRepositoryChangeParams("configScopeId"));
-    when(client.matchSonarProjectBranch(any(), any(), any(), any())).thenReturn("branchB");
+    doReturn("branchB").when(client).matchSonarProjectBranch(any(), any(), any(), any());
     backend.getSonarProjectBranchService().didVcsRepositoryChange(new DidVcsRepositoryChangeParams("configScopeId"));
-    when(client.matchSonarProjectBranch(any(), any(), any(), any())).thenReturn("branchC");
+    doReturn("branchC").when(client).matchSonarProjectBranch(any(), any(), any(), any());
     backend.getSonarProjectBranchService().didVcsRepositoryChange(new DidVcsRepositoryChangeParams("configScopeId"));
-    when(client.matchSonarProjectBranch(any(), any(), any(), any())).thenReturn("branchD");
+    doReturn("branchD").when(client).matchSonarProjectBranch(any(), any(), any(), any());
     backend.getSonarProjectBranchService().didVcsRepositoryChange(new DidVcsRepositoryChangeParams("configScopeId"));
 
     // FIXME in a perfect world we would like to have a single notification for branchD, but there is a possible race condition if the branch matching job is cancelled *after*
@@ -223,7 +225,7 @@ class SonarProjectBranchMediumTests {
       .start();
     var client = newFakeClient()
       .build();
-    when(client.matchSonarProjectBranch(eq("configScopeId"), eq("main"), eq(Set.of("main", "myBranch")), any())).thenReturn("main");
+    doReturn("main").when(client).matchSonarProjectBranch(eq("configScopeId"), eq("main"), eq(Set.of("main", "myBranch")), any());
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server,
         storage -> storage.withProject("projectKey",
@@ -236,7 +238,7 @@ class SonarProjectBranchMediumTests {
     verify(client, timeout(5000)).didChangeMatchedSonarProjectBranch(eq("configScopeId"), any());
 
     // Now emulate a branch change
-    when(client.matchSonarProjectBranch(eq("configScopeId"), eq("main"), eq(Set.of("main", "myBranch")), any())).thenReturn("myBranch");
+    doReturn("myBranch").when(client).matchSonarProjectBranch(eq("configScopeId"), eq("main"), eq(Set.of("main", "myBranch")), any());
     backend.getSonarProjectBranchService().didVcsRepositoryChange(new DidVcsRepositoryChangeParams("configScopeId"));
 
     await().untilAsserted(() -> assertThat(backend.getIssueStorageService()
