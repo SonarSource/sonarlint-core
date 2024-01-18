@@ -25,8 +25,6 @@ import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.DidVcsRepositoryChangeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.GetMatchedSonarProjectBranchParams;
@@ -49,9 +47,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class SonarProjectBranchMediumTests {
-
-  @RegisterExtension
-  private static final SonarLintLogTester logTester = new SonarLintLogTester(true);
 
   private SonarLintTestRpcServer backend;
 
@@ -193,7 +188,8 @@ class SonarProjectBranchMediumTests {
   @Test
   void it_should_return_matched_branch_after_matching() {
     var client = newFakeClient().build();
-    when(client.matchSonarProjectBranch(eq("configScopeId"), eq("main"), eq(Set.of("main", "myBranch")), any())).thenReturn("main");
+    when(client.matchSonarProjectBranch(eq("configScopeId"), eq("main"), eq(Set.of("main", "myBranch")), any()))
+      .thenReturn("main");
 
     backend = newBackend()
       .withSonarQubeConnection("connectionId",
@@ -235,18 +231,15 @@ class SonarProjectBranchMediumTests {
       .build(client);
 
     // Wait for first sync
-    verify(client, timeout(5000)).didChangeMatchedSonarProjectBranch(eq("configScopeId"), any());
+    verify(client, timeout(5000)).didChangeMatchedSonarProjectBranch(eq("configScopeId"), eq("main"));
+    verify(client, timeout(5000)).didSynchronizeConfigurationScopes(Set.of("configScopeId"));
 
     // Now emulate a branch change
     doReturn("myBranch").when(client).matchSonarProjectBranch(eq("configScopeId"), eq("main"), eq(Set.of("main", "myBranch")), any());
     backend.getSonarProjectBranchService().didVcsRepositoryChange(new DidVcsRepositoryChangeParams("configScopeId"));
 
-    await().untilAsserted(() -> assertThat(backend.getIssueStorageService()
-      .connection("connectionId")
-      .project("projectKey")
-      .findings()
-      .containsIssue("issueKey", false))
-      .isTrue());
+    verify(client, timeout(5000)).didChangeMatchedSonarProjectBranch(eq("configScopeId"), eq("myBranch"));
+    verify(client, timeout(5000).times(2)).didSynchronizeConfigurationScopes(Set.of("configScopeId"));
   }
 
   @Test

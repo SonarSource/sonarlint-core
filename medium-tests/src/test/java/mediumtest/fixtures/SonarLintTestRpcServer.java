@@ -193,6 +193,7 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
       }
       FileUtils.deleteQuietly(workDir.toFile());
       FileUtils.deleteQuietly(userHome.toFile());
+      FileUtils.deleteQuietly(storageRoot.toFile());
     }
     return CompletableFuture.completedFuture(null);
   }
