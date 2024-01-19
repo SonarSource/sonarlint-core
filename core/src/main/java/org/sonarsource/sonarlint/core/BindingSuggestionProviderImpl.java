@@ -273,6 +273,7 @@ public class BindingSuggestionProviderImpl implements BindingService {
       }
     }
 
+    // Probably very wrong
     return suggestions.stream().anyMatch(c -> c.getSonarProjectKey() != null && c.getSonarProjectKey().equals(projectKey));
   }
 
