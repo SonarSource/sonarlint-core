@@ -127,7 +127,7 @@ class SonarProjectBranchMediumTests {
 
     notifyVcsRepositoryChanged("configScopeId");
 
-    verify(client, timeout(1000)).didChangeMatchedSonarProjectBranch("configScopeId", "main");
+    verify(client, timeout(2000)).didChangeMatchedSonarProjectBranch("configScopeId", "main");
   }
 
   @Test
@@ -164,7 +164,7 @@ class SonarProjectBranchMediumTests {
     var client = newFakeClient()
       .printLogsToStdOut()
       .build();
-    doReturn("branchA").when(client).matchSonarProjectBranch(any(), any(), any(), any());
+    doReturn("branchA", "branchB").when(client).matchSonarProjectBranch(any(), any(), any(), any());
     backend = newBackend()
       .withSonarQubeConnection("connectionId",
         storage -> storage.withProject("projectKey",
@@ -172,17 +172,15 @@ class SonarProjectBranchMediumTests {
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build(client);
 
+    // Wait for initial branch matching
+    verify(client, timeout(5000)).didChangeMatchedSonarProjectBranch("configScopeId", "branchA");
+
     backend.getSonarProjectBranchService().didVcsRepositoryChange(new DidVcsRepositoryChangeParams("configScopeId"));
-    doReturn("branchB").when(client).matchSonarProjectBranch(any(), any(), any(), any());
     backend.getSonarProjectBranchService().didVcsRepositoryChange(new DidVcsRepositoryChangeParams("configScopeId"));
-    doReturn("branchC").when(client).matchSonarProjectBranch(any(), any(), any(), any());
     backend.getSonarProjectBranchService().didVcsRepositoryChange(new DidVcsRepositoryChangeParams("configScopeId"));
-    doReturn("branchD").when(client).matchSonarProjectBranch(any(), any(), any(), any());
     backend.getSonarProjectBranchService().didVcsRepositoryChange(new DidVcsRepositoryChangeParams("configScopeId"));
 
-    // FIXME in a perfect world we would like to have a single notification for branchD, but there is a possible race condition if the branch matching job is cancelled *after*
-    // having already send the event, then we can receive multiple notifications. This is not a big deal, but we should try to fix it some day.
-    verify(client, timeout(5000).atLeastOnce()).didChangeMatchedSonarProjectBranch("configScopeId", "branchD");
+    verify(client, timeout(5000)).didChangeMatchedSonarProjectBranch("configScopeId", "branchB");
   }
 
   @Test

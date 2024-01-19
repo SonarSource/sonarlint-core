@@ -40,6 +40,7 @@ import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ApplicationEventPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
@@ -99,6 +100,8 @@ class SonarProjectBranchTrackingServiceTests {
     assertThat(underTest.awaitEffectiveSonarProjectBranch(CONFIG_SCOPE_ID)).contains("feature");
 
     assertThat(firstFuture).isCancelled();
+
+    verify(sonarLintRpcClient, timeout(1000).times(1)).didChangeMatchedSonarProjectBranch(any());
   }
 
   @Test
@@ -119,7 +122,7 @@ class SonarProjectBranchTrackingServiceTests {
 
     assertThat(underTest.awaitEffectiveSonarProjectBranch(CONFIG_SCOPE_ID)).contains("main");
 
-    assertThat(logTester.logs()).contains("Matched Sonar project branch for configuration scope 'configScopeId' changed from 'null' to 'main'");
+    await().untilAsserted(() -> assertThat(logTester.logs()).contains("Matched Sonar project branch for configuration scope 'configScopeId' changed from 'null' to 'main'"));
   }
 
 }
