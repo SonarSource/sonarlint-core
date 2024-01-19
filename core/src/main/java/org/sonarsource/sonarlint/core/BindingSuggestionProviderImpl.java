@@ -56,9 +56,11 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 
 import static java.lang.String.join;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singlePlural;
 
@@ -189,6 +191,34 @@ public class BindingSuggestionProviderImpl implements BindingService {
     return suggestions;
   }
 
+  public String computeBindingSuggestionsForProjectKey(Set<String> configScopeIds, String connectionId, String projectKey) {
+    var eligibleConfigScopesForBindingSuggestion = new HashSet<String>();
+    for (var configScopeId : configScopeIds) {
+      if (isScopeEligibleForBindingSuggestion(configScopeId)) {
+        eligibleConfigScopesForBindingSuggestion.add(configScopeId);
+      }
+    }
+    if (eligibleConfigScopesForBindingSuggestion.isEmpty()) {
+      return null;
+    }
+
+    try {
+      for (var configScopeId : eligibleConfigScopesForBindingSuggestion) {
+        var found = suggestBindingForEligibleScopeAndProjectKey(configScopeId, connectionId, projectKey);
+        if (found) {
+          LOG.debug("Found 1 suggestion for configuration scope '{}'", configScopeId);
+          return configScopeId;
+        }
+        LOG.debug("Found 0 suggestion for configuration scope '{}'", configScopeId);
+      }
+    } catch (InterruptedException e) {
+      LOG.debug("Binding suggestion computation was interrupted", e);
+      Thread.currentThread().interrupt();
+    }
+
+    return null;
+  }
+
   private List<BindingSuggestionDto> suggestBindingForEligibleScope(String checkedConfigScopeId, Set<String> candidateConnectionIds) throws InterruptedException {
     var cluesAndConnections = bindingClueProvider.collectBindingCluesWithConnections(checkedConfigScopeId, candidateConnectionIds);
 
@@ -215,6 +245,38 @@ public class BindingSuggestionProviderImpl implements BindingService {
       }
     }
     return suggestions;
+  }
+
+  private boolean suggestBindingForEligibleScopeAndProjectKey(String checkedConfigScopeId, String connectionId, String projectKey) throws InterruptedException {
+    var cluesAndConnection = bindingClueProvider.collectBindingCluesWithConnectionAndProjectKey(checkedConfigScopeId, connectionId, projectKey);
+
+    List<BindingSuggestionDto> suggestions = new ArrayList<>();
+    var cluesWithProjectKey = cluesAndConnection.stream().filter(c -> c.getBindingClue().getSonarProjectKey() != null).collect(toSet());
+    for (var bindingClueWithConnections : cluesWithProjectKey) {
+      var sonarProjectKey = requireNonNull(bindingClueWithConnections.getBindingClue().getSonarProjectKey());
+      if (sonarProjectKey.equals(projectKey)) {
+        return true;
+      }
+      for (var cId : bindingClueWithConnections.getConnectionIds()) {
+        sonarProjectsCache
+          .getSonarProject(cId, sonarProjectKey)
+          .ifPresent(serverProject -> suggestions.add(new BindingSuggestionDto(cId, sonarProjectKey, serverProject.getName())));
+      }
+    }
+    if (suggestions.isEmpty()) {
+      var configScopeName = Optional.ofNullable(configRepository.getConfigurationScope(checkedConfigScopeId)).map(ConfigurationScope::getName).orElse(null);
+      if (isNotBlank(configScopeName)) {
+        var cluesWithoutProjectKey = cluesAndConnection.stream().filter(c -> c.getBindingClue().getSonarProjectKey() == null).collect(toSet());
+        for (var bindingClueWithConnections : cluesWithoutProjectKey) {
+          searchGoodMatchInConnections(suggestions, configScopeName, bindingClueWithConnections.getConnectionIds());
+        }
+        if (cluesWithoutProjectKey.isEmpty()) {
+          searchGoodMatchInConnections(suggestions, configScopeName, Set.of(connectionId));
+        }
+      }
+    }
+
+    return suggestions.stream().anyMatch(c -> c.getSonarProjectKey() != null && c.getSonarProjectKey().equals(projectKey));
   }
 
   private void searchGoodMatchInConnections(List<BindingSuggestionDto> suggestions, String configScopeName, Set<String> connectionIdsToSearch) {

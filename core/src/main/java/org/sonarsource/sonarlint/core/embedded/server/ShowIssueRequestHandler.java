@@ -25,6 +25,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -99,12 +100,11 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
 
     var connectionsMatchingOrigin = repository.findByUrl(query.serverUrl);
     if (connectionsMatchingOrigin.isEmpty()) {
-      startFullBindingProcess();
+      endFullBindingProcess();
       assistCreatingConnection(query.serverUrl, query.tokenName, query.tokenValue)
-        .thenCompose(response -> assistBinding(response.getNewConnectionId(), query.projectKey))
+        .thenCompose(response -> assistBinding(response.getConfigScopeIds(), response.getNewConnectionId(), query.projectKey))
         .thenAccept(response -> showIssueForScope(response.getConnectionId(), response.getConfigurationScopeId(),
-          query.issueKey, query.projectKey, query.branch, query.pullRequest))
-        .whenComplete((v, e) -> endFullBindingProcess());
+          query.issueKey, query.projectKey, query.branch, query.pullRequest));
     } else {
       // we pick the first connection but this could lead to issues later if there were several matches (make the user select the right
       // one?)
@@ -116,7 +116,7 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
     @Nullable String pullRequest) {
     var scopes = configurationService.getConfigScopesWithBindingConfiguredTo(connectionId, projectKey);
     if (scopes.isEmpty()) {
-      assistBinding(connectionId, projectKey)
+      assistBinding(Set.of(), connectionId, projectKey)
         .thenAccept(newBinding -> showIssueForScope(connectionId, newBinding.getConfigurationScopeId(), issueKey, projectKey, branch, pullRequest));
     } else {
       // we pick the first bound scope but this could lead to issues later if there were several matches (make the user select the right one?)

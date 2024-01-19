@@ -528,7 +528,7 @@ public class SonarLintBackendFixture {
         return canceledFuture();
       }
       backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(cannedSonarQubeConnection), Collections.emptyList()));
-      return CompletableFuture.completedFuture(new AssistCreatingConnectionResponse(cannedSonarQubeConnection.getConnectionId()));
+      return CompletableFuture.completedFuture(new AssistCreatingConnectionResponse(cannedSonarQubeConnection.getConnectionId(), Set.of()));
     }
 
     @Override

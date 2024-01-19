@@ -24,6 +24,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -93,7 +94,7 @@ public class ShowHotspotRequestHandler extends ShowHotspotOrIssueRequestHandler 
     if (connectionsMatchingOrigin.isEmpty()) {
       startFullBindingProcess();
       assistCreatingConnection(query.serverUrl)
-        .thenCompose(response -> assistBinding(response.getNewConnectionId(), query.projectKey))
+        .thenCompose(response -> assistBinding(Set.of(), response.getNewConnectionId(), query.projectKey))
         .thenAccept(response -> showHotspotForScope(response.getConnectionId(), response.getConfigurationScopeId(), query.hotspotKey))
         .whenComplete((v, e) -> endFullBindingProcess());
     } else {
@@ -105,7 +106,7 @@ public class ShowHotspotRequestHandler extends ShowHotspotOrIssueRequestHandler 
   private void showHotspotForConnection(String connectionId, String projectKey, String hotspotKey) {
     var scopes = configurationService.getConfigScopesWithBindingConfiguredTo(connectionId, projectKey);
     if (scopes.isEmpty()) {
-      assistBinding(connectionId, projectKey)
+      assistBinding(Set.of(), connectionId, projectKey)
         .thenAccept(newBinding -> showHotspotForScope(connectionId, newBinding.getConfigurationScopeId(), hotspotKey));
     } else {
       // we pick the first bound scope but this could lead to issues later if there were several matches (make the user select the right one?)

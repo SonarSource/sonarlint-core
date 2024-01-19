@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.embedded.server;
 
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.BindingSuggestionProviderImpl;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
@@ -57,8 +58,9 @@ public class ShowHotspotOrIssueRequestHandler {
     return client.assistCreatingConnection(new AssistCreatingConnectionParams(serverUrl, tokenName, tokenValue));
   }
 
-  CompletableFuture<NewBinding> assistBinding(String connectionId, String projectKey) {
-    return client.assistBinding(new AssistBindingParams(connectionId, projectKey))
+  CompletableFuture<NewBinding> assistBinding(Set<String> scopeIds, String connectionId, String projectKey) {
+    var configScopeId = bindingSuggestionProvider.computeBindingSuggestionsForProjectKey(scopeIds, connectionId, projectKey);
+    return client.assistBinding(new AssistBindingParams(connectionId, projectKey, configScopeId))
       .thenApply(response -> new NewBinding(connectionId, response.getConfigurationScopeId()));
   }
 
