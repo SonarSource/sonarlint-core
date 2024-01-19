@@ -202,12 +202,14 @@ public class BindingSuggestionProviderImpl implements BindingService {
       return null;
     }
 
+    var results = new ArrayList<String>();
+
     try {
       for (var configScopeId : eligibleConfigScopesForBindingSuggestion) {
         var found = suggestBindingForEligibleScopeAndProjectKey(configScopeId, connectionId, projectKey);
         if (found) {
           LOG.debug("Found 1 suggestion for configuration scope '{}'", configScopeId);
-          return configScopeId;
+          results.add(configScopeId);
         }
         LOG.debug("Found 0 suggestion for configuration scope '{}'", configScopeId);
       }
@@ -216,7 +218,7 @@ public class BindingSuggestionProviderImpl implements BindingService {
       Thread.currentThread().interrupt();
     }
 
-    return null;
+    return results.size() == 1 ? results.get(0) : null;
   }
 
   private List<BindingSuggestionDto> suggestBindingForEligibleScope(String checkedConfigScopeId, Set<String> candidateConnectionIds) throws InterruptedException {
@@ -263,16 +265,11 @@ public class BindingSuggestionProviderImpl implements BindingService {
           .ifPresent(serverProject -> suggestions.add(new BindingSuggestionDto(cId, sonarProjectKey, serverProject.getName())));
       }
     }
+
     if (suggestions.isEmpty()) {
       var configScopeName = Optional.ofNullable(configRepository.getConfigurationScope(checkedConfigScopeId)).map(ConfigurationScope::getName).orElse(null);
       if (isNotBlank(configScopeName)) {
-        var cluesWithoutProjectKey = cluesAndConnection.stream().filter(c -> c.getBindingClue().getSonarProjectKey() == null).collect(toSet());
-        for (var bindingClueWithConnections : cluesWithoutProjectKey) {
-          searchGoodMatchInConnections(suggestions, configScopeName, bindingClueWithConnections.getConnectionIds());
-        }
-        if (cluesWithoutProjectKey.isEmpty()) {
-          searchGoodMatchInConnections(suggestions, configScopeName, Set.of(connectionId));
-        }
+        searchGoodMatchInConnectionWithProjectKey(suggestions, configScopeName, connectionId, projectKey);
       }
     }
 
@@ -285,6 +282,10 @@ public class BindingSuggestionProviderImpl implements BindingService {
     }
   }
 
+  private void searchGoodMatchInConnectionWithProjectKey(List<BindingSuggestionDto> suggestions, String configScopeName, String connectionIdToSearch, String projectKey) {
+    searchGoodMatchWithProjectKey(suggestions, configScopeName, connectionIdToSearch, projectKey);
+  }
+
   private void searchGoodMatchInConnection(List<BindingSuggestionDto> suggestions, String configScopeName, String connectionId) {
     LOG.debug("Attempt to find a good match for '{}' on connection '{}'...", configScopeName, connectionId);
     var index = sonarProjectsCache.getTextSearchIndex(connectionId);
@@ -293,6 +294,23 @@ public class BindingSuggestionProviderImpl implements BindingService {
       Double bestScore = Double.MIN_VALUE;
       for (var serverProjectScoreEntry : searchResult.entrySet()) {
         if (serverProjectScoreEntry.getValue() < bestScore) {
+          break;
+        }
+        bestScore = serverProjectScoreEntry.getValue();
+        suggestions.add(new BindingSuggestionDto(connectionId, serverProjectScoreEntry.getKey().getKey(), serverProjectScoreEntry.getKey().getName()));
+      }
+      LOG.debug("Best score = {}", String.format(Locale.ENGLISH, "%,.2f", bestScore));
+    }
+  }
+
+  private void searchGoodMatchWithProjectKey(List<BindingSuggestionDto> suggestions, String configScopeName, String connectionId, String projectKey) {
+    LOG.debug("Attempt to find a good match for '{}' on connection '{}'...", configScopeName, connectionId);
+    var index = sonarProjectsCache.getTextSearchIndexWithProjectKey(connectionId, projectKey);
+    var searchResult = index.search(configScopeName);
+    if (!searchResult.isEmpty()) {
+      Double bestScore = 0.0;
+      for (var serverProjectScoreEntry : searchResult.entrySet()) {
+        if (serverProjectScoreEntry.getValue() <= bestScore) {
           break;
         }
         bestScore = serverProjectScoreEntry.getValue();

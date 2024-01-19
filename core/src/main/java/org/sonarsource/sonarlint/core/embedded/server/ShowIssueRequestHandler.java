@@ -50,6 +50,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams
 import org.sonarsource.sonarlint.core.clientapi.common.FlowDto;
 import org.sonarsource.sonarlint.core.clientapi.common.LocationDto;
 import org.sonarsource.sonarlint.core.clientapi.common.TextRangeDto;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
@@ -65,20 +66,22 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler implements HttpRequestHandler {
 
   private final SonarLintClient client;
-  private final ConnectionConfigurationRepository repository;
+  private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final ConfigurationServiceImpl configurationService;
   private final ServerApiProvider serverApiProvider;
   private final TelemetryServiceImpl telemetryService;
+  private final ConfigurationRepository configurationRepository;
 
-  public ShowIssueRequestHandler(SonarLintClient client, ConnectionConfigurationRepository repository,
+  public ShowIssueRequestHandler(SonarLintClient client, ConnectionConfigurationRepository connectionConfigurationRepository,
     ConfigurationServiceImpl configurationService, BindingSuggestionProviderImpl bindingSuggestionProvider,
-    ServerApiProvider serverApiProvider, TelemetryServiceImpl telemetryService) {
+    ServerApiProvider serverApiProvider, TelemetryServiceImpl telemetryService, ConfigurationRepository configurationRepository) {
     super(bindingSuggestionProvider, client);
     this.client = client;
-    this.repository = repository;
+    this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.configurationService = configurationService;
     this.serverApiProvider = serverApiProvider;
     this.telemetryService = telemetryService;
+    this.configurationRepository = configurationRepository;
   }
 
   @Override
@@ -98,7 +101,7 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
   private void showIssue(ShowIssueQuery query) {
     telemetryService.showIssueRequestReceived();
 
-    var connectionsMatchingOrigin = repository.findByUrl(query.serverUrl);
+    var connectionsMatchingOrigin = connectionConfigurationRepository.findByUrl(query.serverUrl);
     if (connectionsMatchingOrigin.isEmpty()) {
       startFullBindingProcess();
       assistCreatingConnection(query.serverUrl, query.tokenName, query.tokenValue)
@@ -109,15 +112,17 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
     } else {
       // we pick the first connection but this could lead to issues later if there were several matches (make the user select the right
       // one?)
-      showIssueForConnection(connectionsMatchingOrigin.get(0).getConnectionId(), query.projectKey, query.issueKey, query.branch, query.pullRequest);
+      var configScopeIds = configurationRepository.getConfigScopeIds();
+      showIssueForConnection(configScopeIds, connectionsMatchingOrigin.get(0).getConnectionId(), query.projectKey, query.issueKey, query.branch, query.pullRequest);
     }
   }
 
-  private void showIssueForConnection(String connectionId, String projectKey, String issueKey, String branch,
+  private void showIssueForConnection(Set<String> configScopeIds, String connectionId, String projectKey, String issueKey, String branch,
     @Nullable String pullRequest) {
     var scopes = configurationService.getConfigScopesWithBindingConfiguredTo(connectionId, projectKey);
     if (scopes.isEmpty()) {
-      assistBinding(Set.of(), connectionId, projectKey)
+
+      assistBinding(configScopeIds, connectionId, projectKey)
         .thenAccept(newBinding -> showIssueForScope(connectionId, newBinding.getConfigurationScopeId(), issueKey, projectKey, branch, pullRequest));
     } else {
       // we pick the first bound scope but this could lead to issues later if there were several matches (make the user select the right one?)

@@ -143,4 +143,29 @@ public class SonarProjectsCache {
     }
   }
 
+  public TextSearchIndex<ServerProject> getTextSearchIndexWithProjectKey(String connectionId, String projectKey) {
+    try {
+      return textSearchIndexCache.get(connectionId, () -> {
+        LOG.debug("Load projects from connection '{}'...", connectionId);
+        Optional<ServerProject> optProject;
+        try {
+          optProject = serverApiProvider.getServerApi(connectionId).map(s -> s.component().getProject(projectKey)).orElseThrow(() -> new IllegalStateException("Project not found"));
+        } catch (Exception e) {
+          LOG.error("Error while querying projects from connection '{}'", connectionId, e);
+          return new TextSearchIndex<>();
+        }
+        if (optProject.isEmpty()) {
+          throw new IllegalStateException("No project found for connection '" + connectionId + "'");
+        }
+        var project = optProject.get();
+        LOG.debug("Creating index for {} {}", 1, "project");
+        var index = new TextSearchIndex<ServerProject>();
+        index.index(project, project.getKey() + " " + project.getName());
+        return index;
+      });
+    } catch (ExecutionException e) {
+      throw new IllegalStateException(e.getCause());
+    }
+  }
+
 }

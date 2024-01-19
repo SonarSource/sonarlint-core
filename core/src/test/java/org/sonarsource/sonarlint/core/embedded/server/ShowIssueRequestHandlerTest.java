@@ -28,6 +28,7 @@ import org.sonarsource.sonarlint.core.BindingSuggestionProviderImpl;
 import org.sonarsource.sonarlint.core.ConfigurationServiceImpl;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
@@ -53,6 +54,7 @@ class ShowIssueRequestHandlerTest {
     var sonarLintClient = mock(SonarLintClient.class);
     var serverApi = mock(ServerApi.class);
     var issueApi = mock(IssueApi.class);
+    var configurationRepository = mock(ConfigurationRepository.class);
 
     var connectionId = "connectionId";
     var configScopeId = "configScopeId";
@@ -78,7 +80,7 @@ class ShowIssueRequestHandlerTest {
     when(issueApi.getCodeSnippet(eq(locationComponentKey_1), any(), any(), any())).thenReturn(Optional.of(locationCodeSnippet_1));
 
     var showIssueRequestHandler = new ShowIssueRequestHandler(sonarLintClient, repository, configurationService,
-      bindingSuggestionProvider, serverApiProvider, telemetryService);
+      bindingSuggestionProvider, serverApiProvider, telemetryService, configurationRepository);
 
     var flow = Common.Flow.newBuilder()
       .addLocations(Common.Location.newBuilder().setTextRange(locationTextRange_1).setComponent(locationComponentKey_1).setMsg(locationMessage_1))
