@@ -289,8 +289,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
         }
       });
 
-    var supportSecretAnalysis = serverConnection.supportsSecretAnalysis();
-    if (!supportSecretAnalysis) {
+    if (!serverConnection.supportsSecretAnalysis()) {
       analysisContext.get().allRulesDefinitionsByKey.values().stream()
         .filter(ruleDefinition -> ruleDefinition.getLanguage() == Language.SECRETS)
         .filter(this::shouldIncludeRuleForAnalysis)

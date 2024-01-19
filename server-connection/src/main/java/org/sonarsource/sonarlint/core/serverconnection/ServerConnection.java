@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.IntPredicate;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FilenameUtils;
 import org.sonarsource.sonarlint.core.commons.Language;
@@ -208,23 +210,22 @@ public class ServerConnection {
   }
 
   public boolean supportsSecretAnalysis() {
-    // when storage is not present, assume that secrets are not supported by server
-    return isSonarCloud || storage.serverInfo().read()
-      .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(SECRET_ANALYSIS_MIN_SQ_VERSION) >= 0)
-      .orElse(false);
+    return isSonarCloud || compareSynchronizedServerVersion(SECRET_ANALYSIS_MIN_SQ_VERSION, i -> i >= 0);
   }
 
   public boolean supportsCustomSecrets() {
-    // when storage is not present, assume that custom secrets are not supported by server
-    return isSonarCloud || storage.serverInfo().read()
-      .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(CUSTOM_SECRETS_MIN_SQ_VERSION) >= 0)
-      .orElse(false);
+    return !isSonarCloud && compareSynchronizedServerVersion(CUSTOM_SECRETS_MIN_SQ_VERSION, i -> i >= 0);
   }
 
   public boolean shouldSkipCleanCodeTaxonomy() {
     // In connected mode, Clean Code taxonomy is skipped if the server is SonarQube < 10.2
-    return !isSonarCloud && storage.serverInfo().read()
-      .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(CLEAN_CODE_TAXONOMY_MIN_SQ_VERSION) < 0)
+    return !isSonarCloud && compareSynchronizedServerVersion(CLEAN_CODE_TAXONOMY_MIN_SQ_VERSION, i -> i < 0);
+  }
+
+  private boolean compareSynchronizedServerVersion(Version version, IntPredicate comparisonPredicate) {
+    return storage.serverInfo().read()
+      .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(version))
+      .map(comparisonPredicate::test)
       .orElse(false);
   }
 
