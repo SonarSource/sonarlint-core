@@ -50,6 +50,7 @@ import org.sonarsource.sonarlint.core.serverconnection.prefix.FileTreeMatcher;
 public class ServerConnection {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final Version SECRET_ANALYSIS_MIN_SQ_VERSION = Version.create("9.9");
+  private static final Version CUSTOM_SECRETS_MIN_SQ_VERSION = Version.create("10.4");
 
   private static final Version CLEAN_CODE_TAXONOMY_MIN_SQ_VERSION = Version.create("10.2");
 
@@ -210,6 +211,13 @@ public class ServerConnection {
     // when storage is not present, assume that secrets are not supported by server
     return isSonarCloud || storage.serverInfo().read()
       .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(SECRET_ANALYSIS_MIN_SQ_VERSION) >= 0)
+      .orElse(false);
+  }
+
+  public boolean supportsCustomSecrets() {
+    // when storage is not present, assume that custom secrets are not supported by server
+    return isSonarCloud || storage.serverInfo().read()
+      .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(CUSTOM_SECRETS_MIN_SQ_VERSION) >= 0)
       .orElse(false);
   }
 
