@@ -100,11 +100,12 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
 
     var connectionsMatchingOrigin = repository.findByUrl(query.serverUrl);
     if (connectionsMatchingOrigin.isEmpty()) {
-      endFullBindingProcess();
+      startFullBindingProcess();
       assistCreatingConnection(query.serverUrl, query.tokenName, query.tokenValue)
         .thenCompose(response -> assistBinding(response.getConfigScopeIds(), response.getNewConnectionId(), query.projectKey))
         .thenAccept(response -> showIssueForScope(response.getConnectionId(), response.getConfigurationScopeId(),
-          query.issueKey, query.projectKey, query.branch, query.pullRequest));
+          query.issueKey, query.projectKey, query.branch, query.pullRequest))
+        .whenComplete((v, e) -> endFullBindingProcess());
     } else {
       // we pick the first connection but this could lead to issues later if there were several matches (make the user select the right
       // one?)
