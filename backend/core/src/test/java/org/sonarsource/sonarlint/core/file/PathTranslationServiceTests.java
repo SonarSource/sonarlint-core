@@ -19,15 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.file;
 
-import dev.failsafe.ExecutionContext;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +30,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
@@ -44,7 +38,6 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -132,59 +125,6 @@ class PathTranslationServiceTests {
     assertThat(result2.get())
       .usingRecursiveComparison()
       .isEqualTo(new FilePathTranslation(Paths.get(""), Paths.get("moduleB")));
-  }
-
-  @Test
-  void shouldCancelComputationIfBindingChangedMeanwhile() throws InterruptedException {
-    CountDownLatch enterHttpCallLatch = new CountDownLatch(1);
-    var canceled = new AtomicBoolean();
-    when(serverApi.component().getAllFileKeys(any(), any())).thenAnswer(invocation -> {
-      var ctx = invocation.getArgument(1, ExecutionContext.class);
-      ctx.onCancel(() -> canceled.set(ctx.isCancelled()));
-      enterHttpCallLatch.countDown();
-      await().until(ctx::isCancelled);
-      if (ctx.isCancelled()) {
-        throw new CancellationException();
-      }
-      return null;
-    }).thenReturn(List.of(SONAR_PROJECT_A + ":" + "moduleB/src/Foo.java"));
-    mockClientFilePaths(CONFIG_SCOPE_A, "src/Foo.java");
-
-    var result1Async = CompletableFuture.supplyAsync(() -> {
-      SonarLintLogger.setTarget(logTester.getLogOutput());
-      return underTest.getOrComputePathTranslation(CONFIG_SCOPE_A);
-    });
-    enterHttpCallLatch.await();
-
-    underTest.onBindingChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_A, null, null));
-
-    await().until(canceled::get);
-
-    var result1 = result1Async.join();
-    var result2 = underTest.getOrComputePathTranslation(CONFIG_SCOPE_A);
-
-    assertThat(result1).isPresent();
-    assertThat(result1.get())
-      .usingRecursiveComparison()
-      .isEqualTo(new FilePathTranslation(Paths.get(""), Paths.get("moduleB")));
-    assertThat(result2).isPresent();
-    assertThat(result2.get())
-      .usingRecursiveComparison()
-      .isEqualTo(new FilePathTranslation(Paths.get(""), Paths.get("moduleB")));
-  }
-
-  @Test
-  void shouldGiveUpAfter3Cancellation() throws InterruptedException {
-    when(serverApi.component().getAllFileKeys(any(), any())).thenAnswer(invocation -> {
-      throw new CancellationException();
-    });
-    mockClientFilePaths(CONFIG_SCOPE_A, "src/Foo.java");
-
-    var result = underTest.getOrComputePathTranslation(CONFIG_SCOPE_A);
-
-    assertThat(result).isEmpty();
-    assertThat(logTester.logs())
-      .contains("Retrying to compute paths translation for config scope 'configScopeA'");
   }
 
   @Test

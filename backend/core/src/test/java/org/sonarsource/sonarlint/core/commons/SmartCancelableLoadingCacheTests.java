@@ -1,6 +1,24 @@
+/*
+ * SonarLint Core - Implementation
+ * Copyright (C) 2016-2023 SonarSource SA
+ * mailto:info AT sonarsource DOT com
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
 package org.sonarsource.sonarlint.core.commons;
 
-import dev.failsafe.ExecutionContext;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -11,10 +29,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.stubbing.Answer;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelChecker;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -32,9 +50,9 @@ class SmartCancelableLoadingCacheTests {
 
   public static final String A_VALUE = "aValue";
   public static final String A_KEY = "aKey";
-  private SmartCancelableLoadingCache.Listener<String, String> listener = mock(SmartCancelableLoadingCache.Listener.class);
-  private BiFunction<String, SmartCancelableLoadingCache.FutureCancelChecker, String> computer = mock(BiFunction.class);
-  private SmartCancelableLoadingCache<String, String> underTest = new SmartCancelableLoadingCache<>("test", computer, listener);
+  private final SmartCancelableLoadingCache.Listener<String, String> listener = mock(SmartCancelableLoadingCache.Listener.class);
+  private final BiFunction<String, SonarLintCancelChecker, String> computer = mock(BiFunction.class);
+  private final SmartCancelableLoadingCache<String, String> underTest = new SmartCancelableLoadingCache<>("test", computer, listener);
 
   @Test
   void should_cache_value_and_notify_listener_once() {
@@ -117,15 +135,17 @@ class SmartCancelableLoadingCacheTests {
 
     // Queue a first computation
     AtomicReference<String> value = new AtomicReference<>();
-    new Thread(() -> {
+    var t = new Thread(() -> {
       value.set(underTest.get(A_KEY));
-    }).start();
+    });
+    t.start();
     firstComputationStarted.await();
 
     // Queue a second computation
     underTest.refreshAsync(A_KEY);
 
     assertThat(underTest.get(A_KEY)).isEqualTo(ANOTHER_VALUE);
+    t.join();
     assertThat(value.get()).isEqualTo(ANOTHER_VALUE);
   }
 
@@ -148,8 +168,8 @@ class SmartCancelableLoadingCacheTests {
 
 
   private static Answer<String> waitingForCancellation(CountDownLatch startedLatch, @Nullable AtomicBoolean wasCancelled) {
-    return (Answer<String>) invocation -> {
-      var cancelChecker = (SmartCancelableLoadingCache.FutureCancelChecker) invocation.getArgument(1);
+    return invocation -> {
+      var cancelChecker = (SonarLintCancelChecker) invocation.getArgument(1);
       startedLatch.countDown();
       while (!cancelChecker.isCanceled()) {
         Thread.sleep(100);

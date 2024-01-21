@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.serverapi;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
-import dev.failsafe.ExecutionContext;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -42,6 +41,7 @@ import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelChecker;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpConnectionListener;
 import org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException;
@@ -112,14 +112,14 @@ public class ServerApiHelper {
   /**
    * Execute GET and don't check response
    */
-  public HttpClient.Response rawGet(String relativePath, ExecutionContext<?> failsafeCtx) {
+  public HttpClient.Response rawGet(String relativePath, SonarLintCancelChecker cancelChecker) {
     var startTime = Instant.now();
     var url = buildEndpointUrl(relativePath);
 
     var httpFuture = client.getAsync(url);
-    failsafeCtx.onCancel(() -> httpFuture.cancel(true));
+    cancelChecker.propagateCancelTo(httpFuture, true);
     // In case the context is cancelled before we register the callback
-    if (failsafeCtx.isCancelled()) {
+    if (cancelChecker.isCanceled()) {
       httpFuture.cancel(true);
     }
     return httpFuture
@@ -223,7 +223,7 @@ public class ServerApiHelper {
   }
 
   public <G, F> void getPaginated(String relativeUrlWithoutPaginationParams, CheckedFunction<InputStream, G> responseParser, Function<G, Number> getPagingTotal,
-    Function<G, List<F>> itemExtractor, Consumer<F> itemConsumer, boolean limitToTwentyPages, ExecutionContext<?> failsafeCtx) {
+    Function<G, List<F>> itemExtractor, Consumer<F> itemConsumer, boolean limitToTwentyPages, SonarLintCancelChecker cancelChecker) {
     var page = new AtomicInteger(0);
     var stop = new AtomicBoolean(false);
     var loaded = new AtomicInteger(0);
@@ -233,11 +233,11 @@ public class ServerApiHelper {
       fullUrl.append(relativeUrlWithoutPaginationParams.contains("?") ? "&" : "?");
       fullUrl.append("ps=" + PAGE_SIZE + "&p=").append(page);
       ServerApiHelper.consumeTimed(
-        () -> rawGet(fullUrl.toString(), failsafeCtx),
+        () -> rawGet(fullUrl.toString(), cancelChecker),
         response -> processPage(relativeUrlWithoutPaginationParams, responseParser, getPagingTotal, itemExtractor, itemConsumer, limitToTwentyPages, page, stop, loaded,
           response),
         duration -> LOG.debug("Page downloaded in {}ms", duration));
-    } while (!stop.get() && !failsafeCtx.isCancelled());
+    } while (!stop.get() && !cancelChecker.isCanceled());
   }
 
   private static <F, G> void processPage(String baseUrl, CheckedFunction<InputStream, G> responseParser, Function<G, Number> getPagingTotal, Function<G, List<F>> itemExtractor,

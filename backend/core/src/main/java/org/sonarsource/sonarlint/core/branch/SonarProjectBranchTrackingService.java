@@ -19,14 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.branch;
 
-import dev.failsafe.Failsafe;
-import dev.failsafe.Fallback;
-import dev.failsafe.RetryPolicy;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
@@ -34,6 +30,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelChecker;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
@@ -71,29 +68,16 @@ public class SonarProjectBranchTrackingService {
   }
 
   public Optional<String> awaitEffectiveSonarProjectBranch(String configurationScopeId) {
-    var currentThreadOutput = SonarLintLogger.getTargetForCopy();
-    var retryOnCancelPolicy = RetryPolicy.<String>builder()
-      .handle(CancellationException.class)
-      .withMaxRetries(3)
-      .onRetry(e -> {
-        SonarLintLogger.setTarget(currentThreadOutput);
-        LOG.debug("Retrying to compute paths translation for config scope '{}'", configurationScopeId, e);
-      })
-      .build();
-    return Optional.ofNullable(
-      Failsafe.with(Fallback.of((String) null), retryOnCancelPolicy)
-        .onFailure(e -> LOG.error("Error while awaiting the Sonar project branch for configuration scope '" + configurationScopeId + "'", e.getException()))
-        .get(ctx -> {
-          SonarLintLogger.setTarget(currentThreadOutput);
-          return cachedMatchingBranchByConfigScope.get(configurationScopeId);
-        }));
+    return Optional.ofNullable(cachedMatchingBranchByConfigScope.get(configurationScopeId));
   }
 
   private void afterCachedValueRefreshed(String configScopeId, @Nullable String oldValue, @Nullable String newValue) {
     if (!Objects.equals(newValue, oldValue)) {
       LOG.debug("Matched Sonar project branch for configuration scope '{}' changed from '{}' to '{}'", configScopeId, oldValue, newValue);
-      client.didChangeMatchedSonarProjectBranch(new DidChangeMatchedSonarProjectBranchParams(configScopeId, newValue));
-      applicationEventPublisher.publishEvent(new MatchedSonarProjectBranchChangedEvent(configScopeId, newValue));
+      if (newValue != null) {
+        client.didChangeMatchedSonarProjectBranch(new DidChangeMatchedSonarProjectBranchParams(configScopeId, newValue));
+        applicationEventPublisher.publishEvent(new MatchedSonarProjectBranchChangedEvent(configScopeId, newValue));
+      }
     } else {
       LOG.debug("Matched Sonar project branch for configuration scope '{}' is still '{}'", configScopeId, newValue);
     }
@@ -147,7 +131,7 @@ public class SonarProjectBranchTrackingService {
     cachedMatchingBranchByConfigScope.refreshAsync(configScopeId);
   }
 
-  private String matchSonarProjectBranch(String configurationScopeId, SmartCancelableLoadingCache.FutureCancelChecker cancelChecker) {
+  private String matchSonarProjectBranch(String configurationScopeId, SonarLintCancelChecker cancelChecker) {
     LOG.debug("Matching Sonar project branch for configuration scope '{}'", configurationScopeId);
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     if (effectiveBindingOpt.isEmpty()) {
@@ -175,21 +159,18 @@ public class SonarProjectBranchTrackingService {
 
   @CheckForNull
   private String requestClientToMatchSonarProjectBranch(String configurationScopeId, String mainSonarBranchName, Set<String> allSonarBranchesNames,
-    SmartCancelableLoadingCache.FutureCancelChecker cancelChecker) {
+    SonarLintCancelChecker cancelChecker) {
     var matchSonarProjectBranchResponseCompletableFuture = client
       .matchSonarProjectBranch(new MatchSonarProjectBranchParams(configurationScopeId, mainSonarBranchName, allSonarBranchesNames));
     cancelChecker.propagateCancelTo(matchSonarProjectBranchResponseCompletableFuture, true);
     try {
-      return matchSonarProjectBranchResponseCompletableFuture.get().getMatchedSonarProjectBranch();
-    } catch (InterruptedException e) {
-      // Cancel the RPC call if it's still running
-      matchSonarProjectBranchResponseCompletableFuture.cancel(true);
-      LOG.debug("matchSonarProjectBranch interrupted!");
-      Thread.currentThread().interrupt();
-    } catch (ExecutionException e) {
-      LOG.warn("Unable to get matched branch from the client", e);
+      return matchSonarProjectBranchResponseCompletableFuture.join().getMatchedSonarProjectBranch();
+    } catch (CancellationException e) {
+      throw e;
+    } catch (Exception e) {
+      LOG.debug("Error while matching Sonar project branch for configuration scope '{}'", configurationScopeId, e);
+      return null;
     }
-    return null;
   }
 
   @PreDestroy

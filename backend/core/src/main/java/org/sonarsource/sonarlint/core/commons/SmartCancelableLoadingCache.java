@@ -1,22 +1,40 @@
+/*
+ * SonarLint Core - Implementation
+ * Copyright (C) 2016-2023 SonarSource SA
+ * mailto:info AT sonarsource DOT com
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
 package org.sonarsource.sonarlint.core.commons;
 
-import com.github.benmanes.caffeine.cache.AsyncCacheLoader;
-import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
-import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelChecker;
 
 /**
- * Extend {@link com.github.benmanes.caffeine.cache.AsyncLoadingCache} to support cancellation.
+ * A cache with async computation of values, and supporting cancellation.
+ * "Smart" because when a computation is cancelled, it will return to the previous callers the result of the new computation.
  */
 public class SmartCancelableLoadingCache<K, V> implements AutoCloseable {
 
@@ -24,7 +42,91 @@ public class SmartCancelableLoadingCache<K, V> implements AutoCloseable {
 
   private final ExecutorService executorService;
   private final String threadName;
-  private final AsyncLoadingCache<K, V> caffeineCache;
+  private final BiFunction<K, SonarLintCancelChecker, V> valueComputer;
+  private final ConcurrentHashMap<K, ValueAndComputeFutures> cache = new ConcurrentHashMap<>();
+
+  private class ValueAndComputeFutures {
+    private final K key;
+    private CompletableFuture<V> valueFuture = new CompletableFuture<>();
+    private CompletableFuture<V> computeFuture;
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+
+    public ValueAndComputeFutures(K key) {
+      this.key = key;
+      scheduleComputation();
+    }
+
+    private void scheduleComputation() {
+      lock.writeLock().lock();
+      if (computeFuture != null) {
+        computeFuture.cancel(false);
+        computeFuture = null;
+      }
+      // Even if we have canceled the previous computation, the previous valueFuture can still be completed later, so we will create a new one
+      // that will be returned to new callers. We will also try to complete the old valueFuture, in case the cancellation was successful.
+      var oldValueFuture = valueFuture;
+      valueFuture = new CompletableFuture<>();
+
+      var previousValue = oldValueFuture.getNow(null);
+
+      CompletableFuture<SonarLintCancelChecker> start = new CompletableFuture<>();
+      CompletableFuture<V> result = start.thenApplyAsync(cancelChecker -> valueComputer.apply(key, cancelChecker), executorService);
+      start.complete(new SonarLintCancelChecker(result));
+      result.whenCompleteAsync((newValue, error) -> {
+        lock.writeLock().lock();
+        try {
+          computeFuture = null;
+          if (error instanceof CancellationException) {
+            return;
+          }
+          try {
+            if (listener != null) {
+              listener.afterCachedValueRefreshed(key, previousValue, newValue);
+            }
+          } finally {
+            if (error != null) {
+              oldValueFuture.completeExceptionally(error);
+              valueFuture.completeExceptionally(error);
+            } else {
+              oldValueFuture.complete(newValue);
+              valueFuture.complete(newValue);
+            }
+          }
+        } finally {
+          lock.writeLock().unlock();
+        }
+      }, executorService);
+      computeFuture = result;
+      lock.writeLock().unlock();
+    }
+
+
+    public void refresh() {
+      scheduleComputation();
+    }
+
+    public CompletableFuture<V> getValueFuture() {
+      lock.readLock().lock();
+      try {
+        return valueFuture;
+      } finally {
+        lock.readLock().unlock();
+      }
+    }
+
+    public void cancel() {
+      lock.writeLock().lock();
+      if (computeFuture != null) {
+        computeFuture.cancel(false);
+        computeFuture = null;
+      }
+      valueFuture.cancel(false);
+      lock.writeLock().unlock();
+    }
+
+  }
+
+  @Nullable
   private final Listener<K, V> listener;
 
   public interface Listener<K, V> {
@@ -33,109 +135,46 @@ public class SmartCancelableLoadingCache<K, V> implements AutoCloseable {
 
   }
 
-  public SmartCancelableLoadingCache(String threadName, BiFunction<K, FutureCancelChecker, V> valueComputer, Listener<K, V> listener) {
+  public SmartCancelableLoadingCache(String threadName, BiFunction<K, SonarLintCancelChecker, V> valueComputer) {
+    this(threadName, valueComputer, null);
+  }
+  public SmartCancelableLoadingCache(String threadName, BiFunction<K, SonarLintCancelChecker, V> valueComputer, @Nullable Listener<K, V> listener) {
     this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, threadName));
     this.threadName = threadName;
-    this.caffeineCache = Caffeine.newBuilder()
-      .executor(executorService)
-      .buildAsync(new AsyncCacheLoader<>() {
-        @Override
-        public CompletableFuture<? extends V> asyncLoad(K key, Executor executor) throws Exception {
-          return asyncLoadWithFailsafe(key, null, executor);
-        }
-
-        @Override
-        public CompletableFuture<? extends V> asyncReload(K key, V oldValue, Executor executor) throws Exception {
-          return asyncLoadWithFailsafe(key, oldValue, executor);
-        }
-
-        private CompletableFuture<V> asyncLoadWithFailsafe(K key, @Nullable V oldValue, Executor executor) {
-          CompletableFuture<FutureCancelChecker> start = new CompletableFuture<>();
-          CompletableFuture<V> result = start.thenApplyAsync(cancelChecker -> valueComputer.apply(key, cancelChecker), executor);
-          start.complete(new FutureCancelChecker(result));
-          result.whenCompleteAsync((newValue, error) -> {
-            if (error instanceof CancellationException) {
-              return;
-            }
-            listener.afterCachedValueRefreshed(key, oldValue, newValue);
-          }, executorService);
-          return result;
-        }
-      });
+    this.valueComputer = valueComputer;
     this.listener = listener;
   }
 
-  public static class FutureCancelChecker implements CancelChecker {
-
-    private final CompletableFuture<?> future;
-
-    public FutureCancelChecker(CompletableFuture<?> future) {
-      this.future = future;
-    }
-
-    @Override
-    public void checkCanceled() {
-      if (future.isCancelled()) {
-        throw new CancellationException();
-      }
-    }
-
-    public void propagateCancelTo(CompletableFuture<?> downstreamFuture, boolean mayInterruptIfRunning) {
-      future.whenComplete((value, error) -> {
-        if (error instanceof CancellationException || future.isCancelled()) {
-          downstreamFuture.cancel(mayInterruptIfRunning);
-        }
-      });
-    }
-
-    @Override
-    public boolean isCanceled() {
-      return future.isCancelled();
-    }
-
-  }
 
   /**
    * Clear the cached value for this key. Attempt to cancel the computation if it is still running.
+   * Awaiting #get() will throw a {@link CancellationException}.
    */
   public void clear(K key) {
-    invalidate(key);
-  }
-
-  /**
-   * Clear the cached value for this key. Attempt to cancel the ongoing computation if it is still running.
-   */
-  public void invalidate(K key) {
-    CompletableFuture<?> cachedFuture;
-    synchronized (caffeineCache) {
-      cachedFuture = caffeineCache.getIfPresent(key);
-      var oldValue = caffeineCache.synchronous().getIfPresent(key);
-      caffeineCache.synchronous().invalidate(key);
-      listener.afterCachedValueRefreshed(key, oldValue, null);
-    }
-    if (cachedFuture != null) {
-      cachedFuture.cancel(false);
+    var valueAndComputeFutures = cache.remove(key);
+    if (valueAndComputeFutures != null) {
+      valueAndComputeFutures.cancel();
     }
   }
 
   /**
    * Force a new computation for this key. Ensure {@link Listener#afterCachedValueRefreshed(Object, Object, Object)} is called.
+   * Awaiting #get() will receive the newly computed value
    */
   public void refreshAsync(K key) {
-    CompletableFuture<?> previousFuture;
-    synchronized (caffeineCache) {
-      previousFuture = caffeineCache.getIfPresent(key);
-      caffeineCache.synchronous().refresh(key);
+    var valueAndComputeFutures = cache.get(key);
+    if (valueAndComputeFutures == null) {
+      cache.computeIfAbsent(key, ValueAndComputeFutures::new);
+    } else {
+      valueAndComputeFutures.refresh();
     }
-    if (previousFuture != null) {
-      previousFuture.cancel(false);
-    }
-
   }
 
   public V get(K key) {
-    return caffeineCache.synchronous().get(key);
+    var resultFuture = cache.computeIfAbsent(key, ValueAndComputeFutures::new);
+    return resultFuture.getValueFuture().join();
   }
+
 
   @Override
   public void close() {

@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.http;
 
-import dev.failsafe.ExecutionContext;
-import dev.failsafe.function.ContextualSupplier;
 import java.io.Closeable;
 import java.io.InputStream;
 import java.util.concurrent.CompletableFuture;

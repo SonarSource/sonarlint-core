@@ -19,13 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.component;
 
-import dev.failsafe.ExecutionContext;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelChecker;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Components;
@@ -39,7 +39,7 @@ public class ComponentApi {
     this.helper = helper;
   }
 
-  public List<String> getAllFileKeys(String projectKey, ExecutionContext<?> failsafeCtx) {
+  public List<String> getAllFileKeys(String projectKey, SonarLintCancelChecker cancelChecker) {
     var path = buildAllFileKeysPath(projectKey);
     List<String> files = new ArrayList<>();
 
@@ -47,7 +47,7 @@ public class ComponentApi {
       Components.TreeWsResponse::parseFrom,
       r -> r.getPaging().getTotal(),
       Components.TreeWsResponse::getComponentsList,
-      component -> files.add(component.getKey()), false, failsafeCtx);
+      component -> files.add(component.getKey()), false, cancelChecker);
     return files;
   }
 

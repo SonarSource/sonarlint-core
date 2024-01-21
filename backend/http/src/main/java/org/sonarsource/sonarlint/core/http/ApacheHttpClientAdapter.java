@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.http;
 
-import dev.failsafe.ExecutionContext;
-import dev.failsafe.function.ContextualSupplier;
 import java.net.URISyntaxException;
 import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;

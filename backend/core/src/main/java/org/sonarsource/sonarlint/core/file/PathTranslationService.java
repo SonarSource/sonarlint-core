@@ -19,21 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.file;
 
-import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.google.common.util.concurrent.MoreExecutors;
-import dev.failsafe.ExecutionContext;
-import dev.failsafe.Failsafe;
-import dev.failsafe.Fallback;
-import dev.failsafe.RetryPolicy;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.CheckForNull;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
@@ -41,7 +31,9 @@ import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.branch.MatchedSonarProjectBranchChangedEvent;
+import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelChecker;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
@@ -66,19 +58,9 @@ public class PathTranslationService {
   private final ServerApiProvider serverApiProvider;
   private final ConfigurationRepository configurationRepository;
 
-  private final ExecutorService executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-path-translation"));
-
-  private final AsyncLoadingCache<String, FilePathTranslation> cachedPathsTranslationByConfigScope = Caffeine.newBuilder()
-    .executor(executorService)
-    .buildAsync((key, executor) -> {
-      var currentThreadOutput = SonarLintLogger.getTargetForCopy();
-      return Failsafe.none().with(executor).getAsync(ctx -> {
-        SonarLintLogger.setTarget(currentThreadOutput);
-        return computePaths(key, ctx);
-      });
+  private final SmartCancelableLoadingCache<String, FilePathTranslation> cachedPathsTranslationByConfigScope =
+    new SmartCancelableLoadingCache<>("sonarlint-path-translation", this::computePaths, (key, oldValue, newValue) -> {
     });
-
-  private static final String UNABLE_TO_COMPUTE_PATHS = "Unable to compute paths translation";
 
   public PathTranslationService(ClientFileSystemService clientFs, ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository) {
     this.clientFs = clientFs;
@@ -87,20 +69,22 @@ public class PathTranslationService {
   }
 
   @CheckForNull
-  private FilePathTranslation computePaths(String configScopeId, ExecutionContext<FilePathTranslation> ctx) {
+  private FilePathTranslation computePaths(String configScopeId, SonarLintCancelChecker cancelChecker) {
     LOG.debug("Computing paths translation for config scope '{}'...", configScopeId);
     var fileMatcher = new FileTreeMatcher();
     var boundScope = configurationRepository.getBoundScope(configScopeId);
     if (boundScope == null) {
-      throw new IllegalStateException("Config scope '" + configScopeId + "' does not exist or is not bound");
+      LOG.debug("Config scope '{}' does not exist or is not bound", configScopeId);
+      return null;
     }
     var serverApiOpt = serverApiProvider.getServerApi(boundScope.getConnectionId());
     if (serverApiOpt.isEmpty()) {
-      throw new IllegalStateException("Connection '" + boundScope.getConnectionId() + "' does not exist");
+      LOG.debug("Connection '{}' does not exist", boundScope.getConnectionId());
+      return null;
     }
     List<Path> serverFilePaths;
     try {
-      serverFilePaths = listAllFilePathsFromServer(serverApiOpt.get(), boundScope.getSonarProjectKey(), ctx);
+      serverFilePaths = listAllFilePathsFromServer(serverApiOpt.get(), boundScope.getSonarProjectKey(), cancelChecker);
     } catch (CancellationException e) {
       throw e;
     } catch (Exception e) {
@@ -123,8 +107,8 @@ public class PathTranslationService {
     return new FilePathTranslation(match.idePrefix(), match.sqPrefix());
   }
 
-  private static List<Path> listAllFilePathsFromServer(ServerApi serverApi, String projectKey, ExecutionContext<FilePathTranslation> ctx) {
-    return serverApi.component().getAllFileKeys(projectKey, ctx).stream()
+  private static List<Path> listAllFilePathsFromServer(ServerApi serverApi, String projectKey, SonarLintCancelChecker cancelChecker) {
+    return serverApi.component().getAllFileKeys(projectKey, cancelChecker).stream()
       .map(fileKey -> StringUtils.substringAfterLast(fileKey, ":"))
       .map(Paths::get)
       .collect(toList());
@@ -132,52 +116,27 @@ public class PathTranslationService {
 
   @EventListener
   public void onConfigurationScopeRemoved(ConfigurationScopeRemovedEvent event) {
-    cancelAndInvalidate(event.getRemovedConfigurationScopeId());
+    cachedPathsTranslationByConfigScope.refreshAsync(event.getRemovedConfigurationScopeId());
   }
 
   @EventListener
   public void onBindingChanged(BindingConfigChangedEvent event) {
     var configScopeId = event.getConfigScopeId();
-    cancelAndInvalidate(configScopeId);
+    cachedPathsTranslationByConfigScope.refreshAsync(configScopeId);
   }
 
   @EventListener
   public void onBranchChanged(MatchedSonarProjectBranchChangedEvent event) {
     var configScopeId = event.getConfigurationScopeId();
-    cancelAndInvalidate(configScopeId);
-  }
-
-  private void cancelAndInvalidate(String configScopeId) {
-    var cachedFuture = cachedPathsTranslationByConfigScope.getIfPresent(configScopeId);
-    cachedPathsTranslationByConfigScope.synchronous().invalidate(configScopeId);
-    if (cachedFuture != null) {
-      cachedFuture.cancel(false);
-    }
+    cachedPathsTranslationByConfigScope.refreshAsync(configScopeId);
   }
 
   public Optional<FilePathTranslation> getOrComputePathTranslation(String configurationScopeId) {
-    var currentThreadOutput = SonarLintLogger.getTargetForCopy();
-    var retryOnCancelPolicy = RetryPolicy.<FilePathTranslation>builder()
-      .handle(CancellationException.class)
-      .withMaxRetries(3)
-      .onRetry(e -> {
-        SonarLintLogger.setTarget(currentThreadOutput);
-        LOG.debug("Retrying to compute paths translation for config scope '{}'", configurationScopeId, e);
-      })
-      .build();
-    return Optional.ofNullable(
-      Failsafe.with(Fallback.of((FilePathTranslation) null), retryOnCancelPolicy)
-        .onFailure(e -> LOG.error(UNABLE_TO_COMPUTE_PATHS, e.getException()))
-        .getStageAsync(ctx -> {
-          SonarLintLogger.setTarget(currentThreadOutput);
-          return cachedPathsTranslationByConfigScope.get(configurationScopeId);
-        }).join());
+    return Optional.ofNullable(cachedPathsTranslationByConfigScope.get(configurationScopeId));
   }
 
   @PreDestroy
   public void shutdown() {
-    if (!MoreExecutors.shutdownAndAwaitTermination(executorService, 1, TimeUnit.SECONDS)) {
-      LOG.warn("Unable to stop path translation executor service in a timely manner");
-    }
+    cachedPathsTranslationByConfigScope.close();
   }
 }
