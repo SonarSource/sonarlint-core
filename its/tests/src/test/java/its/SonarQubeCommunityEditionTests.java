@@ -37,6 +37,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -74,13 +75,13 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
 import static its.utils.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.CODE_SMELL;
 
 class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
   private static final String CONNECTION_ID = "orchestrator";
-  private static final String CONFIG_SCOPE_ID = "my-ide-project-name";
 
   @RegisterExtension
   static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
@@ -136,11 +137,6 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
   @BeforeEach
   void clearState() {
     didSynchronizeConfigurationScopes.clear();
-  }
-
-  @AfterEach
-  void removeConfigScope() {
-    backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(CONFIG_SCOPE_ID));
   }
 
   @AfterAll
@@ -203,15 +199,17 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
     @Test
     void should_match_server_issues_of_enabled_languages() throws ExecutionException, InterruptedException {
+      var configScopeId = "should_match_server_issues_of_enabled_languages";
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
-        List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "sample-language-mix", new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY_LANGUAGE_MIX,
+        List.of(new ConfigurationScopeDto(configScopeId, null, true, "sample-language-mix", new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY_LANGUAGE_MIX,
           true)))));
+      waitForSync(configScopeId);
 
       var javaClientTrackedFindingDto = new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(14, 4, 14, 14, "hashedHash"),
         null, "java:S106", "Replace this use of System.out by a logger.");
       var pythonClientTrackedFindingDto = new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(2, 4, 2, 9, "hashedHash"),
         null, "python:PrintStatementUsage", "Replace print statement by built-in function.");
-      var trackWithServerIssuesParams = new TrackWithServerIssuesParams(CONFIG_SCOPE_ID, Map.of(Path.of("src/main/java/foo/Foo.java"),
+      var trackWithServerIssuesParams = new TrackWithServerIssuesParams(configScopeId, Map.of(Path.of("src/main/java/foo/Foo.java"),
         List.of(javaClientTrackedFindingDto), Path.of("src/main/java/foo/main.py"), List.of(pythonClientTrackedFindingDto)), true);
       var issuesByIdeRelativePath = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByIdeRelativePath();
 
@@ -229,6 +227,10 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
         assertThat(fooJavaIssues.get(0).isRight()).isTrue();
       }
     }
+  }
+
+  private static void waitForSync(String configScopeId) {
+    await().atMost(1, TimeUnit.MINUTES).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(configScopeId));
   }
 
   //TODO Possibly add tests for a method which will replace SonarLintEngine.getPluginDetails()

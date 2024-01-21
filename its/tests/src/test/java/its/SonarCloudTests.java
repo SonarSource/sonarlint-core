@@ -378,26 +378,27 @@ class SonarCloudTests extends AbstractConnectedTests {
   @Test
   @Disabled("Reaction to settings changes is not fully implemented in the new backend, see SLCORE-650")
   void analysisUseConfiguration() {
+    var configScopeId = "analysisUseConfiguration";
     var issueListener = new SaveIssueListener();
-    openUnboundConfigurationScope("analysisUseConfiguration");
+    openUnboundConfigurationScope(configScopeId);
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA,
         "src/main/java/foo/Foo.java",
         "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
-      issueListener, null, null, "analysisUseConfiguration");
+      issueListener, null, null, configScopeId);
     assertThat(issueListener.getIssues()).hasSize(2);
 
     try {
       // Override default file suffixes in project props so that input file is not considered as a Java file
       setSettingsMultiValue(projectKey(PROJECT_KEY_JAVA), SONAR_JAVA_FILE_SUFFIXES, ".foo");
 
-      backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams("analysisUseConfiguration", new BindingConfigurationDto(CONNECTION_ID, projectKey(PROJECT_KEY_JAVA), true)));
-      await().atMost(1, TimeUnit.MINUTES).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains("analysisUseConfiguration"));
+      backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(CONNECTION_ID, projectKey(PROJECT_KEY_JAVA), true)));
+      waitForSync(configScopeId);
 
       issueListener.clear();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA,
           "src/main/java/foo/Foo.java",
           "sonar.java.binaries", new File("projects/sample-java/target/classes").getAbsolutePath()),
-        issueListener, null, null, "analysisUseConfiguration");
+        issueListener, null, null, configScopeId);
       assertThat(issueListener.getIssues()).isEmpty();
     } finally {
       adminWsClient.settings().reset(new ResetRequest()
@@ -548,13 +549,14 @@ class SonarCloudTests extends AbstractConnectedTests {
 
     @Test
     void reportHotspots() {
+      var configScopeId = "reportHotspots";
       var issueListener = new SaveIssueListener();
-      openBoundConfigurationScope("reportHotspots", PROJECT_KEY_JAVA_HOTSPOT);
-      await().atMost(1, TimeUnit.MINUTES).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains("reportHotspots"));
+      openBoundConfigurationScope(configScopeId, PROJECT_KEY_JAVA_HOTSPOT);
+      waitForSync(configScopeId);
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_HOTSPOT,
           "src/main/java/foo/Foo.java",
           "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath()),
-        issueListener, null, null, "reportHotspots");
+        issueListener, null, null, configScopeId);
 
       assertThat(issueListener.getIssues()).hasSize(1)
         .extracting(RawIssue::getRuleKey, RawIssue::getType)
@@ -573,8 +575,9 @@ class SonarCloudTests extends AbstractConnectedTests {
 
     @Test
     void shouldMatchServerSecurityHotspots() throws ExecutionException, InterruptedException {
-      openBoundConfigurationScope("shouldMatchServerSecurityHotspots", PROJECT_KEY_JAVA_HOTSPOT);
-      await().atMost(1, TimeUnit.MINUTES).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains("shouldMatchServerSecurityHotspots"));
+      var configScopeId = "shouldMatchServerSecurityHotspots";
+      openBoundConfigurationScope(configScopeId, PROJECT_KEY_JAVA_HOTSPOT);
+      waitForSync(configScopeId);
 
       var textRangeWithHash = new TextRangeWithHashDto(9, 4, 9, 45, "qwer");
       var clientTrackedHotspotsByServerRelativePath = Map.of(
@@ -582,7 +585,7 @@ class SonarCloudTests extends AbstractConnectedTests {
         List.of(new ClientTrackedFindingDto(null, null, textRangeWithHash, null, "java:S4792", "Make sure that this logger's configuration is safe.")),
         Path.of("src/main/java/bar/Bar.java"), List.of(new ClientTrackedFindingDto(null, null, textRangeWithHash, null, "java:S1234", "Some other rule")));
       var matchWithServerSecurityHotspotsResponse = backend.getSecurityHotspotMatchingService()
-        .matchWithServerSecurityHotspots(new MatchWithServerSecurityHotspotsParams("shouldMatchServerSecurityHotspots", clientTrackedHotspotsByServerRelativePath, true)).get();
+        .matchWithServerSecurityHotspots(new MatchWithServerSecurityHotspotsParams(configScopeId, clientTrackedHotspotsByServerRelativePath, true)).get();
       assertThat(matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByIdeRelativePath()).hasSize(2);
       var fooSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByIdeRelativePath().get(Path.of("src/main/java/foo/Foo.java"));
       assertThat(fooSecurityHotspots).hasSize(1);
