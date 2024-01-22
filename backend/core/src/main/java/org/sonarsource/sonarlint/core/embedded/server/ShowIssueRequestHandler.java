@@ -23,6 +23,7 @@ import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -116,7 +117,7 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
         var codeSnippet = tryFetchCodeSnippet(connectionId, locationComponent.map(Issues.Component::getKey).orElse(""), locationTextRange, branch, pullRequest);
         var locationTextRangeDto = new TextRangeDto(locationTextRange.getStartLine(), locationTextRange.getStartOffset(),
           locationTextRange.getEndLine(), locationTextRange.getEndOffset());
-        return new LocationDto(locationTextRangeDto, location.getMsg(), filePath, codeSnippet.orElse(""));
+        return new LocationDto(locationTextRangeDto, location.getMsg(), translation.serverToIdePath(Paths.get(filePath)), codeSnippet.orElse(""));
       }).collect(Collectors.toList());
       return new FlowDto(locations);
     }).collect(Collectors.toList());
