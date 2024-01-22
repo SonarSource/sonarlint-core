@@ -57,11 +57,9 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 
 import static java.lang.String.join;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singlePlural;
 
@@ -192,7 +190,8 @@ public class BindingSuggestionProviderImpl implements BindingService {
     return suggestions;
   }
 
-  private List<BindingSuggestionDto> suggestBindingForEligibleScope(String checkedConfigScopeId, Set<String> candidateConnectionIds, @Nullable String projectKey) throws InterruptedException {
+  private List<BindingSuggestionDto> suggestBindingForEligibleScope(String checkedConfigScopeId, Set<String> candidateConnectionIds, @Nullable String projectKey)
+          throws InterruptedException {
     var cluesAndConnections = bindingClueProvider.collectBindingCluesWithConnections(checkedConfigScopeId, candidateConnectionIds, projectKey);
 
     List<BindingSuggestionDto> suggestions = new ArrayList<>();

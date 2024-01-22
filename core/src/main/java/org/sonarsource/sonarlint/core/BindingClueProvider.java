@@ -64,7 +64,8 @@ public class BindingClueProvider {
     this.client = client;
   }
 
-  public List<BindingClueWithConnections> collectBindingCluesWithConnections(String configScopeId, Set<String> connectionIds, @Nullable String projectKey) throws InterruptedException {
+  public List<BindingClueWithConnections> collectBindingCluesWithConnections(String configScopeId, Set<String> connectionIds, @Nullable String projectKey)
+          throws InterruptedException {
     var bindingClues = collectBindingClues(configScopeId);
     if (projectKey != null && connectionIds.size() == 1) {
       for (var bindingClue : bindingClues) {

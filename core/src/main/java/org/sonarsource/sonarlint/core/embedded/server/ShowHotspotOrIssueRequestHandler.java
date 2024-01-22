@@ -69,7 +69,7 @@ public class ShowHotspotOrIssueRequestHandler {
   }
 
   @Nullable
-  private String findSingleConfigScopeIdFromBindingSuggestions(Map<String, List<BindingSuggestionDto>> suggestions, String projectKey) {
+  private static String findSingleConfigScopeIdFromBindingSuggestions(Map<String, List<BindingSuggestionDto>> suggestions, String projectKey) {
     String resultKey = null;
 
     for (var entry: suggestions.entrySet()) {
