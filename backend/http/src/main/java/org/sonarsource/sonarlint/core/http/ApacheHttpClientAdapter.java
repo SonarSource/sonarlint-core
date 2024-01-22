@@ -132,6 +132,11 @@ class ApacheHttpClientAdapter implements HttpClient {
           }
           if (connected) {
             messageConsumer.accept(src.toString());
+          } else {
+            var possiblyErrorMessage = src.toString();
+            if (!possiblyErrorMessage.isEmpty()) {
+              LOG.debug("Received event-stream data while not connected: " + possiblyErrorMessage);
+            }
           }
         }
 
