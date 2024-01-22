@@ -35,6 +35,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -140,7 +141,7 @@ public class BindingSuggestionProviderImpl implements BindingService {
   @Override
   public CompletableFuture<GetBindingSuggestionsResponse> getBindingSuggestions(GetBindingSuggestionParams params) {
     return CompletableFuture.supplyAsync(() -> {
-      var suggestions = computeBindingSuggestions(Set.of(params.getConfigScopeId()), Set.of(params.getConnectionId()));
+      var suggestions = computeBindingSuggestions(Set.of(params.getConfigScopeId()), Set.of(params.getConnectionId()), null);
       return new GetBindingSuggestionsResponse(suggestions);
     }, executorService);
   }
@@ -156,14 +157,14 @@ public class BindingSuggestionProviderImpl implements BindingService {
   }
 
   private void computeAndNotifyBindingSuggestions(Set<String> configScopeIds, Set<String> candidateConnectionIds) {
-    Map<String, List<BindingSuggestionDto>> suggestions = computeBindingSuggestions(configScopeIds, candidateConnectionIds);
+    Map<String, List<BindingSuggestionDto>> suggestions = computeBindingSuggestions(configScopeIds, candidateConnectionIds, null);
     if (!suggestions.isEmpty()) {
       client.suggestBinding(new SuggestBindingParams(suggestions));
     }
   }
 
   @NonNull
-  private Map<String, List<BindingSuggestionDto>> computeBindingSuggestions(Set<String> configScopeIds, Set<String> candidateConnectionIds) {
+  public Map<String, List<BindingSuggestionDto>> computeBindingSuggestions(Set<String> configScopeIds, Set<String> candidateConnectionIds, @Nullable String projectKey) {
     var eligibleConfigScopesForBindingSuggestion = new HashSet<String>();
     for (var configScopeId : configScopeIds) {
       if (isScopeEligibleForBindingSuggestion(configScopeId)) {
@@ -179,7 +180,7 @@ public class BindingSuggestionProviderImpl implements BindingService {
 
     try {
       for (var configScopeId : eligibleConfigScopesForBindingSuggestion) {
-        var scopeSuggestions = suggestBindingForEligibleScope(configScopeId, candidateConnectionIds);
+        var scopeSuggestions = suggestBindingForEligibleScope(configScopeId, candidateConnectionIds, projectKey);
         LOG.debug("Found {} {} for configuration scope '{}'", scopeSuggestions.size(), singlePlural(scopeSuggestions.size(), "suggestion", "suggestions"), configScopeId);
         suggestions.put(configScopeId, scopeSuggestions);
       }
@@ -191,43 +192,16 @@ public class BindingSuggestionProviderImpl implements BindingService {
     return suggestions;
   }
 
-  public String computeBindingSuggestionsForProjectKey(Set<String> configScopeIds, String connectionId, String projectKey) {
-    var eligibleConfigScopesForBindingSuggestion = new HashSet<String>();
-    for (var configScopeId : configScopeIds) {
-      if (isScopeEligibleForBindingSuggestion(configScopeId)) {
-        eligibleConfigScopesForBindingSuggestion.add(configScopeId);
-      }
-    }
-    if (eligibleConfigScopesForBindingSuggestion.isEmpty()) {
-      return null;
-    }
-
-    var results = new ArrayList<String>();
-
-    try {
-      for (var configScopeId : eligibleConfigScopesForBindingSuggestion) {
-        var found = suggestBindingForEligibleScopeAndProjectKey(configScopeId, connectionId, projectKey);
-        if (found) {
-          LOG.debug("Found 1 suggestion for configuration scope '{}'", configScopeId);
-          results.add(configScopeId);
-        }
-        LOG.debug("Found 0 suggestion for configuration scope '{}'", configScopeId);
-      }
-    } catch (InterruptedException e) {
-      LOG.debug("Binding suggestion computation was interrupted", e);
-      Thread.currentThread().interrupt();
-    }
-
-    return results.size() == 1 ? results.get(0) : null;
-  }
-
-  private List<BindingSuggestionDto> suggestBindingForEligibleScope(String checkedConfigScopeId, Set<String> candidateConnectionIds) throws InterruptedException {
-    var cluesAndConnections = bindingClueProvider.collectBindingCluesWithConnections(checkedConfigScopeId, candidateConnectionIds);
+  private List<BindingSuggestionDto> suggestBindingForEligibleScope(String checkedConfigScopeId, Set<String> candidateConnectionIds, @Nullable String projectKey) throws InterruptedException {
+    var cluesAndConnections = bindingClueProvider.collectBindingCluesWithConnections(checkedConfigScopeId, candidateConnectionIds, projectKey);
 
     List<BindingSuggestionDto> suggestions = new ArrayList<>();
     var cluesWithProjectKey = cluesAndConnections.stream().filter(c -> c.getBindingClue().getSonarProjectKey() != null).collect(toList());
     for (var bindingClueWithConnections : cluesWithProjectKey) {
       var sonarProjectKey = requireNonNull(bindingClueWithConnections.getBindingClue().getSonarProjectKey());
+      if (sonarProjectKey.equals(projectKey)) {
+        return suggestions;
+      }
       for (var connectionId : bindingClueWithConnections.getConnectionIds()) {
         sonarProjectsCache
           .getSonarProject(connectionId, sonarProjectKey)
@@ -239,79 +213,30 @@ public class BindingSuggestionProviderImpl implements BindingService {
       if (isNotBlank(configScopeName)) {
         var cluesWithoutProjectKey = cluesAndConnections.stream().filter(c -> c.getBindingClue().getSonarProjectKey() == null).collect(toList());
         for (var bindingClueWithConnections : cluesWithoutProjectKey) {
-          searchGoodMatchInConnections(suggestions, configScopeName, bindingClueWithConnections.getConnectionIds());
+          searchGoodMatchInConnections(suggestions, configScopeName, bindingClueWithConnections.getConnectionIds(), projectKey);
         }
         if (cluesWithoutProjectKey.isEmpty()) {
-          searchGoodMatchInConnections(suggestions, configScopeName, candidateConnectionIds);
+          searchGoodMatchInConnections(suggestions, configScopeName, candidateConnectionIds, projectKey);
         }
       }
     }
     return suggestions;
   }
 
-  private boolean suggestBindingForEligibleScopeAndProjectKey(String checkedConfigScopeId, String connectionId, String projectKey) throws InterruptedException {
-    var cluesAndConnection = bindingClueProvider.collectBindingCluesWithConnectionAndProjectKey(checkedConfigScopeId, connectionId, projectKey);
-
-    List<BindingSuggestionDto> suggestions = new ArrayList<>();
-    var cluesWithProjectKey = cluesAndConnection.stream().filter(c -> c.getBindingClue().getSonarProjectKey() != null).collect(toSet());
-    for (var bindingClueWithConnections : cluesWithProjectKey) {
-      var sonarProjectKey = requireNonNull(bindingClueWithConnections.getBindingClue().getSonarProjectKey());
-      if (sonarProjectKey.equals(projectKey)) {
-        return true;
-      }
-      for (var cId : bindingClueWithConnections.getConnectionIds()) {
-        sonarProjectsCache
-          .getSonarProject(cId, sonarProjectKey)
-          .ifPresent(serverProject -> suggestions.add(new BindingSuggestionDto(cId, sonarProjectKey, serverProject.getName())));
-      }
-    }
-
-    if (suggestions.isEmpty()) {
-      var configScopeName = Optional.ofNullable(configRepository.getConfigurationScope(checkedConfigScopeId)).map(ConfigurationScope::getName).orElse(null);
-      if (isNotBlank(configScopeName)) {
-        searchGoodMatchInConnectionWithProjectKey(suggestions, configScopeName, connectionId, projectKey);
-      }
-    }
-
-    // Probably very wrong
-    return suggestions.stream().anyMatch(c -> c.getSonarProjectKey() != null && c.getSonarProjectKey().equals(projectKey));
-  }
-
-  private void searchGoodMatchInConnections(List<BindingSuggestionDto> suggestions, String configScopeName, Set<String> connectionIdsToSearch) {
+  private void searchGoodMatchInConnections(List<BindingSuggestionDto> suggestions, String configScopeName, Set<String> connectionIdsToSearch, @Nullable String projectKey) {
     for (var connectionId : connectionIdsToSearch) {
-      searchGoodMatchInConnection(suggestions, configScopeName, connectionId);
+      searchGoodMatchInConnection(suggestions, configScopeName, connectionId, projectKey);
     }
   }
 
-  private void searchGoodMatchInConnectionWithProjectKey(List<BindingSuggestionDto> suggestions, String configScopeName, String connectionIdToSearch, String projectKey) {
-    searchGoodMatchWithProjectKey(suggestions, configScopeName, connectionIdToSearch, projectKey);
-  }
-
-  private void searchGoodMatchInConnection(List<BindingSuggestionDto> suggestions, String configScopeName, String connectionId) {
+  private void searchGoodMatchInConnection(List<BindingSuggestionDto> suggestions, String configScopeName, String connectionId, @Nullable String projectKey) {
     LOG.debug("Attempt to find a good match for '{}' on connection '{}'...", configScopeName, connectionId);
-    var index = sonarProjectsCache.getTextSearchIndex(connectionId);
+    var index = sonarProjectsCache.getTextSearchIndex(connectionId, projectKey);
     var searchResult = index.search(configScopeName);
     if (!searchResult.isEmpty()) {
       Double bestScore = Double.MIN_VALUE;
       for (var serverProjectScoreEntry : searchResult.entrySet()) {
         if (serverProjectScoreEntry.getValue() < bestScore) {
-          break;
-        }
-        bestScore = serverProjectScoreEntry.getValue();
-        suggestions.add(new BindingSuggestionDto(connectionId, serverProjectScoreEntry.getKey().getKey(), serverProjectScoreEntry.getKey().getName()));
-      }
-      LOG.debug("Best score = {}", String.format(Locale.ENGLISH, "%,.2f", bestScore));
-    }
-  }
-
-  private void searchGoodMatchWithProjectKey(List<BindingSuggestionDto> suggestions, String configScopeName, String connectionId, String projectKey) {
-    LOG.debug("Attempt to find a good match for '{}' on connection '{}'...", configScopeName, connectionId);
-    var index = sonarProjectsCache.getTextSearchIndexWithProjectKey(connectionId, projectKey);
-    var searchResult = index.search(configScopeName);
-    if (!searchResult.isEmpty()) {
-      Double bestScore = 0.0;
-      for (var serverProjectScoreEntry : searchResult.entrySet()) {
-        if (serverProjectScoreEntry.getValue() <= bestScore) {
           break;
         }
         bestScore = serverProjectScoreEntry.getValue();

@@ -174,11 +174,11 @@ class SonarProjectsCacheTests {
       .thenReturn(List.of(PROJECT_1, PROJECT_2))
       .thenThrow(new AssertionError("Should only be called once"));
 
-    var searchIndex1 = underTest.getTextSearchIndex(SQ_1);
+    var searchIndex1 = underTest.getTextSearchIndex(SQ_1, null);
 
     assertThat(searchIndex1.size()).isEqualTo(2);
 
-    var searchIndex2 = underTest.getTextSearchIndex(SQ_1);
+    var searchIndex2 = underTest.getTextSearchIndex(SQ_1, null);
 
     assertThat(searchIndex2.size()).isEqualTo(2);
 
@@ -191,11 +191,11 @@ class SonarProjectsCacheTests {
       .thenReturn(List.of())
       .thenThrow(new AssertionError("Should only be called once"));
 
-    var searchIndex1 = underTest.getTextSearchIndex(SQ_1);
+    var searchIndex1 = underTest.getTextSearchIndex(SQ_1, null);
 
     assertThat(searchIndex1.isEmpty()).isTrue();
 
-    var searchIndex2 = underTest.getTextSearchIndex(SQ_1);
+    var searchIndex2 = underTest.getTextSearchIndex(SQ_1, null);
 
     assertThat(searchIndex1.isEmpty()).isTrue();
 
@@ -208,11 +208,11 @@ class SonarProjectsCacheTests {
       .thenThrow(new RuntimeException("Unable to fetch projects"))
       .thenReturn(List.of(PROJECT_1, PROJECT_2));
 
-    var searchIndex1 = underTest.getTextSearchIndex(SQ_1);
+    var searchIndex1 = underTest.getTextSearchIndex(SQ_1, null);
 
     assertThat(searchIndex1.isEmpty()).isTrue();
 
-    var searchIndex2 = underTest.getTextSearchIndex(SQ_1);
+    var searchIndex2 = underTest.getTextSearchIndex(SQ_1, null);
 
     assertThat(searchIndex1.isEmpty()).isTrue();
 

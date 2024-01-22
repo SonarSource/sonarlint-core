@@ -19,10 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.embedded.server;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.BindingSuggestionProviderImpl;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
+import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
@@ -59,9 +62,27 @@ public class ShowHotspotOrIssueRequestHandler {
   }
 
   CompletableFuture<NewBinding> assistBinding(Set<String> scopeIds, String connectionId, String projectKey) {
-    var configScopeId = bindingSuggestionProvider.computeBindingSuggestionsForProjectKey(scopeIds, connectionId, projectKey);
-    return client.assistBinding(new AssistBindingParams(connectionId, projectKey, configScopeId))
+    var suggestions = bindingSuggestionProvider.computeBindingSuggestions(scopeIds, Set.of(connectionId), projectKey);
+    var configScopeIdSuggested = findSingleConfigScopeIdFromBindingSuggestions(suggestions, projectKey);
+    return client.assistBinding(new AssistBindingParams(connectionId, projectKey, configScopeIdSuggested))
       .thenApply(response -> new NewBinding(connectionId, response.getConfigurationScopeId()));
+  }
+
+  @Nullable
+  private String findSingleConfigScopeIdFromBindingSuggestions(Map<String, List<BindingSuggestionDto>> suggestions, String projectKey) {
+    String resultKey = null;
+
+    for (var entry: suggestions.entrySet()) {
+      if (entry.getValue().stream().anyMatch(dto -> projectKey.equals(dto.getSonarProjectKey()))) {
+        if (resultKey == null) {
+          resultKey = entry.getKey();
+        } else {
+          return null;
+        }
+      }
+    }
+
+    return resultKey;
   }
 
   static class NewBinding {

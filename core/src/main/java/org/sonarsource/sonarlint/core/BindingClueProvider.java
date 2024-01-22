@@ -64,8 +64,16 @@ public class BindingClueProvider {
     this.client = client;
   }
 
-  public List<BindingClueWithConnections> collectBindingCluesWithConnections(String configScopeId, Set<String> connectionIds) throws InterruptedException {
+  public List<BindingClueWithConnections> collectBindingCluesWithConnections(String configScopeId, Set<String> connectionIds, @Nullable String projectKey) throws InterruptedException {
     var bindingClues = collectBindingClues(configScopeId);
+    if (projectKey != null && connectionIds.size() == 1) {
+      for (var bindingClue : bindingClues) {
+        var sonarProjectKey = bindingClue.getSonarProjectKey();
+        if (sonarProjectKey != null && sonarProjectKey.equals(projectKey)) {
+          return List.of(new BindingClueWithConnections(bindingClue, connectionIds));
+        }
+      }
+    }
     return matchConnections(bindingClues, connectionIds);
   }
 

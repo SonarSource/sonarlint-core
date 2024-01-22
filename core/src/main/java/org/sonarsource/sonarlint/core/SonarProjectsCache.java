@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.client.api.util.TextSearchIndex;
@@ -117,13 +118,18 @@ public class SonarProjectsCache {
     }
   }
 
-  public TextSearchIndex<ServerProject> getTextSearchIndex(String connectionId) {
+  public TextSearchIndex<ServerProject> getTextSearchIndex(String connectionId, @Nullable String projectKey) {
     try {
       return textSearchIndexCache.get(connectionId, () -> {
         LOG.debug("Load projects from connection '{}'...", connectionId);
         List<ServerProject> projects;
         try {
-          projects = serverApiProvider.getServerApi(connectionId).map(s -> s.component().getAllProjects(new ProgressMonitor(null))).orElse(List.of());
+          if (projectKey != null) {
+            var optProject = serverApiProvider.getServerApi(connectionId).map(s -> s.component().getProject(projectKey)).orElseThrow(() -> new IllegalStateException("Project not found"));
+            projects = optProject.map(List::of).orElseGet(List::of);
+          } else {
+            projects = serverApiProvider.getServerApi(connectionId).map(s -> s.component().getAllProjects(new ProgressMonitor(null))).orElse(List.of());
+          }
         } catch (Exception e) {
           LOG.error("Error while querying projects from connection '{}'", connectionId, e);
           return new TextSearchIndex<>();
