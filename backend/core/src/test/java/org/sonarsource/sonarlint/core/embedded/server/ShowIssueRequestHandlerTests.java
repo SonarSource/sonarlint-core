@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.embedded.server;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 import org.apache.hc.core5.http.message.BasicClassicHttpRequest;
@@ -62,10 +63,10 @@ class ShowIssueRequestHandlerTests {
     var issueKey = "issueKey";
     var issueCreationDate = "2023-05-13T17:55:39+0200";
     var issueMessage = "issue message";
-    var issuePath = "/home/file.java";
+    var issuePath = Paths.get("home/file.java");
     var issueRuleKey = "javasecurity:S3649";
-    var flowLocationPath_1 = "/home/file_1.java";
-    var flowLocationPath_2 = "/home/file_2.java";
+    var flowLocationPath_1 = "home/file_1.java";
+    var flowLocationPath_2 = "home/file_2.java";
     var issueTextRange = Common.TextRange.newBuilder().setStartLine(1).setEndLine(2).setStartOffset(3).setEndOffset(4).build();
     var locationTextRange_1 = Common.TextRange.newBuilder().setStartLine(5).setEndLine(5).setStartOffset(10).setEndOffset(20).build();
     var locationTextRange_2 = Common.TextRange.newBuilder().setStartLine(50).setEndLine(50).setStartOffset(42).setEndOffset(52).build();
@@ -97,13 +98,14 @@ class ShowIssueRequestHandlerTests {
       .addFlows(flow)
       .build();
     var components = List.of(
-      Issues.Component.newBuilder().setKey(issueComponentKey).setPath(issuePath).build(),
+      Issues.Component.newBuilder().setKey(issueComponentKey).setPath(issuePath.toString()).build(),
       Issues.Component.newBuilder().setKey(locationComponentKey_1).setPath(flowLocationPath_1).build(),
       Issues.Component.newBuilder().setKey(locationComponentKey_2).setPath(flowLocationPath_2).build());
-    var serverIssueDetails = new IssueApi.ServerIssueDetails(issue, Path.of(issuePath), components, codeSnippet);
+    var serverIssueDetails = new IssueApi.ServerIssueDetails(issue, issuePath, components, codeSnippet);
 
     var showIssueParams = showIssueRequestHandler.getShowIssueParams(serverIssueDetails, connectionId, configScopeId, "branch", "",
-      new FilePathTranslation(Path.of(""), Path.of("")));
+      new FilePathTranslation(Path.of("ide"), Path.of("home")));
+
     assertThat(showIssueParams.getConfigurationScopeId()).isEqualTo(configScopeId);
     var issueDetails = showIssueParams.getIssueDetails();
     assertThat(issueDetails.getIssueKey()).isEqualTo(issueKey);
@@ -115,7 +117,7 @@ class ShowIssueRequestHandlerTests {
     assertThat(issueDetails.getTextRange().getEndLine()).isEqualTo(2);
     assertThat(issueDetails.getTextRange().getStartLineOffset()).isEqualTo(3);
     assertThat(issueDetails.getTextRange().getEndLineOffset()).isEqualTo(4);
-    assertThat(issueDetails.getIdeFilePath()).isEqualTo(Path.of(issuePath));
+    assertThat(issueDetails.getIdeFilePath()).isEqualTo(Paths.get("ide/file.java"));
     assertThat(issueDetails.getFlows()).hasSize(1);
     assertThat(issueDetails.getCodeSnippet()).isEqualTo(codeSnippet);
 
@@ -125,10 +127,10 @@ class ShowIssueRequestHandlerTests {
     assertThat(locations.get(0).getTextRange().getEndLine()).isEqualTo(5);
     assertThat(locations.get(0).getTextRange().getStartLineOffset()).isEqualTo(10);
     assertThat(locations.get(0).getTextRange().getEndLineOffset()).isEqualTo(20);
-    assertThat(locations.get(0).getFilePath()).isEqualTo(flowLocationPath_1);
+    assertThat(locations.get(0).getIdeFilePath()).isEqualTo(Paths.get("ide/file_1.java"));
     assertThat(locations.get(0).getMessage()).isEqualTo(locationMessage_1);
     assertThat(locations.get(0).getCodeSnippet()).isEqualTo(locationCodeSnippet_1);
-    assertThat(locations.get(1).getFilePath()).isEqualTo(flowLocationPath_2);
+    assertThat(locations.get(1).getIdeFilePath()).isEqualTo(Paths.get("ide/file_2.java"));
     assertThat(locations.get(1).getCodeSnippet()).isEmpty();
   }
 

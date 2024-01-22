@@ -19,16 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.common;
 
+import java.nio.file.Path;
+
 public class LocationDto {
   private final TextRangeDto textRange;
   private final String message;
-  private final String filePath;
+  private final Path ideFilePath;
   private final String codeSnippet;
 
-  public LocationDto(TextRangeDto textRange, String message, String filePath, String codeSnippet) {
+  public LocationDto(TextRangeDto textRange, String message, Path ideFilePath, String codeSnippet) {
     this.textRange = textRange;
     this.message = message;
-    this.filePath = filePath;
+    this.ideFilePath = ideFilePath;
     this.codeSnippet = codeSnippet;
   }
 
@@ -40,8 +42,8 @@ public class LocationDto {
     return message;
   }
 
-  public String getFilePath() {
-    return filePath;
+  public Path getIdeFilePath() {
+    return ideFilePath;
   }
 
   public String getCodeSnippet() {
