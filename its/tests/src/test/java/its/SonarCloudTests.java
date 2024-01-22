@@ -148,7 +148,6 @@ class SonarCloudTests extends AbstractConnectedTests {
 
   private static SonarLintRpcServer backend;
   private static String sonarcloudUserToken;
-  private static BackendJsonRpcLauncher serverLauncher;
   private static final Deque<String> didSynchronizeConfigurationScopes = new ConcurrentLinkedDeque<>();
 
   @BeforeAll
@@ -161,7 +160,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     var serverToClientOutputStream = new PipedOutputStream();
     var serverToClientInputStream = new PipedInputStream(serverToClientOutputStream);
 
-    serverLauncher = new BackendJsonRpcLauncher(clientToServerInputStream, serverToClientOutputStream);
+    new BackendJsonRpcLauncher(clientToServerInputStream, serverToClientOutputStream);
     var clientLauncher = new ClientJsonRpcLauncher(serverToClientInputStream, clientToServerOutputStream, newDummySonarLintClient());
 
     backend = clientLauncher.getServerProxy();

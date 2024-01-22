@@ -122,17 +122,14 @@ class FileExclusionTests extends AbstractConnectedTests {
     } catch (Exception e) {
       throw new IllegalStateException("Cannot initialize the backend", e);
     }
-  }
 
-  @BeforeAll
-  static void createSonarLintUser() {
     adminWsClient = newAdminWsClient(ORCHESTRATOR);
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
   }
 
   @AfterAll
   static void stop() throws ExecutionException, InterruptedException {
-    serverLauncher.getJavaImpl().shutdown().get();
+    backend.shutdown().get();
     System.clearProperty("sonarlint.internal.synchronization.initialDelay");
     System.clearProperty("sonarlint.internal.synchronization.period");
     System.clearProperty("sonarlint.internal.synchronization.scope.period");

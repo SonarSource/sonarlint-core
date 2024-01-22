@@ -225,6 +225,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
   @BeforeEach
   void clearState() {
+    rpcClientLogs.clear();
     didSynchronizeConfigurationScopes.clear();
     allBranchNamesForProject.clear();
     matchedBranchNameForProject = null;
