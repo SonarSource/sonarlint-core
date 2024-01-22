@@ -77,6 +77,7 @@ public class FileExclusionService {
   }
 
   public boolean computeExclusion(URI fileUri, SonarLintCancelChecker cancelChecker) {
+    LOG.debug("Computing file exclusion for uri '{}'", fileUri);
     var clientFile = clientFileSystemService.getClientFile(fileUri);
     if (clientFile == null) {
       LOG.debug("Unable to find client file for uri {}", fileUri);
@@ -111,12 +112,20 @@ public class FileExclusionService {
       serverPath = idePath;
     }
     var type = clientFile.isTest() ? InputFile.Type.TEST : InputFile.Type.MAIN;
-    return !exclusionFilters.accept(serverPath.toString(), type);
+    var result = !exclusionFilters.accept(serverPath.toString(), type);
+    LOG.debug("File exclusion for uri '{}' is {}", fileUri, result);
+    return result;
   }
 
   @EventListener
   public void onBindingChanged(BindingConfigChangedEvent event) {
-    clientFileSystemService.getFiles(event.getConfigScopeId()).forEach(f -> serverExclusionByUriCache.refreshAsync(f.getUri()));
+    if (event.getNewConfig().isBound()) {
+      LOG.debug("Binding changed for config scope '{}', recompute file exclusions...", event.getConfigScopeId());
+      clientFileSystemService.getFiles(event.getConfigScopeId()).forEach(f -> serverExclusionByUriCache.refreshAsync(f.getUri()));
+    } else {
+      LOG.debug("Binding removed for config scope '{}', clearing file exclusions...", event.getConfigScopeId());
+      clientFileSystemService.getFiles(event.getConfigScopeId()).forEach(f -> serverExclusionByUriCache.clear(f.getUri()));
+    }
   }
 
   @EventListener
@@ -135,6 +144,7 @@ public class FileExclusionService {
   public void onFileExclusionSettingsChanged(SonarServerSettingsChangedEvent event) {
     var settingsDiff = event.getUpdatedSettingsValueByKey();
     if (isFileExclusionSettingsDifferent(settingsDiff)) {
+      LOG.debug("File exclusion settings changed, recompute all file exclusions...");
       event.getConfigScopeIds().forEach(configScopeId -> clientFileSystemService.getFiles(configScopeId)
         .forEach(f -> serverExclusionByUriCache.refreshAsync(f.getUri())));
     }
