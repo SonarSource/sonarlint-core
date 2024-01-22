@@ -77,17 +77,6 @@ public class BindingClueProvider {
     return matchConnections(bindingClues, connectionIds);
   }
 
-  public List<BindingClueWithConnections> collectBindingCluesWithConnectionAndProjectKey(String configScopeId, String connectionId, String projectKey) throws InterruptedException {
-    var bindingClues = collectBindingClues(configScopeId);
-    for (var bindingClue : bindingClues) {
-      var sonarProjectKey = bindingClue.getSonarProjectKey();
-      if (sonarProjectKey != null && sonarProjectKey.equals(projectKey)) {
-        return List.of(new BindingClueWithConnections(bindingClue, Set.of(connectionId)));
-      }
-    }
-    return matchConnections(bindingClues, Set.of(connectionId));
-  }
-
   private List<BindingClueWithConnections> matchConnections(List<BindingClue> bindingClues, Set<String> eligibleConnectionIds) {
     LOG.debug("Match connections...");
     List<BindingClueWithConnections> cluesAndConnections = new ArrayList<>();
