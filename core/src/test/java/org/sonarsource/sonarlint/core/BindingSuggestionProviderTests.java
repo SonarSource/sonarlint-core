@@ -52,6 +52,7 @@ import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -83,7 +84,7 @@ class BindingSuggestionProviderTests {
 
   @BeforeEach
   public void setup() {
-    when(sonarProjectsCache.getTextSearchIndex(anyString(), null)).thenReturn(new TextSearchIndex<>());
+    when(sonarProjectsCache.getTextSearchIndex(anyString(), eq(null))).thenReturn(new TextSearchIndex<>());
   }
 
   @Test
@@ -229,7 +230,7 @@ class BindingSuggestionProviderTests {
         "Binding suggestion computation queued for config scopes '" + CONFIG_SCOPE_ID_1 + "'...",
         "Found 1 suggestion for configuration scope '" + CONFIG_SCOPE_ID_1 + "'");
 
-    verify(sonarProjectsCache, never()).getTextSearchIndex(anyString(), null);
+    verify(sonarProjectsCache, never()).getTextSearchIndex(anyString(), eq(null));
 
     var captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
     verify(client).suggestBinding(captor.capture());

@@ -125,7 +125,8 @@ public class SonarProjectsCache {
         List<ServerProject> projects;
         try {
           if (projectKey != null) {
-            var optProject = serverApiProvider.getServerApi(connectionId).map(s -> s.component().getProject(projectKey)).orElseThrow(() -> new IllegalStateException("Project not found"));
+            var optProject = serverApiProvider.getServerApi(connectionId).map(s -> s.component().getProject(projectKey))
+              .orElseThrow(() -> new IllegalStateException("Project not found"));
             projects = optProject.map(List::of).orElseGet(List::of);
           } else {
             projects = serverApiProvider.getServerApi(connectionId).map(s -> s.component().getAllProjects(new ProgressMonitor(null))).orElse(List.of());
@@ -143,6 +144,32 @@ public class SonarProjectsCache {
           projects.forEach(p -> index.index(p, p.getKey() + " " + p.getName()));
           return index;
         }
+      });
+    } catch (ExecutionException e) {
+      throw new IllegalStateException(e.getCause());
+    }
+  }
+
+  public TextSearchIndex<ServerProject> getTextSearchIndexWithProjectKey(String connectionId, String projectKey) {
+    try {
+      return textSearchIndexCache.get(connectionId, () -> {
+        LOG.debug("Load projects from connection '{}'...", connectionId);
+        Optional<ServerProject> optProject;
+        try {
+          optProject = serverApiProvider.getServerApi(connectionId).map(s -> s.component().getProject(projectKey))
+            .orElseThrow(() -> new IllegalStateException("Project ky provided by SonarQube is not found"));
+        } catch (Exception e) {
+          LOG.error("Error while querying projects from connection '{}'", connectionId, e);
+          return new TextSearchIndex<>();
+        }
+        if (optProject.isEmpty()) {
+          throw new IllegalStateException("No project found for connection '" + connectionId + "'");
+        }
+        var project = optProject.get();
+        LOG.debug("Creating index for {} {}", 1, "project");
+        var index = new TextSearchIndex<ServerProject>();
+        index.index(project, project.getKey() + " " + project.getName());
+        return index;
       });
     } catch (ExecutionException e) {
       throw new IllegalStateException(e.getCause());
