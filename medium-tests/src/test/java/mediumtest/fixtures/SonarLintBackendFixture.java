@@ -381,8 +381,7 @@ public class SonarLintBackendFixture {
     private static SonarLintTestRpcServer createTestBackend(SonarLintRpcClientDelegate client) throws IOException {
       var clientToServerOutputStream = new PipedOutputStream() {
         private final StringBuilder mem = new StringBuilder();
-
-        public int nextContentSize = -1;
+        private int nextContentSize = -1;
 
         @Override
         public void write(@NotNull byte[] b) throws IOException {
@@ -391,7 +390,7 @@ public class SonarLintBackendFixture {
           super.write(b);
         }
 
-        public void flushIfNeeded() {
+        private void flushIfNeeded() {
           int cr = mem.indexOf("\r\n");
           if (cr != -1 && nextContentSize < 0) {
             var contentLength = mem.substring(0, cr);
@@ -410,10 +409,6 @@ public class SonarLintBackendFixture {
 
       var serverToClientOutputStream = new PipedOutputStream();
       var serverToClientInputStream = new PipedInputStream(serverToClientOutputStream) {
-
-        private final StringBuilder mem = new StringBuilder();
-        public int nextContentSize = -1;
-
         @Override
         public synchronized int read(byte[] b, int off, int len) throws IOException {
           int readLength = super.read(b, off, len);
@@ -421,21 +416,6 @@ public class SonarLintBackendFixture {
             System.out.println("<-- " + new String(b, off, readLength));
           }
           return readLength;
-        }
-
-        public void flushIfNeeded() {
-          int cr = mem.indexOf("\r\n");
-          if (cr != -1 && nextContentSize < 0) {
-            var contentLength = mem.substring(0, cr);
-            mem.replace(0, cr + 2, "");
-            nextContentSize = Integer.parseInt(contentLength.substring("Content-Length: ".length()));
-          }
-          if (nextContentSize > 0 && mem.length() >= nextContentSize + 2) {
-            var content = mem.substring(2, nextContentSize + 2);
-            mem.replace(0, nextContentSize + 2, "");
-            nextContentSize = -1;
-            System.out.println("<-- " + content);
-          }
         }
       };
 

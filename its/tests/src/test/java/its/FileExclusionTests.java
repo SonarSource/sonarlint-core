@@ -170,11 +170,7 @@ class FileExclusionTests extends AbstractConnectedTests {
       .setValues(singletonList("**/*.java"))
       .setComponent(projectKey));
 
-    // The only way to force a sync of the storage is to unbind/rebind
-    didSynchronizeConfigurationScopes.clear();
-    backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(null, null, true)));
-    backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)));
-    await().atMost(1, MINUTES).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(configScopeId));
+    forceBackendToPullSettings(configScopeId, projectKey);
 
     // Check Foo.java is excluded
     await().atMost(30, SECONDS).untilAsserted(() ->
@@ -186,11 +182,7 @@ class FileExclusionTests extends AbstractConnectedTests {
       .setValues(singletonList("**/*.js"))
       .setComponent(projectKey));
 
-    // The only way to force a sync of the storage is to unbind/rebind
-    didSynchronizeConfigurationScopes.clear();
-    backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(null, null, true)));
-    backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)));
-    await().atMost(1, MINUTES).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(configScopeId));
+    forceBackendToPullSettings(configScopeId, projectKey);
 
     // Check Foo.java is included
     await().atMost(30, SECONDS).untilAsserted(() ->
@@ -202,11 +194,7 @@ class FileExclusionTests extends AbstractConnectedTests {
       .setValues(singletonList("**/*.js"))
       .setComponent(projectKey));
 
-    // The only way to force a sync of the storage is to unbind/rebind
-    didSynchronizeConfigurationScopes.clear();
-    backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(null, null, true)));
-    backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)));
-    await().atMost(1, MINUTES).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(configScopeId));
+    forceBackendToPullSettings(configScopeId, projectKey);
 
     // Check Foo.java is excluded
     await().atMost(30, SECONDS).untilAsserted(() ->
@@ -217,15 +205,19 @@ class FileExclusionTests extends AbstractConnectedTests {
       .setKeys(List.of("sonar.exclusions", "sonar.inclusions"))
       .setComponent(projectKey));
 
+    forceBackendToPullSettings(configScopeId, projectKey);
+
+    // Check Foo.java is included again
+    await().atMost(30, SECONDS).untilAsserted(() ->
+      assertThat(backend.getFileService().getFilesStatus(getFilesStatusParams).get().getFileStatuses().get(filePath.toUri()).isExcluded()).isFalse());
+  }
+
+  private static void forceBackendToPullSettings(String configScopeId, String projectKey) {
     // The only way to force a sync of the storage is to unbind/rebind
     didSynchronizeConfigurationScopes.clear();
     backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(null, null, true)));
     backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)));
     await().atMost(1, MINUTES).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(configScopeId));
-
-    // Check Foo.java is included again
-    await().atMost(30, SECONDS).untilAsserted(() ->
-      assertThat(backend.getFileService().getFilesStatus(getFilesStatusParams).get().getFileStatuses().get(filePath.toUri()).isExcluded()).isFalse());
   }
 
   private static SonarLintRpcClientDelegate newDummySonarLintClient() {

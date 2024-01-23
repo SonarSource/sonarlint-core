@@ -47,8 +47,8 @@ public class SmartCancelableLoadingCache<K, V> implements AutoCloseable {
 
   private class ValueAndComputeFutures {
     private final K key;
-    private CompletableFuture<V> valueFuture = new CompletableFuture<>();
-    private CompletableFuture<V> computeFuture;
+    private volatile CompletableFuture<V> valueFuture = new CompletableFuture<>();
+    private volatile CompletableFuture<V> computeFuture;
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     public ValueAndComputeFutures(K key) {
@@ -58,46 +58,51 @@ public class SmartCancelableLoadingCache<K, V> implements AutoCloseable {
 
     private void scheduleComputation() {
       lock.writeLock().lock();
-      if (computeFuture != null) {
-        computeFuture.cancel(false);
-        computeFuture = null;
-      }
-      // Even if we have canceled the previous computation, the previous valueFuture can still be completed later, so we will create a new one
-      // that will be returned to new callers. We will also try to complete the old valueFuture, in case the cancellation was successful.
-      var oldValueFuture = valueFuture;
-      valueFuture = new CompletableFuture<>();
-
-      var previousValue = oldValueFuture.getNow(null);
-
-      CompletableFuture<SonarLintCancelChecker> start = new CompletableFuture<>();
-      CompletableFuture<V> result = start.thenApplyAsync(cancelChecker -> valueComputer.apply(key, cancelChecker), executorService);
-      start.complete(new SonarLintCancelChecker(result));
-      result.whenCompleteAsync((newValue, error) -> {
-        lock.writeLock().lock();
-        try {
+      try {
+        if (computeFuture != null) {
+          computeFuture.cancel(false);
           computeFuture = null;
-          if (error instanceof CancellationException) {
-            return;
-          }
-          try {
-            if (listener != null) {
-              listener.afterCachedValueRefreshed(key, previousValue, newValue);
-            }
-          } finally {
-            if (error != null) {
-              oldValueFuture.completeExceptionally(error);
-              valueFuture.completeExceptionally(error);
-            } else {
-              oldValueFuture.complete(newValue);
-              valueFuture.complete(newValue);
-            }
+        }
+        // Even if we have canceled the previous computation, the previous valueFuture can still be completed later, so we will create a new one
+        // that will be returned to new callers. We will also try to complete the old valueFuture, in case the cancellation was successful.
+        var oldValueFuture = valueFuture;
+        valueFuture = new CompletableFuture<>();
+
+        var previousValue = oldValueFuture.getNow(null);
+
+        CompletableFuture<SonarLintCancelChecker> start = new CompletableFuture<>();
+        CompletableFuture<V> result = start.thenApplyAsync(cancelChecker -> valueComputer.apply(key, cancelChecker), executorService);
+        start.complete(new SonarLintCancelChecker(result));
+        result.whenCompleteAsync((newValue, error) -> whenComputeCompleted(newValue, error, previousValue, oldValueFuture), executorService);
+        computeFuture = result;
+      } finally {
+        lock.writeLock().unlock();
+      }
+    }
+
+    private void whenComputeCompleted(@Nullable V newValue, @Nullable Throwable error, @Nullable V previousValue, CompletableFuture<V> oldValueFuture) {
+      lock.writeLock().lock();
+      try {
+        computeFuture = null;
+        if (error instanceof CancellationException) {
+          return;
+        }
+        try {
+          if (listener != null) {
+            listener.afterCachedValueRefreshed(key, previousValue, newValue);
           }
         } finally {
-          lock.writeLock().unlock();
+          if (error != null) {
+            oldValueFuture.completeExceptionally(error);
+            valueFuture.completeExceptionally(error);
+          } else {
+            oldValueFuture.complete(newValue);
+            valueFuture.complete(newValue);
+          }
         }
-      }, executorService);
-      computeFuture = result;
-      lock.writeLock().unlock();
+      } finally {
+        lock.writeLock().unlock();
+      }
     }
 
 
@@ -116,12 +121,15 @@ public class SmartCancelableLoadingCache<K, V> implements AutoCloseable {
 
     public void cancel() {
       lock.writeLock().lock();
-      if (computeFuture != null) {
-        computeFuture.cancel(false);
-        computeFuture = null;
+      try {
+        if (computeFuture != null) {
+          computeFuture.cancel(false);
+          computeFuture = null;
+        }
+        valueFuture.cancel(false);
+      } finally {
+        lock.writeLock().unlock();
       }
-      valueFuture.cancel(false);
-      lock.writeLock().unlock();
     }
 
   }
@@ -138,6 +146,7 @@ public class SmartCancelableLoadingCache<K, V> implements AutoCloseable {
   public SmartCancelableLoadingCache(String threadName, BiFunction<K, SonarLintCancelChecker, V> valueComputer) {
     this(threadName, valueComputer, null);
   }
+
   public SmartCancelableLoadingCache(String threadName, BiFunction<K, SonarLintCancelChecker, V> valueComputer, @Nullable Listener<K, V> listener) {
     this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, threadName));
     this.threadName = threadName;

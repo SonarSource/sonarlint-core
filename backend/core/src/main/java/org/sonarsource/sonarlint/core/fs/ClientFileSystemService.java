@@ -56,8 +56,6 @@ public class ClientFileSystemService {
   private final ApplicationEventPublisher eventPublisher;
   private final Map<URI, ClientFile> filesByUri = new ConcurrentHashMap<>();
 
-  private final ExecutorService executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-filesystem"));
-
   private final SmartCancelableLoadingCache<String, Map<URI, ClientFile>> filesByConfigScopeIdCache =
     new SmartCancelableLoadingCache<>("sonarlint-filesystem", this::initializeFileSystem);
 
@@ -133,9 +131,7 @@ public class ClientFileSystemService {
 
   @PreDestroy
   public void shutdown() {
-    if (!MoreExecutors.shutdownAndAwaitTermination(executorService, 1, TimeUnit.SECONDS)) {
-      LOG.warn("Unable to stop filesystem executor service in a timely manner");
-    }
+    filesByConfigScopeIdCache.close();
   }
 
   /**
