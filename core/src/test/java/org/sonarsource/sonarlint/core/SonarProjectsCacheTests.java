@@ -186,16 +186,16 @@ class SonarProjectsCacheTests {
   }
 
   @Test
-  void getTextSearchIndexWithProjectKey_should_query_server_once() {
+  void getTextSearchIndex_with_project_key_should_query_server_once() {
     when(serverApi.component().getProject(any()))
       .thenReturn(Optional.of(PROJECT_1))
       .thenThrow(new AssertionError("Should only be called once"));
 
-    var searchIndex1 = underTest.getTextSearchIndexWithProjectKey(SQ_1, PROJECT_KEY_1);
+    var searchIndex1 = underTest.getTextSearchIndex(SQ_1, PROJECT_KEY_1);
 
     assertThat(searchIndex1.size()).isEqualTo(1);
 
-    var searchIndex2 = underTest.getTextSearchIndexWithProjectKey(SQ_1, PROJECT_KEY_1);
+    var searchIndex2 = underTest.getTextSearchIndex(SQ_1, PROJECT_KEY_1);
 
     assertThat(searchIndex2.size()).isEqualTo(1);
 
