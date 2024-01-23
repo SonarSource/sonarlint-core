@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.ConnectionService;
+import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenResponse;
@@ -34,6 +35,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUs
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUserOrganizationsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SearchProjectsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SearchProjectsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionResponse;
 
@@ -86,4 +89,9 @@ class ConnectionRpcServiceDelegate extends AbstractRpcServiceDelegate implements
     return requestAsync(cancelMonitor -> new GetAllProjectsResponse(getBean(ConnectionService.class).getAllProjects(params.getTransientConnection(), cancelMonitor)));
   }
 
+  @Override
+  public CompletableFuture<SearchProjectsResponse> searchProjects(SearchProjectsParams params) {
+    return requestAsync(cancelMonitor -> new SearchProjectsResponse(getBean(SonarProjectsCache.class)
+      .searchProjects(params.getConnectionId(), params.getSearchText(), cancelMonitor)));
+  }
 }

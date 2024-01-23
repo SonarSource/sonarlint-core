@@ -30,6 +30,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.Tra
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SearchProjectsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProjectDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 
@@ -107,6 +108,43 @@ class ConnectionGetAllProjectsMediumTests {
   }
 
   @Test
+  void it_should_search_for_projects_on_sonarqube() {
+    server = newSonarQubeServer()
+      .withProject("mycompany:project-foo1", project -> project.withName("My Company Project Foo 1"))
+      .withProject("mycompany:project-foo2", project -> project.withName("My Company Project Foo 2"))
+      .withProject("mycompany:project-bar", project -> project.withName("My Company Project Bar"))
+      .start();
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", server.baseUrl())
+      .build();
+
+    var emptySearch = backend.getConnectionService().searchProjects(new SearchProjectsParams("connectionId", "")).join();
+    assertThat(emptySearch.getTopResults())
+      .isEmpty();
+
+    var searchMy = backend.getConnectionService().searchProjects(new SearchProjectsParams("connectionId", "My")).join();
+    assertThat(searchMy.getTopResults())
+      .extracting(SonarProjectDto::getKey, SonarProjectDto::getName)
+      .containsExactly(
+        tuple("mycompany:project-bar", "My Company Project Bar"),
+        tuple("mycompany:project-foo1", "My Company Project Foo 1"),
+        tuple("mycompany:project-foo2", "My Company Project Foo 2"));
+
+    var searchFooByName = backend.getConnectionService().searchProjects(new SearchProjectsParams("connectionId", "Foo")).join();
+    assertThat(searchFooByName.getTopResults())
+      .extracting(SonarProjectDto::getKey, SonarProjectDto::getName)
+      .containsExactly(
+        tuple("mycompany:project-foo1", "My Company Project Foo 1"),
+        tuple("mycompany:project-foo2", "My Company Project Foo 2"));
+
+    var searchBarByKey = backend.getConnectionService().searchProjects(new SearchProjectsParams("connectionId", "project-bar")).join();
+    assertThat(searchBarByKey.getTopResults())
+      .extracting(SonarProjectDto::getKey, SonarProjectDto::getName)
+      .containsExactly(
+        tuple("mycompany:project-bar", "My Company Project Bar"));
+  }
+
+  @Test
   void it_should_return_the_list_of_projects_on_sonarcloud() {
     server = newSonarCloudServer("myOrg")
       .withProject("projectKey1", project -> project.withName("MyProject1"))
@@ -142,19 +180,11 @@ class ConnectionGetAllProjectsMediumTests {
   }
 
   private GetAllProjectsResponse getAllProjects(TransientSonarQubeConnectionDto connectionDto) {
-    try {
-      return backend.getConnectionService().getAllProjects(new GetAllProjectsParams(connectionDto)).get();
-    } catch (InterruptedException | ExecutionException e) {
-      throw new RuntimeException(e);
-    }
+    return backend.getConnectionService().getAllProjects(new GetAllProjectsParams(connectionDto)).join();
   }
 
   private GetAllProjectsResponse getAllProjects(TransientSonarCloudConnectionDto connectionDto) {
-    try {
-      return backend.getConnectionService().getAllProjects(new GetAllProjectsParams(connectionDto)).get();
-    } catch (InterruptedException | ExecutionException e) {
-      throw new RuntimeException(e);
-    }
+    return backend.getConnectionService().getAllProjects(new GetAllProjectsParams(connectionDto)).join();
   }
 
 }
