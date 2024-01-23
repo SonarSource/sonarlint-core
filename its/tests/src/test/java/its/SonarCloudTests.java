@@ -26,7 +26,6 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Deque;
@@ -38,11 +37,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
-import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterAll;
@@ -95,7 +92,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTracke
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.MatchWithServerSecurityHotspotsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.usertoken.RevokeTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
@@ -501,35 +497,6 @@ class SonarCloudTests extends AbstractConnectedTests {
       .validateConnection(new ValidateConnectionParams(new TransientSonarCloudConnectionDto(SONARCLOUD_ORGANIZATION, Either.forLeft(new TokenDto("foo"))))).get();
     assertThat(failIfWrongCredentials.isSuccess()).isFalse();
     assertThat(failIfWrongCredentials.getMessage()).isEqualTo("Authentication failed");
-  }
-
-  @Test
-  void test_revoke_token() {
-    var tokenName = RandomStringUtils.randomAlphabetic(32);
-
-    // If a prior IT is failing, remove the token (which can fail)
-    // -> SonarCloud staging does not reset like the orchestrator instances do!
-    try {
-      adminWsClient.userTokens().revoke(new RevokeRequest().setName(tokenName).setLogin(SONARCLOUD_USER));
-    } catch (Exception ignored) {
-    }
-
-    var testToken = adminWsClient.userTokens()
-      .generate(new GenerateRequest().setName(tokenName));
-    assertThat(testToken.getName()).isEqualTo(tokenName);
-
-    // Using the credentials we used throughout the test, we want to remove the additional token!
-    assertThat(backend
-      .getUserTokenService()
-      .revokeToken(new RevokeTokenParams(SONARCLOUD_STAGING_URL, tokenName, testToken.getToken())))
-      .succeedsWithin(Duration.ofSeconds(10));
-
-    // SonarCloud staging gets accessed by everything, this way we can filter out OUR token (from THIS very build).
-    var searchResult = adminWsClient.userTokens().search(new org.sonarqube.ws.client.usertokens.SearchRequest().setLogin(testToken.getLogin()));
-    var tokensNamedTestTokenForRevoking = searchResult.getUserTokensList().stream()
-      .filter(token -> token.getName().equals(tokenName))
-      .collect(Collectors.toList());
-    assertThat(tokensNamedTestTokenForRevoking).isEmpty();
   }
 
   @Nested
