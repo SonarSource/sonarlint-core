@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.fs;
 
-import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.net.URI;
 import java.nio.charset.Charset;
@@ -35,7 +33,9 @@ import javax.annotation.CheckForNull;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelChecker;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
@@ -56,11 +56,8 @@ public class ClientFileSystemService {
   private final ApplicationEventPublisher eventPublisher;
   private final Map<URI, ClientFile> filesByUri = new ConcurrentHashMap<>();
 
-  private final ExecutorService executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-filesystem"));
-
-  private final AsyncLoadingCache<String, Map<URI, ClientFile>> filesByConfigScopeId = Caffeine.newBuilder()
-    .executor(executorService)
-    .buildAsync(this::initializeFileSystem);
+  private final SmartCancelableLoadingCache<String, Map<URI, ClientFile>> filesByConfigScopeIdCache =
+    new SmartCancelableLoadingCache<>("sonarlint-filesystem", this::initializeFileSystem);
 
   public ClientFileSystemService(SonarLintRpcClient rpcClient, ApplicationEventPublisher eventPublisher) {
     this.rpcClient = rpcClient;
@@ -68,7 +65,7 @@ public class ClientFileSystemService {
   }
 
   public List<ClientFile> getFiles(String configScopeId) {
-    return List.copyOf(filesByConfigScopeId.get(configScopeId).join().values());
+    return List.copyOf(filesByConfigScopeIdCache.get(configScopeId).values());
   }
 
   private static ClientFile fromDto(ClientFileDto clientFileDto) {
@@ -91,10 +88,11 @@ public class ClientFileSystemService {
       .collect(toList());
   }
 
-  public Map<URI, ClientFile> initializeFileSystem(String configScopeId) {
+  public Map<URI, ClientFile> initializeFileSystem(String configScopeId, SonarLintCancelChecker cancelChecker) {
     var result = new ConcurrentHashMap<URI, ClientFile>();
-    var response = rpcClient.listFiles(new ListFilesParams(configScopeId)).join();
-    response.getFiles().forEach(clientFileDto -> {
+    var future = rpcClient.listFiles(new ListFilesParams(configScopeId));
+    cancelChecker.propagateCancelTo(future, true);
+    future.join().getFiles().forEach(clientFileDto -> {
       var clientFile = fromDto(clientFileDto);
       filesByUri.put(clientFileDto.getUri(), clientFile);
       result.put(clientFileDto.getUri(), clientFile);
@@ -107,7 +105,7 @@ public class ClientFileSystemService {
     params.getRemovedFiles().forEach(uri -> {
       var clientFile = filesByUri.remove(uri);
       if (clientFile != null) {
-        filesByConfigScopeId.synchronous().get(clientFile.getConfigScopeId()).remove(uri);
+        filesByConfigScopeIdCache.get(clientFile.getConfigScopeId()).remove(uri);
         removed.add(clientFile);
       }
     });
@@ -115,11 +113,8 @@ public class ClientFileSystemService {
     params.getAddedOrChangedFiles().forEach(clientFileDto -> {
       var clientFile = fromDto(clientFileDto);
       filesByUri.put(clientFileDto.getUri(), clientFile);
-      var byScope = filesByConfigScopeId.synchronous().getIfPresent(clientFileDto.getConfigScopeId());
-      if (byScope == null) {
-        filesByConfigScopeId.synchronous().put(clientFileDto.getConfigScopeId(), new ConcurrentHashMap<>());
-      }
-      filesByConfigScopeId.synchronous().get(clientFileDto.getConfigScopeId()).put(clientFileDto.getUri(), clientFile);
+      var byScope = filesByConfigScopeIdCache.get(clientFileDto.getConfigScopeId());
+      byScope.put(clientFileDto.getUri(), clientFile);
       addedOrUpdated.add(clientFile);
     });
     eventPublisher.publishEvent(new FileSystemUpdatedEvent(removed, addedOrUpdated));
@@ -127,8 +122,8 @@ public class ClientFileSystemService {
 
   @EventListener
   public void onConfigurationScopeRemoved(ConfigurationScopeRemovedEvent event) {
-    var removedFilesByURI = filesByConfigScopeId.synchronous().get(event.getRemovedConfigurationScopeId());
-    filesByConfigScopeId.synchronous().invalidate(event.getRemovedConfigurationScopeId());
+    var removedFilesByURI = filesByConfigScopeIdCache.get(event.getRemovedConfigurationScopeId());
+    filesByConfigScopeIdCache.clear(event.getRemovedConfigurationScopeId());
     if (removedFilesByURI != null) {
       removedFilesByURI.keySet().forEach(filesByUri::remove);
     }
@@ -136,9 +131,7 @@ public class ClientFileSystemService {
 
   @PreDestroy
   public void shutdown() {
-    if (!MoreExecutors.shutdownAndAwaitTermination(executorService, 1, TimeUnit.SECONDS)) {
-      LOG.warn("Unable to stop filesystem executor service in a timely manner");
-    }
+    filesByConfigScopeIdCache.close();
   }
 
   /**
@@ -146,7 +139,7 @@ public class ClientFileSystemService {
    */
   @CheckForNull
   public ClientFile getClientFiles(String configScopeId, URI fileUri) {
-    return filesByConfigScopeId.get(configScopeId).join().get(fileUri);
+    return filesByConfigScopeIdCache.get(configScopeId).get(fileUri);
   }
 
   /**

@@ -19,52 +19,137 @@
  */
 package org.sonarsource.sonarlint.core.file;
 
-import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Optional;
 import java.util.concurrent.CancellationException;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
+import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class PathTranslationServiceTests {
+
   @RegisterExtension
-  private static final SonarLintLogTester logTester = new SonarLintLogTester();
-  private PathTranslationService underTest;
-  private ConfigurationRepository configurationRepository;
-  private AsyncLoadingCache<String, FilePathTranslation> cachedPathsTranslationByConfigScope;
+  private final static SonarLintLogTester logTester = new SonarLintLogTester(true);
+  public static final String CONFIG_SCOPE_A = "configScopeA";
+  public static final String CONNECTION_A = "connectionA";
+  public static final String SONAR_PROJECT_A = "sonarProjectA";
+  private final ServerApiProvider serverApiProvider = mock(ServerApiProvider.class);
+  private final ServerApi serverApi = mock(ServerApi.class);
+  private final ClientFileSystemService clientFs = mock(ClientFileSystemService.class);
+  private final ConfigurationRepository configurationRepository = mock(ConfigurationRepository.class);
+  private final PathTranslationService underTest = new PathTranslationService(clientFs, serverApiProvider, configurationRepository);
+  private final ComponentApi componentApi = mock(ComponentApi.class);
 
   @BeforeEach
   void prepare() {
-    configurationRepository = mock(ConfigurationRepository.class);
-    cachedPathsTranslationByConfigScope = mock(AsyncLoadingCache.class);
-    underTest = new PathTranslationService(mock(ClientFileSystemService.class), mock(ServerApiProvider.class), configurationRepository);
-
+    when(configurationRepository.getBoundScope(CONFIG_SCOPE_A)).thenReturn(new BoundScope(CONFIG_SCOPE_A, CONNECTION_A, SONAR_PROJECT_A));
+    when(serverApiProvider.getServerApi(CONNECTION_A)).thenReturn(Optional.of(serverApi));
+    when(serverApi.component()).thenReturn(componentApi);
   }
 
   @Test
-  void shouldRethrowOnExecutionException() {
-    when(cachedPathsTranslationByConfigScope.get(anyString())).thenThrow(new CancellationException());
+  void shouldComputePathTranslations() {
+    mockServerFilePaths(SONAR_PROJECT_A, "moduleA/src/Foo.java");
+    mockClientFilePaths(CONFIG_SCOPE_A, "src/Foo.java");
 
-    assertThat(underTest.getOrComputePathTranslation("scope", cachedPathsTranslationByConfigScope, 0)).isEmpty();
-    verify(cachedPathsTranslationByConfigScope, times(5)).get(anyString());
+    var result = underTest.getOrComputePathTranslation(CONFIG_SCOPE_A);
+
+    assertThat(result).isPresent();
+    assertThat(result.get())
+      .usingRecursiveComparison()
+      .isEqualTo(new FilePathTranslation(Paths.get(""), Paths.get("moduleA")));
   }
 
   @Test
-  void shouldThrowWhenCounterHigherThanLimit() {
-    when(cachedPathsTranslationByConfigScope.get(anyString())).thenThrow(new CancellationException());
+  void shouldCachePathTranslations() {
+    mockServerFilePaths(SONAR_PROJECT_A, "moduleA/src/Foo.java");
+    mockClientFilePaths(CONFIG_SCOPE_A, "src/Foo.java");
 
-    assertThat(underTest.getOrComputePathTranslation("scope", cachedPathsTranslationByConfigScope, 4)).isEmpty();
-    verify(cachedPathsTranslationByConfigScope, times(1)).get(anyString());
+    var result1 = underTest.getOrComputePathTranslation(CONFIG_SCOPE_A);
+
+    assertThat(result1).isPresent();
+    assertThat(result1.get())
+      .usingRecursiveComparison()
+      .isEqualTo(new FilePathTranslation(Paths.get(""), Paths.get("moduleA")));
+
+    var result2 = underTest.getOrComputePathTranslation(CONFIG_SCOPE_A);
+
+    assertThat(result2).isPresent();
+    assertThat(result2.get())
+      .usingRecursiveComparison()
+      .isEqualTo(new FilePathTranslation(Paths.get(""), Paths.get("moduleA")));
+
+    verify(clientFs, times(1)).getFiles(any());
+    verify(serverApi.component(), times(1)).getAllFileKeys(any(), any());
+  }
+
+  @Test
+  void shouldRecomputePathTranslationsAfterBindingChange() {
+    mockServerFilePaths(SONAR_PROJECT_A, "moduleA/src/Foo.java");
+    mockClientFilePaths(CONFIG_SCOPE_A, "src/Foo.java");
+
+    var result1 = underTest.getOrComputePathTranslation(CONFIG_SCOPE_A);
+
+    assertThat(result1).isPresent();
+    assertThat(result1.get())
+      .usingRecursiveComparison()
+      .isEqualTo(new FilePathTranslation(Paths.get(""), Paths.get("moduleA")));
+
+    mockServerFilePaths(SONAR_PROJECT_A, "moduleB/src/Foo.java");
+
+    underTest.onBindingChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_A, null, null));
+
+    var result2 = underTest.getOrComputePathTranslation(CONFIG_SCOPE_A);
+
+    assertThat(result2).isPresent();
+    assertThat(result2.get())
+      .usingRecursiveComparison()
+      .isEqualTo(new FilePathTranslation(Paths.get(""), Paths.get("moduleB")));
+  }
+
+  @Test
+  void shouldLogAndIgnoreOtherErrors() throws InterruptedException {
+    when(serverApi.component().getAllFileKeys(any(), any())).thenAnswer(invocation -> {
+      throw new IllegalStateException();
+    });
+    mockClientFilePaths(CONFIG_SCOPE_A, "src/Foo.java");
+
+    var result = underTest.getOrComputePathTranslation(CONFIG_SCOPE_A);
+
+    assertThat(result).isEmpty();
+    assertThat(logTester.logs()).contains("Error while getting server file paths for project 'sonarProjectA'");
+  }
+
+  private void mockClientFilePaths(String configScopeId, String... paths) {
+    doReturn(Arrays.stream(paths).map(path -> new ClientFile(null, null, Paths.get(path), null, null, null)).collect(Collectors.toList()))
+      .when(clientFs)
+      .getFiles(configScopeId);
+  }
+
+  private void mockServerFilePaths(String sonarProjectKey, String... paths) {
+    doReturn(Arrays.stream(paths).map(path -> SONAR_PROJECT_A + ":" + path).collect(Collectors.toList()))
+      .when(componentApi)
+      .getAllFileKeys(eq(sonarProjectKey), any());
   }
 
 }

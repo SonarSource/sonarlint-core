@@ -198,6 +198,8 @@ qa_task:
     junit_artifacts:
       path: '**/target/surefire-reports/TEST-*.xml'
       format: junit
+    log_artifacts:
+      path: "**/target/**/sonarqube*/logs/*.log"
 
 promote_task:
   # Promotion

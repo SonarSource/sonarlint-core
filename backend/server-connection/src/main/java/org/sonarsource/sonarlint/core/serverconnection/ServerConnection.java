@@ -21,14 +21,11 @@ package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.nio.file.Path;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.Version;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 
 public class ServerConnection {
   private static final Version SECRET_ANALYSIS_MIN_SQ_VERSION = Version.create("9.9");
@@ -55,42 +52,16 @@ public class ServerConnection {
     storage.plugins().cleanUp();
   }
 
-  public Map<String, Path> getStoredPluginPathsByKey() {
-    return storage.plugins().getStoredPluginPathsByKey();
-  }
-
-  public AnalyzerConfiguration getAnalyzerConfiguration(String projectKey) {
-    return storage.project(projectKey).analyzerConfiguration().read();
-  }
-
   public boolean sync(ServerApi serverApi) {
-    return storageSynchronizer.synchronize(serverApi);
+    return storageSynchronizer.synchronizeServerInfosAndPlugins(serverApi);
   }
 
   public AnalyzerSettingsUpdateSummary sync(ServerApi serverApi, String projectKey) {
-    return storageSynchronizer.synchronize(serverApi, projectKey);
-  }
-
-  public SynchronizationResult sync(ServerApi serverApi, Set<String> projectKeys, ProgressMonitor monitor) {
-    return storageSynchronizer.synchronize(serverApi, projectKeys, monitor);
+    return storageSynchronizer.synchronizeAnalyzerConfig(serverApi, projectKey);
   }
 
   public Version readOrSynchronizeServerVersion(ServerApi serverApi) {
     return serverInfoSynchronizer.readOrSynchronizeServerInfo(serverApi).getVersion();
-  }
-
-  public boolean permitsHotspotTracking() {
-    // when storage is not present, consider hotspots should not be detected
-    return storage.serverInfo().read()
-      .map(serverInfo -> HotspotApi.permitsTracking(isSonarCloud, serverInfo::getVersion))
-      .orElse(false);
-  }
-
-  public boolean supportsSecretAnalysis() {
-    // when storage is not present, assume that secrets are not supported by server
-    return isSonarCloud || storage.serverInfo().read()
-      .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(SECRET_ANALYSIS_MIN_SQ_VERSION) >= 0)
-      .orElse(false);
   }
 
   public boolean shouldSkipCleanCodeTaxonomy() {

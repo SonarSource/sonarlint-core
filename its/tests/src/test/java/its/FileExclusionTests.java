@@ -29,16 +29,16 @@ import java.io.PipedOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutionException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -52,21 +52,22 @@ import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.GetFilesStatusParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
 import static its.utils.ItUtils.SONAR_VERSION;
 import static java.util.Collections.singletonList;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -81,13 +82,12 @@ class FileExclusionTests extends AbstractConnectedTests {
     .build();
 
   private static final String CONNECTION_ID = "orchestrator";
-  private static final String CONFIG_SCOPE_ID = "my-ide-project-name";
 
   @TempDir
   private static Path sonarUserHome;
   private static WsClient adminWsClient;
   private static SonarLintRpcServer backend;
-  private static final List<String> didSynchronizeConfigurationScopes = new CopyOnWriteArrayList<>();
+  private static final Deque<String> didSynchronizeConfigurationScopes = new ConcurrentLinkedDeque<>();
   private static BackendJsonRpcLauncher serverLauncher;
 
   @BeforeAll
@@ -122,51 +122,45 @@ class FileExclusionTests extends AbstractConnectedTests {
     } catch (Exception e) {
       throw new IllegalStateException("Cannot initialize the backend", e);
     }
-  }
 
-  @BeforeAll
-  static void createSonarLintUser() {
     adminWsClient = newAdminWsClient(ORCHESTRATOR);
     adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
   }
 
-  @BeforeEach
-  void clearState() {
-    didSynchronizeConfigurationScopes.clear();
-  }
-
-  @AfterEach
-  void removeConfigScope() {
-    backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(CONFIG_SCOPE_ID));
-  }
-
-    @AfterAll
+  @AfterAll
   static void stop() throws ExecutionException, InterruptedException {
-    serverLauncher.getJavaImpl().shutdown().get();
+    backend.shutdown().get();
     System.clearProperty("sonarlint.internal.synchronization.initialDelay");
     System.clearProperty("sonarlint.internal.synchronization.period");
     System.clearProperty("sonarlint.internal.synchronization.scope.period");
   }
 
+  @AfterEach
+  void cleanup_after_each() {
+    didSynchronizeConfigurationScopes.clear();
+    rpcClientLogs.clear();
+  }
+
   @Test
   void should_respect_exclusion_settings_on_SQ() {
+    var configScopeId = "should_respect_exclusion_settings_on_SQ";
     var projectKey = "sample-java";
     var projectName = "my-sample-java";
     provisionProject(ORCHESTRATOR, projectKey, projectName);
 
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
-      List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, projectName, new BindingConfigurationDto(CONNECTION_ID, projectKey,
+      List.of(new ConfigurationScopeDto(configScopeId, null, true, projectName, new BindingConfigurationDto(CONNECTION_ID, projectKey,
         true)))));
-    await().atMost(20, SECONDS).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+    await().atMost(1, MINUTES).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(configScopeId));
 
     var filePath = Path.of("src/main/java/foo/Foo.java");
-    var clientFileDto = new ClientFileDto(filePath.toUri(), filePath, CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(),
+    var clientFileDto = new ClientFileDto(filePath.toUri(), filePath, configScopeId, null, StandardCharsets.UTF_8.name(),
       filePath.toAbsolutePath(), null);
     var didUpdateFileSystemParams = new DidUpdateFileSystemParams(List.of(), List.of(clientFileDto));
     backend.getFileService().didUpdateFileSystem(didUpdateFileSystemParams);
 
     // Firstly check file is included
-    var getFilesStatusParams = new GetFilesStatusParams(Map.of(CONFIG_SCOPE_ID, List.of(filePath.toUri())));
+    var getFilesStatusParams = new GetFilesStatusParams(Map.of(configScopeId, List.of(filePath.toUri())));
     await().atMost(10, SECONDS).untilAsserted(() ->
       assertThat(backend.getFileService().getFilesStatus(getFilesStatusParams).get().getFileStatuses().get(filePath.toUri()).isExcluded()).isFalse());
 
@@ -175,6 +169,8 @@ class FileExclusionTests extends AbstractConnectedTests {
       .setKey("sonar.exclusions")
       .setValues(singletonList("**/*.java"))
       .setComponent(projectKey));
+
+    forceBackendToPullSettings(configScopeId, projectKey);
 
     // Check Foo.java is excluded
     await().atMost(30, SECONDS).untilAsserted(() ->
@@ -186,6 +182,8 @@ class FileExclusionTests extends AbstractConnectedTests {
       .setValues(singletonList("**/*.js"))
       .setComponent(projectKey));
 
+    forceBackendToPullSettings(configScopeId, projectKey);
+
     // Check Foo.java is included
     await().atMost(30, SECONDS).untilAsserted(() ->
       assertThat(backend.getFileService().getFilesStatus(getFilesStatusParams).get().getFileStatuses().get(filePath.toUri()).isExcluded()).isFalse());
@@ -196,6 +194,8 @@ class FileExclusionTests extends AbstractConnectedTests {
       .setValues(singletonList("**/*.js"))
       .setComponent(projectKey));
 
+    forceBackendToPullSettings(configScopeId, projectKey);
+
     // Check Foo.java is excluded
     await().atMost(30, SECONDS).untilAsserted(() ->
       assertThat(backend.getFileService().getFilesStatus(getFilesStatusParams).get().getFileStatuses().get(filePath.toUri()).isExcluded()).isTrue());
@@ -205,9 +205,19 @@ class FileExclusionTests extends AbstractConnectedTests {
       .setKeys(List.of("sonar.exclusions", "sonar.inclusions"))
       .setComponent(projectKey));
 
+    forceBackendToPullSettings(configScopeId, projectKey);
+
     // Check Foo.java is included again
     await().atMost(30, SECONDS).untilAsserted(() ->
       assertThat(backend.getFileService().getFilesStatus(getFilesStatusParams).get().getFileStatuses().get(filePath.toUri()).isExcluded()).isFalse());
+  }
+
+  private static void forceBackendToPullSettings(String configScopeId, String projectKey) {
+    // The only way to force a sync of the storage is to unbind/rebind
+    didSynchronizeConfigurationScopes.clear();
+    backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(null, null, true)));
+    backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)));
+    await().atMost(1, MINUTES).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(configScopeId));
   }
 
   private static SonarLintRpcClientDelegate newDummySonarLintClient() {
@@ -222,10 +232,15 @@ class FileExclusionTests extends AbstractConnectedTests {
       }
 
       @Override
-      public void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params) {
-        didSynchronizeConfigurationScopes.addAll(params.getConfigurationScopeIds());
+      public void didSynchronizeConfigurationScopes(Set<String> configurationScopeIds) {
+        didSynchronizeConfigurationScopes.addAll(configurationScopeIds);
       }
 
+      @Override
+      public void log(LogParams params) {
+        System.out.println(params.getMessage());
+        rpcClientLogs.add(params);
+      }
     };
   }
 }

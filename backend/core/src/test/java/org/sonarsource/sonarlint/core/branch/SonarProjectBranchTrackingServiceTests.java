@@ -40,6 +40,7 @@ import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ApplicationEventPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
@@ -55,9 +56,9 @@ class SonarProjectBranchTrackingServiceTests {
   public static final String PROJECT_KEY = "projectKey";
   public static final String CONFIG_SCOPE_ID = "configScopeId";
   private SonarProjectBranchTrackingService underTest;
-  private SonarLintRpcClient sonarLintRpcClient = mock(SonarLintRpcClient.class);
-  private StorageService storageService = mock(StorageService.class);
-  private ConfigurationRepository configurationRepository = mock(ConfigurationRepository.class);
+  private final SonarLintRpcClient sonarLintRpcClient = mock(SonarLintRpcClient.class);
+  private final StorageService storageService = mock(StorageService.class);
+  private final ConfigurationRepository configurationRepository = mock(ConfigurationRepository.class);
   private ProjectBranchesStorage projectBranchesStorage;
 
   @BeforeEach
@@ -98,8 +99,9 @@ class SonarProjectBranchTrackingServiceTests {
 
     assertThat(underTest.awaitEffectiveSonarProjectBranch(CONFIG_SCOPE_ID)).contains("feature");
 
-    assertThat(logTester.logs()).contains("Cancelled previous matching job for configuration scope 'configScopeId'");
     assertThat(firstFuture).isCancelled();
+
+    verify(sonarLintRpcClient, timeout(1000).times(1)).didChangeMatchedSonarProjectBranch(any());
   }
 
   @Test
@@ -120,7 +122,7 @@ class SonarProjectBranchTrackingServiceTests {
 
     assertThat(underTest.awaitEffectiveSonarProjectBranch(CONFIG_SCOPE_ID)).contains("main");
 
-    assertThat(logTester.logs()).contains("Matched Sonar project branch for configuration scope 'configScopeId' changed from 'null' to 'main'");
+    await().untilAsserted(() -> assertThat(logTester.logs()).contains("Matched Sonar project branch for configuration scope 'configScopeId' changed from 'null' to 'main'"));
   }
 
 }

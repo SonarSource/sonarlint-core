@@ -48,6 +48,7 @@ import mediumtest.fixtures.storage.ConfigurationScopeStorageFixture;
 import mediumtest.fixtures.storage.StorageFixture;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
@@ -61,6 +62,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.Son
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
@@ -81,7 +83,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgress
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
@@ -378,11 +379,46 @@ public class SonarLintBackendFixture {
     }
 
     private static SonarLintTestRpcServer createTestBackend(SonarLintRpcClientDelegate client) throws IOException {
-      var clientToServerOutputStream = new PipedOutputStream();
+      var clientToServerOutputStream = new PipedOutputStream() {
+        private final StringBuilder mem = new StringBuilder();
+        private int nextContentSize = -1;
+
+        @Override
+        public void write(@NotNull byte[] b) throws IOException {
+          mem.append(new String(b));
+          flushIfNeeded();
+          super.write(b);
+        }
+
+        private void flushIfNeeded() {
+          int cr = mem.indexOf("\r\n");
+          if (cr != -1 && nextContentSize < 0) {
+            var contentLength = mem.substring(0, cr);
+            mem.replace(0, cr + 2, "");
+            nextContentSize = Integer.parseInt(contentLength.substring("Content-Length: ".length()));
+          }
+          if (nextContentSize > 0 && mem.length() >= nextContentSize + 2) {
+            var content = mem.substring(2, nextContentSize + 2);
+            mem.replace(0, nextContentSize + 2, "");
+            nextContentSize = -1;
+            System.out.println("--> " + content);
+          }
+        }
+      };
       var clientToServerInputStream = new PipedInputStream(clientToServerOutputStream);
 
       var serverToClientOutputStream = new PipedOutputStream();
-      var serverToClientInputStream = new PipedInputStream(serverToClientOutputStream);
+      var serverToClientInputStream = new PipedInputStream(serverToClientOutputStream) {
+        @Override
+        public synchronized int read(byte[] b, int off, int len) throws IOException {
+          int readLength = super.read(b, off, len);
+          if (readLength > 0) {
+            System.out.println("<-- " + new String(b, off, readLength));
+          }
+          return readLength;
+        }
+      };
+
 
       var serverLauncher = new BackendJsonRpcLauncher(clientToServerInputStream, serverToClientOutputStream);
 
@@ -523,8 +559,8 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public void didSynchronizeConfigurationScopes(DidSynchronizeConfigurationScopeParams params) {
-      synchronizedConfigScopeIds.addAll(params.getConfigurationScopeIds());
+    public void didSynchronizeConfigurationScopes(Set<String> configurationScopeIds) {
+      synchronizedConfigScopeIds.addAll(configurationScopeIds);
     }
 
     public Set<String> getSynchronizedConfigScopeIds() {
@@ -603,7 +639,7 @@ public class SonarLintBackendFixture {
     public void log(LogParams params) {
       this.logs.add(params);
       if (printLogsToStdOut) {
-        System.out.println(params.getLevel() + " " + (params.getConfigScopeId() != null ? ("[" + params.getConfigScopeId() + "] ") : "") + params.getMessage());
+        System.out.println((params.getThreadName() != null ? ("[" + params.getThreadName() + "] ") : "") + params.getLevel() + " " + (params.getConfigScopeId() != null ? ("[" + params.getConfigScopeId() + "] ") : "") + params.getMessage());
       }
     }
 

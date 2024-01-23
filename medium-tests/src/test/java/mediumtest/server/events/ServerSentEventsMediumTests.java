@@ -58,6 +58,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWit
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.jsonResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.notFound;
 import static com.github.tomakehurst.wiremock.client.WireMock.okForContentType;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
@@ -218,8 +219,31 @@ class ServerSentEventsMediumTests {
 
       await().atMost(Duration.ofSeconds(2))
         .untilAsserted(() -> assertThat(requestedPaths()).containsExactly("/api/push/sonarlint_events?projectKeys=projectKey&languages=java,js"));
-      var paths = requestedPaths();
-      assertThat(paths).isNotEmpty();
+    }
+
+    @Test
+    void should_log_subscription_errors() {
+      var client = newFakeClient().build();
+      backend = newBackend()
+        .withEnabledLanguageInStandaloneMode(JS)
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
+        .withServerSentEventsEnabled()
+        .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
+        .build(client);
+      var projectKey = "projectKey";
+
+      sonarServerMock.stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java,js")
+        .willReturn(jsonResponse("{\"errors\":[{\"msg\":\"Some error from server\"}]}", 400)));
+
+      addConfigurationScope("configScope", "connectionId", projectKey);
+
+      await().atMost(Duration.ofSeconds(2))
+        .untilAsserted(() -> assertThat(requestedPaths()).containsExactly("/api/push/sonarlint_events?projectKeys=projectKey&languages=java,js"));
+
+      assertThat(client.getLogMessages())
+        .contains(
+          "Cannot connect to server event-stream (400), retrying in 60s",
+          "Received event-stream data while not connected: {\"errors\":[{\"msg\":\"Some error from server\"}]}");
     }
 
     @Test

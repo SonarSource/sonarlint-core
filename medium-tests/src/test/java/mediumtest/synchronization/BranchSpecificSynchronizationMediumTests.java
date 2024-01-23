@@ -94,15 +94,13 @@ class BranchSpecificSynchronizationMediumTests {
 
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("parentScope", "connectionId", "projectKey")
-      .withChildConfigScope("childScope", "parentScope")
       .withFullSynchronization()
       .build(client);
 
     backend.getConfigurationService().didAddConfigurationScopes(
       new DidAddConfigurationScopesParams(List.of(
         new ConfigurationScopeDto("parentScope", null, true, "Parent", new BindingConfigurationDto("connectionId", "projectKey", true)),
-        new ConfigurationScopeDto("childScope", null, true, "Child", new BindingConfigurationDto(null, null, true)))));
+        new ConfigurationScopeDto("childScope", "parentScope", true, "Child", new BindingConfigurationDto(null, null, true)))));
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
       assertThat(client.getLogMessages()).contains(

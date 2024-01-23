@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.fs;
 
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.LoadingCache;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
@@ -32,7 +30,9 @@ import org.sonar.api.CoreProperties;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonarsource.sonarlint.core.ServerFileExclusions;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
+import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelChecker;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -64,8 +64,9 @@ public class FileExclusionService {
   private final PathTranslationService pathTranslationService;
   private final ClientFileSystemService clientFileSystemService;
 
-  private final LoadingCache<URI, Boolean> serverExclusionByUri = Caffeine.newBuilder()
-    .build(this::computeExclusion);
+  private final SmartCancelableLoadingCache<URI, Boolean> serverExclusionByUriCache =
+    new SmartCancelableLoadingCache<>("sonarlint-file-exclusions", this::computeExclusion, (key, oldValue, newValue) -> {
+    });
 
   public FileExclusionService(ConfigurationRepository configRepo, StorageService storageService, PathTranslationService pathTranslationService,
     ClientFileSystemService clientFileSystemService) {
@@ -75,7 +76,8 @@ public class FileExclusionService {
     this.clientFileSystemService = clientFileSystemService;
   }
 
-  public boolean computeExclusion(URI fileUri) {
+  public boolean computeExclusion(URI fileUri, SonarLintCancelChecker cancelChecker) {
+    LOG.debug("Computing file exclusion for uri '{}'", fileUri);
     var clientFile = clientFileSystemService.getClientFile(fileUri);
     if (clientFile == null) {
       LOG.debug("Unable to find client file for uri {}", fileUri);
@@ -110,20 +112,28 @@ public class FileExclusionService {
       serverPath = idePath;
     }
     var type = clientFile.isTest() ? InputFile.Type.TEST : InputFile.Type.MAIN;
-    return !exclusionFilters.accept(serverPath.toString(), type);
+    var result = !exclusionFilters.accept(serverPath.toString(), type);
+    LOG.debug("File exclusion for uri '{}' is {}", fileUri, result);
+    return result;
   }
 
   @EventListener
   public void onBindingChanged(BindingConfigChangedEvent event) {
-    clientFileSystemService.getFiles(event.getConfigScopeId()).forEach(f -> serverExclusionByUri.invalidate(f.getUri()));
+    if (event.getNewConfig().isBound()) {
+      LOG.debug("Binding changed for config scope '{}', recompute file exclusions...", event.getConfigScopeId());
+      clientFileSystemService.getFiles(event.getConfigScopeId()).forEach(f -> serverExclusionByUriCache.refreshAsync(f.getUri()));
+    } else {
+      LOG.debug("Binding removed for config scope '{}', clearing file exclusions...", event.getConfigScopeId());
+      clientFileSystemService.getFiles(event.getConfigScopeId()).forEach(f -> serverExclusionByUriCache.clear(f.getUri()));
+    }
   }
 
   @EventListener
   public void onFileSystemUpdated(FileSystemUpdatedEvent event) {
-    event.getRemoved().forEach(f -> serverExclusionByUri.invalidate(f.getUri()));
+    event.getRemoved().forEach(f -> serverExclusionByUriCache.clear(f.getUri()));
     // We could try to be more efficient by looking at changed files, and deciding if we need to invalidate or not based on changed
     // attributes (relative path, isTest). But it's probably not worth the effort.
-    event.getAddedOrUpdated().forEach(f -> serverExclusionByUri.invalidate(f.getUri()));
+    event.getAddedOrUpdated().forEach(f -> serverExclusionByUriCache.refreshAsync(f.getUri()));
   }
 
   private static boolean isFileExclusionSettingsDifferent(Map<String, String> updatedSettingsValueByKey) {
@@ -134,8 +144,9 @@ public class FileExclusionService {
   public void onFileExclusionSettingsChanged(SonarServerSettingsChangedEvent event) {
     var settingsDiff = event.getUpdatedSettingsValueByKey();
     if (isFileExclusionSettingsDifferent(settingsDiff)) {
+      LOG.debug("File exclusion settings changed, recompute all file exclusions...");
       event.getConfigScopeIds().forEach(configScopeId -> clientFileSystemService.getFiles(configScopeId)
-        .forEach(f -> serverExclusionByUri.invalidate(f.getUri())));
+        .forEach(f -> serverExclusionByUriCache.refreshAsync(f.getUri())));
     }
   }
 
@@ -146,9 +157,8 @@ public class FileExclusionService {
       .filter(Objects::nonNull)
       .map(ClientFile::getUri)
       .collect(Collectors.toList());
-    return serverExclusionByUri.getAll(existingFileUris)
-      .entrySet()
-      .stream()
+    return existingFileUris.stream()
+      .map(k -> Map.entry(k, serverExclusionByUriCache.get(k)))
       .collect(toMap(Map.Entry::getKey, e -> new FileStatusDto(e.getValue())));
   }
 }

@@ -19,18 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.file;
 
-import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.google.common.util.concurrent.MoreExecutors;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.CheckForNull;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
@@ -38,8 +31,9 @@ import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.branch.MatchedSonarProjectBranchChangedEvent;
+import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelChecker;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
@@ -60,18 +54,13 @@ import static java.util.stream.Collectors.toList;
 @Singleton
 public class PathTranslationService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final int COMPUTE_PATHS_RETRY_LIMIT = 3;
-
   private final ClientFileSystemService clientFs;
   private final ServerApiProvider serverApiProvider;
   private final ConfigurationRepository configurationRepository;
 
-  private final ExecutorService executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-path-translation"));
-
-  private final AsyncLoadingCache<String, FilePathTranslation> cachedPathsTranslationByConfigScope = Caffeine.newBuilder()
-    .executor(executorService)
-    .buildAsync(this::computePaths);
-  private static final String UNABLE_TO_COMPUTE_PATHS = "Unable to compute paths translation";
+  private final SmartCancelableLoadingCache<String, FilePathTranslation> cachedPathsTranslationByConfigScope =
+    new SmartCancelableLoadingCache<>("sonarlint-path-translation", this::computePaths, (key, oldValue, newValue) -> {
+    });
 
   public PathTranslationService(ClientFileSystemService clientFs, ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository) {
     this.clientFs = clientFs;
@@ -80,22 +69,26 @@ public class PathTranslationService {
   }
 
   @CheckForNull
-  private FilePathTranslation computePaths(String configScopeId) {
-    LOG.debug("Computing paths translation for config scope '{}'", configScopeId);
+  private FilePathTranslation computePaths(String configScopeId, SonarLintCancelChecker cancelChecker) {
+    LOG.debug("Computing paths translation for config scope '{}'...", configScopeId);
     var fileMatcher = new FileTreeMatcher();
     var boundScope = configurationRepository.getBoundScope(configScopeId);
     if (boundScope == null) {
+      LOG.debug("Config scope '{}' does not exist or is not bound", configScopeId);
       return null;
     }
     var serverApiOpt = serverApiProvider.getServerApi(boundScope.getConnectionId());
     if (serverApiOpt.isEmpty()) {
+      LOG.debug("Connection '{}' does not exist", boundScope.getConnectionId());
       return null;
     }
     List<Path> serverFilePaths;
     try {
-      serverFilePaths = listAllFilePathsFromServer(serverApiOpt.get(), boundScope.getSonarProjectKey());
+      serverFilePaths = listAllFilePathsFromServer(serverApiOpt.get(), boundScope.getSonarProjectKey(), cancelChecker);
+    } catch (CancellationException e) {
+      throw e;
     } catch (Exception e) {
-      LOG.debug("Error while getter server file paths for project '{}'", boundScope.getSonarProjectKey(), e);
+      LOG.debug("Error while getting server file paths for project '{}'", boundScope.getSonarProjectKey(), e);
       return null;
     }
     return matchPaths(boundScope.getConfigScopeId(), fileMatcher, serverFilePaths);
@@ -114,66 +107,36 @@ public class PathTranslationService {
     return new FilePathTranslation(match.idePrefix(), match.sqPrefix());
   }
 
-  private static List<Path> listAllFilePathsFromServer(ServerApi serverApi, String projectKey) {
-    return serverApi.component().getAllFileKeys(projectKey, new ProgressMonitor(null)).stream()
-      .map(fileKey -> fileKey.substring(StringUtils.lastIndexOf(fileKey, ":") + 1))
+  private static List<Path> listAllFilePathsFromServer(ServerApi serverApi, String projectKey, SonarLintCancelChecker cancelChecker) {
+    return serverApi.component().getAllFileKeys(projectKey, cancelChecker).stream()
+      .map(fileKey -> StringUtils.substringAfterLast(fileKey, ":"))
       .map(Paths::get)
       .collect(toList());
   }
 
   @EventListener
   public void onConfigurationScopeRemoved(ConfigurationScopeRemovedEvent event) {
-    cancelAndInvalidate(event.getRemovedConfigurationScopeId());
+    cachedPathsTranslationByConfigScope.refreshAsync(event.getRemovedConfigurationScopeId());
   }
 
   @EventListener
   public void onBindingChanged(BindingConfigChangedEvent event) {
     var configScopeId = event.getConfigScopeId();
-    cancelAndInvalidate(configScopeId);
+    cachedPathsTranslationByConfigScope.refreshAsync(configScopeId);
   }
 
   @EventListener
   public void onBranchChanged(MatchedSonarProjectBranchChangedEvent event) {
     var configScopeId = event.getConfigurationScopeId();
-    cancelAndInvalidate(configScopeId);
-  }
-
-  private void cancelAndInvalidate(String configScopeId) {
-    var cachedFuture = cachedPathsTranslationByConfigScope.getIfPresent(configScopeId);
-    cachedPathsTranslationByConfigScope.synchronous().invalidate(configScopeId);
-    if (cachedFuture != null) {
-      cachedFuture.cancel(true);
-    }
+    cachedPathsTranslationByConfigScope.refreshAsync(configScopeId);
   }
 
   public Optional<FilePathTranslation> getOrComputePathTranslation(String configurationScopeId) {
-    return getOrComputePathTranslation(configurationScopeId, this.cachedPathsTranslationByConfigScope, 0);
-  }
-
-  Optional<FilePathTranslation> getOrComputePathTranslation(String configurationScopeId,
-    AsyncLoadingCache<String, FilePathTranslation> cachedPathsTranslationByConfigScope, int retryCounter) {
-    try {
-      return Optional.ofNullable(cachedPathsTranslationByConfigScope.get(configurationScopeId).get());
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      LOG.debug("Interrupted!", e);
-      return Optional.empty();
-    } catch (CancellationException e) {
-      if (retryCounter > COMPUTE_PATHS_RETRY_LIMIT) {
-        LOG.error(UNABLE_TO_COMPUTE_PATHS, e);
-        return Optional.empty();
-      }
-      return getOrComputePathTranslation(configurationScopeId, cachedPathsTranslationByConfigScope, retryCounter + 1);
-    } catch (ExecutionException e) {
-      LOG.error(UNABLE_TO_COMPUTE_PATHS, e);
-      return Optional.empty();
-    }
+    return Optional.ofNullable(cachedPathsTranslationByConfigScope.get(configurationScopeId));
   }
 
   @PreDestroy
   public void shutdown() {
-    if (!MoreExecutors.shutdownAndAwaitTermination(executorService, 1, TimeUnit.SECONDS)) {
-      LOG.warn("Unable to stop path translation executor service in a timely manner");
-    }
+    cachedPathsTranslationByConfigScope.close();
   }
 }

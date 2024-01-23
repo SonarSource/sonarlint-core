@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.rpc.protocol.utils.FutureAndShutdownCancelChecker;
 import org.springframework.beans.factory.BeanFactory;
 
 abstract class AbstractRpcServiceDelegate {
@@ -54,14 +55,20 @@ abstract class AbstractRpcServiceDelegate {
   }
 
   protected <R> CompletableFuture<R> requestAsync(Function<CancelChecker, R> code, @Nullable String configScopeId) {
-    return CompletableFutures.computeAsync(requestAndNotificationsSequentialExecutor, cancelChecker -> {
-      var wrapper = new CancelCheckerWrapper(cancelChecker);
-      wrapper.checkCanceled();
-      return wrapper;
-    }).thenApplyAsync(cancelChecker -> withLogger(() -> {
+    CompletableFuture<CancelChecker> start = new CompletableFuture<>();
+    // First we schedule the processing of the request on the sequential executor, to maintain ordering of notifications, requests, responses, and cancellations
+    var sequentialFuture = start.thenApplyAsync(cancelChecker -> {
+      // We can maybe cancel early
+      cancelChecker.checkCanceled();
+      return cancelChecker;
+    }, requestAndNotificationsSequentialExecutor);
+    // Then requests are processed asynchronously to not block the processing of notifications, responses and cancellations
+    var requestFuture = sequentialFuture.thenApplyAsync(cancelChecker -> withLogger(() -> {
       cancelChecker.checkCanceled();
       return code.apply(cancelChecker);
     }, configScopeId), requestsExecutor);
+    start.complete(new FutureAndShutdownCancelChecker(requestsExecutor, requestFuture));
+    return requestFuture;
   }
 
   protected CompletableFuture<Void> runAsync(Consumer<CancelChecker> code) {
@@ -69,17 +76,23 @@ abstract class AbstractRpcServiceDelegate {
   }
 
   protected CompletableFuture<Void> runAsync(Consumer<CancelChecker> code, @Nullable String configScopeId) {
-    return CompletableFutures.computeAsync(requestAndNotificationsSequentialExecutor, cancelChecker -> {
-      var wrapper = new CancelCheckerWrapper(cancelChecker);
-      wrapper.checkCanceled();
-      return wrapper;
-    }).thenApplyAsync(cancelChecker -> {
+    CompletableFuture<CancelChecker> start = new CompletableFuture<>();
+    // First we schedule the processing of the request on the sequential executor, to maintain ordering of notifications, requests, responses, and cancellations
+    var sequentialFuture = start.thenApplyAsync(cancelChecker -> {
+      // We can maybe cancel early
+      cancelChecker.checkCanceled();
+      return cancelChecker;
+    }, requestAndNotificationsSequentialExecutor);
+    // Then requests are processed asynchronously to not block the processing of notifications, responses and cancellations
+    var requestFuture = sequentialFuture.<Void>thenApplyAsync(cancelChecker -> {
       withLogger(() -> {
         cancelChecker.checkCanceled();
         code.accept(cancelChecker);
       }, configScopeId);
       return null;
     }, requestsExecutor);
+    start.complete(new FutureAndShutdownCancelChecker(requestsExecutor, requestFuture));
+    return requestFuture;
   }
 
   /**
@@ -115,23 +128,5 @@ abstract class AbstractRpcServiceDelegate {
       logOutputSupplier.get().setConfigScopeId(null);
     }
   }
-
-  private class CancelCheckerWrapper implements CancelChecker {
-
-    private final CancelChecker wrapped;
-
-    private CancelCheckerWrapper(CancelChecker wrapped) {
-      this.wrapped = wrapped;
-    }
-
-    @Override
-    public void checkCanceled() {
-      wrapped.checkCanceled();
-      if (requestsExecutor.isShutdown()) {
-        throw new CancellationException("Server is shutting down");
-      }
-    }
-  }
-
 
 }

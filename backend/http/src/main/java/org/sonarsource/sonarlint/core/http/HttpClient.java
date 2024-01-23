@@ -26,10 +26,7 @@ import java.util.function.Consumer;
 
 /**
  * The client(IDE) is responsible to provide an HttpClient, configured with authentication, timeouts, proxy support, ...
- *
- * @deprecated
  */
-@Deprecated
 public interface HttpClient {
 
   String JSON_CONTENT_TYPE = "application/json; charset=utf-8";
@@ -64,10 +61,7 @@ public interface HttpClient {
 
   Response post(String url, String contentType, String body);
 
-  default CompletableFuture<Response> postAsync(String url, String contentType, String body) {
-    // default implementation to keep backward compatibility
-    throw new UnsupportedOperationException();
-  }
+  CompletableFuture<Response> postAsync(String url, String contentType, String body);
 
   Response delete(String url, String contentType, String body);
 
