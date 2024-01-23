@@ -20,18 +20,17 @@
 package org.sonarsource.sonarlint.core;
 
 import com.google.common.collect.ImmutableSortedSet;
-import com.google.common.util.concurrent.MoreExecutors;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
@@ -45,15 +44,16 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
-import testutils.NoopCancelChecker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -77,12 +77,12 @@ class BindingSuggestionProviderTests {
   private final BindingClueProvider bindingClueProvider = mock(BindingClueProvider.class);
   private final SonarProjectsCache sonarProjectsCache = mock(SonarProjectsCache.class);
 
-  private final BindingSuggestionProvider underTest = new BindingSuggestionProvider(configRepository, connectionRepository, client, bindingClueProvider, sonarProjectsCache,
-    MoreExecutors.newDirectExecutorService());
+  private final BindingSuggestionProvider underTest = new BindingSuggestionProvider(configRepository, connectionRepository, client, bindingClueProvider, sonarProjectsCache);
 
   @BeforeEach
   public void setup() {
-    when(sonarProjectsCache.getTextSearchIndex(anyString())).thenReturn(new TextSearchIndex<>());
+    when(sonarProjectsCache.getTextSearchIndex(anyString(), any(SonarLintCancelMonitor.class))).thenReturn(new TextSearchIndex<>());
+    logTester.clear();
   }
 
   @Test
@@ -173,13 +173,13 @@ class BindingSuggestionProviderTests {
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(ImmutableSortedSet.of("configScopeWithNoBinding", "configScopeWithNoConfig", "configScopeNotBindable", "alreadyBound", "suggestionsDisabled")));
 
-    assertThat(logTester.logs(LogOutput.Level.DEBUG))
+    await().untilAsserted(() -> assertThat(logTester.logs(LogOutput.Level.DEBUG))
       .contains(
         "Configuration scope 'configScopeWithNoBinding' is gone.",
         "Configuration scope 'configScopeWithNoConfig' is gone.",
         "Configuration scope 'configScopeNotBindable' is not bindable.",
         "Configuration scope 'alreadyBound' is already bound.",
-        "Configuration scope 'suggestionsDisabled' has binding suggestions disabled.");
+        "Configuration scope 'suggestionsDisabled' has binding suggestions disabled."));
   }
 
   @Test
@@ -198,11 +198,11 @@ class BindingSuggestionProviderTests {
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(ImmutableSortedSet.of("brokenBinding1", "brokenBinding2", "connectionGone")));
 
-    assertThat(logTester.logs(LogOutput.Level.DEBUG))
+    await().untilAsserted(() -> assertThat(logTester.logs(LogOutput.Level.DEBUG))
       .contains(
         "Found 0 suggestions for configuration scope 'brokenBinding1'",
         "Found 0 suggestions for configuration scope 'brokenBinding2'",
-        "Found 0 suggestions for configuration scope 'connectionGone'");
+        "Found 0 suggestions for configuration scope 'connectionGone'"));
   }
 
   @Test
@@ -213,22 +213,22 @@ class BindingSuggestionProviderTests {
     when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "Config scope"));
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
 
-    when(bindingClueProvider.collectBindingCluesWithConnections(eq(CONFIG_SCOPE_ID_1), eq(Set.of(SQ_1_ID)), any(CancelChecker.class)))
+    when(bindingClueProvider.collectBindingCluesWithConnections(eq(CONFIG_SCOPE_ID_1), eq(Set.of(SQ_1_ID)), any(SonarLintCancelMonitor.class)))
       .thenReturn(List.of(new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1), Set.of(SQ_1_ID))));
 
-    when(sonarProjectsCache.getSonarProject(SQ_1_ID, PROJECT_KEY_1)).thenReturn(Optional.of(SERVER_PROJECT_1));
+    when(sonarProjectsCache.getSonarProject(eq(SQ_1_ID), eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class))).thenReturn(Optional.of(SERVER_PROJECT_1));
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID_1)));
+
+    var captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
+    verify(client, timeout(1000)).suggestBinding(captor.capture());
 
     assertThat(logTester.logs(LogOutput.Level.DEBUG))
       .containsExactly(
         "Binding suggestion computation queued for config scopes '" + CONFIG_SCOPE_ID_1 + "'...",
         "Found 1 suggestion for configuration scope '" + CONFIG_SCOPE_ID_1 + "'");
 
-    verify(sonarProjectsCache, never()).getTextSearchIndex(anyString());
-
-    var captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
-    verify(client).suggestBinding(captor.capture());
+    verify(sonarProjectsCache, never()).getTextSearchIndex(anyString(), any(SonarLintCancelMonitor.class));
 
     var params = captor.getValue();
     assertThat(params.getSuggestions()).containsOnlyKeys(CONFIG_SCOPE_ID_1);
@@ -246,16 +246,19 @@ class BindingSuggestionProviderTests {
     when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "KEYWORD"));
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
 
-    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID), new NoopCancelChecker()))
+    when(bindingClueProvider.collectBindingCluesWithConnections(eq(CONFIG_SCOPE_ID_1), eq(Set.of(SQ_1_ID)), any(SonarLintCancelMonitor.class)))
       .thenReturn(List.of(new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1), Set.of(SQ_1_ID))));
 
-    when(sonarProjectsCache.getSonarProject(SQ_1_ID, PROJECT_KEY_1)).thenReturn(Optional.empty());
-    when(sonarProjectsCache.getSonarProject(SC_1_ID, PROJECT_KEY_1)).thenReturn(Optional.empty());
+    when(sonarProjectsCache.getSonarProject(eq(SQ_1_ID), eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class))).thenReturn(Optional.empty());
+    when(sonarProjectsCache.getSonarProject(eq(SC_1_ID), eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class))).thenReturn(Optional.empty());
     var searchIndex = new TextSearchIndex<ServerProject>();
     searchIndex.index(SERVER_PROJECT_1, "foo bar keyword");
-    when(sonarProjectsCache.getTextSearchIndex(SC_1_ID)).thenReturn(searchIndex);
+    when(sonarProjectsCache.getTextSearchIndex(eq(SC_1_ID), any(SonarLintCancelMonitor.class))).thenReturn(searchIndex);
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID_1)));
+
+    var captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
+    verify(client, timeout(1000)).suggestBinding(captor.capture());
 
     assertThat(logTester.logs(LogOutput.Level.DEBUG))
       .containsExactlyInAnyOrder(
@@ -264,9 +267,6 @@ class BindingSuggestionProviderTests {
         "Attempt to find a good match for 'KEYWORD' on connection '" + SC_1_ID + "'...",
         "Best score = 0.33",
         "Found 1 suggestion for configuration scope '" + CONFIG_SCOPE_ID_1 + "'");
-
-    var captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
-    verify(client).suggestBinding(captor.capture());
 
     var params = captor.getValue();
     assertThat(params.getSuggestions()).containsOnlyKeys(CONFIG_SCOPE_ID_1);
@@ -284,16 +284,19 @@ class BindingSuggestionProviderTests {
     when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "KEYWORD"));
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
 
-    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID), new NoopCancelChecker()))
+    when(bindingClueProvider.collectBindingCluesWithConnections(eq(CONFIG_SCOPE_ID_1), eq(Set.of(SQ_1_ID)), any(SonarLintCancelMonitor.class)))
       .thenReturn(List.of(new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1), Set.of(SQ_1_ID))));
 
-    when(sonarProjectsCache.getSonarProject(SQ_1_ID, PROJECT_KEY_1)).thenReturn(Optional.empty());
-    when(sonarProjectsCache.getSonarProject(SC_1_ID, PROJECT_KEY_1)).thenReturn(Optional.empty());
+    when(sonarProjectsCache.getSonarProject(eq(SQ_1_ID), eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class))).thenReturn(Optional.empty());
+    when(sonarProjectsCache.getSonarProject(eq(SC_1_ID), eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class))).thenReturn(Optional.empty());
     var searchIndex = new TextSearchIndex<ServerProject>();
     searchIndex.index(SERVER_PROJECT_1, "foo bar keyword");
-    when(sonarProjectsCache.getTextSearchIndex(SC_1_ID)).thenReturn(searchIndex);
+    when(sonarProjectsCache.getTextSearchIndex(eq(SC_1_ID), any(SonarLintCancelMonitor.class))).thenReturn(searchIndex);
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID_1)));
+
+    var captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
+    verify(client, timeout(1000)).suggestBinding(captor.capture());
 
     assertThat(logTester.logs(LogOutput.Level.DEBUG))
       .containsExactlyInAnyOrder(
@@ -302,9 +305,6 @@ class BindingSuggestionProviderTests {
         "Attempt to find a good match for 'KEYWORD' on connection '" + SC_1_ID + "'...",
         "Best score = 0.33",
         "Found 1 suggestion for configuration scope '" + CONFIG_SCOPE_ID_1 + "'");
-
-    var captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
-    verify(client).suggestBinding(captor.capture());
 
     var params = captor.getValue();
     assertThat(params.getSuggestions()).containsOnlyKeys(CONFIG_SCOPE_ID_1);
@@ -315,18 +315,19 @@ class BindingSuggestionProviderTests {
 
   @Test
   void get_suggested_binding() {
+    var cancelMonitor = new SonarLintCancelMonitor();
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
     when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "foo-bar"));
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
-    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID), new NoopCancelChecker()))
+    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID), cancelMonitor))
       .thenReturn(List.of(
         new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.SonarQubeBindingClue(null, null), Set.of(SQ_1_ID))));
     var searchIndex = new TextSearchIndex<ServerProject>();
     searchIndex.index(SERVER_PROJECT_1, "foo bar garbage1");
-    when(sonarProjectsCache.getTextSearchIndex(SQ_1_ID)).thenReturn(searchIndex);
-    when(sonarProjectsCache.getSonarProject(SQ_1_ID, PROJECT_KEY_1)).thenReturn(Optional.empty());
+    when(sonarProjectsCache.getTextSearchIndex(SQ_1_ID, cancelMonitor)).thenReturn(searchIndex);
+    when(sonarProjectsCache.getSonarProject(SQ_1_ID, PROJECT_KEY_1, cancelMonitor)).thenReturn(Optional.empty());
 
-    var bindingSuggestions = underTest.getBindingSuggestions(CONFIG_SCOPE_ID_1, SQ_1_ID, new NoopCancelChecker());
+    var bindingSuggestions = underTest.getBindingSuggestions(CONFIG_SCOPE_ID_1, SQ_1_ID, cancelMonitor);
     assertThat(bindingSuggestions).hasSize(1);
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID_1))
       .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
@@ -344,24 +345,24 @@ class BindingSuggestionProviderTests {
     when(configRepository.getConfigScopeIds()).thenReturn(Set.of(CONFIG_SCOPE_ID_1));
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
 
-    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID), new NoopCancelChecker()))
+    when(bindingClueProvider.collectBindingCluesWithConnections(eq(CONFIG_SCOPE_ID_1), eq(Set.of(SQ_1_ID)), any(SonarLintCancelMonitor.class)))
       .thenReturn(List.of(
         new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1), Set.of(SQ_1_ID, SC_1_ID))));
 
-    when(sonarProjectsCache.getSonarProject(SQ_1_ID, PROJECT_KEY_1)).thenReturn(Optional.empty());
-    when(sonarProjectsCache.getSonarProject(SC_1_ID, PROJECT_KEY_1)).thenReturn(Optional.empty());
+    when(sonarProjectsCache.getSonarProject(eq(SQ_1_ID), eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class))).thenReturn(Optional.empty());
+    when(sonarProjectsCache.getSonarProject(eq(SC_1_ID), eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class))).thenReturn(Optional.empty());
 
     var searchIndex = new TextSearchIndex<ServerProject>();
     searchIndex.index(SERVER_PROJECT_1, "foo bar garbage1");
     searchIndex.index(serverProject("key2", "Project 2"), "foo bar garbage2");
     searchIndex.index(serverProject("key3", "Project 3"), "foo bar more garbage");
-    when(sonarProjectsCache.getTextSearchIndex(SC_1_ID)).thenReturn(searchIndex);
-    when(sonarProjectsCache.getTextSearchIndex(SQ_1_ID)).thenReturn(searchIndex);
+    when(sonarProjectsCache.getTextSearchIndex(eq(SC_1_ID), any(SonarLintCancelMonitor.class))).thenReturn(searchIndex);
+    when(sonarProjectsCache.getTextSearchIndex(eq(SQ_1_ID), any(SonarLintCancelMonitor.class))).thenReturn(searchIndex);
 
     underTest.connectionAdded(new ConnectionConfigurationAddedEvent(SQ_1_ID));
 
     var captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
-    verify(client).suggestBinding(captor.capture());
+    verify(client, timeout(1000)).suggestBinding(captor.capture());
 
     var params = captor.getValue();
     assertThat(params.getSuggestions()).containsOnlyKeys(CONFIG_SCOPE_ID_1);
@@ -380,21 +381,24 @@ class BindingSuggestionProviderTests {
     when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "foo-bar"));
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
 
-    when(bindingClueProvider.collectBindingCluesWithConnections(eq(CONFIG_SCOPE_ID_1), eq(Set.of(SQ_1_ID)), any(CancelChecker.class)))
+    when(bindingClueProvider.collectBindingCluesWithConnections(eq(CONFIG_SCOPE_ID_1), eq(Set.of(SQ_1_ID)), any(SonarLintCancelMonitor.class)))
       .thenReturn(List.of(
         new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1), Set.of(SQ_1_ID, SC_1_ID)),
         new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.SonarCloudBindingClue(null, null), Set.of(SC_1_ID))));
 
-    when(sonarProjectsCache.getSonarProject(SQ_1_ID, PROJECT_KEY_1)).thenReturn(Optional.empty());
-    when(sonarProjectsCache.getSonarProject(SC_1_ID, PROJECT_KEY_1)).thenReturn(Optional.empty());
+    when(sonarProjectsCache.getSonarProject(eq(SQ_1_ID), eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class))).thenReturn(Optional.empty());
+    when(sonarProjectsCache.getSonarProject(eq(SC_1_ID), eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class))).thenReturn(Optional.empty());
 
     var searchIndex = new TextSearchIndex<ServerProject>();
     searchIndex.index(SERVER_PROJECT_1, "foo bar garbage1");
     searchIndex.index(serverProject("key2", "Project 2"), "foo bar garbage2");
     searchIndex.index(serverProject("key3", "Project 3"), "foo bar more garbage");
-    when(sonarProjectsCache.getTextSearchIndex(SC_1_ID)).thenReturn(searchIndex);
+    when(sonarProjectsCache.getTextSearchIndex(eq(SC_1_ID), any(SonarLintCancelMonitor.class))).thenReturn(searchIndex);
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID_1)));
+
+    var captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
+    verify(client, timeout(1000)).suggestBinding(captor.capture());
 
     assertThat(logTester.logs(LogOutput.Level.DEBUG))
       .containsExactly(
@@ -402,9 +406,6 @@ class BindingSuggestionProviderTests {
         "Attempt to find a good match for 'foo-bar' on connection '" + SC_1_ID + "'...",
         "Best score = 0.67",
         "Found 2 suggestions for configuration scope '" + CONFIG_SCOPE_ID_1 + "'");
-
-    var captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
-    verify(client).suggestBinding(captor.capture());
 
     var params = captor.getValue();
     assertThat(params.getSuggestions()).containsOnlyKeys(CONFIG_SCOPE_ID_1);

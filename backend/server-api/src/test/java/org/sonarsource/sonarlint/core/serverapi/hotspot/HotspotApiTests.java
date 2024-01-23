@@ -28,11 +28,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
-import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
+import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
@@ -63,7 +63,7 @@ class HotspotApiTests {
 
   @Test
   void it_should_call_the_expected_api_endpoint_when_fetching_hotspot_details() {
-    underTest.fetch("h");
+    underTest.fetch("h", new SonarLintCancelMonitor());
 
     var recordedRequest = mockServer.takeRequest();
     assertThat(recordedRequest.getPath()).isEqualTo("/api/hotspots/show.protobuf?hotspot=h");
@@ -71,7 +71,7 @@ class HotspotApiTests {
 
   @Test
   void it_should_urlencode_the_hotspot_and_project_keys_when_fetching_hotspot_details() {
-    underTest.fetch("hot/spot");
+    underTest.fetch("hot/spot", new SonarLintCancelMonitor());
 
     var recordedRequest = mockServer.takeRequest();
     assertThat(recordedRequest.getPath()).isEqualTo("/api/hotspots/show.protobuf?hotspot=hot%2Fspot");
@@ -97,7 +97,7 @@ class HotspotApiTests {
       .build());
     mockServer.addStringResponse("/api/sources/raw?key=" + UrlUtils.urlEncode("myproject:path"), "Even\nBefore My\n\tCode\n  Snippet And\n After");
 
-    var remoteHotspot = underTest.fetch("h");
+    var remoteHotspot = underTest.fetch("h", new SonarLintCancelMonitor());
 
     assertThat(remoteHotspot).isNotEmpty();
     var hotspot = remoteHotspot.get();
@@ -137,7 +137,7 @@ class HotspotApiTests {
       .build());
     mockServer.addStringResponse("/api/sources/raw?key=" + UrlUtils.urlEncode("myproject:path"), "Even\nBefore My\n\tCode\n  Snippet And\n After");
 
-    var remoteHotspot = underTest.fetch("h");
+    var remoteHotspot = underTest.fetch("h", new SonarLintCancelMonitor());
 
     assertThat(remoteHotspot).isNotEmpty();
     var hotspot = remoteHotspot.get();
@@ -146,7 +146,7 @@ class HotspotApiTests {
 
   @Test
   void it_should_return_empty_optional_when_ws_client_throws_an_exception() {
-    var remoteHotspot = underTest.fetch("h");
+    var remoteHotspot = underTest.fetch("h", new SonarLintCancelMonitor());
     assertThat(remoteHotspot).isEmpty();
   }
 
@@ -154,7 +154,7 @@ class HotspotApiTests {
   void it_should_throw_when_parser_throws_an_exception() {
     mockServer.addProtobufResponse("/api/hotspots/show.protobuf?hotspot=h", Issues.SearchWsResponse.newBuilder().build());
 
-    assertThrows(IllegalArgumentException.class, () -> underTest.fetch("h"));
+    assertThrows(IllegalArgumentException.class, () -> underTest.fetch("h", new SonarLintCancelMonitor()));
   }
 
   @Test
@@ -173,7 +173,7 @@ class HotspotApiTests {
         .build())
       .build());
 
-    var remoteHotspot = underTest.fetch("h");
+    var remoteHotspot = underTest.fetch("h", new SonarLintCancelMonitor());
 
     assertThat(remoteHotspot).isNotEmpty();
     var hotspot = remoteHotspot.get();
@@ -197,7 +197,7 @@ class HotspotApiTests {
         .build())
       .build());
 
-    var remoteHotspot = underTest.fetch("h");
+    var remoteHotspot = underTest.fetch("h", new SonarLintCancelMonitor());
 
     assertThat(remoteHotspot).isNotEmpty();
     var hotspot = remoteHotspot.get();
@@ -280,7 +280,7 @@ class HotspotApiTests {
       .addComponents(Hotspots.Component.newBuilder().setKey("component:path6").setPath("path6").build())
       .build());
 
-    var hotspots = underTest.getAll("p", "branch", new ProgressMonitor(null));
+    var hotspots = underTest.getAll("p", "branch", new SonarLintCancelMonitor());
 
     assertThat(hotspots)
       .extracting("key", "ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "creationDate",
@@ -311,7 +311,7 @@ class HotspotApiTests {
       .addComponents(Hotspots.Component.newBuilder().setKey("component:path/to/file.ext").setPath("path/to/file.ext").build())
       .build());
 
-    var hotspots = underTest.getFromFile("p", Path.of("path/to/file.ext"), "branch");
+    var hotspots = underTest.getFromFile("p", Path.of("path/to/file.ext"), "branch", new SonarLintCancelMonitor());
 
     assertThat(hotspots)
       .extracting("key", "ruleKey", "message", "filePath", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset", "creationDate",
@@ -330,7 +330,7 @@ class HotspotApiTests {
         .build())
       .build());
 
-    var hotspots = underTest.getAll("p", "branch", new ProgressMonitor(null));
+    var hotspots = underTest.getAll("p", "branch", new SonarLintCancelMonitor());
 
     assertThat(logTester.logs())
       .contains("Error while fetching security hotspots, the component 'component:path' is missing");

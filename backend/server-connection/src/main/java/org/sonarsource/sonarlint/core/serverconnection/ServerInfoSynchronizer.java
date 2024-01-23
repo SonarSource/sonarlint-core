@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 
 public class ServerInfoSynchronizer {
@@ -28,16 +29,16 @@ public class ServerInfoSynchronizer {
     this.storage = storage;
   }
 
-  public StoredServerInfo readOrSynchronizeServerInfo(ServerApi serverApi) {
+  public StoredServerInfo readOrSynchronizeServerInfo(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
     return storage.serverInfo().read()
       .orElseGet(() -> {
-        synchronize(serverApi);
+        synchronize(serverApi, cancelMonitor);
         return storage.serverInfo().read().get();
       });
   }
 
-  public void synchronize(ServerApi serverApi) {
-    var serverStatus = serverApi.system().getStatusSync();
+  public void synchronize(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
+    var serverStatus = serverApi.system().getStatus(cancelMonitor);
     ServerVersionAndStatusChecker.checkServerUpAndSupported(serverStatus);
     storage.serverInfo().store(serverStatus);
   }

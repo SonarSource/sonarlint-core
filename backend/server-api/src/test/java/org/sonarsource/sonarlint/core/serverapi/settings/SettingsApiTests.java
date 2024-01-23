@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.serverapi.settings;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Settings;
 
@@ -59,7 +60,7 @@ class SettingsApiTests {
       .build();
     mockServer.addProtobufResponse("/api/settings/values.protobuf?component=foo", response);
 
-    var projectSettings = new SettingsApi(mockServer.serverApiHelper()).getProjectSettings("foo");
+    var projectSettings = new SettingsApi(mockServer.serverApiHelper()).getProjectSettings("foo", new SonarLintCancelMonitor());
 
     assertThat(projectSettings).containsOnly(
       entry("sonar.inclusions", "**/*.java"),

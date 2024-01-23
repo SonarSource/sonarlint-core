@@ -29,9 +29,10 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.IssueLite;
@@ -59,16 +60,17 @@ public class IssueDownloader {
    * Fetch all issues of the component with specified key.
    * If the component doesn't exist or it exists but has no issues, an empty iterator is returned.
    *
-   * @param key        project key, or file key.
-   * @param branchName name of the branch.
+   * @param key           project key, or file key.
+   * @param branchName    name of the branch.
+   * @param cancelMonitor
    * @return List of issues. It can be empty but never null.
    */
-  public List<ServerIssue<?>> downloadFromBatch(ServerApi serverApi, String key, @Nullable String branchName) {
+  public List<ServerIssue<?>> downloadFromBatch(ServerApi serverApi, String key, @Nullable String branchName, SonarLintCancelMonitor cancelMonitor) {
     var issueApi = serverApi.issue();
 
     List<ServerIssue<?>> result = new ArrayList<>();
 
-    var batchIssues = issueApi.downloadAllFromBatchIssues(key, branchName);
+    var batchIssues = issueApi.downloadAllFromBatchIssues(key, branchName, cancelMonitor);
 
     for (ScannerInput.ServerIssue batchIssue : batchIssues) {
       // We ignore project level issues
@@ -87,10 +89,10 @@ public class IssueDownloader {
    * @param branchName name of the branch.
    * @return List of issues. It can be empty but never null.
    */
-  public PullResult downloadFromPull(ServerApi serverApi, String projectKey, String branchName, Optional<Instant> lastSync) {
+  public PullResult downloadFromPull(ServerApi serverApi, String projectKey, String branchName, Optional<Instant> lastSync, SonarLintCancelMonitor cancelMonitor) {
     var issueApi = serverApi.issue();
 
-    var apiResult = issueApi.pullIssues(projectKey, branchName, enabledLanguages, lastSync.map(Instant::toEpochMilli).orElse(null));
+    var apiResult = issueApi.pullIssues(projectKey, branchName, enabledLanguages, lastSync.map(Instant::toEpochMilli).orElse(null), cancelMonitor);
     // Ignore project level issues
     List<ServerIssue<?>> changedIssues = apiResult.getIssues()
       .stream()

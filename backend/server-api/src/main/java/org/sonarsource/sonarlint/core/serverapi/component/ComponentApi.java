@@ -24,8 +24,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelChecker;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Components;
@@ -39,7 +38,7 @@ public class ComponentApi {
     this.helper = helper;
   }
 
-  public List<String> getAllFileKeys(String projectKey, SonarLintCancelChecker cancelChecker) {
+  public List<String> getAllFileKeys(String projectKey, SonarLintCancelMonitor cancelMonitor) {
     var path = buildAllFileKeysPath(projectKey);
     List<String> files = new ArrayList<>();
 
@@ -47,7 +46,7 @@ public class ComponentApi {
       Components.TreeWsResponse::parseFrom,
       r -> r.getPaging().getTotal(),
       Components.TreeWsResponse::getComponentsList,
-      component -> files.add(component.getKey()), false, cancelChecker);
+      component -> files.add(component.getKey()), false, cancelMonitor);
     return files;
   }
 
@@ -59,11 +58,11 @@ public class ComponentApi {
     return url.toString();
   }
 
-  public Optional<ServerProject> getProject(String projectKey) {
-    return fetchComponent(projectKey).map(component -> new DefaultRemoteProject(component.getKey(), component.getName()));
+  public Optional<ServerProject> getProject(String projectKey, SonarLintCancelMonitor cancelMonitor) {
+    return fetchComponent(projectKey, cancelMonitor).map(component -> new DefaultRemoteProject(component.getKey(), component.getName()));
   }
 
-  public List<ServerProject> getAllProjects(ProgressMonitor progress) {
+  public List<ServerProject> getAllProjects(SonarLintCancelMonitor cancelMonitor) {
     List<ServerProject> serverProjects = new ArrayList<>();
     helper.getPaginated(getAllProjectsUrl(),
       Components.SearchWsResponse::parseFrom,
@@ -71,7 +70,7 @@ public class ComponentApi {
       Components.SearchWsResponse::getComponentsList,
       project -> serverProjects.add(new DefaultRemoteProject(project.getKey(), project.getName())),
       true,
-      progress);
+      cancelMonitor);
     return serverProjects;
   }
 
@@ -83,20 +82,20 @@ public class ComponentApi {
     return searchUrl.toString();
   }
 
-  private Optional<Component> fetchComponent(String componentKey) {
+  private Optional<Component> fetchComponent(String componentKey, SonarLintCancelMonitor cancelMonitor) {
     return fetchComponent(componentKey, response -> {
       var wsComponent = response.getComponent();
       return new Component(wsComponent.getKey(), wsComponent.getName());
-    });
+    }, cancelMonitor);
   }
 
-  public Optional<String> fetchFirstAncestorKey(String componentKey) {
-    return fetchComponent(componentKey, response -> response.getAncestorsList().stream().map(Components.Component::getKey).findFirst().orElse(null));
+  public Optional<String> fetchFirstAncestorKey(String componentKey, SonarLintCancelMonitor cancelMonitor) {
+    return fetchComponent(componentKey, response -> response.getAncestorsList().stream().map(Components.Component::getKey).findFirst().orElse(null), cancelMonitor);
   }
 
-  private <T> Optional<T> fetchComponent(String componentKey, Function<Components.ShowWsResponse, T> responseConsumer) {
+  private <T> Optional<T> fetchComponent(String componentKey, Function<Components.ShowWsResponse, T> responseConsumer, SonarLintCancelMonitor cancelMonitor) {
     return ServerApiHelper.processTimed(
-      () -> helper.rawGet("api/components/show.protobuf?component=" + UrlUtils.urlEncode(componentKey)),
+      () -> helper.rawGet("api/components/show.protobuf?component=" + UrlUtils.urlEncode(componentKey), cancelMonitor),
       response -> {
         if (response.isSuccessful()) {
           var wsResponse = Components.ShowWsResponse.parseFrom(response.bodyAsStream());

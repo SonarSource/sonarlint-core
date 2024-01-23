@@ -41,12 +41,12 @@ class RulesRpcServiceDelegate extends AbstractRpcServiceDelegate implements Rule
 
   @Override
   public CompletableFuture<GetEffectiveRuleDetailsResponse> getEffectiveRuleDetails(GetEffectiveRuleDetailsParams params) {
-    return requestAsync(cancelChecker -> {
+    return requestAsync(cancelMonitor -> {
       try {
         return new GetEffectiveRuleDetailsResponse(
-          getBean(RulesService.class).getEffectiveRuleDetails(params.getConfigurationScopeId(), params.getRuleKey(), params.getContextKey()));
+          getBean(RulesService.class).getEffectiveRuleDetails(params.getConfigurationScopeId(), params.getRuleKey(), params.getContextKey(), cancelMonitor));
       } catch (RuleNotFoundException e) {
-        ResponseError error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, e.getMessage(), e.getRuleKey());
+        var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, e.getMessage(), e.getRuleKey());
         throw new ResponseErrorException(error);
       }
     }, params.getConfigurationScopeId());
@@ -54,12 +54,12 @@ class RulesRpcServiceDelegate extends AbstractRpcServiceDelegate implements Rule
 
   @Override
   public CompletableFuture<ListAllStandaloneRulesDefinitionsResponse> listAllStandaloneRulesDefinitions() {
-    return requestAsync(cancelChecker -> new ListAllStandaloneRulesDefinitionsResponse(getBean(RulesService.class).listAllStandaloneRulesDefinitions()));
+    return requestAsync(cancelMonitor -> new ListAllStandaloneRulesDefinitionsResponse(getBean(RulesService.class).listAllStandaloneRulesDefinitions()));
   }
 
   @Override
   public CompletableFuture<GetStandaloneRuleDescriptionResponse> getStandaloneRuleDetails(GetStandaloneRuleDescriptionParams params) {
-    return requestAsync(cancelChecker -> getBean(RulesService.class).getStandaloneRuleDetails(params.getRuleKey()));
+    return requestAsync(cancelMonitor -> getBean(RulesService.class).getStandaloneRuleDetails(params.getRuleKey()));
   }
 
   @Override

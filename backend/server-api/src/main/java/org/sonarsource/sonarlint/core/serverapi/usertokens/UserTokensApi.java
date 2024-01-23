@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.usertokens;
 
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 import static org.sonarsource.sonarlint.core.http.HttpClient.FORM_URL_ENCODED_CONTENT_TYPE;
@@ -35,10 +36,8 @@ public class UserTokensApi {
     this.helper = helper;
   }
 
-  public void revoke(String tokenName) {
+  public void revoke(String tokenName, SonarLintCancelMonitor cancelMonitor) {
     var body = "name=" + urlEncode(tokenName);
-    try (var r = helper.postAsync("/api/user_tokens/revoke", FORM_URL_ENCODED_CONTENT_TYPE, body).join()) {
-      // No content expected
-    }
+    helper.post("/api/user_tokens/revoke", FORM_URL_ENCODED_CONTENT_TYPE, body, cancelMonitor);
   }
 }

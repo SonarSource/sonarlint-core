@@ -26,7 +26,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.branches.ServerBranch;
 import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfile;
@@ -49,9 +49,9 @@ public class LocalStorageSynchronizer {
     this.serverInfoSynchronizer = serverInfoSynchronizer;
   }
 
-  public boolean synchronizeServerInfosAndPlugins(ServerApi serverApi) {
-    serverInfoSynchronizer.synchronize(serverApi);
-    return pluginsSynchronizer.synchronize(serverApi, new ProgressMonitor(null));
+  public boolean synchronizeServerInfosAndPlugins(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
+    serverInfoSynchronizer.synchronize(serverApi, cancelMonitor);
+    return pluginsSynchronizer.synchronize(serverApi, cancelMonitor);
   }
 
   private static AnalyzerSettingsUpdateSummary diffAnalyzerConfiguration(AnalyzerConfiguration original, AnalyzerConfiguration updated) {
@@ -65,8 +65,8 @@ public class LocalStorageSynchronizer {
     return new AnalyzerSettingsUpdateSummary(updatedSettingsValueByKey);
   }
 
-  public AnalyzerSettingsUpdateSummary synchronizeAnalyzerConfig(ServerApi serverApi, String projectKey) {
-    var updatedAnalyzerConfiguration = synchronizeAnalyzerConfig(serverApi, projectKey, new ProgressMonitor(null));
+  public AnalyzerSettingsUpdateSummary synchronizeAnalyzerConfig(ServerApi serverApi, String projectKey, SonarLintCancelMonitor cancelMonitor) {
+    var updatedAnalyzerConfiguration = downloadAnalyzerConfig(serverApi, projectKey, cancelMonitor);
     AnalyzerSettingsUpdateSummary configUpdateSummary;
     try {
       var originalAnalyzerConfiguration = storage.project(projectKey).analyzerConfiguration().read();
@@ -77,12 +77,12 @@ public class LocalStorageSynchronizer {
 
     storage.project(projectKey).analyzerConfiguration().store(updatedAnalyzerConfiguration);
     var version = storage.serverInfo().read().orElseThrow().getVersion();
-    serverApi.newCodeApi().getNewCodeDefinition(projectKey, null, version)
+    serverApi.newCodeApi().getNewCodeDefinition(projectKey, null, version, cancelMonitor)
       .ifPresent(ncd -> storage.project(projectKey).newCodeDefinition().store(ncd));
     return configUpdateSummary;
   }
 
-  private AnalyzerConfiguration synchronizeAnalyzerConfig(ServerApi serverApi, String projectKey, ProgressMonitor progressMonitor) {
+  private AnalyzerConfiguration downloadAnalyzerConfig(ServerApi serverApi, String projectKey, SonarLintCancelMonitor cancelMonitor) {
     LOG.info("[SYNC] Synchronizing analyzer configuration for project '{}'", projectKey);
     Map<String, RuleSet> currentRuleSets;
     int currentSchemaVersion;
@@ -96,22 +96,22 @@ public class LocalStorageSynchronizer {
     }
     var shouldForceRuleSetUpdate = outdatedSchema(currentSchemaVersion);
     var currentRuleSetsFinal = currentRuleSets;
-    var settings = new Settings(serverApi.settings().getProjectSettings(projectKey));
-    var ruleSetsByLanguageKey = serverApi.qualityProfile().getQualityProfiles(projectKey).stream()
+    var settings = new Settings(serverApi.settings().getProjectSettings(projectKey, cancelMonitor));
+    var ruleSetsByLanguageKey = serverApi.qualityProfile().getQualityProfiles(projectKey, cancelMonitor).stream()
       .filter(qualityProfile -> enabledLanguageKeys.contains(qualityProfile.getLanguage()))
-      .collect(Collectors.toMap(QualityProfile::getLanguage, profile -> toRuleSet(serverApi, currentRuleSetsFinal, profile, shouldForceRuleSetUpdate, progressMonitor)));
+      .collect(Collectors.toMap(QualityProfile::getLanguage, profile -> toRuleSet(serverApi, currentRuleSetsFinal, profile, shouldForceRuleSetUpdate, cancelMonitor)));
     return new AnalyzerConfiguration(settings, ruleSetsByLanguageKey, AnalyzerConfiguration.CURRENT_SCHEMA_VERSION);
   }
 
   private static RuleSet toRuleSet(ServerApi serverApi, Map<String, RuleSet> currentRuleSets, QualityProfile profile, boolean forceUpdate,
-    ProgressMonitor progressMonitor) {
+    SonarLintCancelMonitor cancelMonitor) {
     var language = profile.getLanguage();
     if (forceUpdate ||
       newlySupportedLanguage(currentRuleSets, language) ||
       profileModifiedSinceLastSync(currentRuleSets, profile, language)) {
       var profileKey = profile.getKey();
       LOG.info("[SYNC] Fetching rule set for language '{}' from profile '{}'", language, profileKey);
-      var profileActiveRules = serverApi.rules().getAllActiveRules(profileKey, progressMonitor);
+      var profileActiveRules = serverApi.rules().getAllActiveRules(profileKey, cancelMonitor);
       return new RuleSet(profileActiveRules, profile.getRulesUpdatedAt());
     } else {
       LOG.info("[SYNC] Active rules for '{}' are up-to-date", language);
@@ -131,9 +131,9 @@ public class LocalStorageSynchronizer {
     return currentSchemaVersion < AnalyzerConfiguration.CURRENT_SCHEMA_VERSION;
   }
 
-  private static ProjectBranches synchronizeProjectBranches(ServerApi serverApi, String projectKey) {
+  private static ProjectBranches synchronizeProjectBranches(ServerApi serverApi, String projectKey, SonarLintCancelMonitor cancelMonitor) {
     LOG.info("[SYNC] Synchronizing project branches for project '{}'", projectKey);
-    var allBranches = serverApi.branches().getAllBranches(projectKey);
+    var allBranches = serverApi.branches().getAllBranches(projectKey, cancelMonitor);
     var mainBranch = allBranches.stream().filter(ServerBranch::isMain).findFirst().map(ServerBranch::getName)
       .orElseThrow(() -> new IllegalStateException("No main branch for project '" + projectKey + "'"));
     return new ProjectBranches(allBranches.stream().map(ServerBranch::getName).collect(toSet()), mainBranch);

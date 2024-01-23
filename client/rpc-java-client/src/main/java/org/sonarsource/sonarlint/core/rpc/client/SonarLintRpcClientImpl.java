@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
+import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
@@ -65,7 +66,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.Show
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.utils.FutureAndShutdownCancelChecker;
 
 /**
  * Implementation of {@link SonarLintRpcClient} that delegates to {@link SonarLintRpcClientDelegate} in order to simplify Java clients and avoid
@@ -102,7 +102,7 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
       cancelChecker.checkCanceled();
       return code.apply(cancelChecker);
     }, requestsExecutor);
-    start.complete(new FutureAndShutdownCancelChecker(requestsExecutor, requestFuture));
+    start.complete(new CompletableFutures.FutureCancelChecker(requestFuture));
     return requestFuture;
   }
 
@@ -120,7 +120,7 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
       code.accept(cancelChecker);
       return null;
     }, requestsExecutor);
-    start.complete(new FutureAndShutdownCancelChecker(requestsExecutor, requestFuture));
+    start.complete(new CompletableFutures.FutureCancelChecker(requestFuture));
     return requestFuture;
   }
 

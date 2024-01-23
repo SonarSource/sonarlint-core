@@ -21,17 +21,17 @@ package org.sonarsource.sonarlint.core.embedded.server;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -48,7 +48,7 @@ public class RequestHandlerBindingAssistant {
   private final SonarLintRpcClient client;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final ConfigurationRepository configurationRepository;
-  private final ExecutorService executorService;
+  private final ExecutorServiceShutdownWatchable<?> executorService;
 
   public RequestHandlerBindingAssistant(BindingSuggestionProvider bindingSuggestionProvider, SonarLintRpcClient client,
     ConnectionConfigurationRepository connectionConfigurationRepository,
@@ -57,17 +57,22 @@ public class RequestHandlerBindingAssistant {
     this.client = client;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.configurationRepository = configurationRepository;
-    this.executorService = new ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS,
-      new LinkedBlockingQueue<>(), r -> new Thread(r, "Show Issue or Hotspot Request Handler"));
+    this.executorService = new ExecutorServiceShutdownWatchable<>(new ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS,
+      new LinkedBlockingQueue<>(), r -> new Thread(r, "Show Issue or Hotspot Request Handler")));
   }
 
-  void assistConnectionAndBindingIfNeededAsync(String serverUrl, String tokenName, String tokenValue, String projectKey, BiConsumer<String, String> andThen) {
-    executorService.submit(() -> assistConnectionAndBindingIfNeeded(serverUrl, tokenName, tokenValue, projectKey, andThen));
+  interface Callback {
+    void andThen(String connectionId, String configurationScopeId, SonarLintCancelMonitor cancelMonitor);
   }
 
+  void assistConnectionAndBindingIfNeededAsync(String serverUrl, @Nullable String tokenName, @Nullable String tokenValue, String projectKey, Callback callback) {
+    var cancelMonitor = new SonarLintCancelMonitor();
+    cancelMonitor.watchForShutdown(executorService);
+    executorService.submit(() -> assistConnectionAndBindingIfNeeded(serverUrl, tokenName, tokenValue, projectKey, callback, cancelMonitor));
+  }
 
   private void assistConnectionAndBindingIfNeeded(String serverUrl, @Nullable String tokenName, @Nullable String tokenValue, String projectKey,
-    BiConsumer<String, String> andThen) {
+    Callback callback, SonarLintCancelMonitor cancelMonitor) {
     LOG.debug("Assist connection and binding if needed for project {} and server {}", projectKey, serverUrl);
     try {
       var connectionsMatchingOrigin = connectionConfigurationRepository.findByUrl(serverUrl);
@@ -75,15 +80,15 @@ public class RequestHandlerBindingAssistant {
         startFullBindingProcess();
         try {
           var assistNewConnectionResult = assistCreatingConnectionAndWaitForRepositoryUpdate(serverUrl, tokenName, tokenValue);
-          var assistNewBindingResult = assistBindingAndWaitForRepositoryUpdate(assistNewConnectionResult.getNewConnectionId(), projectKey);
-          andThen.accept(assistNewConnectionResult.getNewConnectionId(), assistNewBindingResult.getConfigurationScopeId());
+          var assistNewBindingResult = assistBindingAndWaitForRepositoryUpdate(assistNewConnectionResult.getNewConnectionId(), projectKey, cancelMonitor);
+          callback.andThen(assistNewConnectionResult.getNewConnectionId(), assistNewBindingResult.getConfigurationScopeId(), cancelMonitor);
         } finally {
           endFullBindingProcess();
         }
       } else {
         // we pick the first connection but this could lead to issues later if there were several matches (make the user select the right
         // one?)
-        assistBindingIfNeeded(connectionsMatchingOrigin.get(0).getConnectionId(), projectKey, andThen);
+        assistBindingIfNeeded(connectionsMatchingOrigin.get(0).getConnectionId(), projectKey, callback, cancelMonitor);
       }
     } catch (Exception e) {
       LOG.error("Unable to show issue", e);
@@ -111,20 +116,19 @@ public class RequestHandlerBindingAssistant {
     return assistNewConnectionResult;
   }
 
-  private void assistBindingIfNeeded(String connectionId, String projectKey, BiConsumer<String, String> andThen) throws InterruptedException {
+  private void assistBindingIfNeeded(String connectionId, String projectKey, Callback callback, SonarLintCancelMonitor cancelMonitor) throws InterruptedException {
     var scopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, projectKey);
     if (scopes.isEmpty()) {
-      var assistNewBindingResult = assistBindingAndWaitForRepositoryUpdate(connectionId, projectKey);
-      andThen.accept(connectionId, assistNewBindingResult.getConfigurationScopeId());
+      var assistNewBindingResult = assistBindingAndWaitForRepositoryUpdate(connectionId, projectKey, cancelMonitor);
+      callback.andThen(connectionId, assistNewBindingResult.getConfigurationScopeId(), cancelMonitor);
     } else {
       // we pick the first bound scope but this could lead to issues later if there were several matches (make the user select the right one?)
-      andThen.accept(connectionId, scopes.iterator().next().getConfigScopeId());
+      callback.andThen(connectionId, scopes.iterator().next().getConfigScopeId(), cancelMonitor);
     }
   }
 
-  private NewBinding assistBindingAndWaitForRepositoryUpdate(String connectionId, String projectKey) throws InterruptedException {
-    var assistNewBindingResult = assistBinding(connectionId, projectKey);
-
+  private NewBinding assistBindingAndWaitForRepositoryUpdate(String connectionId, String projectKey, SonarLintCancelMonitor cancelMonitor) throws InterruptedException {
+    var assistNewBindingResult = assistBinding(connectionId, projectKey, cancelMonitor);
     // Wait 5s for the binding to be created in the repository. This is happening asynchronously by the
     // ConfigurationService::didUpdateBinding event
     LOG.debug("Waiting for binding creation notification...");
@@ -157,8 +161,10 @@ public class RequestHandlerBindingAssistant {
     return client.assistCreatingConnection(new AssistCreatingConnectionParams(serverUrl, tokenName, tokenValue)).join();
   }
 
-  NewBinding assistBinding(String connectionId, String projectKey) {
-    var response = client.assistBinding(new AssistBindingParams(connectionId, projectKey)).join();
+  NewBinding assistBinding(String connectionId, String projectKey, SonarLintCancelMonitor cancelMonitor) {
+    var future = client.assistBinding(new AssistBindingParams(connectionId, projectKey));
+    cancelMonitor.onCancel(() -> future.cancel(true));
+    var response = future.join();
     return new NewBinding(connectionId, response.getConfigurationScopeId());
   }
 

@@ -28,16 +28,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
-import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 
 import static java.util.stream.Collectors.joining;
@@ -65,21 +63,18 @@ public class RulesApi {
     this.serverApiHelper = serverApiHelper;
   }
 
-  public CompletableFuture<ServerRule> getRule(String ruleKey) {
+  public Optional<ServerRule> getRule(String ruleKey, SonarLintCancelMonitor cancelMonitor) {
     var builder = new StringBuilder(RULE_SHOW_URL + ruleKey);
     serverApiHelper.getOrganizationKey().ifPresent(org -> builder.append("&organization=").append(UrlUtils.urlEncode(org)));
-    return serverApiHelper.getAsync(builder.toString())
-      .thenApply(response -> {
-        try (response) {
-          var rule = Rules.ShowResponse.parseFrom(response.bodyAsStream()).getRule();
-          return new ServerRule(rule.getName(), IssueSeverity.valueOf(rule.getSeverity()), RuleType.valueOf(rule.getType().name()), rule.getLang(), rule.getHtmlDesc(),
-            convertDescriptionSections(rule),
-            rule.getHtmlNote(), Set.copyOf(rule.getEducationPrinciples().getEducationPrinciplesList()));
-        } catch (Exception e) {
-          LOG.error("Error when fetching rule + '" + ruleKey + "'", e);
-          throw new UnexpectedBodyException(e);
-        }
-      });
+    try (var response = serverApiHelper.get(builder.toString(), cancelMonitor)) {
+      var rule = Rules.ShowResponse.parseFrom(response.bodyAsStream()).getRule();
+      return Optional.of(new ServerRule(rule.getName(), IssueSeverity.valueOf(rule.getSeverity()), RuleType.valueOf(rule.getType().name()), rule.getLang(), rule.getHtmlDesc(),
+        convertDescriptionSections(rule),
+        rule.getHtmlNote(), Set.copyOf(rule.getEducationPrinciples().getEducationPrinciplesList())));
+    } catch (Exception e) {
+      LOG.error("Error when fetching rule '" + ruleKey + "'", e);
+    }
+    return Optional.empty();
   }
 
   private static List<ServerRule.DescriptionSection> convertDescriptionSections(Rules.Rule rule) {
@@ -97,7 +92,7 @@ public class RulesApi {
     return Collections.emptyList();
   }
 
-  public Collection<ServerActiveRule> getAllActiveRules(String qualityProfileKey, ProgressMonitor progress) {
+  public Collection<ServerActiveRule> getAllActiveRules(String qualityProfileKey, SonarLintCancelMonitor cancelMonitor) {
     // Use a map to avoid duplicates during pagination
     Map<String, ServerActiveRule> activeRulesByKey = new HashMap<>();
     Map<String, String> ruleTemplatesByRuleKey = new HashMap<>();
@@ -120,7 +115,7 @@ public class RulesApi {
 
       },
       false,
-      progress);
+      cancelMonitor);
     return activeRulesByKey.values();
   }
 
@@ -133,7 +128,7 @@ public class RulesApi {
     return builder.toString();
   }
 
-  public Set<String> getAllTaintRules(List<SonarLanguage> enabledLanguages, ProgressMonitor progress) {
+  public Set<String> getAllTaintRules(List<SonarLanguage> enabledLanguages, SonarLintCancelMonitor cancelMonitor) {
     Set<String> taintRules = new HashSet<>();
     serverApiHelper.getPaginated(getSearchByRepoUrl(enabledLanguages.stream().map(TAINT_REPOS_BY_LANGUAGE::get).filter(Objects::nonNull).collect(toList())),
       Rules.SearchResponse::parseFrom,
@@ -141,7 +136,7 @@ public class RulesApi {
       Rules.SearchResponse::getRulesList,
       rule -> taintRules.add(rule.getKey()),
       false,
-      progress);
+      cancelMonitor);
     return taintRules;
   }
 

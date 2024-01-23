@@ -23,10 +23,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
@@ -51,33 +51,34 @@ public class ServerIssueUpdater {
     this.taintIssueDownloader = taintIssueDownloader;
   }
 
-  public void update(ServerApi serverApi, String projectKey, String branchName, boolean isSonarCloud, Version serverVersion) {
+  public void update(ServerApi serverApi, String projectKey, String branchName, boolean isSonarCloud, Version serverVersion, SonarLintCancelMonitor cancelMonitor) {
     if (IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
-      sync(serverApi, projectKey, branchName, issueDownloader.getEnabledLanguages());
+      sync(serverApi, projectKey, branchName, issueDownloader.getEnabledLanguages(), cancelMonitor);
     } else {
-      var issues = issueDownloader.downloadFromBatch(serverApi, projectKey, branchName);
+      var issues = issueDownloader.downloadFromBatch(serverApi, projectKey, branchName, cancelMonitor);
       storage.project(projectKey).findings().replaceAllIssuesOfBranch(branchName, issues);
     }
   }
 
-  public void sync(ServerApi serverApi, String projectKey, String branchName, Set<SonarLanguage> enabledLanguages) {
+  public void sync(ServerApi serverApi, String projectKey, String branchName, Set<SonarLanguage> enabledLanguages, SonarLintCancelMonitor cancelMonitor) {
     var lastSync = storage.project(projectKey).findings().getLastIssueSyncTimestamp(branchName);
 
     lastSync = computeLastSync(enabledLanguages, lastSync, storage.project(projectKey).findings().getLastIssueEnabledLanguages(branchName));
 
-    var result = issueDownloader.downloadFromPull(serverApi, projectKey, branchName, lastSync);
+    var result = issueDownloader.downloadFromPull(serverApi, projectKey, branchName, lastSync, cancelMonitor);
     storage.project(projectKey).findings().mergeIssues(branchName, result.getChangedIssues(), result.getClosedIssueKeys(),
       result.getQueryTimestamp(), enabledLanguages);
   }
 
-  public UpdateSummary<ServerTaintIssue> syncTaints(ServerApi serverApi, String projectKey, String branchName, Set<SonarLanguage> enabledLanguages) {
+  public UpdateSummary<ServerTaintIssue> syncTaints(ServerApi serverApi, String projectKey, String branchName, Set<SonarLanguage> enabledLanguages,
+    SonarLintCancelMonitor cancelMonitor) {
     var serverIssueStore = storage.project(projectKey).findings();
 
     var lastSync = serverIssueStore.getLastTaintSyncTimestamp(branchName);
 
     lastSync = computeLastSync(enabledLanguages, lastSync, storage.project(projectKey).findings().getLastTaintEnabledLanguages(branchName));
 
-    var result = taintIssueDownloader.downloadTaintFromPull(serverApi, projectKey, branchName, lastSync);
+    var result = taintIssueDownloader.downloadTaintFromPull(serverApi, projectKey, branchName, lastSync, cancelMonitor);
     var previousTaintIssues = serverIssueStore.loadTaint(branchName);
     var previousTaintIssueKeys = previousTaintIssues.stream().map(ServerTaintIssue::getSonarServerKey).collect(toSet());
     serverIssueStore.mergeTaintIssues(branchName, result.getChangedTaintIssues(), result.getClosedIssueKeys(), result.getQueryTimestamp(), enabledLanguages);
@@ -91,20 +92,21 @@ public class ServerIssueUpdater {
   }
 
   public void updateFileIssues(ServerApi serverApi, ProjectBinding projectBinding, Path ideFilePath, String branchName, boolean isSonarCloud,
-    Version serverVersion) {
+    Version serverVersion, SonarLintCancelMonitor cancelMonitor) {
     var serverFilePath = IssueStorePaths.idePathToServerPath(projectBinding, ideFilePath);
     if (serverFilePath == null) {
       return;
     }
-    updateFileIssues(serverApi, projectBinding.projectKey(), serverFilePath, branchName, isSonarCloud, serverVersion);
+    updateFileIssues(serverApi, projectBinding.projectKey(), serverFilePath, branchName, isSonarCloud, serverVersion, cancelMonitor);
   }
 
-  public void updateFileIssues(ServerApi serverApi, String projectKey, Path serverFileRelativePath, String branchName, boolean isSonarCloud, Version serverVersion) {
+  public void updateFileIssues(ServerApi serverApi, String projectKey, Path serverFileRelativePath, String branchName, boolean isSonarCloud, Version serverVersion,
+    SonarLintCancelMonitor cancelMonitor) {
     var fileKey = IssueStorePaths.componentKey(projectKey, serverFileRelativePath);
     if (!IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
       List<ServerIssue<?>> issues = new ArrayList<>();
       try {
-        issues.addAll(issueDownloader.downloadFromBatch(serverApi, fileKey, branchName));
+        issues.addAll(issueDownloader.downloadFromBatch(serverApi, fileKey, branchName, cancelMonitor));
       } catch (Exception e) {
         // null as cause so that it doesn't get wrapped
         throw new DownloadException("Failed to update file issues: " + e.getMessage(), null);
@@ -115,10 +117,10 @@ public class ServerIssueUpdater {
     }
   }
 
-  public UpdateSummary<ServerTaintIssue> downloadProjectTaints(ServerApi serverApi, String projectKey, String branchName) {
+  public UpdateSummary<ServerTaintIssue> downloadProjectTaints(ServerApi serverApi, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
     List<ServerTaintIssue> newTaintIssues;
     try {
-      newTaintIssues = new ArrayList<>(taintIssueDownloader.downloadTaintFromIssueSearch(serverApi, projectKey, branchName, new ProgressMonitor(null)));
+      newTaintIssues = new ArrayList<>(taintIssueDownloader.downloadTaintFromIssueSearch(serverApi, projectKey, branchName, cancelMonitor));
     } catch (Exception e) {
       // null as cause so that it doesn't get wrapped
       throw new DownloadException("Failed to update file taint vulnerabilities: " + e.getMessage(), null);

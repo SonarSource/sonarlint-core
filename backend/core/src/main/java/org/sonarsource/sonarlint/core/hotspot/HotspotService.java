@@ -19,12 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.hotspot;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
@@ -33,6 +31,7 @@ import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -47,7 +46,6 @@ import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
-import org.sonarsource.sonarlint.core.utils.FutureUtils;
 
 import static org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi.TRACKING_COMPATIBLE_MIN_SQ_VERSION;
 
@@ -124,11 +122,11 @@ public class HotspotService {
     return new CheckLocalDetectionSupportedResponse(supported, supported ? null : UNSUPPORTED_SONARQUBE_REASON);
   }
 
-  public CheckStatusChangePermittedResponse checkStatusChangePermitted(String connectionId, String hotspotKey, CancelChecker cancelChecker) {
+  public CheckStatusChangePermittedResponse checkStatusChangePermitted(String connectionId, String hotspotKey, SonarLintCancelMonitor cancelMonitor) {
     // fixme add getConnectionByIdOrThrow
     var connection = connectionRepository.getConnectionById(connectionId);
     var serverApi = serverApiProvider.getServerApiOrThrow(connectionId);
-    var r = FutureUtils.waitForTaskWithResult(cancelChecker, serverApi.hotspot().show(hotspotKey), "check permission on hostpot", Duration.ofMinutes(1));
+    var r = serverApi.hotspot().show(hotspotKey, cancelMonitor);
     var allowedStatuses = HotspotReviewStatus.allowedStatusesOn(connection.getKind());
     // canChangeStatus is false when the 'Administer Hotspots' permission is missing
     // normally the 'Browse' permission is also required, but we assume it's present as the client knows the hotspot key
@@ -144,7 +142,7 @@ public class HotspotService {
         .collect(Collectors.toList()));
   }
 
-  public void changeStatus(String configurationScopeId, String hotspotKey, HotspotReviewStatus newStatus, CancelChecker cancelChecker) {
+  public void changeStatus(String configurationScopeId, String hotspotKey, HotspotReviewStatus newStatus, SonarLintCancelMonitor cancelMonitor) {
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     if (effectiveBindingOpt.isEmpty()) {
       LOG.debug("No binding for config scope {}", configurationScopeId);
@@ -155,7 +153,7 @@ public class HotspotService {
       LOG.debug("Connection {} is gone", effectiveBindingOpt.get().getConnectionId());
       return;
     }
-    FutureUtils.waitForHttpRequest(cancelChecker, connectionOpt.get().hotspot().changeStatusAsync(hotspotKey, newStatus), "change hotspot status");
+    connectionOpt.get().hotspot().changeStatus(hotspotKey, newStatus, cancelMonitor);
     saveStatusInStorage(effectiveBindingOpt.get(), hotspotKey, newStatus);
     telemetryService.hotspotStatusChanged();
   }

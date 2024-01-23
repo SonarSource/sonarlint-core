@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
@@ -36,7 +37,7 @@ import testutils.MockWebServerExtensionWithProtobuf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
-class ServerInfoSynchronizerTest {
+class ServerInfoSynchronizerTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
@@ -59,7 +60,7 @@ class ServerInfoSynchronizerTest {
     Files.createDirectory(connectionPath);
     ProtobufFileUtil.writeToFile(Sonarlint.ServerInfo.newBuilder().setVersion("1.0.0").build(), connectionPath.resolve("server_info.pb"));
 
-    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(null);
+    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(null, new SonarLintCancelMonitor());
 
     assertThat(storedServerInfo)
       .extracting("version")
@@ -70,7 +71,7 @@ class ServerInfoSynchronizerTest {
   void it_should_synchronize_version_when_not_available() {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"7.9\",\"status\": \"UP\"}");
 
-    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()));
+    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor());
 
     assertThat(storedServerInfo)
       .extracting("version")
@@ -81,7 +82,7 @@ class ServerInfoSynchronizerTest {
   void it_should_fail_when_server_is_down() {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"7.9\",\"status\": \"DOWN\"}");
 
-    var throwable = catchThrowable(() -> synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient())));
+    var throwable = catchThrowable(() -> synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor()));
 
     assertThat(throwable)
       .isInstanceOf(IllegalStateException.class)

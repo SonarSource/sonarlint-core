@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.serverapi.branches;
 
 import java.util.List;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.BranchType;
@@ -38,9 +39,9 @@ public class ProjectBranchesApi {
     this.helper = helper;
   }
 
-  public List<ServerBranch> getAllBranches(String projectKey) {
+  public List<ServerBranch> getAllBranches(String projectKey, SonarLintCancelMonitor cancelMonitor) {
     ProjectBranches.ListWsResponse response;
-    try (var wsResponse = helper.get(LIST_ALL_PROJECT_BRANCHES_URL + "?project=" + UrlUtils.urlEncode(projectKey)); var is = wsResponse.bodyAsStream()) {
+    try (var wsResponse = helper.get(LIST_ALL_PROJECT_BRANCHES_URL + "?project=" + UrlUtils.urlEncode(projectKey), cancelMonitor); var is = wsResponse.bodyAsStream()) {
       response = ProjectBranches.ListWsResponse.parseFrom(is);
     } catch (Exception e) {
       LOG.error("Error while fetching project branches", e);

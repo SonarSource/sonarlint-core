@@ -55,32 +55,35 @@ class ConnectionRpcServiceDelegate extends AbstractRpcServiceDelegate implements
 
   @Override
   public CompletableFuture<HelpGenerateUserTokenResponse> helpGenerateUserToken(HelpGenerateUserTokenParams params) {
-    return requestAsync(cancelChecker -> getBean(ConnectionService.class).helpGenerateUserToken(params.getServerUrl(), params.isSonarCloud(), cancelChecker));
+    return requestAsync(cancelMonitor -> getBean(ConnectionService.class).helpGenerateUserToken(params.getServerUrl(), params.isSonarCloud(), cancelMonitor));
   }
 
   @Override
   public CompletableFuture<ValidateConnectionResponse> validateConnection(ValidateConnectionParams params) {
-    return requestAsync(cancelChecker -> getBean(ConnectionService.class).validateConnection(params.getTransientConnection(), cancelChecker));
+    return requestAsync(cancelMonitor -> getBean(ConnectionService.class).validateConnection(params.getTransientConnection(), cancelMonitor));
   }
 
   @Override
   public CompletableFuture<CheckSmartNotificationsSupportedResponse> checkSmartNotificationsSupported(CheckSmartNotificationsSupportedParams params) {
     return requestAsync(
-      cancelChecker -> new CheckSmartNotificationsSupportedResponse(getBean(ConnectionService.class).checkSmartNotificationsSupported(params.getTransientConnection())));
+      cancelMonitor -> new CheckSmartNotificationsSupportedResponse(getBean(ConnectionService.class)
+        .checkSmartNotificationsSupported(params.getTransientConnection(), cancelMonitor)));
   }
 
   @Override
   public CompletableFuture<ListUserOrganizationsResponse> listUserOrganizations(ListUserOrganizationsParams params) {
-    return requestAsync(cancelChecker -> new ListUserOrganizationsResponse(getBean(ConnectionService.class).listUserOrganizations(params.getCredentials())));
+    return requestAsync(cancelMonitor -> new ListUserOrganizationsResponse(getBean(ConnectionService.class).listUserOrganizations(params.getCredentials(), cancelMonitor)));
   }
 
   @Override
   public CompletableFuture<GetOrganizationResponse> getOrganization(GetOrganizationParams params) {
-    return requestAsync(cancelChecker -> new GetOrganizationResponse(getBean(ConnectionService.class).getOrganization(params.getCredentials(), params.getOrganizationKey())));
+    return requestAsync(cancelMonitor -> new GetOrganizationResponse(getBean(ConnectionService.class)
+      .getOrganization(params.getCredentials(), params.getOrganizationKey(), cancelMonitor)));
   }
 
   @Override
   public CompletableFuture<GetAllProjectsResponse> getAllProjects(GetAllProjectsParams params) {
-    return requestAsync(cancelChecker -> new GetAllProjectsResponse(getBean(ConnectionService.class).getAllProjects(params.getTransientConnection(), cancelChecker)));
+    return requestAsync(cancelMonitor -> new GetAllProjectsResponse(getBean(ConnectionService.class).getAllProjects(params.getTransientConnection(), cancelMonitor)));
   }
+
 }

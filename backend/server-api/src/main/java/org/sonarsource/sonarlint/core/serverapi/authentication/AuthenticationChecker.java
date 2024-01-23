@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.serverapi.authentication;
 
 import com.google.gson.Gson;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.system.DefaultValidationResult;
 import org.sonarsource.sonarlint.core.serverapi.system.ValidationResult;
@@ -32,8 +33,8 @@ public class AuthenticationChecker {
     this.serverApiHelper = serverApiHelper;
   }
 
-  public ValidationResult validateCredentials() {
-    try (var response = serverApiHelper.rawGet("api/authentication/validate?format=json")) {
+  public ValidationResult validateCredentials(SonarLintCancelMonitor cancelMonitor) {
+    try (var response = serverApiHelper.rawGet("api/authentication/validate?format=json", cancelMonitor)) {
       var code = response.code();
       if (response.isSuccessful()) {
         var responseStr = response.bodyAsString();

@@ -46,7 +46,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredenti
  * The client is the source of truth for connection configuration, but the backend also need to be kept in sync.
  * The client will use {@link SonarLintRpcServer#initialize(InitializeParams)} to register existing connection configurations at startup, and then
  * update the service as needed using {@link #didUpdateConnections(DidUpdateConnectionsParams)}, when a connection configuration is added/removed/updated.
- *
+ * <p>
  * One source of complexity for connection configuration is that some attributes (like credentials) should be stored in
  * the IDE secure storage. Accessing secure storage may be delayed after IDE startup, request manual user
  * actions, or even be prevented. So the backend should be able to handle "partial" connection configuration, where
@@ -105,10 +105,11 @@ public interface ConnectionRpcService {
   CompletableFuture<GetOrganizationResponse> getOrganization(GetOrganizationParams params);
 
   /**
-   * Get all projects existing on SonarQube or in a SonarCloud organization.
+   * Get all Sonar projects existing on SonarQube or in a SonarCloud organization.
    * As this data might be needed during connection creation, it accepts a transient connection.
    */
   @JsonRequest
   CompletableFuture<GetAllProjectsResponse> getAllProjects(GetAllProjectsParams params);
+
 
 }

@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,7 +46,7 @@ class AuthenticationCheckerTests {
   void test_authentication_ok() {
     mockServer.addStringResponse("/api/authentication/validate?format=json", "{\"valid\": true}");
 
-    var validationResult = underTest.validateCredentials();
+    var validationResult = underTest.validateCredentials(new SonarLintCancelMonitor());
 
     assertThat(validationResult.success()).isTrue();
     assertThat(validationResult.message()).isEqualTo("Authentication successful");
@@ -55,7 +56,7 @@ class AuthenticationCheckerTests {
   void test_authentication_ko() {
     mockServer.addStringResponse("/api/authentication/validate?format=json", "{\"valid\": false}");
 
-    var validationResult = underTest.validateCredentials();
+    var validationResult = underTest.validateCredentials(new SonarLintCancelMonitor());
 
     assertThat(validationResult.success()).isFalse();
     assertThat(validationResult.message()).isEqualTo("Authentication failed");
@@ -65,7 +66,7 @@ class AuthenticationCheckerTests {
   void test_connection_issue() {
     mockServer.addResponse("/api/authentication/validate?format=json", new MockResponse().setResponseCode(500).setBody("Foo"));
 
-    var validationResult = underTest.validateCredentials();
+    var validationResult = underTest.validateCredentials(new SonarLintCancelMonitor());
 
     assertThat(validationResult.success()).isFalse();
     assertThat(validationResult.message()).isEqualTo("HTTP Connection failed (500): Foo");

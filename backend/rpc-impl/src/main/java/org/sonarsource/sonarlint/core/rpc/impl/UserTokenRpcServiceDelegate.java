@@ -32,8 +32,8 @@ public class UserTokenRpcServiceDelegate extends AbstractRpcServiceDelegate impl
 
   @Override
   public CompletableFuture<Void> revokeToken(RevokeTokenParams params) {
-    return requestAsync(cancelChecker -> {
-      getBean(UserTokenService.class).revokeToken(params);
+    return requestAsync(cancelMonitor -> {
+      getBean(UserTokenService.class).revokeToken(params, cancelMonitor);
       return null;
     });
   }

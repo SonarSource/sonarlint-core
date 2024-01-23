@@ -25,19 +25,22 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Measures;
 import org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.serverapi.newcode.NewCodeApi.getPeriodForServer;
 import static org.sonarsource.sonarlint.core.serverapi.newcode.NewCodeApi.getPeriodFromWs;
 
-class NewCodeApiTest {
+class NewCodeApiTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
@@ -104,7 +107,7 @@ class NewCodeApiTest {
       .setParameter("referenceBranch")
       .build());
 
-    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION).orElseThrow();
+    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION, new SonarLintCancelMonitor()).orElseThrow();
 
     assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodeReferenceBranch.class)
       .hasToString("Current new code definition (reference branch) is not supported");
@@ -121,7 +124,7 @@ class NewCodeApiTest {
       .setDate(SOME_DATE)
       .build());
 
-    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION).orElseThrow();
+    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION, new SonarLintCancelMonitor()).orElseThrow();
 
     assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodeNumberOfDays.class)
       .hasToString("From last 42 days");
@@ -138,7 +141,7 @@ class NewCodeApiTest {
       .setDate(SOME_DATE)
       .build());
 
-    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, SC_VERSION).orElseThrow();
+    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, SC_VERSION, new SonarLintCancelMonitor()).orElseThrow();
 
     assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodeNumberOfDays.class)
       .hasToString("From last 42 days");
@@ -155,7 +158,7 @@ class NewCodeApiTest {
       .setDate(SOME_DATE)
       .build());
 
-    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION).orElseThrow();
+    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION, new SonarLintCancelMonitor()).orElseThrow();
 
     assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodePreviousVersion.class)
       .hasToString("Since version version");
@@ -171,7 +174,7 @@ class NewCodeApiTest {
       .setDate(SOME_DATE)
       .build());
 
-    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION).orElseThrow();
+    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION, new SonarLintCancelMonitor()).orElseThrow();
 
     assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodePreviousVersion.class)
       .hasToString("Since " + NewCodeDefinition.formatEpochToDate(SOME_DATE_EPOCH_MILLIS));
@@ -188,7 +191,7 @@ class NewCodeApiTest {
       .setDate(SOME_DATE)
       .build());
 
-    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, SC_VERSION).orElseThrow();
+    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, SC_VERSION, new SonarLintCancelMonitor()).orElseThrow();
 
     assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodePreviousVersion.class)
       .hasToString("Since version version");
@@ -205,7 +208,7 @@ class NewCodeApiTest {
       .setDate(SOME_DATE)
       .build());
 
-    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION).orElseThrow();
+    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION, new SonarLintCancelMonitor()).orElseThrow();
 
     var date = NewCodeDefinition.formatEpochToDate(SOME_DATE_EPOCH_MILLIS);
     assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodeSpecificAnalysis.class)
@@ -223,7 +226,7 @@ class NewCodeApiTest {
       .setDate(SOME_DATE)
       .build());
 
-    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, SC_VERSION).orElseThrow();
+    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, SC_VERSION, new SonarLintCancelMonitor()).orElseThrow();
 
     var date = NewCodeDefinition.formatEpochToDate(SOME_DATE_EPOCH_MILLIS);
     assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodeSpecificAnalysis.class)
@@ -240,7 +243,7 @@ class NewCodeApiTest {
       .setDate(SOME_DATE)
       .build());
 
-    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, SC_VERSION).orElseThrow();
+    var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, SC_VERSION, new SonarLintCancelMonitor()).orElseThrow();
 
     var date = NewCodeDefinition.formatEpochToDate(SOME_DATE_EPOCH_MILLIS);
     assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodeSpecificAnalysis.class)
@@ -256,23 +259,23 @@ class NewCodeApiTest {
       .setMode("Definitely not a supported mode")
       .setParameter("Whatever")
       .build());
-    assertThat(underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION)).isEmpty();
+    assertThat(underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION, new SonarLintCancelMonitor())).isEmpty();
   }
 
   @Test
   void failHttpCall() {
-    when(mockApiHelper.get(anyString()))
+    when(mockApiHelper.get(anyString(), any(SonarLintCancelMonitor.class)))
       .thenThrow(new RuntimeException("Not good"));
-    assertThat(underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION)).isEmpty();
+    assertThat(underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION, new SonarLintCancelMonitor())).isEmpty();
   }
 
   void prepareSqWsResponseWithPeriod(Measures.Period period) {
     when(mockApiHelper.isSonarCloud()).thenReturn(false);
     var httpResponse = mock(HttpClient.Response.class);
     when(httpResponse.bodyAsStream()).thenReturn(Measures.ComponentWsResponse.newBuilder()
-        .setPeriod(period)
-        .build().toByteString().newInput());
-    when(mockApiHelper.get("/api/measures/component.protobuf?additionalFields=period&metricKeys=projects&component=" + PROJECT + "&branch=" + BRANCH))
+      .setPeriod(period)
+      .build().toByteString().newInput());
+    when(mockApiHelper.get(eq("/api/measures/component.protobuf?additionalFields=period&metricKeys=projects&component=" + PROJECT + "&branch=" + BRANCH), any(SonarLintCancelMonitor.class)))
       .thenReturn(httpResponse);
   }
 
@@ -284,7 +287,7 @@ class NewCodeApiTest {
         .addPeriods(period)
         .build())
       .build().toByteString().newInput());
-    when(mockApiHelper.get("/api/measures/component.protobuf?additionalFields=periods&metricKeys=projects&component=" + PROJECT + "&branch=" + BRANCH))
+    when(mockApiHelper.get(eq("/api/measures/component.protobuf?additionalFields=periods&metricKeys=projects&component=" + PROJECT + "&branch=" + BRANCH), any(SonarLintCancelMonitor.class)))
       .thenReturn(httpResponse);
   }
 }

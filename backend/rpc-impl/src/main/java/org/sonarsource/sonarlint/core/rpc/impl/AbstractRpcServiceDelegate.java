@@ -26,16 +26,15 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
-import org.eclipse.lsp4j.jsonrpc.CancelChecker;
-import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.rpc.protocol.utils.FutureAndShutdownCancelChecker;
+import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.springframework.beans.factory.BeanFactory;
 
 abstract class AbstractRpcServiceDelegate {
 
   private final Supplier<BeanFactory> beanFactorySupplier;
-  private final ExecutorService requestsExecutor;
+  private final ExecutorServiceShutdownWatchable<?> requestsExecutor;
   private final ExecutorService requestAndNotificationsSequentialExecutor;
   private final Supplier<RpcClientLogOutput> logOutputSupplier;
 
@@ -50,48 +49,52 @@ abstract class AbstractRpcServiceDelegate {
     return beanFactorySupplier.get().getBean(clazz);
   }
 
-  protected <R> CompletableFuture<R> requestAsync(Function<CancelChecker, R> code) {
+  protected <R> CompletableFuture<R> requestAsync(Function<SonarLintCancelMonitor, R> code) {
     return requestAsync(code, null);
   }
 
-  protected <R> CompletableFuture<R> requestAsync(Function<CancelChecker, R> code, @Nullable String configScopeId) {
-    CompletableFuture<CancelChecker> start = new CompletableFuture<>();
+  protected <R> CompletableFuture<R> requestAsync(Function<SonarLintCancelMonitor, R> code, @Nullable String configScopeId) {
+    var cancelMonitor = new SonarLintCancelMonitor();
+    cancelMonitor.watchForShutdown(requestsExecutor);
     // First we schedule the processing of the request on the sequential executor, to maintain ordering of notifications, requests, responses, and cancellations
-    var sequentialFuture = start.thenApplyAsync(cancelChecker -> {
-      // We can maybe cancel early
-      cancelChecker.checkCanceled();
-      return cancelChecker;
-    }, requestAndNotificationsSequentialExecutor);
+    // We can maybe cancel early
+    var sequentialFuture = CompletableFuture.runAsync(cancelMonitor::checkCanceled, requestAndNotificationsSequentialExecutor);
     // Then requests are processed asynchronously to not block the processing of notifications, responses and cancellations
-    var requestFuture = sequentialFuture.thenApplyAsync(cancelChecker -> withLogger(() -> {
-      cancelChecker.checkCanceled();
-      return code.apply(cancelChecker);
+    var requestFuture = sequentialFuture.thenApplyAsync(unused -> withLogger(() -> {
+      cancelMonitor.checkCanceled();
+      return code.apply(cancelMonitor);
     }, configScopeId), requestsExecutor);
-    start.complete(new FutureAndShutdownCancelChecker(requestsExecutor, requestFuture));
+    requestFuture.whenComplete((result, error) -> {
+      if (error instanceof CancellationException) {
+        cancelMonitor.cancel();
+      }
+    });
     return requestFuture;
   }
 
-  protected CompletableFuture<Void> runAsync(Consumer<CancelChecker> code) {
+  protected CompletableFuture<Void> runAsync(Consumer<SonarLintCancelMonitor> code) {
     return runAsync(code, null);
   }
 
-  protected CompletableFuture<Void> runAsync(Consumer<CancelChecker> code, @Nullable String configScopeId) {
-    CompletableFuture<CancelChecker> start = new CompletableFuture<>();
+  protected CompletableFuture<Void> runAsync(Consumer<SonarLintCancelMonitor> code, @Nullable String configScopeId) {
+    var cancelMonitor = new SonarLintCancelMonitor();
+    cancelMonitor.watchForShutdown(requestsExecutor);
     // First we schedule the processing of the request on the sequential executor, to maintain ordering of notifications, requests, responses, and cancellations
-    var sequentialFuture = start.thenApplyAsync(cancelChecker -> {
-      // We can maybe cancel early
-      cancelChecker.checkCanceled();
-      return cancelChecker;
-    }, requestAndNotificationsSequentialExecutor);
+    // We can maybe cancel early
+    var sequentialFuture = CompletableFuture.runAsync(cancelMonitor::checkCanceled, requestAndNotificationsSequentialExecutor);
     // Then requests are processed asynchronously to not block the processing of notifications, responses and cancellations
-    var requestFuture = sequentialFuture.<Void>thenApplyAsync(cancelChecker -> {
+    var requestFuture = sequentialFuture.<Void>thenApplyAsync(unused -> {
       withLogger(() -> {
-        cancelChecker.checkCanceled();
-        code.accept(cancelChecker);
+        cancelMonitor.checkCanceled();
+        code.accept(cancelMonitor);
       }, configScopeId);
       return null;
     }, requestsExecutor);
-    start.complete(new FutureAndShutdownCancelChecker(requestsExecutor, requestFuture));
+    requestFuture.whenComplete((result, error) -> {
+      if (error instanceof CancellationException) {
+        cancelMonitor.cancel();
+      }
+    });
     return requestFuture;
   }
 

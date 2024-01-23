@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -41,6 +40,7 @@ import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
@@ -102,12 +102,13 @@ public class RulesService {
     }
   }
 
-  public EffectiveRuleDetailsDto getEffectiveRuleDetails(String configurationScopeId, String ruleKey, @Nullable String contextKey) throws RuleNotFoundException {
-    var ruleDetails = getRuleDetails(configurationScopeId, ruleKey);
+  public EffectiveRuleDetailsDto getEffectiveRuleDetails(String configurationScopeId, String ruleKey, @Nullable String contextKey,
+    SonarLintCancelMonitor cancelMonitor) throws RuleNotFoundException {
+    var ruleDetails = getRuleDetails(configurationScopeId, ruleKey, cancelMonitor);
     return buildResponse(ruleDetails, contextKey);
   }
 
-  private RuleDetails getRuleDetails(String configurationScopeId, String ruleKey) throws RuleNotFoundException {
+  private RuleDetails getRuleDetails(String configurationScopeId, String ruleKey, SonarLintCancelMonitor cancelMonitor) throws RuleNotFoundException {
     var effectiveBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
     RuleDetails ruleDetails;
     if (effectiveBinding.isEmpty()) {
@@ -117,12 +118,12 @@ public class RulesService {
       }
       ruleDetails = RuleDetails.from(embeddedRule.get(), standaloneRuleConfig.get(ruleKey));
     } else {
-      ruleDetails = getActiveRuleForBinding(ruleKey, effectiveBinding.get());
+      ruleDetails = getActiveRuleForBinding(ruleKey, effectiveBinding.get(), cancelMonitor);
     }
     return ruleDetails;
   }
 
-  private RuleDetails getActiveRuleForBinding(String ruleKey, Binding binding) {
+  private RuleDetails getActiveRuleForBinding(String ruleKey, Binding binding, SonarLintCancelMonitor cancelMonitor) {
     var connectionId = binding.getConnectionId();
     var serverApi = serverApiProvider.getServerApi(connectionId);
     if (serverApi.isEmpty()) {
@@ -131,16 +132,13 @@ public class RulesService {
     boolean skipCleanCodeTaxonomy = synchronizationService.getServerConnection(connectionId, serverApi.get()).shouldSkipCleanCodeTaxonomy();
 
     return findServerActiveRuleInStorage(binding, ruleKey)
-      .map(storageRule -> hydrateDetailsWithServer(connectionId, storageRule, skipCleanCodeTaxonomy))
+      .map(storageRule -> hydrateDetailsWithServer(connectionId, storageRule, skipCleanCodeTaxonomy, cancelMonitor))
       // try from loaded rules, for e.g. extra analyzers
       .orElseGet(() -> rulesRepository.getRule(connectionId, ruleKey)
         .map(r -> RuleDetails.from(r, standaloneRuleConfig.get(ruleKey)))
-        .orElseThrow(() -> {
-          var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in plugins loaded from '" + connectionId + "'",
-            new Object[] {connectionId, ruleKey});
-          return new ResponseErrorException(error);
-        }));
+        .orElseThrow(() -> ruleNotFoundInPlugins(ruleKey, connectionId)));
   }
+
 
   private Optional<ServerActiveRule> findServerActiveRuleInStorage(Binding binding, String ruleKey) {
     AnalyzerConfiguration analyzerConfiguration;
@@ -156,22 +154,23 @@ public class RulesService {
       .filter(r -> tryConvertDeprecatedKeys(r, binding.getConnectionId()).getRuleKey().equals(ruleKey)).findFirst();
   }
 
-  private RuleDetails hydrateDetailsWithServer(String connectionId, ServerActiveRule activeRuleFromStorage, boolean skipCleanCodeTaxonomy) {
+  private RuleDetails hydrateDetailsWithServer(String connectionId, ServerActiveRule activeRuleFromStorage, boolean skipCleanCodeTaxonomy, SonarLintCancelMonitor cancelMonitor) {
     var ruleKey = activeRuleFromStorage.getRuleKey();
     var templateKey = activeRuleFromStorage.getTemplateKey();
+    var serverApi = serverApiProvider.getServerApiOrThrow(connectionId);
     if (StringUtils.isNotBlank(templateKey)) {
-      return rulesRepository.getRule(connectionId, templateKey)
-        .map(templateRule -> serverApiProvider.getServerApi(connectionId)
-          .map(serverApi -> fetchRuleFromServer(connectionId, ruleKey, serverApi))
-          .map(serverRule -> RuleDetails.merging(activeRuleFromStorage, serverRule, templateRule, skipCleanCodeTaxonomy)))
-        .orElseThrow(() -> unknownConnection(connectionId))
-        .orElseThrow(() -> ruleDefinitionNotFound(templateKey));
+      var templateRule = rulesRepository.getRule(connectionId, templateKey);
+      if (templateRule.isEmpty()) {
+        throw ruleDefinitionNotFound(templateKey);
+      }
+      var serverRule = fetchRuleFromServer(connectionId, ruleKey, serverApi, cancelMonitor);
+      return RuleDetails.merging(activeRuleFromStorage, serverRule, templateRule.get(), skipCleanCodeTaxonomy);
     } else {
-      return serverApiProvider.getServerApi(connectionId).map(serverApi -> fetchRuleFromServer(connectionId, ruleKey, serverApi))
-        .map(serverRule -> rulesRepository.getRule(connectionId, ruleKey)
-          .map(ruleDefFromPlugin -> RuleDetails.merging(serverRule, ruleDefFromPlugin, skipCleanCodeTaxonomy))
-          .orElseGet(() -> RuleDetails.merging(activeRuleFromStorage, serverRule)))
-        .orElseThrow(() -> unknownConnection(connectionId));
+      var serverRule = fetchRuleFromServer(connectionId, ruleKey, serverApi, cancelMonitor);
+      var ruleDefFromPluginOpt = rulesRepository.getRule(connectionId, ruleKey);
+      return ruleDefFromPluginOpt
+        .map(ruleDefFromPlugin -> RuleDetails.merging(serverRule, ruleDefFromPlugin, skipCleanCodeTaxonomy))
+        .orElseGet(() -> RuleDetails.merging(activeRuleFromStorage, serverRule));
     }
   }
 
@@ -181,25 +180,25 @@ public class RulesService {
     return new ResponseErrorException(error);
   }
 
-  private static ServerRule fetchRuleFromServer(String connectionId, String ruleKey, ServerApi serverApi) {
-    try {
-      return serverApi.rules().getRule(ruleKey).get(1, TimeUnit.MINUTES);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw ruleNotFound(connectionId, ruleKey, e);
-    } catch (Exception e) {
-      throw ruleNotFound(connectionId, ruleKey, e);
-    }
-  }
-
-  private static ResponseErrorException ruleNotFound(String connectionId, String ruleKey, Exception e) {
-    LOG.error("Failed to fetch rule details from server", e);
-    var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' on '" + connectionId + "'", new Object[] {ruleKey, connectionId});
-    return new ResponseErrorException(error);
+  private static ServerRule fetchRuleFromServer(String connectionId, String ruleKey, ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
+    return serverApi.rules().getRule(ruleKey, cancelMonitor).orElseThrow(() -> ruleNotFoundOnServer(ruleKey, connectionId));
   }
 
   private static ResponseErrorException ruleDefinitionNotFound(String templateKey) {
     var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, "Unable to find rule definition for rule template " + templateKey, templateKey);
+    return new ResponseErrorException(error);
+  }
+
+  @NotNull
+  private static ResponseErrorException ruleNotFoundInPlugins(String ruleKey, String connectionId) {
+    var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in plugins loaded from '" + connectionId + "'",
+      new Object[]{connectionId, ruleKey});
+    return new ResponseErrorException(error);
+  }
+
+  private static ResponseErrorException ruleNotFoundOnServer(String ruleKey, String connectionId) {
+    var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' on server '" + connectionId + "'",
+      new Object[]{connectionId, ruleKey});
     return new ResponseErrorException(error);
   }
 
@@ -269,7 +268,7 @@ public class RulesService {
   public GetStandaloneRuleDescriptionResponse getStandaloneRuleDetails(String ruleKey) {
     var embeddedRule = rulesRepository.getEmbeddedRule(ruleKey);
     if (embeddedRule.isEmpty()) {
-      var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules", new Object[] {ruleKey});
+      var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules", new Object[]{ruleKey});
       throw new ResponseErrorException(error);
     }
     var ruleDefinition = embeddedRule.get();

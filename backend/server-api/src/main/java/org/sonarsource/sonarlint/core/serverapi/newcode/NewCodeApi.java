@@ -24,6 +24,7 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Measures;
@@ -43,7 +44,7 @@ public class NewCodeApi {
     this.helper = helper;
   }
 
-  public Optional<NewCodeDefinition> getNewCodeDefinition(String projectKey, @Nullable String branch, Version serverVersion) {
+  public Optional<NewCodeDefinition> getNewCodeDefinition(String projectKey, @Nullable String branch, Version serverVersion, SonarLintCancelMonitor cancelMonitor) {
     Measures.ComponentWsResponse response;
     var period = getPeriodForServer(helper, serverVersion);
     var requestPath = new StringBuilder().append(GET_NEW_CODE_DEFINITION_URL)
@@ -55,7 +56,7 @@ public class NewCodeApi {
       requestPath.append("&branch=").append(UrlUtils.urlEncode(branch));
     }
     try (
-      var wsResponse = helper.get(requestPath.toString());
+      var wsResponse = helper.get(requestPath.toString(), cancelMonitor);
       var is = wsResponse.bodyAsStream()) {
       response = Measures.ComponentWsResponse.parseFrom(is);
     } catch (Exception e) {

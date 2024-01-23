@@ -35,12 +35,12 @@ import java.util.stream.Collectors;
 /**
  * Indexes text associated to objects, and performs full text search to find matching objects.
  * It is a positional index, so it supports queries consisted of multiple terms, in which case it will find partial term matches in sequence (distance = 1).
- * The result is sorted by score. The score of each term matches is the ratio of the term matches (1 for exact match), 
+ * The result is sorted by score. The score of each term matches is the ratio of the term matches (1 for exact match),
  * and the global score is the sum of the term's scores in the object divided by the total term frequency in the object.
- * 
+ * <p>
  * The generic type should properly implement equals and hashCode.
- * <b>An object cannot be indexed twice</b>. 
- * 
+ * <b>An object cannot be indexed twice</b>.
+ * <p>
  * Performance of indexing: O(N)
  * Performance of search: O(log N) on the number of indexed terms + O(N) on the number of results
  */
@@ -78,7 +78,7 @@ public class TextSearchIndex<T> {
   /**
    * Search for indexed objects based on a query. Results will be sorted by score (highest first).
    * Score is in the interval ]0,1].
-   * 
+   *
    * @return A map of results reverse-sorted by value (score). Can be empty, but never null
    */
   public Map<T, Double> search(String query) {

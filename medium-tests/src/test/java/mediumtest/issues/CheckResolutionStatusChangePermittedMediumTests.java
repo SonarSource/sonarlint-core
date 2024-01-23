@@ -166,7 +166,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
   }
 
   @Test
-  void it_should_fail_if_no_issue_is_returned_wy_web_api() {
+  void it_should_fail_if_no_issue_is_returned_by_web_api() {
     fakeServerWithResponse("issueKey", null, Issues.SearchWsResponse.newBuilder().build());
     backend = newBackend()
       .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("10.3"))
@@ -179,8 +179,9 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .failsWithin(Duration.ofSeconds(2))
       .withThrowableOfType(ExecutionException.class)
       .havingCause()
-      .isInstanceOf(ResponseErrorException.class)
-      .withMessage("Task 'check status change permitted' failed: org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException: No issue found with key 'issueKey'");
+      .isInstanceOfSatisfying(ResponseErrorException.class, ex -> {
+        assertThat(ex.getResponseError().getData().toString()).contains("No issue found with key 'issueKey'");
+      });
   }
 
   @Test
@@ -213,8 +214,9 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .failsWithin(Duration.ofSeconds(2))
       .withThrowableOfType(ExecutionException.class)
       .havingCause()
-      .isInstanceOf(ResponseErrorException.class)
-      .withMessage("Task 'check status change permitted' failed: org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException: Unexpected body received");
+      .isInstanceOfSatisfying(ResponseErrorException.class, ex -> {
+        assertThat(ex.getResponseError().getData().toString()).contains("Unexpected body received");
+      });
   }
 
   @Test

@@ -23,8 +23,9 @@ import java.nio.file.Path;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 
 public class ServerConnection {
@@ -52,16 +53,16 @@ public class ServerConnection {
     storage.plugins().cleanUp();
   }
 
-  public boolean sync(ServerApi serverApi) {
-    return storageSynchronizer.synchronizeServerInfosAndPlugins(serverApi);
+  public boolean sync(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
+    return storageSynchronizer.synchronizeServerInfosAndPlugins(serverApi, cancelMonitor);
   }
 
-  public AnalyzerSettingsUpdateSummary sync(ServerApi serverApi, String projectKey) {
-    return storageSynchronizer.synchronizeAnalyzerConfig(serverApi, projectKey);
+  public AnalyzerSettingsUpdateSummary sync(ServerApi serverApi, String projectKey, SonarLintCancelMonitor cancelMonitor) {
+    return storageSynchronizer.synchronizeAnalyzerConfig(serverApi, projectKey, cancelMonitor);
   }
 
-  public Version readOrSynchronizeServerVersion(ServerApi serverApi) {
-    return serverInfoSynchronizer.readOrSynchronizeServerInfo(serverApi).getVersion();
+  public Version readOrSynchronizeServerVersion(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
+    return serverInfoSynchronizer.readOrSynchronizeServerInfo(serverApi, cancelMonitor).getVersion();
   }
 
   public boolean shouldSkipCleanCodeTaxonomy() {

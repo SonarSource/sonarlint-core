@@ -21,25 +21,24 @@ package org.sonarsource.sonarlint.core.tracking;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
@@ -57,10 +56,7 @@ import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotClosedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotRaisedEvent;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.HotspotSynchronizationService;
-import org.sonarsource.sonarlint.core.utils.FutureUtils;
 import org.springframework.context.event.EventListener;
-
-import static org.sonarsource.sonarlint.core.utils.FutureUtils.waitForTasks;
 
 @Named
 @Singleton
@@ -88,7 +84,7 @@ public class SecurityHotspotMatchingService {
   }
 
   public Map<Path, List<Either<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>>> matchWithServerSecurityHotspots(String configurationScopeId,
-    Map<Path, List<ClientTrackedFindingDto>> clientTrackedHotspotsByIdeRelativePath, boolean shouldFetchHotspotsFromServer, CancelChecker cancelChecker) {
+    Map<Path, List<ClientTrackedFindingDto>> clientTrackedHotspotsByIdeRelativePath, boolean shouldFetchHotspotsFromServer, SonarLintCancelMonitor cancelMonitor) {
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     var activeBranchOpt = branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId);
     var translationOpt = pathTranslationService.getOrComputePathTranslation(configurationScopeId);
@@ -103,7 +99,7 @@ public class SecurityHotspotMatchingService {
     var binding = effectiveBindingOpt.get();
     var activeBranch = activeBranchOpt.get();
     if (shouldFetchHotspotsFromServer) {
-      refreshServerSecurityHotspots(cancelChecker, binding, activeBranch, clientTrackedHotspotsByIdeRelativePath, translationOpt.get());
+      refreshServerSecurityHotspots(cancelMonitor, binding, activeBranch, clientTrackedHotspotsByIdeRelativePath, translationOpt.get());
     }
     var newCodeDefinition = storageService.binding(binding).newCodeDefinition().read();
     return clientTrackedHotspotsByIdeRelativePath.entrySet().stream().map(e -> {
@@ -126,21 +122,21 @@ public class SecurityHotspotMatchingService {
     }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
-  private void refreshServerSecurityHotspots(CancelChecker cancelChecker, Binding binding, String activeBranch,
+  private void refreshServerSecurityHotspots(SonarLintCancelMonitor cancelMonitor, Binding binding, String activeBranch,
     Map<Path, List<ClientTrackedFindingDto>> clientTrackedHotspotsByIdeRelativePath, FilePathTranslation translation) {
     var serverFileRelativePaths = clientTrackedHotspotsByIdeRelativePath.keySet()
       .stream().map(translation::ideToServerPath).collect(Collectors.toSet());
     var downloadAllSecurityHotspotsAtOnce = serverFileRelativePaths.size() > FETCH_ALL_SECURITY_HOTSPOTS_THRESHOLD;
-    var fetchTasks = new LinkedList<Future<?>>();
+    var fetchTasks = new LinkedList<CompletableFuture<?>>();
     if (downloadAllSecurityHotspotsAtOnce) {
-      fetchTasks.add(executorService.submit(() -> hotspotSynchronizationService.fetchProjectHotspots(binding, activeBranch)));
+      fetchTasks.add(CompletableFuture.runAsync(() -> hotspotSynchronizationService.fetchProjectHotspots(binding, activeBranch, cancelMonitor), executorService));
     } else {
       fetchTasks.addAll(serverFileRelativePaths.stream()
-        .map(serverFileRelativePath -> executorService.submit(() -> hotspotSynchronizationService.fetchFileHotspots(binding, activeBranch, serverFileRelativePath)))
+        .map(serverFileRelativePath ->
+          CompletableFuture.runAsync(() -> hotspotSynchronizationService.fetchFileHotspots(binding, activeBranch, serverFileRelativePath, cancelMonitor), executorService))
         .collect(Collectors.toList()));
     }
-    var waitForTasksTask = executorService.submit(() -> waitForTasks(cancelChecker, fetchTasks, "Wait for server hotspots", Duration.ofSeconds(20)));
-    FutureUtils.waitForTask(cancelChecker, waitForTasksTask, "Wait for server hotspots (global timeout)", Duration.ofSeconds(60));
+    CompletableFuture.allOf(fetchTasks.toArray(new CompletableFuture[0])).join();
   }
 
   private static List<Either<ServerHotspot, LocalOnlySecurityHotspot>> matchSecurityHotspots(Collection<ServerHotspot> serverHotspots,

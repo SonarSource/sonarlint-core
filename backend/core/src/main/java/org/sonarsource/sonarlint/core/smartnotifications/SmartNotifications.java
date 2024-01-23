@@ -38,6 +38,8 @@ import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
@@ -68,7 +70,7 @@ public class SmartNotifications {
   private final InitializeParams params;
   private final Map<String, Boolean> isConnectionIdSupported;
   private final LastEventPolling lastEventPollingService;
-  private ScheduledExecutorService smartNotificationsPolling;
+  private ExecutorServiceShutdownWatchable<ScheduledExecutorService> smartNotificationsPolling;
 
   public SmartNotifications(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository, ServerApiProvider serverApiProvider,
     SonarLintRpcClient client, StorageService storageService, TelemetryService telemetryService, WebSocketService webSocketService, InitializeParams params) {
@@ -88,31 +90,33 @@ public class SmartNotifications {
     if (!params.getFeatureFlags().shouldManageSmartNotifications()) {
       return;
     }
-    smartNotificationsPolling = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "Smart Notifications Polling"));
-    smartNotificationsPolling.scheduleAtFixedRate(this::poll, 1, 60, TimeUnit.SECONDS);
+    smartNotificationsPolling = new ExecutorServiceShutdownWatchable<>(Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "Smart Notifications Polling")));
+    var cancelMonitor = new SonarLintCancelMonitor();
+    cancelMonitor.watchForShutdown(smartNotificationsPolling);
+    smartNotificationsPolling.getWrapped().scheduleAtFixedRate(() -> this.poll(cancelMonitor), 1, 60, TimeUnit.SECONDS);
   }
 
-  private void poll() {
+  private void poll(SonarLintCancelMonitor cancelMonitor) {
     var boundScopeByConnectionAndSonarProject = configurationRepository.getBoundScopeByConnectionAndSonarProject();
     boundScopeByConnectionAndSonarProject.forEach((connectionId, boundScopesByProject) -> {
       var connection = connectionRepository.getConnectionById(connectionId);
       if (connection != null && !connection.isDisableNotifications() && !shouldSkipPolling(connection)) {
-        serverApiProvider.getServerApi(connectionId).ifPresent(serverApi -> manageNotificationsForConnection(serverApi, boundScopesByProject, connection));
+        serverApiProvider.getServerApi(connectionId).ifPresent(serverApi -> manageNotificationsForConnection(serverApi, boundScopesByProject, connection, cancelMonitor));
       }
     });
   }
 
   private void manageNotificationsForConnection(ServerApi serverApi, Map<String, Collection<BoundScope>> boundScopesPerProjectKey,
-    AbstractConnectionConfiguration connection) {
+    AbstractConnectionConfiguration connection, SonarLintCancelMonitor cancelMonitor) {
     var developersApi = serverApi.developers();
     var connectionId = connection.getConnectionId();
-    var isSupported = isConnectionIdSupported.computeIfAbsent(connectionId, v -> developersApi.isSupported());
+    var isSupported = isConnectionIdSupported.computeIfAbsent(connectionId, v -> developersApi.isSupported(cancelMonitor));
     if (Boolean.TRUE.equals(isSupported)) {
       var projectKeysByLastEventPolling = boundScopesPerProjectKey.keySet().stream()
         .collect(Collectors.toMap(Function.identity(),
           p -> getLastNotificationTime(lastEventPollingService.getLastEventPolling(connectionId, p))));
 
-      var notifications = retrieveServerNotifications(developersApi, projectKeysByLastEventPolling);
+      var notifications = retrieveServerNotifications(developersApi, projectKeysByLastEventPolling, cancelMonitor);
 
       for (var n : notifications) {
         var scopeIds = boundScopesPerProjectKey.get(n.projectKey()).stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet());
@@ -144,8 +148,8 @@ public class SmartNotifications {
   }
 
   private static List<ServerNotification> retrieveServerNotifications(DevelopersApi developersApi,
-    Map<String, ZonedDateTime> projectKeysByLastEventPolling) {
-    return developersApi.getEvents(projectKeysByLastEventPolling)
+    Map<String, ZonedDateTime> projectKeysByLastEventPolling, SonarLintCancelMonitor cancelMonitor) {
+    return developersApi.getEvents(projectKeysByLastEventPolling, cancelMonitor)
       .stream().map(e -> new ServerNotification(
         e.getCategory(),
         e.getMessage(),

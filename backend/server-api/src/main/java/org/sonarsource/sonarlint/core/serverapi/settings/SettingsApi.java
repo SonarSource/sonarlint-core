@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Settings;
@@ -40,13 +41,13 @@ public class SettingsApi {
     this.helper = helper;
   }
 
-  public Map<String, String> getProjectSettings(String projectKey) {
+  public Map<String, String> getProjectSettings(String projectKey, SonarLintCancelMonitor cancelMonitor) {
     Map<String, String> settings = new HashMap<>();
     var url = new StringBuilder();
     url.append(API_SETTINGS_PATH);
     url.append("?component=").append(UrlUtils.urlEncode(projectKey));
     ServerApiHelper.consumeTimed(
-      () -> helper.get(url.toString()),
+      () -> helper.get(url.toString(), cancelMonitor),
       response -> {
         try (var is = response.bodyAsStream()) {
           var values = Settings.ValuesWsResponse.parseFrom(is);

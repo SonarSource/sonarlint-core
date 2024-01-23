@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 public class PluginsApi {
@@ -36,9 +37,9 @@ public class PluginsApi {
     this.helper = helper;
   }
 
-  public List<ServerPlugin> getInstalled() {
+  public List<ServerPlugin> getInstalled(SonarLintCancelMonitor cancelMonitor) {
     return ServerApiHelper.processTimed(
-      () -> helper.get("/api/plugins/installed"),
+      () -> helper.get("/api/plugins/installed", cancelMonitor),
       response -> {
         var plugins = new Gson().fromJson(response.bodyAsString(), InstalledPluginsPayload.class);
         return Arrays.stream(plugins.plugins).map(PluginsApi::toInstalledPlugin).collect(Collectors.toList());
@@ -50,10 +51,10 @@ public class PluginsApi {
     return new ServerPlugin(payload.key, payload.hash, payload.filename, payload.sonarLintSupported);
   }
 
-  public void getPlugin(String key, ServerApiHelper.IOConsumer<InputStream> pluginFileConsumer) {
+  public void getPlugin(String key, ServerApiHelper.IOConsumer<InputStream> pluginFileConsumer, SonarLintCancelMonitor cancelMonitor) {
     var url = "api/plugins/download?plugin=" + key;
     ServerApiHelper.consumeTimed(
-      () -> helper.get(url),
+      () -> helper.get(url, cancelMonitor),
       response -> pluginFileConsumer.accept(response.bodyAsStream()),
       duration -> LOG.info("Downloaded '{}' in {}ms", key, duration));
   }

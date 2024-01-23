@@ -55,7 +55,7 @@ class HotspotRpcServiceDelegate extends AbstractRpcServiceDelegate implements Ho
   @Override
   public CompletableFuture<Void> changeStatus(ChangeHotspotStatusParams params) {
     return runAsync(
-      cancelChecker -> getBean(HotspotService.class).changeStatus(params.getConfigurationScopeId(), params.getHotspotKey(), adapt(params.getNewStatus()), cancelChecker),
+      cancelMonitor -> getBean(HotspotService.class).changeStatus(params.getConfigurationScopeId(), params.getHotspotKey(), adapt(params.getNewStatus()), cancelMonitor),
       params.getConfigurationScopeId());
   }
 

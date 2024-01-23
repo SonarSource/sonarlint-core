@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
@@ -55,7 +55,7 @@ class IssueApiTests {
   void should_download_all_issues_as_batch() {
     mockServer.addProtobufResponseDelimited("/batch/issues?key=keyyy", ScannerInput.ServerIssue.newBuilder().setRuleKey("ruleKey").build());
 
-    var issues = underTest.downloadAllFromBatchIssues("keyyy", null);
+    var issues = underTest.downloadAllFromBatchIssues("keyyy", null, new SonarLintCancelMonitor());
 
     assertThat(issues)
       .extracting("ruleKey")
@@ -66,7 +66,7 @@ class IssueApiTests {
   void should_download_all_issues_as_batch_from_branch() {
     mockServer.addProtobufResponseDelimited("/batch/issues?key=keyyy&branch=branchName", ScannerInput.ServerIssue.newBuilder().setRuleKey("ruleKey").build());
 
-    var issues = underTest.downloadAllFromBatchIssues("keyyy", "branchName");
+    var issues = underTest.downloadAllFromBatchIssues("keyyy", "branchName", new SonarLintCancelMonitor());
 
     assertThat(issues)
       .extracting("ruleKey")
@@ -77,7 +77,7 @@ class IssueApiTests {
   void should_return_no_batch_issue_if_download_is_forbidden() {
     mockServer.addResponse("/batch/issues?key=keyyy", new MockResponse().setResponseCode(403));
 
-    var issues = underTest.downloadAllFromBatchIssues("keyyy", null);
+    var issues = underTest.downloadAllFromBatchIssues("keyyy", null, new SonarLintCancelMonitor());
 
     assertThat(issues).isEmpty();
   }
@@ -86,7 +86,7 @@ class IssueApiTests {
   void should_return_no_batch_issue_if_endpoint_is_not_found() {
     mockServer.addResponse("/batch/issues?key=keyyy", new MockResponse().setResponseCode(404));
 
-    var issues = underTest.downloadAllFromBatchIssues("keyyy", null);
+    var issues = underTest.downloadAllFromBatchIssues("keyyy", null, new SonarLintCancelMonitor());
 
     assertThat(issues).isEmpty();
   }
@@ -95,7 +95,7 @@ class IssueApiTests {
   void should_throw_an_error_if_batch_issue_download_fails() {
     mockServer.addResponse("/batch/issues?key=keyyy", new MockResponse().setResponseCode(500));
 
-    var throwable = catchThrowable(() -> underTest.downloadAllFromBatchIssues("keyyy", null));
+    var throwable = catchThrowable(() -> underTest.downloadAllFromBatchIssues("keyyy", null, new SonarLintCancelMonitor()));
 
     assertThat(throwable).isInstanceOf(ServerErrorException.class);
   }
@@ -104,7 +104,7 @@ class IssueApiTests {
   void should_throw_an_error_if_batch_issue_body__format_is_unexpected() {
     mockServer.addStringResponse("/batch/issues?key=keyyy", "nope");
 
-    var throwable = catchThrowable(() -> underTest.downloadAllFromBatchIssues("keyyy", null));
+    var throwable = catchThrowable(() -> underTest.downloadAllFromBatchIssues("keyyy", null, new SonarLintCancelMonitor()));
 
     assertThat(throwable).isInstanceOf(IllegalStateException.class);
   }
@@ -116,7 +116,7 @@ class IssueApiTests {
     mockServer.addProtobufResponse("/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=VULNERABILITY&componentKeys=keyyy&rules=ruleKey&ps=500&p=2",
       Issues.SearchWsResponse.newBuilder().addComponents(Issues.Component.newBuilder().setKey("componentKey").setPath("componentPath").build()).build());
 
-    var result = underTest.downloadVulnerabilitiesForRules("keyyy", Set.of("ruleKey"), null, new ProgressMonitor(null));
+    var result = underTest.downloadVulnerabilitiesForRules("keyyy", Set.of("ruleKey"), null, new SonarLintCancelMonitor());
 
     assertThat(result.getIssues())
       .extracting("key")
@@ -136,17 +136,17 @@ class IssueApiTests {
         .addComponents(Issues.Component.newBuilder().setPath(path).build())
         .setRules(Issues.SearchWsResponse.newBuilder().getRulesBuilder().addRules(Common.Rule.newBuilder().setKey("ruleKey").build()))
         .build());
-    var serverIssueDetails = underTest.fetchServerIssue(issueKey, projectKey, "", "");
+    var serverIssueDetails = underTest.fetchServerIssue(issueKey, projectKey, "", "", new SonarLintCancelMonitor());
     assertThat(serverIssueDetails).isPresent();
     assertThat(serverIssueDetails.get().key).isEqualTo(issueKey);
     assertThat(serverIssueDetails.get().path).isEqualTo(Path.of(path));
   }
 
   @Test
-  void should_not_fail_when_no_issue_found_by_key(){
+  void should_not_fail_when_no_issue_found_by_key() {
     mockServer.addProtobufResponse("/api/issues/search.protobuf?issues=".concat(urlEncode("qwert")).concat("&componentKeys=myProject").concat("&ps=1&p=1"),
       Issues.SearchWsResponse.newBuilder().addIssues(Issues.Issue.newBuilder().build()).build());
-    var serverIssueDetails = underTest.fetchServerIssue("non-existent", "myProject", "", "");
+    var serverIssueDetails = underTest.fetchServerIssue("non-existent", "myProject", "", "", new SonarLintCancelMonitor());
     assertThat(serverIssueDetails).isEmpty();
     assertThat(logTester.logs()).contains("Error while fetching issue");
   }
@@ -161,7 +161,7 @@ class IssueApiTests {
         .addComponents(Issues.Component.newBuilder().setPath(path).setKey("differentIssueComponent").build())
         .setRules(Issues.SearchWsResponse.newBuilder().getRulesBuilder().addRules(Common.Rule.newBuilder().setKey("ruleKey").build()))
         .build());
-    var serverIssueDetails = underTest.fetchServerIssue(issueKey, "differentIssueComponent", "", "");
+    var serverIssueDetails = underTest.fetchServerIssue(issueKey, "differentIssueComponent", "", "", new SonarLintCancelMonitor());
     assertThat(serverIssueDetails).isEmpty();
     assertThat(logTester.logs()).contains("No path found in components for the issue with key 'issueKey'");
   }
@@ -181,7 +181,7 @@ class IssueApiTests {
         .addComponents(Issues.Component.newBuilder().setPath(path).build())
         .setRules(Issues.SearchWsResponse.newBuilder().getRulesBuilder().addRules(Common.Rule.newBuilder().setKey("ruleKey").build()))
         .build());
-    var serverIssueDetails = underTest.fetchServerIssue(issueKey, projectKey, branch, "");
+    var serverIssueDetails = underTest.fetchServerIssue(issueKey, projectKey, branch, "", new SonarLintCancelMonitor());
     assertThat(serverIssueDetails).isPresent();
     assertThat(serverIssueDetails.get().key).isEqualTo(issueKey);
     assertThat(serverIssueDetails.get().path).isEqualTo(Path.of(path));
@@ -202,7 +202,7 @@ class IssueApiTests {
         .addComponents(Issues.Component.newBuilder().setPath(path).build())
         .setRules(Issues.SearchWsResponse.newBuilder().getRulesBuilder().addRules(Common.Rule.newBuilder().setKey("ruleKey").build()))
         .build());
-    var serverIssueDetails = underTest.fetchServerIssue(issueKey, projectKey, "prbranch", pullRequest);
+    var serverIssueDetails = underTest.fetchServerIssue(issueKey, projectKey, "prbranch", pullRequest, new SonarLintCancelMonitor());
     assertThat(serverIssueDetails).isPresent();
     assertThat(serverIssueDetails.get().key).isEqualTo(issueKey);
     assertThat(serverIssueDetails.get().path).isEqualTo(Path.of(path));

@@ -25,12 +25,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.serverconnection.ServerVersionAndStatusChecker;
 import testutils.MockWebServerExtensionWithProtobuf;
-import testutils.NoopCancelChecker;
 import testutils.TakeThreadDumpAfter;
 import testutils.ThreadDumpExtension;
 
@@ -56,7 +56,7 @@ class ConnectionValidatorTests {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"7.9\",\"status\": \"UP\"}");
     mockServer.addStringResponse("/api/authentication/validate?format=json", "{\"valid\": true}");
 
-    var validation = underTest.validateConnection(new NoopCancelChecker());
+    var validation = underTest.validateConnection(new SonarLintCancelMonitor());
 
     assertThat(validation.success()).isTrue();
     assertThat(mockServer.takeRequest().getPath()).isEqualTo("/api/system/status");
@@ -72,7 +72,7 @@ class ConnectionValidatorTests {
     mockServer.addStringResponse("/api/authentication/validate?format=json", "{\"valid\": true}");
     mockServer.addResponseFromResource("/api/organizations/search.protobuf?organizations=myOrg&ps=500&p=1", "/orgs/empty.pb");
 
-    var validation = underTest.validateConnection(new NoopCancelChecker());
+    var validation = underTest.validateConnection(new SonarLintCancelMonitor());
 
     assertThat(validation.success()).isFalse();
     assertThat(validation.message()).isEqualTo("No organizations found for key: myOrg");
@@ -88,7 +88,7 @@ class ConnectionValidatorTests {
     mockServer.addResponseFromResource("/api/organizations/search.protobuf?organizations=henryju-github&ps=500&p=1", "/orgs/single.pb");
     mockServer.addResponseFromResource("/api/organizations/search.protobuf?organizations=henryju-github&ps=500&p=2", "/orgs/empty.pb");
 
-    var validation = underTest.validateConnection(new NoopCancelChecker());
+    var validation = underTest.validateConnection(new SonarLintCancelMonitor());
 
     assertThat(validation.success()).isTrue();
   }
@@ -100,9 +100,10 @@ class ConnectionValidatorTests {
 
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}");
 
-    when(serverChecker.checkVersionAndStatus()).thenThrow(UnsupportedServerException.class);
+    var cancelMonitor = new SonarLintCancelMonitor();
+    when(serverChecker.checkVersionAndStatus(cancelMonitor)).thenThrow(UnsupportedServerException.class);
 
-    var validation = underTest.validateConnection(new NoopCancelChecker());
+    var validation = underTest.validateConnection(cancelMonitor);
 
     assertThat(validation.success()).isFalse();
     assertThat(validation.message()).isEqualTo("SonarQube server has version 6.7. Version should be greater or equal to 7.9");
@@ -117,7 +118,7 @@ class ConnectionValidatorTests {
     mockResponse.setResponseCode(400);
     mockServer.addResponse("/api/system/status", mockResponse);
 
-    var validation = underTest.validateConnection(new NoopCancelChecker());
+    var validation = underTest.validateConnection(new SonarLintCancelMonitor());
 
     assertThat(validation.success()).isFalse();
     assertThat(validation.message()).isEqualTo("Error 400 on " + mockServer.endpointParams().getBaseUrl() + "api/system/status");
@@ -130,7 +131,7 @@ class ConnectionValidatorTests {
 
     mockServer.addStringResponse("/api/system/status", "{\"id\": }");
 
-    var validation = underTest.validateConnection(new NoopCancelChecker());
+    var validation = underTest.validateConnection(new SonarLintCancelMonitor());
 
     assertThat(validation.success()).isFalse();
     assertThat(validation.message()).isEqualTo("Unable to parse server infos from: {\"id\": }");

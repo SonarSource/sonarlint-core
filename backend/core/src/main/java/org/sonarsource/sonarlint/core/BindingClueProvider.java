@@ -31,6 +31,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
@@ -62,8 +63,8 @@ public class BindingClueProvider {
     this.clientFs = clientFs;
   }
 
-  public List<BindingClueWithConnections> collectBindingCluesWithConnections(String configScopeId, Set<String> connectionIds, CancelChecker cancelToken) {
-    var bindingClues = collectBindingClues(configScopeId, cancelToken);
+  public List<BindingClueWithConnections> collectBindingCluesWithConnections(String configScopeId, Set<String> connectionIds, SonarLintCancelMonitor cancelMonitor) {
+    var bindingClues = collectBindingClues(configScopeId, cancelMonitor);
     return matchConnections(bindingClues, connectionIds);
   }
 
@@ -98,11 +99,11 @@ public class BindingClueProvider {
     }
   }
 
-  private List<BindingClue> collectBindingClues(String checkedConfigScopeId, CancelChecker cancelToken) {
-    LOG.debug("Query client for binding clues...");
+  private List<BindingClue> collectBindingClues(String checkedConfigScopeId, SonarLintCancelMonitor cancelMonitor) {
     var files = clientFs.findFileByNamesInScope(checkedConfigScopeId, List.copyOf(ALL_BINDING_CLUE_FILENAMES));
     List<BindingClue> bindingClues = new ArrayList<>();
     for (var foundFile : files) {
+      cancelMonitor.checkCanceled();
       var scannerProps = extractScannerProperties(foundFile);
       if (scannerProps == null) {
         continue;

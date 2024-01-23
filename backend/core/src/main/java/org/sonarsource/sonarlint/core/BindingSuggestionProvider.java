@@ -28,7 +28,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -38,9 +37,10 @@ import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
@@ -53,7 +53,6 @@ import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurat
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
-import org.sonarsource.sonarlint.core.utils.ExecutorServiceShutdownCancelChecker;
 import org.springframework.context.event.EventListener;
 
 import static java.lang.String.join;
@@ -73,25 +72,19 @@ public class BindingSuggestionProvider {
   private final SonarLintRpcClient client;
   private final BindingClueProvider bindingClueProvider;
   private final SonarProjectsCache sonarProjectsCache;
-  private final ExecutorService executorService;
+  private final ExecutorServiceShutdownWatchable<?> executorService;
   private final AtomicBoolean enabled = new AtomicBoolean(true);
 
   @Inject
   public BindingSuggestionProvider(ConfigurationRepository configRepository, ConnectionConfigurationRepository connectionRepository, SonarLintRpcClient client,
     BindingClueProvider bindingClueProvider, SonarProjectsCache sonarProjectsCache) {
-    this(configRepository, connectionRepository, client, bindingClueProvider, sonarProjectsCache,
-      new ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS,
-        new LinkedBlockingQueue<>(), r -> new Thread(r, "Binding Suggestion Provider")));
-  }
-
-  BindingSuggestionProvider(ConfigurationRepository configRepository, ConnectionConfigurationRepository connectionRepository, SonarLintRpcClient client,
-    BindingClueProvider bindingClueProvider, SonarProjectsCache sonarProjectsCache, ExecutorService executorService) {
     this.configRepository = configRepository;
     this.connectionRepository = connectionRepository;
     this.client = client;
     this.bindingClueProvider = bindingClueProvider;
     this.sonarProjectsCache = sonarProjectsCache;
-    this.executorService = executorService;
+    this.executorService = new ExecutorServiceShutdownWatchable<>(new ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS,
+      new LinkedBlockingQueue<>(), r -> new Thread(r, "Binding Suggestion Provider")));
   }
 
   @EventListener
@@ -141,32 +134,34 @@ public class BindingSuggestionProvider {
     suggestBindingForGivenScopesAndAllConnections(configScopeWithAddedOrUpdatedBindingClue);
   }
 
-  public Map<String, List<BindingSuggestionDto>> getBindingSuggestions(String configScopeId, String connectionId, CancelChecker cancelChecker) {
-    return computeBindingSuggestions(Set.of(configScopeId), Set.of(connectionId), cancelChecker);
+  public Map<String, List<BindingSuggestionDto>> getBindingSuggestions(String configScopeId, String connectionId, SonarLintCancelMonitor cancelMonitor) {
+    return computeBindingSuggestions(Set.of(configScopeId), Set.of(connectionId), cancelMonitor);
   }
 
   private void queueBindingSuggestionComputation(Set<String> configScopeIds, Set<String> candidateConnectionIds) {
+    var cancelMonitor = new SonarLintCancelMonitor();
+    cancelMonitor.watchForShutdown(executorService);
     executorService.submit(() -> {
       if (enabled.get()) {
-        computeAndNotifyBindingSuggestions(configScopeIds, candidateConnectionIds, new ExecutorServiceShutdownCancelChecker(executorService));
+        computeAndNotifyBindingSuggestions(configScopeIds, candidateConnectionIds, cancelMonitor);
       } else {
         LOG.debug("Skipping binding suggestion computation as it is disabled");
       }
     });
   }
 
-  private void computeAndNotifyBindingSuggestions(Set<String> configScopeIds, Set<String> candidateConnectionIds, CancelChecker cancelChecker) {
-    Map<String, List<BindingSuggestionDto>> suggestionsByConfigScope = computeBindingSuggestions(configScopeIds, candidateConnectionIds, cancelChecker);
+  private void computeAndNotifyBindingSuggestions(Set<String> configScopeIds, Set<String> candidateConnectionIds, SonarLintCancelMonitor cancelMonitor) {
+    Map<String, List<BindingSuggestionDto>> suggestionsByConfigScope = computeBindingSuggestions(configScopeIds, candidateConnectionIds, cancelMonitor);
     if (!suggestionsByConfigScope.isEmpty()) {
       client.suggestBinding(new SuggestBindingParams(suggestionsByConfigScope));
     }
   }
 
   @NonNull
-  private Map<String, List<BindingSuggestionDto>> computeBindingSuggestions(Set<String> configScopeIds, Set<String> candidateConnectionIds, CancelChecker cancelChecker) {
+  private Map<String, List<BindingSuggestionDto>> computeBindingSuggestions(Set<String> configScopeIds, Set<String> candidateConnectionIds, SonarLintCancelMonitor cancelMonitor) {
     var eligibleConfigScopesForBindingSuggestion = new HashSet<String>();
     for (var configScopeId : configScopeIds) {
-      cancelChecker.checkCanceled();
+      cancelMonitor.checkCanceled();
       if (isScopeEligibleForBindingSuggestion(configScopeId)) {
         eligibleConfigScopesForBindingSuggestion.add(configScopeId);
       }
@@ -179,8 +174,8 @@ public class BindingSuggestionProvider {
     Map<String, List<BindingSuggestionDto>> suggestionsByConfigScope = new HashMap<>();
 
     for (var configScopeId : eligibleConfigScopesForBindingSuggestion) {
-      cancelChecker.checkCanceled();
-      var scopeSuggestions = suggestBindingForEligibleScope(configScopeId, candidateConnectionIds, cancelChecker);
+      cancelMonitor.checkCanceled();
+      var scopeSuggestions = suggestBindingForEligibleScope(configScopeId, candidateConnectionIds, cancelMonitor);
       LOG.debug("Found {} {} for configuration scope '{}'", scopeSuggestions.size(), singlePlural(scopeSuggestions.size(), "suggestion", "suggestions"), configScopeId);
       suggestionsByConfigScope.put(configScopeId, scopeSuggestions);
     }
@@ -188,8 +183,8 @@ public class BindingSuggestionProvider {
     return suggestionsByConfigScope;
   }
 
-  private List<BindingSuggestionDto> suggestBindingForEligibleScope(String checkedConfigScopeId, Set<String> candidateConnectionIds, CancelChecker cancelToken) {
-    var cluesAndConnections = bindingClueProvider.collectBindingCluesWithConnections(checkedConfigScopeId, candidateConnectionIds, cancelToken);
+  private List<BindingSuggestionDto> suggestBindingForEligibleScope(String checkedConfigScopeId, Set<String> candidateConnectionIds, SonarLintCancelMonitor cancelMonitor) {
+    var cluesAndConnections = bindingClueProvider.collectBindingCluesWithConnections(checkedConfigScopeId, candidateConnectionIds, cancelMonitor);
 
     List<BindingSuggestionDto> suggestions = new ArrayList<>();
     var cluesWithProjectKey = cluesAndConnections.stream().filter(c -> c.getBindingClue().getSonarProjectKey() != null).collect(toList());
@@ -197,7 +192,7 @@ public class BindingSuggestionProvider {
       var sonarProjectKey = requireNonNull(bindingClueWithConnections.getBindingClue().getSonarProjectKey());
       for (var connectionId : bindingClueWithConnections.getConnectionIds()) {
         sonarProjectsCache
-          .getSonarProject(connectionId, sonarProjectKey)
+          .getSonarProject(connectionId, sonarProjectKey, cancelMonitor)
           .ifPresent(serverProject -> suggestions.add(new BindingSuggestionDto(connectionId, sonarProjectKey, serverProject.getName())));
       }
     }
@@ -206,25 +201,26 @@ public class BindingSuggestionProvider {
       if (isNotBlank(configScopeName)) {
         var cluesWithoutProjectKey = cluesAndConnections.stream().filter(c -> c.getBindingClue().getSonarProjectKey() == null).collect(toList());
         for (var bindingClueWithConnections : cluesWithoutProjectKey) {
-          searchGoodMatchInConnections(suggestions, configScopeName, bindingClueWithConnections.getConnectionIds());
+          searchGoodMatchInConnections(suggestions, configScopeName, bindingClueWithConnections.getConnectionIds(), cancelMonitor);
         }
         if (cluesWithoutProjectKey.isEmpty()) {
-          searchGoodMatchInConnections(suggestions, configScopeName, candidateConnectionIds);
+          searchGoodMatchInConnections(suggestions, configScopeName, candidateConnectionIds, cancelMonitor);
         }
       }
     }
     return suggestions;
   }
 
-  private void searchGoodMatchInConnections(List<BindingSuggestionDto> suggestions, String configScopeName, Set<String> connectionIdsToSearch) {
+  private void searchGoodMatchInConnections(List<BindingSuggestionDto> suggestions, String configScopeName, Set<String> connectionIdsToSearch,
+    SonarLintCancelMonitor cancelMonitor) {
     for (var connectionId : connectionIdsToSearch) {
-      searchGoodMatchInConnection(suggestions, configScopeName, connectionId);
+      searchGoodMatchInConnection(suggestions, configScopeName, connectionId, cancelMonitor);
     }
   }
 
-  private void searchGoodMatchInConnection(List<BindingSuggestionDto> suggestions, String configScopeName, String connectionId) {
+  private void searchGoodMatchInConnection(List<BindingSuggestionDto> suggestions, String configScopeName, String connectionId, SonarLintCancelMonitor cancelMonitor) {
     LOG.debug("Attempt to find a good match for '{}' on connection '{}'...", configScopeName, connectionId);
-    var index = sonarProjectsCache.getTextSearchIndex(connectionId);
+    var index = sonarProjectsCache.getTextSearchIndex(connectionId, cancelMonitor);
     var searchResult = index.search(configScopeName);
     if (!searchResult.isEmpty()) {
       Double bestScore = Double.MIN_VALUE;

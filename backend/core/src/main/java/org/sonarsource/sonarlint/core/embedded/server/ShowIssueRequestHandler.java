@@ -40,6 +40,7 @@ import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.net.URIBuilder;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -88,19 +89,19 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
     telemetryService.showIssueRequestReceived();
 
     requestHandlerBindingAssistant.assistConnectionAndBindingIfNeededAsync(showIssueQuery.serverUrl, showIssueQuery.tokenName, showIssueQuery.tokenValue, showIssueQuery.projectKey,
-      (connectionId, configScopeId) -> showIssueForScope(connectionId, configScopeId, showIssueQuery.issueKey, showIssueQuery.projectKey, showIssueQuery.branch,
-        showIssueQuery.pullRequest));
+      (connectionId, configScopeId, cancelMonitor) -> showIssueForScope(connectionId, configScopeId, showIssueQuery.issueKey, showIssueQuery.projectKey, showIssueQuery.branch,
+        showIssueQuery.pullRequest, cancelMonitor));
 
     response.setCode(HttpStatus.SC_OK);
     response.setEntity(new StringEntity("OK"));
   }
 
   private void showIssueForScope(String connectionId, String configScopeId, String issueKey, String projectKey,
-    String branch, @Nullable String pullRequest) {
-    var issueDetailsOpt = tryFetchIssue(connectionId, issueKey, projectKey, branch, pullRequest);
+    String branch, @Nullable String pullRequest, SonarLintCancelMonitor cancelMonitor) {
+    var issueDetailsOpt = tryFetchIssue(connectionId, issueKey, projectKey, branch, pullRequest, cancelMonitor);
     if (issueDetailsOpt.isPresent()) {
       pathTranslationService.getOrComputePathTranslation(configScopeId)
-          .ifPresent(translation -> client.showIssue(getShowIssueParams(issueDetailsOpt.get(), connectionId, configScopeId, branch, pullRequest, translation)));
+        .ifPresent(translation -> client.showIssue(getShowIssueParams(issueDetailsOpt.get(), connectionId, configScopeId, branch, pullRequest, translation, cancelMonitor)));
     } else {
       client.showMessage(new ShowMessageParams(MessageType.ERROR, "Could not show the issue. See logs for more details"));
     }
@@ -108,13 +109,13 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
 
   @VisibleForTesting
   ShowIssueParams getShowIssueParams(IssueApi.ServerIssueDetails issueDetails, String connectionId,
-    String configScopeId, String branch, @Nullable String pullRequest, FilePathTranslation translation) {
+    String configScopeId, String branch, @Nullable String pullRequest, FilePathTranslation translation, SonarLintCancelMonitor cancelMonitor) {
     var flowLocations = issueDetails.flowList.stream().map(flow -> {
       var locations = flow.getLocationsList().stream().map(location -> {
         var locationComponent = issueDetails.componentsList.stream().filter(component -> component.getKey().equals(location.getComponent())).findFirst();
         var filePath = locationComponent.map(Issues.Component::getPath).orElse("");
         var locationTextRange = location.getTextRange();
-        var codeSnippet = tryFetchCodeSnippet(connectionId, locationComponent.map(Issues.Component::getKey).orElse(""), locationTextRange, branch, pullRequest);
+        var codeSnippet = tryFetchCodeSnippet(connectionId, locationComponent.map(Issues.Component::getKey).orElse(""), locationTextRange, branch, pullRequest, cancelMonitor);
         var locationTextRangeDto = new TextRangeDto(locationTextRange.getStartLine(), locationTextRange.getStartOffset(),
           locationTextRange.getEndLine(), locationTextRange.getEndOffset());
         return new LocationDto(locationTextRangeDto, location.getMsg(), translation.serverToIdePath(Paths.get(filePath)), codeSnippet.orElse(""));
@@ -137,18 +138,20 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
     return RulesApi.TAINT_REPOS.stream().anyMatch(ruleKey::startsWith);
   }
 
-  private Optional<IssueApi.ServerIssueDetails> tryFetchIssue(String connectionId, String issueKey, String projectKey, String branch, @Nullable String pullRequest) {
+  private Optional<IssueApi.ServerIssueDetails> tryFetchIssue(String connectionId, String issueKey, String projectKey, String branch, @Nullable String pullRequest,
+    SonarLintCancelMonitor cancelMonitor) {
     var serverApi = serverApiProvider.getServerApiOrThrow(connectionId);
-    return serverApi.issue().fetchServerIssue(issueKey, projectKey, branch, pullRequest);
+    return serverApi.issue().fetchServerIssue(issueKey, projectKey, branch, pullRequest, cancelMonitor);
   }
 
-  private Optional<String> tryFetchCodeSnippet(String connectionId, String fileKey, Common.TextRange textRange, String branch, String pullRequest) {
+  private Optional<String> tryFetchCodeSnippet(String connectionId, String fileKey, Common.TextRange textRange, String branch, @Nullable String pullRequest,
+    SonarLintCancelMonitor cancelMonitor) {
     var serverApi = serverApiProvider.getServerApi(connectionId);
     if (serverApi.isEmpty() || fileKey.isEmpty()) {
       // should not happen since we found the connection just before, improve the design ?
       return Optional.empty();
     }
-    return serverApi.get().issue().getCodeSnippet(fileKey, textRange, branch, pullRequest);
+    return serverApi.get().issue().getCodeSnippet(fileKey, textRange, branch, pullRequest, cancelMonitor);
   }
 
   @VisibleForTesting

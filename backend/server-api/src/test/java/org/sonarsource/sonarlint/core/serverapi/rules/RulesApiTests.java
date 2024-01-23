@@ -21,14 +21,13 @@ package org.sonarsource.sonarlint.core.serverapi.rules;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
@@ -37,7 +36,6 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.mockito.Mockito.mock;
 
 class RulesApiTests {
   @RegisterExtension
@@ -46,63 +44,62 @@ class RulesApiTests {
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
-  private final ProgressMonitor progress = mock(ProgressMonitor.class);
-
   @Test
-  void errorReadingRuleDescription() {
+  void logErrorParsingRuleDescription() {
     mockServer.addStringResponse("/api/rules/show.protobuf?key=java:S1234", "trash");
 
     var rulesApi = new RulesApi(mockServer.serverApiHelper());
 
-    var error = catchThrowable(() -> rulesApi.getRule("java:S1234").get());
-    assertThat(error).hasCauseInstanceOf(UnexpectedBodyException.class);
+    assertThat(rulesApi.getRule("java:S1234", new SonarLintCancelMonitor())).isEmpty();
+
+    assertThat(logTester.logs()).contains("Error when fetching rule 'java:S1234'");
   }
 
   @Test
-  void should_get_rule() throws ExecutionException, InterruptedException {
+  void should_get_rule() {
     mockServer.addProtobufResponse("/api/rules/show.protobuf?key=java:S1234",
       Rules.ShowResponse.newBuilder().setRule(
-        Rules.Rule.newBuilder()
-          .setName("name")
-          .setSeverity("MINOR")
-          .setType(Common.RuleType.VULNERABILITY)
-          .setLang(SonarLanguage.PYTHON.getSonarLanguageKey())
-          .setHtmlDesc("htmlDesc")
-          .setHtmlNote("htmlNote")
-          .build())
+          Rules.Rule.newBuilder()
+            .setName("name")
+            .setSeverity("MINOR")
+            .setType(Common.RuleType.VULNERABILITY)
+            .setLang(SonarLanguage.PYTHON.getSonarLanguageKey())
+            .setHtmlDesc("htmlDesc")
+            .setHtmlNote("htmlNote")
+            .build())
         .build());
 
     var rulesApi = new RulesApi(mockServer.serverApiHelper());
 
-    var rule = rulesApi.getRule("java:S1234").get();
+    var rule = rulesApi.getRule("java:S1234", new SonarLintCancelMonitor()).get();
 
     assertThat(rule).extracting("name", "severity", "type", "language", "htmlDesc", "htmlNote")
       .contains("name", IssueSeverity.MINOR, RuleType.VULNERABILITY, SonarLanguage.PYTHON, "htmlDesc", "htmlNote");
   }
 
   @Test
-  void should_get_rule_with_description_sections() throws ExecutionException, InterruptedException {
+  void should_get_rule_with_description_sections() {
     mockServer.addProtobufResponse("/api/rules/show.protobuf?key=java:S1234",
       Rules.ShowResponse.newBuilder().setRule(
-        Rules.Rule.newBuilder()
-          .setName("name")
-          .setSeverity("MINOR")
-          .setType(Common.RuleType.VULNERABILITY)
-          .setLang(SonarLanguage.PYTHON.getSonarLanguageKey())
-          .setHtmlDesc("htmlDesc")
-          .setDescriptionSections(Rules.Rule.DescriptionSections.newBuilder()
-            .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder().setKey("sectionKey").setContent("htmlContent").build())
-            .addDescriptionSections(
-              Rules.Rule.DescriptionSection.newBuilder().setKey("sectionKey2").setContent("htmlContent2").setContext(Rules.Rule.DescriptionSection.Context.newBuilder()
-                .setKey("contextKey").setDisplayName("displayName").build()).build())
+          Rules.Rule.newBuilder()
+            .setName("name")
+            .setSeverity("MINOR")
+            .setType(Common.RuleType.VULNERABILITY)
+            .setLang(SonarLanguage.PYTHON.getSonarLanguageKey())
+            .setHtmlDesc("htmlDesc")
+            .setDescriptionSections(Rules.Rule.DescriptionSections.newBuilder()
+              .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder().setKey("sectionKey").setContent("htmlContent").build())
+              .addDescriptionSections(
+                Rules.Rule.DescriptionSection.newBuilder().setKey("sectionKey2").setContent("htmlContent2").setContext(Rules.Rule.DescriptionSection.Context.newBuilder()
+                  .setKey("contextKey").setDisplayName("displayName").build()).build())
+              .build())
+            .setHtmlNote("htmlNote")
             .build())
-          .setHtmlNote("htmlNote")
-          .build())
         .build());
 
     var rulesApi = new RulesApi(mockServer.serverApiHelper());
 
-    var rule = rulesApi.getRule("java:S1234").get();
+    var rule = rulesApi.getRule("java:S1234", new SonarLintCancelMonitor()).get();
 
     assertThat(rule).extracting("name", "severity", "type", "language", "htmlDesc", "htmlNote")
       .contains("name", IssueSeverity.MINOR, RuleType.VULNERABILITY, SonarLanguage.PYTHON, "htmlDesc", "htmlNote");
@@ -121,22 +118,22 @@ class RulesApiTests {
   }
 
   @Test
-  void should_get_rule_from_organization() throws ExecutionException, InterruptedException {
+  void should_get_rule_from_organization() {
     mockServer.addProtobufResponse("/api/rules/show.protobuf?key=java:S1234&organization=orgKey",
       Rules.ShowResponse.newBuilder().setRule(
-        Rules.Rule.newBuilder()
-          .setName("name")
-          .setSeverity("MAJOR")
-          .setType(Common.RuleType.VULNERABILITY)
-          .setLang(SonarLanguage.PYTHON.getSonarLanguageKey())
-          .setHtmlDesc("htmlDesc")
-          .setHtmlNote("htmlNote")
-          .build())
+          Rules.Rule.newBuilder()
+            .setName("name")
+            .setSeverity("MAJOR")
+            .setType(Common.RuleType.VULNERABILITY)
+            .setLang(SonarLanguage.PYTHON.getSonarLanguageKey())
+            .setHtmlDesc("htmlDesc")
+            .setHtmlNote("htmlNote")
+            .build())
         .build());
 
     var rulesApi = new RulesApi(mockServer.serverApiHelper("orgKey"));
 
-    var rule = rulesApi.getRule("java:S1234").get();
+    var rule = rulesApi.getRule("java:S1234", new SonarLintCancelMonitor()).get();
 
     assertThat(rule).extracting("name", "severity", "type", "language", "htmlDesc", "htmlNote")
       .contains("name", IssueSeverity.MAJOR, RuleType.VULNERABILITY, SonarLanguage.PYTHON, "htmlDesc", "htmlNote");
@@ -153,22 +150,22 @@ class RulesApiTests {
         .setActives(
           Rules.Actives.newBuilder()
             .putActives("repo:key_with_template", Rules.ActiveList.newBuilder().addActiveList(
-              Rules.Active.newBuilder()
-                .setSeverity("MAJOR")
-                .addParams(Rules.Active.Param.newBuilder().setKey("paramKey").setValue("paramValue").build())
-                .build())
+                Rules.Active.newBuilder()
+                  .setSeverity("MAJOR")
+                  .addParams(Rules.Active.Param.newBuilder().setKey("paramKey").setValue("paramValue").build())
+                  .build())
               .build())
             .putActives("repo:key", Rules.ActiveList.newBuilder().addActiveList(
-              Rules.Active.newBuilder()
-                .setSeverity("MINOR")
-                .build())
+                Rules.Active.newBuilder()
+                  .setSeverity("MINOR")
+                  .build())
               .build())
             .build())
         .build());
 
     var rulesApi = new RulesApi(mockServer.serverApiHelper("orgKey"));
 
-    var activeRules = rulesApi.getAllActiveRules("QPKEY+", progress);
+    var activeRules = rulesApi.getAllActiveRules("QPKEY+", new SonarLintCancelMonitor());
 
     assertThat(activeRules)
       .extracting("ruleKey", "severity", "templateKey", "params")
@@ -209,7 +206,7 @@ class RulesApiTests {
 
     var rulesApi = new RulesApi(mockServer.serverApiHelper("orgKey"));
 
-    var activeRules = rulesApi.getAllActiveRules("QPKEY+", progress);
+    var activeRules = rulesApi.getAllActiveRules("QPKEY+", new SonarLintCancelMonitor());
 
     assertThat(activeRules).extracting(ServerActiveRule::getRuleKey).containsExactlyInAnyOrder("repo:key1", "repo:key2");
   }

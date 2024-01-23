@@ -29,17 +29,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.commons.IssueStatus;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.Transition;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
@@ -86,7 +85,7 @@ public class IssueApi {
    *
    * @param key project key, or file key.
    */
-  public DownloadIssuesResult downloadVulnerabilitiesForRules(String key, Set<String> ruleKeys, @Nullable String branchName, ProgressMonitor progress) {
+  public DownloadIssuesResult downloadVulnerabilitiesForRules(String key, Set<String> ruleKeys, @Nullable String branchName, SonarLintCancelMonitor cancelMonitor) {
     var searchUrl = new StringBuilder();
     searchUrl.append(getVulnerabilitiesUrl(key, ruleKeys));
     searchUrl.append(getUrlBranchParameter(branchName));
@@ -106,7 +105,7 @@ public class IssueApi {
       },
       result::add,
       true,
-      progress);
+      cancelMonitor);
 
     return new DownloadIssuesResult(result, componentsPathByKey);
   }
@@ -142,14 +141,14 @@ public class IssueApi {
     return "";
   }
 
-  public List<ScannerInput.ServerIssue> downloadAllFromBatchIssues(String key, @Nullable String branchName) {
+  public List<ScannerInput.ServerIssue> downloadAllFromBatchIssues(String key, @Nullable String branchName, SonarLintCancelMonitor cancelMonitor) {
     String batchIssueUrl = getBatchIssuesUrl(key) + getUrlBranchParameter(branchName);
     return ServerApiHelper.processTimed(
-      () -> serverApiHelper.rawGet(batchIssueUrl),
+      () -> serverApiHelper.rawGet(batchIssueUrl, cancelMonitor),
       response -> {
         if (response.code() == 403 || response.code() == 404) {
           return Collections.emptyList();
-        } else if (response.code() != 200) {
+        } else if (!response.isSuccessful()) {
           throw ServerApiHelper.handleError(response);
         }
         var input = response.bodyAsStream();
@@ -177,9 +176,10 @@ public class IssueApi {
     return url.toString();
   }
 
-  public IssuesPullResult pullIssues(String projectKey, String branchName, Set<SonarLanguage> enabledLanguages, @Nullable Long changedSince) {
+  public IssuesPullResult pullIssues(String projectKey, String branchName, Set<SonarLanguage> enabledLanguages, @Nullable Long changedSince,
+    SonarLintCancelMonitor cancelMonitor) {
     return ServerApiHelper.processTimed(
-      () -> serverApiHelper.get(getPullIssuesUrl(projectKey, branchName, enabledLanguages, changedSince)),
+      () -> serverApiHelper.get(getPullIssuesUrl(projectKey, branchName, enabledLanguages, changedSince), cancelMonitor),
       response -> {
         var input = response.bodyAsStream();
         var timestamp = Issues.IssuesPullQueryTimestamp.parseDelimitedFrom(input);
@@ -220,9 +220,10 @@ public class IssueApi {
     return url.toString();
   }
 
-  public TaintIssuesPullResult pullTaintIssues(String projectKey, String branchName, Set<SonarLanguage> enabledLanguages, @Nullable Long changedSince) {
+  public TaintIssuesPullResult pullTaintIssues(String projectKey, String branchName, Set<SonarLanguage> enabledLanguages, @Nullable Long changedSince,
+    SonarLintCancelMonitor cancelMonitor) {
     return ServerApiHelper.processTimed(
-      () -> serverApiHelper.get(getPullTaintIssuesUrl(projectKey, branchName, enabledLanguages, changedSince)),
+      () -> serverApiHelper.get(getPullTaintIssuesUrl(projectKey, branchName, enabledLanguages, changedSince), cancelMonitor),
       response -> {
         var input = response.bodyAsStream();
         var timestamp = Issues.TaintVulnerabilityPullQueryTimestamp.parseDelimitedFrom(input);
@@ -231,44 +232,35 @@ public class IssueApi {
       duration -> LOG.debug("Pulled taint issues in {}ms", duration));
   }
 
-  public CompletableFuture<Void> changeStatusAsync(String issueKey, Transition transition) {
+  public void changeStatus(String issueKey, Transition transition, SonarLintCancelMonitor cancelMonitor) {
     var body = "issue=" + urlEncode(issueKey) + "&transition=" + urlEncode(transition.getStatus());
-    return serverApiHelper.postAsync("/api/issues/do_transition", FORM_URL_ENCODED_CONTENT_TYPE, body)
-      .thenAccept(response -> {
-        // no data, return void
-      });
+    serverApiHelper.post("/api/issues/do_transition", FORM_URL_ENCODED_CONTENT_TYPE, body, cancelMonitor);
   }
 
-  public CompletableFuture<Void> addComment(String issueKey, String text) {
+  public void addComment(String issueKey, String text, SonarLintCancelMonitor cancelMonitor) {
     var body = "issue=" + urlEncode(issueKey) + "&text=" + urlEncode(text);
-    return serverApiHelper.postAsync("/api/issues/add_comment", FORM_URL_ENCODED_CONTENT_TYPE, body)
-      .thenAccept(response -> {
-        // no data, return void
-      });
+    serverApiHelper.post("/api/issues/add_comment", FORM_URL_ENCODED_CONTENT_TYPE, body, cancelMonitor);
   }
 
-  public CompletableFuture<Issue> searchByKey(String issueKey) {
+  public Issue searchByKey(String issueKey, SonarLintCancelMonitor cancelMonitor) {
     var searchUrl = new StringBuilder();
     searchUrl.append("/api/issues/search.protobuf?issues=").append(urlEncode(issueKey)).append("&additionalFields=transitions");
     serverApiHelper.getOrganizationKey()
       .ifPresent(org -> searchUrl.append(ORGANIZATION_PARAM).append(UrlUtils.urlEncode(org)));
     searchUrl.append("&ps=1&p=1");
-    return serverApiHelper.getAsync(searchUrl.toString())
-      .thenApply(rawResponse -> {
-        try (var body = rawResponse.bodyAsStream()) {
-          var wsResponse = Issues.SearchWsResponse.parseFrom(body);
-          if (wsResponse.getIssuesList().isEmpty()) {
-            throw new UnexpectedBodyException("No issue found with key '" + issueKey + "'");
-          }
-          return wsResponse.getIssuesList().get(0);
-        } catch (IOException e) {
-          LOG.error("Error when searching issue + '" + issueKey + "'", e);
-          throw new UnexpectedBodyException(e);
-        }
-      });
+    try (var wsResponse = serverApiHelper.get(searchUrl.toString(), cancelMonitor); var body = wsResponse.bodyAsStream()) {
+      var pbResponse = Issues.SearchWsResponse.parseFrom(body);
+      if (pbResponse.getIssuesList().isEmpty()) {
+        throw new UnexpectedBodyException("No issue found with key '" + issueKey + "'");
+      }
+      return pbResponse.getIssuesList().get(0);
+    } catch (IOException e) {
+      LOG.error("Error when searching issue + '" + issueKey + "'", e);
+      throw new UnexpectedBodyException(e);
+    }
   }
 
-  public Optional<ServerIssueDetails> fetchServerIssue(String issueKey, String projectKey, String branch, @Nullable String pullRequest) {
+  public Optional<ServerIssueDetails> fetchServerIssue(String issueKey, String projectKey, String branch, @Nullable String pullRequest, SonarLintCancelMonitor cancelMonitor) {
     String searchUrl = "/api/issues/search.protobuf?issues=" + urlEncode(issueKey) + "&componentKeys=" + projectKey + "&ps=1&p=1";
     if (pullRequest != null && !pullRequest.isEmpty()) {
       searchUrl = searchUrl.concat("&pullRequest=").concat(urlEncode(pullRequest));
@@ -277,7 +269,7 @@ public class IssueApi {
       searchUrl = searchUrl.concat("&branch=").concat(urlEncode(branch));
     }
 
-    try (var wsResponse = serverApiHelper.get(searchUrl); var is = wsResponse.bodyAsStream()) {
+    try (var wsResponse = serverApiHelper.get(searchUrl, cancelMonitor); var is = wsResponse.bodyAsStream()) {
       var response = Issues.SearchWsResponse.parseFrom(is);
       if (response.getIssuesList().isEmpty() || response.getComponentsList().isEmpty()) {
         LOG.warn("No issue found with key '" + issueKey + "'");
@@ -285,13 +277,13 @@ public class IssueApi {
       }
       var issue = response.getIssuesList().get(0);
       var optionalComponentWithPath = response.getComponentsList().stream().filter(component -> component.getKey().equals(issue.getComponent())).findFirst();
-      if (optionalComponentWithPath.isEmpty()){
+      if (optionalComponentWithPath.isEmpty()) {
         LOG.warn("No path found in components for the issue with key '" + issueKey + "'");
         return Optional.empty();
       }
 
       var fileKey = issue.getComponent();
-      var codeSnippet = getCodeSnippet(fileKey, issue.getTextRange(), branch, pullRequest);
+      var codeSnippet = getCodeSnippet(fileKey, issue.getTextRange(), branch, pullRequest, cancelMonitor);
 
       return Optional.of(new ServerIssueDetails(issue, Path.of(optionalComponentWithPath.get().getPath()), response.getComponentsList(), codeSnippet.orElse("")));
     } catch (Exception e) {
@@ -300,8 +292,8 @@ public class IssueApi {
     }
   }
 
-  public Optional<String> getCodeSnippet(String fileKey, Common.TextRange textRange, String branch, @Nullable String pullRequest) {
-    var source = new SourceApi(serverApiHelper).getRawSourceCodeForBranchAndPullRequest(fileKey, branch, pullRequest);
+  public Optional<String> getCodeSnippet(String fileKey, Common.TextRange textRange, String branch, @Nullable String pullRequest, SonarLintCancelMonitor cancelMonitor) {
+    var source = new SourceApi(serverApiHelper).getRawSourceCodeForBranchAndPullRequest(fileKey, branch, pullRequest, cancelMonitor);
     if (source.isPresent()) {
       try {
         var codeSnippet = ServerApiUtils.extractCodeSnippet(source.get(), textRange);
@@ -315,11 +307,8 @@ public class IssueApi {
     }
   }
 
-  public CompletableFuture<Void> anticipatedTransitions(String projectKey, List<LocalOnlyIssue> resolvedLocalOnlyIssues) {
-    return serverApiHelper.postAsync("/api/issues/anticipated_transitions?projectKey=" + projectKey, JSON_CONTENT_TYPE, new Gson().toJson(adapt(resolvedLocalOnlyIssues)))
-      .thenAccept(response -> {
-        // no data, return void
-      });
+  public void anticipatedTransitions(String projectKey, List<LocalOnlyIssue> resolvedLocalOnlyIssues, SonarLintCancelMonitor cancelMonitor) {
+    serverApiHelper.post("/api/issues/anticipated_transitions?projectKey=" + projectKey, JSON_CONTENT_TYPE, new Gson().toJson(adapt(resolvedLocalOnlyIssues)), cancelMonitor);
   }
 
   private static List<IssueAnticipatedTransition> adapt(List<LocalOnlyIssue> resolvedLocalOnlyIssues) {

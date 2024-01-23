@@ -40,8 +40,7 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
-import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelChecker;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpConnectionListener;
 import org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException;
@@ -69,85 +68,62 @@ public class ServerApiHelper {
     return endpointParams.isSonarCloud();
   }
 
-  public HttpClient.Response get(String path) {
-    var response = rawGet(path);
+  public HttpClient.Response get(String path, SonarLintCancelMonitor cancelMonitor) {
+    var response = rawGet(path, cancelMonitor);
     if (!response.isSuccessful()) {
       throw handleError(response);
     }
     return response;
   }
 
-  public CompletableFuture<HttpClient.Response> getAsync(String path) {
-    return rawGetAsync(path)
-      .thenApply(response -> {
-        if (!response.isSuccessful()) {
-          throw handleError(response);
-        }
-        return response;
-      });
-  }
-
-  public CompletableFuture<HttpClient.Response> postAsync(String url, String contentType, String body) {
-    return rawPostAsync(url, contentType, body)
-      .thenApply(response -> {
-        if (!response.isSuccessful()) {
-          throw handleError(response);
-        }
-        return response;
-      });
-  }
-
-  /**
-   * Execute GET and don't check response
-   */
-  public HttpClient.Response rawGet(String relativePath) {
-    var startTime = Instant.now();
-    var url = buildEndpointUrl(relativePath);
-
-    var response = client.get(url);
-    logTime(startTime, url, response.code());
+  public HttpClient.Response post(String url, String contentType, String body, SonarLintCancelMonitor cancelMonitor) {
+    var response = rawPost(url, contentType, body, cancelMonitor);
+    if (!response.isSuccessful()) {
+      throw handleError(response);
+    }
     return response;
   }
 
   /**
    * Execute GET and don't check response
    */
-  public HttpClient.Response rawGet(String relativePath, SonarLintCancelChecker cancelChecker) {
+  public HttpClient.Response rawGet(String relativePath, SonarLintCancelMonitor cancelMonitor) {
     var startTime = Instant.now();
     var url = buildEndpointUrl(relativePath);
 
     var httpFuture = client.getAsync(url);
-    cancelChecker.propagateCancelTo(httpFuture, true);
-    // In case the context is cancelled before we register the callback
-    if (cancelChecker.isCanceled()) {
-      httpFuture.cancel(true);
+    return processResponse("GET", cancelMonitor, httpFuture, startTime, url);
+  }
+
+  public HttpClient.Response rawPost(String relativePath, String contentType, String body, SonarLintCancelMonitor cancelMonitor) {
+    var startTime = Instant.now();
+    var url = buildEndpointUrl(relativePath);
+
+    var httpFuture = client.postAsync(url, contentType, body);
+    return processResponse("POST", cancelMonitor, httpFuture, startTime, url);
+  }
+
+  private static HttpClient.Response processResponse(String method, SonarLintCancelMonitor cancelMonitor, CompletableFuture<HttpClient.Response> httpFuture,
+    Instant startTime, String url) {
+    cancelMonitor.onCancel(() -> httpFuture.cancel(true));
+    try {
+      var response = httpFuture.join();
+      logTime(method, startTime, url, response.code());
+      return response;
+    } catch (Exception e) {
+      logFailure(method, startTime, url, e.getMessage());
+      throw e;
     }
-    return httpFuture
-      .whenComplete((response, error) -> logTime(startTime, url, response != null ? response.code() : -1)).join();
   }
 
-  /**
-   * Execute GET and don't check response
-   */
-  public CompletableFuture<HttpClient.Response> rawGetAsync(String relativePath) {
-    var startTime = Instant.now();
-    var url = buildEndpointUrl(relativePath);
-
-    return client.getAsync(url)
-      .whenComplete((response, error) -> logTime(startTime, url, response != null ? response.code() : -1));
-  }
-
-  public CompletableFuture<HttpClient.Response> rawPostAsync(String relativePath, String contentType, String body) {
-    var startTime = Instant.now();
-    var url = buildEndpointUrl(relativePath);
-
-    return client.postAsync(url, contentType, body)
-      .whenComplete((response, error) -> logTime(startTime, url, response != null ? response.code() : -1));
-  }
-
-  private static void logTime(Instant startTime, String url, int responseCode) {
+  private static void logTime(String method, Instant startTime, String url, int responseCode) {
     var duration = Duration.between(startTime, Instant.now());
-    LOG.debug("{} {} {} | response time={}ms", "GET", responseCode, url, duration.toMillis());
+    LOG.debug("{} {} {} | response time={}ms", method, responseCode, url, duration.toMillis());
+  }
+
+  private static void logFailure(String method, Instant startTime, String url, String message) {
+    var duration = Duration.between(startTime, Instant.now());
+    LOG.debug("{} {} {} | failed after {}ms", method, url, message, duration.toMillis());
   }
 
   private String buildEndpointUrl(String relativePath) {
@@ -205,25 +181,7 @@ public class ServerApiHelper {
   }
 
   public <G, F> void getPaginated(String relativeUrlWithoutPaginationParams, CheckedFunction<InputStream, G> responseParser, Function<G, Number> getPagingTotal,
-    Function<G, List<F>> itemExtractor, Consumer<F> itemConsumer, boolean limitToTwentyPages, ProgressMonitor progress) {
-    var page = new AtomicInteger(0);
-    var stop = new AtomicBoolean(false);
-    var loaded = new AtomicInteger(0);
-    do {
-      page.incrementAndGet();
-      var fullUrl = new StringBuilder(relativeUrlWithoutPaginationParams);
-      fullUrl.append(relativeUrlWithoutPaginationParams.contains("?") ? "&" : "?");
-      fullUrl.append("ps=" + PAGE_SIZE + "&p=").append(page);
-      ServerApiHelper.consumeTimed(
-        () -> rawGet(fullUrl.toString()),
-        response -> processPage(relativeUrlWithoutPaginationParams, responseParser, getPagingTotal, itemExtractor, itemConsumer, limitToTwentyPages, progress, page, stop, loaded,
-          response),
-        duration -> LOG.debug("Page downloaded in {}ms", duration));
-    } while (!stop.get());
-  }
-
-  public <G, F> void getPaginated(String relativeUrlWithoutPaginationParams, CheckedFunction<InputStream, G> responseParser, Function<G, Number> getPagingTotal,
-    Function<G, List<F>> itemExtractor, Consumer<F> itemConsumer, boolean limitToTwentyPages, SonarLintCancelChecker cancelChecker) {
+    Function<G, List<F>> itemExtractor, Consumer<F> itemConsumer, boolean limitToTwentyPages, SonarLintCancelMonitor cancelChecker) {
     var page = new AtomicInteger(0);
     var stop = new AtomicBoolean(false);
     var loaded = new AtomicInteger(0);
@@ -238,35 +196,6 @@ public class ServerApiHelper {
           response),
         duration -> LOG.debug("Page downloaded in {}ms", duration));
     } while (!stop.get() && !cancelChecker.isCanceled());
-  }
-
-  private static <F, G> void processPage(String baseUrl, CheckedFunction<InputStream, G> responseParser, Function<G, Number> getPagingTotal, Function<G, List<F>> itemExtractor,
-    Consumer<F> itemConsumer, boolean limitToTwentyPages, ProgressMonitor progress, AtomicInteger page, AtomicBoolean stop, AtomicInteger loaded,
-    HttpClient.Response response)
-    throws IOException {
-    if (!response.isSuccessful()) {
-      throw handleError(response);
-    }
-    G protoBufResponse;
-    try (var body = response.bodyAsStream()) {
-      protoBufResponse = responseParser.apply(body);
-    }
-
-    var items = itemExtractor.apply(protoBufResponse);
-    for (F item : items) {
-      itemConsumer.accept(item);
-      loaded.incrementAndGet();
-    }
-    var isEmpty = items.isEmpty();
-    var pagingTotal = getPagingTotal.apply(protoBufResponse).longValue();
-    // SONAR-9150 Some WS used to miss the paging information, so iterate until response is empty
-    stop.set(isEmpty || (pagingTotal > 0 && page.get() * PAGE_SIZE >= pagingTotal));
-    if (!stop.get() && limitToTwentyPages && page.get() >= MAX_PAGES) {
-      stop.set(true);
-      LOG.debug("Limiting number of requested pages from '{}' to {}. Some of the data won't be fetched", baseUrl, MAX_PAGES);
-    }
-
-    progress.setProgressAndCheckCancel("Page " + page, loaded.get() / (float) pagingTotal);
   }
 
   private static <F, G> void processPage(String baseUrl, CheckedFunction<InputStream, G> responseParser, Function<G, Number> getPagingTotal, Function<G, List<F>> itemExtractor,
@@ -318,20 +247,6 @@ public class ServerApiHelper {
     }
     durationConsumer.accept(Duration.between(startTime, Instant.now()).toMillis());
     return result;
-  }
-
-  public static <G> CompletableFuture<G> processTimed(CompletableFuture<HttpClient.Response> futureResponse, IOFunction<HttpClient.Response, G> responseProcessor,
-    LongConsumer durationConsumer) {
-    var startTime = Instant.now();
-    return futureResponse.thenApply(response -> {
-      try (response) {
-        var processed = responseProcessor.apply(response);
-        durationConsumer.accept(Duration.between(startTime, Instant.now()).toMillis());
-        return processed;
-      } catch (IOException e) {
-        throw new IllegalStateException("Unable to parse WS response: " + e.getMessage(), e);
-      }
-    });
   }
 
   public static void consumeTimed(Supplier<HttpClient.Response> responseSupplier, IOConsumer<HttpClient.Response> responseConsumer,
