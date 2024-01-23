@@ -37,6 +37,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUs
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUserOrganizationsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SearchProjectsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SearchProjectsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -111,5 +113,10 @@ public interface ConnectionRpcService {
   @JsonRequest
   CompletableFuture<GetAllProjectsResponse> getAllProjects(GetAllProjectsParams params);
 
+  /**
+   * Search Sonar projects existing on SonarQube or in a SonarCloud organization.
+   */
+  @JsonRequest
+  CompletableFuture<SearchProjectsResponse> searchProjects(SearchProjectsParams params);
 
 }

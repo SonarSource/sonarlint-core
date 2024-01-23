@@ -21,17 +21,21 @@ package org.sonarsource.sonarlint.core;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProjectDto;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.springframework.context.event.EventListener;
 
@@ -51,6 +55,17 @@ public class SonarProjectsCache {
   private final Cache<SonarProjectKey, Optional<ServerProject>> singleProjectsCache = CacheBuilder.newBuilder()
     .expireAfterWrite(1, TimeUnit.HOURS)
     .build();
+
+  public List<SonarProjectDto> searchProjects(String connectionId, String searchText, SonarLintCancelMonitor cancelMonitor) {
+    return getTextSearchIndex(connectionId, cancelMonitor).search(searchText)
+      .entrySet()
+      .stream()
+      .sorted(Comparator.comparing(Map.Entry<ServerProject, Double>::getValue).reversed()
+        .thenComparing(Comparator.comparing(e -> e.getKey().getName(), String.CASE_INSENSITIVE_ORDER)))
+      .limit(10)
+      .map(e -> new SonarProjectDto(e.getKey().getKey(), e.getKey().getName()))
+      .collect(Collectors.toList());
+  }
 
   private static class SonarProjectKey {
     private final String connectionId;
