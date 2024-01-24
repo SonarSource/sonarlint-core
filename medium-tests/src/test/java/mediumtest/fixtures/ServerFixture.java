@@ -20,6 +20,8 @@
 package mediumtest.fixtures;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.matching.ContentPattern;
 import com.google.protobuf.Message;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -84,6 +86,7 @@ public class ServerFixture {
     private final Map<String, ServerProjectBuilder> projectByProjectKey = new HashMap<>();
     private ServerStatus serverStatus = ServerStatus.UP;
     private boolean smartNotificationsSupported;
+    private final List<String> tokensRegistered = new ArrayList<>();
 
     public ServerBuilder(ServerKind serverKind, @Nullable String version) {
       this.serverKind = serverKind;
@@ -92,6 +95,11 @@ public class ServerFixture {
 
     public ServerBuilder withStatus(ServerStatus status) {
       serverStatus = status;
+      return this;
+    }
+
+    public ServerBuilder withToken(String tokenName) {
+      tokensRegistered.add(tokenName);
       return this;
     }
 
@@ -107,7 +115,7 @@ public class ServerFixture {
     }
 
     public Server start() {
-      var server = new Server(serverKind, serverStatus, version, projectByProjectKey, smartNotificationsSupported);
+      var server = new Server(serverKind, serverStatus, version, projectByProjectKey, smartNotificationsSupported, tokensRegistered);
       server.start();
       return server;
     }
@@ -313,15 +321,17 @@ public class ServerFixture {
     private final Version version;
     private final Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey;
     private final boolean smartNotificationsSupported;
+    private final List<String> tokensRegistered;
 
     public Server(ServerKind serverKind, ServerStatus serverStatus, @Nullable String version,
       Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey,
-      boolean smartNotificationsSupported) {
+      boolean smartNotificationsSupported, List<String> tokensRegistered) {
       this.serverKind = serverKind;
       this.serverStatus = serverStatus;
       this.version = version != null ? Version.create(version) : null;
       this.projectsByProjectKey = projectsByProjectKey;
       this.smartNotificationsSupported = smartNotificationsSupported;
+      this.tokensRegistered = tokensRegistered;
     }
 
     public void start() {
@@ -337,6 +347,7 @@ public class ServerFixture {
         registerSourceApiResponses();
         registerDevelopersApiResponses();
         registerMeasuresApiResponses();
+        registerTokenApiResponse();
       }
     }
 
@@ -647,6 +658,10 @@ public class ServerFixture {
                 .build())
               .build()))));
       }));
+    }
+
+    private void registerTokenApiResponse() {
+      tokensRegistered.forEach(tokenName -> mockServer.stubFor(post("/api/user_tokens/revoke").withRequestBody(WireMock.containing("name=" + tokenName)).willReturn(aResponse().withStatus(200))));
     }
 
     public void shutdown() {

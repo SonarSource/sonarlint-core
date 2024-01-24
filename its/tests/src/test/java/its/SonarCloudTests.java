@@ -303,7 +303,7 @@ class SonarCloudTests extends AbstractConnectedTests {
   }
 
   @Test
-  void sync_all_project_branches() throws IOException {
+  void sync_all_project_branches() {
     assertThat(engine.getServerBranches(projectKey(PROJECT_KEY_JAVA)).getBranchNames()).containsOnly(MAIN_BRANCH_NAME);
     assertThat(engine.getServerBranches(projectKey(PROJECT_KEY_JAVA)).getMainBranchName()).contains(MAIN_BRANCH_NAME);
   }
