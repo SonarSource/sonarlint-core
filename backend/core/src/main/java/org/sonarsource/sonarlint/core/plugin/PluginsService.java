@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.Set;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.sonarsource.sonarlint.core.commons.ConnectionKind;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
@@ -33,6 +35,7 @@ import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoadResult;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
+import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.event.EventListener;
@@ -40,6 +43,7 @@ import org.springframework.context.event.EventListener;
 @Named
 @Singleton
 public class PluginsService {
+  private static final Version CUSTOM_SECRETS_MIN_SQ_VERSION = Version.create("10.4");
 
   private final SonarLintLogger logger = SonarLintLogger.get();
   private final PluginsRepository pluginsRepository;
@@ -47,15 +51,18 @@ public class PluginsService {
   private final StorageService storageService;
   private final Set<Path> embeddedPluginPaths;
   private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey;
+  private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final boolean enableDataflowBugDetection;
 
-  public PluginsService(PluginsRepository pluginsRepository, LanguageSupportRepository languageSupportRepository, StorageService storageService, InitializeParams params) {
+  public PluginsService(PluginsRepository pluginsRepository, LanguageSupportRepository languageSupportRepository, StorageService storageService, InitializeParams params,
+    ConnectionConfigurationRepository connectionConfigurationRepository) {
     this.pluginsRepository = pluginsRepository;
     this.languageSupportRepository = languageSupportRepository;
     this.storageService = storageService;
     this.embeddedPluginPaths = params.getEmbeddedPluginPaths();
     this.connectedModeEmbeddedPluginPathsByKey = params.getConnectedModeEmbeddedPluginPathsByKey();
     this.enableDataflowBugDetection = params.getFeatureFlags().isEnableDataflowBugDetection();
+    this.connectionConfigurationRepository = connectionConfigurationRepository;
   }
 
   public LoadedPlugins getEmbeddedPlugins() {
@@ -91,8 +98,29 @@ public class PluginsService {
     Map<String, Path> pluginsToLoadByKey = new HashMap<>();
     // order is important as e.g. embedded takes precedence over stored
     pluginsToLoadByKey.putAll(pluginsStorage.getStoredPluginPathsByKey());
-    pluginsToLoadByKey.putAll(connectedModeEmbeddedPluginPathsByKey);
+    pluginsToLoadByKey.putAll(getEmbeddedPluginPathsByKey(connectionId));
     return Set.copyOf(pluginsToLoadByKey.values());
+  }
+
+  private Map<String, Path> getEmbeddedPluginPathsByKey(String connectionId) {
+    if (supportsCustomSecrets(connectionId)) {
+      var embeddedPluginsExceptSecrets = new HashMap<>(connectedModeEmbeddedPluginPathsByKey);
+      embeddedPluginsExceptSecrets.remove(SonarLanguage.SECRETS.getPluginKey());
+      return embeddedPluginsExceptSecrets;
+    }
+    return connectedModeEmbeddedPluginPathsByKey;
+  }
+
+  public boolean supportsCustomSecrets(String connectionId) {
+    var connection = connectionConfigurationRepository.getConnectionById(connectionId);
+    if (connection == null) {
+      // Connection is gone
+      return false;
+    }
+    // when storage is not present, assume that secrets are not supported by server
+    return connection.getKind() == ConnectionKind.SONARCLOUD || storageService.connection(connectionId).serverInfo().read()
+      .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(CUSTOM_SECRETS_MIN_SQ_VERSION) >= 0)
+      .orElse(false);
   }
 
   private static PluginsLoadResult loadPlugins(Set<SonarLanguage> enabledLanguages, Set<Path> pluginPaths, boolean enableDataflowBugDetection) {
