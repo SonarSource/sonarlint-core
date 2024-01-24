@@ -36,6 +36,7 @@ import static testutils.PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR;
 import static testutils.PluginLocator.SONAR_JAVASCRIPT_PLUGIN_JAR_HASH;
 import static testutils.PluginLocator.SONAR_JAVA_PLUGIN_JAR;
 import static testutils.PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH;
+import static testutils.PluginLocator.SONAR_TEXT_PLUGIN_JAR;
 
 public class StorageFixture {
   public static StorageBuilder newStorage(String connectionId) {
@@ -87,6 +88,10 @@ public class StorageFixture {
 
     public StorageBuilder withJavaPlugin() {
       return withPlugin(PluginLocator.getJavaPluginPath(), SONAR_JAVA_PLUGIN_JAR, SONAR_JAVA_PLUGIN_JAR_HASH, "java");
+    }
+
+    public StorageBuilder withTextPlugin() {
+      return withPlugin(PluginLocator.getTextPluginPath(), SONAR_TEXT_PLUGIN_JAR, "No-valid-hash", "secrets");
     }
 
     private StorageBuilder withPlugin(Path path, String jarName, String hash, String key) {

@@ -137,11 +137,20 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     Map<String, Path> pluginsToLoadByKey = new HashMap<>();
     // order is important as e.g. embedded takes precedence over stored
     pluginsToLoadByKey.putAll(serverConnection.getStoredPluginPathsByKey());
-    pluginsToLoadByKey.putAll(globalConfig.getEmbeddedPluginPathsByKey());
+    pluginsToLoadByKey.putAll(getEmbeddedPluginPathsByKey());
     Set<Path> plugins = new HashSet<>(pluginsToLoadByKey.values());
 
     var config = new Configuration(plugins, globalConfig.getEnabledLanguages(), globalConfig.isDataflowBugDetectionEnabled(), Optional.ofNullable(globalConfig.getNodeJsVersion()));
     return new PluginsLoader().load(config);
+  }
+
+  private Map<String, Path> getEmbeddedPluginPathsByKey() {
+    if (serverConnection.supportsCustomSecrets()) {
+      var embeddedPluginsExceptSecrets = new HashMap<>(globalConfig.getEmbeddedPluginPathsByKey());
+      embeddedPluginsExceptSecrets.remove(Language.SECRETS.getPluginKey());
+      return embeddedPluginsExceptSecrets;
+    }
+    return globalConfig.getEmbeddedPluginPathsByKey();
   }
 
   private static class ActiveRulesContext {
@@ -280,8 +289,7 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
         }
       });
 
-    var supportSecretAnalysis = serverConnection.supportsSecretAnalysis();
-    if (!supportSecretAnalysis) {
+    if (!serverConnection.supportsSecretAnalysis()) {
       analysisContext.get().allRulesDefinitionsByKey.values().stream()
         .filter(ruleDefinition -> ruleDefinition.getLanguage() == Language.SECRETS)
         .filter(this::shouldIncludeRuleForAnalysis)

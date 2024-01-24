@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FilenameUtils;
 import org.sonarsource.sonarlint.core.commons.Language;
@@ -50,6 +51,7 @@ import org.sonarsource.sonarlint.core.serverconnection.prefix.FileTreeMatcher;
 public class ServerConnection {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final Version SECRET_ANALYSIS_MIN_SQ_VERSION = Version.create("9.9");
+  private static final Version CUSTOM_SECRETS_MIN_SQ_VERSION = Version.create("10.4");
 
   private static final Version CLEAN_CODE_TAXONOMY_MIN_SQ_VERSION = Version.create("10.2");
 
@@ -207,16 +209,22 @@ public class ServerConnection {
   }
 
   public boolean supportsSecretAnalysis() {
-    // when storage is not present, assume that secrets are not supported by server
-    return isSonarCloud || storage.serverInfo().read()
-      .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(SECRET_ANALYSIS_MIN_SQ_VERSION) >= 0)
-      .orElse(false);
+    return isSonarCloud || compareSynchronizedServerVersion(SECRET_ANALYSIS_MIN_SQ_VERSION, i -> i >= 0);
+  }
+
+  public boolean supportsCustomSecrets() {
+    return !isSonarCloud && compareSynchronizedServerVersion(CUSTOM_SECRETS_MIN_SQ_VERSION, i -> i >= 0);
   }
 
   public boolean shouldSkipCleanCodeTaxonomy() {
     // In connected mode, Clean Code taxonomy is skipped if the server is SonarQube < 10.2
-    return !isSonarCloud && storage.serverInfo().read()
-      .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(CLEAN_CODE_TAXONOMY_MIN_SQ_VERSION) < 0)
+    return !isSonarCloud && compareSynchronizedServerVersion(CLEAN_CODE_TAXONOMY_MIN_SQ_VERSION, i -> i < 0);
+  }
+
+  private boolean compareSynchronizedServerVersion(Version version, IntPredicate comparisonPredicate) {
+    return storage.serverInfo().read()
+      .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(version))
+      .map(comparisonPredicate::test)
       .orElse(false);
   }
 
