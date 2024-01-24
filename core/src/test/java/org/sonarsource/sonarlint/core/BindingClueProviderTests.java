@@ -235,7 +235,7 @@ class BindingClueProviderTests {
   }
 
   @Test
-  void should_try_find_clues_for_projectKey_if_provided() throws InterruptedException {
+  void should_try_find_clues_for_projectKey_if_both_connectionId_and_projectKey_provided() throws InterruptedException {
     mockFindFileByNamesInScope(List.of(new FoundFileDto(".sonarcloud.properties", "filePath", "sonar.projectKey=projectKey")));
 
     var result = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of("connectionId"), "projectKey");
@@ -243,6 +243,15 @@ class BindingClueProviderTests {
     assertThat(result).isNotEmpty();
     assertThat(result.get(0).getBindingClue().getSonarProjectKey()).isEqualTo("projectKey");
     assertThat(result.get(0).getConnectionIds()).contains("connectionId");
+  }
+
+  @Test
+  void should_not_try_find_clues_for_projectKey_if_connectionId_not_provided() throws InterruptedException {
+    mockFindFileByNamesInScope(List.of(new FoundFileDto(".sonarcloud.properties", "filePath", "sonar.projectKey=projectKey")));
+
+    var result = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(), "projectKey");
+
+    assertThat(result).isEmpty();
   }
 
   private void mockFindFileByNamesInScope(List<FoundFileDto> dtos) {
