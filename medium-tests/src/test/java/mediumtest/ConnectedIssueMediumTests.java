@@ -48,7 +48,6 @@ import org.sonarsource.sonarlint.core.client.legacy.analysis.AnalysisConfigurati
 import org.sonarsource.sonarlint.core.client.legacy.analysis.EngineConfiguration;
 import org.sonarsource.sonarlint.core.client.legacy.analysis.PluginDetails;
 import org.sonarsource.sonarlint.core.client.legacy.analysis.RawIssue;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.RawIssueListener;
 import org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -125,11 +124,11 @@ class ConnectedIssueMediumTests {
 
     final List<RawIssue> issues = new ArrayList<>();
     engine.analyze(AnalysisConfiguration.builder()
-      .setBaseDir(baseDir)
-      .addInputFile(inputFile)
-      .setModuleKey("key")
-      .build(),
-      new StoreIssueListener(issues), null, null, JAVA_MODULE_KEY);
+        .setBaseDir(baseDir)
+        .addInputFile(inputFile)
+        .setModuleKey("key")
+        .build(),
+      issues::add, null, null, JAVA_MODULE_KEY);
 
     assertThat(issues).extracting("ruleKey", "textRange", "inputFile.path", "severity")
       .usingRecursiveFieldByFieldElementComparator()
@@ -145,11 +144,11 @@ class ConnectedIssueMediumTests {
 
     final List<RawIssue> issues = new ArrayList<>();
     engine.analyze(AnalysisConfiguration.builder()
-      .setBaseDir(baseDir)
-      .addInputFile(inputFile)
-      .setModuleKey("key")
-      .build(),
-      new StoreIssueListener(issues), null, null, EMPTY_PROJECT_KEY);
+        .setBaseDir(baseDir)
+        .addInputFile(inputFile)
+        .setModuleKey("key")
+        .build(),
+      issues::add, null, null, EMPTY_PROJECT_KEY);
 
     assertThat(issues).isEmpty();
   }
@@ -217,17 +216,5 @@ class ConnectedIssueMediumTests {
     return TestUtils.createInputFile(file.toPath(), relativePath, isTest);
   }
 
-  static class StoreIssueListener implements RawIssueListener {
-    private final List<RawIssue> issues;
-
-    StoreIssueListener(List<RawIssue> issues) {
-      this.issues = issues;
-    }
-
-    @Override
-    public void handle(RawIssue rawIssue) {
-      issues.add(rawIssue);
-    }
-  }
 
 }

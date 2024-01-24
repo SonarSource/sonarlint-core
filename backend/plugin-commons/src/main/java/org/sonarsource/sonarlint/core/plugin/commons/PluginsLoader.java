@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core.plugin.commons;
 
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -79,8 +81,15 @@ public class PluginsLoader {
     var instancesLoader = new PluginInstancesLoader();
     var pluginInstancesByKeys = instancesLoader.instantiatePluginClasses(nonSkippedPlugins);
 
-    return new PluginsLoadResult(new LoadedPlugins(pluginInstancesByKeys, instancesLoader, maybeDbdAllowedPlugins(configuration.enableDataflowBugDetection)),
+    return new PluginsLoadResult(new LoadedPlugins(pluginInstancesByKeys, instancesLoader, additionalAllowedPlugins(configuration)),
       pluginCheckResultByKeys);
+  }
+
+  private static Set<String> additionalAllowedPlugins(Configuration configuration) {
+    var allowedPluginsIds = new HashSet<String>();
+    allowedPluginsIds.add("textenterprise");
+    allowedPluginsIds.addAll(maybeDbdAllowedPlugins(configuration.enableDataflowBugDetection));
+    return Collections.unmodifiableSet(allowedPluginsIds);
   }
 
   private static Set<String> maybeDbdAllowedPlugins(boolean enableDataflowBugDetection) {
