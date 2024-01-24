@@ -254,7 +254,7 @@ public class BindingSuggestionProviderImpl implements BindingService {
       return false;
     }
     if (!configScope.isBindable()) {
-      LOG.debug("Conwfiguration scope '{}' is not bindable.", configScopeId);
+      LOG.debug("Configuration scope '{}' is not bindable.", configScopeId);
       return false;
     }
     if (isValidBinding(bindingConfiguration)) {
