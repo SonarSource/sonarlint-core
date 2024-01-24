@@ -234,6 +234,17 @@ class BindingClueProviderTests {
     assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).contains("Unable to parse content of file 'path/to/sonar-project.properties'");
   }
 
+  @Test
+  void should_try_find_clues_for_projectKey_if_provided() throws InterruptedException {
+    mockFindFileByNamesInScope(List.of(new FoundFileDto(".sonarcloud.properties", "filePath", "sonar.projectKey=projectKey")));
+
+    var result = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of("connectionId"), "projectKey");
+
+    assertThat(result).isNotEmpty();
+    assertThat(result.get(0).getBindingClue().getSonarProjectKey()).isEqualTo("projectKey");
+    assertThat(result.get(0).getConnectionIds()).contains("connectionId");
+  }
+
   private void mockFindFileByNamesInScope(List<FoundFileDto> dtos) {
     when(client.findFileByNamesInScope(any())).thenReturn(CompletableFuture.completedFuture(new FindFileByNamesInScopeResponse(dtos)));
   }
