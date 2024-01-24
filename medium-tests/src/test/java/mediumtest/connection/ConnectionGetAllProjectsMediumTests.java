@@ -33,11 +33,17 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.G
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProjectDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static mediumtest.fixtures.ServerFixture.newSonarCloudServer;
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
+import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.awaitility.Awaitility.await;
 
 class ConnectionGetAllProjectsMediumTests {
   private SonarLintRpcServer backend;
@@ -114,6 +120,27 @@ class ConnectionGetAllProjectsMediumTests {
     assertThat(response.getSonarProjects())
       .extracting(SonarProjectDto::getKey, SonarProjectDto::getName)
       .containsOnly(tuple("projectKey1", "MyProject1"), tuple("projectKey2", "MyProject2"));
+  }
+
+  @Test
+  void it_should_support_cancellation() throws InterruptedException {
+    server = newSonarQubeServer().start();
+    server.getMockServer().stubFor(get("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1").willReturn(aResponse()
+      .withStatus(200)
+      .withFixedDelay(2000)));
+    var client = newFakeClient().build();
+    backend = newBackend().build(client);
+
+    var connectionDto = new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto(null)));
+
+    var future = backend.getConnectionService().getAllProjects(new GetAllProjectsParams(connectionDto));
+    // Give time for the HTTP request to be established
+    Thread.sleep(200);
+    future.cancel(true);
+
+    server.getMockServer().verify(getRequestedFor(urlEqualTo("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1")));
+
+    await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Request cancelled"));
   }
 
   private GetAllProjectsResponse getAllProjects(TransientSonarQubeConnectionDto connectionDto) {
