@@ -95,7 +95,11 @@ public class ShowHotspotRequestHandler extends ShowHotspotOrIssueRequestHandler 
       startFullBindingProcess();
       assistCreatingConnection(query.serverUrl)
         .thenCompose(response -> assistBinding(Set.of(), response.getNewConnectionId(), query.projectKey))
-        .thenAccept(response -> showHotspotForScope(response.getConnectionId(), response.getConfigurationScopeId(), query.hotspotKey))
+        .thenAccept(response -> {
+          if (response.getConfigurationScopeId() != null) {
+            showHotspotForScope(response.getConnectionId(), response.getConfigurationScopeId(), query.hotspotKey);
+          }
+        })
         .whenComplete((v, e) -> endFullBindingProcess());
     } else {
       // we pick the first connection but this could lead to issues later if there were several matches (make the user select the right one?)
@@ -107,7 +111,11 @@ public class ShowHotspotRequestHandler extends ShowHotspotOrIssueRequestHandler 
     var scopes = configurationService.getConfigScopesWithBindingConfiguredTo(connectionId, projectKey);
     if (scopes.isEmpty()) {
       assistBinding(Set.of(), connectionId, projectKey)
-        .thenAccept(newBinding -> showHotspotForScope(connectionId, newBinding.getConfigurationScopeId(), hotspotKey));
+        .thenAccept(newBinding ->  {
+          if (newBinding.getConfigurationScopeId() != null) {
+            showHotspotForScope(connectionId, newBinding.getConfigurationScopeId(), hotspotKey);
+          }
+        });
     } else {
       // we pick the first bound scope but this could lead to issues later if there were several matches (make the user select the right one?)
       var firstBoundScope = scopes.get(0);

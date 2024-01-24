@@ -89,7 +89,7 @@ public class ShowHotspotOrIssueRequestHandler {
     private final String connectionId;
     private final String configurationScopeId;
 
-    private NewBinding(String connectionId, String configurationScopeId) {
+    private NewBinding(String connectionId, @Nullable String configurationScopeId) {
       this.connectionId = connectionId;
       this.configurationScopeId = configurationScopeId;
     }
@@ -98,6 +98,7 @@ public class ShowHotspotOrIssueRequestHandler {
       return connectionId;
     }
 
+    @Nullable
     public String getConfigurationScopeId() {
       return configurationScopeId;
     }

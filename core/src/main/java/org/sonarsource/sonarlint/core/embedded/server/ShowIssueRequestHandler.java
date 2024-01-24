@@ -106,8 +106,11 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
       startFullBindingProcess();
       assistCreatingConnection(query.serverUrl, query.tokenName, query.tokenValue)
         .thenCompose(response -> assistBinding(response.getConfigScopeIds(), response.getNewConnectionId(), query.projectKey))
-        .thenAccept(response -> showIssueForScope(response.getConnectionId(), response.getConfigurationScopeId(),
-          query.issueKey, query.projectKey, query.branch, query.pullRequest))
+        .thenAccept(response -> {
+          if (response.getConfigurationScopeId() != null) {
+            showIssueForScope(response.getConnectionId(), response.getConfigurationScopeId(), query.issueKey, query.projectKey, query.branch, query.pullRequest);
+          }
+        })
         .whenComplete((v, e) -> endFullBindingProcess());
     } else {
       // we pick the first connection but this could lead to issues later if there were several matches (make the user select the right
@@ -121,9 +124,12 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
     @Nullable String pullRequest) {
     var scopes = configurationService.getConfigScopesWithBindingConfiguredTo(connectionId, projectKey);
     if (scopes.isEmpty()) {
-
       assistBinding(configScopeIds, connectionId, projectKey)
-        .thenAccept(newBinding -> showIssueForScope(connectionId, newBinding.getConfigurationScopeId(), issueKey, projectKey, branch, pullRequest));
+        .thenAccept(newBinding -> {
+          if (newBinding.getConfigurationScopeId() != null) {
+            showIssueForScope(connectionId, newBinding.getConfigurationScopeId(), issueKey, projectKey, branch, pullRequest);
+          }
+        });
     } else {
       // we pick the first bound scope but this could lead to issues later if there were several matches (make the user select the right one?)
       showIssueForScope(connectionId, scopes.get(0).getId(), issueKey, projectKey, branch, pullRequest);
