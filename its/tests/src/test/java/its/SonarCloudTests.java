@@ -74,6 +74,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializePar
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.NoBindingSuggestionFoundParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
@@ -710,6 +711,11 @@ class SonarCloudTests extends AbstractConnectedTests {
       @Override
       public CompletableFuture<SelectProxiesResponse> selectProxies(SelectProxiesParams params) {
         return CompletableFuture.completedFuture(new SelectProxiesResponse(List.of(ProxyDto.NO_PROXY)));
+      }
+
+      @Override
+      public void noBindingSuggestionFound(NoBindingSuggestionFoundParams params) {
+
       }
 
     };
