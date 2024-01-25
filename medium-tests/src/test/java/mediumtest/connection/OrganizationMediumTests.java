@@ -72,6 +72,21 @@ class OrganizationMediumTests {
   }
 
   @Test
+  void it_should_list_empty_user_organizations() throws ExecutionException, InterruptedException {
+    var fakeClient = newFakeClient()
+      .build();
+    backend = newBackend()
+      .build(fakeClient);
+    sonarcloudMock.stubFor(get("/api/organizations/search.protobuf?member=true&ps=500&p=1")
+      .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Organizations.SearchWsResponse.newBuilder()
+        .build()))));
+
+    var details = backend.getConnectionService().listUserOrganizations(new ListUserOrganizationsParams(Either.forLeft(new TokenDto("token"))));
+
+    assertThat(details.get().getUserOrganizations()).isEmpty();
+  }
+
+  @Test
   void it_should_list_user_organizations() throws ExecutionException, InterruptedException {
     var fakeClient = newFakeClient()
       .build();

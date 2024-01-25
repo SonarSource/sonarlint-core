@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
-import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -45,32 +44,12 @@ class ServerVersionAndStatusCheckerTests {
   }
 
   @Test
-  void serverNotReady() throws ExecutionException, InterruptedException {
-    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.5-SNAPSHOT\",\"status\": \"DOWN\"}");
-
-    var validationResult = underTest.validateStatusAndVersion(new SonarLintCancelMonitor());
-
-    assertThat(validationResult.success()).isFalse();
-    assertThat(validationResult.message()).isEqualTo("Server not ready (DOWN)");
-  }
-
-  @Test
   void failWhenServerNotReady() {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.5-SNAPSHOT\",\"status\": \"DOWN\"}");
 
     var throwable = catchThrowable(() -> underTest.checkVersionAndStatus(new SonarLintCancelMonitor()));
 
     assertThat(throwable).hasMessage("Server not ready (DOWN)");
-  }
-
-  @Test
-  void incompatibleVersion() throws ExecutionException, InterruptedException {
-    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}");
-
-    var validationResult = underTest.validateStatusAndVersion(new SonarLintCancelMonitor());
-
-    assertThat(validationResult.success()).isFalse();
-    assertThat(validationResult.message()).isEqualTo("SonarQube server has version 6.7. Version should be greater or equal to 7.9");
   }
 
   @Test
