@@ -19,9 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.serverapi.system.DefaultValidationResult;
@@ -38,32 +37,17 @@ public class ServerVersionAndStatusChecker {
     this.systemApi = serverApi.system();
   }
 
-  public ServerInfo checkVersionAndStatus() {
-    try {
-      return checkVersionAndStatusAsync().get();
-    } catch (InterruptedException e) {
-      throw new IllegalStateException("Cannot check server version and status", e);
-    } catch (ExecutionException e) {
-      var cause = e.getCause();
-      if (cause instanceof RuntimeException) {
-        throw (RuntimeException) cause;
-      }
-      throw new IllegalStateException("Cannot check server version and status", cause);
-    }
-  }
-
   /**
    * Checks SonarQube version against the minimum version supported by the library
+   *
    * @return ServerInfos
    * @throws UnsupportedServerException if version &lt; minimum supported version
-   * @throws IllegalStateException If server is not ready
+   * @throws IllegalStateException      If server is not ready
    */
-  public CompletableFuture<ServerInfo> checkVersionAndStatusAsync() {
-    return systemApi.getStatus()
-      .thenApply(serverStatus -> {
-        checkServerUpAndSupported(serverStatus);
-        return serverStatus;
-      });
+  public ServerInfo checkVersionAndStatus(SonarLintCancelMonitor cancelMonitor) {
+    var serverStatus = systemApi.getStatus(cancelMonitor);
+    checkServerUpAndSupported(serverStatus);
+    return serverStatus;
   }
 
   public static void checkServerUpAndSupported(ServerInfo serverInfo) {
@@ -84,21 +68,19 @@ public class ServerVersionAndStatusChecker {
     return "Server not ready (" + serverStatus.getStatus() + ")";
   }
 
-  public CompletableFuture<ValidationResult> validateStatusAndVersion() {
-    return validateStatusAndVersion(MIN_SQ_VERSION);
+  public ValidationResult validateStatusAndVersion(SonarLintCancelMonitor cancelMonitor) {
+    return validateStatusAndVersion(MIN_SQ_VERSION, cancelMonitor);
   }
 
-  public CompletableFuture<ValidationResult> validateStatusAndVersion(String minVersion) {
-    return systemApi.getStatus()
-      .thenApply(serverStatus -> {
-        if (!serverStatus.isUp()) {
-          return new DefaultValidationResult(false, serverNotReady(serverStatus));
-        }
-        var serverVersion = Version.create(serverStatus.getVersion());
-        if (serverVersion.compareToIgnoreQualifier(Version.create(minVersion)) < 0) {
-          return new DefaultValidationResult(false, unsupportedVersion(serverStatus, minVersion));
-        }
-        return new DefaultValidationResult(true, "Compatible and ready");
-      });
+  public ValidationResult validateStatusAndVersion(String minVersion, SonarLintCancelMonitor cancelMonitor) {
+    var serverStatus = systemApi.getStatus(cancelMonitor);
+    if (!serverStatus.isUp()) {
+      return new DefaultValidationResult(false, serverNotReady(serverStatus));
+    }
+    var serverVersion = Version.create(serverStatus.getVersion());
+    if (serverVersion.compareToIgnoreQualifier(Version.create(minVersion)) < 0) {
+      return new DefaultValidationResult(false, unsupportedVersion(serverStatus, minVersion));
+    }
+    return new DefaultValidationResult(true, "Compatible and ready");
   }
 }

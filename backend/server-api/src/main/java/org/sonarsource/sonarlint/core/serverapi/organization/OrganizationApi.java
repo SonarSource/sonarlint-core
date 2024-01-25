@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.serverapi.organization;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations;
@@ -34,23 +34,23 @@ public class OrganizationApi {
     this.helper = helper;
   }
 
-  public List<ServerOrganization> listUserOrganizations(ProgressMonitor progress) {
-    return fetchUserOrganizations(progress);
+  public List<ServerOrganization> listUserOrganizations(SonarLintCancelMonitor cancelMonitor) {
+    return fetchUserOrganizations(cancelMonitor);
   }
 
-  public Optional<ServerOrganization> getOrganization(String organizationKey, ProgressMonitor progress) {
+  public Optional<ServerOrganization> getOrganization(String organizationKey, SonarLintCancelMonitor cancelMonitor) {
     var url = "api/organizations/search.protobuf?organizations=" + UrlUtils.urlEncode(organizationKey);
-    return getPaginatedOrganizations(url, progress)
+    return getPaginatedOrganizations(url, cancelMonitor)
       .stream()
       .findFirst();
   }
 
-  private List<ServerOrganization> fetchUserOrganizations(ProgressMonitor progress) {
+  private List<ServerOrganization> fetchUserOrganizations(SonarLintCancelMonitor cancelMonitor) {
     var url = "api/organizations/search.protobuf?member=true";
-    return getPaginatedOrganizations(url, progress);
+    return getPaginatedOrganizations(url, cancelMonitor);
   }
 
-  private List<ServerOrganization> getPaginatedOrganizations(String url, ProgressMonitor progress) {
+  private List<ServerOrganization> getPaginatedOrganizations(String url, SonarLintCancelMonitor cancelMonitor) {
     List<ServerOrganization> result = new ArrayList<>();
 
     helper.getPaginated(url,
@@ -59,7 +59,7 @@ public class OrganizationApi {
       Organizations.SearchWsResponse::getOrganizationsList,
       org -> result.add(new DefaultRemoteOrganization(org)),
       false,
-      progress);
+      cancelMonitor);
 
     return result;
   }

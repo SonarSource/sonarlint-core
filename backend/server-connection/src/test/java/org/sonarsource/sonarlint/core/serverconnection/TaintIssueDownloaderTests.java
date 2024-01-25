@@ -32,12 +32,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.Flow;
@@ -72,8 +72,6 @@ class TaintIssueDownloaderTests {
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
   private ServerApi serverApi;
-
-  private static final ProgressMonitor PROGRESS = new ProgressMonitor(null);
 
   private TaintIssueDownloader underTest;
 
@@ -164,7 +162,7 @@ class TaintIssueDownloaderTests {
       issueSearchResponse);
     mockServer.addStringResponse("/api/sources/raw?key=" + URLEncoder.encode(FILE_1_KEY, StandardCharsets.UTF_8), "Even\nBefore My\n\tCode\n  Snippet And\n After");
 
-    var issues = underTest.downloadTaintFromIssueSearch(serverApi, DUMMY_KEY, null, PROGRESS);
+    var issues = underTest.downloadTaintFromIssueSearch(serverApi, DUMMY_KEY, null, new SonarLintCancelMonitor());
 
     assertThat(issues).hasSize(1);
 
@@ -177,7 +175,7 @@ class TaintIssueDownloaderTests {
     assertThat(taintIssue.getCleanCodeAttribute()).hasValue(CleanCodeAttribute.COMPLETE);
     assertThat(taintIssue.getImpacts()).containsExactly(entry(SoftwareQuality.SECURITY, ImpactSeverity.HIGH));
 
-    assertTextRange(taintIssue.getTextRange(), 2, 7,4, 9, hash("My\n\tCode\n  Snippet"));
+    assertTextRange(taintIssue.getTextRange(), 2, 7, 4, 9, hash("My\n\tCode\n  Snippet"));
 
     assertThat(taintIssue.getFlows()).hasSize(2);
     assertThat(taintIssue.getFlows().get(0).locations()).hasSize(4);
@@ -228,7 +226,7 @@ class TaintIssueDownloaderTests {
     mockServer.addProtobufResponse(
       "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=VULNERABILITY&componentKeys=dummyKey&rules=javasecurity%3AS789&branch=branchName&ps=500&p=1", response);
 
-    var issues = underTest.downloadTaintFromIssueSearch(serverApi, DUMMY_KEY, "branchName", PROGRESS);
+    var issues = underTest.downloadTaintFromIssueSearch(serverApi, DUMMY_KEY, "branchName", new SonarLintCancelMonitor());
 
     assertThat(issues).hasSize(1);
   }
@@ -273,7 +271,7 @@ class TaintIssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/api/issues/pull_taint?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java", timestamp, taint1, taintNoRange);
 
-    var result = underTest.downloadTaintFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty());
+    var result = underTest.downloadTaintFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty(), new SonarLintCancelMonitor());
     assertThat(result.getQueryTimestamp()).isEqualTo(Instant.ofEpochMilli(123L));
 
     assertThat(result.getChangedTaintIssues()).hasSize(2);
@@ -295,7 +293,7 @@ class TaintIssueDownloaderTests {
 
     var flowLocation11 = serverTaintIssue.getFlows().get(0).locations().get(0);
     assertThat(flowLocation11.getFilePath()).isEqualTo(Path.of("foo/bar/Hello.java"));
-    assertTextRange(flowLocation11.getTextRange(),5, 1, 5, 6, "hashLocation11");
+    assertTextRange(flowLocation11.getTextRange(), 5, 1, 5, 6, "hashLocation11");
 
     // No text range
     assertThat(serverTaintIssue.getFlows().get(0).locations().get(2).getTextRange()).isNull();

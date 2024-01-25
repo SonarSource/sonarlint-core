@@ -23,6 +23,7 @@ import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.exception.ProjectNotFoundException;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
@@ -45,7 +46,8 @@ class QualityProfileApiTests {
 
     mockServer.addResponse("/api/qualityprofiles/search.protobuf?project=projectKey", new MockResponse().setResponseCode(404));
 
-    assertThrows(ProjectNotFoundException.class, () -> underTest.getQualityProfiles("projectKey"));
+    var cancelMonitor = new SonarLintCancelMonitor();
+    assertThrows(ProjectNotFoundException.class, () -> underTest.getQualityProfiles("projectKey", cancelMonitor));
   }
 
   @Test
@@ -54,7 +56,8 @@ class QualityProfileApiTests {
 
     mockServer.addResponse("/api/qualityprofiles/search.protobuf?project=projectKey", new MockResponse().setResponseCode(503));
 
-    assertThrows(ServerErrorException.class, () -> underTest.getQualityProfiles("projectKey"));
+    var cancelMonitor = new SonarLintCancelMonitor();
+    assertThrows(ServerErrorException.class, () -> underTest.getQualityProfiles("projectKey", cancelMonitor));
   }
 
   @Test
@@ -74,7 +77,7 @@ class QualityProfileApiTests {
         .build())
       .build());
 
-    var qualityProfiles = underTest.getQualityProfiles("projectKey");
+    var qualityProfiles = underTest.getQualityProfiles("projectKey", new SonarLintCancelMonitor());
 
     assertThat(qualityProfiles)
       .extracting("default", "key", "name", "language", "languageName", "activeRuleCount", "rulesUpdatedAt", "userUpdatedAt")

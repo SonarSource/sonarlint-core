@@ -20,8 +20,8 @@
 package org.sonarsource.sonarlint.core.serverapi.system;
 
 import com.google.gson.Gson;
-import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 public class SystemApi {
@@ -33,9 +33,9 @@ public class SystemApi {
     this.helper = helper;
   }
 
-  public CompletableFuture<ServerInfo> getStatus() {
+  public ServerInfo getStatus(SonarLintCancelMonitor cancelMonitor) {
     return ServerApiHelper.processTimed(
-      helper.getAsync("api/system/status"),
+      () -> helper.get("api/system/status", cancelMonitor),
       response -> {
         var responseStr = response.bodyAsString();
         try {
@@ -46,14 +46,6 @@ public class SystemApi {
         }
       },
       duration -> LOG.debug("Downloaded server infos in {}ms", duration));
-  }
-
-  public ServerInfo getStatusSync() {
-    try {
-      return getStatus().get();
-    } catch (Exception e) {
-      throw new IllegalStateException("Unable to get server status", e);
-    }
   }
 
   private static class SystemStatus {

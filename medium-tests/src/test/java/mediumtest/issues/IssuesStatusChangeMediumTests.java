@@ -144,8 +144,9 @@ class IssuesStatusChangeMediumTests {
       .failsWithin(Duration.ofSeconds(2))
       .withThrowableOfType(ExecutionException.class)
       .havingCause()
-      .isInstanceOf(ResponseErrorException.class)
-      .withMessageContaining("Request 'change status' failed:");
+      .isInstanceOfSatisfying(ResponseErrorException.class, ex -> {
+        assertThat(ex.getResponseError().getData().toString()).contains("Error 404 on", "/api/issues/do_transition");
+      });
   }
 
   @Test
@@ -312,8 +313,9 @@ class IssuesStatusChangeMediumTests {
       .failsWithin(Duration.ofSeconds(2))
       .withThrowableOfType(ExecutionException.class)
       .havingCause()
-      .isInstanceOf(ResponseErrorException.class)
-      .withMessageContaining("Request 'Add comment to server issue' failed: org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException:");
+      .isInstanceOfSatisfying(ResponseErrorException.class, ex -> {
+        assertThat(ex.getResponseError().getData().toString()).contains("Error 404 on", "/api/issues/add_comment");
+      });
   }
 
   @Test

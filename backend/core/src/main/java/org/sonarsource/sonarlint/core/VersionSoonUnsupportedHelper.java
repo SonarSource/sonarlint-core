@@ -31,6 +31,8 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
@@ -58,7 +60,7 @@ public class VersionSoonUnsupportedHelper {
   private final ServerApiProvider serverApiProvider;
   private final SynchronizationService synchronizationService;
   private final Map<String, Version> cacheConnectionIdPerVersion = new ConcurrentHashMap<>();
-  private final ExecutorService executorService;
+  private final ExecutorServiceShutdownWatchable<?> executorService;
 
   public VersionSoonUnsupportedHelper(SonarLintRpcClient client, ConfigurationRepository configRepository, ServerApiProvider serverApiProvider,
     ConnectionConfigurationRepository connectionRepository, SynchronizationService synchronizationService) {
@@ -67,8 +69,8 @@ public class VersionSoonUnsupportedHelper {
     this.connectionRepository = connectionRepository;
     this.serverApiProvider = serverApiProvider;
     this.synchronizationService = synchronizationService;
-    this.executorService = new ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS,
-      new LinkedBlockingQueue<>(), r -> new Thread(r, "Version Soon Unsupported Helper"));
+    this.executorService = new ExecutorServiceShutdownWatchable<>(new ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS,
+      new LinkedBlockingQueue<>(), r -> new Thread(r, "Version Soon Unsupported Helper")));
   }
 
   @EventListener
@@ -101,13 +103,15 @@ public class VersionSoonUnsupportedHelper {
   }
 
   private void queueCheckIfSoonUnsupported(String connectionId, String configScopeId) {
+    var cancelMonitor = new SonarLintCancelMonitor();
+    cancelMonitor.watchForShutdown(executorService);
     executorService.submit(() -> {
       try {
         var connection = connectionRepository.getConnectionById(connectionId);
         if (connection != null && connection.getKind() == ConnectionKind.SONARQUBE) {
           var serverInfo = serverApiProvider.getServerApi(connectionId);
           if (serverInfo.isPresent()) {
-            var version = synchronizationService.getServerConnection(connectionId, serverInfo.get()).readOrSynchronizeServerVersion(serverInfo.get());
+            var version = synchronizationService.getServerConnection(connectionId, serverInfo.get()).readOrSynchronizeServerVersion(serverInfo.get(), cancelMonitor);
             var isCached = cacheConnectionIdPerVersion.containsKey(connectionId) && cacheConnectionIdPerVersion.get(connectionId).compareTo(version) == 0;
             if (!isCached && VersionUtils.isVersionSupportedDuringGracePeriod(version)) {
               client.showSoonUnsupportedMessage(

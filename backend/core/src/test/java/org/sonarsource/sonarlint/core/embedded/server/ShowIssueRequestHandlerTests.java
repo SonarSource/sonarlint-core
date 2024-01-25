@@ -27,6 +27,7 @@ import org.apache.hc.core5.http.message.BasicClassicHttpRequest;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -79,7 +80,7 @@ class ShowIssueRequestHandlerTests {
 
     when(serverApiProvider.getServerApi(any())).thenReturn(Optional.of(serverApi));
     when(serverApi.issue()).thenReturn(issueApi);
-    when(issueApi.getCodeSnippet(eq(locationComponentKey_1), any(), any(), any())).thenReturn(Optional.of(locationCodeSnippet_1));
+    when(issueApi.getCodeSnippet(eq(locationComponentKey_1), any(), any(), any(), any())).thenReturn(Optional.of(locationCodeSnippet_1));
 
     var showIssueRequestHandler = new ShowIssueRequestHandler(sonarLintClient, serverApiProvider, telemetryService,
       new RequestHandlerBindingAssistant(bindingSuggestionProvider, sonarLintClient, repository, configurationRepository), pathTranslationService);
@@ -104,8 +105,7 @@ class ShowIssueRequestHandlerTests {
     var serverIssueDetails = new IssueApi.ServerIssueDetails(issue, issuePath, components, codeSnippet);
 
     var showIssueParams = showIssueRequestHandler.getShowIssueParams(serverIssueDetails, connectionId, configScopeId, "branch", "",
-      new FilePathTranslation(Path.of("ide"), Path.of("home")));
-
+      new FilePathTranslation(Path.of("ide"), Path.of("home")), new SonarLintCancelMonitor());
     assertThat(showIssueParams.getConfigurationScopeId()).isEqualTo(configScopeId);
     var issueDetails = showIssueParams.getIssueDetails();
     assertThat(issueDetails.getIssueKey()).isEqualTo(issueKey);

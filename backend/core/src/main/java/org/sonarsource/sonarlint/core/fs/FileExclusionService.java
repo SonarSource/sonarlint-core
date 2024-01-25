@@ -32,7 +32,7 @@ import org.sonarsource.sonarlint.core.ServerFileExclusions;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
 import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelChecker;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -76,7 +76,7 @@ public class FileExclusionService {
     this.clientFileSystemService = clientFileSystemService;
   }
 
-  public boolean computeExclusion(URI fileUri, SonarLintCancelChecker cancelChecker) {
+  public boolean computeExclusion(URI fileUri, SonarLintCancelMonitor cancelMonitor) {
     LOG.debug("Computing file exclusion for uri '{}'", fileUri);
     var clientFile = clientFileSystemService.getClientFile(fileUri);
     if (clientFile == null) {

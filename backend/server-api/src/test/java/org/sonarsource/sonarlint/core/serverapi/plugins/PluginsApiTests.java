@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.serverapi.plugins;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,7 +42,7 @@ class PluginsApiTests {
       "{\"key\": \"pluginKey\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"plugin-1.0.0.1234.jar\", \"sonarLintSupported\": true}" +
       "]}");
 
-    var serverPlugins = underTest.getInstalled();
+    var serverPlugins = underTest.getInstalled(new SonarLintCancelMonitor());
 
     assertThat(serverPlugins)
       .extracting("key", "hash", "filename", "sonarLintSupported")
@@ -53,7 +54,7 @@ class PluginsApiTests {
     var underTest = new PluginsApi(mockServer.serverApiHelper());
     mockServer.addStringResponse("/api/plugins/download?plugin=pluginKey", "content");
 
-    underTest.getPlugin("pluginKey", stream -> assertThat(stream).hasContent("content"));
+    underTest.getPlugin("pluginKey", stream -> assertThat(stream).hasContent("content"), new SonarLintCancelMonitor());
   }
 
 }

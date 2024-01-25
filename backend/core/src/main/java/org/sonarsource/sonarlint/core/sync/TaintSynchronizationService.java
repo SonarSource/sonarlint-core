@@ -27,6 +27,7 @@ import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.TaintVulnerabilitiesSynchronizedEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -66,37 +67,38 @@ public class TaintSynchronizationService {
     this.eventPublisher = eventPublisher;
   }
 
-  public void synchronizeTaintVulnerabilities(String connectionId, String projectKey) {
+  public void synchronizeTaintVulnerabilities(String connectionId, String projectKey, SonarLintCancelMonitor cancelMonitor) {
     serverApiProvider.getServerApi(connectionId).ifPresent(serverApi -> {
       var allScopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, projectKey);
       var allScopesByOptBranch = allScopes.stream()
         .collect(groupingBy(b -> branchTrackingService.awaitEffectiveSonarProjectBranch(b.getConfigScopeId())));
       allScopesByOptBranch
-        .forEach((branchNameOpt, scopes) -> branchNameOpt.ifPresent(branchName -> synchronizeTaintVulnerabilities(serverApi, connectionId, projectKey, branchName)));
+        .forEach((branchNameOpt, scopes) -> branchNameOpt.ifPresent(branchName -> synchronizeTaintVulnerabilities(serverApi, connectionId, projectKey, branchName, cancelMonitor)));
     });
   }
 
-  private void synchronizeTaintVulnerabilities(ServerApi serverApi, String connectionId, String projectKey, String branch) {
+  private void synchronizeTaintVulnerabilities(ServerApi serverApi, String connectionId, String projectKey, String branch, SonarLintCancelMonitor cancelMonitor) {
     if (languageSupportRepository.areTaintVulnerabilitiesSupported()) {
-      var summary = updateServerTaintIssuesForProject(connectionId, serverApi, projectKey, branch);
+      var summary = updateServerTaintIssuesForProject(connectionId, serverApi, projectKey, branch, cancelMonitor);
       if (summary.hasAnythingChanged()) {
         eventPublisher.publishEvent(new TaintVulnerabilitiesSynchronizedEvent(connectionId, projectKey, branch, summary));
       }
     }
   }
 
-  private UpdateSummary<ServerTaintIssue> updateServerTaintIssuesForProject(String connectionId, ServerApi serverApi, String projectKey, String branchName) {
+  private UpdateSummary<ServerTaintIssue> updateServerTaintIssuesForProject(String connectionId, ServerApi serverApi, String projectKey,
+    String branchName, SonarLintCancelMonitor cancelMonitor) {
     var storage = storageService.getStorageFacade().connection(connectionId);
     var serverInfoSynchronizer = new ServerInfoSynchronizer(storage);
-    var serverVersion = serverInfoSynchronizer.readOrSynchronizeServerInfo(serverApi).getVersion();
+    var serverVersion = serverInfoSynchronizer.readOrSynchronizeServerInfo(serverApi, cancelMonitor).getVersion();
     var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
       .collect(Collectors.toCollection(LinkedHashSet::new));
     var issuesUpdater = new ServerIssueUpdater(storage, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
     if (IssueApi.supportIssuePull(serverApi.isSonarCloud(), serverVersion)) {
       LOG.info("[SYNC] Synchronizing taint issues for project '{}' on branch '{}'", projectKey, branchName);
-      return issuesUpdater.syncTaints(serverApi, projectKey, branchName, enabledLanguagesToSync);
+      return issuesUpdater.syncTaints(serverApi, projectKey, branchName, enabledLanguagesToSync, cancelMonitor);
     } else {
-      return issuesUpdater.downloadProjectTaints(serverApi, projectKey, branchName);
+      return issuesUpdater.downloadProjectTaints(serverApi, projectKey, branchName, cancelMonitor);
     }
   }
 

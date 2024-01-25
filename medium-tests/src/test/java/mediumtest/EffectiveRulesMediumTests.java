@@ -240,9 +240,6 @@ class EffectiveRulesMediumTests {
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .build();
-    mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
-      .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc("desc").setHtmlNote("extendedDesc").build())
-      .build());
 
     var futureResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:S139"));
 
@@ -265,8 +262,10 @@ class EffectiveRulesMediumTests {
 
     assertThat(futureResponse).failsWithin(3, TimeUnit.SECONDS)
       .withThrowableOfType(ExecutionException.class)
-      .withCauseInstanceOf(ResponseErrorException.class)
-      .withMessageContaining("Could not find rule 'python:S139' on 'connectionId'");
+      .havingCause()
+      .isInstanceOfSatisfying(ResponseErrorException.class, ex -> {
+        assertThat(ex.getResponseError().getMessage()).contains("Could not find rule 'python:S139' on server 'connectionId'");
+      });
   }
 
   @Test

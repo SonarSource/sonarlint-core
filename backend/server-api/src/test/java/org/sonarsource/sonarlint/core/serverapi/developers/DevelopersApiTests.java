@@ -25,6 +25,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -48,7 +49,7 @@ class DevelopersApiTests {
 
   @Test
   void should_consider_notifications_unsupported_if_endpoint_does_not_exist() {
-    var supported = underTest.isSupported();
+    var supported = underTest.isSupported(new SonarLintCancelMonitor());
 
     assertThat(supported).isFalse();
   }
@@ -57,7 +58,7 @@ class DevelopersApiTests {
   void should_consider_notifications_supported_if_sonarcloud() {
     var api = new DevelopersApi(new ServerApiHelper(mockServer.endpointParams("orgKey"), mock(HttpClient.class)));
 
-    var supported = api.isSupported();
+    var supported = api.isSupported(new SonarLintCancelMonitor());
 
     assertThat(supported).isTrue();
   }
@@ -66,7 +67,7 @@ class DevelopersApiTests {
   void should_consider_notifications_supported_if_endpoint_exists() {
     mockServer.addStringResponse("/api/developers/search_events?projects=&from=", "");
 
-    var supported = underTest.isSupported();
+    var supported = underTest.isSupported(new SonarLintCancelMonitor());
 
     assertThat(supported).isTrue();
   }
@@ -84,7 +85,7 @@ class DevelopersApiTests {
       "]" +
       "}");
 
-    var events = underTest.getEvents(Map.of("projectKey", ZonedDateTime.parse("2022-01-01T12:00:00Z")));
+    var events = underTest.getEvents(Map.of("projectKey", ZonedDateTime.parse("2022-01-01T12:00:00Z")), new SonarLintCancelMonitor());
 
     assertThat(events)
       .extracting("category", "message", "link", "projectKey", "time")
@@ -103,14 +104,14 @@ class DevelopersApiTests {
       "]" +
       "}");
 
-    var events = underTest.getEvents(Map.of("projectKey", ZonedDateTime.parse("2022-01-01T12:00:00Z")));
+    var events = underTest.getEvents(Map.of("projectKey", ZonedDateTime.parse("2022-01-01T12:00:00Z")), new SonarLintCancelMonitor());
 
     assertThat(events).isEmpty();
   }
 
   @Test
   void should_return_no_event_if_the_request_fails() {
-    var events = underTest.getEvents(Map.of("projectKey", ZonedDateTime.parse("2022-01-01T12:00:00Z")));
+    var events = underTest.getEvents(Map.of("projectKey", ZonedDateTime.parse("2022-01-01T12:00:00Z")), new SonarLintCancelMonitor());
 
     assertThat(events).isEmpty();
   }

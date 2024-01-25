@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - Commons
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,30 +17,42 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.utils;
+package org.sonarsource.sonarlint.core.commons.progress;
 
+import java.util.Deque;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
-/**
- * A {@link CompletableFutures.FutureCancelChecker} that also checks if the executor is shutdown.
- */
-public class FutureAndShutdownCancelChecker extends CompletableFutures.FutureCancelChecker {
+public class SonarLintCancelMonitor {
 
-  private final ExecutorService executor;
+  private boolean canceled;
+  private final Deque<Runnable> downstreamCancelAction = new ConcurrentLinkedDeque<>();
 
-  public FutureAndShutdownCancelChecker(ExecutorService executor, CompletableFuture<?> future) {
-    super(future);
-    this.executor = executor;
+  public synchronized void cancel() {
+    canceled = true;
+    downstreamCancelAction.forEach(Runnable::run);
+    downstreamCancelAction.clear();
   }
 
-  @Override
+  public boolean isCanceled() {
+    return canceled;
+  }
+
   public void checkCanceled() {
-    super.checkCanceled();
-    if (executor.isShutdown()) {
-      throw new CancellationException("Server is shutting down");
+    if (canceled) {
+      throw new CancellationException();
     }
+  }
+
+  public synchronized void onCancel(Runnable action) {
+    if (canceled) {
+      action.run();
+    } else {
+      this.downstreamCancelAction.add(action);
+    }
+  }
+
+  public void watchForShutdown(ExecutorServiceShutdownWatchable<?> executorService) {
+    executorService.cancelOnShutdown(this);
   }
 }

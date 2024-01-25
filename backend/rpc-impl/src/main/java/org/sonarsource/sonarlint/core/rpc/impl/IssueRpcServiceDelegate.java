@@ -40,38 +40,38 @@ public class IssueRpcServiceDelegate extends AbstractRpcServiceDelegate implemen
 
   @Override
   public CompletableFuture<Void> changeStatus(ChangeIssueStatusParams params) {
-    return runAsync(cancelChecker -> getBean(IssueService.class).changeStatus(params.getConfigurationScopeId(), params.getIssueKey(), params.getNewStatus(), params.isTaintIssue(),
-      cancelChecker), params.getConfigurationScopeId());
+    return runAsync(cancelMonitor -> getBean(IssueService.class).changeStatus(params.getConfigurationScopeId(), params.getIssueKey(), params.getNewStatus(), params.isTaintIssue(),
+      cancelMonitor), params.getConfigurationScopeId());
   }
 
   @Override
   public CompletableFuture<Void> addComment(AddIssueCommentParams params) {
-    return runAsync(cancelChecker -> getBean(IssueService.class).addComment(params.getConfigurationScopeId(), params.getIssueKey(), params.getText(), cancelChecker),
+    return runAsync(cancelMonitor -> getBean(IssueService.class).addComment(params.getConfigurationScopeId(), params.getIssueKey(), params.getText(), cancelMonitor),
       params.getConfigurationScopeId());
   }
 
   @Override
   public CompletableFuture<CheckAnticipatedStatusChangeSupportedResponse> checkAnticipatedStatusChangeSupported(CheckAnticipatedStatusChangeSupportedParams params) {
-    return requestAsync(cancelChecker -> new CheckAnticipatedStatusChangeSupportedResponse(
+    return requestAsync(cancelMonitor -> new CheckAnticipatedStatusChangeSupportedResponse(
       getBean(IssueService.class).checkAnticipatedStatusChangeSupported(params.getConfigScopeId())), params.getConfigScopeId());
   }
 
   @Override
   public CompletableFuture<CheckStatusChangePermittedResponse> checkStatusChangePermitted(CheckStatusChangePermittedParams params) {
-    return requestAsync(cancelChecker -> getBean(IssueService.class).checkStatusChangePermitted(params.getConnectionId(), params.getIssueKey(), cancelChecker));
+    return requestAsync(cancelMonitor -> getBean(IssueService.class).checkStatusChangePermitted(params.getConnectionId(), params.getIssueKey(), cancelMonitor));
   }
 
   @Override
   public CompletableFuture<ReopenIssueResponse> reopenIssue(ReopenIssueParams params) {
     return requestAsync(
-      cancelChecker -> new ReopenIssueResponse(
-        getBean(IssueService.class).reopenIssue(params.getConfigurationScopeId(), params.getIssueId(), params.isTaintIssue(), cancelChecker)),
+      cancelMonitor -> new ReopenIssueResponse(
+        getBean(IssueService.class).reopenIssue(params.getConfigurationScopeId(), params.getIssueId(), params.isTaintIssue(), cancelMonitor)),
       params.getConfigurationScopeId());
   }
 
   @Override
   public CompletableFuture<ReopenAllIssuesForFileResponse> reopenAllIssuesForFile(ReopenAllIssuesForFileParams params) {
-    return requestAsync(cancelChecker -> new ReopenAllIssuesForFileResponse(getBean(IssueService.class).reopenAllIssuesForFile(params, cancelChecker)),
+    return requestAsync(cancelMonitor -> new ReopenAllIssuesForFileResponse(getBean(IssueService.class).reopenAllIssuesForFile(params, cancelMonitor)),
       params.getConfigurationScopeId());
   }
 }

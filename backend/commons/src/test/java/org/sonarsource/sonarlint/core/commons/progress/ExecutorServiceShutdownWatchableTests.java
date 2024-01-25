@@ -19,33 +19,31 @@
  */
 package org.sonarsource.sonarlint.core.commons.progress;
 
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ExecutorService;
+import java.util.stream.IntStream;
+import org.junit.jupiter.api.Test;
 
-public class SonarLintCancelChecker {
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
-  private final CompletableFuture<?> future;
+class ExecutorServiceShutdownWatchableTests {
 
-  public SonarLintCancelChecker(CompletableFuture<?> future) {
-    this.future = future;
-  }
+  @Test
+  void should_cancel_all_monitors() {
+    ExecutorServiceShutdownWatchable<?> underTest = new ExecutorServiceShutdownWatchable<>(mock(ExecutorService.class));
 
-  public void checkCanceled() {
-    if (future.isCancelled()) {
-      throw new CancellationException();
+    var monitors = new ArrayList<SonarLintCancelMonitor>();
+    for (int i = 0; i < 1000; i++) {
+      var monitor = new SonarLintCancelMonitor();
+      underTest.cancelOnShutdown(monitor);
+      monitors.add(monitor);
     }
-  }
+    underTest.shutdown();
 
-  public void propagateCancelTo(CompletableFuture<?> downstreamFuture, boolean mayInterruptIfRunning) {
-    future.whenComplete((value, error) -> {
-      if (error instanceof CancellationException || future.isCancelled()) {
-        downstreamFuture.cancel(mayInterruptIfRunning);
-      }
-    });
-  }
-
-  public boolean isCanceled() {
-    return future.isCancelled();
+    assertThat(monitors).allMatch(SonarLintCancelMonitor::isCanceled);
   }
 
 }

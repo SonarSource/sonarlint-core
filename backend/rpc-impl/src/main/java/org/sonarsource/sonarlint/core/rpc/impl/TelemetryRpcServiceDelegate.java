@@ -37,7 +37,7 @@ class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements 
 
   @Override
   public CompletableFuture<GetStatusResponse> getStatus() {
-    return requestAsync(cancelChecker -> getBean(TelemetryService.class).getStatus());
+    return requestAsync(cancelMonitor -> getBean(TelemetryService.class).getStatus());
   }
 
   @Override

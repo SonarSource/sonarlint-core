@@ -24,6 +24,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.branches.ServerBranch;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBranches;
@@ -49,14 +50,14 @@ public class SonarProjectBranchesSynchronizationService {
     this.eventPublisher = eventPublisher;
   }
 
-  public void sync(String connectionId, String sonarProjectKey) {
+  public void sync(String connectionId, String sonarProjectKey, SonarLintCancelMonitor cancelMonitor) {
     serverApiProvider.getServerApi(connectionId).ifPresent(serverApi -> {
       var branchesStorage = storageService.getStorageFacade().connection(connectionId).project(sonarProjectKey).branches();
       Optional<ProjectBranches> oldBranches = Optional.empty();
       if (branchesStorage.exists()) {
         oldBranches = Optional.of(branchesStorage.read());
       }
-      var newBranches = getProjectBranches(serverApi, sonarProjectKey);
+      var newBranches = getProjectBranches(serverApi, sonarProjectKey, cancelMonitor);
       branchesStorage.store(newBranches);
       if (oldBranches.isPresent() && !oldBranches.get().equals(newBranches)) {
         LOG.debug("Project branches changed for project '{}'", sonarProjectKey);
@@ -65,9 +66,9 @@ public class SonarProjectBranchesSynchronizationService {
     });
   }
 
-  public static ProjectBranches getProjectBranches(ServerApi serverApi, String projectKey) {
+  public static ProjectBranches getProjectBranches(ServerApi serverApi, String projectKey, SonarLintCancelMonitor cancelMonitor) {
     LOG.info("Synchronizing project branches for project '{}'", projectKey);
-    var allBranches = serverApi.branches().getAllBranches(projectKey);
+    var allBranches = serverApi.branches().getAllBranches(projectKey, cancelMonitor);
     var mainBranch = allBranches.stream().filter(ServerBranch::isMain).findFirst().map(ServerBranch::getName)
       .orElseThrow(() -> new IllegalStateException("No main branch for project '" + projectKey + "'"));
     return new ProjectBranches(allBranches.stream().map(ServerBranch::getName).collect(toSet()), mainBranch);

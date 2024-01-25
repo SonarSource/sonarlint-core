@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.issue;
 
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +30,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
@@ -39,6 +37,7 @@ import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.Transition;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.LocalOnlyIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.event.ServerIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
@@ -51,17 +50,13 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssues
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
-import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
+import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
 import org.sonarsource.sonarlint.core.storage.StorageService;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
-
-import static org.sonarsource.sonarlint.core.utils.FutureUtils.waitForHttpRequest;
-import static org.sonarsource.sonarlint.core.utils.FutureUtils.waitForTaskWithResult;
 
 @Named
 @Singleton
@@ -71,7 +66,9 @@ public class IssueService {
   private static final String UNSUPPORTED_SQ_VERSION_REASON = "Marking a local-only issue as resolved requires SonarQube 10.2+";
   private static final Version SQ_ANTICIPATED_TRANSITIONS_MIN_VERSION = Version.create("10.2");
 
-  /** With SQ 10.4 the transitions changed from "Won't fix" to "Accept" */
+  /**
+   * With SQ 10.4 the transitions changed from "Won't fix" to "Accept"
+   */
   private static final Version SQ_ACCEPTED_TRANSITION_MIN_VERSION = Version.create("10.4");
   private static final List<ResolutionStatus> NEW_RESOLUTION_STATUSES = List.of(ResolutionStatus.ACCEPT, ResolutionStatus.FALSE_POSITIVE);
   private static final List<ResolutionStatus> OLD_RESOLUTION_STATUSES = List.of(ResolutionStatus.WONT_FIX, ResolutionStatus.FALSE_POSITIVE);
@@ -86,29 +83,27 @@ public class IssueService {
   private final StorageService storageService;
   private final LocalOnlyIssueStorageService localOnlyIssueStorageService;
   private final LocalOnlyIssueRepository localOnlyIssueRepository;
-  private final TelemetryService telemetryService;
   private final ApplicationEventPublisher eventPublisher;
 
   public IssueService(ConfigurationRepository configurationRepository, ServerApiProvider serverApiProvider, StorageService storageService,
-    LocalOnlyIssueStorageService localOnlyIssueStorageService, TelemetryService telemetryService, LocalOnlyIssueRepository localOnlyIssueRepository,
+    LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
     ApplicationEventPublisher eventPublisher) {
     this.configurationRepository = configurationRepository;
     this.serverApiProvider = serverApiProvider;
     this.storageService = storageService;
     this.localOnlyIssueStorageService = localOnlyIssueStorageService;
     this.localOnlyIssueRepository = localOnlyIssueRepository;
-    this.telemetryService = telemetryService;
     this.eventPublisher = eventPublisher;
   }
 
-  public void changeStatus(String configurationScopeId, String issueKey, ResolutionStatus newStatus, boolean isTaintIssue, CancelChecker cancelChecker) {
+  public void changeStatus(String configurationScopeId, String issueKey, ResolutionStatus newStatus, boolean isTaintIssue, SonarLintCancelMonitor cancelMonitor) {
     var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
     var serverApi = serverApiProvider.getServerApiOrThrow(binding.getConnectionId());
     var reviewStatus = transitionByResolutionStatus.get(newStatus);
     var projectServerIssueStore = storageService.binding(binding).findings();
     boolean isServerIssue = projectServerIssueStore.containsIssue(issueKey, isTaintIssue);
     if (isServerIssue) {
-      waitForHttpRequest(cancelChecker, serverApi.issue().changeStatusAsync(issueKey, reviewStatus), "change status");
+      serverApi.issue().changeStatus(issueKey, reviewStatus, cancelMonitor);
       projectServerIssueStore.updateIssueResolutionStatus(issueKey, isTaintIssue, true)
         .ifPresent(issue -> eventPublisher.publishEvent(new ServerIssueStatusChangedEvent(binding.getConnectionId(), binding.getSonarProjectKey(), issue)));
     } else {
@@ -122,8 +117,7 @@ public class IssueService {
       var issue = localIssueOpt.get();
       issue.resolve(coreStatus);
       var localOnlyIssueStore = localOnlyIssueStorageService.get();
-      waitForHttpRequest(cancelChecker, serverApi.issue()
-        .anticipatedTransitions(binding.getSonarProjectKey(), concat(localOnlyIssueStore.loadAll(configurationScopeId), issue)), "update anticipated transitions");
+      serverApi.issue().anticipatedTransitions(binding.getSonarProjectKey(), concat(localOnlyIssueStore.loadAll(configurationScopeId), issue), cancelMonitor);
       localOnlyIssueStore.storeLocalOnlyIssue(configurationScopeId, issue);
       eventPublisher.publishEvent(new LocalOnlyIssueStatusChangedEvent(issue));
     }
@@ -159,7 +153,7 @@ public class IssueService {
       .orElse(false);
   }
 
-  public CheckStatusChangePermittedResponse checkStatusChangePermitted(String connectionId, String issueKey, CancelChecker cancelChecker) {
+  public CheckStatusChangePermittedResponse checkStatusChangePermitted(String connectionId, String issueKey, SonarLintCancelMonitor cancelMonitor) {
     var serverApi = serverApiProvider.getServerApiOrThrow(connectionId);
     return asUUID(issueKey)
       .flatMap(localOnlyIssueRepository::findByKey)
@@ -169,22 +163,24 @@ public class IssueService {
         // have to rely on the version check for SonarQube (>= 10.2 / >=10.4)
         List<ResolutionStatus> statuses = List.of();
         if (checkAnticipatedStatusChangeSupported(serverApi, connectionId)) {
-          var is104orNewer = !serverApi.isSonarCloud() && is104orNewer(connectionId, serverApi);
+          var is104orNewer = !serverApi.isSonarCloud() && is104orNewer(connectionId, serverApi, cancelMonitor);
           statuses = is104orNewer ? NEW_RESOLUTION_STATUSES : OLD_RESOLUTION_STATUSES;
         }
 
         return toResponse(statuses, UNSUPPORTED_SQ_VERSION_REASON);
       })
       .orElseGet(() -> {
-        Issues.Issue issue = waitForTaskWithResult(cancelChecker, serverApi.issue().searchByKey(issueKey), "check status change permitted", Duration.ofSeconds(10));
+        var issue = serverApi.issue().searchByKey(issueKey, cancelMonitor);
         return toResponse(getAdministerIssueTransitions(issue), STATUS_CHANGE_PERMISSION_MISSING_REASON);
       });
   }
 
-  /** For checking whether SonarQube is already on 10.4 or not. NEVER apply to SonarCloud as their version differs! */
-  private boolean is104orNewer(String connectionId, ServerApi serverApi) {
+  /**
+   * For checking whether SonarQube is already on 10.4 or not. NEVER apply to SonarCloud as their version differs!
+   */
+  private boolean is104orNewer(String connectionId, ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
     var serverVersionSynchronizer = new ServerInfoSynchronizer(storageService.connection(connectionId));
-    var serverVersion = serverVersionSynchronizer.readOrSynchronizeServerInfo(serverApi);
+    var serverVersion = serverVersionSynchronizer.readOrSynchronizeServerInfo(serverApi, cancelMonitor);
     return serverVersion.getVersion().compareToIgnoreQualifier(SQ_ACCEPTED_TRANSITION_MIN_VERSION) >= 0;
   }
 
@@ -216,55 +212,55 @@ public class IssueService {
       .collect(Collectors.toSet());
   }
 
-  public void addComment(String configurationScopeId, String issueKey, String text, CancelChecker cancelChecker) {
+  public void addComment(String configurationScopeId, String issueKey, String text, SonarLintCancelMonitor cancelMonitor) {
     var optionalId = asUUID(issueKey);
     if (optionalId.isPresent()) {
-      setCommentOnLocalOnlyIssue(configurationScopeId, optionalId.get(), text, cancelChecker);
+      setCommentOnLocalOnlyIssue(configurationScopeId, optionalId.get(), text, cancelMonitor);
     } else {
-      addCommentOnServerIssue(configurationScopeId, issueKey, text, cancelChecker);
+      addCommentOnServerIssue(configurationScopeId, issueKey, text, cancelMonitor);
     }
   }
 
-  public boolean reopenIssue(String configurationScopeId, String issueId, boolean isTaintIssue, CancelChecker cancelChecker) {
+  public boolean reopenIssue(String configurationScopeId, String issueId, boolean isTaintIssue, SonarLintCancelMonitor cancelMonitor) {
     var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
     var serverApiConnection = serverApiProvider.getServerApiOrThrow(binding.getConnectionId());
     var projectServerIssueStore = storageService.binding(binding).findings();
     boolean isServerIssue = projectServerIssueStore.containsIssue(issueId, isTaintIssue);
     if (isServerIssue) {
-      return reopenServerIssue(serverApiConnection, binding, issueId, projectServerIssueStore, isTaintIssue, cancelChecker);
+      return reopenServerIssue(serverApiConnection, binding, issueId, projectServerIssueStore, isTaintIssue, cancelMonitor);
     } else {
-      return reopenLocalIssue(issueId, configurationScopeId, cancelChecker);
+      return reopenLocalIssue(issueId, configurationScopeId, cancelMonitor);
     }
   }
 
-  public boolean reopenAllIssuesForFile(ReopenAllIssuesForFileParams params, CancelChecker cancelChecker) {
+  public boolean reopenAllIssuesForFile(ReopenAllIssuesForFileParams params, SonarLintCancelMonitor cancelMonitor) {
     var configurationScopeId = params.getConfigurationScopeId();
     var ideRelativePath = params.getIdeRelativePath();
     var localOnlyIssueStore = localOnlyIssueStorageService.get();
-    removeAllIssuesForFile(localOnlyIssueStore, configurationScopeId, ideRelativePath, cancelChecker);
+    removeAllIssuesForFile(localOnlyIssueStore, configurationScopeId, ideRelativePath, cancelMonitor);
     return localOnlyIssueStorageService.get().removeAllIssuesForFile(configurationScopeId, ideRelativePath);
   }
 
   private void removeAllIssuesForFile(XodusLocalOnlyIssueStore localOnlyIssueStore,
-    String configurationScopeId, Path filePath, CancelChecker cancelChecker) {
+    String configurationScopeId, Path filePath, SonarLintCancelMonitor cancelMonitor) {
     var allIssues = localOnlyIssueStore.loadAll(configurationScopeId);
     var issuesForFile = localOnlyIssueStore.loadForFile(configurationScopeId, filePath);
     var issuesToSync = subtract(allIssues, issuesForFile);
     var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
     var serverConnection = serverApiProvider.getServerApiOrThrow(binding.getConnectionId());
-    waitForHttpRequest(cancelChecker, serverConnection.issue().anticipatedTransitions(binding.getSonarProjectKey(), issuesToSync), "Reopen all issues for file");
+    serverConnection.issue().anticipatedTransitions(binding.getSonarProjectKey(), issuesToSync, cancelMonitor);
   }
 
   private void removeIssueOnServer(XodusLocalOnlyIssueStore localOnlyIssueStore,
-    String configurationScopeId, UUID issueId, CancelChecker cancelChecker) {
+    String configurationScopeId, UUID issueId, SonarLintCancelMonitor cancelMonitor) {
     var allIssues = localOnlyIssueStore.loadAll(configurationScopeId);
     var issuesToSync = allIssues.stream().filter(it -> !it.getId().equals(issueId)).collect(Collectors.toList());
     var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
     var serverConnection = serverApiProvider.getServerApiOrThrow(binding.getConnectionId());
-    waitForHttpRequest(cancelChecker, serverConnection.issue().anticipatedTransitions(binding.getSonarProjectKey(), issuesToSync), "Remove issue on server");
+    serverConnection.issue().anticipatedTransitions(binding.getSonarProjectKey(), issuesToSync, cancelMonitor);
   }
 
-  private void setCommentOnLocalOnlyIssue(String configurationScopeId, UUID issueId, String comment, CancelChecker cancelChecker) {
+  private void setCommentOnLocalOnlyIssue(String configurationScopeId, UUID issueId, String comment, SonarLintCancelMonitor cancelMonitor) {
     var localOnlyIssueStore = localOnlyIssueStorageService.get();
     var optionalLocalOnlyIssue = localOnlyIssueStore.find(issueId);
     if (optionalLocalOnlyIssue.isPresent()) {
@@ -276,34 +272,34 @@ public class IssueService {
         issuesToSync.replaceAll(issue -> issue.getId().equals(issueId) ? commentedIssue : issue);
         var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
         var serverApi = serverApiProvider.getServerApiOrThrow(binding.getConnectionId());
-        waitForHttpRequest(cancelChecker, serverApi.issue().anticipatedTransitions(binding.getSonarProjectKey(), issuesToSync), "Add comment to local issue");
+        serverApi.issue().anticipatedTransitions(binding.getSonarProjectKey(), issuesToSync, cancelMonitor);
         localOnlyIssueStore.storeLocalOnlyIssue(configurationScopeId, commentedIssue);
       }
     }
   }
 
-  private void addCommentOnServerIssue(String configurationScopeId, String issueKey, String comment, CancelChecker cancelChecker) {
+  private void addCommentOnServerIssue(String configurationScopeId, String issueKey, String comment, SonarLintCancelMonitor cancelMonitor) {
     var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
     var serverApi = serverApiProvider.getServerApiOrThrow(binding.getConnectionId());
-    waitForHttpRequest(cancelChecker, serverApi.issue().addComment(issueKey, comment), "Add comment to server issue");
+    serverApi.issue().addComment(issueKey, comment, cancelMonitor);
   }
 
   private boolean reopenServerIssue(ServerApi connection, Binding binding, String issueId, ProjectServerIssueStore projectServerIssueStore, boolean isTaintIssue,
-    CancelChecker cancelChecker) {
-    waitForHttpRequest(cancelChecker, connection.issue().changeStatusAsync(issueId, Transition.REOPEN), "Reopen server issue");
+    SonarLintCancelMonitor cancelMonitor) {
+    connection.issue().changeStatus(issueId, Transition.REOPEN, cancelMonitor);
     var serverIssue = projectServerIssueStore.updateIssueResolutionStatus(issueId, isTaintIssue, false);
     serverIssue.ifPresent(issue -> eventPublisher.publishEvent(new ServerIssueStatusChangedEvent(binding.getConnectionId(), binding.getSonarProjectKey(), issue)));
     return true;
   }
 
-  private boolean reopenLocalIssue(String issueId, String configurationScopeId, CancelChecker cancelChecker) {
+  private boolean reopenLocalIssue(String issueId, String configurationScopeId, SonarLintCancelMonitor cancelMonitor) {
     var issueUuidOptional = asUUID(issueId);
     if (issueUuidOptional.isEmpty()) {
       return false;
     }
     var issueUuid = issueUuidOptional.get();
     var localOnlyIssueStore = localOnlyIssueStorageService.get();
-    removeIssueOnServer(localOnlyIssueStore, configurationScopeId, issueUuid, cancelChecker);
+    removeIssueOnServer(localOnlyIssueStore, configurationScopeId, issueUuid, cancelMonitor);
     return localOnlyIssueStorageService.get().removeIssue(issueUuid);
   }
 

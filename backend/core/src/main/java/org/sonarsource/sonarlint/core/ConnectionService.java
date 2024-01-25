@@ -29,11 +29,9 @@ import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.api.progress.ClientProgressMonitor;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
@@ -160,29 +158,31 @@ public class ConnectionService {
     }
   }
 
-  public ValidateConnectionResponse validateConnection(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection, CancelChecker cancelToken) {
+  public ValidateConnectionResponse validateConnection(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection,
+    SonarLintCancelMonitor cancelMonitor) {
     var helper = buildServerApiHelper(transientConnection);
     var connectionValidator = new ConnectionValidator(helper);
-    var r = connectionValidator.validateConnection(cancelToken);
+    var r = connectionValidator.validateConnection(cancelMonitor);
     return new ValidateConnectionResponse(r.success(), r.message());
   }
 
-  public boolean checkSmartNotificationsSupported(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection) {
+  public boolean checkSmartNotificationsSupported(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection,
+    SonarLintCancelMonitor cancelMonitor) {
     var helper = buildServerApiHelper(transientConnection);
     var developersApi = new ServerApi(helper).developers();
-    return developersApi.isSupported();
+    return developersApi.isSupported(cancelMonitor);
   }
 
-  public List<OrganizationDto> listUserOrganizations(Either<TokenDto, UsernamePasswordDto> credentials) {
+  public List<OrganizationDto> listUserOrganizations(Either<TokenDto, UsernamePasswordDto> credentials, SonarLintCancelMonitor cancelMonitor) {
     var helper = buildSonarCloudNoOrgApiHelper(credentials);
-    var serverOrganizations = new OrganizationApi(helper).listUserOrganizations(new ProgressMonitor(null));
+    var serverOrganizations = new OrganizationApi(helper).listUserOrganizations(cancelMonitor);
     return serverOrganizations.stream().map(o -> new OrganizationDto(o.getKey(), o.getName(), o.getDescription())).collect(Collectors.toList());
   }
 
   @CheckForNull
-  public OrganizationDto getOrganization(Either<TokenDto, UsernamePasswordDto> credentials, String organizationKey) {
+  public OrganizationDto getOrganization(Either<TokenDto, UsernamePasswordDto> credentials, String organizationKey, SonarLintCancelMonitor cancelMonitor) {
     var helper = buildSonarCloudNoOrgApiHelper(credentials);
-    var serverOrganization = new OrganizationApi(helper).getOrganization(organizationKey, new ProgressMonitor(null));
+    var serverOrganization = new OrganizationApi(helper).getOrganization(organizationKey, cancelMonitor);
     return serverOrganization.map(o -> new OrganizationDto(o.getKey(), o.getName(), o.getDescription())).orElse(null);
   }
 
@@ -207,42 +207,15 @@ public class ConnectionService {
       userPass -> httpClientProvider.getHttpClientWithPreemptiveAuth(userPass.getUsername(), userPass.getPassword()));
   }
 
-  public HelpGenerateUserTokenResponse helpGenerateUserToken(String serverUrl, boolean isSonarCloud, CancelChecker cancelToken) {
-    return tokenGeneratorHelper.helpGenerateUserToken(serverUrl, isSonarCloud, cancelToken);
+  public HelpGenerateUserTokenResponse helpGenerateUserToken(String serverUrl, boolean isSonarCloud, SonarLintCancelMonitor cancelMonitor) {
+    return tokenGeneratorHelper.helpGenerateUserToken(serverUrl, isSonarCloud, cancelMonitor);
   }
 
-  public List<SonarProjectDto> getAllProjects(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection, CancelChecker cancelChecker) {
+  public List<SonarProjectDto> getAllProjects(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection, SonarLintCancelMonitor cancelMonitor) {
     var helper = buildServerApiHelper(transientConnection);
-    return new ServerApi(helper).component().getAllProjects(new ProgressMonitor(new CancelCheckerAwareProgressMonitor(cancelChecker)))
+    return new ServerApi(helper).component().getAllProjects(cancelMonitor)
       .stream().map(serverProject -> new SonarProjectDto(serverProject.getKey(), serverProject.getName()))
       .collect(Collectors.toList());
   }
 
-  private static class CancelCheckerAwareProgressMonitor implements ClientProgressMonitor {
-    private final CancelChecker cancelChecker;
-
-    private CancelCheckerAwareProgressMonitor(CancelChecker cancelChecker) {
-      this.cancelChecker = cancelChecker;
-    }
-
-    @Override
-    public boolean isCanceled() {
-      return cancelChecker.isCanceled();
-    }
-
-    @Override
-    public void setMessage(String msg) {
-      // not implemented
-    }
-
-    @Override
-    public void setFraction(float fraction) {
-      // not implemented
-    }
-
-    @Override
-    public void setIndeterminate(boolean indeterminate) {
-      // not implemented
-    }
-  }
 }

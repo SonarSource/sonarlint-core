@@ -30,9 +30,10 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonar.scanner.protocol.Constants.Severity;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
@@ -83,7 +84,7 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, response);
 
-    var issues = underTest.downloadFromBatch(serverApi, DUMMY_KEY, null);
+    var issues = underTest.downloadFromBatch(serverApi, DUMMY_KEY, null, new SonarLintCancelMonitor());
     assertThat(issues).hasSize(1);
 
     var serverIssue = issues.get(0);
@@ -115,7 +116,7 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, response);
 
-    var issues = underTest.downloadFromBatch(serverApi, DUMMY_KEY, null);
+    var issues = underTest.downloadFromBatch(serverApi, DUMMY_KEY, null, new SonarLintCancelMonitor());
     assertThat(issues).hasSize(1);
 
     var serverIssue = issues.get(0);
@@ -136,7 +137,7 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, response);
 
-    var issues = underTest.downloadFromBatch(serverApi, DUMMY_KEY, null);
+    var issues = underTest.downloadFromBatch(serverApi, DUMMY_KEY, null, new SonarLintCancelMonitor());
     assertThat(issues).hasSize(1);
 
     var serverIssue = issues.get(0);
@@ -161,7 +162,7 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java", timestamp, issue);
 
-    var result = underTest.downloadFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty());
+    var result = underTest.downloadFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty(), new SonarLintCancelMonitor());
     assertThat(result.getChangedIssues()).hasSize(1);
     assertThat(result.getClosedIssueKeys()).isEmpty();
 
@@ -195,7 +196,7 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java", timestamp, issue);
 
-    var result = underTest.downloadFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty());
+    var result = underTest.downloadFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty(), new SonarLintCancelMonitor());
     assertThat(result.getChangedIssues()).hasSize(1);
     assertThat(result.getClosedIssueKeys()).isEmpty();
 
@@ -216,7 +217,7 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java", timestamp, issue);
 
-    var result = underTest.downloadFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty());
+    var result = underTest.downloadFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty(), new SonarLintCancelMonitor());
     assertThat(result.getChangedIssues()).hasSize(1);
     assertThat(result.getClosedIssueKeys()).isEmpty();
 
@@ -240,7 +241,7 @@ class IssueDownloaderTests {
       .build();
     mockServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java&changedSince=123456789", timestamp, issue);
 
-    var result = underTest.downloadFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.of(Instant.ofEpochMilli(123456789)));
+    var result = underTest.downloadFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.of(Instant.ofEpochMilli(123456789)), new SonarLintCancelMonitor());
 
     assertThat(result.getChangedIssues()).isEmpty();
     assertThat(result.getClosedIssueKeys()).containsOnly("key");
@@ -261,7 +262,7 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, response);
 
-    var issues = underTest.downloadFromBatch(serverApi, DUMMY_KEY, null);
+    var issues = underTest.downloadFromBatch(serverApi, DUMMY_KEY, null, new SonarLintCancelMonitor());
     assertThat(issues).isEmpty();
   }
 
@@ -277,7 +278,7 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java", timestamp, issue);
 
-    var issues = underTest.downloadFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty());
+    var issues = underTest.downloadFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty(), new SonarLintCancelMonitor());
     assertThat(issues.getChangedIssues()).isEmpty();
     assertThat(issues.getClosedIssueKeys()).isEmpty();
   }
@@ -310,7 +311,7 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY, issue1, taint1);
 
-    var issues = underTest.downloadFromBatch(serverApi, DUMMY_KEY, null);
+    var issues = underTest.downloadFromBatch(serverApi, DUMMY_KEY, null, new SonarLintCancelMonitor());
 
     assertThat(issues).hasSize(1);
   }
@@ -319,7 +320,7 @@ class IssueDownloaderTests {
   void test_download_no_issues() {
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY);
 
-    var issues = underTest.downloadFromBatch(serverApi, DUMMY_KEY, null);
+    var issues = underTest.downloadFromBatch(serverApi, DUMMY_KEY, null, new SonarLintCancelMonitor());
     assertThat(issues).isEmpty();
   }
 
@@ -327,8 +328,9 @@ class IssueDownloaderTests {
   void test_fail_other_codes() {
     mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, new MockResponse().setResponseCode(503));
 
+    var cancelMonitor = new SonarLintCancelMonitor();
     var thrown = assertThrows(ServerErrorException.class,
-      () -> underTest.downloadFromBatch(serverApi, DUMMY_KEY, null));
+      () -> underTest.downloadFromBatch(serverApi, DUMMY_KEY, null, cancelMonitor));
     assertThat(thrown).hasMessageContaining("Error 503");
   }
 
@@ -336,7 +338,7 @@ class IssueDownloaderTests {
   void test_return_empty_if_404() {
     mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, new MockResponse().setResponseCode(404));
 
-    var issues = underTest.downloadFromBatch(serverApi, DUMMY_KEY, null);
+    var issues = underTest.downloadFromBatch(serverApi, DUMMY_KEY, null, new SonarLintCancelMonitor());
     assertThat(issues).isEmpty();
   }
 
@@ -351,7 +353,7 @@ class IssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/batch/issues?key=" + DUMMY_KEY + "&branch=branchName", response);
 
-    var issues = underTest.downloadFromBatch(serverApi, DUMMY_KEY, "branchName");
+    var issues = underTest.downloadFromBatch(serverApi, DUMMY_KEY, "branchName", new SonarLintCancelMonitor());
     assertThat(issues).hasSize(1);
   }
 

@@ -25,10 +25,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.PluginsMinVersions;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
 
@@ -46,27 +46,26 @@ public class PluginsSynchronizer {
     this.embeddedPluginKeys = embeddedPluginKeys;
   }
 
-  public boolean synchronize(ServerApi serverApi, ProgressMonitor progressMonitor) {
+  public boolean synchronize(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
     var storedPluginsByKey = storage.plugins().getStoredPluginsByKey();
-    var serverPlugins = serverApi.plugins().getInstalled();
+    var serverPlugins = serverApi.plugins().getInstalled(cancelMonitor);
     var pluginsToDownload = serverPlugins.stream()
       .filter(p -> shouldDownload(p, storedPluginsByKey))
       .collect(Collectors.toList());
-    downloadAll(serverApi, pluginsToDownload, progressMonitor);
+    downloadAll(serverApi, pluginsToDownload, cancelMonitor);
     return !pluginsToDownload.isEmpty();
   }
 
-  private void downloadAll(ServerApi serverApi, List<ServerPlugin> pluginsToDownload, ProgressMonitor progressMonitor) {
+  private void downloadAll(ServerApi serverApi, List<ServerPlugin> pluginsToDownload, SonarLintCancelMonitor cancelMonitor) {
     var i = 0;
     for (ServerPlugin p : pluginsToDownload) {
-      progressMonitor.setProgressAndCheckCancel("Downloading analyzer '" + p.getKey() + "'", i++ / (float) pluginsToDownload.size());
-      downloadPlugin(serverApi, p);
+      downloadPlugin(serverApi, p, cancelMonitor);
     }
   }
 
-  private void downloadPlugin(ServerApi serverApi, ServerPlugin plugin) {
+  private void downloadPlugin(ServerApi serverApi, ServerPlugin plugin, SonarLintCancelMonitor cancelMonitor) {
     LOG.info("[SYNC] Downloading plugin '{}'", plugin.getFilename());
-    serverApi.plugins().getPlugin(plugin.getKey(), pluginBinary -> storage.plugins().store(plugin, pluginBinary));
+    serverApi.plugins().getPlugin(plugin.getKey(), pluginBinary -> storage.plugins().store(plugin, pluginBinary), cancelMonitor);
   }
 
   private boolean shouldDownload(ServerPlugin serverPlugin, Map<String, StoredPlugin> storedPluginsByKey) {

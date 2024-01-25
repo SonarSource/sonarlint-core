@@ -28,17 +28,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
-import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
@@ -79,30 +78,28 @@ public class HotspotApi {
     return isSonarCloud || serverVersion.get().compareToIgnoreQualifier(TRACKING_COMPATIBLE_MIN_SQ_VERSION) >= 0;
   }
 
-  public CompletableFuture<Void> changeStatusAsync(String hotspotKey, HotspotReviewStatus status) {
+  public void changeStatus(String hotspotKey, HotspotReviewStatus status, SonarLintCancelMonitor cancelMonitor) {
     var isReviewed = status.isReviewed();
     var webApiStatus = isReviewed ? "REVIEWED" : "TO_REVIEW";
     var body = "hotspot=" + urlEncode(hotspotKey) + "&status=" + urlEncode(webApiStatus);
     if (isReviewed) {
       body += "&resolution=" + urlEncode(status.name());
     }
-    return helper.postAsync("api/hotspots/change_status", FORM_URL_ENCODED_CONTENT_TYPE, body)
-      .thenAccept(response -> {
-        // no data, return void
-      });
+    helper.post("api/hotspots/change_status", FORM_URL_ENCODED_CONTENT_TYPE, body, cancelMonitor);
   }
 
-  public Collection<ServerHotspot> getAll(String projectKey, String branchName, ProgressMonitor progress) {
-    return searchHotspots(getSearchUrl(projectKey, null, branchName), progress);
+  public Collection<ServerHotspot> getAll(String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
+    return searchHotspots(getSearchUrl(projectKey, null, branchName), cancelMonitor);
   }
 
-  public Collection<ServerHotspot> getFromFile(String projectKey, Path filePath, String branchName) {
-    return searchHotspots(getSearchUrl(projectKey, filePath, branchName), new ProgressMonitor(null));
+  public Collection<ServerHotspot> getFromFile(String projectKey, Path filePath, String branchName, SonarLintCancelMonitor cancelMonitor) {
+    return searchHotspots(getSearchUrl(projectKey, filePath, branchName), cancelMonitor);
   }
 
-  public HotspotApi.HotspotsPullResult pullHotspots(String projectKey, String branchName, Set<SonarLanguage> enabledLanguages, @Nullable Long changedSince) {
+  public HotspotApi.HotspotsPullResult pullHotspots(String projectKey, String branchName, Set<SonarLanguage> enabledLanguages, @Nullable Long changedSince
+    , SonarLintCancelMonitor cancelMonitor) {
     return ServerApiHelper.processTimed(
-      () -> helper.get(getPullHotspotsUrl(projectKey, branchName, enabledLanguages, changedSince)),
+      () -> helper.get(getPullHotspotsUrl(projectKey, branchName, enabledLanguages, changedSince), cancelMonitor),
       response -> {
         var input = response.bodyAsStream();
         var timestamp = Hotspots.HotspotPullQueryTimestamp.parseDelimitedFrom(input);
@@ -154,7 +151,7 @@ public class HotspotApi {
     return !isSonarCloud && serverVersion.compareToIgnoreQualifier(HotspotApi.MIN_SQ_VERSION_SUPPORTING_PULL) >= 0;
   }
 
-  private Collection<ServerHotspot> searchHotspots(String searchUrl, ProgressMonitor progress) {
+  private Collection<ServerHotspot> searchHotspots(String searchUrl, SonarLintCancelMonitor cancelMonitor) {
     Collection<ServerHotspot> hotspots = new ArrayList<>();
     Map<String, Path> componentPathsByKey = new HashMap<>();
     helper.getPaginated(
@@ -175,7 +172,7 @@ public class HotspotApi {
         }
       },
       false,
-      progress);
+      cancelMonitor);
     return hotspots;
   }
 
@@ -186,26 +183,24 @@ public class HotspotApi {
       + "&branch=" + urlEncode(branchName);
   }
 
-  public CompletableFuture<ServerHotspotDetails> show(String hotspotKey) {
-    return helper.getAsync(getShowUrl(hotspotKey)).thenApply(response -> {
-      try (response; var is = response.bodyAsStream()) {
-        return adapt(Hotspots.ShowWsResponse.parseFrom(is), null);
-      } catch (IOException e) {
-        throw new UnexpectedBodyException(e);
-      }
-    });
+  public ServerHotspotDetails show(String hotspotKey, SonarLintCancelMonitor cancelMonitor) {
+    try (var wsResponse = helper.get(getShowUrl(hotspotKey), cancelMonitor); var is = wsResponse.bodyAsStream()) {
+      return adapt(Hotspots.ShowWsResponse.parseFrom(is), null);
+    } catch (IOException e) {
+      throw new UnexpectedBodyException(e);
+    }
   }
 
-  public Optional<ServerHotspotDetails> fetch(String hotspotKey) {
+  public Optional<ServerHotspotDetails> fetch(String hotspotKey, SonarLintCancelMonitor cancelMonitor) {
     Hotspots.ShowWsResponse response;
-    try (var wsResponse = helper.get(getShowUrl(hotspotKey)); var is = wsResponse.bodyAsStream()) {
+    try (var wsResponse = helper.get(getShowUrl(hotspotKey), cancelMonitor); var is = wsResponse.bodyAsStream()) {
       response = Hotspots.ShowWsResponse.parseFrom(is);
     } catch (Exception e) {
       LOG.error("Error while fetching security hotspot", e);
       return Optional.empty();
     }
     var fileKey = response.getComponent().getKey();
-    var source = new SourceApi(helper).getRawSourceCode(fileKey);
+    var source = new SourceApi(helper).getRawSourceCode(fileKey, cancelMonitor);
     String codeSnippet;
     if (source.isPresent()) {
       try {

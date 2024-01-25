@@ -23,14 +23,14 @@ import com.google.common.util.concurrent.MoreExecutors;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelChecker;
+import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 
 /**
  * A cache with async computation of values, and supporting cancellation.
@@ -40,9 +40,9 @@ public class SmartCancelableLoadingCache<K, V> implements AutoCloseable {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final ExecutorService executorService;
+  private final ExecutorServiceShutdownWatchable<?> executorService;
   private final String threadName;
-  private final BiFunction<K, SonarLintCancelChecker, V> valueComputer;
+  private final BiFunction<K, SonarLintCancelMonitor, V> valueComputer;
   private final ConcurrentHashMap<K, ValueAndComputeFutures> cache = new ConcurrentHashMap<>();
 
   private class ValueAndComputeFutures {
@@ -70,9 +70,17 @@ public class SmartCancelableLoadingCache<K, V> implements AutoCloseable {
 
         var previousValue = oldValueFuture.getNow(null);
 
-        CompletableFuture<SonarLintCancelChecker> start = new CompletableFuture<>();
-        CompletableFuture<V> result = start.thenApplyAsync(cancelChecker -> valueComputer.apply(key, cancelChecker), executorService);
-        start.complete(new SonarLintCancelChecker(result));
+        var cancelMonitor = new SonarLintCancelMonitor();
+        cancelMonitor.watchForShutdown(executorService);
+        CompletableFuture<V> result = CompletableFuture.supplyAsync(() -> {
+          cancelMonitor.checkCanceled();
+          return valueComputer.apply(key, cancelMonitor);
+        }, executorService);
+        result.whenComplete((newValue, error) -> {
+          if (error instanceof CancellationException) {
+            cancelMonitor.cancel();
+          }
+        });
         result.whenCompleteAsync((newValue, error) -> whenComputeCompleted(newValue, error, previousValue, oldValueFuture), executorService);
         computeFuture = result;
       } finally {
@@ -88,7 +96,7 @@ public class SmartCancelableLoadingCache<K, V> implements AutoCloseable {
           return;
         }
         try {
-          if (listener != null) {
+          if (error == null && listener != null) {
             listener.afterCachedValueRefreshed(key, previousValue, newValue);
           }
         } finally {
@@ -143,12 +151,12 @@ public class SmartCancelableLoadingCache<K, V> implements AutoCloseable {
 
   }
 
-  public SmartCancelableLoadingCache(String threadName, BiFunction<K, SonarLintCancelChecker, V> valueComputer) {
+  public SmartCancelableLoadingCache(String threadName, BiFunction<K, SonarLintCancelMonitor, V> valueComputer) {
     this(threadName, valueComputer, null);
   }
 
-  public SmartCancelableLoadingCache(String threadName, BiFunction<K, SonarLintCancelChecker, V> valueComputer, @Nullable Listener<K, V> listener) {
-    this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, threadName));
+  public SmartCancelableLoadingCache(String threadName, BiFunction<K, SonarLintCancelMonitor, V> valueComputer, @Nullable Listener<K, V> listener) {
+    this.executorService = new ExecutorServiceShutdownWatchable<>(Executors.newSingleThreadExecutor(r -> new Thread(r, threadName)));
     this.threadName = threadName;
     this.valueComputer = valueComputer;
     this.listener = listener;

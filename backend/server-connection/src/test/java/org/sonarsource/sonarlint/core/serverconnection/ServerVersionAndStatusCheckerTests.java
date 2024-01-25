@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import testutils.MockWebServerExtensionWithProtobuf;
 
@@ -47,9 +48,8 @@ class ServerVersionAndStatusCheckerTests {
   void serverNotReady() throws ExecutionException, InterruptedException {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.5-SNAPSHOT\",\"status\": \"DOWN\"}");
 
-    var futureResult = underTest.validateStatusAndVersion();
+    var validationResult = underTest.validateStatusAndVersion(new SonarLintCancelMonitor());
 
-    var validationResult = futureResult.get();
     assertThat(validationResult.success()).isFalse();
     assertThat(validationResult.message()).isEqualTo("Server not ready (DOWN)");
   }
@@ -58,7 +58,7 @@ class ServerVersionAndStatusCheckerTests {
   void failWhenServerNotReady() {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"5.5-SNAPSHOT\",\"status\": \"DOWN\"}");
 
-    var throwable = catchThrowable(() -> underTest.checkVersionAndStatus());
+    var throwable = catchThrowable(() -> underTest.checkVersionAndStatus(new SonarLintCancelMonitor()));
 
     assertThat(throwable).hasMessage("Server not ready (DOWN)");
   }
@@ -67,9 +67,8 @@ class ServerVersionAndStatusCheckerTests {
   void incompatibleVersion() throws ExecutionException, InterruptedException {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}");
 
-    var futureResult = underTest.validateStatusAndVersion();
+    var validationResult = underTest.validateStatusAndVersion(new SonarLintCancelMonitor());
 
-    var validationResult = futureResult.get();
     assertThat(validationResult.success()).isFalse();
     assertThat(validationResult.message()).isEqualTo("SonarQube server has version 6.7. Version should be greater or equal to 7.9");
   }
@@ -78,7 +77,7 @@ class ServerVersionAndStatusCheckerTests {
   void failWhenIncompatibleVersion() {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}");
 
-    var throwable = catchThrowable(() -> underTest.checkVersionAndStatus());
+    var throwable = catchThrowable(() -> underTest.checkVersionAndStatus(new SonarLintCancelMonitor()));
 
     assertThat(throwable).hasMessage("SonarQube server has version 6.7. Version should be greater or equal to 7.9");
   }
@@ -87,7 +86,7 @@ class ServerVersionAndStatusCheckerTests {
   void responseParsingError() {
     mockServer.addStringResponse("/api/system/status", "bla bla");
 
-    var throwable = catchThrowable(() -> underTest.checkVersionAndStatus());
+    var throwable = catchThrowable(() -> underTest.checkVersionAndStatus(new SonarLintCancelMonitor()));
 
     assertThat(throwable).hasMessage("Unable to parse server infos from: bla bla");
   }

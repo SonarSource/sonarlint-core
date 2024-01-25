@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 
@@ -45,19 +46,19 @@ public class DevelopersApi {
     this.helper = helper;
   }
 
-  public boolean isSupported() {
+  public boolean isSupported(SonarLintCancelMonitor cancelMonitor) {
     if (helper.isSonarCloud()) {
       return true;
     }
     var path = getWsPath(Collections.emptyMap());
-    try (var wsResponse = helper.rawGet(path)) {
+    try (var wsResponse = helper.rawGet(path, cancelMonitor)) {
       return wsResponse.isSuccessful();
     }
   }
 
-  public List<Event> getEvents(Map<String, ZonedDateTime> projectTimestamps) {
+  public List<Event> getEvents(Map<String, ZonedDateTime> projectTimestamps, SonarLintCancelMonitor cancelMonitor) {
     var path = getWsPath(projectTimestamps);
-    try (var wsResponse = helper.rawGet(path)) {
+    try (var wsResponse = helper.rawGet(path, cancelMonitor)) {
       if (!wsResponse.isSuccessful()) {
         LOG.debug("Failed to get notifications: {}, {}", wsResponse.code(), wsResponse.bodyAsString());
         return Collections.emptyList();

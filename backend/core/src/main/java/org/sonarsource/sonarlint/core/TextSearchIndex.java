@@ -35,12 +35,12 @@ import java.util.stream.Collectors;
 /**
  * Indexes text associated to objects, and performs full text search to find matching objects.
  * It is a positional index, so it supports queries consisted of multiple terms, in which case it will find partial term matches in sequence (distance = 1).
- * The result is sorted by score. The score of each term matches is the ratio of the term matches (1 for exact match), 
+ * The result is sorted by score. The score of each term matches is the ratio of the term matches (1 for exact match),
  * and the global score is the sum of the term's scores in the object divided by the total term frequency in the object.
- * 
+ * <br/><br/>
  * The generic type should properly implement equals and hashCode.
- * <b>An object cannot be indexed twice</b>. 
- * 
+ * <b>An object cannot be indexed twice</b>.
+ * <br/><br/>
  * Performance of indexing: O(N)
  * Performance of search: O(log N) on the number of indexed terms + O(N) on the number of results
  */
@@ -78,7 +78,7 @@ public class TextSearchIndex<T> {
   /**
    * Search for indexed objects based on a query. Results will be sorted by score (highest first).
    * Score is in the interval ]0,1].
-   * 
+   *
    * @return A map of results reverse-sorted by value (score). Can be empty, but never null
    */
   public Map<T, Double> search(String query) {
@@ -176,13 +176,7 @@ public class TextSearchIndex<T> {
   }
 
   private void addToDictionary(String token, int tokenIndex, T obj) {
-    var entries = termToObj.get(token);
-
-    if (entries == null) {
-      entries = new LinkedList<>();
-      termToObj.put(token, entries);
-    }
-
+    var entries = termToObj.computeIfAbsent(token, t -> new LinkedList<>());
     entries.add(new DictEntry(obj, tokenIndex));
   }
 
@@ -201,8 +195,8 @@ public class TextSearchIndex<T> {
 
   private class SearchResult {
     private double score;
-    private T obj;
-    private int lastIdx;
+    private final T obj;
+    private final int lastIdx;
 
     public SearchResult(double score, T obj, int lastIdx) {
       this.score = score;

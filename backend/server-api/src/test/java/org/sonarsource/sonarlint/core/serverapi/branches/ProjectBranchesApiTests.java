@@ -23,6 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.BranchType;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.ProjectBranches;
@@ -52,7 +53,7 @@ class ProjectBranchesApiTests {
       .addBranches(ProjectBranches.Branch.newBuilder().setName("feature/foo").setIsMain(false).setType(BranchType.BRANCH))
       .addBranches(ProjectBranches.Branch.newBuilder().setName("master").setIsMain(true).setType(BranchType.BRANCH)).build());
 
-    var branches = underTest.getAllBranches(PROJECT_KEY);
+    var branches = underTest.getAllBranches(PROJECT_KEY, new SonarLintCancelMonitor());
 
     assertThat(branches).extracting(ServerBranch::getName, ServerBranch::isMain).containsExactlyInAnyOrder(tuple("master", true), tuple("feature/foo", false));
   }
@@ -67,7 +68,7 @@ class ProjectBranchesApiTests {
 
     mockServer.addProtobufResponse("/api/project_branches/list.protobuf?project=" + PROJECT_KEY, branchListResponseBuilder.build());
 
-    var branches = underTest.getAllBranches(PROJECT_KEY);
+    var branches = underTest.getAllBranches(PROJECT_KEY, new SonarLintCancelMonitor());
 
     assertThat(branches).extracting(ServerBranch::getName, ServerBranch::isMain)
       .containsExactlyInAnyOrder(tuple("master", true), tuple("branch-1.x", false),
@@ -83,7 +84,7 @@ class ProjectBranchesApiTests {
         "  ]\n" +
         "}");
 
-    var branches = underTest.getAllBranches(PROJECT_KEY);
+    var branches = underTest.getAllBranches(PROJECT_KEY, new SonarLintCancelMonitor());
 
     assertThat(branches).isEmpty();
   }

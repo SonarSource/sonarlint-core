@@ -19,15 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
-import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 
+/**
+ * @deprecated since 7.0. Use helpGenerateUserToken RPC method instead.
+ */
+@Deprecated(since = "10.0")
 public class ServerPathProvider {
 
   private ServerPathProvider() {
@@ -35,15 +39,16 @@ public class ServerPathProvider {
 
   private static final String MIN_SQ_VERSION = "9.7";
 
-  public static CompletableFuture<String> getServerUrlForTokenGeneration(EndpointParams endpoint, HttpClient client,
-    int port, String ideName) {
+  public static String getServerUrlForTokenGeneration(EndpointParams endpoint, HttpClient client, int port, String ideName, SonarLintCancelMonitor cancelMonitor) {
     var serverApi = new ServerApi(endpoint, client);
-    return serverApi.system().getStatus().thenApply(systemInfo -> buildServerPath(endpoint.getBaseUrl(), systemInfo.getVersion(), port, ideName, endpoint.isSonarCloud()));
+    var systemInfo = serverApi.system().getStatus(cancelMonitor);
+    return buildServerPath(endpoint.getBaseUrl(), systemInfo.getVersion(), port, ideName, endpoint.isSonarCloud());
   }
 
-  public static CompletableFuture<String> getFallbackServerUrlForTokenGeneration(EndpointParams endpoint, HttpClient client, String ideName) {
+  public static String getFallbackServerUrlForTokenGeneration(EndpointParams endpoint, HttpClient client, String ideName, SonarLintCancelMonitor cancelMonitor) {
     var serverApi = new ServerApi(endpoint, client);
-    return serverApi.system().getStatus().thenApply(systemInfo -> buildServerPath(endpoint.getBaseUrl(), systemInfo.getVersion(), null, ideName, endpoint.isSonarCloud()));
+    var systemInfo = serverApi.system().getStatus(cancelMonitor);
+    return buildServerPath(endpoint.getBaseUrl(), systemInfo.getVersion(), null, ideName, endpoint.isSonarCloud());
   }
 
   static String buildServerPath(String baseUrl, String serverVersionStr, @Nullable Integer port, String ideName, boolean isSonarCloud) {

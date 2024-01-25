@@ -34,6 +34,7 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClient;
@@ -68,14 +69,14 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   private final AtomicBoolean initializeCalled = new AtomicBoolean(false);
   private final AtomicBoolean initialized = new AtomicBoolean(false);
   private final Future<Void> launcherFuture;
-  private final ExecutorService requestsExecutor;
+  private final ExecutorServiceShutdownWatchable<ExecutorService> requestsExecutor;
   private final ExecutorService requestAndNotificationsSequentialExecutor;
   private final RpcClientLogOutput logOutput;
   private SpringApplicationContextInitializer springApplicationContextInitializer;
 
   public SonarLintRpcServerImpl(InputStream in, OutputStream out, ExecutorService messageReaderExecutor, ExecutorService messageWriterExecutor) {
     this.requestAndNotificationsSequentialExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint Server RPC sequential executor"));
-    this.requestsExecutor = Executors.newCachedThreadPool(r -> new Thread(r, "SonarLint Server RPC request executor"));
+    this.requestsExecutor = new ExecutorServiceShutdownWatchable<>(Executors.newCachedThreadPool(r -> new Thread(r, "SonarLint Server RPC request executor")));
     var launcher = new SonarLintLauncherBuilder<SonarLintRpcClient>()
       .setLocalService(this)
       .setRemoteInterface(SonarLintRpcClient.class)
@@ -205,7 +206,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
         try {
           springApplicationContextInitializer.close();
         } catch (Exception e) {
-          throw new RuntimeException(e);
+          SonarLintLogger.get().error("Error while closing Spring context", e);
         }
       }
       ThreadJobProcessorPool.getProcessors().forEach(JobProcessor::finish);
@@ -236,7 +237,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     return getInitializedApplicationContext().getBean(StorageService.class);
   }
 
-  ExecutorService getRequestsExecutor() {
+  ExecutorServiceShutdownWatchable<ExecutorService> getRequestsExecutor() {
     return requestsExecutor;
   }
 

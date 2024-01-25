@@ -39,13 +39,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.Flow;
@@ -70,17 +70,17 @@ public class TaintIssueDownloader {
     this.enabledLanguages = enabledLanguages;
   }
 
-  public List<ServerTaintIssue> downloadTaintFromIssueSearch(ServerApi serverApi, String key, @Nullable String branchName, ProgressMonitor progress) {
+  public List<ServerTaintIssue> downloadTaintFromIssueSearch(ServerApi serverApi, String key, @Nullable String branchName, SonarLintCancelMonitor cancelMonitor) {
     var issueApi = serverApi.issue();
 
     List<ServerTaintIssue> result = new ArrayList<>();
 
-    Set<String> taintRuleKeys = serverApi.rules().getAllTaintRules(List.of(SonarLanguage.values()), progress);
+    Set<String> taintRuleKeys = serverApi.rules().getAllTaintRules(List.of(SonarLanguage.values()), cancelMonitor);
     Map<String, String> sourceCodeByKey = new HashMap<>();
-    var downloadVulnerabilitiesForRules = issueApi.downloadVulnerabilitiesForRules(key, taintRuleKeys, branchName, progress);
+    var downloadVulnerabilitiesForRules = issueApi.downloadVulnerabilitiesForRules(key, taintRuleKeys, branchName, cancelMonitor);
     downloadVulnerabilitiesForRules.getIssues()
       .stream()
-      .map(i -> convertTaintVulnerability(serverApi.source(), i, downloadVulnerabilitiesForRules.getComponentPathsByKey(), sourceCodeByKey))
+      .map(i -> convertTaintVulnerability(serverApi.source(), i, downloadVulnerabilitiesForRules.getComponentPathsByKey(), sourceCodeByKey, cancelMonitor))
       .filter(Objects::nonNull)
       .forEach(result::add);
 
@@ -94,10 +94,10 @@ public class TaintIssueDownloader {
    * @param branchName name of the branch.
    * @return List of issues. It can be empty but never null.
    */
-  public PullTaintResult downloadTaintFromPull(ServerApi serverApi, String projectKey, String branchName, Optional<Instant> lastSync) {
+  public PullTaintResult downloadTaintFromPull(ServerApi serverApi, String projectKey, String branchName, Optional<Instant> lastSync, SonarLintCancelMonitor cancelMonitor) {
     var issueApi = serverApi.issue();
 
-    var apiResult = issueApi.pullTaintIssues(projectKey, branchName, enabledLanguages, lastSync.map(Instant::toEpochMilli).orElse(null));
+    var apiResult = issueApi.pullTaintIssues(projectKey, branchName, enabledLanguages, lastSync.map(Instant::toEpochMilli).orElse(null), cancelMonitor);
     var changedIssues = apiResult.getTaintIssues()
       .stream()
       // Ignore project level issues
@@ -118,9 +118,9 @@ public class TaintIssueDownloader {
 
   @CheckForNull
   private static ServerTaintIssue convertTaintVulnerability(SourceApi sourceApi, Issue taintVulnerabilityFromWs,
-    Map<String, Path> componentPathsByKey, Map<String, String> sourceCodeByKey) {
+    Map<String, Path> componentPathsByKey, Map<String, String> sourceCodeByKey, SonarLintCancelMonitor cancelMonitor) {
     var ruleKey = RuleKey.parse(taintVulnerabilityFromWs.getRule());
-    var primaryLocation = convertPrimaryLocation(sourceApi, taintVulnerabilityFromWs, componentPathsByKey, sourceCodeByKey);
+    var primaryLocation = convertPrimaryLocation(sourceApi, taintVulnerabilityFromWs, componentPathsByKey, sourceCodeByKey, cancelMonitor);
     var filePath = primaryLocation.getFilePath();
     if (filePath == null) {
       // Ignore project level issues
@@ -143,7 +143,7 @@ public class TaintIssueDownloader {
       RuleType.valueOf(taintVulnerabilityFromWs.getType().name()),
       primaryLocation.getTextRange(), ruleDescriptionContextKey,
       cleanCodeAttribute, impacts)
-        .setFlows(convertFlows(sourceApi, taintVulnerabilityFromWs.getFlowsList(), componentPathsByKey, sourceCodeByKey));
+      .setFlows(convertFlows(sourceApi, taintVulnerabilityFromWs.getFlowsList(), componentPathsByKey, sourceCodeByKey, cancelMonitor));
   }
 
   @CheckForNull
@@ -181,12 +181,12 @@ public class TaintIssueDownloader {
   }
 
   private static List<ServerTaintIssue.Flow> convertFlows(SourceApi sourceApi, List<Flow> flowsList, Map<String, Path> componentPathsByKey,
-    Map<String, String> sourceCodeByKey) {
+    Map<String, String> sourceCodeByKey, SonarLintCancelMonitor cancelMonitor) {
     return flowsList.stream()
       .map(flowFromWs -> new ServerTaintIssue.Flow(flowFromWs.getLocationsList().stream().map(locationFromWs -> {
         var componentPath = componentPathsByKey.get(locationFromWs.getComponent());
         if (locationFromWs.hasTextRange()) {
-          var codeSnippet = getCodeSnippet(sourceApi, locationFromWs.getComponent(), locationFromWs.getTextRange(), sourceCodeByKey);
+          var codeSnippet = getCodeSnippet(sourceApi, locationFromWs.getComponent(), locationFromWs.getTextRange(), sourceCodeByKey, cancelMonitor);
           String textRangeHash;
           if (codeSnippet != null) {
             textRangeHash = hash(codeSnippet);
@@ -246,10 +246,10 @@ public class TaintIssueDownloader {
   }
 
   private static ServerTaintIssue.ServerIssueLocation convertPrimaryLocation(SourceApi sourceApi, Issue issueFromWs, Map<String, Path> componentPathsByKey,
-    Map<String, String> sourceCodeByKey) {
+    Map<String, String> sourceCodeByKey, SonarLintCancelMonitor cancelMonitor) {
     var componentPath = componentPathsByKey.get(issueFromWs.getComponent());
     if (issueFromWs.hasTextRange()) {
-      var codeSnippet = getCodeSnippet(sourceApi, issueFromWs.getComponent(), issueFromWs.getTextRange(), sourceCodeByKey);
+      var codeSnippet = getCodeSnippet(sourceApi, issueFromWs.getComponent(), issueFromWs.getTextRange(), sourceCodeByKey, cancelMonitor);
       String textRangeHash;
       if (codeSnippet != null) {
         textRangeHash = hash(codeSnippet);
@@ -272,8 +272,8 @@ public class TaintIssueDownloader {
   }
 
   @CheckForNull
-  private static String getCodeSnippet(SourceApi sourceApi, String fileKey, TextRange textRange, Map<String, String> sourceCodeByKey) {
-    var sourceCode = getOrFetchSourceCode(sourceApi, fileKey, sourceCodeByKey);
+  private static String getCodeSnippet(SourceApi sourceApi, String fileKey, TextRange textRange, Map<String, String> sourceCodeByKey, SonarLintCancelMonitor cancelMonitor) {
+    var sourceCode = getOrFetchSourceCode(sourceApi, fileKey, sourceCodeByKey, cancelMonitor);
     if (StringUtils.isEmpty(sourceCode)) {
       return null;
     }
@@ -285,9 +285,9 @@ public class TaintIssueDownloader {
     return null;
   }
 
-  private static String getOrFetchSourceCode(SourceApi sourceApi, String fileKey, Map<String, String> sourceCodeByKey) {
+  private static String getOrFetchSourceCode(SourceApi sourceApi, String fileKey, Map<String, String> sourceCodeByKey, SonarLintCancelMonitor cancelMonitor) {
     return sourceCodeByKey.computeIfAbsent(fileKey, k -> sourceApi
-      .getRawSourceCode(fileKey)
+      .getRawSourceCode(fileKey, cancelMonitor)
       .orElse(""));
   }
 

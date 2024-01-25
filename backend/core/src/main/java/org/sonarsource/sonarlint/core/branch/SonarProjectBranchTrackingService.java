@@ -30,7 +30,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelChecker;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
@@ -131,7 +131,7 @@ public class SonarProjectBranchTrackingService {
     cachedMatchingBranchByConfigScope.refreshAsync(configScopeId);
   }
 
-  private String matchSonarProjectBranch(String configurationScopeId, SonarLintCancelChecker cancelChecker) {
+  private String matchSonarProjectBranch(String configurationScopeId, SonarLintCancelMonitor cancelMonitor) {
     LOG.debug("Matching Sonar project branch for configuration scope '{}'", configurationScopeId);
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     if (effectiveBindingOpt.isEmpty()) {
@@ -147,22 +147,20 @@ public class SonarProjectBranchTrackingService {
     }
     var storedBranches = branchesStorage.read();
     var mainBranchName = storedBranches.getMainBranchName();
-    var matchedSonarBranch = requestClientToMatchSonarProjectBranch(configurationScopeId, mainBranchName, storedBranches.getBranchNames(), cancelChecker);
+    var matchedSonarBranch = requestClientToMatchSonarProjectBranch(configurationScopeId, mainBranchName, storedBranches.getBranchNames(), cancelMonitor);
     if (matchedSonarBranch == null) {
       matchedSonarBranch = mainBranchName;
     }
-    if (cancelChecker.isCanceled()) {
-      throw new CancellationException();
-    }
+    cancelMonitor.checkCanceled();
     return matchedSonarBranch;
   }
 
   @CheckForNull
   private String requestClientToMatchSonarProjectBranch(String configurationScopeId, String mainSonarBranchName, Set<String> allSonarBranchesNames,
-    SonarLintCancelChecker cancelChecker) {
+    SonarLintCancelMonitor cancelMonitor) {
     var matchSonarProjectBranchResponseCompletableFuture = client
       .matchSonarProjectBranch(new MatchSonarProjectBranchParams(configurationScopeId, mainSonarBranchName, allSonarBranchesNames));
-    cancelChecker.propagateCancelTo(matchSonarProjectBranchResponseCompletableFuture, true);
+    cancelMonitor.onCancel(() -> matchSonarProjectBranchResponseCompletableFuture.cancel(true));
     try {
       return matchSonarProjectBranchResponseCompletableFuture.join().getMatchedSonarProjectBranch();
     } catch (CancellationException e) {

@@ -22,10 +22,10 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.function.Supplier;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 
 import static org.sonarsource.sonarlint.core.serverconnection.ServerUpdaterUtils.computeLastSync;
@@ -42,34 +42,35 @@ public class ServerHotspotUpdater {
     this.hotspotDownloader = hotspotDownloader;
   }
 
-  public void updateAll(HotspotApi hotspotApi, String projectKey, String branchName, Supplier<Version> serverVersionSupplier, ProgressMonitor progress) {
+  public void updateAll(HotspotApi hotspotApi, String projectKey, String branchName, Supplier<Version> serverVersionSupplier, SonarLintCancelMonitor cancelMonitor) {
     if (hotspotApi.permitsTracking(serverVersionSupplier)) {
-      var projectHotspots = hotspotApi.getAll(projectKey, branchName, progress);
+      var projectHotspots = hotspotApi.getAll(projectKey, branchName, cancelMonitor);
       storage.project(projectKey).findings().replaceAllHotspotsOfBranch(branchName, projectHotspots);
     } else {
       LOG.info("Skip downloading hotspots from server, not supported");
     }
   }
 
-  public void updateForFile(HotspotApi hotspotApi, String projectKey, Path serverFilePath, String branchName, Supplier<Version> serverVersionSupplier) {
+  public void updateForFile(HotspotApi hotspotApi, String projectKey, Path serverFilePath, String branchName, Supplier<Version> serverVersionSupplier,
+    SonarLintCancelMonitor cancelMonitor) {
     if (hotspotApi.supportHotspotsPull(serverVersionSupplier)) {
       LOG.debug("Skip downloading file hotspots on SonarQube 10.1+");
       return;
     }
     if (hotspotApi.permitsTracking(serverVersionSupplier)) {
-      var fileHotspots = hotspotApi.getFromFile(projectKey, serverFilePath, branchName);
+      var fileHotspots = hotspotApi.getFromFile(projectKey, serverFilePath, branchName, cancelMonitor);
       storage.project(projectKey).findings().replaceAllHotspotsOfFile(branchName, serverFilePath, fileHotspots);
     } else {
       LOG.info("Skip downloading hotspots for file, not supported");
     }
   }
 
-  public void sync(HotspotApi hotspotApi, String projectKey, String branchName, Set<SonarLanguage> enabledLanguages) {
+  public void sync(HotspotApi hotspotApi, String projectKey, String branchName, Set<SonarLanguage> enabledLanguages, SonarLintCancelMonitor cancelMonitor) {
     var lastSync = storage.project(projectKey).findings().getLastHotspotSyncTimestamp(branchName);
 
     lastSync = computeLastSync(enabledLanguages, lastSync, storage.project(projectKey).findings().getLastHotspotEnabledLanguages(branchName));
 
-    var result = hotspotDownloader.downloadFromPull(hotspotApi, projectKey, branchName, lastSync);
+    var result = hotspotDownloader.downloadFromPull(hotspotApi, projectKey, branchName, lastSync, cancelMonitor);
     storage.project(projectKey).findings().mergeHotspots(branchName, result.getChangedHotspots(), result.getClosedHotspotKeys(),
       result.getQueryTimestamp(), enabledLanguages);
   }

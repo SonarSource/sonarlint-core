@@ -37,6 +37,7 @@ import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.net.URIBuilder;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -78,14 +79,14 @@ public class ShowHotspotRequestHandler implements HttpRequestHandler {
     telemetryService.showHotspotRequestReceived();
 
     requestHandlerBindingAssistant.assistConnectionAndBindingIfNeededAsync(showHotspotQuery.serverUrl, null, null, showHotspotQuery.projectKey,
-      (connectionId, configScopeId) -> showHotspotForScope(connectionId, configScopeId, showHotspotQuery.hotspotKey));
+      (connectionId, configScopeId, cancelMonitor) -> showHotspotForScope(connectionId, configScopeId, showHotspotQuery.hotspotKey, cancelMonitor));
 
     response.setCode(HttpStatus.SC_OK);
     response.setEntity(new StringEntity("OK"));
   }
 
-  private void showHotspotForScope(String connectionId, String configurationScopeId, String hotspotKey) {
-    var hotspotOpt = tryFetchHotspot(connectionId, hotspotKey);
+  private void showHotspotForScope(String connectionId, String configurationScopeId, String hotspotKey, SonarLintCancelMonitor cancelMonitor) {
+    var hotspotOpt = tryFetchHotspot(connectionId, hotspotKey, cancelMonitor);
     if (hotspotOpt.isPresent()) {
       pathTranslationService.getOrComputePathTranslation(configurationScopeId)
         .ifPresent(translation -> client.showHotspot(new ShowHotspotParams(configurationScopeId, adapt(hotspotKey, hotspotOpt.get(), translation))));
@@ -94,13 +95,13 @@ public class ShowHotspotRequestHandler implements HttpRequestHandler {
     }
   }
 
-  private Optional<ServerHotspotDetails> tryFetchHotspot(String connectionId, String hotspotKey) {
+  private Optional<ServerHotspotDetails> tryFetchHotspot(String connectionId, String hotspotKey, SonarLintCancelMonitor cancelMonitor) {
     var serverApi = serverApiProvider.getServerApi(connectionId);
     if (serverApi.isEmpty()) {
       // should not happen since we found the connection just before, improve the design ?
       return Optional.empty();
     }
-    return serverApi.get().hotspot().fetch(hotspotKey);
+    return serverApi.get().hotspot().fetch(hotspotKey, cancelMonitor);
   }
 
   private static HotspotDetailsDto adapt(String hotspotKey, ServerHotspotDetails hotspot, FilePathTranslation translation) {

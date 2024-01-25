@@ -35,7 +35,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelChecker;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
@@ -88,10 +88,10 @@ public class ClientFileSystemService {
       .collect(toList());
   }
 
-  public Map<URI, ClientFile> initializeFileSystem(String configScopeId, SonarLintCancelChecker cancelChecker) {
+  public Map<URI, ClientFile> initializeFileSystem(String configScopeId, SonarLintCancelMonitor cancelMonitor) {
     var result = new ConcurrentHashMap<URI, ClientFile>();
     var future = rpcClient.listFiles(new ListFilesParams(configScopeId));
-    cancelChecker.propagateCancelTo(future, true);
+    cancelMonitor.onCancel(() -> future.cancel(true));
     future.join().getFiles().forEach(clientFileDto -> {
       var clientFile = fromDto(clientFileDto);
       filesByUri.put(clientFileDto.getUri(), clientFile);

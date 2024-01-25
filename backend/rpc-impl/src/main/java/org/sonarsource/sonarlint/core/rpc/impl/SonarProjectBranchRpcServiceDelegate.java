@@ -40,7 +40,7 @@ class SonarProjectBranchRpcServiceDelegate extends AbstractRpcServiceDelegate im
   @Override
   public CompletableFuture<GetMatchedSonarProjectBranchResponse> getMatchedSonarProjectBranch(GetMatchedSonarProjectBranchParams params) {
     return requestAsync(
-      cancelChecker -> new GetMatchedSonarProjectBranchResponse(
+      cancelMonitor -> new GetMatchedSonarProjectBranchResponse(
         getBean(SonarProjectBranchTrackingService.class).awaitEffectiveSonarProjectBranch(params.getConfigurationScopeId()).orElse(null)));
   }
 }

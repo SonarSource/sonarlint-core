@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import testutils.MockWebServerExtensionWithProtobuf;
 
@@ -69,7 +70,7 @@ class ServerPathProviderTests {
     var client = HttpClientProvider.forTesting().getHttpClient();
     var baseUrl = mockWebServerExtension.url("");
 
-    var serverUrl = ServerPathProvider.getServerUrlForTokenGeneration(mockWebServerExtension.endpointParams(), client, 1234, "My IDE").get();
+    var serverUrl = ServerPathProvider.getServerUrlForTokenGeneration(mockWebServerExtension.endpointParams(), client, 1234, "My IDE", new SonarLintCancelMonitor());
 
     assertThat(serverUrl).isEqualTo(baseUrl + "account/security");
   }
@@ -80,7 +81,7 @@ class ServerPathProviderTests {
     var client = HttpClientProvider.forTesting().getHttpClient();
     var baseUrl = mockWebServerExtension.url("");
 
-    var serverUrl = ServerPathProvider.getFallbackServerUrlForTokenGeneration(mockWebServerExtension.endpointParams(), client, "My IDE").get();
+    var serverUrl = ServerPathProvider.getFallbackServerUrlForTokenGeneration(mockWebServerExtension.endpointParams(), client, "My IDE", new SonarLintCancelMonitor());
 
     assertThat(serverUrl).isEqualTo(baseUrl + "account/security");
   }

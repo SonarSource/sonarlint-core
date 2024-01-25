@@ -33,7 +33,7 @@ import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.branch.MatchedSonarProjectBranchChangedEvent;
 import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelChecker;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
@@ -69,7 +69,7 @@ public class PathTranslationService {
   }
 
   @CheckForNull
-  private FilePathTranslation computePaths(String configScopeId, SonarLintCancelChecker cancelChecker) {
+  private FilePathTranslation computePaths(String configScopeId, SonarLintCancelMonitor cancelMonitor) {
     LOG.debug("Computing paths translation for config scope '{}'...", configScopeId);
     var fileMatcher = new FileTreeMatcher();
     var boundScope = configurationRepository.getBoundScope(configScopeId);
@@ -84,7 +84,7 @@ public class PathTranslationService {
     }
     List<Path> serverFilePaths;
     try {
-      serverFilePaths = listAllFilePathsFromServer(serverApiOpt.get(), boundScope.getSonarProjectKey(), cancelChecker);
+      serverFilePaths = listAllFilePathsFromServer(serverApiOpt.get(), boundScope.getSonarProjectKey(), cancelMonitor);
     } catch (CancellationException e) {
       throw e;
     } catch (Exception e) {
@@ -107,8 +107,8 @@ public class PathTranslationService {
     return new FilePathTranslation(match.idePrefix(), match.sqPrefix());
   }
 
-  private static List<Path> listAllFilePathsFromServer(ServerApi serverApi, String projectKey, SonarLintCancelChecker cancelChecker) {
-    return serverApi.component().getAllFileKeys(projectKey, cancelChecker).stream()
+  private static List<Path> listAllFilePathsFromServer(ServerApi serverApi, String projectKey, SonarLintCancelMonitor cancelMonitor) {
+    return serverApi.component().getAllFileKeys(projectKey, cancelMonitor).stream()
       .map(fileKey -> StringUtils.substringAfterLast(fileKey, ":"))
       .map(Paths::get)
       .collect(toList());

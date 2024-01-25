@@ -25,7 +25,7 @@ import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -43,8 +43,6 @@ class OrganizationApiTests {
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
-  private final ProgressMonitor progressMonitor = new ProgressMonitor(null);
-
   @Test
   void testListUserOrganizationWithMoreThan20Pages() {
     var underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams("myOrg"), HttpClientProvider.forTesting().getHttpClient()));
@@ -55,7 +53,7 @@ class OrganizationApiTests {
       mockOrganizationsPage(i + 1, 10500);
     }
 
-    var orgs = underTest.listUserOrganizations(progressMonitor);
+    var orgs = underTest.listUserOrganizations(new SonarLintCancelMonitor());
 
     assertThat(orgs).hasSize(10500);
   }
@@ -76,7 +74,7 @@ class OrganizationApiTests {
     mockServer.addProtobufResponse("/api/organizations/search.protobuf?organizations=org%3Akey&ps=500&p=2", SearchWsResponse.newBuilder().build());
     var underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()));
 
-    var organization = underTest.getOrganization("org:key", progressMonitor);
+    var organization = underTest.getOrganization("org:key", new SonarLintCancelMonitor());
 
     assertThat(organization).hasValueSatisfying(org -> {
       assertThat(org.getKey()).isEqualTo("orgKey");

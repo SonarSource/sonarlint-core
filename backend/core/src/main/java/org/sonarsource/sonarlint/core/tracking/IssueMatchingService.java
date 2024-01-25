@@ -21,15 +21,14 @@ package org.sonarsource.sonarlint.core.tracking;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
@@ -37,7 +36,6 @@ import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
@@ -47,6 +45,7 @@ import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.issue.matching.IssueMatcher;
@@ -63,9 +62,6 @@ import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.IssueSynchronizationService;
-import org.sonarsource.sonarlint.core.utils.FutureUtils;
-
-import static org.sonarsource.sonarlint.core.utils.FutureUtils.waitForTasks;
 
 @Named
 @Singleton
@@ -99,7 +95,7 @@ public class IssueMatchingService {
 
   public Map<Path, List<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>> trackWithServerIssues(String configurationScopeId,
     Map<Path, List<ClientTrackedFindingDto>> clientTrackedIssuesByIdeRelativePath,
-    boolean shouldFetchIssuesFromServer, CancelChecker cancelChecker) {
+    boolean shouldFetchIssuesFromServer, SonarLintCancelMonitor cancelMonitor) {
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     var activeBranchOpt = branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId);
     var translationOpt = pathTranslationService.getOrComputePathTranslation(configurationScopeId);
@@ -114,7 +110,7 @@ public class IssueMatchingService {
     var activeBranch = activeBranchOpt.get();
     var translation = translationOpt.get();
     if (shouldFetchIssuesFromServer) {
-      refreshServerIssues(cancelChecker, binding, activeBranch, clientTrackedIssuesByIdeRelativePath, translation);
+      refreshServerIssues(cancelMonitor, binding, activeBranch, clientTrackedIssuesByIdeRelativePath, translation);
     }
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId)
       .orElse(NewCodeDefinition.withAlwaysNew());
@@ -144,21 +140,21 @@ public class IssueMatchingService {
     }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
-  private void refreshServerIssues(CancelChecker cancelChecker, Binding binding, String activeBranch,
+  private void refreshServerIssues(SonarLintCancelMonitor cancelMonitor, Binding binding, String activeBranch,
     Map<Path, List<ClientTrackedFindingDto>> clientTrackedIssuesByIdeRelativePath, FilePathTranslation translation) {
     var serverFileRelativePaths = clientTrackedIssuesByIdeRelativePath.keySet()
       .stream().map(translation::serverToIdePath).collect(Collectors.toSet());
     var downloadAllIssuesAtOnce = serverFileRelativePaths.size() > FETCH_ALL_ISSUES_THRESHOLD;
-    var fetchTasks = new LinkedList<Future<?>>();
+    var fetchTasks = new LinkedList<CompletableFuture<?>>();
     if (downloadAllIssuesAtOnce) {
-      fetchTasks.add(executorService.submit(() -> issueSynchronizationService.fetchProjectIssues(binding, activeBranch)));
+      fetchTasks.add(CompletableFuture.runAsync(() -> issueSynchronizationService.fetchProjectIssues(binding, activeBranch, cancelMonitor), executorService));
     } else {
       fetchTasks.addAll(serverFileRelativePaths.stream()
-        .map(serverFileRelativePath -> executorService.submit(() -> issueSynchronizationService.fetchFileIssues(binding, serverFileRelativePath, activeBranch)))
+        .map(serverFileRelativePath -> CompletableFuture.runAsync(() -> issueSynchronizationService
+          .fetchFileIssues(binding, serverFileRelativePath, activeBranch, cancelMonitor), executorService))
         .collect(Collectors.toList()));
     }
-    var waitForTasksTask = executorService.submit(() -> waitForTasks(cancelChecker, fetchTasks, "Wait for server issues", Duration.ofSeconds(20)));
-    FutureUtils.waitForTask(cancelChecker, waitForTasksTask, "Wait for server issues (global timeout)", Duration.ofSeconds(60));
+    CompletableFuture.allOf(fetchTasks.toArray(new CompletableFuture[0])).join();
   }
 
   private List<Either<ServerIssue<?>, LocalOnlyIssue>> matchIssues(Path serverRelativePath, List<ServerIssue<?>> serverIssues,
