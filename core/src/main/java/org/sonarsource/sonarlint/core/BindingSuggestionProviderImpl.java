@@ -230,7 +230,7 @@ public class BindingSuggestionProviderImpl implements BindingService {
 
   private void searchGoodMatchInConnection(List<BindingSuggestionDto> suggestions, String configScopeName, String connectionId, @Nullable String projectKey) {
     LOG.debug("Attempt to find a good match for '{}' on connection '{}'...", configScopeName, connectionId);
-    var index = sonarProjectsCache.getTextSearchIndex(connectionId, projectKey);
+    var index = sonarProjectsCache.getTextSearchIndexCached(connectionId, projectKey);
     var searchResult = index.search(configScopeName);
     if (!searchResult.isEmpty()) {
       Double bestScore = Double.MIN_VALUE;

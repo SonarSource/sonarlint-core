@@ -118,35 +118,40 @@ public class SonarProjectsCache {
     }
   }
 
-  public TextSearchIndex<ServerProject> getTextSearchIndex(String connectionId, @Nullable String projectKey) {
+  public TextSearchIndex<ServerProject> getTextSearchIndexCached(String connectionId, @Nullable String projectKey) {
     try {
-      return textSearchIndexCache.get(connectionId, () -> {
-        LOG.debug("Load projects from connection '{}'...", connectionId);
-        List<ServerProject> projects;
-        try {
-          if (projectKey != null) {
-            var optProject = serverApiProvider.getServerApi(connectionId).map(s -> s.component().getProject(projectKey))
-              .orElseThrow(() -> new IllegalStateException("Project not found"));
-            projects = optProject.map(List::of).orElseGet(List::of);
-          } else {
-            projects = serverApiProvider.getServerApi(connectionId).map(s -> s.component().getAllProjects(new ProgressMonitor(null))).orElse(List.of());
-          }
-        } catch (Exception e) {
-          LOG.error("Error while querying projects from connection '{}'", connectionId, e);
-          return new TextSearchIndex<>();
-        }
-        if (projects.isEmpty()) {
-          LOG.debug("No projects found for connection '{}'", connectionId);
-          return new TextSearchIndex<>();
-        } else {
-          LOG.debug("Creating index for {} {}", projects.size(), singlePlural(projects.size(), "project", "projects"));
-          var index = new TextSearchIndex<ServerProject>();
-          projects.forEach(p -> index.index(p, p.getKey() + " " + p.getName()));
-          return index;
-        }
-      });
+      if (projectKey != null) {
+        return getTextSearchIndex(connectionId, projectKey);
+      }
+      return textSearchIndexCache.get(connectionId, () -> getTextSearchIndex(connectionId, null));
     } catch (ExecutionException e) {
       throw new IllegalStateException(e.getCause());
+    }
+  }
+
+  private TextSearchIndex<ServerProject> getTextSearchIndex(String connectionId, @Nullable String projectKey) {
+    LOG.debug("Load projects from connection '{}'...", connectionId);
+    List<ServerProject> projects;
+    try {
+      if (projectKey != null) {
+        var optProject = serverApiProvider.getServerApi(connectionId).map(s -> s.component().getProject(projectKey))
+          .orElseThrow(() -> new IllegalStateException("Project not found"));
+        projects = optProject.map(List::of).orElseGet(List::of);
+      } else {
+        projects = serverApiProvider.getServerApi(connectionId).map(s -> s.component().getAllProjects(new ProgressMonitor(null))).orElse(List.of());
+      }
+    } catch (Exception e) {
+      LOG.error("Error while querying projects from connection '{}'", connectionId, e);
+      return new TextSearchIndex<>();
+    }
+    if (projects.isEmpty()) {
+      LOG.debug("No projects found for connection '{}'", connectionId);
+      return new TextSearchIndex<>();
+    } else {
+      LOG.debug("Creating index for {} {}", projects.size(), singlePlural(projects.size(), "project", "projects"));
+      var index = new TextSearchIndex<ServerProject>();
+      projects.forEach(p -> index.index(p, p.getKey() + " " + p.getName()));
+      return index;
     }
   }
 
