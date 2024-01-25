@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.serverapi;
 
 import org.sonarsource.sonarlint.core.http.HttpClient;
+import org.sonarsource.sonarlint.core.serverapi.authentication.AuthenticationApi;
 import org.sonarsource.sonarlint.core.serverapi.branches.ProjectBranchesApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi;
 import org.sonarsource.sonarlint.core.serverapi.developers.DevelopersApi;
@@ -45,6 +46,10 @@ public class ServerApi {
 
   public ServerApi(ServerApiHelper helper) {
     this.helper = helper;
+  }
+
+  public AuthenticationApi authentication() {
+    return new AuthenticationApi(helper);
   }
 
   public ComponentApi component() {

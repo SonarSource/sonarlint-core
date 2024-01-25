@@ -193,6 +193,10 @@ public class TextSearchIndex<T> {
     return terms;
   }
 
+  public List<T> getAll() {
+    return List.copyOf(objToWordFrequency.keySet());
+  }
+
   private class SearchResult {
     private double score;
     private final T obj;

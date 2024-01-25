@@ -27,14 +27,20 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import javax.annotation.CheckForNull;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.http.HttpClient;
+import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.OrganizationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.organization.OrganizationApi;
 
 import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singlePlural;
 
@@ -46,14 +52,14 @@ import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singleP
 public class OrganizationsCache {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private final ConnectionService connectionService;
+  private final ServerApiProvider serverApiProvider;
 
   private final Cache<Either<TokenDto, UsernamePasswordDto>, TextSearchIndex<OrganizationDto>> textSearchIndexCacheByCredentials = CacheBuilder.newBuilder()
     .expireAfterWrite(5, TimeUnit.MINUTES)
     .build();
 
-  public OrganizationsCache(ConnectionService connectionService) {
-    this.connectionService = connectionService;
+  public OrganizationsCache(ServerApiProvider serverApiProvider) {
+    this.serverApiProvider = serverApiProvider;
   }
 
   public List<OrganizationDto> fuzzySearchOrganizations(Either<TokenDto, UsernamePasswordDto> credentials, String searchText, SonarLintCancelMonitor cancelMonitor) {
@@ -73,7 +79,9 @@ public class OrganizationsCache {
         LOG.debug("Load user organizations...");
         List<OrganizationDto> orgs;
         try {
-          orgs = connectionService.listUserOrganizations(credentials, cancelMonitor);
+          var serverApi = serverApiProvider.getForSonarCloudNoOrg(credentials);
+          var serverOrganizations = serverApi.organization().listUserOrganizations(cancelMonitor);
+          orgs = serverOrganizations.stream().map(o -> new OrganizationDto(o.getKey(), o.getName(), o.getDescription())).collect(Collectors.toList());
         } catch (Exception e) {
           LOG.error("Error while querying SonarCloud organizations", e);
           return new TextSearchIndex<>();
@@ -93,5 +101,16 @@ public class OrganizationsCache {
     }
   }
 
+  public List<OrganizationDto> listUserOrganizations(Either<TokenDto, UsernamePasswordDto> credentials, SonarLintCancelMonitor cancelMonitor) {
+    textSearchIndexCacheByCredentials.invalidate(credentials);
+    return getTextSearchIndex(credentials, cancelMonitor).getAll();
+  }
+
+  @CheckForNull
+  public OrganizationDto getOrganization(Either<TokenDto, UsernamePasswordDto> credentials, String organizationKey, SonarLintCancelMonitor cancelMonitor) {
+    var helper = serverApiProvider.getForSonarCloudNoOrg(credentials);
+    var serverOrganization = helper.organization().getOrganization(organizationKey, cancelMonitor);
+    return serverOrganization.map(o -> new OrganizationDto(o.getKey(), o.getName(), o.getDescription())).orElse(null);
+  }
 
 }

@@ -22,26 +22,25 @@ package org.sonarsource.sonarlint.core.serverapi.authentication;
 import com.google.gson.Gson;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverapi.system.DefaultValidationResult;
 import org.sonarsource.sonarlint.core.serverapi.system.ValidationResult;
 
-public class AuthenticationChecker {
+public class AuthenticationApi {
 
   private final ServerApiHelper serverApiHelper;
 
-  public AuthenticationChecker(ServerApiHelper serverApiHelper) {
+  public AuthenticationApi(ServerApiHelper serverApiHelper) {
     this.serverApiHelper = serverApiHelper;
   }
 
-  public ValidationResult validateCredentials(SonarLintCancelMonitor cancelMonitor) {
+  public ValidationResult validate(SonarLintCancelMonitor cancelMonitor) {
     try (var response = serverApiHelper.rawGet("api/authentication/validate?format=json", cancelMonitor)) {
       var code = response.code();
       if (response.isSuccessful()) {
         var responseStr = response.bodyAsString();
         var validateResponse = new Gson().fromJson(responseStr, ValidateResponse.class);
-        return new DefaultValidationResult(validateResponse.valid, validateResponse.valid ? "Authentication successful" : "Authentication failed");
+        return new ValidationResult(validateResponse.valid, validateResponse.valid ? "Authentication successful" : "Authentication failed");
       } else {
-        return new DefaultValidationResult(false, "HTTP Connection failed (" + code + "): " + response.bodyAsString());
+        return new ValidationResult(false, "HTTP Connection failed (" + code + "): " + response.bodyAsString());
       }
     }
   }

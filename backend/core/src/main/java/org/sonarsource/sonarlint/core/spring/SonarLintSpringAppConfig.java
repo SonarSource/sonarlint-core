@@ -55,7 +55,6 @@ import org.sonarsource.sonarlint.core.http.AskClientCertificatePredicate;
 import org.sonarsource.sonarlint.core.http.ClientProxyCredentialsProvider;
 import org.sonarsource.sonarlint.core.http.ClientProxySelector;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
-import org.sonarsource.sonarlint.core.http.ConnectionUnawareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.issue.IssueService;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
@@ -101,7 +100,6 @@ import org.springframework.scheduling.support.TaskUtils;
   ClientProxySelector.class,
   ClientProxyCredentialsProvider.class,
   ConnectionAwareHttpClientProvider.class,
-  ConnectionUnawareHttpClientProvider.class,
   ConfigurationService.class,
   ConfigurationRepository.class,
   RulesService.class,

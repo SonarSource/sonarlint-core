@@ -78,12 +78,12 @@ class ConnectionRpcServiceDelegate extends AbstractRpcServiceDelegate implements
 
   @Override
   public CompletableFuture<ListUserOrganizationsResponse> listUserOrganizations(ListUserOrganizationsParams params) {
-    return requestAsync(cancelMonitor -> new ListUserOrganizationsResponse(getBean(ConnectionService.class).listUserOrganizations(params.getCredentials(), cancelMonitor)));
+    return requestAsync(cancelMonitor -> new ListUserOrganizationsResponse(getBean(OrganizationsCache.class).listUserOrganizations(params.getCredentials(), cancelMonitor)));
   }
 
   @Override
   public CompletableFuture<GetOrganizationResponse> getOrganization(GetOrganizationParams params) {
-    return requestAsync(cancelMonitor -> new GetOrganizationResponse(getBean(ConnectionService.class)
+    return requestAsync(cancelMonitor -> new GetOrganizationResponse(getBean(OrganizationsCache.class)
       .getOrganization(params.getCredentials(), params.getOrganizationKey(), cancelMonitor)));
   }
 
