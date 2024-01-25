@@ -19,12 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects;
 
-public class SearchProjectsParams {
+public class FuzzySearchProjectsParams {
 
   private final String connectionId;
   private final String searchText;
 
-  public SearchProjectsParams(String connectionId, String searchText) {
+  public FuzzySearchProjectsParams(String connectionId, String searchText) {
     this.connectionId = connectionId;
     this.searchText = searchText;
   }

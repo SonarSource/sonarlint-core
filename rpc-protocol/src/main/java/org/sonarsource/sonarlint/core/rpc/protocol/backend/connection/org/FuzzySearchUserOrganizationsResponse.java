@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Server API
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,24 +17,19 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverapi.organization;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org;
 
-import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations.Organization;
+import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
+public class FuzzySearchUserOrganizationsResponse {
 
-class DefaultRemoteOrganizationTests {
-  @Test
-  void testRoundTrip() {
-    var org = Organization.newBuilder()
-      .setName("name")
-      .setKey("key")
-      .setDescription("desc")
-      .build();
-    ServerOrganization remoteOrg = new DefaultRemoteOrganization(org);
-    assertThat(remoteOrg.getKey()).isEqualTo("key");
-    assertThat(remoteOrg.getName()).isEqualTo("name");
-    assertThat(remoteOrg.getDescription()).isEqualTo("desc");
+  private final List<OrganizationDto> topResults;
+
+  public FuzzySearchUserOrganizationsResponse(List<OrganizationDto> topResults) {
+    this.topResults = topResults;
+  }
+
+  public List<OrganizationDto> getTopResults() {
+    return topResults;
   }
 }

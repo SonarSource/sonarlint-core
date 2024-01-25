@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.BindingClueProvider;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
 import org.sonarsource.sonarlint.core.ConfigurationService;
 import org.sonarsource.sonarlint.core.ConnectionService;
+import org.sonarsource.sonarlint.core.OrganizationsCache;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.TokenGeneratorHelper;
@@ -150,7 +151,8 @@ import org.springframework.scheduling.support.TaskUtils;
   ClientFileSystemService.class,
   PathTranslationService.class,
   FileExclusionService.class,
-  NodeJsService.class
+  NodeJsService.class,
+  OrganizationsCache.class
 })
 public class SonarLintSpringAppConfig {
 

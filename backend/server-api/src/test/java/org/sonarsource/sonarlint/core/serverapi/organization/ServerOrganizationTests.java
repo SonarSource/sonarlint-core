@@ -19,31 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.organization;
 
+import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations.Organization;
 
-public class DefaultRemoteOrganization implements ServerOrganization {
-  private final String key;
-  private final String name;
-  private final String description;
+import static org.assertj.core.api.Assertions.assertThat;
 
-  public DefaultRemoteOrganization(Organization org) {
-    this.key = org.getKey();
-    this.name = org.getName();
-    this.description = org.getDescription();
-  }
-
-  @Override
-  public String getKey() {
-    return key;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-
-  @Override
-  public String getDescription() {
-    return description;
+class ServerOrganizationTests {
+  @Test
+  void testRoundTrip() {
+    var org = Organization.newBuilder()
+      .setName("name")
+      .setKey("key")
+      .setDescription("desc")
+      .build();
+    ServerOrganization remoteOrg = new ServerOrganization(org);
+    assertThat(remoteOrg.getKey()).isEqualTo("key");
+    assertThat(remoteOrg.getName()).isEqualTo("name");
+    assertThat(remoteOrg.getDescription()).isEqualTo("desc");
   }
 }

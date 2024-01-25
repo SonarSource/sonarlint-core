@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.common;
 
 
+import java.util.Objects;
+
 public class TokenDto {
 
   private final String token;
@@ -30,5 +32,22 @@ public class TokenDto {
 
   public String getToken() {
     return token;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    var tokenDto = (TokenDto) o;
+    return Objects.equals(token, tokenDto.token);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(token);
   }
 }

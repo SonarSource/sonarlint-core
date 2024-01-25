@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.ConnectionService;
+import org.sonarsource.sonarlint.core.OrganizationsCache;
 import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams;
@@ -29,14 +30,16 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.check.Chec
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.check.CheckSmartNotificationsSupportedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidChangeCredentialsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.FuzzySearchUserOrganizationsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.FuzzySearchUserOrganizationsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUserOrganizationsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUserOrganizationsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.FuzzySearchProjectsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.FuzzySearchProjectsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SearchProjectsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SearchProjectsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionResponse;
 
@@ -85,13 +88,19 @@ class ConnectionRpcServiceDelegate extends AbstractRpcServiceDelegate implements
   }
 
   @Override
+  public CompletableFuture<FuzzySearchUserOrganizationsResponse> fuzzySearchUserOrganizations(FuzzySearchUserOrganizationsParams params) {
+    return requestAsync(cancelMonitor -> new FuzzySearchUserOrganizationsResponse(getBean(OrganizationsCache.class)
+      .fuzzySearchOrganizations(params.getCredentials(), params.getSearchText(), cancelMonitor)));
+  }
+
+  @Override
   public CompletableFuture<GetAllProjectsResponse> getAllProjects(GetAllProjectsParams params) {
     return requestAsync(cancelMonitor -> new GetAllProjectsResponse(getBean(ConnectionService.class).getAllProjects(params.getTransientConnection(), cancelMonitor)));
   }
 
   @Override
-  public CompletableFuture<SearchProjectsResponse> searchProjects(SearchProjectsParams params) {
-    return requestAsync(cancelMonitor -> new SearchProjectsResponse(getBean(SonarProjectsCache.class)
-      .searchProjects(params.getConnectionId(), params.getSearchText(), cancelMonitor)));
+  public CompletableFuture<FuzzySearchProjectsResponse> fuzzySearchProjects(FuzzySearchProjectsParams params) {
+    return requestAsync(cancelMonitor -> new FuzzySearchProjectsResponse(getBean(SonarProjectsCache.class)
+      .fuzzySearchProjects(params.getConnectionId(), params.getSearchText(), cancelMonitor)));
   }
 }

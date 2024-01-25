@@ -30,7 +30,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.Tra
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SearchProjectsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.FuzzySearchProjectsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProjectDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 
@@ -108,7 +108,7 @@ class ConnectionGetAllProjectsMediumTests {
   }
 
   @Test
-  void it_should_search_for_projects_on_sonarqube() {
+  void it_should_fuzzy_search_for_projects_on_sonarqube() {
     server = newSonarQubeServer()
       .withProject("mycompany:project-foo1", project -> project.withName("My Company Project Foo 1"))
       .withProject("mycompany:project-foo2", project -> project.withName("My Company Project Foo 2"))
@@ -118,11 +118,11 @@ class ConnectionGetAllProjectsMediumTests {
       .withSonarQubeConnection("connectionId", server.baseUrl())
       .build();
 
-    var emptySearch = backend.getConnectionService().searchProjects(new SearchProjectsParams("connectionId", "")).join();
+    var emptySearch = backend.getConnectionService().fuzzySearchProjects(new FuzzySearchProjectsParams("connectionId", "")).join();
     assertThat(emptySearch.getTopResults())
       .isEmpty();
 
-    var searchMy = backend.getConnectionService().searchProjects(new SearchProjectsParams("connectionId", "My")).join();
+    var searchMy = backend.getConnectionService().fuzzySearchProjects(new FuzzySearchProjectsParams("connectionId", "My")).join();
     assertThat(searchMy.getTopResults())
       .extracting(SonarProjectDto::getKey, SonarProjectDto::getName)
       .containsExactly(
@@ -130,14 +130,14 @@ class ConnectionGetAllProjectsMediumTests {
         tuple("mycompany:project-foo1", "My Company Project Foo 1"),
         tuple("mycompany:project-foo2", "My Company Project Foo 2"));
 
-    var searchFooByName = backend.getConnectionService().searchProjects(new SearchProjectsParams("connectionId", "Foo")).join();
+    var searchFooByName = backend.getConnectionService().fuzzySearchProjects(new FuzzySearchProjectsParams("connectionId", "Foo")).join();
     assertThat(searchFooByName.getTopResults())
       .extracting(SonarProjectDto::getKey, SonarProjectDto::getName)
       .containsExactly(
         tuple("mycompany:project-foo1", "My Company Project Foo 1"),
         tuple("mycompany:project-foo2", "My Company Project Foo 2"));
 
-    var searchBarByKey = backend.getConnectionService().searchProjects(new SearchProjectsParams("connectionId", "project-bar")).join();
+    var searchBarByKey = backend.getConnectionService().fuzzySearchProjects(new FuzzySearchProjectsParams("connectionId", "project-bar")).join();
     assertThat(searchBarByKey.getTopResults())
       .extracting(SonarProjectDto::getKey, SonarProjectDto::getName)
       .containsExactly(

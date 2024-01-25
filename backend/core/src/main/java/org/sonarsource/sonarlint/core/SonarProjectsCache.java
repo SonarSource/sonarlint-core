@@ -56,7 +56,7 @@ public class SonarProjectsCache {
     .expireAfterWrite(1, TimeUnit.HOURS)
     .build();
 
-  public List<SonarProjectDto> searchProjects(String connectionId, String searchText, SonarLintCancelMonitor cancelMonitor) {
+  public List<SonarProjectDto> fuzzySearchProjects(String connectionId, String searchText, SonarLintCancelMonitor cancelMonitor) {
     return getTextSearchIndex(connectionId, cancelMonitor).search(searchText)
       .entrySet()
       .stream()

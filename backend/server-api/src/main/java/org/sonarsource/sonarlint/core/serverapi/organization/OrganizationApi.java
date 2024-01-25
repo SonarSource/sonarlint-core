@@ -57,7 +57,7 @@ public class OrganizationApi {
       Organizations.SearchWsResponse::parseFrom,
       r -> r.getPaging().getTotal(),
       Organizations.SearchWsResponse::getOrganizationsList,
-      org -> result.add(new DefaultRemoteOrganization(org)),
+      org -> result.add(new ServerOrganization(org)),
       false,
       cancelMonitor);
 
