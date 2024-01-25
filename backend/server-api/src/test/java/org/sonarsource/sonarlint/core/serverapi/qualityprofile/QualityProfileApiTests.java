@@ -46,7 +46,8 @@ class QualityProfileApiTests {
 
     mockServer.addResponse("/api/qualityprofiles/search.protobuf?project=projectKey", new MockResponse().setResponseCode(404));
 
-    assertThrows(ProjectNotFoundException.class, () -> underTest.getQualityProfiles("projectKey", new SonarLintCancelMonitor()));
+    var cancelMonitor = new SonarLintCancelMonitor();
+    assertThrows(ProjectNotFoundException.class, () -> underTest.getQualityProfiles("projectKey", cancelMonitor));
   }
 
   @Test
@@ -55,7 +56,8 @@ class QualityProfileApiTests {
 
     mockServer.addResponse("/api/qualityprofiles/search.protobuf?project=projectKey", new MockResponse().setResponseCode(503));
 
-    assertThrows(ServerErrorException.class, () -> underTest.getQualityProfiles("projectKey", new SonarLintCancelMonitor()));
+    var cancelMonitor = new SonarLintCancelMonitor();
+    assertThrows(ServerErrorException.class, () -> underTest.getQualityProfiles("projectKey", cancelMonitor));
   }
 
   @Test

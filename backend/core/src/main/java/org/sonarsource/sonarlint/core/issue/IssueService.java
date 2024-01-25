@@ -54,7 +54,6 @@ import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
 import org.sonarsource.sonarlint.core.storage.StorageService;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
@@ -84,18 +83,16 @@ public class IssueService {
   private final StorageService storageService;
   private final LocalOnlyIssueStorageService localOnlyIssueStorageService;
   private final LocalOnlyIssueRepository localOnlyIssueRepository;
-  private final TelemetryService telemetryService;
   private final ApplicationEventPublisher eventPublisher;
 
   public IssueService(ConfigurationRepository configurationRepository, ServerApiProvider serverApiProvider, StorageService storageService,
-    LocalOnlyIssueStorageService localOnlyIssueStorageService, TelemetryService telemetryService, LocalOnlyIssueRepository localOnlyIssueRepository,
+    LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
     ApplicationEventPublisher eventPublisher) {
     this.configurationRepository = configurationRepository;
     this.serverApiProvider = serverApiProvider;
     this.storageService = storageService;
     this.localOnlyIssueStorageService = localOnlyIssueStorageService;
     this.localOnlyIssueRepository = localOnlyIssueRepository;
-    this.telemetryService = telemetryService;
     this.eventPublisher = eventPublisher;
   }
 
@@ -173,7 +170,7 @@ public class IssueService {
         return toResponse(statuses, UNSUPPORTED_SQ_VERSION_REASON);
       })
       .orElseGet(() -> {
-        Issues.Issue issue = serverApi.issue().searchByKey(issueKey, cancelMonitor);
+        var issue = serverApi.issue().searchByKey(issueKey, cancelMonitor);
         return toResponse(getAdministerIssueTransitions(issue), STATUS_CHANGE_PERMISSION_MISSING_REASON);
       });
   }

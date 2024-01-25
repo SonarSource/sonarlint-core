@@ -69,7 +69,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   private final AtomicBoolean initializeCalled = new AtomicBoolean(false);
   private final AtomicBoolean initialized = new AtomicBoolean(false);
   private final Future<Void> launcherFuture;
-  private final ExecutorServiceShutdownWatchable<?> requestsExecutor;
+  private final ExecutorServiceShutdownWatchable<ExecutorService> requestsExecutor;
   private final ExecutorService requestAndNotificationsSequentialExecutor;
   private final RpcClientLogOutput logOutput;
   private SpringApplicationContextInitializer springApplicationContextInitializer;
@@ -206,7 +206,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
         try {
           springApplicationContextInitializer.close();
         } catch (Exception e) {
-          throw new RuntimeException(e);
+          SonarLintLogger.get().error("Error while closing Spring context", e);
         }
       }
       ThreadJobProcessorPool.getProcessors().forEach(JobProcessor::finish);
@@ -237,7 +237,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     return getInitializedApplicationContext().getBean(StorageService.class);
   }
 
-  ExecutorServiceShutdownWatchable<?> getRequestsExecutor() {
+  ExecutorServiceShutdownWatchable<ExecutorService> getRequestsExecutor() {
     return requestsExecutor;
   }
 

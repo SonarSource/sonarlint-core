@@ -154,7 +154,8 @@ class HotspotApiTests {
   void it_should_throw_when_parser_throws_an_exception() {
     mockServer.addProtobufResponse("/api/hotspots/show.protobuf?hotspot=h", Issues.SearchWsResponse.newBuilder().build());
 
-    assertThrows(IllegalArgumentException.class, () -> underTest.fetch("h", new SonarLintCancelMonitor()));
+    var cancelMonitor = new SonarLintCancelMonitor();
+    assertThrows(IllegalArgumentException.class, () -> underTest.fetch("h", cancelMonitor));
   }
 
   @Test
@@ -337,10 +338,10 @@ class HotspotApiTests {
   }
 
   @Test
-  void sonar_cloud_should_not_permit_tracking_hotspots() {
+  void sonar_cloud_should_permit_tracking_hotspots() {
     var hotspotApi = new HotspotApi(new ServerApiHelper(new EndpointParams("https://sonarcloud.io", true, "org"), HttpClientProvider.forTesting().getHttpClient()));
 
-    var permitsTracking = hotspotApi.permitsTracking(null);
+    var permitsTracking = hotspotApi.permitsTracking(() -> Version.create("1.0"));
 
     assertThat(permitsTracking).isTrue();
   }

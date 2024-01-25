@@ -31,7 +31,7 @@ import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 /**
  * @deprecated since 7.0. Use helpGenerateUserToken RPC method instead.
  */
-@Deprecated
+@Deprecated(since = "10.0")
 public class ServerPathProvider {
 
   private ServerPathProvider() {

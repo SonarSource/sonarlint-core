@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.commons.progress;
 import java.util.Deque;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ExecutorService;
 
 public class SonarLintCancelMonitor {
 

@@ -280,7 +280,7 @@ public class SynchronizationService {
 
   private boolean shouldSynchronizeScope(BoundScope configScope) {
     var syncPeriod = Long.parseLong(System.getProperty("sonarlint.internal.synchronization.scope.period", "300"));
-    var result = synchronizationTimestampRepository.getLastSynchronizationDate(configScope.getConfigScopeId())
+    boolean result = synchronizationTimestampRepository.getLastSynchronizationDate(configScope.getConfigScopeId())
       .map(lastSync -> lastSync.isBefore(Instant.now().minus(syncPeriod, ChronoUnit.SECONDS)))
       .orElse(true);
     if (!result) {
@@ -304,7 +304,7 @@ public class SynchronizationService {
 
   @PreDestroy
   public void shutdown() {
-    if (scheduledSynchronizer != null && !MoreExecutors.shutdownAndAwaitTermination(scheduledSynchronizer, 5, TimeUnit.SECONDS)) {
+    if (!MoreExecutors.shutdownAndAwaitTermination(scheduledSynchronizer, 5, TimeUnit.SECONDS)) {
       LOG.warn("Unable to stop synchronizer executor service in a timely manner");
     }
   }

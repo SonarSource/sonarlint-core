@@ -151,9 +151,7 @@ public class SonarProjectBranchTrackingService {
     if (matchedSonarBranch == null) {
       matchedSonarBranch = mainBranchName;
     }
-    if (cancelMonitor.isCanceled()) {
-      throw new CancellationException();
-    }
+    cancelMonitor.checkCanceled();
     return matchedSonarBranch;
   }
 

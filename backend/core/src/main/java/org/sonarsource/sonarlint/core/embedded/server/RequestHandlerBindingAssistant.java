@@ -95,8 +95,7 @@ public class RequestHandlerBindingAssistant {
     }
   }
 
-  private AssistCreatingConnectionResponse assistCreatingConnectionAndWaitForRepositoryUpdate(String serverUrl, @Nullable String tokenName, @Nullable String tokenValue)
-    throws InterruptedException {
+  private AssistCreatingConnectionResponse assistCreatingConnectionAndWaitForRepositoryUpdate(String serverUrl, @Nullable String tokenName, @Nullable String tokenValue) {
     var assistNewConnectionResult = assistCreatingConnection(serverUrl, tokenName, tokenValue);
 
     // Wait 5s for the connection to be created in the repository. This is happening asynchronously by the
@@ -106,7 +105,7 @@ public class RequestHandlerBindingAssistant {
       if (connectionConfigurationRepository.getConnectionsById().containsKey(assistNewConnectionResult.getNewConnectionId())) {
         break;
       }
-      Thread.sleep(100);
+      sleep();
     }
     if (!connectionConfigurationRepository.getConnectionsById().containsKey(assistNewConnectionResult.getNewConnectionId())) {
       LOG.warn("Did not receive connection creation notification on a timely manner");
@@ -116,7 +115,7 @@ public class RequestHandlerBindingAssistant {
     return assistNewConnectionResult;
   }
 
-  private void assistBindingIfNeeded(String connectionId, String projectKey, Callback callback, SonarLintCancelMonitor cancelMonitor) throws InterruptedException {
+  private void assistBindingIfNeeded(String connectionId, String projectKey, Callback callback, SonarLintCancelMonitor cancelMonitor) {
     var scopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, projectKey);
     if (scopes.isEmpty()) {
       var assistNewBindingResult = assistBindingAndWaitForRepositoryUpdate(connectionId, projectKey, cancelMonitor);
@@ -127,7 +126,7 @@ public class RequestHandlerBindingAssistant {
     }
   }
 
-  private NewBinding assistBindingAndWaitForRepositoryUpdate(String connectionId, String projectKey, SonarLintCancelMonitor cancelMonitor) throws InterruptedException {
+  private NewBinding assistBindingAndWaitForRepositoryUpdate(String connectionId, String projectKey, SonarLintCancelMonitor cancelMonitor) {
     var assistNewBindingResult = assistBinding(connectionId, projectKey, cancelMonitor);
     // Wait 5s for the binding to be created in the repository. This is happening asynchronously by the
     // ConfigurationService::didUpdateBinding event
@@ -136,7 +135,7 @@ public class RequestHandlerBindingAssistant {
       if (configurationRepository.getEffectiveBinding(assistNewBindingResult.configurationScopeId).isPresent()) {
         break;
       }
-      Thread.sleep(100);
+      sleep();
     }
     if (configurationRepository.getEffectiveBinding(assistNewBindingResult.configurationScopeId).isEmpty()) {
       LOG.warn("Did not receive binding creation notification on a timely manner");
@@ -144,6 +143,15 @@ public class RequestHandlerBindingAssistant {
     }
 
     return assistNewBindingResult;
+  }
+
+  private static void sleep() {
+    try {
+      Thread.sleep(100);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new CancellationException("Interrupted!");
+    }
   }
 
   void startFullBindingProcess() {

@@ -134,11 +134,9 @@ class ConnectionGetAllProjectsMediumTests {
     var connectionDto = new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto(null)));
 
     var future = backend.getConnectionService().getAllProjects(new GetAllProjectsParams(connectionDto));
-    // Give time for the HTTP request to be established
-    Thread.sleep(200);
-    future.cancel(true);
+    await().untilAsserted(() -> server.getMockServer().verify(getRequestedFor(urlEqualTo("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1"))));
 
-    server.getMockServer().verify(getRequestedFor(urlEqualTo("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1")));
+    future.cancel(true);
 
     await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Request cancelled"));
   }

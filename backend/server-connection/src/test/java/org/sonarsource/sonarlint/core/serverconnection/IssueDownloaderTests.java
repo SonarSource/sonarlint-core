@@ -328,8 +328,9 @@ class IssueDownloaderTests {
   void test_fail_other_codes() {
     mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, new MockResponse().setResponseCode(503));
 
+    var cancelMonitor = new SonarLintCancelMonitor();
     var thrown = assertThrows(ServerErrorException.class,
-      () -> underTest.downloadFromBatch(serverApi, DUMMY_KEY, null, new SonarLintCancelMonitor()));
+      () -> underTest.downloadFromBatch(serverApi, DUMMY_KEY, null, cancelMonitor));
     assertThat(thrown).hasMessageContaining("Error 503");
   }
 
