@@ -217,7 +217,7 @@ class ShowIssueMediumTests {
   @Test
   void it_should_not_assist_binding_if_multiple_suggestions() throws Exception {
     var fakeClient = newFakeClient()
-      // Both config scope IDs will be a match
+      // Both of the config scope IDs will be a match
       .withConfigScope("intellij")
       .withConfigScope("sonarlint-intellij")
       .assistingConnectingAndBindingToSonarQube("intellij", CONNECTION_ID, serverWithIssues.baseUrl(),
@@ -235,8 +235,7 @@ class ShowIssueMediumTests {
 
     assertThat(statusCode).isEqualTo(200);
     assertThat(fakeClient.getMessagesToShow()).isEmpty();
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getIssueParamsToShowByIssueKey()).containsOnlyKeys(ISSUE_KEY));
-    assertThat(fakeClient.getIssueParamsToShowByIssueKey().get(ISSUE_KEY).getRuleKey()).isEqualTo(RULE_KEY);
+    await().during(1, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getIssueParamsToShowByIssueKey()).isEmpty());
   }
 
   @Test
