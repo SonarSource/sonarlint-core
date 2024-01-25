@@ -64,12 +64,16 @@ public class ShowHotspotOrIssueRequestHandler {
   CompletableFuture<NewBinding> assistBinding(Set<String> scopeIds, String connectionId, String projectKey) {
     var suggestions = bindingSuggestionProvider.computeBindingSuggestions(scopeIds, Set.of(connectionId), projectKey);
     var configScopeIdSuggested = findSingleConfigScopeIdFromBindingSuggestions(suggestions, projectKey);
+    if (configScopeIdSuggested == null) {
+      client.noBindingSuggestionFound(new SonarLintClient.NoBindingSuggestionFoundParams(projectKey));
+      return CompletableFuture.completedFuture(new NewBinding(connectionId, null));
+    }
     return client.assistBinding(new AssistBindingParams(connectionId, projectKey, configScopeIdSuggested))
       .thenApply(response -> new NewBinding(connectionId, response.getConfigurationScopeId()));
   }
 
   @Nullable
-  private static String findSingleConfigScopeIdFromBindingSuggestions(Map<String, List<BindingSuggestionDto>> suggestions, String projectKey) {
+  static String findSingleConfigScopeIdFromBindingSuggestions(Map<String, List<BindingSuggestionDto>> suggestions, String projectKey) {
     String resultKey = null;
 
     for (var entry: suggestions.entrySet()) {

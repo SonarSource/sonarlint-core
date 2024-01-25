@@ -217,5 +217,10 @@ class SonarLintClientTests {
     public CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params) {
       return null;
     }
+
+    @Override
+    public void noBindingSuggestionFound(NoBindingSuggestionFoundParams params) {
+
+    }
   }
 }

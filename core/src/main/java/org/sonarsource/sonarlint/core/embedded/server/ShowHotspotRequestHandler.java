@@ -47,6 +47,7 @@ import org.sonarsource.sonarlint.core.clientapi.client.message.MessageType;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.clientapi.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.commons.TextRange;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspotDetails;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
@@ -62,15 +63,18 @@ public class ShowHotspotRequestHandler extends ShowHotspotOrIssueRequestHandler 
   private final ConfigurationServiceImpl configurationService;
   private final ServerApiProvider serverApiProvider;
   private final TelemetryServiceImpl telemetryService;
+  private final ConfigurationRepository configurationRepository;
 
   public ShowHotspotRequestHandler(SonarLintClient client, ConnectionConfigurationRepository repository, ConfigurationServiceImpl configurationService,
-    BindingSuggestionProviderImpl bindingSuggestionProvider, ServerApiProvider serverApiProvider, TelemetryServiceImpl telemetryService) {
+    BindingSuggestionProviderImpl bindingSuggestionProvider, ServerApiProvider serverApiProvider, TelemetryServiceImpl telemetryService,
+    ConfigurationRepository configurationRepository) {
     super(bindingSuggestionProvider, client);
     this.client = client;
     this.repository = repository;
     this.configurationService = configurationService;
     this.serverApiProvider = serverApiProvider;
     this.telemetryService = telemetryService;
+    this.configurationRepository = configurationRepository;
   }
 
   @Override
@@ -94,7 +98,7 @@ public class ShowHotspotRequestHandler extends ShowHotspotOrIssueRequestHandler 
     if (connectionsMatchingOrigin.isEmpty()) {
       startFullBindingProcess();
       assistCreatingConnection(query.serverUrl)
-        .thenCompose(response -> assistBinding(Set.of(), response.getNewConnectionId(), query.projectKey))
+        .thenCompose(response -> assistBinding(response.getConfigScopeIds(), response.getNewConnectionId(), query.projectKey))
         .thenAccept(response -> {
           if (response.getConfigurationScopeId() != null) {
             showHotspotForScope(response.getConnectionId(), response.getConfigurationScopeId(), query.hotspotKey);
@@ -103,14 +107,15 @@ public class ShowHotspotRequestHandler extends ShowHotspotOrIssueRequestHandler 
         .whenComplete((v, e) -> endFullBindingProcess());
     } else {
       // we pick the first connection but this could lead to issues later if there were several matches (make the user select the right one?)
-      showHotspotForConnection(connectionsMatchingOrigin.get(0).getConnectionId(), query.projectKey, query.hotspotKey);
+      var configScopeIds = configurationRepository.getConfigScopeIds();
+      showHotspotForConnection(configScopeIds, connectionsMatchingOrigin.get(0).getConnectionId(), query.projectKey, query.hotspotKey);
     }
   }
 
-  private void showHotspotForConnection(String connectionId, String projectKey, String hotspotKey) {
+  private void showHotspotForConnection(Set<String> configScopeIds, String connectionId, String projectKey, String hotspotKey) {
     var scopes = configurationService.getConfigScopesWithBindingConfiguredTo(connectionId, projectKey);
     if (scopes.isEmpty()) {
-      assistBinding(Set.of(), connectionId, projectKey)
+      assistBinding(configScopeIds, connectionId, projectKey)
         .thenAccept(newBinding ->  {
           if (newBinding.getConfigurationScopeId() != null) {
             showHotspotForScope(connectionId, newBinding.getConfigurationScopeId(), hotspotKey);

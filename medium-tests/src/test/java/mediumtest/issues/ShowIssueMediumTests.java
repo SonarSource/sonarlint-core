@@ -51,7 +51,8 @@ class ShowIssueMediumTests {
   private ServerFixture.Server serverWithIssues = newSonarQubeServer("10.2")
     .withProject(PROJECT_KEY,
       project -> {
-        project.withPullRequest("1234", pullRequest -> (ServerFixture.ServerBuilder.ServerProjectPullRequestBuilder) pullRequest.withIssue(PR_ISSUE_KEY, RULE_KEY, "msg", "author", "file/path", "OPEN", "", "2023-05-13T17:55:39+0202",
+        project.withProjectName("Project Name")
+          .withPullRequest("1234", pullRequest -> (ServerFixture.ServerBuilder.ServerProjectPullRequestBuilder) pullRequest.withIssue(PR_ISSUE_KEY, RULE_KEY, "msg", "author", "file/path", "OPEN", "", "2023-05-13T17:55:39+0202",
           new TextRange(1, 0, 3, 4))
           .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile\nfive\nlines")));
         return project.withBranch("branchName",
@@ -195,11 +196,13 @@ class ShowIssueMediumTests {
 
   @Test
   void it_should_assist_creating_the_binding_if_scope_not_bound() throws Exception {
-    var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", CONNECTION_ID, serverWithIssues.baseUrl(),
+    var fakeClient = newFakeClient()
+      .withConfigScope("project-name")
+      .assistingConnectingAndBindingToSonarQube("project-name", CONNECTION_ID, serverWithIssues.baseUrl(),
       "projectKey").build();
     backend = newBackend()
       .withSonarQubeConnection(CONNECTION_ID, serverWithIssues)
-      .withUnboundConfigScope("scopeId")
+      .withUnboundConfigScope("project-name")
       .withEmbeddedServer()
       .build(fakeClient);
 
@@ -213,10 +216,12 @@ class ShowIssueMediumTests {
 
   @Test
   void it_should_assist_creating_the_connection_when_server_url_unknown() throws Exception {
-    var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", CONNECTION_ID, serverWithIssues.baseUrl(),
+    var fakeClient = newFakeClient()
+      .withConfigScope("project-name")
+      .assistingConnectingAndBindingToSonarQube("project-name", CONNECTION_ID, serverWithIssues.baseUrl(),
       "projectKey").build();
     backend = newBackend()
-      .withUnboundConfigScope("scopeId")
+      .withUnboundConfigScope("project-name")
       .withEmbeddedServer()
       .build(fakeClient);
 

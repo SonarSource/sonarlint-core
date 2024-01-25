@@ -19,15 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.client.binding;
 
-import javax.annotation.Nullable;
-
 public class AssistBindingParams {
   private final String connectionId;
   private final String projectKey;
-  @Nullable
   private final String configScopeId;
 
-  public AssistBindingParams(String connectionId, String projectKey, @Nullable String configScopeId) {
+  public AssistBindingParams(String connectionId, String projectKey, String configScopeId) {
     this.connectionId = connectionId;
     this.projectKey = projectKey;
     this.configScopeId = configScopeId;
@@ -41,7 +38,6 @@ public class AssistBindingParams {
     return projectKey;
   }
 
-  @Nullable
   public String getConfigScopeId() {
     return configScopeId;
   }

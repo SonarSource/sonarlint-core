@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Components;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Measures;
@@ -123,6 +124,13 @@ public class ServerFixture {
     public static class ServerProjectBuilder {
       private final Map<String, ServerProjectBranchBuilder> branchesByName = new HashMap<>();
       private final Map<String, ServerProjectPullRequestBuilder> pullRequestsByName = new HashMap<>();
+
+      private String projectName;
+
+      public ServerProjectBuilder withProjectName(String projectName) {
+        this.projectName = projectName;
+        return this;
+      }
 
       public ServerProjectBuilder withEmptyBranch(String branchName) {
         var builder = new ServerProjectBranchBuilder();
@@ -348,7 +356,26 @@ public class ServerFixture {
         registerDevelopersApiResponses();
         registerMeasuresApiResponses();
         registerTokenApiResponse();
+        registerComponentApiResponses();
       }
+    }
+
+    private void registerComponentApiResponses() {
+      var getAllProjectsResponseBuilder = Components.SearchWsResponse.newBuilder();
+      projectsByProjectKey.forEach((projectKey, project) -> {
+        if (project.projectName != null) {
+          mockServer.stubFor(get("/api/components/show.protobuf?component=" + projectKey)
+            .willReturn(aResponse().withResponseBody(protobufBody(
+              Components.ShowWsResponse.newBuilder()
+                .setComponent(Components.Component.newBuilder().setKey(projectKey).setName(project.projectName).build()).build()))));
+          getAllProjectsResponseBuilder
+            .addComponents(Components.Component.newBuilder().setKey(projectKey).setName(project.projectName).build());
+        }
+      });
+      mockServer.stubFor(get("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1")
+        .willReturn(aResponse().withResponseBody(protobufBody(getAllProjectsResponseBuilder.build()))));
+      mockServer.stubFor(get("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=2")
+        .willReturn(aResponse().withResponseBody(protobufBody(Components.Component.newBuilder().build()))));
     }
 
     private void registerSystemApiResponses() {
