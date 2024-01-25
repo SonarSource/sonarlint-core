@@ -19,41 +19,31 @@
  */
 package org.sonarsource.sonarlint.core.commons.progress;
 
-import java.util.Deque;
-import java.util.concurrent.CancellationException;
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.IntStream;
+import org.junit.jupiter.api.Test;
 
-public class SonarLintCancelMonitor {
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
-  private boolean canceled;
-  private final Deque<Runnable> downstreamCancelAction = new ConcurrentLinkedDeque<>();
+class ExecutorServiceShutdownWatchableTests {
 
-  public synchronized void cancel() {
-    canceled = true;
-    downstreamCancelAction.forEach(Runnable::run);
-    downstreamCancelAction.clear();
-  }
+  @Test
+  void should_cancel_all_monitors() {
+    ExecutorServiceShutdownWatchable<?> underTest = new ExecutorServiceShutdownWatchable<>(mock(ExecutorService.class));
 
-  public boolean isCanceled() {
-    return canceled;
-  }
-
-  public void checkCanceled() {
-    if (canceled) {
-      throw new CancellationException();
+    var monitors = new ArrayList<SonarLintCancelMonitor>();
+    for (int i = 0; i < 1000; i++) {
+      var monitor = new SonarLintCancelMonitor();
+      underTest.cancelOnShutdown(monitor);
+      monitors.add(monitor);
     }
+    underTest.shutdown();
+
+    assertThat(monitors).allMatch(SonarLintCancelMonitor::isCanceled);
   }
 
-  public synchronized void onCancel(Runnable action) {
-    if (canceled) {
-      action.run();
-    } else {
-      this.downstreamCancelAction.add(action);
-    }
-  }
-
-  public void watchForShutdown(ExecutorServiceShutdownWatchable<?> executorService) {
-    executorService.cancelOnShutdown(this);
-  }
 }

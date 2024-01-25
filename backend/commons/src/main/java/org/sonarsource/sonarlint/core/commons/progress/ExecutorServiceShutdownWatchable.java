@@ -38,7 +38,7 @@ public class ExecutorServiceShutdownWatchable<E extends ExecutorService> impleme
 
   private final E wrapped;
 
-  private final Deque<WeakReference<Runnable>> shutdownHooks = new ConcurrentLinkedDeque<>();
+  private final Deque<WeakReference<SonarLintCancelMonitor>> monitorsToCancelOnShutdown = new ConcurrentLinkedDeque<>();
 
   public ExecutorServiceShutdownWatchable(E wrapped) {
     this.wrapped = wrapped;
@@ -48,38 +48,43 @@ public class ExecutorServiceShutdownWatchable<E extends ExecutorService> impleme
     return wrapped;
   }
 
-  public void addShutdownHook(Runnable hook) {
-    shutdownHooks.add(new WeakReference<>(hook));
-    cleanGoneListeners();
+  public void cancelOnShutdown(SonarLintCancelMonitor monitor) {
+    if (wrapped.isShutdown()) {
+      monitor.cancel();
+    } else {
+      monitorsToCancelOnShutdown.add(new WeakReference<>(monitor));
+      cleanGoneMonitors();
+    }
   }
 
-  private void cleanGoneListeners() {
-    shutdownHooks.removeIf(ref -> ref.get() == null);
+  private void cleanGoneMonitors() {
+    monitorsToCancelOnShutdown.removeIf(ref -> ref.get() == null);
   }
 
   @Override
   public void shutdown() {
-    runShutdownHooks();
     wrapped.shutdown();
+    cancelMonitors();
   }
 
   @Override
   public List<Runnable> shutdownNow() {
-    runShutdownHooks();
-    return wrapped.shutdownNow();
+    var result = wrapped.shutdownNow();
+    cancelMonitors();
+    return result;
   }
 
-  private void runShutdownHooks() {
-    try {
-      shutdownHooks.forEach(w -> {
-        var listener = w.get();
-        if (listener != null) {
-          listener.run();
+  private void cancelMonitors() {
+    monitorsToCancelOnShutdown.forEach(w -> {
+      var monitor = w.get();
+      if (monitor != null) {
+        try {
+          monitor.cancel();
+        } catch (Exception e) {
+          LOG.error("Failed to cancel on shutdown", e);
         }
-      });
-    } catch (Exception e) {
-      LOG.error("Failed to run shutdown hooks", e);
-    }
+      }
+    });
   }
 
   @Override
