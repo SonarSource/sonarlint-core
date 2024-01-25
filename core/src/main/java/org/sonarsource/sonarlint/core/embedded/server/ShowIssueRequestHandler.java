@@ -77,8 +77,7 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
 
   public ShowIssueRequestHandler(SonarLintClient client, ConnectionConfigurationRepository connectionConfigurationRepository,
     ConfigurationServiceImpl configurationService, BindingSuggestionProviderImpl bindingSuggestionProvider,
-    ServerApiProvider serverApiProvider, TelemetryServiceImpl telemetryService, ConfigurationRepository configurationRepository,
-                                 UserTokenServiceImpl userTokenService) {
+    ServerApiProvider serverApiProvider, TelemetryServiceImpl telemetryService, ConfigurationRepository configurationRepository, UserTokenServiceImpl userTokenService) {
     super(bindingSuggestionProvider, client);
     this.client = client;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
@@ -110,19 +109,20 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
     if (connectionsMatchingOrigin.isEmpty()) {
       startFullBindingProcess();
       assistCreatingConnection(query.serverUrl, query.tokenName, query.tokenValue)
-              .exceptionally(error -> {
-                if (query.tokenName != null && query.tokenValue != null) {
-                  userTokenService.revokeToken(new RevokeTokenParams(query.serverUrl, query.tokenName, query.tokenValue));
-                }
-                return null;
-              })
-              .thenCompose(response -> assistBinding(response.getConfigScopeIds(), response.getNewConnectionId(), query.projectKey))
-              .thenAccept(response -> {
-                if (response.getConfigurationScopeId() != null) {
-                  showIssueForScope(response.getConnectionId(), response.getConfigurationScopeId(), query.issueKey, query.projectKey, query.branch, query.pullRequest);
-                }
-              })
-              .whenComplete((v, e) -> endFullBindingProcess());
+        .exceptionally(error -> {
+          if (query.tokenName != null && query.tokenValue != null) {
+            userTokenService.revokeToken(new RevokeTokenParams(query.serverUrl, query.tokenName, query.tokenValue));
+          }
+          return null;
+        })
+        .thenCompose(response -> assistBinding(response.getConfigScopeIds(), response.getNewConnectionId(), query.projectKey))
+        .thenAccept(response -> {
+          if (response.getConfigurationScopeId() != null) {
+            showIssueForScope(response.getConnectionId(), response.getConfigurationScopeId(), query.issueKey, query.projectKey,
+              query.branch, query.pullRequest);
+          }
+        })
+        .whenComplete((v, e) -> endFullBindingProcess());
     } else {
       // we pick the first connection but this could lead to issues later if there were several matches (make the user select the right
       // one?)
