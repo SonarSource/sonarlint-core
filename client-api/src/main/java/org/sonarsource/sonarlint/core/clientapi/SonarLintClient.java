@@ -35,6 +35,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.initialize.InitializePar
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.NoBindingSuggestionFoundParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
@@ -185,16 +186,4 @@ public interface SonarLintClient {
   @JsonNotification
   void noBindingSuggestionFound(NoBindingSuggestionFoundParams params);
 
-  class NoBindingSuggestionFoundParams {
-    @NonNull
-    private final String projectKey;
-
-    public NoBindingSuggestionFoundParams(String projectKey) {
-      this.projectKey = projectKey;
-    }
-
-    public String getProjectKey() {
-      return projectKey;
-    }
-  }
 }

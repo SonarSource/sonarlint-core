@@ -27,6 +27,7 @@ import org.sonarsource.sonarlint.core.BindingSuggestionProviderImpl;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
 import org.sonarsource.sonarlint.core.clientapi.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.NoBindingSuggestionFoundParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
 
@@ -65,7 +66,7 @@ public class ShowHotspotOrIssueRequestHandler {
     var suggestions = bindingSuggestionProvider.computeBindingSuggestions(scopeIds, Set.of(connectionId), projectKey);
     var configScopeIdSuggested = findSingleConfigScopeIdFromBindingSuggestions(suggestions, projectKey);
     if (configScopeIdSuggested == null) {
-      client.noBindingSuggestionFound(new SonarLintClient.NoBindingSuggestionFoundParams(projectKey));
+      client.noBindingSuggestionFound(new NoBindingSuggestionFoundParams(projectKey));
       return CompletableFuture.completedFuture(new NewBinding(connectionId, null));
     }
     return client.assistBinding(new AssistBindingParams(connectionId, projectKey, configScopeIdSuggested))
