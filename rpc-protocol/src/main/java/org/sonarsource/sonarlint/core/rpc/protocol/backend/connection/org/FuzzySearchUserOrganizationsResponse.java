@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Server API
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,33 +17,19 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverapi.organization;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org;
 
-import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations.Organization;
+import java.util.List;
 
-public class DefaultRemoteOrganization implements ServerOrganization {
-  private final String key;
-  private final String name;
-  private final String description;
+public class FuzzySearchUserOrganizationsResponse {
 
-  public DefaultRemoteOrganization(Organization org) {
-    this.key = org.getKey();
-    this.name = org.getName();
-    this.description = org.getDescription();
+  private final List<OrganizationDto> topResults;
+
+  public FuzzySearchUserOrganizationsResponse(List<OrganizationDto> topResults) {
+    this.topResults = topResults;
   }
 
-  @Override
-  public String getKey() {
-    return key;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
-
-  @Override
-  public String getDescription() {
-    return description;
+  public List<OrganizationDto> getTopResults() {
+    return topResults;
   }
 }

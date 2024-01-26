@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Server API
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,24 +17,32 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverapi.organization;
+package org.sonarsource.sonarlint.core.rpc.protocol.common;
 
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations.Organization;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
-class DefaultRemoteOrganizationTests {
+class UsernamePasswordDtoTests {
+
+
   @Test
-  void testRoundTrip() {
-    var org = Organization.newBuilder()
-      .setName("name")
-      .setKey("key")
-      .setDescription("desc")
-      .build();
-    ServerOrganization remoteOrg = new DefaultRemoteOrganization(org);
-    assertThat(remoteOrg.getKey()).isEqualTo("key");
-    assertThat(remoteOrg.getName()).isEqualTo("name");
-    assertThat(remoteOrg.getDescription()).isEqualTo("desc");
+  void testEqualsAndHashCode() {
+    var up1 = new UsernamePasswordDto("user1", "password1");
+    var sameUp = new UsernamePasswordDto("user1", "password1");
+    var differentUp = new UsernamePasswordDto("user2", "password1");
+    var differentUp2 = new UsernamePasswordDto("user1", "password2");
+
+    // Assuming that two new instances are equal
+    assertThat(up1)
+      .isEqualTo(up1)
+      .isEqualTo(sameUp)
+      .isNotEqualTo(differentUp)
+      .isNotEqualTo(differentUp2)
+      .isNotEqualTo("token1")
+      .hasSameHashCodeAs(sameUp)
+      .doesNotHaveSameHashCodeAs(differentUp)
+      .doesNotHaveSameHashCodeAs(differentUp2);
   }
 }

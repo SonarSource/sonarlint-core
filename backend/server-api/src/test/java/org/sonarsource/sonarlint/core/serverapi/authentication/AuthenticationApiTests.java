@@ -29,24 +29,24 @@ import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtob
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class AuthenticationCheckerTests {
+class AuthenticationApiTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
-  private AuthenticationChecker underTest;
+  private AuthenticationApi underTest;
 
   @BeforeEach
   void setUp() {
-    underTest = new AuthenticationChecker(mockServer.serverApiHelper());
+    underTest = new AuthenticationApi(mockServer.serverApiHelper());
   }
 
   @Test
   void test_authentication_ok() {
     mockServer.addStringResponse("/api/authentication/validate?format=json", "{\"valid\": true}");
 
-    var validationResult = underTest.validateCredentials(new SonarLintCancelMonitor());
+    var validationResult = underTest.validate(new SonarLintCancelMonitor());
 
     assertThat(validationResult.success()).isTrue();
     assertThat(validationResult.message()).isEqualTo("Authentication successful");
@@ -56,7 +56,7 @@ class AuthenticationCheckerTests {
   void test_authentication_ko() {
     mockServer.addStringResponse("/api/authentication/validate?format=json", "{\"valid\": false}");
 
-    var validationResult = underTest.validateCredentials(new SonarLintCancelMonitor());
+    var validationResult = underTest.validate(new SonarLintCancelMonitor());
 
     assertThat(validationResult.success()).isFalse();
     assertThat(validationResult.message()).isEqualTo("Authentication failed");
@@ -66,7 +66,7 @@ class AuthenticationCheckerTests {
   void test_connection_issue() {
     mockServer.addResponse("/api/authentication/validate?format=json", new MockResponse().setResponseCode(500).setBody("Foo"));
 
-    var validationResult = underTest.validateCredentials(new SonarLintCancelMonitor());
+    var validationResult = underTest.validate(new SonarLintCancelMonitor());
 
     assertThat(validationResult.success()).isFalse();
     assertThat(validationResult.message()).isEqualTo("HTTP Connection failed (500): Foo");

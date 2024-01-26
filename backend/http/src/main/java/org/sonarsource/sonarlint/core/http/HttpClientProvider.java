@@ -132,8 +132,12 @@ public class HttpClientProvider {
     return new ApacheHttpClientAdapter(sharedClient, null, null);
   }
 
-  public HttpClient getHttpClientWithPreemptiveAuth(String usernameOrToken, @Nullable String password) {
-    return new ApacheHttpClientAdapter(sharedClient, usernameOrToken, password);
+  public HttpClient getHttpClientWithPreemptiveAuth(String username, @Nullable String password) {
+    return new ApacheHttpClientAdapter(sharedClient, username, password);
+  }
+
+  public HttpClient getHttpClientWithPreemptiveAuth(String token) {
+    return new ApacheHttpClientAdapter(sharedClient, token, null);
   }
 
   @PreDestroy

@@ -19,9 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.system;
 
-public interface ValidationResult {
+public class ValidationResult {
 
-  boolean success();
+  private final boolean success;
+  private final String message;
 
-  String message();
+  public ValidationResult(boolean success, String message) {
+    this.success = success;
+    this.message = message;
+  }
+
+  public boolean success() {
+    return success;
+  }
+
+  public String message() {
+    return message;
+  }
+
 }

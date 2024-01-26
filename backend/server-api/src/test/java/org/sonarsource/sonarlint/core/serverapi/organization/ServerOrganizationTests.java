@@ -17,26 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverapi.system;
+package org.sonarsource.sonarlint.core.serverapi.organization;
 
-public class DefaultValidationResult implements ValidationResult {
+import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations.Organization;
 
-  private final boolean success;
-  private final String message;
+import static org.assertj.core.api.Assertions.assertThat;
 
-  public DefaultValidationResult(boolean success, String message) {
-    this.success = success;
-    this.message = message;
+class ServerOrganizationTests {
+  @Test
+  void testRoundTrip() {
+    var org = Organization.newBuilder()
+      .setName("name")
+      .setKey("key")
+      .setDescription("desc")
+      .build();
+    ServerOrganization remoteOrg = new ServerOrganization(org);
+    assertThat(remoteOrg.getKey()).isEqualTo("key");
+    assertThat(remoteOrg.getName()).isEqualTo("name");
+    assertThat(remoteOrg.getDescription()).isEqualTo("desc");
   }
-
-  @Override
-  public boolean success() {
-    return success;
-  }
-
-  @Override
-  public String message() {
-    return message;
-  }
-
 }

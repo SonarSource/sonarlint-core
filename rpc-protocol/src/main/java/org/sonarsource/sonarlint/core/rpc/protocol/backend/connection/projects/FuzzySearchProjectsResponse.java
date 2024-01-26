@@ -21,11 +21,11 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects;
 
 import java.util.List;
 
-public class SearchProjectsResponse {
+public class FuzzySearchProjectsResponse {
 
   private final List<SonarProjectDto> topResults;
 
-  public SearchProjectsResponse(List<SonarProjectDto> topResults) {
+  public FuzzySearchProjectsResponse(List<SonarProjectDto> topResults) {
     this.topResults = topResults;
   }
 

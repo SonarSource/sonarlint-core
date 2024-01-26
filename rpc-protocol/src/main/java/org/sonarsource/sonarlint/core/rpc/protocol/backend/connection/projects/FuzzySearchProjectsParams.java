@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,21 +17,23 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.http;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects;
 
-import javax.inject.Named;
-import javax.inject.Singleton;
+public class FuzzySearchProjectsParams {
 
-@Named
-@Singleton
-public class ConnectionUnawareHttpClientProvider {
-  private final HttpClientProvider httpClientProvider;
+  private final String connectionId;
+  private final String searchText;
 
-  public ConnectionUnawareHttpClientProvider(HttpClientProvider httpClientProvider) {
-    this.httpClientProvider = httpClientProvider;
+  public FuzzySearchProjectsParams(String connectionId, String searchText) {
+    this.connectionId = connectionId;
+    this.searchText = searchText;
   }
 
-  public HttpClient getHttpClient(String token) {
-    return httpClientProvider.getHttpClientWithPreemptiveAuth(token, null);
+  public String getConnectionId() {
+    return connectionId;
+  }
+
+  public String getSearchText() {
+    return searchText;
   }
 }

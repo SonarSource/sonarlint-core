@@ -17,23 +17,27 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects;
+package org.sonarsource.sonarlint.core.rpc.protocol.common;
 
-public class SearchProjectsParams {
+import org.junit.jupiter.api.Test;
 
-  private final String connectionId;
-  private final String searchText;
+import static org.assertj.core.api.Assertions.assertThat;
 
-  public SearchProjectsParams(String connectionId, String searchText) {
-    this.connectionId = connectionId;
-    this.searchText = searchText;
-  }
+class TokenDtoTests {
 
-  public String getConnectionId() {
-    return connectionId;
-  }
+  @Test
+  void testEqualsAndHashCode() {
+    TokenDto token = new TokenDto("token1");
+    TokenDto sameToken = new TokenDto("token1");
+    TokenDto differentToken = new TokenDto("token2");
 
-  public String getSearchText() {
-    return searchText;
+    // Assuming that two new instances are equal
+    assertThat(token)
+      .isEqualTo(token)
+      .isEqualTo(sameToken)
+      .isNotEqualTo(differentToken)
+      .isNotEqualTo("token1")
+      .hasSameHashCodeAs(sameToken)
+      .doesNotHaveSameHashCodeAs(differentToken);
   }
 }

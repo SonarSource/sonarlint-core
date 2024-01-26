@@ -23,10 +23,8 @@ import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;
-import org.sonarsource.sonarlint.core.serverapi.system.DefaultValidationResult;
 import org.sonarsource.sonarlint.core.serverapi.system.ServerInfo;
 import org.sonarsource.sonarlint.core.serverapi.system.SystemApi;
-import org.sonarsource.sonarlint.core.serverapi.system.ValidationResult;
 
 public class ServerVersionAndStatusChecker {
 
@@ -68,19 +66,4 @@ public class ServerVersionAndStatusChecker {
     return "Server not ready (" + serverStatus.getStatus() + ")";
   }
 
-  public ValidationResult validateStatusAndVersion(SonarLintCancelMonitor cancelMonitor) {
-    return validateStatusAndVersion(MIN_SQ_VERSION, cancelMonitor);
-  }
-
-  public ValidationResult validateStatusAndVersion(String minVersion, SonarLintCancelMonitor cancelMonitor) {
-    var serverStatus = systemApi.getStatus(cancelMonitor);
-    if (!serverStatus.isUp()) {
-      return new DefaultValidationResult(false, serverNotReady(serverStatus));
-    }
-    var serverVersion = Version.create(serverStatus.getVersion());
-    if (serverVersion.compareToIgnoreQualifier(Version.create(minVersion)) < 0) {
-      return new DefaultValidationResult(false, unsupportedVersion(serverStatus, minVersion));
-    }
-    return new DefaultValidationResult(true, "Compatible and ready");
-  }
 }

@@ -17,19 +17,21 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package mediumtest;
+package mediumtest.connection;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.SonarLintTestRpcServer;
+import org.assertj.core.api.Assertions;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.FuzzySearchUserOrganizationsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUserOrganizationsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.OrganizationDto;
@@ -39,6 +41,7 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organization
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.exactly;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
@@ -66,6 +69,21 @@ class OrganizationMediumTests {
   @AfterAll
   static void clearSonarCloudUrl() {
     System.clearProperty("sonarlint.internal.sonarcloud.url");
+  }
+
+  @Test
+  void it_should_list_empty_user_organizations() throws ExecutionException, InterruptedException {
+    var fakeClient = newFakeClient()
+      .build();
+    backend = newBackend()
+      .build(fakeClient);
+    sonarcloudMock.stubFor(get("/api/organizations/search.protobuf?member=true&ps=500&p=1")
+      .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Organizations.SearchWsResponse.newBuilder()
+        .build()))));
+
+    var details = backend.getConnectionService().listUserOrganizations(new ListUserOrganizationsParams(Either.forLeft(new TokenDto("token"))));
+
+    assertThat(details.get().getUserOrganizations()).isEmpty();
   }
 
   @Test
@@ -127,6 +145,63 @@ class OrganizationMediumTests {
 
     sonarcloudMock.verify(getRequestedFor(urlEqualTo("/api/organizations/search.protobuf?organizations=myCustomOrg&ps=500&p=1"))
       .withHeader("Authorization", equalTo("Basic " + Base64.getEncoder().encodeToString("user:pwd".getBytes(StandardCharsets.UTF_8)))));
+  }
+
+  @Test
+  void it_should_fuzzy_search_and_cache_organizations_on_sonarcloud() {
+    var fakeClient = newFakeClient()
+      .build();
+    backend = newBackend()
+      .build(fakeClient);
+    sonarcloudMock.stubFor(get("/api/organizations/search.protobuf?member=true&ps=500&p=1")
+      .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Organizations.SearchWsResponse.newBuilder()
+        .addOrganizations(Organizations.Organization.newBuilder()
+          .setKey("org-foo1")
+          .setName("My Company Org Foo 1")
+          .setDescription("orgDesc 1")
+          .build())
+        .addOrganizations(Organizations.Organization.newBuilder()
+          .setKey("org-foo2")
+          .setName("My Company Org Foo 2")
+          .setDescription("orgDesc 2")
+          .build())
+        .addOrganizations(Organizations.Organization.newBuilder()
+          .setKey("org-bar")
+          .setName("My Company Org Bar")
+          .setDescription("orgDesc 3")
+          .build())
+        .build()))));
+    sonarcloudMock.stubFor(get("/api/organizations/search.protobuf?member=true&ps=500&p=2")
+      .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Organizations.SearchWsResponse.newBuilder().build()))));
+
+    var credentials = Either.<TokenDto, UsernamePasswordDto>forRight(new UsernamePasswordDto("user", "pwd"));
+    var emptySearch = backend.getConnectionService().fuzzySearchUserOrganizations(new FuzzySearchUserOrganizationsParams(credentials, "")).join();
+    assertThat(emptySearch.getTopResults())
+      .isEmpty();
+
+    var searchMy = backend.getConnectionService().fuzzySearchUserOrganizations(new FuzzySearchUserOrganizationsParams(credentials, "My")).join();
+    assertThat(searchMy.getTopResults())
+      .extracting(OrganizationDto::getKey, OrganizationDto::getName)
+      .containsExactly(
+        Assertions.tuple("org-bar", "My Company Org Bar"),
+        Assertions.tuple("org-foo1", "My Company Org Foo 1"),
+        Assertions.tuple("org-foo2", "My Company Org Foo 2"));
+
+    var searchFooByName = backend.getConnectionService().fuzzySearchUserOrganizations(new FuzzySearchUserOrganizationsParams(credentials, "Foo")).join();
+    assertThat(searchFooByName.getTopResults())
+      .extracting(OrganizationDto::getKey, OrganizationDto::getName)
+      .containsExactly(
+        Assertions.tuple("org-foo1", "My Company Org Foo 1"),
+        Assertions.tuple("org-foo2", "My Company Org Foo 2"));
+
+    var searchBarByKey = backend.getConnectionService().fuzzySearchUserOrganizations(new FuzzySearchUserOrganizationsParams(credentials, "org-bar")).join();
+    assertThat(searchBarByKey.getTopResults())
+      .extracting(OrganizationDto::getKey, OrganizationDto::getName)
+      .containsExactly(
+        Assertions.tuple("org-bar", "My Company Org Bar"));
+
+    // Verify that the cache is used
+    sonarcloudMock.verify(exactly(1), getRequestedFor(urlEqualTo("/api/organizations/search.protobuf?member=true&ps=500&p=1")));
   }
 
   @AfterEach

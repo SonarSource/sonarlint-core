@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core;
 import java.util.List;
 import java.util.Map;
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -33,17 +32,11 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
-import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 import org.springframework.context.ApplicationEventPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -191,26 +184,4 @@ class ConnectionServiceTests {
     assertThat(logTester.logs(LogOutput.Level.DEBUG)).containsExactly("Attempt to update connection 'sq2' that was not registered. Possibly a race condition?");
   }
 
-  @Test
-  void buildServerApiHelperForSonarQubeWithUsernamePassword() {
-    var httpClientProvider = mock(HttpClientProvider.class);
-    underTest = new ConnectionService(null, null, List.of(), List.of(), httpClientProvider, null);
-
-    var connectionsParams = new ValidateConnectionParams(
-      new TransientSonarQubeConnectionDto("http://notexists", Either.forRight(new UsernamePasswordDto("user", "pwd"))));
-    underTest.buildServerApiHelper(connectionsParams.getTransientConnection());
-
-    verify(httpClientProvider).getHttpClientWithPreemptiveAuth("user", "pwd");
-  }
-
-  @Test
-  void buildServerApiHelperForSonarCloudWithToken() {
-    var httpClientProvider = mock(HttpClientProvider.class);
-    underTest = new ConnectionService(null, null, List.of(), List.of(), httpClientProvider, null);
-
-    var connectionsParams = new ValidateConnectionParams(new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto("foo"))));
-    underTest.buildServerApiHelper(connectionsParams.getTransientConnection());
-
-    verify(httpClientProvider).getHttpClientWithPreemptiveAuth("foo", null);
-  }
 }

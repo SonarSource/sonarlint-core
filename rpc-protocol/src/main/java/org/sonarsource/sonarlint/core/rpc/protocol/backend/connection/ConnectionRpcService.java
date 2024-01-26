@@ -35,10 +35,12 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrg
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUserOrganizationsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUserOrganizationsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.FuzzySearchUserOrganizationsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.FuzzySearchUserOrganizationsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SearchProjectsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SearchProjectsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.FuzzySearchProjectsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.FuzzySearchProjectsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -107,6 +109,12 @@ public interface ConnectionRpcService {
   CompletableFuture<GetOrganizationResponse> getOrganization(GetOrganizationParams params);
 
   /**
+   * Fuzzy search among SonarCloud user organizations.
+   */
+  @JsonRequest
+  CompletableFuture<FuzzySearchUserOrganizationsResponse> fuzzySearchUserOrganizations(FuzzySearchUserOrganizationsParams params);
+
+  /**
    * Get all Sonar projects existing on SonarQube or in a SonarCloud organization.
    * As this data might be needed during connection creation, it accepts a transient connection.
    */
@@ -114,9 +122,9 @@ public interface ConnectionRpcService {
   CompletableFuture<GetAllProjectsResponse> getAllProjects(GetAllProjectsParams params);
 
   /**
-   * Search Sonar projects existing on SonarQube or in a SonarCloud organization.
+   * Fuzzy search among Sonar projects existing on SonarQube or in a SonarCloud organization.
    */
   @JsonRequest
-  CompletableFuture<SearchProjectsResponse> searchProjects(SearchProjectsParams params);
+  CompletableFuture<FuzzySearchProjectsResponse> fuzzySearchProjects(FuzzySearchProjectsParams params);
 
 }

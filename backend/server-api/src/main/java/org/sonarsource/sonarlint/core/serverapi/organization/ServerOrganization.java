@@ -19,12 +19,28 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.organization;
 
-public interface ServerOrganization {
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations.Organization;
 
-  String getKey();
+public class ServerOrganization {
+  private final String key;
+  private final String name;
+  private final String description;
 
-  String getName();
+  public ServerOrganization(Organization org) {
+    this.key = org.getKey();
+    this.name = org.getName();
+    this.description = org.getDescription();
+  }
 
-  String getDescription();
+  public String getKey() {
+    return key;
+  }
 
+  public String getName() {
+    return name;
+  }
+
+  public String getDescription() {
+    return description;
+  }
 }
