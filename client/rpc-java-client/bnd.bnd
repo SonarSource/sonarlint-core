@@ -1,2 +1,3 @@
 -include: ../../shared.bnd
+Import-Package: javax.annotation.*;resolution:=optional,*
 Export-Package: org.sonarsource.sonarlint.core.rpc.client.*;version="${project.version}"
