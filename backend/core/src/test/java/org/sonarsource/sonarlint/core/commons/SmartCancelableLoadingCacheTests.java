@@ -27,10 +27,13 @@ import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.stubbing.Answer;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import testutils.TakeThreadDumpAfter;
+import testutils.ThreadDumpExtension;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -45,6 +48,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(ThreadDumpExtension.class)
 class SmartCancelableLoadingCacheTests {
 
   public static final String ANOTHER_VALUE = "anotherValue";
@@ -64,6 +68,7 @@ class SmartCancelableLoadingCacheTests {
   }
 
   @Test
+  @TakeThreadDumpAfter(seconds = 10)
   void should_cache_value_and_notify_listener_once() {
     when(computer.apply(eq(A_KEY), any(SonarLintCancelMonitor.class))).thenReturn(A_VALUE);
 
@@ -76,6 +81,7 @@ class SmartCancelableLoadingCacheTests {
   }
 
   @Test
+  @TakeThreadDumpAfter(seconds = 10)
   void should_wait_for_long_computation() {
     when(computer.apply(eq(A_KEY), any(SonarLintCancelMonitor.class))).thenAnswer(invocation -> {
       Thread.sleep(100);
@@ -86,6 +92,7 @@ class SmartCancelableLoadingCacheTests {
   }
 
   @Test
+  @TakeThreadDumpAfter(seconds = 10)
   void should_throw_if_failure_while_loading() {
     when(computer.apply(eq(A_KEY), any(SonarLintCancelMonitor.class))).thenThrow(new RuntimeException("boom"));
 
@@ -98,6 +105,7 @@ class SmartCancelableLoadingCacheTests {
   }
 
   @Test
+  @TakeThreadDumpAfter(seconds = 10)
   void should_refresh_value() {
     when(computer.apply(eq(A_KEY), any(SonarLintCancelMonitor.class)))
       .thenReturn(A_VALUE)
@@ -115,6 +123,7 @@ class SmartCancelableLoadingCacheTests {
   }
 
   @Test
+  @TakeThreadDumpAfter(seconds = 10)
   void should_cancel_previous_computation_on_refresh() throws InterruptedException {
     var firstComputationStarted = new CountDownLatch(1);
     var cancelled = new AtomicBoolean();
@@ -136,6 +145,7 @@ class SmartCancelableLoadingCacheTests {
   }
 
   @Test
+  @TakeThreadDumpAfter(seconds = 10)
   void should_cancel_previous_computation_on_clear() throws InterruptedException {
     var firstComputationStarted = new CountDownLatch(1);
     var cancelled = new AtomicBoolean();
@@ -154,6 +164,7 @@ class SmartCancelableLoadingCacheTests {
   }
 
   @Test
+  @TakeThreadDumpAfter(seconds = 10)
   void should_cancel_all_previous_computation_on_close() throws InterruptedException {
     var key1ComputationStarted = new CountDownLatch(1);
     var cancelledKey1 = new AtomicBoolean();
@@ -183,6 +194,7 @@ class SmartCancelableLoadingCacheTests {
   }
 
   @Test
+  @TakeThreadDumpAfter(seconds = 10)
   void previously_queued_get_should_receive_latest_value_on_cancellation() throws InterruptedException {
     var firstComputationStarted = new CountDownLatch(1);
     var cancelled = new AtomicBoolean();
@@ -209,6 +221,7 @@ class SmartCancelableLoadingCacheTests {
 
 
   @Test
+  @TakeThreadDumpAfter(seconds = 10)
   void should_notify_once_in_case_of_cancellation() throws InterruptedException {
     var firstComputationStarted = new CountDownLatch(1);
     when(computer.apply(eq(A_KEY), any(SonarLintCancelMonitor.class)))
