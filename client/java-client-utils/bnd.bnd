@@ -1,3 +1,3 @@
 -include: ../../shared.bnd
 Export-Package: org.sonarsource.sonarlint.core.client.utils.*;version="${project.version}"
-Import-Package: org.eclipse.jgit.*;resolution:=optional
+Import-Package: org.eclipse.jgit.*;resolution:=optional,javax.annotation.*;resolution:=optional,*
