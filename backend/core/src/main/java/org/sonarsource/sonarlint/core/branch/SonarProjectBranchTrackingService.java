@@ -28,6 +28,9 @@ import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -51,7 +54,7 @@ import org.springframework.context.event.EventListener;
 @Named
 @Singleton
 public class SonarProjectBranchTrackingService {
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private static final Logger LOG = LoggerFactory.getLogger(SonarProjectBranchTrackingService.class);
   private final SonarLintRpcClient client;
   private final StorageService storageService;
   private final ConfigurationRepository configurationRepository;
@@ -132,17 +135,18 @@ public class SonarProjectBranchTrackingService {
   }
 
   private String matchSonarProjectBranch(String configurationScopeId, SonarLintCancelMonitor cancelMonitor) {
-    LOG.debug("Matching Sonar project branch for configuration scope '{}'", configurationScopeId);
+    MDC.put("configScopeId", configurationScopeId);
+    LOG.debug("Matching Sonar project branch");
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     if (effectiveBindingOpt.isEmpty()) {
-      LOG.debug("No binding for configuration scope '{}'", configurationScopeId);
+      LOG.debug("No binding for configuration scope");
       return null;
     }
     var effectiveBinding = effectiveBindingOpt.get();
 
     var branchesStorage = storageService.binding(effectiveBinding).branches();
     if (!branchesStorage.exists()) {
-      client.log(new LogParams(LogLevel.INFO, "Cannot match Sonar branch, storage is empty", configurationScopeId));
+      LOG.info("Cannot match Sonar branch, storage is empty");
       return null;
     }
     var storedBranches = branchesStorage.read();

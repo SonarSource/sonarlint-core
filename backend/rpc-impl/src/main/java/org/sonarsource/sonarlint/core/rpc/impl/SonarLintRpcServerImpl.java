@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.rpc.impl;
 
+import ch.qos.logback.classic.LoggerContext;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -32,7 +33,8 @@ import jetbrains.exodus.core.execution.ThreadJobProcessorPool;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
-import org.sonarsource.sonarlint.core.commons.log.LogOutput;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
@@ -65,6 +67,8 @@ import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.ConfigurableApplicationContext;
 
 public class SonarLintRpcServerImpl implements SonarLintRpcServer {
+
+  private static final Logger LOG = LoggerFactory.getLogger(SonarLintRpcServerImpl.class);
   private final SonarLintRpcClient client;
   private final AtomicBoolean initializeCalled = new AtomicBoolean(false);
   private final AtomicBoolean initialized = new AtomicBoolean(false);
@@ -89,9 +93,13 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     this.client = launcher.getRemoteProxy();
     this.logOutput = new RpcClientLogOutput(client);
 
+    var rootLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+    rootLogger.detachAndStopAllAppenders();
+    rootLogger.addAppender(new SonarLintRpcClientLogbackAppender(client));
+
     this.launcherFuture = launcher.startListening();
 
-    logOutput.log("SonarLint backend started", LogOutput.Level.INFO);
+    LOG.info("SonarLint backend started");
   }
 
   public Future<Void> getLauncherFuture() {

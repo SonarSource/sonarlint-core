@@ -63,6 +63,8 @@
     <mockito.version>5.8.0</mockito.version>
     <kotlin.version>1.6.21</kotlin.version>
     <lsp4j.version>0.21.1</lsp4j.version>
+    <slf4j.version>1.7.36</slf4j.version>
+    <logback.version>1.2.13</logback.version>
     <version.surefire.plugin>3.1.2</version.surefire.plugin>
   </properties>
 
@@ -200,14 +202,19 @@
         <version>8.1.6</version>
       </dependency>
       <dependency>
-        <groupId>org.slf4j</groupId>
-        <artifactId>slf4j-simple</artifactId>
-        <version>1.7.36</version>
-      </dependency>
-      <dependency>
         <groupId>com.github.tomakehurst</groupId>
         <artifactId>wiremock-jre8</artifactId>
         <version>2.35.0</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>ch.qos.logback</groupId>
+        <artifactId>logback-classic</artifactId>
+        <version>${logback.version}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

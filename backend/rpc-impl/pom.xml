@@ -32,6 +32,10 @@
       <artifactId>sonarlint-core</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+    </dependency>
 
     <!-- unit tests -->
     <dependency>

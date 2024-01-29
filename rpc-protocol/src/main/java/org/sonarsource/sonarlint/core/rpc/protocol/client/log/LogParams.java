@@ -28,12 +28,18 @@ public class LogParams {
   private final String message;
   private final String configScopeId;
   private final String threadName;
+  private final String loggerName;
 
   public LogParams(LogLevel level, String message, @Nullable String configScopeId) {
+    this(level, message, configScopeId, Thread.currentThread().getName(), "sonarlint");
+  }
+
+  public LogParams(LogLevel level, String message, @Nullable String configScopeId, String threadName, String loggerName) {
     this.level = level;
     this.message = message;
     this.configScopeId = configScopeId;
-    this.threadName = Thread.currentThread().getName();
+    this.threadName = threadName;
+    this.loggerName = loggerName;
   }
 
   public LogLevel getLevel() {
@@ -55,5 +61,9 @@ public class LogParams {
 
   public String getThreadName() {
     return threadName;
+  }
+
+  public String getLoggerName() {
+    return loggerName;
   }
 }

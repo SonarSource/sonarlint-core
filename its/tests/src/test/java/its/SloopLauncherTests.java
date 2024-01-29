@@ -46,9 +46,13 @@ import org.sonarsource.sonarlint.core.rpc.client.SloopLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
@@ -66,8 +70,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupp
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
@@ -115,6 +117,10 @@ class SloopLauncherTests {
 
     var result = server.getRulesService().listAllStandaloneRulesDefinitions().get();
     assertThat(result.getRulesByKey()).hasSize(36);
+
+    server.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto("myConfigScope", null, true, "My Config Scope", null))));
+
+    var result2 = server.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("myConfigScope", "go:S100", null)).join();
   }
 
   static class DummySonarLintRpcClient implements SonarLintRpcClientDelegate {
@@ -146,6 +152,13 @@ class SloopLauncherTests {
     @Override
     public void log(LogParams params) {
       logs.add(params);
+      var log = new StringBuilder();
+      log.append("[").append(params.getThreadName()).append("] ");
+      log.append(params.getLevel()).append(" ").append(params.getMessage());
+      if (params.getConfigScopeId() != null) {
+        log.append(" [").append(params.getConfigScopeId()).append("]");
+      }
+      System.out.println(log);
     }
 
     @Override
