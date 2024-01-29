@@ -47,13 +47,12 @@ public class SmartCancelableLoadingCache<K, V> implements AutoCloseable {
 
   private class ValueAndComputeFutures {
     private final K key;
-    private volatile CompletableFuture<V> valueFuture = new CompletableFuture<>();
-    private volatile CompletableFuture<V> computeFuture;
+    private CompletableFuture<V> valueFuture = new CompletableFuture<>();
+    private CompletableFuture<V> computeFuture;
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     public ValueAndComputeFutures(K key) {
       this.key = key;
-      scheduleComputation();
     }
 
     private void scheduleComputation() {
@@ -72,17 +71,17 @@ public class SmartCancelableLoadingCache<K, V> implements AutoCloseable {
 
         var cancelMonitor = new SonarLintCancelMonitor();
         cancelMonitor.watchForShutdown(executorService);
-        CompletableFuture<V> result = CompletableFuture.supplyAsync(() -> {
+        CompletableFuture<V> newComputeFuture = CompletableFuture.supplyAsync(() -> {
           cancelMonitor.checkCanceled();
           return valueComputer.apply(key, cancelMonitor);
         }, executorService);
-        result.whenComplete((newValue, error) -> {
+        newComputeFuture.whenComplete((newValue, error) -> {
           if (error instanceof CancellationException) {
             cancelMonitor.cancel();
           }
         });
-        result.whenCompleteAsync((newValue, error) -> whenComputeCompleted(newValue, error, previousValue, oldValueFuture), executorService);
-        computeFuture = result;
+        newComputeFuture.whenCompleteAsync((newValue, error) -> whenComputeCompleted(newValue, error, previousValue, oldValueFuture), executorService);
+        computeFuture = newComputeFuture;
       } finally {
         lock.writeLock().unlock();
       }
@@ -179,17 +178,25 @@ public class SmartCancelableLoadingCache<K, V> implements AutoCloseable {
    * Awaiting #get() will receive the newly computed value
    */
   public void refreshAsync(K key) {
-    var valueAndComputeFutures = cache.get(key);
-    if (valueAndComputeFutures == null) {
-      cache.computeIfAbsent(key, ValueAndComputeFutures::new);
-    } else {
-      valueAndComputeFutures.refresh();
-    }
+    cache.compute(key, (k, v) -> {
+      if (v == null)  {
+        return newValueAndScheduleComputation(k);
+      } else {
+        v.refresh();
+        return v;
+      }
+    });
   }
 
   public V get(K key) {
-    var resultFuture = cache.computeIfAbsent(key, ValueAndComputeFutures::new);
+    var resultFuture = cache.computeIfAbsent(key, this::newValueAndScheduleComputation);
     return resultFuture.getValueFuture().join();
+  }
+
+  private ValueAndComputeFutures newValueAndScheduleComputation(K k) {
+    var value = new ValueAndComputeFutures(k);
+    value.scheduleComputation();
+    return value;
   }
 
 
