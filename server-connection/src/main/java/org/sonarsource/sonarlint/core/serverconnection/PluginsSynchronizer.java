@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,8 +38,8 @@ public class PluginsSynchronizer {
 
   private final Set<String> sonarSourceDisabledPluginKeys;
   private final ConnectionStorage storage;
-  private final Set<String> embeddedPluginKeys;
   private final PluginsMinVersions pluginsMinVersions = new PluginsMinVersions();
+  private Set<String> embeddedPluginKeys;
 
   public PluginsSynchronizer(Set<Language> enabledLanguages, ConnectionStorage storage, Set<String> embeddedPluginKeys) {
     this.sonarSourceDisabledPluginKeys = getSonarSourceDisabledPluginKeys(enabledLanguages);
@@ -46,7 +47,13 @@ public class PluginsSynchronizer {
     this.embeddedPluginKeys = embeddedPluginKeys;
   }
 
-  public boolean synchronize(ServerApi serverApi, ProgressMonitor progressMonitor) {
+  public boolean synchronize(ServerApi serverApi, ProgressMonitor progressMonitor, boolean supportsCustomSecrets) {
+    if (supportsCustomSecrets) {
+      var embeddedPluginKeysCopy = new HashSet<>(embeddedPluginKeys);
+      embeddedPluginKeysCopy.remove(Language.SECRETS.getPluginKey());
+      embeddedPluginKeys = embeddedPluginKeysCopy;
+    }
+
     var storedPluginsByKey = storage.plugins().getStoredPluginsByKey();
     var serverPlugins = serverApi.plugins().getInstalled();
     var pluginsToDownload = serverPlugins.stream()
