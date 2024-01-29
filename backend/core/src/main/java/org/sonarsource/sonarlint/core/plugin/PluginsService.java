@@ -27,7 +27,6 @@ import java.util.Set;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
-import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
@@ -40,11 +39,11 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.event.EventListener;
 
+import static org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer.CUSTOM_SECRETS_MIN_SQ_VERSION;
+
 @Named
 @Singleton
 public class PluginsService {
-  private static final Version CUSTOM_SECRETS_MIN_SQ_VERSION = Version.create("10.4");
-
   private final SonarLintLogger logger = SonarLintLogger.get();
   private final PluginsRepository pluginsRepository;
   private final LanguageSupportRepository languageSupportRepository;

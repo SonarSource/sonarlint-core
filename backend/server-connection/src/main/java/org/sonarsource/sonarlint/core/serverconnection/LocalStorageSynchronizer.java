@@ -33,6 +33,7 @@ import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfile;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 
 import static java.util.stream.Collectors.toSet;
+import static org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer.CUSTOM_SECRETS_MIN_SQ_VERSION;
 
 public class LocalStorageSynchronizer {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -51,7 +52,13 @@ public class LocalStorageSynchronizer {
 
   public boolean synchronizeServerInfosAndPlugins(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
     serverInfoSynchronizer.synchronize(serverApi, cancelMonitor);
-    return pluginsSynchronizer.synchronize(serverApi, cancelMonitor);
+    var version = storage.serverInfo().read().orElseThrow().getVersion();
+    // INFO: In order to download `sonar-text` alongside `sonar-text-enterprise` on SQ 10.4+ we have to change the
+    //       plug-in synchronizer to work correctly the moment the connection is established and the plug-ins are
+    //       downloaded for the first time and also everytime the plug-ins are refreshed (e.g. after IDE restart).
+    var supportsCustomSecrets = !serverApi.isSonarCloud()
+      && version.compareToIgnoreQualifier(CUSTOM_SECRETS_MIN_SQ_VERSION) >= 0;
+    return pluginsSynchronizer.synchronize(serverApi, supportsCustomSecrets, cancelMonitor);
   }
 
   private static AnalyzerSettingsUpdateSummary diffAnalyzerConfiguration(AnalyzerConfiguration original, AnalyzerConfiguration updated) {

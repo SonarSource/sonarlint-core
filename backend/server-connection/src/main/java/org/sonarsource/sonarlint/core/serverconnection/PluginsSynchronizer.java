@@ -21,11 +21,13 @@ package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.PluginsMinVersions;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -33,12 +35,13 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
 
 public class PluginsSynchronizer {
+  public static final Version CUSTOM_SECRETS_MIN_SQ_VERSION = Version.create("10.4");
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final Set<String> sonarSourceDisabledPluginKeys;
   private final ConnectionStorage storage;
-  private final Set<String> embeddedPluginKeys;
   private final PluginsMinVersions pluginsMinVersions = new PluginsMinVersions();
+  private Set<String> embeddedPluginKeys;
 
   public PluginsSynchronizer(Set<SonarLanguage> enabledLanguages, ConnectionStorage storage, Set<String> embeddedPluginKeys) {
     this.sonarSourceDisabledPluginKeys = getSonarSourceDisabledPluginKeys(enabledLanguages);
@@ -46,7 +49,13 @@ public class PluginsSynchronizer {
     this.embeddedPluginKeys = embeddedPluginKeys;
   }
 
-  public boolean synchronize(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
+  public boolean synchronize(ServerApi serverApi, boolean supportsCustomSecrets, SonarLintCancelMonitor cancelMonitor) {
+    if (supportsCustomSecrets) {
+      var embeddedPluginKeysCopy = new HashSet<>(embeddedPluginKeys);
+      embeddedPluginKeysCopy.remove(SonarLanguage.SECRETS.getPluginKey());
+      embeddedPluginKeys = embeddedPluginKeysCopy;
+    }
+
     var storedPluginsByKey = storage.plugins().getStoredPluginsByKey();
     var serverPlugins = serverApi.plugins().getInstalled(cancelMonitor);
     var pluginsToDownload = serverPlugins.stream()
@@ -57,7 +66,6 @@ public class PluginsSynchronizer {
   }
 
   private void downloadAll(ServerApi serverApi, List<ServerPlugin> pluginsToDownload, SonarLintCancelMonitor cancelMonitor) {
-    var i = 0;
     for (ServerPlugin p : pluginsToDownload) {
       downloadPlugin(serverApi, p, cancelMonitor);
     }
