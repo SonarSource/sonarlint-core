@@ -17,6 +17,7 @@ Import-Package: org.sonarsource.sonarlint.core.rpc.protocol.*;version="${project
   lib/spring-aop.jar=spring-aop-*.jar;lib:=true,\
   lib/spring-beans.jar=spring-beans-*.jar;lib:=true,\
   lib/spring-core.jar=spring-core-*.jar;lib:=true,\
+  lib/spring-jcl.jar=spring-jcl-*.jar;lib:=true,\
   lib/spring-expression.jar=spring-expression-*.jar;lib:=true,\
   lib/commons-lang3.jar=commons-lang3-*.jar;lib:=true,\
   lib/commons-io.jar=commons-io-*.jar;lib:=true,\
