@@ -1,0 +1,8 @@
+<!-- This file is shared between the production and medium test code -->
+<included>
+  <root level="trace"/>
+  <logger name="org.springframework" level="warn" />
+  <logger name="nl.altindag.ssl" level="warn" />
+  <logger name="jetbrains.exodus" level="warn" />
+  <logger name="org.apache.hc" level="warn" />
+</included>

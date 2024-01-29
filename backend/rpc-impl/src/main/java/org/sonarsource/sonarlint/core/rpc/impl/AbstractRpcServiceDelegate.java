@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
+import org.slf4j.MDC;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -112,10 +113,12 @@ abstract class AbstractRpcServiceDelegate {
 
   private void withLogger(Runnable code, @Nullable String configScopeId) {
     SonarLintLogger.setTarget(logOutputSupplier.get());
+    MDC.put("configScopeId", configScopeId);
     logOutputSupplier.get().setConfigScopeId(configScopeId);
     try {
       code.run();
     } finally {
+      MDC.clear();
       SonarLintLogger.setTarget(null);
       logOutputSupplier.get().setConfigScopeId(null);
     }
@@ -123,10 +126,12 @@ abstract class AbstractRpcServiceDelegate {
 
   private <G> G withLogger(Supplier<G> code, @Nullable String configScopeId) {
     SonarLintLogger.setTarget(logOutputSupplier.get());
+    MDC.put("configScopeId", configScopeId);
     logOutputSupplier.get().setConfigScopeId(configScopeId);
     try {
       return code.get();
     } finally {
+      MDC.clear();
       SonarLintLogger.setTarget(null);
       logOutputSupplier.get().setConfigScopeId(null);
     }
