@@ -61,6 +61,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.rules.StandaloneRuleConf
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.NoBindingSuggestionFoundParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
@@ -382,6 +383,12 @@ public class SonarLintBackendFixture {
     private ProxyDto proxy;
     private GetProxyPasswordAuthenticationResponse proxyAuth;
     private Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId = new HashMap<>();
+    private final Set<String> configScopeIds = new HashSet<>();
+
+    public SonarLintClientBuilder withConfigScope(String configScopeId) {
+      configScopeIds.add(configScopeId);
+      return this;
+    }
 
     public SonarLintClientBuilder withFoundFile(String name, String path, String content) {
       foundFiles.add(new FoundFileDto(name, path, content));
@@ -432,7 +439,7 @@ public class SonarLintBackendFixture {
     public FakeSonarLintClient build() {
       return new FakeSonarLintClient(foundFiles, clientDescription, cannedAssistCreatingSonarQubeConnectionByBaseUrl,
         cannedBindingAssistByProjectKey,
-        rejectingProgress, proxy, proxyAuth, credentialsByConnectionId);
+        rejectingProgress, proxy, proxyAuth, credentialsByConnectionId, configScopeIds);
     }
   }
 
@@ -456,12 +463,14 @@ public class SonarLintBackendFixture {
     private final GetProxyPasswordAuthenticationResponse proxyAuth;
     private final Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId;
     private final Map<String, List<ServerEvent>> receivedServerEventsByConnectionId = new ConcurrentHashMap<>();
+    private final Set<String> configScopeIds = new HashSet<>();
     private SonarLintBackendImpl backend;
 
     public FakeSonarLintClient(List<FoundFileDto> foundFiles, String clientDescription,
       LinkedHashMap<String, SonarQubeConnectionConfigurationDto> cannedAssistCreatingSonarQubeConnectionByBaseUrl,
       LinkedHashMap<String, ConfigurationScopeDto> bindingAssistResponseByProjectKey, boolean rejectingProgress, @Nullable ProxyDto proxy,
-      @Nullable GetProxyPasswordAuthenticationResponse proxyAuth, Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId) {
+      @Nullable GetProxyPasswordAuthenticationResponse proxyAuth, Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId,
+      Set<String> configScopeIds) {
       this.foundFiles = foundFiles;
       this.clientDescription = clientDescription;
       this.cannedAssistCreatingSonarQubeConnectionByBaseUrl = cannedAssistCreatingSonarQubeConnectionByBaseUrl;
@@ -470,6 +479,7 @@ public class SonarLintBackendFixture {
       this.proxy = proxy;
       this.proxyAuth = proxyAuth;
       this.credentialsByConnectionId = credentialsByConnectionId;
+      this.configScopeIds.addAll(configScopeIds);
     }
 
     public void setBackend(SonarLintBackendImpl backend) {
@@ -528,7 +538,7 @@ public class SonarLintBackendFixture {
         return canceledFuture();
       }
       backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(cannedSonarQubeConnection), Collections.emptyList()));
-      return CompletableFuture.completedFuture(new AssistCreatingConnectionResponse(cannedSonarQubeConnection.getConnectionId()));
+      return CompletableFuture.completedFuture(new AssistCreatingConnectionResponse(cannedSonarQubeConnection.getConnectionId(), configScopeIds));
     }
 
     @Override
@@ -643,6 +653,11 @@ public class SonarLintBackendFixture {
     @Override
     public void didReceiveServerEvent(DidReceiveServerEventParams params) {
       this.receivedServerEventsByConnectionId.computeIfAbsent(params.getConnectionId(), k -> new CopyOnWriteArrayList<>()).add(params.getServerEvent());
+    }
+
+    @Override
+    public void noBindingSuggestionFound(NoBindingSuggestionFoundParams params) {
+
     }
 
     public Map<String, List<ServerEvent>> getReceivedServerEventsByConnectionId() {

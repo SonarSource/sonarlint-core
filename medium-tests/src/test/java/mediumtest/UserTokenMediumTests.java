@@ -22,44 +22,54 @@ package mediumtest;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 
-import mockwebserver3.MockResponse;
+import mediumtest.fixtures.ServerFixture;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.SonarLintBackendImpl;
 import org.sonarsource.sonarlint.core.clientapi.backend.usertoken.RevokeTokenParams;
-import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 
 class UserTokenMediumTests {
-  @RegisterExtension
-  private final MockWebServerExtension mockWebServerExtension = new MockWebServerExtension();
   
   private SonarLintBackendImpl backend;
+  private ServerFixture.Server server;
 
-  @AfterEach
+    @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
     backend.shutdown().get();
+      if (server != null) {
+        server.shutdown();
+        server = null;
+      }
   }
 
-  /**
-   *  INFO: Check {@link its.SonarCloudTests#test_revoke_token()} and
-   *        {@link its.SonarQubeCommunityEditionTests#test_revoke_token()} for actual (non-mocked) tests against SQ/SC.
-   */
   @Test
   void test_revoke_user_token() {
     var fakeClient = newFakeClient().build();
     backend = newBackend().build(fakeClient);
-
-    mockWebServerExtension.addResponse("/api/user_tokens/revoke",
-      new MockResponse().setResponseCode(200));
+    var tokenName = "tokenNameTest";
+    server = ServerFixture.newSonarQubeServer().withToken(tokenName).start();
 
     assertThat(backend
       .getUserTokenService()
-      .revokeToken(new RevokeTokenParams(mockWebServerExtension.url("/"), "tokenNameTest", "tokenValueTest")))
+      .revokeToken(new RevokeTokenParams(server.baseUrl(), tokenName, "tokenValueTest")))
       .succeedsWithin(Duration.ofSeconds(5));
   }
+
+  @Test
+  void test_revoke_unknown_user_token() {
+    var fakeClient = newFakeClient().build();
+    backend = newBackend().build(fakeClient);
+    var tokenName = "tokenNameTest";
+    server = ServerFixture.newSonarQubeServer().start();
+
+    assertThat(backend
+            .getUserTokenService()
+            .revokeToken(new RevokeTokenParams(server.baseUrl(), tokenName, "tokenValueTest")))
+            .failsWithin(Duration.ofSeconds(5));
+  }
+
 }

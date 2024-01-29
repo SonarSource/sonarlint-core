@@ -19,16 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.client.binding;
 
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
+import javax.annotation.Nullable;
 
 public class AssistBindingResponse {
   private final String configurationScopeId;
 
-  public AssistBindingResponse(@NonNull String configurationScopeId) {
+  public AssistBindingResponse(@Nullable String configurationScopeId) {
     this.configurationScopeId = configurationScopeId;
   }
 
-  @NonNull
+  @Nullable
   public String getConfigurationScopeId() {
     return configurationScopeId;
   }

@@ -51,7 +51,8 @@ class ShowIssueMediumTests {
   private ServerFixture.Server serverWithIssues = newSonarQubeServer("10.2")
     .withProject(PROJECT_KEY,
       project -> {
-        project.withPullRequest("1234", pullRequest -> (ServerFixture.ServerBuilder.ServerProjectPullRequestBuilder) pullRequest.withIssue(PR_ISSUE_KEY, RULE_KEY, "msg", "author", "file/path", "OPEN", "", "2023-05-13T17:55:39+0202",
+        project.withProjectName("org.sonarsource.sonarlint.intellij:sonarlint-intellij")
+          .withPullRequest("1234", pullRequest -> (ServerFixture.ServerBuilder.ServerProjectPullRequestBuilder) pullRequest.withIssue(PR_ISSUE_KEY, RULE_KEY, "msg", "author", "file/path", "OPEN", "", "2023-05-13T17:55:39+0202",
           new TextRange(1, 0, 3, 4))
           .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile\nfive\nlines")));
         return project.withBranch("branchName",
@@ -195,11 +196,13 @@ class ShowIssueMediumTests {
 
   @Test
   void it_should_assist_creating_the_binding_if_scope_not_bound() throws Exception {
-    var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", CONNECTION_ID, serverWithIssues.baseUrl(),
+    var fakeClient = newFakeClient()
+      .withConfigScope("sonarlint-intellij")
+      .assistingConnectingAndBindingToSonarQube("sonarlint-intellij", CONNECTION_ID, serverWithIssues.baseUrl(),
       "projectKey").build();
     backend = newBackend()
       .withSonarQubeConnection(CONNECTION_ID, serverWithIssues)
-      .withUnboundConfigScope("scopeId")
+      .withUnboundConfigScope("sonarlint-intellij")
       .withEmbeddedServer()
       .build(fakeClient);
 
@@ -212,11 +215,37 @@ class ShowIssueMediumTests {
   }
 
   @Test
+  void it_should_not_assist_binding_if_multiple_suggestions() throws Exception {
+    var fakeClient = newFakeClient()
+      // Both of the config scope IDs will be a match
+      .withConfigScope("intellij")
+      .withConfigScope("sonarlint-intellij")
+      .assistingConnectingAndBindingToSonarQube("intellij", CONNECTION_ID, serverWithIssues.baseUrl(),
+        "projectKey")
+      .assistingConnectingAndBindingToSonarQube("sonarlint-intellij", CONNECTION_ID, serverWithIssues.baseUrl(),
+        "projectKey").build();
+    backend = newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, serverWithIssues)
+      .withUnboundConfigScope("intellij")
+      .withUnboundConfigScope("sonarlint-intellij")
+      .withEmbeddedServer()
+      .build(fakeClient);
+
+    var statusCode = executeOpenIssueRequest(ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
+
+    assertThat(statusCode).isEqualTo(200);
+    assertThat(fakeClient.getMessagesToShow()).isEmpty();
+    await().during(1, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getIssueParamsToShowByIssueKey()).isEmpty());
+  }
+
+  @Test
   void it_should_assist_creating_the_connection_when_server_url_unknown() throws Exception {
-    var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", CONNECTION_ID, serverWithIssues.baseUrl(),
+    var fakeClient = newFakeClient()
+      .withConfigScope("sonarlint-intellij")
+      .assistingConnectingAndBindingToSonarQube("sonarlint-intellij", CONNECTION_ID, serverWithIssues.baseUrl(),
       "projectKey").build();
     backend = newBackend()
-      .withUnboundConfigScope("scopeId")
+      .withUnboundConfigScope("sonarlint-intellij")
       .withEmbeddedServer()
       .build(fakeClient);
 

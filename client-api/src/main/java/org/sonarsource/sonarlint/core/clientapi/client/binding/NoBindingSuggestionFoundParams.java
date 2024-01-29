@@ -19,26 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.client.binding;
 
-public class AssistBindingParams {
-  private final String connectionId;
+import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
+
+public class NoBindingSuggestionFoundParams {
+
+  @NonNull
   private final String projectKey;
-  private final String configScopeId;
 
-  public AssistBindingParams(String connectionId, String projectKey, String configScopeId) {
-    this.connectionId = connectionId;
+  public NoBindingSuggestionFoundParams(String projectKey) {
     this.projectKey = projectKey;
-    this.configScopeId = configScopeId;
-  }
-
-  public String getConnectionId() {
-    return connectionId;
   }
 
   public String getProjectKey() {
     return projectKey;
   }
 
-  public String getConfigScopeId() {
-    return configScopeId;
-  }
 }

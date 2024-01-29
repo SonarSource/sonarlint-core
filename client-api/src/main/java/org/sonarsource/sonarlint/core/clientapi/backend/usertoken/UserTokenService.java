@@ -23,8 +23,9 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 
 public interface UserTokenService {
+
   /**
-   *  <p> It revokes a user token that is existing on the server and was handed over to the client.
+   *  <p> It revokes a user token that is existing on the server.
    *  It silently deals with the following conditions:
    *  <ul>
    *    <li>the token provided by name (identified by {@link RevokeTokenParams#getTokenName()} exists</li>
@@ -38,6 +39,6 @@ public interface UserTokenService {
    *  </ul>
    *  </p>
    */
-  @JsonRequest
   CompletableFuture<Void> revokeToken(RevokeTokenParams params);
+
 }

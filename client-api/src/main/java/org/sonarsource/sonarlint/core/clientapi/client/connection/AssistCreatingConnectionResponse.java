@@ -19,17 +19,24 @@
  */
 package org.sonarsource.sonarlint.core.clientapi.client.connection;
 
+import java.util.Set;
 import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
 public class AssistCreatingConnectionResponse {
   private final String newConnectionId;
+  private final Set<String> configScopeIds;
 
-  public AssistCreatingConnectionResponse(@NonNull String newConnectionId) {
+  public AssistCreatingConnectionResponse(@NonNull String newConnectionId, @NonNull Set<String> configScopeIds) {
     this.newConnectionId = newConnectionId;
+    this.configScopeIds = configScopeIds;
   }
 
   @NonNull
   public String getNewConnectionId() {
     return newConnectionId;
+  }
+  @NonNull
+  public Set<String> getConfigScopeIds() {
+    return configScopeIds;
   }
 }

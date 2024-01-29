@@ -37,6 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.NoBindingSuggestionFoundParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
@@ -135,7 +136,7 @@ class SonarLintClientTests {
   }
 
   @Test
-  void failIfInvalidURL() throws ExecutionException, InterruptedException {
+  void failIfInvalidURL() {
     var future = underTest.getProxyPasswordAuthentication(new GetProxyPasswordAuthenticationParams("http://foo", 8085, "protocol", "prompt", "scheme", "invalid:url"));
     assertThat(future).failsWithin(Duration.ofMillis(50))
       .withThrowableOfType(ExecutionException.class)
@@ -217,5 +218,11 @@ class SonarLintClientTests {
     public CompletableFuture<GetCredentialsResponse> getCredentials(GetCredentialsParams params) {
       return null;
     }
+
+    @Override
+    public void noBindingSuggestionFound(NoBindingSuggestionFoundParams params) {
+
+    }
+
   }
 }
