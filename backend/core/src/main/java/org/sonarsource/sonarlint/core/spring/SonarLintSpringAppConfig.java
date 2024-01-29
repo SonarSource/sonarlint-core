@@ -27,6 +27,7 @@ import java.nio.file.Paths;
 import java.util.Optional;
 import javax.inject.Named;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
+import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingClueProvider;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
 import org.sonarsource.sonarlint.core.ConfigurationService;
@@ -150,7 +151,8 @@ import org.springframework.scheduling.support.TaskUtils;
   PathTranslationService.class,
   FileExclusionService.class,
   NodeJsService.class,
-  OrganizationsCache.class
+  OrganizationsCache.class,
+  BindingCandidatesFinder.class
 })
 public class SonarLintSpringAppConfig {
 

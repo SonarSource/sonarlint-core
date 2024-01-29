@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeNodeJsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSuggestionFoundParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.DidChangeMatchedSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchParams;
@@ -297,4 +298,8 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
     notify(() -> delegate.didChangeNodeJs(params.getNodeJsPath(), params.getVersion()));
   }
 
+  @Override
+  public void noBindingSuggestionFound(NoBindingSuggestionFoundParams params) {
+    notify(() -> delegate.noBindingSuggestionFound(params.getProjectKey()));
+  }
 }

@@ -24,10 +24,12 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
@@ -35,9 +37,12 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.usertoken.RevokeTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSuggestionFoundParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
+import org.sonarsource.sonarlint.core.usertoken.UserTokenService;
 
 @Named
 @Singleton
@@ -45,24 +50,28 @@ public class RequestHandlerBindingAssistant {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final BindingSuggestionProvider bindingSuggestionProvider;
+  private final BindingCandidatesFinder bindingCandidatesFinder;
   private final SonarLintRpcClient client;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final ConfigurationRepository configurationRepository;
+  private final UserTokenService userTokenService;
   private final ExecutorServiceShutdownWatchable<?> executorService;
 
-  public RequestHandlerBindingAssistant(BindingSuggestionProvider bindingSuggestionProvider, SonarLintRpcClient client,
+  public RequestHandlerBindingAssistant(BindingSuggestionProvider bindingSuggestionProvider, BindingCandidatesFinder bindingCandidatesFinder, SonarLintRpcClient client,
     ConnectionConfigurationRepository connectionConfigurationRepository,
-    ConfigurationRepository configurationRepository) {
+    ConfigurationRepository configurationRepository, UserTokenService userTokenService) {
     this.bindingSuggestionProvider = bindingSuggestionProvider;
+    this.bindingCandidatesFinder = bindingCandidatesFinder;
     this.client = client;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.configurationRepository = configurationRepository;
+    this.userTokenService = userTokenService;
     this.executorService = new ExecutorServiceShutdownWatchable<>(new ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS,
       new LinkedBlockingQueue<>(), r -> new Thread(r, "Show Issue or Hotspot Request Handler")));
   }
 
   interface Callback {
-    void andThen(String connectionId, String configurationScopeId, SonarLintCancelMonitor cancelMonitor);
+    void andThen(String connectionId, @Nullable String configurationScopeId, SonarLintCancelMonitor cancelMonitor);
   }
 
   void assistConnectionAndBindingIfNeededAsync(String serverUrl, @Nullable String tokenName, @Nullable String tokenValue, String projectKey, Callback callback) {
@@ -79,8 +88,9 @@ public class RequestHandlerBindingAssistant {
       if (connectionsMatchingOrigin.isEmpty()) {
         startFullBindingProcess();
         try {
-          var assistNewConnectionResult = assistCreatingConnectionAndWaitForRepositoryUpdate(serverUrl, tokenName, tokenValue);
-          var assistNewBindingResult = assistBindingAndWaitForRepositoryUpdate(assistNewConnectionResult.getNewConnectionId(), projectKey, cancelMonitor);
+          var assistNewConnectionResult = assistCreatingConnectionAndWaitForRepositoryUpdate(serverUrl, tokenName, tokenValue, cancelMonitor);
+          var assistNewBindingResult = assistBindingAndWaitForRepositoryUpdate(assistNewConnectionResult.getNewConnectionId(),
+            projectKey, cancelMonitor);
           callback.andThen(assistNewConnectionResult.getNewConnectionId(), assistNewBindingResult.getConfigurationScopeId(), cancelMonitor);
         } finally {
           endFullBindingProcess();
@@ -95,8 +105,9 @@ public class RequestHandlerBindingAssistant {
     }
   }
 
-  private AssistCreatingConnectionResponse assistCreatingConnectionAndWaitForRepositoryUpdate(String serverUrl, @Nullable String tokenName, @Nullable String tokenValue) {
-    var assistNewConnectionResult = assistCreatingConnection(serverUrl, tokenName, tokenValue);
+  private AssistCreatingConnectionResponse assistCreatingConnectionAndWaitForRepositoryUpdate(String serverUrl, @Nullable String tokenName, @Nullable String tokenValue,
+    SonarLintCancelMonitor cancelMonitor) {
+    var assistNewConnectionResult = assistCreatingConnection(serverUrl, tokenName, tokenValue, cancelMonitor);
 
     // Wait 5s for the connection to be created in the repository. This is happening asynchronously by the
     // ConnectionService::didUpdateConnections event
@@ -130,16 +141,19 @@ public class RequestHandlerBindingAssistant {
     var assistNewBindingResult = assistBinding(connectionId, projectKey, cancelMonitor);
     // Wait 5s for the binding to be created in the repository. This is happening asynchronously by the
     // ConfigurationService::didUpdateBinding event
-    LOG.debug("Waiting for binding creation notification...");
-    for (var i = 50; i >= 0; i--) {
-      if (configurationRepository.getEffectiveBinding(assistNewBindingResult.configurationScopeId).isPresent()) {
-        break;
+    var configurationScopeId = assistNewBindingResult.getConfigurationScopeId();
+    if (configurationScopeId != null) {
+      LOG.debug("Waiting for binding creation notification...");
+      for (var i = 50; i >= 0; i--) {
+        if (configurationRepository.getEffectiveBinding(configurationScopeId).isPresent()) {
+          break;
+        }
+        sleep();
       }
-      sleep();
-    }
-    if (configurationRepository.getEffectiveBinding(assistNewBindingResult.configurationScopeId).isEmpty()) {
-      LOG.warn("Did not receive binding creation notification on a timely manner");
-      throw new CancellationException();
+      if (configurationRepository.getEffectiveBinding(configurationScopeId).isEmpty()) {
+        LOG.warn("Did not receive binding creation notification on a timely manner");
+        throw new CancellationException();
+      }
     }
 
     return assistNewBindingResult;
@@ -165,22 +179,38 @@ public class RequestHandlerBindingAssistant {
     bindingSuggestionProvider.enable();
   }
 
-  AssistCreatingConnectionResponse assistCreatingConnection(String serverUrl, @Nullable String tokenName, @Nullable String tokenValue) {
-    return client.assistCreatingConnection(new AssistCreatingConnectionParams(serverUrl, tokenName, tokenValue)).join();
+  AssistCreatingConnectionResponse assistCreatingConnection(String serverUrl, @Nullable String tokenName, @Nullable String tokenValue, SonarLintCancelMonitor cancelMonitor) {
+    try {
+      var future = client.assistCreatingConnection(new AssistCreatingConnectionParams(serverUrl, tokenName, tokenValue));
+      cancelMonitor.onCancel(() -> future.cancel(true));
+      return future.join();
+    } catch (Exception e) {
+      if (tokenName != null && tokenValue != null) {
+        userTokenService.revokeToken(new RevokeTokenParams(serverUrl, tokenName, tokenValue), cancelMonitor);
+      }
+      throw e;
+    }
   }
 
   NewBinding assistBinding(String connectionId, String projectKey, SonarLintCancelMonitor cancelMonitor) {
-    var future = client.assistBinding(new AssistBindingParams(connectionId, projectKey));
+    var configScopeCandidates = bindingCandidatesFinder.findConfigScopesToBind(connectionId, projectKey, cancelMonitor);
+    // For now, we decided to only support automatic binding if there is only one clear candidate
+    if (configScopeCandidates.size() != 1) {
+      client.noBindingSuggestionFound(new NoBindingSuggestionFoundParams(projectKey));
+      return new NewBinding(connectionId, null);
+    }
+    var future = client.assistBinding(new AssistBindingParams(connectionId, projectKey, configScopeCandidates.iterator().next()));
     cancelMonitor.onCancel(() -> future.cancel(true));
     var response = future.join();
     return new NewBinding(connectionId, response.getConfigurationScopeId());
   }
 
+
   static class NewBinding {
     private final String connectionId;
     private final String configurationScopeId;
 
-    private NewBinding(String connectionId, String configurationScopeId) {
+    private NewBinding(String connectionId, @Nullable String configurationScopeId) {
       this.connectionId = connectionId;
       this.configurationScopeId = configurationScopeId;
     }
@@ -189,6 +219,7 @@ public class RequestHandlerBindingAssistant {
       return connectionId;
     }
 
+    @CheckForNull
     public String getConfigurationScopeId() {
       return configurationScopeId;
     }

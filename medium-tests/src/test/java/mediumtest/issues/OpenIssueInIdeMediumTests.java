@@ -36,6 +36,7 @@ import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -45,6 +46,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.Did
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
@@ -62,6 +64,7 @@ import static org.mockito.Mockito.verify;
 class OpenIssueInIdeMediumTests {
 
   public static final String PROJECT_KEY = "projectKey";
+  public static final String SONAR_PROJECT_NAME = "SonarLint IntelliJ";
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester(true);
 
@@ -76,7 +79,7 @@ class OpenIssueInIdeMediumTests {
   private ServerFixture.Server serverWithIssues = newSonarQubeServer("10.2")
     .withProject(PROJECT_KEY,
       project -> {
-        project.withPullRequest("1234",
+        project.withProjectName(SONAR_PROJECT_NAME).withPullRequest("1234",
           pullRequest -> (ServerFixture.ServerBuilder.ServerProjectBuilder.ServerProjectPullRequestBuilder) pullRequest
             .withIssue(PR_ISSUE_KEY, RULE_KEY, "msg", "author", "file/path", "OPEN", "", ISSUE_INTRODUCTION_DATE,
               new TextRange(1, 0, 3, 4))
@@ -141,10 +144,10 @@ class OpenIssueInIdeMediumTests {
     var statusCode = executeOpenIssueRequest(ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
     assertThat(statusCode).isEqualTo(200);
 
-    verify(fakeClient, timeout(2000)).showIssue(any(), any());
+    ArgumentCaptor<IssueDetailsDto> captor = ArgumentCaptor.captor();
+    verify(fakeClient, timeout(2000)).showIssue(eq(configScopeId), captor.capture());
 
-    await().untilAsserted(() -> assertThat(fakeClient.getIssueToShowByConfigScopeId()).containsOnlyKeys(configScopeId));
-    var issues = fakeClient.getIssueToShowByConfigScopeId().get(configScopeId);
+    var issues = captor.getAllValues();
     assertThat(issues).hasSize(1);
     var issueDetails = issues.get(0);
     assertThat(issueDetails.getIssueKey()).isEqualTo(issueKey);
@@ -153,7 +156,7 @@ class OpenIssueInIdeMediumTests {
     assertThat(issueDetails.getRuleKey()).isEqualTo("ruleKey");
     assertThat(issueDetails.getCreationDate()).isEqualTo("2023-12-25T12:30:35+0000");
     assertThat(issueDetails.getTextRange()).extracting(TextRangeDto::getStartLine, TextRangeDto::getStartLineOffset,
-      TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
+        TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
       .contains(1, 0, 3, 4);
     assertThat(issueDetails.getCodeSnippet()).isEqualTo("source\ncode\nfile");
     assertThat(issueDetails.getBranch()).isEqualTo(BRANCH_NAME);
@@ -176,10 +179,10 @@ class OpenIssueInIdeMediumTests {
     var statusCode = executeOpenIssueRequest(PR_ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, "1234");
     assertThat(statusCode).isEqualTo(200);
 
-    verify(fakeClient, timeout(2000)).showIssue(any(), any());
+    ArgumentCaptor<IssueDetailsDto> captor = ArgumentCaptor.captor();
+    verify(fakeClient, timeout(2000)).showIssue(eq(configScopeId), captor.capture());
 
-    await().untilAsserted(() -> assertThat(fakeClient.getIssueToShowByConfigScopeId()).containsOnlyKeys(configScopeId));
-    var issues = fakeClient.getIssueToShowByConfigScopeId().get(configScopeId);
+    var issues = captor.getAllValues();
     assertThat(issues).hasSize(1);
     var issueDetails = issues.get(0);
     assertThat(issueDetails.getIssueKey()).isEqualTo(PR_ISSUE_KEY);
@@ -188,7 +191,7 @@ class OpenIssueInIdeMediumTests {
     assertThat(issueDetails.getRuleKey()).isEqualTo("ruleKey");
     assertThat(issueDetails.getCreationDate()).isEqualTo("2023-12-25T12:30:35+0000");
     assertThat(issueDetails.getTextRange()).extracting(TextRangeDto::getStartLine, TextRangeDto::getStartLineOffset,
-      TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
+        TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
       .contains(1, 0, 3, 4);
     assertThat(issueDetails.getCodeSnippet()).isEqualTo("source\ncode\nfile");
     assertThat(issueDetails.getBranch()).isEqualTo(BRANCH_NAME);
@@ -212,10 +215,10 @@ class OpenIssueInIdeMediumTests {
     var statusCode = executeOpenIssueRequest(FILE_LEVEL_ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
     assertThat(statusCode).isEqualTo(200);
 
-    verify(fakeClient, timeout(2000)).showIssue(any(), any());
+    ArgumentCaptor<IssueDetailsDto> captor = ArgumentCaptor.captor();
+    verify(fakeClient, timeout(2000)).showIssue(eq(configScopeId), captor.capture());
 
-    await().untilAsserted(() -> assertThat(fakeClient.getIssueToShowByConfigScopeId()).containsOnlyKeys(configScopeId));
-    var issues = fakeClient.getIssueToShowByConfigScopeId().get(configScopeId);
+    var issues = captor.getAllValues();
     assertThat(issues).hasSize(1);
     var issueDetails = issues.get(0);
     assertThat(issueDetails.getIssueKey()).isEqualTo(issueKey);
@@ -224,7 +227,7 @@ class OpenIssueInIdeMediumTests {
     assertThat(issueDetails.getRuleKey()).isEqualTo("ruleKey");
     assertThat(issueDetails.getCreationDate()).isEqualTo("2023-12-25T12:30:35+0000");
     assertThat(issueDetails.getTextRange()).extracting(TextRangeDto::getStartLine, TextRangeDto::getStartLineOffset,
-      TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
+        TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
       .contains(0, 0, 0, 0);
     assertThat(issueDetails.getCodeSnippet()).isEqualTo("source\ncode\nfile\nfive\nlines");
   }
@@ -237,7 +240,7 @@ class OpenIssueInIdeMediumTests {
 
     backend = newBackend()
       .withSonarQubeConnection(CONNECTION_ID, serverWithIssues)
-      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withUnboundConfigScope(CONFIG_SCOPE_ID, SONAR_PROJECT_NAME)
       .withEmbeddedServer()
       .build(fakeClient);
 
@@ -249,13 +252,33 @@ class OpenIssueInIdeMediumTests {
   }
 
   @Test
+  void it_should_not_assist_binding_if_multiple_suggestions() throws Exception {
+    var fakeClient = newFakeClient().build();
+    mockAssistCreatingConnection(fakeClient, CONNECTION_ID);
+    mockAssistBinding(fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
+    backend = newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, serverWithIssues)
+      // Both config scopes will match the Sonar project name
+      .withUnboundConfigScope("configScopeA", SONAR_PROJECT_NAME + " 1")
+      .withUnboundConfigScope("configScopeB", SONAR_PROJECT_NAME + " 2")
+      .withEmbeddedServer()
+      .build(fakeClient);
+
+    var statusCode = executeOpenIssueRequest(ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
+
+    assertThat(statusCode).isEqualTo(200);
+    verify(fakeClient, timeout(1000)).noBindingSuggestionFound(PROJECT_KEY);
+    verify(fakeClient, never()).showIssue(any(), any());
+  }
+
+  @Test
   void it_should_assist_creating_the_connection_when_server_url_unknown() throws Exception {
     var fakeClient = newFakeClient().build();
     mockAssistCreatingConnection(fakeClient, CONNECTION_ID);
     mockAssistBinding(fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
     backend = newBackend()
-      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withUnboundConfigScope(CONFIG_SCOPE_ID, SONAR_PROJECT_NAME)
       .withEmbeddedServer()
       .build(fakeClient);
 

@@ -40,4 +40,5 @@ public interface UserTokenRpcService {
    */
   @JsonRequest
   CompletableFuture<Void> revokeToken(RevokeTokenParams params);
+
 }

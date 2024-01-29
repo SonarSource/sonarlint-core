@@ -81,7 +81,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupp
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
@@ -444,7 +443,6 @@ public class SonarLintBackendFixture {
     private Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId = new HashMap<>();
     private boolean printLogsToStdOut;
     private Map<String, List<ClientFileDto>> initialFilesByConfigScope = new HashMap<>();
-
     private final Map<String, String> matchedBranchPerScopeId = new HashMap<>();
 
     public SonarLintClientBuilder withCredentials(String connectionId, String user, String password) {
@@ -480,8 +478,6 @@ public class SonarLintBackendFixture {
   public static class FakeSonarLintRpcClient implements SonarLintRpcClientDelegate {
     private final Queue<ShowSoonUnsupportedMessageParams> soonUnsupportedMessagesToShow = new ConcurrentLinkedQueue<>();
     private final Queue<ShowSmartNotificationParams> smartNotificationsToShow = new ConcurrentLinkedQueue<>();
-    private final Map<String, List<HotspotDetailsDto>> hotspotToShowByConfigScopeId = new ConcurrentHashMap<>();
-    private final Map<String, List<IssueDetailsDto>> issueToShowByConfigScopeId = new ConcurrentHashMap<>();
     private final Map<String, ProgressReport> progressReportsByTaskId = new ConcurrentHashMap<>();
     private final Set<String> synchronizedConfigScopeIds = new HashSet<>();
     private final Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId;
@@ -516,12 +512,10 @@ public class SonarLintBackendFixture {
 
     @Override
     public void showHotspot(String configurationScopeId, HotspotDetailsDto hotspotDetails) {
-      hotspotToShowByConfigScopeId.computeIfAbsent(configurationScopeId, k -> new ArrayList<>()).add(hotspotDetails);
     }
 
     @Override
     public void showIssue(String configurationScopeId, IssueDetailsDto issueDetails) {
-      issueToShowByConfigScopeId.computeIfAbsent(configurationScopeId, k -> new ArrayList<>()).add(issueDetails);
     }
 
     @Override
@@ -662,20 +656,16 @@ public class SonarLintBackendFixture {
       return smartNotificationsToShow;
     }
 
-    public Map<String, List<HotspotDetailsDto>> getHotspotToShowByConfigScopeId() {
-      return hotspotToShowByConfigScopeId;
-    }
-
-    public Map<String, List<IssueDetailsDto>> getIssueToShowByConfigScopeId() {
-      return issueToShowByConfigScopeId;
-    }
-
     public Queue<LogParams> getLogs() {
       return logs;
     }
 
     public List<String> getLogMessages() {
       return logs.stream().map(LogParams::getMessage).collect(Collectors.toList());
+    }
+
+    @Override
+    public void noBindingSuggestionFound(String projectKey) {
     }
 
     public List<DidChangeTaintVulnerabilitiesParams> getTaintVulnerabilityChanges() {
