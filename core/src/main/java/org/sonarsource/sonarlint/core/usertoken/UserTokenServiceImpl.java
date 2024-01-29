@@ -23,8 +23,11 @@ import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.clientapi.backend.usertoken.RevokeTokenParams;
 import org.sonarsource.sonarlint.core.clientapi.backend.usertoken.UserTokenService;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class UserTokenServiceImpl implements UserTokenService {
+
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final ServerApiProvider serverApiProvider;
 
   public UserTokenServiceImpl(ServerApiProvider serverApiProvider) {
@@ -33,8 +36,10 @@ public class UserTokenServiceImpl implements UserTokenService {
 
   @Override
   public CompletableFuture<Void> revokeToken(RevokeTokenParams params) {
+    LOG.debug(String.format("Revoking token '%s'", params.getTokenName()));
     return serverApiProvider.getServerApi(params.getBaseUrl(), null, params.getTokenValue())
       .userTokens()
       .revoke(params.getTokenName());
   }
+
 }

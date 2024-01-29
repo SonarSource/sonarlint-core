@@ -20,6 +20,8 @@
 package mediumtest.fixtures;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.matching.ContentPattern;
 import com.google.protobuf.Message;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -42,6 +44,7 @@ import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Components;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Measures;
@@ -84,6 +87,7 @@ public class ServerFixture {
     private final Map<String, ServerProjectBuilder> projectByProjectKey = new HashMap<>();
     private ServerStatus serverStatus = ServerStatus.UP;
     private boolean smartNotificationsSupported;
+    private final List<String> tokensRegistered = new ArrayList<>();
 
     public ServerBuilder(ServerKind serverKind, @Nullable String version) {
       this.serverKind = serverKind;
@@ -92,6 +96,11 @@ public class ServerFixture {
 
     public ServerBuilder withStatus(ServerStatus status) {
       serverStatus = status;
+      return this;
+    }
+
+    public ServerBuilder withToken(String tokenName) {
+      tokensRegistered.add(tokenName);
       return this;
     }
 
@@ -107,7 +116,7 @@ public class ServerFixture {
     }
 
     public Server start() {
-      var server = new Server(serverKind, serverStatus, version, projectByProjectKey, smartNotificationsSupported);
+      var server = new Server(serverKind, serverStatus, version, projectByProjectKey, smartNotificationsSupported, tokensRegistered);
       server.start();
       return server;
     }
@@ -115,6 +124,13 @@ public class ServerFixture {
     public static class ServerProjectBuilder {
       private final Map<String, ServerProjectBranchBuilder> branchesByName = new HashMap<>();
       private final Map<String, ServerProjectPullRequestBuilder> pullRequestsByName = new HashMap<>();
+
+      private String projectName;
+
+      public ServerProjectBuilder withProjectName(String projectName) {
+        this.projectName = projectName;
+        return this;
+      }
 
       public ServerProjectBuilder withEmptyBranch(String branchName) {
         var builder = new ServerProjectBranchBuilder();
@@ -313,15 +329,17 @@ public class ServerFixture {
     private final Version version;
     private final Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey;
     private final boolean smartNotificationsSupported;
+    private final List<String> tokensRegistered;
 
     public Server(ServerKind serverKind, ServerStatus serverStatus, @Nullable String version,
       Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey,
-      boolean smartNotificationsSupported) {
+      boolean smartNotificationsSupported, List<String> tokensRegistered) {
       this.serverKind = serverKind;
       this.serverStatus = serverStatus;
       this.version = version != null ? Version.create(version) : null;
       this.projectsByProjectKey = projectsByProjectKey;
       this.smartNotificationsSupported = smartNotificationsSupported;
+      this.tokensRegistered = tokensRegistered;
     }
 
     public void start() {
@@ -337,7 +355,27 @@ public class ServerFixture {
         registerSourceApiResponses();
         registerDevelopersApiResponses();
         registerMeasuresApiResponses();
+        registerTokenApiResponse();
+        registerComponentApiResponses();
       }
+    }
+
+    private void registerComponentApiResponses() {
+      var getAllProjectsResponseBuilder = Components.SearchWsResponse.newBuilder();
+      projectsByProjectKey.forEach((projectKey, project) -> {
+        if (project.projectName != null) {
+          mockServer.stubFor(get("/api/components/show.protobuf?component=" + projectKey)
+            .willReturn(aResponse().withResponseBody(protobufBody(
+              Components.ShowWsResponse.newBuilder()
+                .setComponent(Components.Component.newBuilder().setKey(projectKey).setName(project.projectName).build()).build()))));
+          getAllProjectsResponseBuilder
+            .addComponents(Components.Component.newBuilder().setKey(projectKey).setName(project.projectName).build());
+        }
+      });
+      mockServer.stubFor(get("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1")
+        .willReturn(aResponse().withResponseBody(protobufBody(getAllProjectsResponseBuilder.build()))));
+      mockServer.stubFor(get("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=2")
+        .willReturn(aResponse().withResponseBody(protobufBody(Components.Component.newBuilder().build()))));
     }
 
     private void registerSystemApiResponses() {
@@ -647,6 +685,10 @@ public class ServerFixture {
                 .build())
               .build()))));
       }));
+    }
+
+    private void registerTokenApiResponse() {
+      tokensRegistered.forEach(tokenName -> mockServer.stubFor(post("/api/user_tokens/revoke").withRequestBody(WireMock.containing("name=" + tokenName)).willReturn(aResponse().withStatus(200))));
     }
 
     public void shutdown() {

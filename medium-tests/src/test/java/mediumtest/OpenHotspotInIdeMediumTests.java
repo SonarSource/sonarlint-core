@@ -49,7 +49,9 @@ class OpenHotspotInIdeMediumTests {
   private SonarLintTestBackend backend;
   static ServerFixture.Server serverWithHotspot = newSonarQubeServer("1.2.3")
     .withProject("projectKey",
-      project -> project.withDefaultBranch(branch -> branch.withHotspot("key",
+      project -> project
+        .withProjectName("Project Name")
+        .withDefaultBranch(branch -> branch.withHotspot("key",
         hotspot -> hotspot.withRuleKey("ruleKey")
           .withMessage("msg")
           .withAuthor("author")
@@ -144,9 +146,11 @@ class OpenHotspotInIdeMediumTests {
 
   @Test
   void it_should_assist_creating_the_connection_when_server_url_unknown() {
-    var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", CONNECTION_ID, serverWithHotspot.baseUrl(), "projectKey").build();
+    var fakeClient = newFakeClient()
+      .withConfigScope("project-name")
+      .assistingConnectingAndBindingToSonarQube("project-name", CONNECTION_ID, serverWithHotspot.baseUrl(), "projectKey").build();
     backend = newBackend()
-      .withUnboundConfigScope("scopeId")
+      .withUnboundConfigScope("project-name")
       .withEmbeddedServer()
       .build(fakeClient);
 
@@ -154,18 +158,20 @@ class OpenHotspotInIdeMediumTests {
 
     assertThat(statusCode).isEqualTo(200);
     assertThat(fakeClient.getMessagesToShow()).isEmpty();
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getHotspotToShowByConfigScopeId()).containsOnlyKeys("scopeId"));
-    assertThat(fakeClient.getHotspotToShowByConfigScopeId().get("scopeId"))
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getHotspotToShowByConfigScopeId()).containsOnlyKeys("project-name"));
+    assertThat(fakeClient.getHotspotToShowByConfigScopeId().get("project-name"))
       .extracting(HotspotDetailsDto::getMessage)
       .containsExactly("msg");
   }
 
   @Test
   void it_should_assist_creating_the_binding_if_scope_not_bound() {
-    var fakeClient = newFakeClient().assistingConnectingAndBindingToSonarQube("scopeId", CONNECTION_ID, serverWithHotspot.baseUrl(), "projectKey").build();
+    var fakeClient = newFakeClient()
+      .withConfigScope("project-name")
+      .assistingConnectingAndBindingToSonarQube("project-name", CONNECTION_ID, serverWithHotspot.baseUrl(), "projectKey").build();
     backend = newBackend()
       .withSonarQubeConnection(CONNECTION_ID, serverWithHotspot)
-      .withUnboundConfigScope("scopeId")
+      .withUnboundConfigScope("project-name")
       .withEmbeddedServer()
       .build(fakeClient);
 
@@ -173,8 +179,8 @@ class OpenHotspotInIdeMediumTests {
 
     assertThat(statusCode).isEqualTo(200);
     assertThat(fakeClient.getMessagesToShow()).isEmpty();
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getHotspotToShowByConfigScopeId()).containsOnlyKeys("scopeId"));
-    assertThat(fakeClient.getHotspotToShowByConfigScopeId().get("scopeId"))
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getHotspotToShowByConfigScopeId()).containsOnlyKeys("project-name"));
+    assertThat(fakeClient.getHotspotToShowByConfigScopeId().get("project-name"))
       .extracting(HotspotDetailsDto::getMessage)
       .containsExactly("msg");
   }

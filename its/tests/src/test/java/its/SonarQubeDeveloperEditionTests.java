@@ -89,6 +89,7 @@ import org.sonarsource.sonarlint.core.clientapi.backend.rules.RuleDescriptionTab
 import org.sonarsource.sonarlint.core.clientapi.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.AssistBindingResponse;
+import org.sonarsource.sonarlint.core.clientapi.client.binding.NoBindingSuggestionFoundParams;
 import org.sonarsource.sonarlint.core.clientapi.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.clientapi.client.connection.AssistCreatingConnectionResponse;
@@ -1562,6 +1563,12 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       public void didReceiveServerEvent(DidReceiveServerEventParams params) {
         events.add(params);
       }
+
+      @Override
+      public void noBindingSuggestionFound(NoBindingSuggestionFoundParams params) {
+
+      }
+
     };
   }
 }

@@ -52,6 +52,7 @@ import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -83,7 +84,7 @@ class BindingSuggestionProviderTests {
 
   @BeforeEach
   public void setup() {
-    when(sonarProjectsCache.getTextSearchIndex(anyString())).thenReturn(new TextSearchIndex<>());
+    when(sonarProjectsCache.getTextSearchIndexCached(anyString(), eq(null))).thenReturn(new TextSearchIndex<>());
   }
 
   @Test
@@ -217,7 +218,7 @@ class BindingSuggestionProviderTests {
     when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "Config scope"));
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
 
-    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID)))
+    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID), null))
       .thenReturn(List.of(new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1), Set.of(SQ_1_ID))));
 
     when(sonarProjectsCache.getSonarProject(SQ_1_ID, PROJECT_KEY_1)).thenReturn(Optional.of(SERVER_PROJECT_1));
@@ -229,7 +230,7 @@ class BindingSuggestionProviderTests {
         "Binding suggestion computation queued for config scopes '" + CONFIG_SCOPE_ID_1 + "'...",
         "Found 1 suggestion for configuration scope '" + CONFIG_SCOPE_ID_1 + "'");
 
-    verify(sonarProjectsCache, never()).getTextSearchIndex(anyString());
+    verify(sonarProjectsCache, never()).getTextSearchIndexCached(anyString(), eq(null));
 
     var captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
     verify(client).suggestBinding(captor.capture());
@@ -250,14 +251,14 @@ class BindingSuggestionProviderTests {
     when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "KEYWORD"));
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
 
-    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID)))
+    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID), null))
       .thenReturn(List.of(new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1), Set.of(SQ_1_ID))));
 
     when(sonarProjectsCache.getSonarProject(SQ_1_ID, PROJECT_KEY_1)).thenReturn(Optional.empty());
     when(sonarProjectsCache.getSonarProject(SC_1_ID, PROJECT_KEY_1)).thenReturn(Optional.empty());
     var searchIndex = new TextSearchIndex<ServerProject>();
     searchIndex.index(SERVER_PROJECT_1, "foo bar keyword");
-    when(sonarProjectsCache.getTextSearchIndex(SC_1_ID)).thenReturn(searchIndex);
+    when(sonarProjectsCache.getTextSearchIndexCached(SC_1_ID, null)).thenReturn(searchIndex);
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID_1)));
 
@@ -288,14 +289,14 @@ class BindingSuggestionProviderTests {
     when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "KEYWORD"));
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
 
-    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID)))
+    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID), null))
       .thenReturn(List.of(new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1), Set.of(SQ_1_ID))));
 
     when(sonarProjectsCache.getSonarProject(SQ_1_ID, PROJECT_KEY_1)).thenReturn(Optional.empty());
     when(sonarProjectsCache.getSonarProject(SC_1_ID, PROJECT_KEY_1)).thenReturn(Optional.empty());
     var searchIndex = new TextSearchIndex<ServerProject>();
     searchIndex.index(SERVER_PROJECT_1, "foo bar keyword");
-    when(sonarProjectsCache.getTextSearchIndex(SC_1_ID)).thenReturn(searchIndex);
+    when(sonarProjectsCache.getTextSearchIndexCached(SC_1_ID, null)).thenReturn(searchIndex);
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID_1)));
 
@@ -322,12 +323,12 @@ class BindingSuggestionProviderTests {
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
     when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "foo-bar"));
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
-    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID)))
+    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID), null))
       .thenReturn(List.of(
         new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.SonarQubeBindingClue(null, null), Set.of(SQ_1_ID))));
     var searchIndex = new TextSearchIndex<ServerProject>();
     searchIndex.index(SERVER_PROJECT_1, "foo bar garbage1");
-    when(sonarProjectsCache.getTextSearchIndex(SQ_1_ID)).thenReturn(searchIndex);
+    when(sonarProjectsCache.getTextSearchIndexCached(SQ_1_ID, null)).thenReturn(searchIndex);
     when(sonarProjectsCache.getSonarProject(SQ_1_ID, PROJECT_KEY_1)).thenReturn(Optional.empty());
 
     var suggestBindingParamsCompletableFuture = underTest.getBindingSuggestions(new GetBindingSuggestionParams(CONFIG_SCOPE_ID_1, SQ_1_ID));
@@ -349,7 +350,7 @@ class BindingSuggestionProviderTests {
     when(configRepository.getConfigScopeIds()).thenReturn(Set.of(CONFIG_SCOPE_ID_1));
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
 
-    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID)))
+    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID), null))
       .thenReturn(List.of(
         new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1), Set.of(SQ_1_ID, SC_1_ID))));
 
@@ -360,8 +361,8 @@ class BindingSuggestionProviderTests {
     searchIndex.index(SERVER_PROJECT_1, "foo bar garbage1");
     searchIndex.index(serverProject("key2", "Project 2"), "foo bar garbage2");
     searchIndex.index(serverProject("key3", "Project 3"), "foo bar more garbage");
-    when(sonarProjectsCache.getTextSearchIndex(SC_1_ID)).thenReturn(searchIndex);
-    when(sonarProjectsCache.getTextSearchIndex(SQ_1_ID)).thenReturn(searchIndex);
+    when(sonarProjectsCache.getTextSearchIndexCached(SC_1_ID, null)).thenReturn(searchIndex);
+    when(sonarProjectsCache.getTextSearchIndexCached(SQ_1_ID, null)).thenReturn(searchIndex);
 
     underTest.connectionAdded(new ConnectionConfigurationAddedEvent(SQ_1_ID));
 
@@ -385,7 +386,7 @@ class BindingSuggestionProviderTests {
     when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "foo-bar"));
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
 
-    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID)))
+    when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID), null))
       .thenReturn(List.of(
         new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.UnknownBindingClue(PROJECT_KEY_1), Set.of(SQ_1_ID, SC_1_ID)),
         new BindingClueProvider.BindingClueWithConnections(new BindingClueProvider.SonarCloudBindingClue(null, null), Set.of(SC_1_ID))));
@@ -397,7 +398,7 @@ class BindingSuggestionProviderTests {
     searchIndex.index(SERVER_PROJECT_1, "foo bar garbage1");
     searchIndex.index(serverProject("key2", "Project 2"), "foo bar garbage2");
     searchIndex.index(serverProject("key3", "Project 3"), "foo bar more garbage");
-    when(sonarProjectsCache.getTextSearchIndex(SC_1_ID)).thenReturn(searchIndex);
+    when(sonarProjectsCache.getTextSearchIndexCached(SC_1_ID, null)).thenReturn(searchIndex);
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID_1)));
 

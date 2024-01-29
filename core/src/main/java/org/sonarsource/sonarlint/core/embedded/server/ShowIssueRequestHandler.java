@@ -25,6 +25,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -43,18 +44,21 @@ import org.sonarsource.sonarlint.core.BindingSuggestionProviderImpl;
 import org.sonarsource.sonarlint.core.ConfigurationServiceImpl;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
+import org.sonarsource.sonarlint.core.clientapi.backend.usertoken.RevokeTokenParams;
 import org.sonarsource.sonarlint.core.clientapi.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.clientapi.client.message.MessageType;
 import org.sonarsource.sonarlint.core.clientapi.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.clientapi.common.FlowDto;
 import org.sonarsource.sonarlint.core.clientapi.common.LocationDto;
 import org.sonarsource.sonarlint.core.clientapi.common.TextRangeDto;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryServiceImpl;
+import org.sonarsource.sonarlint.core.usertoken.UserTokenServiceImpl;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
@@ -64,20 +68,24 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler implements HttpRequestHandler {
 
   private final SonarLintClient client;
-  private final ConnectionConfigurationRepository repository;
+  private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final ConfigurationServiceImpl configurationService;
   private final ServerApiProvider serverApiProvider;
   private final TelemetryServiceImpl telemetryService;
+  private final ConfigurationRepository configurationRepository;
+  private final UserTokenServiceImpl userTokenService;
 
-  public ShowIssueRequestHandler(SonarLintClient client, ConnectionConfigurationRepository repository,
+  public ShowIssueRequestHandler(SonarLintClient client, ConnectionConfigurationRepository connectionConfigurationRepository,
     ConfigurationServiceImpl configurationService, BindingSuggestionProviderImpl bindingSuggestionProvider,
-    ServerApiProvider serverApiProvider, TelemetryServiceImpl telemetryService) {
+    ServerApiProvider serverApiProvider, TelemetryServiceImpl telemetryService, ConfigurationRepository configurationRepository, UserTokenServiceImpl userTokenService) {
     super(bindingSuggestionProvider, client);
     this.client = client;
-    this.repository = repository;
+    this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.configurationService = configurationService;
     this.serverApiProvider = serverApiProvider;
     this.telemetryService = telemetryService;
+    this.configurationRepository = configurationRepository;
+    this.userTokenService = userTokenService;
   }
 
   @Override
@@ -97,27 +105,42 @@ public class ShowIssueRequestHandler extends ShowHotspotOrIssueRequestHandler im
   private void showIssue(ShowIssueQuery query) {
     telemetryService.showIssueRequestReceived();
 
-    var connectionsMatchingOrigin = repository.findByUrl(query.serverUrl);
+    var connectionsMatchingOrigin = connectionConfigurationRepository.findByUrl(query.serverUrl);
     if (connectionsMatchingOrigin.isEmpty()) {
       startFullBindingProcess();
       assistCreatingConnection(query.serverUrl, query.tokenName, query.tokenValue)
-        .thenCompose(response -> assistBinding(response.getNewConnectionId(), query.projectKey))
-        .thenAccept(response -> showIssueForScope(response.getConnectionId(), response.getConfigurationScopeId(),
-          query.issueKey, query.projectKey, query.branch, query.pullRequest))
+        .exceptionally(error -> {
+          if (query.tokenName != null && query.tokenValue != null) {
+            userTokenService.revokeToken(new RevokeTokenParams(query.serverUrl, query.tokenName, query.tokenValue));
+          }
+          return null;
+        })
+        .thenCompose(response -> assistBinding(response.getConfigScopeIds(), response.getNewConnectionId(), query.projectKey))
+        .thenAccept(response -> {
+          if (response.getConfigurationScopeId() != null) {
+            showIssueForScope(response.getConnectionId(), response.getConfigurationScopeId(), query.issueKey, query.projectKey,
+              query.branch, query.pullRequest);
+          }
+        })
         .whenComplete((v, e) -> endFullBindingProcess());
     } else {
       // we pick the first connection but this could lead to issues later if there were several matches (make the user select the right
       // one?)
-      showIssueForConnection(connectionsMatchingOrigin.get(0).getConnectionId(), query.projectKey, query.issueKey, query.branch, query.pullRequest);
+      var configScopeIds = configurationRepository.getConfigScopeIds();
+      showIssueForConnection(configScopeIds, connectionsMatchingOrigin.get(0).getConnectionId(), query.projectKey, query.issueKey, query.branch, query.pullRequest);
     }
   }
 
-  private void showIssueForConnection(String connectionId, String projectKey, String issueKey, String branch,
-    @Nullable String pullRequest) {
+  private void showIssueForConnection(Set<String> configScopeIds, String connectionId, String projectKey, String issueKey, String branch,
+                                      @Nullable String pullRequest) {
     var scopes = configurationService.getConfigScopesWithBindingConfiguredTo(connectionId, projectKey);
     if (scopes.isEmpty()) {
-      assistBinding(connectionId, projectKey)
-        .thenAccept(newBinding -> showIssueForScope(connectionId, newBinding.getConfigurationScopeId(), issueKey, projectKey, branch, pullRequest));
+      assistBinding(configScopeIds, connectionId, projectKey)
+        .thenAccept(newBinding -> {
+          if (newBinding.getConfigurationScopeId() != null) {
+            showIssueForScope(connectionId, newBinding.getConfigurationScopeId(), issueKey, projectKey, branch, pullRequest);
+          }
+        });
     } else {
       // we pick the first bound scope but this could lead to issues later if there were several matches (make the user select the right one?)
       showIssueForScope(connectionId, scopes.get(0).getId(), issueKey, projectKey, branch, pullRequest);
