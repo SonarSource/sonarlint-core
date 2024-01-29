@@ -29,4 +29,5 @@ public class AssistCreatingConnectionResponse {
   public String getNewConnectionId() {
     return newConnectionId;
   }
+
 }

@@ -130,12 +130,22 @@ public class ConfigurationRepository {
       .collect(Collectors.toList());
   }
 
+  public Collection<ConfigurationScope> getAllBindbableUnboundScopes() {
+    return configScopePerId.entrySet()
+      .stream()
+      .filter(e -> e.getValue().isBindable())
+      .filter(e -> getEffectiveBinding(e.getKey()).isEmpty())
+      .map(Map.Entry::getValue)
+      .collect(Collectors.toList());
+  }
+
   @CheckForNull
   public BoundScope getBoundScope(String configScopeId) {
     var effectiveBinding = getEffectiveBinding(configScopeId);
     return effectiveBinding.map(binding -> new BoundScope(configScopeId, requireNonNull(binding.getConnectionId()),
       requireNonNull(binding.getSonarProjectKey()))).orElse(null);
   }
+
 
   public Collection<BoundScope> getBoundScopesToConnectionAndSonarProject(String connectionId, String projectKey) {
     return getBoundScopesToConnection(connectionId)

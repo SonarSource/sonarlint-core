@@ -20,6 +20,7 @@
 package mediumtest.fixtures;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.WireMock;
 import com.google.protobuf.Message;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -44,9 +45,9 @@ import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.RuleType;
-import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
+import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
@@ -109,6 +110,7 @@ public class ServerFixture {
     private final Map<String, ServerPluginBuilder> pluginsByKey = new HashMap<>();
     private ServerStatus serverStatus = ServerStatus.UP;
     private boolean smartNotificationsSupported;
+    private final List<String> tokensRegistered = new ArrayList<>();
 
     public ServerBuilder(ServerKind serverKind, @Nullable String organizationKey, @Nullable String version) {
       this.serverKind = serverKind;
@@ -123,6 +125,11 @@ public class ServerFixture {
 
     public ServerBuilder withProject(String projectKey) {
       return withProject(projectKey, UnaryOperator.identity());
+    }
+
+    public ServerBuilder withToken(String tokenName) {
+      tokensRegistered.add(tokenName);
+      return this;
     }
 
     public ServerBuilder withProject(String projectKey, UnaryOperator<ServerProjectBuilder> projectBuilder) {
@@ -153,7 +160,7 @@ public class ServerFixture {
     }
 
     public Server start() {
-      var server = new Server(serverKind, serverStatus, organizationKey, version, projectByProjectKey, smartNotificationsSupported, pluginsByKey, qualityProfilesByKey);
+      var server = new Server(serverKind, serverStatus, organizationKey, version, projectByProjectKey, smartNotificationsSupported, pluginsByKey, qualityProfilesByKey, tokensRegistered);
       server.start();
       return server;
     }
@@ -186,6 +193,8 @@ public class ServerFixture {
       private final List<String> qualityProfileKeys = new ArrayList<>();
       private final List<String> relativeFilePaths = new ArrayList<>();
       private String name = "MyProject";
+      private String projectName;
+
 
       private ServerProjectBuilder() {
         branchesByName.put(mainBranchName, new ServerProjectBranchBuilder());
@@ -198,6 +207,17 @@ public class ServerFixture {
 
       public ServerProjectBuilder withBranch(String branchName) {
         return withBranch(branchName, builder -> builder);
+      }
+
+      public ServerProjectBuilder withProjectName(String projectName) {
+        this.projectName = projectName;
+        return this;
+      }
+
+      public ServerProjectBuilder withEmptyBranch(String branchName) {
+        var builder = new ServerProjectBranchBuilder();
+        this.branchesByName.put(branchName, builder);
+        return this;
       }
 
       public ServerProjectBuilder withBranch(String branchName, UnaryOperator<ServerProjectBranchBuilder> branchBuilder) {
@@ -452,11 +472,12 @@ public class ServerFixture {
     private final boolean smartNotificationsSupported;
     private final Map<String, ServerBuilder.ServerPluginBuilder> pluginsByKey;
     private final Map<String, ServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey;
+    private final List<String> tokensRegistered;
 
     public Server(ServerKind serverKind, ServerStatus serverStatus, @Nullable String organizationKey, @Nullable String version,
       Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey,
       boolean smartNotificationsSupported, Map<String, ServerBuilder.ServerPluginBuilder> pluginsByKey,
-      Map<String, ServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey) {
+      Map<String, ServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey, List<String> tokensRegistered) {
       this.serverKind = serverKind;
       this.serverStatus = serverStatus;
       this.organizationKey = organizationKey;
@@ -465,6 +486,7 @@ public class ServerFixture {
       this.smartNotificationsSupported = smartNotificationsSupported;
       this.pluginsByKey = pluginsByKey;
       this.qualityProfilesByKey = qualityProfilesByKey;
+      this.tokensRegistered = tokensRegistered;
     }
 
     public void start() {
@@ -486,7 +508,20 @@ public class ServerFixture {
         registerMeasuresApiResponses();
         registerComponentsApiResponses();
         registerSettingsApiResponses();
+        registerTokenApiResponse();
+        registerComponentApiResponses();
       }
+    }
+
+    private void registerComponentApiResponses() {
+      projectsByProjectKey.forEach((projectKey, project) -> {
+        if (project.projectName != null) {
+          mockServer.stubFor(get("/api/components/show.protobuf?component=" + projectKey)
+            .willReturn(aResponse().withResponseBody(protobufBody(
+              Components.ShowWsResponse.newBuilder()
+                .setComponent(Components.Component.newBuilder().setKey(projectKey).setName(project.projectName).build()).build()))));
+        }
+      });
     }
 
     public void registerSystemApiResponses() {
@@ -504,13 +539,13 @@ public class ServerFixture {
       mockServer.stubFor(get("/api/plugins/installed")
         .willReturn(aResponse().withStatus(200).withBody("{\"plugins\": [" +
           pluginsByKey.entrySet().stream().map(
-            entry -> {
-              var pluginKey = entry.getKey();
-              return "{\"key\": \"" + pluginKey + "\", " +
-                "\"hash\": \"" + entry.getValue().hash + "\", " +
-                "\"filename\": \"" + entry.getValue().jarPath.getFileName() + "\", " +
-                "\"sonarLintSupported\": " + entry.getValue().sonarLintSupported + "}";
-            })
+              entry -> {
+                var pluginKey = entry.getKey();
+                return "{\"key\": \"" + pluginKey + "\", " +
+                  "\"hash\": \"" + entry.getValue().hash + "\", " +
+                  "\"filename\": \"" + entry.getValue().jarPath.getFileName() + "\", " +
+                  "\"sonarLintSupported\": " + entry.getValue().sonarLintSupported + "}";
+              })
             .collect(Collectors.joining(", "))
           + "]}")));
     }
@@ -635,11 +670,11 @@ public class ServerFixture {
         var branchParameter = branchName == null ? "" : "&branch=" + urlEncode(branchName);
         messagesPerFilePath.forEach((filePath,
           messages) -> mockServer.stubFor(get("/api/hotspots/search.protobuf?projectKey=" + projectKey + "&files=" + urlEncode(filePath) + branchParameter + "&ps=500&p=1")
-            .willReturn(aResponse().withResponseBody(protobufBody(Hotspots.SearchWsResponse.newBuilder()
-              .addComponents(Hotspots.Component.newBuilder().setPath(filePath).setKey(projectKey + ":" + filePath).build())
-              .addAllHotspots(messages)
-              .setPaging(Common.Paging.newBuilder().setTotal(messages.size()).build())
-              .build())))));
+          .willReturn(aResponse().withResponseBody(protobufBody(Hotspots.SearchWsResponse.newBuilder()
+            .addComponents(Hotspots.Component.newBuilder().setPath(filePath).setKey(projectKey + ":" + filePath).build())
+            .addAllHotspots(messages)
+            .setPaging(Common.Paging.newBuilder().setTotal(messages.size()).build())
+            .build())))));
         var allMessages = messagesPerFilePath.values().stream().flatMap(Collection::stream).collect(toList());
         mockServer.stubFor(get("/api/hotspots/search.protobuf?projectKey=" + projectKey + branchParameter + "&ps=500&p=1")
           .willReturn(aResponse().withResponseBody(protobufBody(Hotspots.SearchWsResponse.newBuilder()
@@ -998,6 +1033,10 @@ public class ServerFixture {
     private void registerSettingsApiResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> mockServer.stubFor(get("/api/settings/values.protobuf?component=" + projectKey)
         .willReturn(aResponse().withResponseBody(protobufBody(Settings.ValuesWsResponse.newBuilder().build())))));
+    }
+
+    private void registerTokenApiResponse() {
+      tokensRegistered.forEach(tokenName -> mockServer.stubFor(post("/api/user_tokens/revoke").withRequestBody(WireMock.containing("name=" + tokenName)).willReturn(aResponse().withStatus(200))));
     }
 
     public void shutdown() {

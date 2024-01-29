@@ -1517,6 +1517,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       public void didChangeNodeJs(@org.jetbrains.annotations.Nullable Path nodeJsPath, @org.jetbrains.annotations.Nullable String version) {
         engine.restartAsync();
       }
+
     };
   }
 }

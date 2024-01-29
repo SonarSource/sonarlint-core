@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Optional;
 import org.apache.hc.core5.http.message.BasicClassicHttpRequest;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -38,6 +39,7 @@ import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
+import org.sonarsource.sonarlint.core.usertoken.UserTokenService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -52,12 +54,14 @@ class ShowIssueRequestHandlerTests {
     var repository = mock(ConnectionConfigurationRepository.class);
     var configurationRepository = mock(ConfigurationRepository.class);
     var bindingSuggestionProvider = mock(BindingSuggestionProvider.class);
+    var bindingCandidatesFinder = mock(BindingCandidatesFinder.class);
     var serverApiProvider = mock(ServerApiProvider.class);
     var telemetryService = mock(TelemetryService.class);
     var sonarLintClient = mock(SonarLintRpcClient.class);
     var serverApi = mock(ServerApi.class);
     var issueApi = mock(IssueApi.class);
     var pathTranslationService = mock(PathTranslationService.class);
+    var userTokenService = mock(UserTokenService.class);
 
     var connectionId = "connectionId";
     var configScopeId = "configScopeId";
@@ -83,7 +87,7 @@ class ShowIssueRequestHandlerTests {
     when(issueApi.getCodeSnippet(eq(locationComponentKey_1), any(), any(), any(), any())).thenReturn(Optional.of(locationCodeSnippet_1));
 
     var showIssueRequestHandler = new ShowIssueRequestHandler(sonarLintClient, serverApiProvider, telemetryService,
-      new RequestHandlerBindingAssistant(bindingSuggestionProvider, sonarLintClient, repository, configurationRepository), pathTranslationService);
+      new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintClient, repository, configurationRepository, userTokenService), pathTranslationService);
 
     var flow = Common.Flow.newBuilder()
       .addLocations(Common.Location.newBuilder().setTextRange(locationTextRange_1).setComponent(locationComponentKey_1).setMsg(locationMessage_1))

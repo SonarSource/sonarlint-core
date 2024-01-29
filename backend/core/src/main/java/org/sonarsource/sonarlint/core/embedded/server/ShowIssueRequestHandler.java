@@ -89,8 +89,12 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
     telemetryService.showIssueRequestReceived();
 
     requestHandlerBindingAssistant.assistConnectionAndBindingIfNeededAsync(showIssueQuery.serverUrl, showIssueQuery.tokenName, showIssueQuery.tokenValue, showIssueQuery.projectKey,
-      (connectionId, configScopeId, cancelMonitor) -> showIssueForScope(connectionId, configScopeId, showIssueQuery.issueKey, showIssueQuery.projectKey, showIssueQuery.branch,
-        showIssueQuery.pullRequest, cancelMonitor));
+      (connectionId, configScopeId, cancelMonitor) -> {
+        if (configScopeId != null) {
+          showIssueForScope(connectionId, configScopeId, showIssueQuery.issueKey, showIssueQuery.projectKey, showIssueQuery.branch,
+            showIssueQuery.pullRequest, cancelMonitor);
+        }
+      });
 
     response.setCode(HttpStatus.SC_OK);
     response.setEntity(new StringEntity("OK"));

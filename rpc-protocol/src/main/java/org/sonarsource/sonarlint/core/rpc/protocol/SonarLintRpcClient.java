@@ -29,6 +29,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeNodeJsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSuggestionFoundParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.DidChangeMatchedSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchParams;
@@ -115,6 +116,7 @@ public interface SonarLintRpcClient {
 
   /**
    * Can be triggered by the backend when trying to handle a feature that needs a connection, e.g. open hotspot.
+   *
    * @return the response to this connection creation assist request, that contains the new connection. The client can cancel the request if the user stops the creation process.
    * When cancelling the request from the client side, the error code should be {@link org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode#ServerCancelled}
    */
@@ -123,6 +125,7 @@ public interface SonarLintRpcClient {
 
   /**
    * Can be triggered by the backend when trying to handle a feature that needs a bound project, e.g. open hotspot.
+   *
    * @return the response to this binding assist request, that contains the bound project. The client can cancel the request if the user stops the binding process.
    * When cancelling the request from the client side, the error code should be {@link org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode#ServerCancelled}
    */
@@ -202,4 +205,7 @@ public interface SonarLintRpcClient {
 
   @JsonNotification
   void didChangeNodeJs(DidChangeNodeJsParams params);
+
+  @JsonNotification
+  void noBindingSuggestionFound(NoBindingSuggestionFoundParams params);
 }

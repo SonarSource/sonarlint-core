@@ -37,7 +37,6 @@ import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -157,7 +156,6 @@ public class BindingSuggestionProvider {
     }
   }
 
-  @NonNull
   private Map<String, List<BindingSuggestionDto>> computeBindingSuggestions(Set<String> configScopeIds, Set<String> candidateConnectionIds, SonarLintCancelMonitor cancelMonitor) {
     var eligibleConfigScopesForBindingSuggestion = new HashSet<String>();
     for (var configScopeId : configScopeIds) {

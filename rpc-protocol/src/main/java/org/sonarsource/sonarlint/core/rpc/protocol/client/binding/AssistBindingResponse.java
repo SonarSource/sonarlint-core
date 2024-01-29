@@ -19,13 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.binding;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+
 public class AssistBindingResponse {
   private final String configurationScopeId;
 
-  public AssistBindingResponse(String configurationScopeId) {
+  public AssistBindingResponse(@Nullable String configurationScopeId) {
     this.configurationScopeId = configurationScopeId;
   }
 
+  @CheckForNull
   public String getConfigurationScopeId() {
     return configurationScopeId;
   }

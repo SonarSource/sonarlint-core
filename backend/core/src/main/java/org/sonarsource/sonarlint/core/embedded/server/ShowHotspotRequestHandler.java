@@ -79,7 +79,11 @@ public class ShowHotspotRequestHandler implements HttpRequestHandler {
     telemetryService.showHotspotRequestReceived();
 
     requestHandlerBindingAssistant.assistConnectionAndBindingIfNeededAsync(showHotspotQuery.serverUrl, null, null, showHotspotQuery.projectKey,
-      (connectionId, configScopeId, cancelMonitor) -> showHotspotForScope(connectionId, configScopeId, showHotspotQuery.hotspotKey, cancelMonitor));
+      (connectionId, configScopeId, cancelMonitor) -> {
+        if (configScopeId != null) {
+          showHotspotForScope(connectionId, configScopeId, showHotspotQuery.hotspotKey, cancelMonitor);
+        }
+      });
 
     response.setCode(HttpStatus.SC_OK);
     response.setEntity(new StringEntity("OK"));

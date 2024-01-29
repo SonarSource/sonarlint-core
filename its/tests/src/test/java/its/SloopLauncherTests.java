@@ -256,6 +256,10 @@ class SloopLauncherTests {
 
     @Override
     public void didChangeNodeJs(@Nullable Path nodeJsPath, @Nullable String version) {
+    }
+
+    @Override
+    public void noBindingSuggestionFound(String projectKey) {
 
     }
   }

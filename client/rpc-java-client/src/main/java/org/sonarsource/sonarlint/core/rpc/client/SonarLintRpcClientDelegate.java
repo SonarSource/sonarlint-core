@@ -162,4 +162,6 @@ public interface SonarLintRpcClientDelegate {
   List<ClientFileDto> listFiles(String configScopeId) throws ConfigScopeNotFoundException;
 
   void didChangeNodeJs(@Nullable Path nodeJsPath, @Nullable String version);
+
+  void noBindingSuggestionFound(String projectKey);
 }
