@@ -27,7 +27,7 @@ import org.apache.commons.io.filefilter.RegexFileFilter;
 
 public class SloopDistLocator {
 
-  private static final String SLOOP_DIST_PATH = "target/sloop-dist/";
+  private static final String SLOOP_DIST_PATH = "../../backend/cli/target";
   private static final String WINDOWS_DIST_REGEXP = "^sonarlint-backend-cli-([0-9.]+)(-SNAPSHOT)*-windows.zip$";
   private static final String LINUX_64_DIST_REGEXP = "^sonarlint-backend-cli-([0-9.]+)(-SNAPSHOT)*-linux_x64.tar.gz$";
 

@@ -218,7 +218,7 @@
                       <overWriteReleases>false</overWriteReleases>
                       <overWriteSnapshots>true</overWriteSnapshots>
                       <stripVersion>false</stripVersion>
-                      <outputDirectory>${project.build.directory}/sloop-dist</outputDirectory>
+                      <outputDirectory>${project.basedir}/../../backend/cli/target</outputDirectory>
                     </configuration>
                   </execution>
                 </executions>
@@ -277,7 +277,7 @@
                       <overWriteReleases>false</overWriteReleases>
                       <overWriteSnapshots>true</overWriteSnapshots>
                       <stripVersion>false</stripVersion>
-                      <outputDirectory>${project.build.directory}/sloop-dist</outputDirectory>
+                      <outputDirectory>${project.basedir}/../../backend/cli/target</outputDirectory>
                     </configuration>
                   </execution>
                 </executions>
