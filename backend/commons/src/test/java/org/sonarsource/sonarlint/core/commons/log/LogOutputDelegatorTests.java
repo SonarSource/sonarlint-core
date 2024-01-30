@@ -25,6 +25,8 @@ import org.sonarsource.sonarlint.core.commons.log.LogOutput.Level;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -36,22 +38,22 @@ class LogOutputDelegatorTests {
 
   @Test
   void should_throw_exception_when_not_set() {
-    var e = assertThrows(IllegalStateException.class, () -> delegator.log("asd", Level.DEBUG));
+    var e = assertThrows(IllegalStateException.class, () -> delegator.log("asd", Level.DEBUG, (Throwable) null));
     assertThat(e).hasMessage("No log output configured");
   }
 
   @Test
   void should_delegate() {
     delegator.setTarget(output);
-    delegator.log("asd", Level.DEBUG);
-    verify(output).log("asd", Level.DEBUG);
+    delegator.log("asd", Level.DEBUG, (Throwable) null);
+    verify(output).log("asd", Level.DEBUG, null);
   }
 
   @Test
   void should_remove_delegate() {
     delegator.setTarget(output);
     delegator.setTarget(null);
-    var e = assertThrows(IllegalStateException.class, () -> delegator.log("asd", Level.DEBUG));
+    var e = assertThrows(IllegalStateException.class, () -> delegator.log("asd", Level.DEBUG, (Throwable) null));
     assertThat(e).hasMessage("No log output configured");
   }
 
@@ -59,15 +61,14 @@ class LogOutputDelegatorTests {
   void should_report_throwables() {
     delegator.setTarget(output);
     delegator.log("msg", Level.ERROR, new NullPointerException("error"));
-    verify(output).log("msg", Level.ERROR);
-    verify(output).log(ArgumentMatchers.startsWith("java.lang.NullPointerException: error"), ArgumentMatchers.eq(Level.ERROR));
+    verify(output).log(eq("msg"), eq(Level.ERROR), startsWith("java.lang.NullPointerException: error"));
     verifyNoMoreInteractions(output);
   }
 
   @Test
   void handle_nulls() {
     delegator.setTarget(output);
-    delegator.log(null, Level.ERROR, null);
+    delegator.log(null, Level.ERROR, (Throwable) null);
     verifyNoInteractions(output);
   }
 
@@ -75,7 +76,7 @@ class LogOutputDelegatorTests {
   void should_not_log_skipped_message() {
     var messageToSkip = "Skipping section 'introduction' for rule 'S123', content is empty";
     delegator.setTarget(output);
-    delegator.log(messageToSkip, Level.DEBUG, null);
+    delegator.log(messageToSkip, Level.DEBUG, (Throwable) null);
     verifyNoInteractions(output);
   }
 }

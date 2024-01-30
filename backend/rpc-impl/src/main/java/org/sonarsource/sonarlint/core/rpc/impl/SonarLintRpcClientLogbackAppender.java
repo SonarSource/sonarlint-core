@@ -19,8 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.rpc.impl;
 
+import ch.qos.logback.classic.pattern.ThrowableProxyConverter;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.IThrowableProxy;
 import ch.qos.logback.core.AppenderBase;
+import org.sonarsource.sonarlint.core.SonarLintMDC;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
@@ -28,17 +31,30 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 class SonarLintRpcClientLogbackAppender extends AppenderBase<ILoggingEvent> {
 
   private final SonarLintRpcClient rpcClient;
+  private final ThrowableProxyConverter tpc = new ThrowableProxyConverter();
 
   public SonarLintRpcClientLogbackAppender(SonarLintRpcClient client) {
     rpcClient = client;
-    start();
+  }
+
+  @Override
+  public void start() {
+    tpc.start();
+    super.start();
   }
 
   @Override
   protected void append(ILoggingEvent eventObject) {
-    var configScopeId = eventObject.getMDCPropertyMap().get("configScopeId");
+    var configScopeId = eventObject.getMDCPropertyMap().get(SonarLintMDC.CONFIG_SCOPE_ID_MDC_KEY);
     var threadName = eventObject.getThreadName();
     var loggerName = eventObject.getLoggerName();
-    rpcClient.log(new LogParams(LogLevel.valueOf(eventObject.getLevel().levelStr), eventObject.getFormattedMessage(), configScopeId, threadName, loggerName));
+    var formattedMessage = eventObject.getFormattedMessage();
+    IThrowableProxy tp = eventObject.getThrowableProxy();
+    String stackTrace = null;
+    if (tp != null) {
+      stackTrace = tpc.convert(eventObject);
+    }
+    rpcClient.log(new LogParams(LogLevel.valueOf(eventObject.getLevel().levelStr), formattedMessage, configScopeId, threadName, loggerName, stackTrace));
   }
+
 }

@@ -25,27 +25,33 @@ import javax.annotation.Nullable;
 public class LogParams {
 
   private final LogLevel level;
+  @Nullable
   private final String message;
+  @Nullable
   private final String configScopeId;
   private final String threadName;
   private final String loggerName;
+  @Nullable
+  private final String stackTrace;
 
-  public LogParams(LogLevel level, String message, @Nullable String configScopeId) {
-    this(level, message, configScopeId, Thread.currentThread().getName(), "sonarlint");
+  public LogParams(LogLevel level, @Nullable String message, @Nullable String configScopeId, @Nullable String stackTrace) {
+    this(level, message, configScopeId, Thread.currentThread().getName(), "sonarlint", stackTrace);
   }
 
-  public LogParams(LogLevel level, String message, @Nullable String configScopeId, String threadName, String loggerName) {
+  public LogParams(LogLevel level, @Nullable String message, @Nullable String configScopeId, String threadName, String loggerName, @Nullable String stackTrace) {
     this.level = level;
     this.message = message;
     this.configScopeId = configScopeId;
     this.threadName = threadName;
     this.loggerName = loggerName;
+    this.stackTrace = stackTrace;
   }
 
   public LogLevel getLevel() {
     return level;
   }
 
+  @CheckForNull
   public String getMessage() {
     return message;
   }
@@ -65,5 +71,28 @@ public class LogParams {
 
   public String getLoggerName() {
     return loggerName;
+  }
+
+  @CheckForNull
+  public String getStackTrace() {
+    return stackTrace;
+  }
+
+  @Override
+  public String toString() {
+    var sb = new StringBuilder();
+    sb.append(" [");
+    sb.append(threadName);
+    sb.append("] ");
+    sb.append(level.toString());
+    sb.append(" ");
+    sb.append(loggerName);
+    sb.append(" - ");
+    sb.append(message);
+    if (stackTrace != null) {
+      sb.append(System.lineSeparator());
+      sb.append(stackTrace);
+    }
+    return sb.toString();
   }
 }

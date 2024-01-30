@@ -140,7 +140,7 @@ class StandaloneIssueMediumTests {
     // See test sonarjs_should_honor_global_and_analysis_level_properties
     extraProperties.put("sonar.javascript.globals", "GLOBAL1");
 
-    var nodeJsHelper = new NodeJsHelper(logTester.getLogOutput());
+    var nodeJsHelper = new NodeJsHelper();
     nodeJsHelper.detect(null);
 
     var configBuilder = EngineConfiguration.builder()

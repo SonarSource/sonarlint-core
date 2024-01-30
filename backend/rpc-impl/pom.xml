@@ -22,6 +22,11 @@
       <artifactId>org.eclipse.lsp4j.jsonrpc</artifactId>
       <version>${lsp4j.version}</version>
     </dependency>
+    <!-- lsp4j is logging to jul -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jul-to-slf4j</artifactId>
+    </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>sonarlint-rpc-protocol</artifactId>

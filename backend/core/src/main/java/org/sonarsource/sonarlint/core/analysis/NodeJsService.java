@@ -65,7 +65,7 @@ public class NodeJsService {
 
   private synchronized void initNodeIfNeeded() {
     if (!nodeInit) {
-      var helper = new NodeJsHelper(Objects.requireNonNull(SonarLintLogger.getTargetForCopy()));
+      var helper = new NodeJsHelper();
       helper.detect(clientNodeJsPath);
       this.nodeInit = true;
       var newNodeJsPath = helper.getNodeJsPath();

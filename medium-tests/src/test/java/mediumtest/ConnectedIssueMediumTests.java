@@ -78,7 +78,7 @@ class ConnectedIssueMediumTests {
 
   @BeforeAll
   static void prepare(@TempDir Path slHome) {
-    var nodeJsHelper = new NodeJsHelper(logTester.getLogOutput());
+    var nodeJsHelper = new NodeJsHelper();
     nodeJsHelper.detect(null);
 
     var config = EngineConfiguration.builder()

@@ -245,9 +245,13 @@ class ProxyMediumTests {
 
     assertThat(details.getDescription().getLeft().getHtmlContent()).contains("extendedDesc from server");
 
-    assertThat(fakeClient.getLogMessages())
-      .contains("Unable to get proxy")
-      .anyMatch(s -> s.contains("Port is outside the valid range for hostname: localhost"));
+    assertThat(fakeClient.getLogs())
+      .anySatisfy(
+        l -> {
+          assertThat(l.getMessage()).isEqualTo("Unable to get proxy");
+          assertThat(l.getStackTrace()).contains("Port is outside the valid range for hostname: localhost");
+        }
+      );
   }
 
   @Test
@@ -277,9 +281,13 @@ class ProxyMediumTests {
 
     assertThat(details.getDescription().getLeft().getHtmlContent()).contains("extendedDesc from server");
 
-    assertThat(fakeClient.getLogMessages())
-      .contains("Unable to get proxy")
-      .anyMatch(s -> s.contains("Port is outside the valid range for hostname: localhost"));
+    assertThat(fakeClient.getLogs())
+      .anySatisfy(
+        l -> {
+          assertThat(l.getMessage()).isEqualTo("Unable to get proxy");
+          assertThat(l.getStackTrace()).contains("Port is outside the valid range for hostname: localhost");
+        }
+      );
   }
 
   private EffectiveRuleDetailsDto getEffectiveRuleDetails(String configScopeId, String ruleKey) {

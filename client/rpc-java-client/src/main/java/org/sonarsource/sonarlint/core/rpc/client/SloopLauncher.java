@@ -23,6 +23,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -58,9 +60,16 @@ public class SloopLauncher {
       SloopLauncher.client = clientArg;
       return execute(distPath, jrePath);
     } catch (Exception e) {
-      client.log(new LogParams(LogLevel.ERROR, e.getMessage(), null));
+      client.log(new LogParams(LogLevel.ERROR, null, null, stackTraceToString(e)));
     }
     return null;
+  }
+
+  private static String stackTraceToString(Throwable t) {
+    var stringWriter = new StringWriter();
+    var printWriter = new PrintWriter(stringWriter);
+    t.printStackTrace(printWriter);
+    return stringWriter.toString();
   }
 
   /**
@@ -87,7 +96,7 @@ public class SloopLauncher {
         commands.add(UNIX_LAUNCHER_SCRIPT);
       }
       if (!jrePath.isEmpty()) {
-        client.log(new LogParams(LogLevel.INFO, "Using JRE from " + jrePath, null));
+        client.log(new LogParams(LogLevel.INFO, "Using JRE from " + jrePath, null, null));
         commands.add("-j");
         commands.add(jrePath);
       }
@@ -110,13 +119,13 @@ public class SloopLauncher {
 
       return clientLauncher.getServerProxy();
     } catch (Exception e) {
-      client.log(new LogParams(LogLevel.WARN, e.getMessage(), ""));
+      client.log(new LogParams(LogLevel.WARN, null, null, stackTraceToString(e)));
     }
     return null;
   }
 
   private static Consumer<String> stdErrLogConsumer() {
-    return s -> client.log(new LogParams(LogLevel.ERROR, "StdErr: " + s, null));
+    return s -> client.log(new LogParams(LogLevel.ERROR, "StdErr: " + s, null, null));
   }
 
   public static int waitFor() throws InterruptedException {

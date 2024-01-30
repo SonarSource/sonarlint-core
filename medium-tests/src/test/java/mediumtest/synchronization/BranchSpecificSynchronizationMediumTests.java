@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.Bindin
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.GetNewCodeDefinitionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -43,6 +44,7 @@ import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -103,13 +105,13 @@ class BranchSpecificSynchronizationMediumTests {
         new ConfigurationScopeDto("childScope", "parentScope", true, "Child", new BindingConfigurationDto(null, null, true)))));
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
-      assertThat(client.getLogMessages()).contains(
-        "Matching Sonar project branch for configuration scope 'parentScope'",
-        "Matched Sonar project branch for configuration scope 'parentScope' changed from 'null' to 'branchNameParent'",
-        "Matching Sonar project branch for configuration scope 'childScope'",
-        "Matched Sonar project branch for configuration scope 'childScope' changed from 'null' to 'branchNameChild'",
-        "[SYNC] Synchronizing issues for project 'projectKey' on branch 'branchNameParent'",
-        "[SYNC] Synchronizing issues for project 'projectKey' on branch 'branchNameChild'");
+      assertThat(client.getLogs()).extracting(LogParams::getMessage, LogParams::getConfigScopeId).contains(
+        tuple("Matching Sonar project branch", "parentScope"),
+        tuple("Matched Sonar project branch for configuration scope 'parentScope' changed from 'null' to 'branchNameParent'", "parentScope"),
+        tuple("Matching Sonar project branch", "childScope"),
+        tuple("Matched Sonar project branch for configuration scope 'childScope' changed from 'null' to 'branchNameChild'", "childScope"),
+        tuple("[SYNC] Synchronizing issues for project 'projectKey' on branch 'branchNameParent'", null),
+        tuple("[SYNC] Synchronizing issues for project 'projectKey' on branch 'branchNameChild'", null));
     });
 
     assertThat(backend.getSonarProjectBranchService().getMatchedSonarProjectBranch(new GetMatchedSonarProjectBranchParams("parentScope")))

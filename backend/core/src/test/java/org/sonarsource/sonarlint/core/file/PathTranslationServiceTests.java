@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.file;
 
+import ch.qos.logback.classic.spi.ILoggingEvent;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Optional;
@@ -49,7 +50,7 @@ import static org.mockito.Mockito.when;
 class PathTranslationServiceTests {
 
   @RegisterExtension
-  private final static SonarLintLogTester logTester = new SonarLintLogTester(true);
+  private final static SonarLintLogTester logTester = new SonarLintLogTester();
   public static final String CONFIG_SCOPE_A = "configScopeA";
   public static final String CONNECTION_A = "connectionA";
   public static final String SONAR_PROJECT_A = "sonarProjectA";
@@ -137,7 +138,8 @@ class PathTranslationServiceTests {
     var result = underTest.getOrComputePathTranslation(CONFIG_SCOPE_A);
 
     assertThat(result).isEmpty();
-    assertThat(logTester.logs()).contains("Error while getting server file paths for project 'sonarProjectA'");
+    assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage)
+      .contains("Error while getting server file paths for project 'sonarProjectA'");
   }
 
   private void mockClientFilePaths(String configScopeId, String... paths) {

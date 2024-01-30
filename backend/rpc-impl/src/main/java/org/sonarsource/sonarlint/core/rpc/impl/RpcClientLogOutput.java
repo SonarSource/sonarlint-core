@@ -36,8 +36,8 @@ class RpcClientLogOutput implements LogOutput {
   }
 
   @Override
-  public void log(String msg, Level level) {
-    client.log(new LogParams(LogLevel.valueOf(level.name()), msg, configScopeId.get()));
+  public void log(@Nullable String msg, Level level, @Nullable String stacktrace) {
+    client.log(new LogParams(LogLevel.valueOf(level.name()), msg, configScopeId.get(), stacktrace));
   }
 
   public void setConfigScopeId(@Nullable String configScopeId) {
