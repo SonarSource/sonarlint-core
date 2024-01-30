@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.rpc.client;
 import java.io.Closeable;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -61,11 +63,20 @@ public class ClientJsonRpcLauncher implements Closeable {
       .setInput(in)
       .setOutput(out)
       .setExecutorService(messageReaderExecutor)
-      .wrapMessages(m -> new SingleThreadedMessageConsumer(m, messageWriterExecutor, msg -> clientDelegate.log(new LogParams(LogLevel.ERROR, msg, null))))
+      .wrapMessages(m -> new SingleThreadedMessageConsumer(m, messageWriterExecutor,
+        ex -> clientDelegate.log(new LogParams(LogLevel.ERROR, null, null, stackTraceToString(ex)))))
       .create();
 
     this.serverProxy = clientLauncher.getRemoteProxy();
     this.future = clientLauncher.startListening();
+  }
+
+
+  private static String stackTraceToString(Throwable t) {
+    var stringWriter = new StringWriter();
+    var printWriter = new PrintWriter(stringWriter);
+    t.printStackTrace(printWriter);
+    return stringWriter.toString();
   }
 
   public SonarLintRpcServer getServerProxy() {

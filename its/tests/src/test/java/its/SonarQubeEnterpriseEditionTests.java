@@ -349,7 +349,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
       @Override
       public void log(LogParams params) {
-        System.out.println(params.getMessage());
+        System.out.println(params.toString());
         rpcClientLogs.add(params);
       }
 

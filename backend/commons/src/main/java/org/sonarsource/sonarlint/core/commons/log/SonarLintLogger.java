@@ -52,15 +52,15 @@ public class SonarLintLogger {
   }
 
   public void trace(String msg) {
-    logOutput.log(msg, Level.TRACE);
+    logOutput.log(msg, Level.TRACE, (Throwable) null);
   }
 
   public void trace(String msg, @Nullable Object arg) {
-    doLogExtractingThrowable(Level.TRACE, msg, new Object[] {arg});
+    doLogExtractingThrowable(Level.TRACE, msg, new Object[]{arg});
   }
 
   public void trace(String msg, @Nullable Object arg1, @Nullable Object arg2) {
-    doLogExtractingThrowable(Level.TRACE, msg, new Object[] {arg1, arg2});
+    doLogExtractingThrowable(Level.TRACE, msg, new Object[]{arg1, arg2});
   }
 
   public void trace(String msg, Object... args) {
@@ -68,15 +68,15 @@ public class SonarLintLogger {
   }
 
   public void debug(String msg) {
-    logOutput.log(msg, Level.DEBUG);
+    logOutput.log(msg, Level.DEBUG, (Throwable) null);
   }
 
   public void debug(String msg, @Nullable Object arg) {
-    doLogExtractingThrowable(Level.DEBUG, msg, new Object[] {arg});
+    doLogExtractingThrowable(Level.DEBUG, msg, new Object[]{arg});
   }
 
   public void debug(String msg, @Nullable Object arg1, @Nullable Object arg2) {
-    doLogExtractingThrowable(Level.DEBUG, msg, new Object[] {arg1, arg2});
+    doLogExtractingThrowable(Level.DEBUG, msg, new Object[]{arg1, arg2});
   }
 
   public void debug(String msg, Object... args) {
@@ -84,15 +84,15 @@ public class SonarLintLogger {
   }
 
   public void info(String msg) {
-    logOutput.log(msg, Level.INFO);
+    logOutput.log(msg, Level.INFO, (Throwable) null);
   }
 
   public void info(String msg, @Nullable Object arg) {
-    doLogExtractingThrowable(Level.INFO, msg, new Object[] {arg});
+    doLogExtractingThrowable(Level.INFO, msg, new Object[]{arg});
   }
 
   public void info(String msg, @Nullable Object arg1, @Nullable Object arg2) {
-    doLogExtractingThrowable(Level.INFO, msg, new Object[] {arg1, arg2});
+    doLogExtractingThrowable(Level.INFO, msg, new Object[]{arg1, arg2});
   }
 
   public void info(String msg, Object... args) {
@@ -100,7 +100,7 @@ public class SonarLintLogger {
   }
 
   public void warn(String msg) {
-    logOutput.log(msg, Level.WARN);
+    logOutput.log(msg, Level.WARN, (Throwable) null);
   }
 
   public void warn(String msg, Throwable thrown) {
@@ -108,11 +108,11 @@ public class SonarLintLogger {
   }
 
   public void warn(String msg, @Nullable Object arg) {
-    doLogExtractingThrowable(Level.WARN, msg, new Object[] {arg});
+    doLogExtractingThrowable(Level.WARN, msg, new Object[]{arg});
   }
 
   public void warn(String msg, @Nullable Object arg1, @Nullable Object arg2) {
-    doLogExtractingThrowable(Level.WARN, msg, new Object[] {arg1, arg2});
+    doLogExtractingThrowable(Level.WARN, msg, new Object[]{arg1, arg2});
   }
 
   public void warn(String msg, Object... args) {
@@ -120,15 +120,15 @@ public class SonarLintLogger {
   }
 
   public void error(String msg) {
-    logOutput.log(msg, Level.ERROR);
+    logOutput.log(msg, Level.ERROR, (Throwable) null);
   }
 
   public void error(String msg, @Nullable Object arg) {
-    doLogExtractingThrowable(Level.ERROR, msg, new Object[] {arg});
+    doLogExtractingThrowable(Level.ERROR, msg, new Object[]{arg});
   }
 
   public void error(String msg, @Nullable Object arg1, @Nullable Object arg2) {
-    doLogExtractingThrowable(Level.ERROR, msg, new Object[] {arg1, arg2});
+    doLogExtractingThrowable(Level.ERROR, msg, new Object[]{arg1, arg2});
   }
 
   public void error(String msg, Object... args) {

@@ -24,6 +24,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -32,8 +33,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
@@ -65,11 +67,14 @@ public class RuleExtractorCli implements Callable<Integer> {
   @Override
   public Integer call() throws Exception {
     try {
-      SonarLintLogger.setTarget((formattedMessage, level) -> {
-        if (level == LogOutput.Level.ERROR) {
-          System.err.println(level + " " + formattedMessage);
-        } else if (level == LogOutput.Level.WARN || level == LogOutput.Level.INFO || verbose) {
-          System.out.println(level + " " + formattedMessage);
+      SonarLintLogger.setTarget(new LogOutput() {
+        @Override
+        public void log(@Nullable String formattedMessage, Level level, @Nullable String stacktrace) {
+          if (level == LogOutput.Level.ERROR) {
+            print(System.err, formattedMessage, level, stacktrace);
+          } else if (level == LogOutput.Level.WARN || level == LogOutput.Level.INFO || verbose) {
+            print(System.out, formattedMessage, level, stacktrace);
+          }
         }
       });
       // We can pretend we have a very high Node.js version since Node is not required to load rules
@@ -91,6 +96,13 @@ public class RuleExtractorCli implements Callable<Integer> {
     } catch (Exception e) {
       e.printStackTrace(System.err);
       return -1;
+    }
+  }
+
+  private static void print(PrintStream stream, @Nullable String formattedMessage, LogOutput.Level level, @Nullable String stacktrace) {
+    stream.println(level + " " + (formattedMessage != null ? formattedMessage : ""));
+    if (stacktrace != null) {
+      stream.println(stacktrace);
     }
   }
 

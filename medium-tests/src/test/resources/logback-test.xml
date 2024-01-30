@@ -4,5 +4,10 @@
 <configuration>
   <include resource="logback-shared.xml"/>
 
+  <!-- Disable logs from Wiremock -->
   <logger name="org.eclipse.jetty" level="OFF" />
+  <!-- Disable logs from Tomcat embedded used by the WebSocketServer -->
+  <logger name="org.apache.tomcat" level="OFF" />
+  <logger name="org.apache.catalina" level="OFF" />
+  <logger name="org.apache.coyote" level="OFF" />
 </configuration>

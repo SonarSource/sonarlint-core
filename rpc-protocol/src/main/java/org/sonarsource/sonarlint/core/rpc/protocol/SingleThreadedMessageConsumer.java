@@ -37,7 +37,7 @@ public class SingleThreadedMessageConsumer implements MessageConsumer {
 
   private final LinkedBlockingQueue<Message> queue = new LinkedBlockingQueue<>();
 
-  public SingleThreadedMessageConsumer(MessageConsumer syncMessageConsumer, ExecutorService threadPool, Consumer<String> errorLogger) {
+  public SingleThreadedMessageConsumer(MessageConsumer syncMessageConsumer, ExecutorService threadPool, Consumer<Throwable> errorLogger) {
     threadPool.submit(() -> {
       while (true) {
         Message message;
@@ -50,17 +50,10 @@ public class SingleThreadedMessageConsumer implements MessageConsumer {
         try {
           syncMessageConsumer.consume(message);
         } catch (Exception e) {
-          errorLogger.accept("Error while consuming message\n" + stackTraceToString(e));
+          errorLogger.accept(e);
         }
       }
     });
-  }
-
-  private static String stackTraceToString(Throwable t) {
-    var stringWriter = new StringWriter();
-    var printWriter = new PrintWriter(stringWriter);
-    t.printStackTrace(printWriter);
-    return stringWriter.toString();
   }
 
   @Override

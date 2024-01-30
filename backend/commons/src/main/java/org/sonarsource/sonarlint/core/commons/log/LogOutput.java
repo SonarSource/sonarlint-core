@@ -21,13 +21,29 @@ package org.sonarsource.sonarlint.core.commons.log;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import javax.annotation.Nullable;
 
 /**
  * Allow to redirect SonarLint logs to a custom output on client side
  */
 public interface LogOutput {
 
-  void log(String formattedMessage, Level level);
+  /**
+   * @deprecated please implement {@link #log(String, Level, String)} instead
+   */
+  @Deprecated(since = "10.0")
+  default void log(String formattedMessage, Level level) {
+    log(formattedMessage, level, null);
+  }
+
+  default void log(@Nullable String formattedMessage, Level level, @Nullable String stacktrace) {
+    if (formattedMessage != null) {
+      log(formattedMessage, level);
+    }
+    if (stacktrace != null) {
+      log(stacktrace, level);
+    }
+  }
 
   enum Level {
     ERROR, WARN, INFO, DEBUG, TRACE;

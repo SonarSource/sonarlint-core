@@ -29,10 +29,12 @@ import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.SonarLintMDC;
 import org.sonarsource.sonarlint.core.branch.MatchedSonarProjectBranchChangedEvent;
 import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
@@ -53,7 +55,7 @@ import static java.util.stream.Collectors.toList;
 @Named
 @Singleton
 public class PathTranslationService {
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private static final Logger LOG = LoggerFactory.getLogger(PathTranslationService.class);
   private final ClientFileSystemService clientFs;
   private final ServerApiProvider serverApiProvider;
   private final ConfigurationRepository configurationRepository;
@@ -70,6 +72,7 @@ public class PathTranslationService {
 
   @CheckForNull
   private FilePathTranslation computePaths(String configScopeId, SonarLintCancelMonitor cancelMonitor) {
+    SonarLintMDC.putConfigScopeId(configScopeId);
     LOG.debug("Computing paths translation for config scope '{}'...", configScopeId);
     var fileMatcher = new FileTreeMatcher();
     var boundScope = configurationRepository.getBoundScope(configScopeId);

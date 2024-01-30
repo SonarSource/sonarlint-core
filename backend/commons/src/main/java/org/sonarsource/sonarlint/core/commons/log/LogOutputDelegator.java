@@ -35,28 +35,27 @@ class LogOutputDelegator {
 
   private final InheritableThreadLocal<LogOutput> target = new InheritableThreadLocal<>();
 
-  void log(String formattedMessage, Level level) {
+  void log(@Nullable String formattedMessage, Level level, @Nullable String stackTrace) {
     var output = Optional.ofNullable(target.get()).orElseThrow(() -> {
       var noLogOutputConfigured = new IllegalStateException("No log output configured");
       noLogOutputConfigured.printStackTrace(System.err);
       return noLogOutputConfigured;
     });
     if (output != null) {
-      if (level == Level.DEBUG && SKIPPED_MESSAGE_PATTERN.matcher(formattedMessage).matches()) {
+      if (formattedMessage != null && level == Level.DEBUG && SKIPPED_MESSAGE_PATTERN.matcher(formattedMessage).matches()) {
         return;
       }
-      output.log(formattedMessage, level);
+      output.log(formattedMessage, level, stackTrace);
     }
   }
 
   void log(@Nullable String formattedMessage, Level level, @Nullable Throwable t) {
-    if (formattedMessage != null) {
-      log(formattedMessage, level);
-    }
-
+    String stacktrace = null;
     if (t != null) {
-      var stacktrace = LogOutput.stackTraceToString(t);
-      log(stacktrace, level);
+      stacktrace = LogOutput.stackTraceToString(t);
+    }
+    if (formattedMessage != null || t != null) {
+      log(formattedMessage, level, stacktrace);
     }
   }
 

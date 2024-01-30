@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.rpc.impl;
 
-import ch.qos.logback.classic.LoggerContext;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -35,6 +34,7 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
@@ -93,9 +93,18 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     this.client = launcher.getRemoteProxy();
     this.logOutput = new RpcClientLogOutput(client);
 
-    var rootLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+    // Remove existing handlers attached to j.u.l root logger
+    SLF4JBridgeHandler.removeHandlersForRootLogger();
+    // add SLF4JBridgeHandler to j.u.l's root logger, should be done once during
+    // the initialization phase of your application
+    SLF4JBridgeHandler.install();
+
+    var rootLogger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
     rootLogger.detachAndStopAllAppenders();
-    rootLogger.addAppender(new SonarLintRpcClientLogbackAppender(client));
+    var rpcAppender = new SonarLintRpcClientLogbackAppender(client);
+    rpcAppender.start();
+    rootLogger.addAppender(rpcAppender);
+
 
     this.launcherFuture = launcher.startListening();
 
