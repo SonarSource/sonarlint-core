@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.commons;
 
 import com.google.common.util.concurrent.MoreExecutors;
+import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -84,24 +85,23 @@ public class SmartCancelableLoadingCache<K, V> implements AutoCloseable {
       if (v == null) {
         return newValueAndScheduleComputation(k);
       } else {
-        v.refresh();
+        v.scheduleComputationAsync();
         return v;
       }
     });
   }
 
   public V get(K key) {
-    var resultFuture = cache.computeIfAbsent(key, this::newValueAndScheduleComputation);
-    return resultFuture.getValueFuture().join();
+    return cache.computeIfAbsent(key, this::newValueAndScheduleComputation).get();
   }
 
   private DebounceComputer<V> newValueAndScheduleComputation(K k) {
     var value = new DebounceComputer<>(c -> valueComputer.apply(k, c), executorService, (oldValue, newValue) -> {
-      if (listener != null) {
+      if (listener != null && !Objects.equals(oldValue, newValue)) {
         listener.afterCachedValueRefreshed(k, oldValue, newValue);
       }
     });
-    value.scheduleComputation();
+    value.scheduleComputationAsync();
     return value;
   }
 

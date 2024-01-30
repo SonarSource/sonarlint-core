@@ -224,6 +224,25 @@ class SmartCancelableLoadingCacheTests {
     verifyNoMoreInteractions(listener);
   }
 
+  @Test
+  void should_notify_once_if_multiple_refresh() {
+    when(computer.apply(eq(A_KEY), any(SonarLintCancelMonitor.class)))
+      .thenReturn(A_VALUE)
+      .thenReturn(ANOTHER_VALUE);
+
+    assertThat(underTest.get(A_KEY)).isEqualTo(A_VALUE);
+    verify(listener, timeout(1000).times(1)).afterCachedValueRefreshed(A_KEY, null, A_VALUE);
+
+    underTest.refreshAsync(A_KEY);
+    underTest.refreshAsync(A_KEY);
+    underTest.refreshAsync(A_KEY);
+    underTest.refreshAsync(A_KEY);
+    underTest.refreshAsync(A_KEY);
+
+    verify(listener, timeout(1000).times(1)).afterCachedValueRefreshed(A_KEY, A_VALUE, ANOTHER_VALUE);
+    verifyNoMoreInteractions(listener);
+  }
+
 
   private static Answer<String> waitingForCancellation(CountDownLatch startedLatch, @Nullable AtomicBoolean wasCancelled) {
     return invocation -> {
