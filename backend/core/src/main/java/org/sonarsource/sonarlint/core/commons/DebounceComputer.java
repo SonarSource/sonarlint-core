@@ -27,13 +27,22 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 
+/**
+ * The goal of this class is to debounce calls to a function that computes a value. Multiple threads can be blocked on the {@link #get()} method, waiting for the end of the computation.
+ * If a {@link #scheduleComputationAsync()} is called while a computation is in progress, an attempt will be made to cancel the current computation, and a new computation will be scheduled.
+ * Last feature: it is possible to register a listener that will be notified only after a successful computation (not after a cancellation).
+ */
 class DebounceComputer<V> {
   private final Function<SonarLintCancelMonitor, V> valueComputer;
   private final ExecutorServiceShutdownWatchable<?> executorService;
   @Nullable
   private final Listener<V> listener;
   private CompletableFuture<V> valueFuture = new CompletableFuture<>();
+  @Nullable
   private CompletableFuture<V> computeFuture;
+  // The last computed value (a compute task went to completion without cancellation). Can be null if the compute task failed.
+  @Nullable
+  private V value;
   private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
   public interface Listener<V> {
@@ -48,20 +57,25 @@ class DebounceComputer<V> {
     this.listener = listener;
   }
 
-  public void scheduleComputation() {
+  public V get() {
+    return getValueFuture().join();
+  }
+
+  public void scheduleComputationAsync() {
     lock.writeLock().lock();
     try {
       if (computeFuture != null) {
         computeFuture.cancel(false);
+        try {
+          computeFuture.join();
+        } catch (Exception ignore) {
+          // expected Cancellation exception, but we can ignore any other error since we are going to compute a new value anyway
+        }
         computeFuture = null;
       }
-      // Even if we have canceled the previous computation, the previous valueFuture can still be completed later, so we will create a new one
-      // that will be returned to new callers. We will also try to complete the old valueFuture, in case the cancellation was successful.
-      var oldValueFuture = valueFuture;
-      valueFuture = new CompletableFuture<>();
-
-      var previousValue = oldValueFuture.getNow(null);
-
+      if (valueFuture.isDone()) {
+        valueFuture = new CompletableFuture<>();
+      }
       var cancelMonitor = new SonarLintCancelMonitor();
       cancelMonitor.watchForShutdown(executorService);
       CompletableFuture<V> newComputeFuture = CompletableFuture.supplyAsync(() -> {
@@ -73,30 +87,30 @@ class DebounceComputer<V> {
           cancelMonitor.cancel();
         }
       });
-      newComputeFuture.whenCompleteAsync((newValue, error) -> whenComputeCompleted(newValue, error, previousValue, oldValueFuture), executorService);
+      newComputeFuture.whenComplete(this::whenComputeCompleted);
       computeFuture = newComputeFuture;
     } finally {
       lock.writeLock().unlock();
     }
   }
 
-  private void whenComputeCompleted(@Nullable V newValue, @Nullable Throwable error, @Nullable V previousValue, CompletableFuture<V> oldValueFuture) {
+  private void whenComputeCompleted(@Nullable V newValue, @Nullable Throwable error) {
     lock.writeLock().lock();
     try {
       computeFuture = null;
       if (error instanceof CancellationException) {
         return;
       }
+      var previousValue = value;
+      value = newValue;
       try {
-        if (error == null && listener != null) {
+        if (listener != null) {
           listener.afterComputedValueRefreshed(previousValue, newValue);
         }
       } finally {
         if (error != null) {
-          oldValueFuture.completeExceptionally(error);
           valueFuture.completeExceptionally(error);
         } else {
-          oldValueFuture.complete(newValue);
           valueFuture.complete(newValue);
         }
       }
@@ -105,12 +119,7 @@ class DebounceComputer<V> {
     }
   }
 
-
-  public void refresh() {
-    scheduleComputation();
-  }
-
-  public CompletableFuture<V> getValueFuture() {
+  private CompletableFuture<V> getValueFuture() {
     lock.readLock().lock();
     try {
       return valueFuture;
