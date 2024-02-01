@@ -28,15 +28,17 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
@@ -77,6 +79,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.Bindin
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationParams;
@@ -144,7 +147,8 @@ class SonarCloudTests extends AbstractConnectedTests {
 
   private static SonarLintRpcServer backend;
   private static String sonarcloudUserToken;
-  private static final Deque<String> didSynchronizeConfigurationScopes = new ConcurrentLinkedDeque<>();
+  private static final Set<String> openedConfigurationScopeIds = new HashSet<>();
+  private static final Map<String, Boolean> analysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
 
   @BeforeAll
   static void prepare() throws Exception {
@@ -252,7 +256,9 @@ class SonarCloudTests extends AbstractConnectedTests {
 
   @AfterEach
   void cleanup_after_each() {
-    didSynchronizeConfigurationScopes.clear();
+    openedConfigurationScopeIds.forEach(configScopeId -> backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(configScopeId)));
+    openedConfigurationScopeIds.clear();
+    analysisReadinessByConfigScopeId.clear();
     rpcClientLogs.clear();
   }
 
@@ -260,7 +266,7 @@ class SonarCloudTests extends AbstractConnectedTests {
   void match_main_branch_by_default() throws ExecutionException, InterruptedException {
     var configScopeId = "match_main_branch_by_default";
     openBoundConfigurationScope(configScopeId, PROJECT_KEY_JAVA);
-    waitForSync(configScopeId);
+    waitForAnalysisToBeReady(configScopeId);
 
     var sonarProjectBranch = backend.getSonarProjectBranchService().getMatchedSonarProjectBranch(new GetMatchedSonarProjectBranchParams(configScopeId)).get();
 
@@ -304,7 +310,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     }
 
     openBoundConfigurationScope(configScopeId, PROJECT_KEY_JAVA);
-    waitForSync(configScopeId);
+    waitForAnalysisToBeReady(configScopeId);
     var ruleDetails = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, "java" +
       ":S106", null)).get();
     assertThat(ruleDetails.details().getDescription().getRight().getTabs().get(1).getContent().getLeft().getHtmlContent()).contains(extendedDescription);
@@ -320,7 +326,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
     var issueListener = new SaveIssueListener();
     openBoundConfigurationScope(configScopeId, projectKeyJs);
-    waitForSync(configScopeId);
+    waitForAnalysisToBeReady(configScopeId);
     engine.analyze(createAnalysisConfiguration(projectKeyJs, "src/Person.js"), issueListener, null, null, configScopeId);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -335,7 +341,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
     var issueListener = new SaveIssueListener();
     openBoundConfigurationScope(configScopeId, projectKeyPhp);
-    waitForSync(configScopeId);
+    waitForAnalysisToBeReady(configScopeId);
     engine.analyze(createAnalysisConfiguration(projectKeyPhp, "src/Math.php"), issueListener, null, null, configScopeId);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -350,7 +356,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
     var issueListener = new SaveIssueListener();
     openBoundConfigurationScope(configScopeId, projectKeyPython);
-    waitForSync(configScopeId);
+    waitForAnalysisToBeReady(configScopeId);
     engine.analyze(createAnalysisConfiguration(projectKeyPython, "src/hello.py"), issueListener, null, null, configScopeId);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -365,7 +371,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
     var issueListener = new SaveIssueListener();
     openBoundConfigurationScope(configScopeId, projectKey);
-    waitForSync(configScopeId);
+    waitForAnalysisToBeReady(configScopeId);
     engine.analyze(createAnalysisConfiguration(projectKey, "src/file.html"), issueListener, null, null, configScopeId);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -387,7 +393,7 @@ class SonarCloudTests extends AbstractConnectedTests {
       setSettingsMultiValue(projectKey(PROJECT_KEY_JAVA), SONAR_JAVA_FILE_SUFFIXES, ".foo");
 
       backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(CONNECTION_ID, projectKey(PROJECT_KEY_JAVA), true)));
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       issueListener.clear();
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA,
@@ -429,7 +435,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
     var issueListener = new SaveIssueListener();
     openBoundConfigurationScope(configScopeId, projectKeyRuby);
-    waitForSync(configScopeId);
+    waitForAnalysisToBeReady(configScopeId);
     engine.analyze(createAnalysisConfiguration(projectKeyRuby, "src/hello.rb"), issueListener, null, null, configScopeId);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -444,7 +450,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
     var issueListener = new SaveIssueListener();
     openBoundConfigurationScope(configScopeId, projectKeyKotlin);
-    waitForSync(configScopeId);
+    waitForAnalysisToBeReady(configScopeId);
     engine.analyze(createAnalysisConfiguration(projectKeyKotlin, "src/hello.kt"), issueListener, null, null, configScopeId);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -459,7 +465,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
     var issueListener = new SaveIssueListener();
     openBoundConfigurationScope(configScopeId, projectKeyScala);
-    waitForSync(configScopeId);
+    waitForAnalysisToBeReady(configScopeId);
     engine.analyze(createAnalysisConfiguration(projectKeyScala, "src/Hello.scala"), issueListener, null, null, configScopeId);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -474,7 +480,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
     var issueListener = new SaveIssueListener();
     openBoundConfigurationScope(configScopeId, projectKeyXml);
-    waitForSync(configScopeId);
+    waitForAnalysisToBeReady(configScopeId);
     engine.analyze(createAnalysisConfiguration(projectKeyXml, "src/foo.xml"), issueListener, (m, l) -> System.out.println(m), null, configScopeId);
     assertThat(issueListener.getIssues()).hasSize(1);
   }
@@ -518,7 +524,7 @@ class SonarCloudTests extends AbstractConnectedTests {
       var configScopeId = "reportHotspots";
       var issueListener = new SaveIssueListener();
       openBoundConfigurationScope(configScopeId, PROJECT_KEY_JAVA_HOTSPOT);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
       engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVA_HOTSPOT,
           "src/main/java/foo/Foo.java",
           "sonar.java.binaries", new File("projects/sample-java-hotspot/target/classes").getAbsolutePath()),
@@ -543,7 +549,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     void shouldMatchServerSecurityHotspots() throws ExecutionException, InterruptedException {
       var configScopeId = "shouldMatchServerSecurityHotspots";
       openBoundConfigurationScope(configScopeId, PROJECT_KEY_JAVA_HOTSPOT);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var textRangeWithHash = new TextRangeWithHashDto(9, 4, 9, 45, "qwer");
       var clientTrackedHotspotsByServerRelativePath = Map.of(
@@ -564,6 +570,7 @@ class SonarCloudTests extends AbstractConnectedTests {
   }
 
   private static void openBoundConfigurationScope(String configScopeId, String projectKey) {
+    openedConfigurationScopeIds.add(configScopeId);
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
       List.of(new ConfigurationScopeDto(configScopeId, null, true, "My " + configScopeId, new BindingConfigurationDto(CONNECTION_ID, projectKey(projectKey), true)))));
   }
@@ -591,7 +598,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     void download_taint_vulnerabilities_for_project() throws ExecutionException, InterruptedException {
       var configScopeId = "download_taint_vulnerabilities_for_project";
       openBoundConfigurationScope(configScopeId, PROJECT_KEY_JAVA_TAINT);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       // Ensure a vulnerability has been reported on server side
       var issuesList = adminWsClient.issues().search(new SearchRequest().setTypes(List.of("VULNERABILITY")).setComponentKeys(List.of(projectKey(PROJECT_KEY_JAVA_TAINT))))
@@ -621,8 +628,8 @@ class SonarCloudTests extends AbstractConnectedTests {
     }
   }
 
-  private static void waitForSync(String configScopeId) {
-    await().atMost(1, TimeUnit.MINUTES).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(configScopeId));
+  private static void waitForAnalysisToBeReady(String configScopeId) {
+    await().atMost(1, TimeUnit.MINUTES).untilAsserted(() -> assertThat(analysisReadinessByConfigScopeId).containsEntry(configScopeId, true));
   }
 
   private void setSettingsMultiValue(@Nullable String moduleKey, String key, String value) {
@@ -695,8 +702,8 @@ class SonarCloudTests extends AbstractConnectedTests {
       }
 
       @Override
-      public void didSynchronizeConfigurationScopes(Set<String> configurationScopeIds) {
-        didSynchronizeConfigurationScopes.addAll(configurationScopeIds);
+      public void didChangeAnalysisReadiness(Set<String> configurationScopeIds, boolean areReadyForAnalysis) {
+        analysisReadinessByConfigScopeId.putAll(configurationScopeIds.stream().collect(Collectors.toMap(Function.identity(), k -> areReadyForAnalysis)));
       }
 
       @Override

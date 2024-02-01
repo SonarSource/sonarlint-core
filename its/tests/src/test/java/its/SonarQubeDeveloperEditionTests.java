@@ -48,9 +48,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -119,7 +122,6 @@ import static its.utils.ItUtils.SONAR_VERSION;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.lang3.StringUtils.abbreviate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -188,6 +190,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   private static final List<String> allBranchNamesForProject = new CopyOnWriteArrayList<>();
   private static String matchedBranchNameForProject = null;
   private static final List<String> didSynchronizeConfigurationScopes = new CopyOnWriteArrayList<>();
+  private static final Map<String, Boolean> analysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
 
   private static SonarLintAnalysisEngine engine;
 
@@ -228,6 +231,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   void clearState() {
     rpcClientLogs.clear();
     didSynchronizeConfigurationScopes.clear();
+    analysisReadinessByConfigScopeId.clear();
     allBranchNamesForProject.clear();
     matchedBranchNameForProject = null;
   }
@@ -278,7 +282,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "js", "SonarLint IT Javascript");
 
       openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var rawIssues = analyzeFile(configScopeId, "sample-javascript", "src/Person.js");
 
@@ -294,7 +298,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint IT Java Custom");
 
       openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var rawIssues = analyzeFile(configScopeId, "sample-java-custom", "src/main/java/foo/Foo.java");
 
@@ -312,7 +316,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "php", "SonarLint IT PHP");
 
       openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var rawIssues = analyzeFile(configScopeId, "sample-php", "src/Math.php");
 
@@ -329,7 +333,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "py", "SonarLint IT Python");
 
       openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var rawIssues = analyzeFile(configScopeId, "sample-python", "src/hello.py");
 
@@ -345,7 +349,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "web", "SonarLint IT Web");
 
       openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var rawIssues = analyzeFile(configScopeId, "sample-web", "src/file.html");
 
@@ -361,7 +365,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "go", "SonarLint IT Go");
 
       openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var rawIssues = analyzeFile(configScopeId, "sample-go", "src/sample.go");
 
@@ -378,7 +382,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "cloudformation", "SonarLint IT CloudFormation");
 
       openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var rawIssues = analyzeFile(configScopeId, "sample-cloudformation", "src/sample.yaml");
 
@@ -395,7 +399,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "docker", "SonarLint IT Docker");
 
       openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var rawIssues = analyzeFile(configScopeId, "sample-docker", "src/Dockerfile");
 
@@ -412,7 +416,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "kubernetes", "SonarLint IT Kubernetes");
 
       openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var rawIssues = analyzeFile(configScopeId, "sample-kubernetes", "src/sample.yaml");
 
@@ -429,7 +433,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "terraform", "SonarLint IT Terraform");
 
       openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var rawIssues = analyzeFile(configScopeId, "sample-terraform", "src/sample.tf");
 
@@ -445,7 +449,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint IT Custom Sensor");
 
       openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var rawIssues = analyzeFile(configScopeId, "sample-java", "src/main/java/foo/Foo.java");
 
@@ -462,7 +466,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "cobol", "SonarLint IT Global Extension");
 
       openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       assertThat(logs).contains("Start Global Extension It works");
 
@@ -515,7 +519,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       try {
         openBoundConfigurationScope(configScopeId, projectKey, true);
-        waitForSync(configScopeId);
+        waitForAnalysisToBeReady(configScopeId);
 
         var rawIssues = analyzeFile(configScopeId, "sample-java", "src/main/java/foo/Foo.java");
         assertThat(rawIssues).hasSize(3);
@@ -544,28 +548,29 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint IT Java");
 
       openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var rawIssues = analyzeFile(configScopeId, "sample-java", "src/main/java/foo/Foo.java");
       assertThat(rawIssues).hasSize(2);
 
       rpcClientLogs.clear();
       didSynchronizeConfigurationScopes.clear();
+      analysisReadinessByConfigScopeId.clear();
       // Override default file suffixes in global props so that input file is not considered as a Java file
       setSettingsMultiValue(null, "sonar.java.file.suffixes", ".foo");
       backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(CONNECTION_ID, projectKey, false)));
-      await().atMost(20, SECONDS).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(configScopeId));
+      await().untilAsserted(() -> assertThat(analysisReadinessByConfigScopeId).containsEntry(configScopeId, true));
       await().untilAsserted(() -> assertThat(rpcClientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
       rawIssues = analyzeFile(configScopeId, "sample-java", "src/main/java/foo/Foo.java");
       assertThat(rawIssues).isEmpty();
 
       rpcClientLogs.clear();
-      didSynchronizeConfigurationScopes.clear();
+      analysisReadinessByConfigScopeId.clear();
       // Override default file suffixes in project props so that input file is considered as a Java file again
       setSettingsMultiValue(projectKey, "sonar.java.file.suffixes", ".java");
       backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)));
-      await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(configScopeId));
+      await().untilAsserted(() -> assertThat(analysisReadinessByConfigScopeId).containsEntry(configScopeId, true));
       await().untilAsserted(() -> assertThat(rpcClientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
 
       rawIssues = analyzeFile(configScopeId, "sample-java", "src/main/java/foo/Foo.java");
@@ -581,7 +586,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "ruby", "SonarLint IT Ruby");
 
       openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var rawIssues = analyzeFile(configScopeId, "sample-ruby", "src/hello.rb");
 
@@ -597,7 +602,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "kotlin", "SonarLint IT Kotlin");
 
       openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var rawIssues = analyzeFile(configScopeId, "sample-kotlin", "src/hello.kt");
 
@@ -613,7 +618,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "scala", "SonarLint IT Scala");
 
       openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var rawIssues = analyzeFile(configScopeId, "sample-scala", "src/Hello.scala");
 
@@ -629,7 +634,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "xml", "SonarLint IT XML");
 
       openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var rawIssues = analyzeFile(configScopeId, "sample-xml", "src/foo.xml");
 
@@ -665,7 +670,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint IT Java");
 
       openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var qualityProfile = getQualityProfile(adminWsClient, "SonarLint IT Java");
       deactivateRule(adminWsClient, qualityProfile, "java:S106");
@@ -690,7 +695,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       analyzeMavenProject("sample-java", projectKey);
 
       openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var issueKey = getIssueKeys(adminWsClient, "java:S106").get(0);
       resolveIssueAsWontFix(adminWsClient, issueKey);
@@ -772,7 +777,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       }
 
       openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var clientTrackedDto_s100 = new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(4, 14, 4, 23, "hashedHash"),
         null, "java:S100", "Rename this method name to match the regular expression '^[a-z][a-zA-Z0-9]*$'."); // this one is not matched but its on the server
@@ -801,7 +806,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         .getMatchedSonarProjectBranch(new GetMatchedSonarProjectBranchParams(configScopeId))
         .get().getMatchedSonarProjectBranch())
         .isEqualTo(featureBranch));
-      await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(configScopeId));
+      waitForSync(configScopeId);
 
       var issuesOnFeatureBranch = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByIdeRelativePath();
 
@@ -850,7 +855,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     @Test
     void shouldSyncTaintVulnerabilities() throws ExecutionException, InterruptedException {
       openBoundConfigurationScope(CONFIG_SCOPE_ID, PROJECT_KEY_JAVA_TAINT, true);
-      waitForSync(CONFIG_SCOPE_ID);
+      waitForAnalysisToBeReady(CONFIG_SCOPE_ID);
 
       analyzeMavenProject("sample-java-taint", PROJECT_KEY_JAVA_TAINT);
 
@@ -892,7 +897,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     @OnlyOnSonarQube(from = "9.6")
     void shouldUpdateTaintVulnerabilityInLocalStorageWhenChangedOnServer() throws ExecutionException, InterruptedException {
       openBoundConfigurationScope(CONFIG_SCOPE_ID, PROJECT_KEY_JAVA_TAINT, true);
-      waitForSync(CONFIG_SCOPE_ID);
+      waitForAnalysisToBeReady(CONFIG_SCOPE_ID);
 
       assertThat(backend.getTaintVulnerabilityTrackingService().listAll(new ListAllParams(CONFIG_SCOPE_ID)).get().getTaintVulnerabilities()).isEmpty();
 
@@ -1038,7 +1043,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     void shouldShowHotspotWhenOpenedFromSonarQube() throws InvalidProtocolBufferException {
       var configScopeId = "shouldShowHotspotWhenOpenedFromSonarQube";
       openBoundConfigurationScope(configScopeId, PROJECT_KEY_JAVA_HOTSPOT, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
       var hotspotKey = getFirstHotspotKey(PROJECT_KEY_JAVA_HOTSPOT);
 
       requestOpenHotspotWithParams(PROJECT_KEY_JAVA_HOTSPOT, hotspotKey);
@@ -1089,7 +1094,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     void reportHotspots() {
       var configScopeId = "reportHotspots";
       openBoundConfigurationScope(configScopeId, PROJECT_KEY_JAVA_HOTSPOT, false);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
       await().untilAsserted(() -> assertThat(rpcClientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored server info"))).isTrue());
 
       var rawIssues = analyzeFile(configScopeId, PROJECT_KEY_JAVA_HOTSPOT, "src/main/java/foo/Foo.java", "sonar.java.binaries",
@@ -1110,7 +1115,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     void loadHotspotRuleDescription() throws Exception {
       var configScopeId = "loadHotspotRuleDescription";
       openBoundConfigurationScope(configScopeId, PROJECT_KEY_JAVA_HOTSPOT, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var ruleDetails = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, "java:S4792", null)).get();
       assertThat(ruleDetails.details().getName()).isEqualTo("Configuring loggers is security-sensitive");
@@ -1122,7 +1127,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     void shouldMatchServerSecurityHotspots() throws ExecutionException, InterruptedException {
       var configScopeId = "shouldMatchServerSecurityHotspots";
       openBoundConfigurationScope(configScopeId, PROJECT_KEY_JAVA_HOTSPOT, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var textRangeWithHash = new TextRangeWithHashDto(9, 4, 9, 45, "qwer");
       var clientTrackedHotspotsByServerRelativePath = Map.of(
@@ -1205,10 +1210,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       }
 
       openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForSync(configScopeId);
-
-
-      await().untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(configScopeId));
+      waitForAnalysisToBeReady(configScopeId);
 
       var ruleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId,
         javaRuleKey("S106"), null)).get();
@@ -1232,7 +1234,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint-with-markdown.xml"));
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "java", "SonarLint IT Java Markdown");
       openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var ruleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, "mycompany-java:markdown",
         null)).get();
@@ -1250,7 +1252,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var projectName = "Java With Taint Vulnerabilities";
       provisionProject(ORCHESTRATOR, projectKey, projectName);
       openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
 
       var activeRuleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, "javasecurity:S2083", null)).get();
@@ -1292,7 +1294,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var projectName = "Java With Taint Vulnerabilities And Multiple Contexts";
       provisionProject(ORCHESTRATOR, projectKey, projectName);
       openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var activeRuleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, "javasecurity:S5131", "spring")).get();
 
@@ -1343,7 +1345,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var projectName = "Java With Security Hotspots";
       provisionProject(ORCHESTRATOR, projectKey, projectName);
       openBoundConfigurationScope(configScopeId, projectKey, true);
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var activeRuleDetailsResponse = backend.getRulesService()
         .getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, javaRuleKey(ORCHESTRATOR, "S4792"), null))
@@ -1453,6 +1455,10 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     await().atMost(1, TimeUnit.MINUTES).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(configScopeId));
   }
 
+  private static void waitForAnalysisToBeReady(String configScopeId) {
+    await().atMost(1, TimeUnit.MINUTES).untilAsserted(() -> assertThat(analysisReadinessByConfigScopeId).containsEntry(configScopeId, true));
+  }
+
   private void analyzeProject(String projectDirName, String projectKey, String... properties) {
     var projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
     ORCHESTRATOR.executeBuild(SonarScanner.create(projectDir.toFile())
@@ -1494,6 +1500,11 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       @Override
       public void didSynchronizeConfigurationScopes(Set<String> configurationScopeIds) {
         didSynchronizeConfigurationScopes.addAll(configurationScopeIds);
+      }
+
+      @Override
+      public void didChangeAnalysisReadiness(Set<String> configurationScopeIds, boolean areReadyForAnalysis) {
+        analysisReadinessByConfigScopeId.putAll(configurationScopeIds.stream().collect(Collectors.toMap(Function.identity(), k -> areReadyForAnalysis)));
       }
 
       @Override

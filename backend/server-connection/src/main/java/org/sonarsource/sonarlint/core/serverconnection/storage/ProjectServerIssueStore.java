@@ -35,6 +35,7 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
 public interface ProjectServerIssueStore {
+  boolean wasEverUpdated();
 
   /**
    * Store issues for a branch by replacing existing ones.

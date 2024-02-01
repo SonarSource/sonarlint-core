@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - ITs - Tests
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,25 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package its.utils;
+package org.sonarsource.sonarlint.core.rpc.protocol.client.analysis;
 
-import java.util.Queue;
-import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.TestWatcher;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
+import java.util.Set;
 
-public class LogOnTestFailure implements TestWatcher {
+public class DidChangeAnalysisReadinessParams {
+  private final Set<String> configurationScopeIds;
+  private final boolean areReadyForAnalysis;
 
-  private final Queue<LogParams> logs;
-
-  public LogOnTestFailure(Queue<LogParams> logs) {
-    this.logs = logs;
+  public DidChangeAnalysisReadinessParams(Set<String> configurationScopeIds, boolean areReadyForAnalysis) {
+    this.configurationScopeIds = configurationScopeIds;
+    this.areReadyForAnalysis = areReadyForAnalysis;
   }
 
-  @Override
-  public void testFailed(ExtensionContext context, Throwable cause) {
-    System.out.println("Test failed: " + context.getDisplayName());
-    System.out.println("Client RPC logs: ");
-    logs.forEach(l -> System.out.println("  " + l));
+  public Set<String> getConfigurationScopeIds() {
+    return configurationScopeIds;
+  }
+
+  public boolean areReadyForAnalysis() {
+    return areReadyForAnalysis;
   }
 }

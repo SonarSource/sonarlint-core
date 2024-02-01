@@ -27,7 +27,7 @@ import org.codehaus.plexus.components.io.fileselectors.FileSelector;
 
 public class UnArchiveUtils {
 
-  public  static void unarchiveDistribution(String inputFilePath, Path destionationPath, FileSelector[] fileSelectors) {
+  public static void unarchiveDistribution(String inputFilePath, Path destionationPath, FileSelector[] fileSelectors) {
     var unArchiver = SystemUtils.IS_OS_WINDOWS ? new ZipUnArchiver() : new TarGZipUnArchiver();
     var outputDirectory = destionationPath.toFile();
     outputDirectory.mkdirs();
@@ -38,7 +38,7 @@ public class UnArchiveUtils {
     unArchiver.extract();
   }
 
-  public  static void unarchiveDistribution(String inputFilePath, Path destionationPath) {
-    unarchiveDistribution(inputFilePath, destionationPath, new FileSelector[]{});
+  public static void unarchiveDistribution(String inputFilePath, Path destionationPath) {
+    unarchiveDistribution(inputFilePath, destionationPath, new FileSelector[] {});
   }
 }

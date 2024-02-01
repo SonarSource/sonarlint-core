@@ -158,6 +158,11 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
+  public boolean wasEverUpdated() {
+    return !issuesByFileByBranch.isEmpty() || !hotspotsByFileByBranch.isEmpty();
+  }
+
+  @Override
   public void replaceAllIssuesOfBranch(String branchName, List<ServerIssue<?>> issues) {
     issuesByFileByBranch.put(branchName, issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath)));
     issues.forEach(issue -> issuesByKey.put(issue.getKey(), issue));

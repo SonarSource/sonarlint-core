@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - ITs - Tests
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,25 +17,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package its.utils;
+package org.sonarsource.sonarlint.core.sync;
 
-import java.util.Queue;
-import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.TestWatcher;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
+public class PluginsSynchronizedEvent {
+  private final String connectionId;
 
-public class LogOnTestFailure implements TestWatcher {
-
-  private final Queue<LogParams> logs;
-
-  public LogOnTestFailure(Queue<LogParams> logs) {
-    this.logs = logs;
+  public PluginsSynchronizedEvent(String connectionId) {
+    this.connectionId = connectionId;
   }
 
-  @Override
-  public void testFailed(ExtensionContext context, Throwable cause) {
-    System.out.println("Test failed: " + context.getDisplayName());
-    System.out.println("Client RPC logs: ");
-    logs.forEach(l -> System.out.println("  " + l));
+  public String getConnectionId() {
+    return connectionId;
   }
 }

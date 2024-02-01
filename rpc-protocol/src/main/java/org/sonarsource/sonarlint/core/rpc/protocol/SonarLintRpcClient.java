@@ -27,6 +27,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientCons
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeNodeJsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnalysisReadinessParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSuggestionFoundParams;
@@ -208,4 +209,11 @@ public interface SonarLintRpcClient {
 
   @JsonNotification
   void noBindingSuggestionFound(NoBindingSuggestionFoundParams params);
+
+  /**
+   * Called when the backend is ready for analyzes to be triggered. The client is supposed to start analyzes only after receiving this notification.
+   * The backend can also notify clients if analyzes become un-ready to be triggered. It can be the case when changing the binding and conditions are not met yet (e.g. no storage)
+   */
+  @JsonNotification
+  void didChangeAnalysisReadiness(DidChangeAnalysisReadinessParams params);
 }

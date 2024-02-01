@@ -652,6 +652,11 @@ public class SonarLintBackendFixture {
 
     }
 
+    @Override
+    public void didChangeAnalysisReadiness(Set<String> configurationScopeIds, boolean areReadyForAnalysis) {
+
+    }
+
     public Queue<ShowSmartNotificationParams> getSmartNotificationsToShow() {
       return smartNotificationsToShow;
     }

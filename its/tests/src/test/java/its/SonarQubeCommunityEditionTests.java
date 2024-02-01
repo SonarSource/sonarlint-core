@@ -33,11 +33,12 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -92,7 +93,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
   private static Path sonarUserHome;
   private static WsClient adminWsClient;
   private static SonarLintRpcServer backend;
-  private static final Queue<String> didSynchronizeConfigurationScopes = new ConcurrentLinkedQueue<>();
+  private static final Map<String, Boolean> analysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
   private static BackendJsonRpcLauncher serverLauncher;
 
   @BeforeAll
@@ -133,7 +134,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
   @BeforeEach
   void clearState() {
-    didSynchronizeConfigurationScopes.clear();
+    analysisReadinessByConfigScopeId.clear();
   }
 
   @AfterAll
@@ -200,7 +201,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(configScopeId, null, true, "sample-language-mix", new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY_LANGUAGE_MIX,
           true)))));
-      waitForSync(configScopeId);
+      waitForAnalysisToBeReady(configScopeId);
 
       var javaClientTrackedFindingDto = new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(14, 4, 14, 14, "hashedHash"),
         null, "java:S106", "Replace this use of System.out by a logger.");
@@ -226,8 +227,8 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
     }
   }
 
-  private static void waitForSync(String configScopeId) {
-    await().atMost(1, TimeUnit.MINUTES).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(configScopeId));
+  private static void waitForAnalysisToBeReady(String configScopeId) {
+    await().atMost(1, TimeUnit.MINUTES).untilAsserted(() -> assertThat(analysisReadinessByConfigScopeId).containsEntry(configScopeId, true));
   }
 
   //TODO Possibly add tests for a method which will replace SonarLintEngine.getPluginDetails()
@@ -244,8 +245,8 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
       }
 
       @Override
-      public void didSynchronizeConfigurationScopes(Set<String> configurationScopeIds) {
-        didSynchronizeConfigurationScopes.addAll(configurationScopeIds);
+      public void didChangeAnalysisReadiness(Set<String> configurationScopeIds, boolean areReadyForAnalysis) {
+        analysisReadinessByConfigScopeId.putAll(configurationScopeIds.stream().collect(Collectors.toMap(Function.identity(), k -> areReadyForAnalysis)));
       }
 
       @Override
