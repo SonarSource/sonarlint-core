@@ -1349,18 +1349,35 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var extendedDescription = activeRuleDetailsResponse.details().getDescription().getRight();
       assertThat(extendedDescription.getIntroductionHtmlContent()).isNull();
-      assertThat(extendedDescription.getTabs())
-        .flatExtracting(this::extractTabContent)
-        .containsOnly(
-          "What's the risk?",
-          "<p>Configuring loggers is security-sensitive. I...",
-          "Assess the risk",
-          "<h2>Ask Yourself Whether</h2>\n"
-            + "<ul>\n"
-            + "  <li> unaut...",
-          "How can I fix it?",
-          "<h2>Recommended Secure Coding Practices</h2>\n"
-            + "<u...");
+      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 4)) {
+        // SONARPY-1588 Rule S4792 is deprecated
+        assertThat(extendedDescription.getTabs())
+          .flatExtracting(this::extractTabContent)
+          .containsOnly(
+            "What's the risk?",
+            "<p>This rule is deprecated, and will eventually...",
+            "Assess the risk",
+            "<h2>Ask Yourself Whether</h2>\n"
+              + "<ul>\n"
+              + "  <li> unaut...",
+            "How can I fix it?",
+            "<h2>Recommended Secure Coding Practices</h2>\n"
+              + "<u...");
+      } else {
+        assertThat(extendedDescription.getTabs())
+          .flatExtracting(this::extractTabContent)
+          .containsOnly(
+            "What's the risk?",
+            "<p>Configuring loggers is security-sensitive. I...",
+            "Assess the risk",
+            "<h2>Ask Yourself Whether</h2>\n"
+              + "<ul>\n"
+              + "  <li> unaut...",
+            "How can I fix it?",
+            "<h2>Recommended Secure Coding Practices</h2>\n"
+              + "<u...");
+      }
+
     }
 
     private List<String> extractTabContent(RuleDescriptionTabDto tab) {
