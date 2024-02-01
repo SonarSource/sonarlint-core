@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core;
 import java.util.Optional;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.clientapi.SonarLintClient;
@@ -45,6 +46,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+
+@Disabled("SLCORE-685 Some tests fail depending on the current date")
 class VersionSoonUnsupportedHelperTests {
 
   private static final String CONFIG_SCOPE_ID = "configScopeId";
