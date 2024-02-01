@@ -1503,6 +1503,27 @@ class WebSocketMediumTests {
         .contains(tuple(false, webSocketPayloadBuilder().subscribeWithProjectKey("projectKey").build()),
           tuple(true, webSocketPayloadBuilder().subscribeWithProjectKey("projectKey").build())));
     }
+    @Test
+    void should_send_one_subscribe_message_per_project_key_when_reopening_connection() {
+      startWebSocketServer();
+      var client = newFakeClient()
+        .withToken("connectionId", "token")
+        .build();
+      backend = newBackend()
+        .withServerSentEventsEnabled()
+        .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
+        .withBoundConfigScope("configScope", "connectionId", "projectKey")
+        .withBoundConfigScope("configScope2", "connectionId", "projectKey")
+        .build(client);
+      await().atMost(Duration.ofSeconds(2)).until(() -> webSocketServer.getConnections().size() == 1 && webSocketServer.getConnections().get(0).getReceivedMessages().size() == 2);
+
+      webSocketServer.getConnections().get(0).close();
+
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
+        .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
+        .contains(tuple(false, webSocketPayloadBuilder().subscribeWithProjectKey("projectKey").build()),
+          tuple(true, webSocketPayloadBuilder().subscribeWithProjectKey("projectKey").build())));
+    }
   }
 
   private void startWebSocketServer() {

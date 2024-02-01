@@ -264,7 +264,8 @@ public class WebSocketService {
   }
 
   private void resubscribeAll() {
-    subscribedProjectKeysByConfigScopes.forEach((configScope, projectKey) -> sonarCloudWebSocket.subscribe(projectKey));
+    var uniqueProjectKeys = new HashSet<>(subscribedProjectKeysByConfigScopes.values());
+    uniqueProjectKeys.forEach(projectKey -> sonarCloudWebSocket.subscribe(projectKey));
   }
 
   private void createConnectionIfNeeded(String connectionId) {
