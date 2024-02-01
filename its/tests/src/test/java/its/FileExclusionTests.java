@@ -29,12 +29,13 @@ import java.io.PipedOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -87,7 +88,7 @@ class FileExclusionTests extends AbstractConnectedTests {
   private static Path sonarUserHome;
   private static WsClient adminWsClient;
   private static SonarLintRpcServer backend;
-  private static final Deque<String> didSynchronizeConfigurationScopes = new ConcurrentLinkedDeque<>();
+  private static final Map<String, Boolean> analysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
   private static BackendJsonRpcLauncher serverLauncher;
 
   @BeforeAll
@@ -137,7 +138,7 @@ class FileExclusionTests extends AbstractConnectedTests {
 
   @AfterEach
   void cleanup_after_each() {
-    didSynchronizeConfigurationScopes.clear();
+    analysisReadinessByConfigScopeId.clear();
     rpcClientLogs.clear();
   }
 
@@ -151,7 +152,7 @@ class FileExclusionTests extends AbstractConnectedTests {
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
       List.of(new ConfigurationScopeDto(configScopeId, null, true, projectName, new BindingConfigurationDto(CONNECTION_ID, projectKey,
         true)))));
-    await().atMost(1, MINUTES).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(configScopeId));
+    await().atMost(1, MINUTES).untilAsserted(() -> assertThat(analysisReadinessByConfigScopeId).containsEntry(configScopeId, true));
 
     var filePath = Path.of("src/main/java/foo/Foo.java");
     var clientFileDto = new ClientFileDto(filePath.toUri(), filePath, configScopeId, null, StandardCharsets.UTF_8.name(),
@@ -214,10 +215,10 @@ class FileExclusionTests extends AbstractConnectedTests {
 
   private static void forceBackendToPullSettings(String configScopeId, String projectKey) {
     // The only way to force a sync of the storage is to unbind/rebind
-    didSynchronizeConfigurationScopes.clear();
+    analysisReadinessByConfigScopeId.clear();
     backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(null, null, true)));
     backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(CONNECTION_ID, projectKey, true)));
-    await().atMost(1, MINUTES).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(configScopeId));
+    await().atMost(1, MINUTES).untilAsserted(() -> assertThat(analysisReadinessByConfigScopeId).containsEntry(configScopeId, true));
   }
 
   private static SonarLintRpcClientDelegate newDummySonarLintClient() {
@@ -232,8 +233,8 @@ class FileExclusionTests extends AbstractConnectedTests {
       }
 
       @Override
-      public void didSynchronizeConfigurationScopes(Set<String> configurationScopeIds) {
-        didSynchronizeConfigurationScopes.addAll(configurationScopeIds);
+      public void didChangeAnalysisReadiness(Set<String> configurationScopeIds, boolean areReadyForAnalysis) {
+        analysisReadinessByConfigScopeId.putAll(configurationScopeIds.stream().collect(Collectors.toMap(Function.identity(), k -> areReadyForAnalysis)));
       }
 
       @Override

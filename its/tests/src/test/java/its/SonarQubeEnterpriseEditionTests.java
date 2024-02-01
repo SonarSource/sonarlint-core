@@ -36,8 +36,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterAll;
@@ -107,7 +109,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
   private static SonarLintRpcServer backend;
 
-  private static final List<String> didSynchronizeConfigurationScopes = new CopyOnWriteArrayList<>();
+  private static final Map<String, Boolean> analysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
 
   @AfterAll
   static void stopBackend() throws ExecutionException, InterruptedException {
@@ -144,8 +146,8 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
   @AfterEach
   void stop() {
-    didSynchronizeConfigurationScopes.forEach(s -> backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(s)));
-    didSynchronizeConfigurationScopes.clear();
+    analysisReadinessByConfigScopeId.forEach((scopeId, readiness) -> backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(scopeId)));
+    analysisReadinessByConfigScopeId.clear();
     rpcClientLogs.clear();
     try {
       engine.stop();
@@ -313,7 +315,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
       List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, projectName,
         new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
-    await().atMost(30, SECONDS).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
+    await().atMost(30, SECONDS).untilAsserted(() -> assertThat(analysisReadinessByConfigScopeId).containsEntry(CONFIG_SCOPE_ID, true));
     // TODO FIX ME and remove this check for a log after https://sonarsource.atlassian.net/browse/SLCORE-396 is fixed
     await().untilAsserted(() ->
       assertThat(rpcClientLogs).anyMatch(s -> Objects.equals(s.getMessage(), "Stored project analyzer configuration")));
@@ -344,8 +346,8 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
       }
 
       @Override
-      public void didSynchronizeConfigurationScopes(Set<String> configurationScopeIds) {
-        didSynchronizeConfigurationScopes.addAll(configurationScopeIds);
+      public void didChangeAnalysisReadiness(Set<String> configurationScopeIds, boolean areReadyForAnalysis) {
+        analysisReadinessByConfigScopeId.putAll(configurationScopeIds.stream().collect(Collectors.toMap(Function.identity(), k -> areReadyForAnalysis)));
       }
 
       @Override

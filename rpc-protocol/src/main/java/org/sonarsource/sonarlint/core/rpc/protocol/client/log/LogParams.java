@@ -19,6 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.log;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
@@ -33,6 +36,9 @@ public class LogParams {
   private final String loggerName;
   @Nullable
   private final String stackTrace;
+  private final Instant loggedAt;
+  private static final DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault());
+
 
   public LogParams(LogLevel level, @Nullable String message, @Nullable String configScopeId, @Nullable String stackTrace) {
     this(level, message, configScopeId, Thread.currentThread().getName(), "sonarlint", stackTrace);
@@ -45,6 +51,7 @@ public class LogParams {
     this.threadName = threadName;
     this.loggerName = loggerName;
     this.stackTrace = stackTrace;
+    this.loggedAt = Instant.now();
   }
 
   public LogLevel getLevel() {
@@ -78,10 +85,16 @@ public class LogParams {
     return stackTrace;
   }
 
+  public Instant getLoggedAt() {
+    return loggedAt;
+  }
+
   @Override
   public String toString() {
     var sb = new StringBuilder();
     sb.append(" [");
+    sb.append(formatter.format(loggedAt));
+    sb.append("] [");
     sb.append(threadName);
     sb.append("] ");
     sb.append(level.toString());

@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
@@ -42,12 +43,24 @@ public class AnalyzerConfigurationStorage {
     this.storageFilePath = projectStorageRoot.resolve("analyzer_config.pb");
   }
 
+  public boolean isValid() {
+    return tryRead().isPresent();
+  }
+
   public void store(AnalyzerConfiguration analyzerConfiguration) {
     FileUtils.mkdirs(storageFilePath.getParent());
     var data = adapt(analyzerConfiguration);
     LOG.debug("Storing project analyzer configuration in {}", storageFilePath);
     rwLock.write(() -> writeToFile(data, storageFilePath));
     LOG.debug("Stored project analyzer configuration");
+  }
+
+  private Optional<AnalyzerConfiguration> tryRead() {
+    try {
+      return Optional.of(read());
+    } catch (Exception e) {
+      return Optional.empty();
+    }
   }
 
   public AnalyzerConfiguration read() {

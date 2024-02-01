@@ -95,11 +95,11 @@ public class SynchronizationService {
   private final Set<String> ignoreBranchEventForScopes = ConcurrentHashMap.newKeySet();
 
   public SynchronizationService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
-    ServerApiProvider serverApiProvider, StorageService storageService, InitializeParams params,
-    SynchronizationTimestampRepository synchronizationTimestampRepository, TaintSynchronizationService taintSynchronizationService,
-    IssueSynchronizationService issueSynchronizationService, HotspotSynchronizationService hotspotSynchronizationService,
-    SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService,
-    ApplicationEventPublisher applicationEventPublisher) {
+                                ServerApiProvider serverApiProvider, StorageService storageService, InitializeParams params,
+                                SynchronizationTimestampRepository synchronizationTimestampRepository, TaintSynchronizationService taintSynchronizationService,
+                                IssueSynchronizationService issueSynchronizationService, HotspotSynchronizationService hotspotSynchronizationService,
+                                SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService,
+                                ApplicationEventPublisher applicationEventPublisher) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
@@ -160,14 +160,15 @@ public class SynchronizationService {
         progress += progressGap;
       }
       if (!synchronizedConfScopeIds.isEmpty()) {
+        applicationEventPublisher.publishEvent(new ConfigurationScopesSynchronizedEvent(synchronizedConfScopeIds));
         client.didSynchronizeConfigurationScopes(new DidSynchronizeConfigurationScopeParams(synchronizedConfScopeIds));
       }
     });
   }
 
   private void synchronizeProjectsOfTheSameConnection(String connectionId, Map<String, Collection<BoundScope>> boundScopeBySonarProject, ProgressNotifier notifier,
-    Set<String> synchronizedConfScopeIds,
-    float progress, float progressGap, SonarLintCancelMonitor cancelMonitor) {
+                                                      Set<String> synchronizedConfScopeIds,
+                                                      float progress, float progressGap, SonarLintCancelMonitor cancelMonitor) {
     if (boundScopeBySonarProject.isEmpty()) {
       return;
     }
@@ -254,6 +255,7 @@ public class SynchronizationService {
     try {
       LOG.debug("Synchronizing storage of connection '{}'", connectionId);
       var anyPluginUpdated = serverConnection.sync(serverApi, cancelMonitor);
+      applicationEventPublisher.publishEvent(new PluginsSynchronizedEvent(connectionId));
       if (anyPluginUpdated) {
         client.didUpdatePlugins(new DidUpdatePluginsParams(connectionId));
       }
@@ -261,11 +263,13 @@ public class SynchronizationService {
       scopesPerProjectKey.forEach((projectKey, configScopeIds) -> {
         LOG.debug("Synchronizing storage of Sonar project '{}' for connection '{}'", projectKey, connectionId);
         var analyzerConfigUpdateSummary = serverConnection.sync(serverApi, projectKey, cancelMonitor);
+        // XXX we might want to group those 2 events under one
         if (!analyzerConfigUpdateSummary.getUpdatedSettingsValueByKey().isEmpty()) {
           applicationEventPublisher.publishEvent(
             new SonarServerSettingsChangedEvent(configScopeIds, analyzerConfigUpdateSummary.getUpdatedSettingsValueByKey())
           );
         }
+        applicationEventPublisher.publishEvent(new AnalyzerConfigurationSynchronized(configScopeIds));
         sonarProjectBranchesSynchronizationService.sync(connectionId, projectKey, cancelMonitor);
       });
       synchronizeProjectsSync(

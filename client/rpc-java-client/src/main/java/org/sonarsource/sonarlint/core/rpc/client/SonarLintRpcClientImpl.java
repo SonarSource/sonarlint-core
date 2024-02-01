@@ -34,6 +34,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeNodeJsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnalysisReadinessParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSuggestionFoundParams;
@@ -301,5 +302,9 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   @Override
   public void noBindingSuggestionFound(NoBindingSuggestionFoundParams params) {
     notify(() -> delegate.noBindingSuggestionFound(params.getProjectKey()));
+  }
+
+  public void didChangeAnalysisReadiness(DidChangeAnalysisReadinessParams params) {
+    notify(() -> delegate.didChangeAnalysisReadiness(params.getConfigurationScopeIds(), params.areReadyForAnalysis()));
   }
 }

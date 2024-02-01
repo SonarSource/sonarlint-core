@@ -22,10 +22,12 @@ package org.sonarsource.sonarlint.core.analysis;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.inject.Named;
@@ -34,26 +36,36 @@ import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.MultivalueProperty;
 import org.sonarsource.sonarlint.core.commons.Binding;
+import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.ActiveRuleDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetGlobalConfigurationResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnalysisReadinessParams;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rules.RulesService;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.sync.AnalyzerConfigurationSynchronized;
+import org.sonarsource.sonarlint.core.sync.ConfigurationScopesSynchronizedEvent;
+import org.sonarsource.sonarlint.core.sync.PluginsSynchronizedEvent;
+import org.springframework.context.event.EventListener;
 
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.trimToNull;
@@ -66,6 +78,7 @@ public class AnalysisService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
+  private final SonarLintRpcClient client;
   private final ConfigurationRepository configurationRepository;
   private final LanguageSupportRepository languageSupportRepository;
   private final StorageService storageService;
@@ -76,10 +89,13 @@ public class AnalysisService {
   private final boolean hotspotEnabled;
   private final NodeJsService nodeJsService;
   private final boolean isDataflowBugDetectionEnabled;
+  private final Map<String, Boolean> analysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
 
-  public AnalysisService(ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository, StorageService storageService,
+  public AnalysisService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
+    StorageService storageService,
     PluginsService pluginsService, RulesService rulesService, RulesRepository rulesRepository, ConnectionConfigurationRepository connectionConfigurationRepository,
     InitializeParams initializeParams, NodeJsService nodeJsService) {
+    this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
     this.storageService = storageService;
@@ -156,14 +172,13 @@ public class AnalysisService {
     if (bindingOpt.isEmpty()) {
       return new GetAnalysisConfigResponse(buildStandaloneActiveRules(), Map.of());
     } else {
-      return new GetAnalysisConfigResponse(buildConnectedActiveRules(bindingOpt.get()), storageService.connection(bindingOpt.get().getConnectionId())
-        .project(bindingOpt.get().getSonarProjectKey()).analyzerConfiguration().read().getSettings().getAll());
+      return new GetAnalysisConfigResponse(buildConnectedActiveRules(bindingOpt.get()),
+        storageService.binding(bindingOpt.get()).analyzerConfiguration().read().getSettings().getAll());
     }
   }
 
   private List<ActiveRuleDto> buildConnectedActiveRules(Binding binding) {
-    var projectKey = binding.getSonarProjectKey();
-    var analyzerConfig = storageService.connection(binding.getConnectionId()).project(projectKey).analyzerConfiguration().read();
+    var analyzerConfig = storageService.binding(binding).analyzerConfiguration().read();
     var ruleSetByLanguageKey = analyzerConfig.getRuleSetByLanguageKey();
     var result = new ArrayList<ActiveRuleDto>();
     ruleSetByLanguageKey.entrySet()
@@ -339,5 +354,82 @@ public class AnalysisService {
       }
       return false;
     };
+  }
+
+  @EventListener
+  public void onPluginsSynchronized(PluginsSynchronizedEvent event) {
+    checkIfReadyForAnalysis(configurationRepository.getBoundScopesToConnection(event.getConnectionId())
+      .stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet()));
+  }
+
+  @EventListener
+  public void onConfigurationScopeAdded(ConfigurationScopesAddedEvent event) {
+    checkIfReadyForAnalysis(event.getAddedConfigurationScopeIds());
+  }
+
+  @EventListener
+  public void onConfigurationScopeRemoved(ConfigurationScopeRemovedEvent event) {
+    analysisReadinessByConfigScopeId.remove(event.getRemovedConfigurationScopeId());
+  }
+
+  @EventListener
+  public void onBindingConfigurationChanged(BindingConfigChangedEvent event) {
+    var configScopeId = event.getConfigScopeId();
+    analysisReadinessByConfigScopeId.remove(configScopeId);
+    if (!checkIfReadyForAnalysis(configScopeId)) {
+      client.didChangeAnalysisReadiness(new DidChangeAnalysisReadinessParams(Set.of(configScopeId), false));
+    }
+  }
+
+  @EventListener
+  public void onAnalyzerConfigurationSynchronized(AnalyzerConfigurationSynchronized event) {
+    checkIfReadyForAnalysis(event.getConfigScopeIds());
+  }
+
+  @EventListener
+  public void onAnalyzerConfigurationSynchronized(ConfigurationScopesSynchronizedEvent event) {
+    checkIfReadyForAnalysis(event.getConfigScopeIds());
+  }
+
+  private void checkIfReadyForAnalysis(Set<String> configurationScopeIds) {
+    var readyConfigScopeIds = configurationScopeIds.stream()
+      .filter(this::isReadyForAnalysis)
+      .collect(toSet());
+    saveAndNotifyReadyForAnalysis(readyConfigScopeIds);
+  }
+
+  private boolean checkIfReadyForAnalysis(String configurationScopeId) {
+    if (isReadyForAnalysis(configurationScopeId)) {
+      saveAndNotifyReadyForAnalysis(Set.of(configurationScopeId));
+      return true;
+    }
+    return false;
+  }
+
+  private void saveAndNotifyReadyForAnalysis(Set<String> configScopeIds) {
+    var scopeIdsThatBecameReady = new HashSet<String>();
+    configScopeIds.forEach(configScopeId -> {
+      if (analysisReadinessByConfigScopeId.get(configScopeId) != Boolean.TRUE) {
+        analysisReadinessByConfigScopeId.put(configScopeId, Boolean.TRUE);
+        scopeIdsThatBecameReady.add(configScopeId);
+      }
+    });
+    if (!scopeIdsThatBecameReady.isEmpty()) {
+      client.didChangeAnalysisReadiness(new DidChangeAnalysisReadinessParams(scopeIdsThatBecameReady, true));
+    }
+  }
+
+  private boolean isReadyForAnalysis(String configScopeId) {
+    return configurationRepository.getEffectiveBinding(configScopeId)
+      .map(this::isReadyForAnalysis)
+      // standalone mode
+      .orElse(true);
+  }
+
+  private boolean isReadyForAnalysis(Binding binding) {
+    return storageService.connection(binding.getConnectionId()).plugins().isValid()
+      && storageService.binding(binding).analyzerConfiguration().isValid()
+      // this is not strictly for analysis but for tracking
+      && storageService.binding(binding).findings().wasEverUpdated();
   }
 }

@@ -51,7 +51,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupp
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
@@ -194,6 +193,10 @@ public class MockSonarLintRpcClientDelegate implements SonarLintRpcClientDelegat
 
   @Override
   public void noBindingSuggestionFound(String projectKey) {
+  }
+
+  @Override
+  public void didChangeAnalysisReadiness(Set<String> configurationScopeIds, boolean areReadyForAnalysis) {
 
   }
 }

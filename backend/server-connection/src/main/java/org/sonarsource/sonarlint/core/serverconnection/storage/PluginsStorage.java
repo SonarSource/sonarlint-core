@@ -49,6 +49,15 @@ public class PluginsStorage {
     this.pluginReferencesFilePath = rootPath.resolve(PLUGIN_REFERENCES_PB);
   }
 
+  public boolean isValid() {
+    try {
+      rwLock.read(() -> ProtobufFileUtil.readFile(pluginReferencesFilePath, Sonarlint.PluginReferences.parser()));
+      return true;
+    } catch (Exception e) {
+      return false;
+    }
+  }
+
   public void store(ServerPlugin plugin, InputStream pluginBinary) {
     try {
       FileUtils.copyInputStreamToFile(pluginBinary, rootPath.resolve(plugin.getFilename()).toFile());
@@ -76,7 +85,7 @@ public class PluginsStorage {
   }
 
   public Map<String, Path> getStoredPluginPathsByKey() {
-    return byKey(getStoredPlugins()).entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, v -> v.getValue().getJarPath()));
+    return getStoredPluginsByKey().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, v -> v.getValue().getJarPath()));
   }
 
   private static Map<String, StoredPlugin> byKey(List<StoredPlugin> plugins) {

@@ -449,6 +449,11 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   @Override
+  public boolean wasEverUpdated() {
+    return entityStore.computeInTransaction(txn -> !txn.getAll(BRANCH_ENTITY_TYPE).isEmpty());
+  }
+
+  @Override
   public void replaceAllIssuesOfBranch(String branchName, List<ServerIssue<?>> issues) {
     var issuesByFile = issues.stream().collect(Collectors.groupingBy(ServerIssue::getFilePath));
     timed(wroteMessage(issues.size(), ISSUES), () -> entityStore.executeInTransaction(txn -> {

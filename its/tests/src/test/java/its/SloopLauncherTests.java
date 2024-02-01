@@ -24,7 +24,6 @@ import its.utils.SloopDistLocator;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -278,6 +277,11 @@ class SloopLauncherTests {
 
     @Override
     public void noBindingSuggestionFound(String projectKey) {
+
+    }
+
+    @Override
+    public void didChangeAnalysisReadiness(Set<String> configurationScopeIds, boolean areReadyForAnalysis) {
 
     }
   }
