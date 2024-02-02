@@ -28,9 +28,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import org.apache.commons.lang3.SystemUtils;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
@@ -88,19 +90,22 @@ class SloopLauncherTests {
   private static Path unarchiveTmpDir;
 
   private static SonarLintRpcServer server;
+  private static SloopLauncher sloopLauncher;
 
   @BeforeAll
   static void setup() {
     var sloopDistPath = SystemUtils.IS_OS_WINDOWS ? SloopDistLocator.getWindowsDistPath() : SloopDistLocator.getLinux64DistPath();
     var sloopOutDirPath = unarchiveTmpDir.resolve("sloopDistOut");
     unarchiveDistribution(sloopDistPath.toString(), sloopOutDirPath);
-    server = SloopLauncher.startSonarLintRpcServer(sloopOutDirPath.toAbsolutePath().toString(), new DummySonarLintRpcClient());
+    sloopLauncher = new SloopLauncher(new DummySonarLintRpcClient());
+    sloopLauncher.start(sloopOutDirPath.toAbsolutePath());
+    server = sloopLauncher.getServerProxy();
   }
 
   @AfterAll
   static void tearDown() throws ExecutionException, InterruptedException {
     server.shutdown().get();
-    var exitCode = SloopLauncher.waitFor();
+    var exitCode = sloopLauncher.waitFor();
     assertThat(exitCode).isZero();
   }
 
@@ -124,9 +129,9 @@ class SloopLauncherTests {
   }
 
   static class DummySonarLintRpcClient implements SonarLintRpcClientDelegate {
-    final List<LogParams> logs = new ArrayList<>();
+    final Queue<LogParams> logs = new ConcurrentLinkedQueue<>();
 
-    public List<LogParams> getLogs() {
+    public Queue<LogParams> getLogs() {
       return logs;
     }
 
