@@ -1350,7 +1350,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var extendedDescription = activeRuleDetailsResponse.details().getDescription().getRight();
       assertThat(extendedDescription.getIntroductionHtmlContent()).isNull();
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 4)) {
-        // SONARPY-1588 Rule S4792 is deprecated
+        // SONARJAVA-4739 Rule S4792 is deprecated
         assertThat(extendedDescription.getTabs())
           .flatExtracting(this::extractTabContent)
           .containsOnly(
