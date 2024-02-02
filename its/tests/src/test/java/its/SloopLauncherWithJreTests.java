@@ -54,6 +54,7 @@ class SloopLauncherWithJreTests {
   private static SonarLintRpcServer server;
 
   private static SloopLauncherTests.DummySonarLintRpcClient client;
+  private static SloopLauncher sloopLauncher;
 
   @BeforeAll
   static void setup() {
@@ -61,13 +62,15 @@ class SloopLauncherWithJreTests {
     var jrePath = SystemUtils.IS_OS_WINDOWS ? JreLocator.getWindowsJrePath() : JreLocator.getLinuxJrePath();
     var sloopOutDirPath = unarchiveSloop(sloopDistPath);
     client = new SloopLauncherTests.DummySonarLintRpcClient();
-    server = SloopLauncher.startSonarLintRpcServerWithJre(sloopOutDirPath.toAbsolutePath().toString(), client, jrePath.toAbsolutePath().toString());
+    sloopLauncher = new SloopLauncher(client);
+    sloopLauncher.start(sloopOutDirPath.toAbsolutePath(), jrePath.toAbsolutePath());
+    server = sloopLauncher.getServerProxy();
   }
 
   @AfterAll
   static void tearDown() throws ExecutionException, InterruptedException {
     server.shutdown().get();
-    var exitCode = SloopLauncher.waitFor();
+    var exitCode = sloopLauncher.waitFor();
     assertThat(exitCode).isZero();
   }
 
@@ -80,9 +83,9 @@ class SloopLauncherWithJreTests {
 
     server.initialize(new InitializeParams(clientInfo, telemetryInitDto, featureFlags, sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
       Set.of(PluginLocator.getGoPluginPath().toAbsolutePath()), Collections.emptyMap(), Set.of(GO), Collections.emptySet(), Collections.emptyList(),
-      Collections.emptyList(), sonarUserHome.toString(), Map.of(), false, null)).get();
+      Collections.emptyList(), sonarUserHome.toString(), Map.of(), false, null)).join();
 
-    var result = server.getRulesService().listAllStandaloneRulesDefinitions().get();
+    var result = server.getRulesService().listAllStandaloneRulesDefinitions().join();
     assertThat(result.getRulesByKey()).hasSize(36);
     var expectedJreLog = "Using JRE from " + (SystemUtils.IS_OS_WINDOWS ? JreLocator.getWindowsJrePath() : JreLocator.getLinuxJrePath());
     assertThat(client.getLogs()).anyMatch(logParams -> logParams.getMessage().equals(expectedJreLog));

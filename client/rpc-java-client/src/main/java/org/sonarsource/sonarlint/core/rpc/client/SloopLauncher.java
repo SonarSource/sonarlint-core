@@ -20,15 +20,18 @@
 package org.sonarsource.sonarlint.core.rpc.client;
 
 import java.io.BufferedReader;
-import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
@@ -38,31 +41,34 @@ public class SloopLauncher {
 
   private static final String WIN_LAUNCHER_SCRIPT = "sonarlint-backend.bat";
   private static final String UNIX_LAUNCHER_SCRIPT = "sonarlint-backend";
-  private static SonarLintRpcClientDelegate client;
-  private static Process process;
+  private final SonarLintRpcClientDelegate rpcClient;
+  private final Function<List<String>, ProcessBuilder> processBuilderFactory;
+  private final Supplier<String> osNameSupplier;
+  private Process process;
+  private SonarLintRpcServer serverProxy;
 
-  private SloopLauncher() {
-    // don't instantiate
+  public SloopLauncher(SonarLintRpcClientDelegate rpcClient) {
+    this(rpcClient, ProcessBuilder::new, () -> System.getProperty("os.name"));
   }
 
-  @Nullable
-  public static SonarLintRpcServer startSonarLintRpcServer(String distPath, SonarLintRpcClientDelegate clientArg) {
-    return startAndGetSonarLintRpcServer(distPath, clientArg, "");
+  SloopLauncher(SonarLintRpcClientDelegate rpcClient, Function<List<String>, ProcessBuilder> processBuilderFactory, Supplier<String> osNameSupplier) {
+    this.rpcClient = rpcClient;
+    this.processBuilderFactory = processBuilderFactory;
+    this.osNameSupplier = osNameSupplier;
   }
 
-  @Nullable
-  public static SonarLintRpcServer startSonarLintRpcServerWithJre(String distPath, SonarLintRpcClientDelegate clientArg, String jrePath) {
-    return startAndGetSonarLintRpcServer(distPath, clientArg, jrePath);
+  public void start(Path distPath) {
+    start(distPath, null);
   }
 
-  private static SonarLintRpcServer startAndGetSonarLintRpcServer(String distPath, SonarLintRpcClientDelegate clientArg, String jrePath) {
+
+  public void start(Path distPath, @Nullable Path jrePath) {
     try {
-      SloopLauncher.client = clientArg;
-      return execute(distPath, jrePath);
+      execute(distPath, jrePath);
     } catch (Exception e) {
-      client.log(new LogParams(LogLevel.ERROR, null, null, stackTraceToString(e)));
+      logToClient(LogLevel.ERROR, "Unable to start the SonarLint backend", stackTraceToString(e));
+      throw new IllegalStateException("Unable to start the SonarLint backend", e);
     }
-    return null;
   }
 
   private static String stackTraceToString(Throwable t) {
@@ -75,63 +81,68 @@ public class SloopLauncher {
   /**
    * Inspired from Apache commons-lang3
    */
-  private static boolean isWindows() {
-    var osName = System.getProperty("os.name");
+  private boolean isWindows() {
+    var osName = osNameSupplier.get();
     if (osName == null) {
       return false;
     }
     return osName.startsWith("Windows");
   }
 
-  private static SonarLintRpcServer execute(String distPath, String jrePath) {
-    var binDirPath = distPath + File.separator + "bin";
+  private void execute(Path distPath, @Nullable Path jrePath) throws IOException {
+    var binDirPath = distPath.resolve("bin");
     List<String> commands = new ArrayList<>();
-    try {
-      if (isWindows()) {
-        commands.add("cmd.exe");
-        commands.add("/c");
-        commands.add(WIN_LAUNCHER_SCRIPT);
-      } else {
-        commands.add("sh");
-        commands.add(UNIX_LAUNCHER_SCRIPT);
-      }
-      if (!jrePath.isEmpty()) {
-        client.log(new LogParams(LogLevel.INFO, "Using JRE from " + jrePath, null, null));
-        commands.add("-j");
-        commands.add(jrePath);
-      }
-
-      var processBuilder = new ProcessBuilder(commands);
-      processBuilder.directory(new File(binDirPath));
-      processBuilder.redirectOutput(ProcessBuilder.Redirect.PIPE);
-      processBuilder.redirectInput(ProcessBuilder.Redirect.PIPE);
-      processBuilder.redirectError(ProcessBuilder.Redirect.PIPE);
-
-      process = processBuilder.start();
-
-      // redirect process.getErrorStream() to the client logs
-      new StreamGobbler(process.getErrorStream(), stdErrLogConsumer()).start();
-      // use process.getInputStream() as an input for the client
-      var serverToClientInputStream = process.getInputStream();
-      // use process.getOutputStream() as the standard input of a subprocess that can be written to
-      var clientToServerOutputStream = process.getOutputStream();
-      var clientLauncher = new ClientJsonRpcLauncher(serverToClientInputStream, clientToServerOutputStream, client);
-
-      return clientLauncher.getServerProxy();
-    } catch (Exception e) {
-      client.log(new LogParams(LogLevel.WARN, null, null, stackTraceToString(e)));
+    if (isWindows()) {
+      commands.add("cmd.exe");
+      commands.add("/c");
+      commands.add(WIN_LAUNCHER_SCRIPT);
+    } else {
+      commands.add("sh");
+      commands.add(UNIX_LAUNCHER_SCRIPT);
     }
-    return null;
+    if (jrePath != null) {
+      logToClient(LogLevel.INFO, "Using JRE from " + jrePath, null);
+      commands.add("-j");
+      commands.add(jrePath.toString());
+    }
+
+    var processBuilder = processBuilderFactory.apply(commands);
+    processBuilder.directory(binDirPath.toFile());
+    processBuilder.redirectOutput(ProcessBuilder.Redirect.PIPE);
+    processBuilder.redirectInput(ProcessBuilder.Redirect.PIPE);
+    processBuilder.redirectError(ProcessBuilder.Redirect.PIPE);
+
+    this.process = processBuilder.start();
+
+    // redirect process.getErrorStream() to the client logs
+    new StreamGobbler(process.getErrorStream(), stdErrLogConsumer()).start();
+    // use process.getInputStream() as an input for the client
+    var serverToClientInputStream = process.getInputStream();
+    // use process.getOutputStream() as the standard input of a subprocess that can be written to
+    var clientToServerOutputStream = process.getOutputStream();
+    var clientLauncher = new ClientJsonRpcLauncher(serverToClientInputStream, clientToServerOutputStream, rpcClient);
+
+    serverProxy = clientLauncher.getServerProxy();
   }
 
-  private static Consumer<String> stdErrLogConsumer() {
-    return s -> client.log(new LogParams(LogLevel.ERROR, "StdErr: " + s, null, null));
+  private Consumer<String> stdErrLogConsumer() {
+    return s -> logToClient(LogLevel.ERROR, "StdErr: " + s, null);
   }
 
-  public static int waitFor() throws InterruptedException {
+  private void logToClient(LogLevel level, @Nullable String message, @Nullable String stacktrace) {
+    rpcClient.log(new LogParams(level, message, null, Thread.currentThread().getName(),
+      SloopLauncher.class.getName(), stacktrace));
+  }
+
+  public SonarLintRpcServer getServerProxy() {
+    return serverProxy;
+  }
+
+  public int waitFor() throws InterruptedException {
     if (process.waitFor(1, TimeUnit.MINUTES)) {
       return process.exitValue();
     } else {
+      logToClient(LogLevel.ERROR, "Unable to stop the SonarLint process in a timely manner. Killing it.", null);
       process.destroyForcibly();
       return -1;
     }
