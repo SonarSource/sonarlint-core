@@ -1257,12 +1257,14 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var description = activeRuleDetailsResponse.details().getDescription();
 
-      if (!ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
+      var serverVersion = ORCHESTRATOR.getServer().version();
+      if (!serverVersion.isGreaterThanOrEquals(9, 5)) {
         // no description sections at that time
         assertThat(description.isRight()).isFalse();
       } else {
         var extendedDescription = description.getRight();
         assertThat(extendedDescription.getIntroductionHtmlContent()).isNull();
+        var link = serverVersion.isGreaterThanOrEquals(10, 4) ? "OWASP - <a href=..." : "<a href=\"https:/...";
         assertThat(extendedDescription.getTabs())
           .flatExtracting(this::extractTabContent)
           .containsExactly(
@@ -1276,7 +1278,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
             "More Info",
             "<h3>Standards</h3>\n"
               + "<ul>\n"
-              + "  <li> <a href=\"https:/...");
+              + "  <li> " + link);
 
         var howToFixTab = extendedDescription.getTabs().get(1);
         assertThat(howToFixTab.getContent().getRight().getDefaultContextKey()).isEqualTo("others");
