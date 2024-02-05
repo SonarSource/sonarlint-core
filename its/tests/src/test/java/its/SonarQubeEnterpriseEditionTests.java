@@ -34,6 +34,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
@@ -315,7 +316,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     await().atMost(30, SECONDS).untilAsserted(() -> assertThat(didSynchronizeConfigurationScopes).contains(CONFIG_SCOPE_ID));
     // TODO FIX ME and remove this check for a log after https://sonarsource.atlassian.net/browse/SLCORE-396 is fixed
     await().untilAsserted(() ->
-      assertThat(rpcClientLogs.stream().anyMatch(s -> s.getMessage().equals("Stored project analyzer configuration"))).isTrue());
+      assertThat(rpcClientLogs).anyMatch(s -> Objects.equals(s.getMessage(), "Stored project analyzer configuration")));
   }
 
   private List<RawIssue> analyzeFile(String projectDir, String filePath, String... properties) {
