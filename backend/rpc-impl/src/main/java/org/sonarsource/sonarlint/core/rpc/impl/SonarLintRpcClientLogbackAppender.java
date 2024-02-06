@@ -23,6 +23,7 @@ import ch.qos.logback.classic.pattern.ThrowableProxyConverter;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.IThrowableProxy;
 import ch.qos.logback.core.AppenderBase;
+import java.time.Instant;
 import org.sonarsource.sonarlint.core.SonarLintMDC;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
@@ -49,12 +50,13 @@ class SonarLintRpcClientLogbackAppender extends AppenderBase<ILoggingEvent> {
     var threadName = eventObject.getThreadName();
     var loggerName = eventObject.getLoggerName();
     var formattedMessage = eventObject.getFormattedMessage();
+    var loggedAt = Instant.ofEpochMilli(eventObject.getTimeStamp());
     IThrowableProxy tp = eventObject.getThrowableProxy();
     String stackTrace = null;
     if (tp != null) {
       stackTrace = tpc.convert(eventObject);
     }
-    rpcClient.log(new LogParams(LogLevel.valueOf(eventObject.getLevel().levelStr), formattedMessage, configScopeId, threadName, loggerName, stackTrace));
+    rpcClient.log(new LogParams(LogLevel.valueOf(eventObject.getLevel().levelStr), formattedMessage, configScopeId, threadName, loggerName, stackTrace, loggedAt));
   }
 
 }

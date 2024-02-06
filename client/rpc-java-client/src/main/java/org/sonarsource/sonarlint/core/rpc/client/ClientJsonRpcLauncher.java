@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.time.Instant;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -64,7 +65,7 @@ public class ClientJsonRpcLauncher implements Closeable {
       .setOutput(out)
       .setExecutorService(messageReaderExecutor)
       .wrapMessages(m -> new SingleThreadedMessageConsumer(m, messageWriterExecutor,
-        ex -> clientDelegate.log(new LogParams(LogLevel.ERROR, null, null, stackTraceToString(ex)))))
+        ex -> clientDelegate.log(new LogParams(LogLevel.ERROR, null, null, stackTraceToString(ex), Instant.now()))))
       .create();
 
     this.serverProxy = clientLauncher.getRemoteProxy();
