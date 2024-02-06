@@ -48,7 +48,7 @@ public enum SonarLanguage {
   PLI("pli", "pli", new String[]{".pli"}, "sonar.pli.file.suffixes"),
   PLSQL("plsql", "plsql", new String[]{".sql", ".pks", ".pkb"}, "sonar.plsql.file.suffixes"),
   PYTHON("py", "python", new String[]{".py"}, "sonar.python.file.suffixes"),
-  RPG("rpg", "rpg", new String[]{".rpg", ".rpgle"}, "sonar.rpg.suffixes"),
+  RPG("rpg", "rpg", new String[]{".rpg", ".rpgle"}, "sonar.rpg.file.suffixes"),
   RUBY("ruby", "ruby", new String[]{".rb"}, "sonar.ruby.file.suffixes"),
   SCALA("scala", "sonarscala", new String[]{".scala"}, "sonar.scala.file.suffixes"),
   SECRETS("secrets", "text", new String[0], "sonar.secrets.file.suffixes"),
