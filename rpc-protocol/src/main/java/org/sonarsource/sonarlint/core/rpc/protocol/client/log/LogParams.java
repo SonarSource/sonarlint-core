@@ -39,19 +39,18 @@ public class LogParams {
   private final Instant loggedAt;
   private static final DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneId.systemDefault());
 
-
-  public LogParams(LogLevel level, @Nullable String message, @Nullable String configScopeId, @Nullable String stackTrace) {
-    this(level, message, configScopeId, Thread.currentThread().getName(), "sonarlint", stackTrace);
+  public LogParams(LogLevel level, @Nullable String message, @Nullable String configScopeId, @Nullable String stackTrace, Instant loggedAt) {
+    this(level, message, configScopeId, Thread.currentThread().getName(), "sonarlint", stackTrace, loggedAt);
   }
 
-  public LogParams(LogLevel level, @Nullable String message, @Nullable String configScopeId, String threadName, String loggerName, @Nullable String stackTrace) {
+  public LogParams(LogLevel level, @Nullable String message, @Nullable String configScopeId, String threadName, String loggerName, @Nullable String stackTrace, Instant loggedAt) {
     this.level = level;
     this.message = message;
     this.configScopeId = configScopeId;
     this.threadName = threadName;
     this.loggerName = loggerName;
     this.stackTrace = stackTrace;
-    this.loggedAt = Instant.now();
+    this.loggedAt = loggedAt;
   }
 
   public LogLevel getLevel() {

@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.rpc.impl;
 
+import java.time.Instant;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -37,7 +38,7 @@ class RpcClientLogOutput implements LogOutput {
 
   @Override
   public void log(@Nullable String msg, Level level, @Nullable String stacktrace) {
-    client.log(new LogParams(LogLevel.valueOf(level.name()), msg, configScopeId.get(), stacktrace));
+    client.log(new LogParams(LogLevel.valueOf(level.name()), msg, configScopeId.get(), stacktrace, Instant.now()));
   }
 
   public void setConfigScopeId(@Nullable String configScopeId) {

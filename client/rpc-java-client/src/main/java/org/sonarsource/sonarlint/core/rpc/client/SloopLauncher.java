@@ -26,6 +26,7 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -131,7 +132,7 @@ public class SloopLauncher {
 
   private void logToClient(LogLevel level, @Nullable String message, @Nullable String stacktrace) {
     rpcClient.log(new LogParams(level, message, null, Thread.currentThread().getName(),
-      SloopLauncher.class.getName(), stacktrace));
+      SloopLauncher.class.getName(), stacktrace, Instant.now()));
   }
 
   public SonarLintRpcServer getServerProxy() {
