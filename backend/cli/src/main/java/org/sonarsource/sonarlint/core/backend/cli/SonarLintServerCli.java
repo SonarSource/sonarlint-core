@@ -49,7 +49,6 @@ public class SonarLintServerCli implements Callable<Integer> {
   }
 
   public static void main(String... args) {
-    System.err.println("Starting SonarLint Core backend...");
     var exitCode = new CommandLine(new SonarLintServerCli()).execute(args);
     System.exit(exitCode);
   }
