@@ -28,7 +28,6 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverapi.branches.ServerBranch;
 import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfile;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 
@@ -79,7 +78,7 @@ public class LocalStorageSynchronizer {
       var originalAnalyzerConfiguration = storage.project(projectKey).analyzerConfiguration().read();
       configUpdateSummary = diffAnalyzerConfiguration(originalAnalyzerConfiguration, updatedAnalyzerConfiguration);
     } catch (StorageException e) {
-      configUpdateSummary = null;
+      configUpdateSummary = new AnalyzerSettingsUpdateSummary(updatedAnalyzerConfiguration.getSettings().getAll());
     }
 
     storage.project(projectKey).analyzerConfiguration().store(updatedAnalyzerConfiguration);
@@ -136,13 +135,5 @@ public class LocalStorageSynchronizer {
 
   private static boolean outdatedSchema(int currentSchemaVersion) {
     return currentSchemaVersion < AnalyzerConfiguration.CURRENT_SCHEMA_VERSION;
-  }
-
-  private static ProjectBranches synchronizeProjectBranches(ServerApi serverApi, String projectKey, SonarLintCancelMonitor cancelMonitor) {
-    LOG.info("[SYNC] Synchronizing project branches for project '{}'", projectKey);
-    var allBranches = serverApi.branches().getAllBranches(projectKey, cancelMonitor);
-    var mainBranch = allBranches.stream().filter(ServerBranch::isMain).findFirst().map(ServerBranch::getName)
-      .orElseThrow(() -> new IllegalStateException("No main branch for project '" + projectKey + "'"));
-    return new ProjectBranches(allBranches.stream().map(ServerBranch::getName).collect(toSet()), mainBranch);
   }
 }
