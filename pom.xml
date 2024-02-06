@@ -293,6 +293,20 @@
         </plugin>
       </plugins>
     </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>com.mycila</groupId>
+        <artifactId>license-maven-plugin</artifactId>
+        <configuration>
+          <includes combine.children="append">
+            <include>src/*/proto/**/*.proto</include>
+          </includes>
+          <mapping combine.children="append">
+            <proto>SLASHSTAR_STYLE</proto>
+          </mapping>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
 
   <profiles>
