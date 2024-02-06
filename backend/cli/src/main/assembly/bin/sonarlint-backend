@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh
 
 real_path () {
   target=$1
