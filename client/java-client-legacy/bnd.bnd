@@ -21,4 +21,5 @@ Import-Package: org.sonarsource.sonarlint.core.rpc.protocol.*;version="${project
   lib/spring-expression.jar=spring-expression-*.jar;lib:=true,\
   lib/commons-lang3.jar=commons-lang3-*.jar;lib:=true,\
   lib/commons-io.jar=commons-io-*.jar;lib:=true,\
+  lib/commons-codec.jar=commons-codec-*.jar;lib:=true,\
   lib/sonar-classloader.jar=sonar-classloader-*.jar;lib:=true
