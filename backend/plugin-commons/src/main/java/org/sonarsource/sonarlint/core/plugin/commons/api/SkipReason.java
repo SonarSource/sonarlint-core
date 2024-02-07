@@ -29,11 +29,11 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 
 public interface SkipReason {
 
-  class UnsupportedPlugin implements SkipReason {
+  class UnsupportedFeature implements SkipReason {
 
-    public static final UnsupportedPlugin INSTANCE = new UnsupportedPlugin();
+    public static final UnsupportedFeature INSTANCE = new UnsupportedFeature();
 
-    private UnsupportedPlugin() {
+    private UnsupportedFeature() {
       // Singleton
     }
 
