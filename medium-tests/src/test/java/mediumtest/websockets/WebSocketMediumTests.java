@@ -47,6 +47,7 @@ import testutils.websockets.WebSocketConnection;
 import testutils.websockets.WebSocketServer;
 
 import static java.util.Collections.emptyList;
+import static mediumtest.fixtures.SonarLintBackendFixture.USER_AGENT_FOR_TESTS;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static mediumtest.fixtures.storage.ServerIssueFixtures.aServerIssue;
@@ -104,6 +105,23 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::getAuthorizationHeader, WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
         .containsExactly(tuple("Bearer token", true, webSocketPayloadBuilder().subscribeWithProjectKey("projectKey").build())));
+    }
+
+    @Test
+    void should_set_user_agent() {
+      startWebSocketServer();
+      var client = newFakeClient().withToken("connectionId", "token").build();
+      backend = newBackend()
+        .withServerSentEventsEnabled()
+        .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
+        .withUnboundConfigScope("configScope")
+        .build(client);
+
+      bind("configScope", "connectionId", "projectKey");
+
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
+        .extracting(WebSocketConnection::getUserAgent)
+        .containsExactly(USER_AGENT_FOR_TESTS));
     }
 
     @Test

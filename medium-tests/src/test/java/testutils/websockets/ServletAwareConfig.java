@@ -30,7 +30,7 @@ import static testutils.websockets.WebSocketServer.CONNECTION_REPOSITORY_ATTRIBU
 public class ServletAwareConfig extends ServerEndpointConfig.Configurator {
   @Override
   public void modifyHandshake(ServerEndpointConfig config, HandshakeRequest request, HandshakeResponse response) {
-    var webSocketConnection = new WebSocketConnection(request.getHeaders().get("Authorization").get(0));
+    var webSocketConnection = new WebSocketConnection(request.getHeaders().get("Authorization").get(0), request.getHeaders().get("User-Agent").get(0));
     getWebSocketConnectionRepository(request).add(webSocketConnection);
     config.getUserProperties().put(WS_CONNECTION_USER_PROPERTY_KEY, webSocketConnection);
     super.modifyHandshake(config, request, response);

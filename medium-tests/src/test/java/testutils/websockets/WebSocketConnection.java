@@ -29,14 +29,16 @@ import javax.annotation.CheckForNull;
 
 public class WebSocketConnection {
   private final String authorizationHeader;
+  private final String userAgent;
   private boolean isOpened;
   private final List<String> receivedMessages = new CopyOnWriteArrayList<>();
   private final Queue<String> preparedAnswers = new LinkedList<>();
   private Throwable throwable;
   private Session session;
 
-  public WebSocketConnection(String authorizationHeader) {
+  public WebSocketConnection(String authorizationHeader, String userAgent) {
     this.authorizationHeader = authorizationHeader;
+    this.userAgent = userAgent;
   }
 
   public void setSession(Session session) {
@@ -46,6 +48,10 @@ public class WebSocketConnection {
 
   public String getAuthorizationHeader() {
     return authorizationHeader;
+  }
+
+  public String getUserAgent() {
+    return userAgent;
   }
 
   public void setIsOpened() {
