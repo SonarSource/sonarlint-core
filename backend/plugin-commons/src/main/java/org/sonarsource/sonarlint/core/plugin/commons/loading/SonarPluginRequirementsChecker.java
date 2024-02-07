@@ -179,8 +179,8 @@ public class SonarPluginRequirementsChecker {
       // Workaround for SLCORE-667
       // dbd and dbdpythonfrontend require Python to be working
       if (!enableDataflowBugDetection) {
-        LOG.debug("Plugin '{}' is not supported. Skip loading it.", plugin.getName());
-        return new PluginRequirementsCheckResult(plugin, SkipReason.UnsupportedPlugin.INSTANCE);
+        LOG.debug("DBD feature disabled. Skip loading plugin '{}'.", plugin.getName());
+        return new PluginRequirementsCheckResult(plugin, SkipReason.UnsupportedFeature.INSTANCE);
       }
       var pythonPluginResult = currentResultsByKey.get(SonarLanguage.PYTHON.getPluginKey());
       if (checkForPluginSkipped(pythonPluginResult)) {

@@ -386,8 +386,8 @@ class SonarPluginRequirementsCheckerTests {
     var loadedPlugins = underTest.checkRequirements(jars, NONE, null, false, Optional.empty(), false);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
-      .containsOnly(tuple("dbdpythonfrontend", true, SkipReason.UnsupportedPlugin.INSTANCE));
-    assertThat(logsWithoutStartStop()).contains("Plugin 'dbdpythonfrontend' is not supported. Skip loading it.");
+      .containsOnly(tuple("dbdpythonfrontend", true, SkipReason.UnsupportedFeature.INSTANCE));
+    assertThat(logsWithoutStartStop()).contains("DBD feature disabled. Skip loading plugin 'dbdpythonfrontend'.");
   }
 
   @Test
@@ -450,9 +450,9 @@ class SonarPluginRequirementsCheckerTests {
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(
         tuple("python", false, null),
-        tuple("dbd", true, SkipReason.UnsupportedPlugin.INSTANCE)
+        tuple("dbd", true, SkipReason.UnsupportedFeature.INSTANCE)
       );
-    assertThat(logsWithoutStartStop()).contains("Plugin 'dbd' is not supported. Skip loading it.");
+    assertThat(logsWithoutStartStop()).contains("DBD feature disabled. Skip loading plugin 'dbd'.");
   }
 
   @Test
