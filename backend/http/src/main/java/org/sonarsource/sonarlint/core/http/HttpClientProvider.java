@@ -19,12 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.http;
 
+import com.google.common.util.concurrent.MoreExecutors;
 import java.net.ProxySelector;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -44,10 +47,16 @@ import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
 import org.apache.hc.core5.http2.HttpVersionPolicy;
 import org.apache.hc.core5.io.CloseMode;
 import org.apache.hc.core5.util.Timeout;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+
+import static org.sonarsource.sonarlint.core.http.ThreadFactories.threadWithNamePrefix;
 
 public class HttpClientProvider {
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final CloseableHttpAsyncClient sharedClient;
+  private final ExecutorService webSocketThreadPool;
+  private final String userAgent;
 
   /**
    * Return an {@link HttpClientProvider} made for testing, with a dummy user agent, and basic configuration regarding proxy/SSL
@@ -58,6 +67,8 @@ public class HttpClientProvider {
 
   public HttpClientProvider(String userAgent, @Nullable Path sonarlintUserHome,
     @Nullable Predicate<TrustManagerParameters> trustManagerParametersPredicate, ProxySelector proxySelector, CredentialsProvider proxyCredentialsProvider) {
+    this.userAgent = userAgent;
+    this.webSocketThreadPool = Executors.newCachedThreadPool(threadWithNamePrefix("sonarcloud-websocket-"));
     var sslFactoryBuilder = SSLFactory.builder()
       .withDefaultTrustMaterial()
       .withSystemTrustMaterial();
@@ -140,9 +151,15 @@ public class HttpClientProvider {
     return new ApacheHttpClientAdapter(sharedClient, token, null);
   }
 
+  public WebSocketClient getWebSocketClient(String token) {
+    return new WebSocketClient(userAgent, token, webSocketThreadPool);
+  }
+
   @PreDestroy
   public void close() {
     sharedClient.close(CloseMode.IMMEDIATE);
+    if (!MoreExecutors.shutdownAndAwaitTermination(webSocketThreadPool, 1, TimeUnit.SECONDS)) {
+      LOG.warn("Unable to stop web socket executor service in a timely manner");
+    }
   }
-
 }

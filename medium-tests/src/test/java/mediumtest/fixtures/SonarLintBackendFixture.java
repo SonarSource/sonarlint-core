@@ -97,6 +97,8 @@ import static org.mockito.Mockito.verify;
 
 public class SonarLintBackendFixture {
 
+  public static final String USER_AGENT_FOR_TESTS = "SonarLintBackendFixture";
+
   public static SonarLintBackendBuilder newBackend() {
     return new SonarLintBackendBuilder();
   }
@@ -121,7 +123,7 @@ public class SonarLintBackendFixture {
     private boolean shouldManageFullSynchronization;
     private boolean taintVulnerabilitiesEnabled = true;
     private boolean manageServerSentEvents;
-    private String userAgent = "SonarLintBackendFixture";
+    private String userAgent = USER_AGENT_FOR_TESTS;
     private String clientName = "SonarLint Backend Fixture";
 
     private final Map<String, StandaloneRuleConfigDto> standaloneConfigByKey = new HashMap<>();

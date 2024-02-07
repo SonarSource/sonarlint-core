@@ -33,12 +33,16 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 public class WebSocketClient {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private static final String AUTHORIZATION_HEADER_NAME = "Authorization";
+  private static final String USER_AGENT_HEADER_NAME = "User-Agent";
 
+  private final String userAgent;
   @Nullable
   private final String token;
   private final HttpClient httpClient;
 
-  WebSocketClient(@Nullable String token, ExecutorService executor) {
+  WebSocketClient(String userAgent, @Nullable String token, ExecutorService executor) {
+    this.userAgent = userAgent;
     this.token = token;
     this.httpClient = HttpClient
       .newBuilder()
@@ -52,7 +56,8 @@ public class WebSocketClient {
     var currentThreadOutput = SonarLintLogger.getTargetForCopy();
     return httpClient
       .newWebSocketBuilder()
-      .header("Authorization", "Bearer " + token)
+      .header(AUTHORIZATION_HEADER_NAME, "Bearer " + token)
+      .header(USER_AGENT_HEADER_NAME, userAgent)
       .buildAsync(URI.create(url), new MessageConsumerWrapper(messageConsumer, onClosedRunnable, currentThreadOutput));
   }
 

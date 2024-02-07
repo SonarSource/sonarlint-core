@@ -19,12 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.http;
 
-import com.google.common.util.concurrent.MoreExecutors;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -34,20 +29,16 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredenti
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
-import static org.sonarsource.sonarlint.core.commons.ThreadFactories.threadWithNamePrefix;
-
 @Named
 @Singleton
 public class ConnectionAwareHttpClientProvider {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final SonarLintRpcClient client;
   private final HttpClientProvider httpClientProvider;
-  private final ExecutorService webSocketThreadPool;
 
   public ConnectionAwareHttpClientProvider(SonarLintRpcClient client, HttpClientProvider httpClientProvider) {
     this.client = client;
     this.httpClientProvider = httpClientProvider;
-    this.webSocketThreadPool = Executors.newCachedThreadPool(threadWithNamePrefix("sonarcloud-websocket-"));
   }
 
   public HttpClient getHttpClient() {
@@ -74,7 +65,7 @@ public class ConnectionAwareHttpClientProvider {
       // We are normally only supporting tokens for SonarCloud connections
       throw new IllegalStateException("Expected token for connection " + connectionId);
     }
-    return new WebSocketClient(credentials.get().getLeft().getToken(), webSocketThreadPool);
+    return httpClientProvider.getWebSocketClient(credentials.get().getLeft().getToken());
   }
 
   private Optional<Either<TokenDto, UsernamePasswordDto>> queryClientForConnectionCredentials(String connectionId) {
@@ -85,13 +76,6 @@ public class ConnectionAwareHttpClientProvider {
       return Optional.empty();
     } else {
       return Optional.of(credentials);
-    }
-  }
-
-  @PreDestroy
-  public void close() {
-    if (!MoreExecutors.shutdownAndAwaitTermination(webSocketThreadPool, 1, TimeUnit.SECONDS)) {
-      LOG.warn("Unable to stop web socket executor service in a timely manner");
     }
   }
 }
