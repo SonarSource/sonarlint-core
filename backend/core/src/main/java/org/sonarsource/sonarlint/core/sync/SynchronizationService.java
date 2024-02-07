@@ -261,7 +261,7 @@ public class SynchronizationService {
       scopesPerProjectKey.forEach((projectKey, configScopeIds) -> {
         LOG.debug("Synchronizing storage of Sonar project '{}' for connection '{}'", projectKey, connectionId);
         var analyzerConfigUpdateSummary = serverConnection.sync(serverApi, projectKey, cancelMonitor);
-        if (analyzerConfigUpdateSummary != null && !analyzerConfigUpdateSummary.getUpdatedSettingsValueByKey().isEmpty()) {
+        if (!analyzerConfigUpdateSummary.getUpdatedSettingsValueByKey().isEmpty()) {
           applicationEventPublisher.publishEvent(
             new SonarServerSettingsChangedEvent(configScopeIds, analyzerConfigUpdateSummary.getUpdatedSettingsValueByKey())
           );
