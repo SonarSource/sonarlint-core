@@ -209,7 +209,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     backend = clientLauncher.getServerProxy();
     try {
       var languages = Set.of(JAVA, GO, PHP, JS, PYTHON, HTML, RUBY, KOTLIN, SCALA, XML, COBOL, CLOUDFORMATION, DOCKER, KUBERNETES, TERRAFORM);
-      var featureFlags = new FeatureFlagsDto(true, true, true, true, true, true, false, true);
+      var featureFlags = new FeatureFlagsDto(true, true, true, true, true, true, true, true);
       backend.initialize(
           new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, featureFlags,
             sonarUserHome.resolve("storage"),
@@ -438,6 +438,25 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var rawIssues = analyzeFile(configScopeId, "sample-terraform", "src/sample.tf");
 
       assertThat(rawIssues).hasSize(1);
+    }
+
+    @Test
+    @OnlyOnSonarQube(from = "10.4")
+    void shouldRaiseDataflowIssuesOnAPythonProject() {
+      var configScopeId = "shouldRaiseDataflowIssuesOnAPythonProject";
+      var projectKey = "sample-dbd";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample DBD");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/dbd-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "py", "SonarLint IT DBD");
+
+      openBoundConfigurationScope(configScopeId, projectKey, true);
+      waitForSync(configScopeId);
+
+      var rawIssues = analyzeFile(configScopeId, "sample-dbd", "src/hello.py");
+
+      assertThat(rawIssues)
+        .extracting(RawIssue::getRuleKey, RawIssue::getMessage)
+        .containsOnly(tuple("pythonbugs:S6466", "Fix this access on a collection that may trigger an 'IndexError'."));
     }
 
     @Test
