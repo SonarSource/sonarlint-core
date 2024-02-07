@@ -77,11 +77,13 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.APEX;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.C;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.COBOL;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.SECRETS;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.TSQL;
 
 class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
@@ -90,6 +92,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
   private static final String PROJECT_KEY_C = "sample-c";
   private static final String PROJECT_KEY_TSQL = "sample-tsql";
   private static final String PROJECT_KEY_APEX = "sample-apex";
+  private static final String PROJECT_KEY_CUSTOM_SECRETS = "sample-custom-secrets";
   private static final String CONFIG_SCOPE_ID = "my-ide-project-name";
 
   @RegisterExtension
@@ -136,6 +139,11 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_COBOL, "cobol", "SonarLint IT Cobol");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_TSQL, "tsql", "SonarLint IT TSQL");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_APEX, "apex", "SonarLint IT APEX");
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 4)) {
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/custom-secrets-sonarlint.xml"));
+      provisionProject(ORCHESTRATOR, PROJECT_KEY_CUSTOM_SECRETS, "Sample Custom Secrets");
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_CUSTOM_SECRETS, "secrets", "SonarLint IT Custom Secrets");
+    }
 
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 4)) {
       singlePointOfExitRuleKey = "c:S1005";
@@ -261,6 +269,18 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
       assertThat(rawIssues).hasSize(1);
     }
+
+    @Test
+    @OnlyOnSonarQube(from = "10.4")
+    void analysisCustomSecrets() {
+      start(PROJECT_KEY_CUSTOM_SECRETS);
+
+      var rawIssues = analyzeFile(PROJECT_KEY_CUSTOM_SECRETS, "src/file.md");
+
+      assertThat(rawIssues)
+        .extracting(RawIssue::getRuleKey, RawIssue::getMessage)
+        .containsOnly(tuple("secrets:custom_secret_rule", "User-specified secrets should not be disclosed."));
+    }
   }
 
   @Nested
@@ -380,7 +400,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
     backend = clientLauncher.getServerProxy();
     try {
-      var languages = Set.of(JAVA, COBOL, C, TSQL, APEX);
+      var languages = Set.of(JAVA, COBOL, C, TSQL, APEX, SECRETS);
       var featureFlags = new FeatureFlagsDto(true, true, true, false, true, false, false, true);
       backend.initialize(
           new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, featureFlags,
