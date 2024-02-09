@@ -14,4 +14,4 @@ jobs:
     with:
       publishToBinaries: false
       mavenCentralSync: true
-      slackChannel: team-sonarlint-java
+      slackChannel: squad-sonar-solution
