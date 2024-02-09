@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.client.utils;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
 
 public enum IssueResolutionStatus {
-  ACCEPT("Accept", "The issue is valid but will not be fixed now. It represents accepted technical debt."),
+  ACCEPT("Accepted", "The issue is valid but will not be fixed now. It represents accepted technical debt."),
   WONT_FIX("Won't Fix", "The issue is valid but does not need fixing. It represents accepted technical debt."),
   FALSE_POSITIVE("False Positive", "The issue is raised unexpectedly on code that should not trigger an issue.");
 
