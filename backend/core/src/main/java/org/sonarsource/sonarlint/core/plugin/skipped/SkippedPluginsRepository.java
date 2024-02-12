@@ -19,12 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.plugin.skipped;
 
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.CheckForNull;
-import javax.inject.Named;
-import javax.inject.Singleton;
 
 @Named
 @Singleton

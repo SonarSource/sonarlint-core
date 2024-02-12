@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,8 +29,6 @@ import java.util.Map;
 import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import javax.inject.Named;
-import javax.inject.Singleton;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
@@ -241,8 +241,6 @@ public class PluginsService {
 
   @CheckForNull
   public Path getEffectivePathToCsharpAnalyzer(String connectionId) {
-    return shouldUseEnterpriseCSharpAnalyzer(connectionId) ?
-      csharpSupport.csharpEnterprisePluginPath :
-      csharpSupport.csharpOssPluginPath;
+    return shouldUseEnterpriseCSharpAnalyzer(connectionId) ? csharpSupport.csharpEnterprisePluginPath : csharpSupport.csharpOssPluginPath;
   }
 }

@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core;
 
 import com.google.common.util.concurrent.MoreExecutors;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -28,8 +30,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.PreDestroy;
-import javax.inject.Named;
-import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -116,9 +116,7 @@ public class VersionSoonUnsupportedHelper {
                   new ShowSoonUnsupportedMessageParams(
                     String.format(UNSUPPORTED_NOTIFICATION_ID, connectionId, version.getName()),
                     configScopeId,
-                    String.format(NOTIFICATION_MESSAGE, version.getName(), connectionId, VersionUtils.getCurrentLts())
-                  )
-                );
+                    String.format(NOTIFICATION_MESSAGE, version.getName(), connectionId, VersionUtils.getCurrentLts())));
                 LOG.debug(String.format("Connection '%s' with version '%s' is detected to be soon unsupported",
                   connection.getConnectionId(), version.getName()));
               }

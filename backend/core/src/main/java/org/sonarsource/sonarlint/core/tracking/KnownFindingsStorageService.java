@@ -19,10 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
+import jakarta.inject.Named;
 import java.io.IOException;
 import java.nio.file.Path;
 import javax.annotation.PreDestroy;
-import javax.inject.Named;
 
 public class KnownFindingsStorageService {
 

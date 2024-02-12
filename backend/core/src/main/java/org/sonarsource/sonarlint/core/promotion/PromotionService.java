@@ -19,11 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.promotion;
 
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.inject.Named;
-import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.analysis.AnalysisFinishedEvent;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;

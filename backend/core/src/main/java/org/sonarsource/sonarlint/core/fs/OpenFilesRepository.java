@@ -19,14 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.fs;
 
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.inject.Named;
-import javax.inject.Singleton;
 
 @Named
 @Singleton
