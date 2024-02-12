@@ -24,7 +24,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.CheckForNull;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PreDestroy;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import org.sonarsource.sonarlint.core.SonarLintMDC;
