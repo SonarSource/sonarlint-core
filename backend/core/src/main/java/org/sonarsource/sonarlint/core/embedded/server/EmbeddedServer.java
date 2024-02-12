@@ -21,8 +21,8 @@ package org.sonarsource.sonarlint.core.embedded.server;
 
 import java.net.InetAddress;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import org.apache.hc.core5.http.ConnectionReuseStrategy;
