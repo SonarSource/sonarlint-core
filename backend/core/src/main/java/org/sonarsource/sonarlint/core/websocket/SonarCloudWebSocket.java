@@ -177,8 +177,8 @@ public class SonarCloudWebSocket {
     }
   }
 
-  public void close() {
-    LOG.debug("Closing SonarCloud WebSocket connection...");
+  public void close(String reason) {
+    LOG.debug("Closing SonarCloud WebSocket connection, reason={}...", reason);
     this.closingInitiated.set(true);
     if (this.wsFuture != null) {
       // output could already be closed if an error occurred

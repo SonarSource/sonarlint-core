@@ -72,7 +72,7 @@ public class WebSocketService {
     var connectionId = connectionIdsInterestedInNotifications.stream().findFirst().orElse(null);
     if (this.sonarCloudWebSocket != null && connectionId != null) {
       // If connection already exists, close it and create new one before it expires on its own
-      reopenConnection(connectionId);
+      reopenConnection(connectionId, "WebSocket was closed by server or reached EOL");
     }
   }
 
@@ -118,7 +118,7 @@ public class WebSocketService {
     }
     var updatedConnectionId = connectionConfigurationUpdatedEvent.getUpdatedConnectionId();
     if (didDisableNotifications(updatedConnectionId)) {
-      forgetConnection(updatedConnectionId);
+      forgetConnection(updatedConnectionId, "Notifications were disabled");
     } else if (didEnableNotifications(updatedConnectionId)) {
       considerConnection(updatedConnectionId);
     }
@@ -130,7 +130,7 @@ public class WebSocketService {
       return;
     }
     String removedConnectionId = connectionConfigurationRemovedEvent.getRemovedConnectionId();
-    forgetConnection(removedConnectionId);
+    forgetConnection(removedConnectionId, "Connection was removed");
   }
 
   @EventListener
@@ -140,7 +140,7 @@ public class WebSocketService {
     }
     var connectionId = connectionCredentialsChangedEvent.getConnectionId();
     if (isEligibleConnection(connectionId) && connectionIdsInterestedInNotifications.contains(connectionId)) {
-      reopenConnection(connectionId);
+      reopenConnection(connectionId, "Credentials have changed");
     }
   }
 
@@ -168,7 +168,7 @@ public class WebSocketService {
 
   private void closeSocketIfNoMoreNeeded() {
     if (subscribedProjectKeysByConfigScopes.isEmpty()) {
-      closeSocket();
+      closeSocket("No more bound project");
     }
   }
 
@@ -191,27 +191,27 @@ public class WebSocketService {
     considerAllBoundConfigurationScopes(configScopeIds);
   }
 
-  private void forgetConnection(String connectionId) {
+  private void forgetConnection(String connectionId, String reason) {
     var previouslyInterestedInNotifications = connectionIdsInterestedInNotifications.remove(connectionId);
     if (!previouslyInterestedInNotifications) {
       return;
     }
     if (connectionIdsInterestedInNotifications.isEmpty()) {
-      closeSocket();
+      closeSocket(reason);
       subscribedProjectKeysByConfigScopes.clear();
     } else if (connectionIdUsedToCreateConnection.equals(connectionId)) {
       // stop using the credentials, switch to another connection
       var otherConnectionId = connectionIdsInterestedInNotifications.stream().findAny().orElseThrow();
       removeProjectsFromSubscriptionListForConnection(connectionId);
-      reopenConnection(otherConnectionId);
+      reopenConnection(otherConnectionId, reason + ", reopening for other SC connection");
     } else {
       configurationRepository.getBoundScopesToConnection(connectionId)
         .forEach(configScope -> forget(configScope.getConfigScopeId()));
     }
   }
 
-  private void reopenConnection(String connectionId) {
-    closeSocket();
+  private void reopenConnection(String connectionId, String reason) {
+    closeSocket(reason);
     createConnectionIfNeeded(connectionId);
     resubscribeAll();
   }
@@ -281,12 +281,12 @@ public class WebSocketService {
     connectionIdsInterestedInNotifications.forEach(id -> eventPublisher.publishEvent(new SonarServerEventReceivedEvent(id, event)));
   }
 
-  private void closeSocket() {
+  private void closeSocket(String reason) {
     if (this.sonarCloudWebSocket != null) {
       var socket = this.sonarCloudWebSocket;
       this.sonarCloudWebSocket = null;
       this.connectionIdUsedToCreateConnection = null;
-      socket.close();
+      socket.close(reason);
     }
   }
 
@@ -298,6 +298,6 @@ public class WebSocketService {
   public void shutdown() {
     connectionIdsInterestedInNotifications.clear();
     subscribedProjectKeysByConfigScopes.clear();
-    closeSocket();
+    closeSocket("Backend is shutting down");
   }
 }
