@@ -8,4 +8,5 @@
   <logger name="org.apache.hc" level="warn" />
   <logger name="org.eclipse.lsp4j.jsonrpc" level="error" />
   <logger name="org.eclipse.jgit" level="info"/>
+  <logger name="org.sonar.scm.git.blame" level="info"/>
 </included>
