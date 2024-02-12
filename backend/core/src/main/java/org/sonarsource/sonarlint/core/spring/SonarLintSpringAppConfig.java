@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.spring;
 
+import jakarta.inject.Named;
 import java.io.IOException;
 import java.net.ProxySelector;
 import java.nio.file.Files;
@@ -28,7 +29,6 @@ import java.time.Duration;
 import java.util.Optional;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import javax.inject.Named;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
 import org.apache.hc.core5.util.Timeout;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;

@@ -19,10 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 import java.time.LocalDateTime;
 import java.util.function.Consumer;
-import javax.inject.Named;
-import javax.inject.Singleton;
 
 /**
  * Manage telemetry data and persistent storage, and stateful telemetry actions.

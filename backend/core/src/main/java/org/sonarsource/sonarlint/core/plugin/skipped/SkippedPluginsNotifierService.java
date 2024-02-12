@@ -19,13 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.plugin.skipped;
 
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import javax.annotation.CheckForNull;
-import javax.inject.Named;
-import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.analysis.AnalysisFinishedEvent;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason;

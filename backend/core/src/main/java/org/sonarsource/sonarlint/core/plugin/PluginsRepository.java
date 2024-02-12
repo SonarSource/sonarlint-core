@@ -26,8 +26,8 @@ import java.util.Map;
 import java.util.Queue;
 import javax.annotation.CheckForNull;
 import javax.annotation.PreDestroy;
-import javax.inject.Named;
-import javax.inject.Singleton;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 
 import static org.sonarsource.sonarlint.core.commons.IOExceptionUtils.throwFirstWithOtherSuppressed;

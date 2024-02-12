@@ -19,9 +19,9 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 import java.util.Objects;
-import javax.inject.Named;
-import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.SonarLintException;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;

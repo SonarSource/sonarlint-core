@@ -19,9 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.mode;
 
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 import javax.annotation.Nullable;
-import javax.inject.Named;
-import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;

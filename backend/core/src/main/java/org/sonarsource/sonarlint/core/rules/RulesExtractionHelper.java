@@ -19,9 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.rules;
 
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 import java.util.List;
-import javax.inject.Named;
-import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;

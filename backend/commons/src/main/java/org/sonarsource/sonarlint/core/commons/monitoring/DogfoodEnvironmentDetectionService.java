@@ -19,8 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.commons.monitoring;
 
-import javax.inject.Named;
-import javax.inject.Singleton;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 import org.apache.commons.lang3.SystemUtils;
 
 @Named
