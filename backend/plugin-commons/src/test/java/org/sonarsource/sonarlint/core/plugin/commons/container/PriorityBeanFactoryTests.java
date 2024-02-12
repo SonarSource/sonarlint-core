@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.plugin.commons.container;
 
-import javax.annotation.Priority;
+import jakarta.annotation.Priority;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

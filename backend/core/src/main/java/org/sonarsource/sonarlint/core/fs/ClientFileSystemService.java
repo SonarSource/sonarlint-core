@@ -19,20 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.fs;
 
-import com.google.common.util.concurrent.MoreExecutors;
+import jakarta.annotation.PreDestroy;
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.CheckForNull;
-import javax.annotation.PreDestroy;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
