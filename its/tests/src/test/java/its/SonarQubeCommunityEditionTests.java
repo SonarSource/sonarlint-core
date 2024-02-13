@@ -218,12 +218,8 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
       var fooJavaIssues = issuesByIdeRelativePath.get(Path.of("src/main/java/foo/Foo.java"));
       assertThat(fooJavaIssues).hasSize(1);
 
-      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
-        assertThat(fooJavaIssues.get(0).isLeft()).isTrue();
-        assertThat(fooJavaIssues.get(0).getLeft().getType()).isEqualTo(CODE_SMELL);
-      } else {
-        assertThat(fooJavaIssues.get(0).isRight()).isTrue();
-      }
+      assertThat(fooJavaIssues.get(0).isLeft()).isTrue();
+      assertThat(fooJavaIssues.get(0).getLeft().getType()).isEqualTo(CODE_SMELL);
     }
   }
 

@@ -145,11 +145,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_CUSTOM_SECRETS, "secrets", "SonarLint IT Custom Secrets");
     }
 
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 4)) {
-      singlePointOfExitRuleKey = "c:S1005";
-    } else {
-      singlePointOfExitRuleKey = "c:FunctionSinglePointOfExit";
-    }
+    singlePointOfExitRuleKey = "c:S1005";
   }
 
   @AfterEach
@@ -214,8 +210,6 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    // New property was introduced in SonarCFamily 6.18 part of SQ 8.8
-    @OnlyOnSonarQube(from = "8.8")
     void analysisC_new_prop() {
       start(PROJECT_KEY_C);
 
