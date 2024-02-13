@@ -69,13 +69,13 @@ class ServerInfoSynchronizerTests {
 
   @Test
   void it_should_synchronize_version_when_not_available() {
-    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"7.9\",\"status\": \"UP\"}");
+    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}");
 
     var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor());
 
     assertThat(storedServerInfo)
       .extracting("version")
-      .hasToString("7.9");
+      .hasToString("9.9");
   }
 
   @Test
