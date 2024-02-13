@@ -1234,7 +1234,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var ruleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId,
         javaRuleKey("S106"), null)).get();
       var ruleDescription = ruleDetailsResponse.details().getDescription();
-      if (ORCHESTRATOR.getServer().version().isGreaterThan(9, 5)) {
+      if (ORCHESTRATOR.getServer().version().isGreaterThan(9, 9)) {
         var ruleTabs = ruleDescription.getRight().getTabs();
         assertThat(ruleTabs.get(ruleTabs.size() - 1).getContent().getLeft().getHtmlContent()).contains(expected);
       } else {
