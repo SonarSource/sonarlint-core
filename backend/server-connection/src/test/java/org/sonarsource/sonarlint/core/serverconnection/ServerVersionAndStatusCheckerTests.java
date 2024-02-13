@@ -58,7 +58,7 @@ class ServerVersionAndStatusCheckerTests {
 
     var throwable = catchThrowable(() -> underTest.checkVersionAndStatus(new SonarLintCancelMonitor()));
 
-    assertThat(throwable).hasMessage("SonarQube server has version 6.7. Version should be greater or equal to 7.9");
+    assertThat(throwable).hasMessage("SonarQube server has version 6.7. Version should be greater or equal to 9.9");
   }
 
   @Test

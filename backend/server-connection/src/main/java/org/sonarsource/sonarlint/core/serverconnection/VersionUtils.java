@@ -26,7 +26,7 @@ import org.sonarsource.sonarlint.core.commons.Version;
 public class VersionUtils {
 
   private static final Version CURRENT_LTS = Version.create("9.9");
-  private static final Version MINIMAL_SUPPORTED_VERSION = Version.create("7.9");
+  private static final Version MINIMAL_SUPPORTED_VERSION = Version.create("9.9");
   private static final String VERSION_REGEX = ".*?(\\d+\\.\\d+(?:\\.\\d+)*).*";
   private static final Pattern JAR_VERSION_PATTERN = Pattern.compile(VERSION_REGEX);
 

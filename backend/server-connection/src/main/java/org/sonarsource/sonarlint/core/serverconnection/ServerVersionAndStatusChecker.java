@@ -28,7 +28,7 @@ import org.sonarsource.sonarlint.core.serverapi.system.SystemApi;
 
 public class ServerVersionAndStatusChecker {
 
-  private static final String MIN_SQ_VERSION = "7.9";
+  private static final String MIN_SQ_VERSION = "9.9";
   private final SystemApi systemApi;
 
   public ServerVersionAndStatusChecker(ServerApi serverApi) {
