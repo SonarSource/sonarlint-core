@@ -61,7 +61,7 @@ build_task:
   # Build and Stage to repox
   <<: *ONLY_IF
   env:
-    JDK_VERSION: "11"
+    JDK_VERSION: "17"
     DEPLOY_PULL_REQUEST: "true"
     ARTIFACTORY_DEPLOY_REPO: sonarsource-public-qa
     ARTIFACTORY_DEPLOY_USERNAME: vault-${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-qa-deployer

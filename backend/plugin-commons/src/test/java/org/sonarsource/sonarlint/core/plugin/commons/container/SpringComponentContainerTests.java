@@ -21,8 +21,8 @@ package org.sonarsource.sonarlint.core.plugin.commons.container;
 
 import java.util.Arrays;
 import java.util.List;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonar.api.Property;

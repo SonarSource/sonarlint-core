@@ -20,8 +20,8 @@
 package org.sonarsource.sonarlint.core.storage;
 
 import java.nio.file.Path;
-import javax.annotation.PreDestroy;
-import javax.inject.Named;
+import jakarta.annotation.PreDestroy;
+import jakarta.inject.Named;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
