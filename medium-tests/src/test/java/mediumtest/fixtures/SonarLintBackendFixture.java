@@ -217,7 +217,11 @@ public class SonarLintBackendFixture {
     }
 
     public SonarLintBackendBuilder withUnboundConfigScope(String configurationScopeId, String name) {
-      return withConfigScope(configurationScopeId, name, null, new BindingConfigurationDto(null, null, false));
+      return withUnboundConfigScope(configurationScopeId, name, null);
+    }
+
+    public SonarLintBackendBuilder withUnboundConfigScope(String configurationScopeId, String name, String parentId) {
+      return withConfigScope(configurationScopeId, name, parentId, new BindingConfigurationDto(null, null, false));
     }
 
     public SonarLintBackendBuilder withBoundConfigScope(String configurationScopeId, String connectionId, String projectKey) {

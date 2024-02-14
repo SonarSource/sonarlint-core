@@ -272,6 +272,26 @@ class OpenIssueInIdeMediumTests {
   }
 
   @Test
+  void it_should_assist_binding_if_multiple_suggestions_but_scopes_are_parent_and_child() throws Exception {
+    var fakeClient = newFakeClient().build();
+    mockAssistCreatingConnection(fakeClient, CONNECTION_ID);
+    mockAssistBinding(fakeClient, "configScopeParent", CONNECTION_ID, PROJECT_KEY);
+    backend = newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, serverWithIssues)
+      // Both config scopes will match the Sonar project name
+      .withUnboundConfigScope("configScopeParent", SONAR_PROJECT_NAME)
+      .withUnboundConfigScope("configScopeChild", SONAR_PROJECT_NAME, "configScopeParent")
+      .withEmbeddedServer()
+      .build(fakeClient);
+
+    var statusCode = executeOpenIssueRequest(ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
+
+    assertThat(statusCode).isEqualTo(200);
+    verify(fakeClient, timeout(2000)).showIssue(eq("configScopeParent"), any());
+    verify(fakeClient, never()).showMessage(any(), any());
+  }
+
+  @Test
   void it_should_assist_creating_the_connection_when_server_url_unknown() throws Exception {
     var fakeClient = newFakeClient().build();
     mockAssistCreatingConnection(fakeClient, CONNECTION_ID);
