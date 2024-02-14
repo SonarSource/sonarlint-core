@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -55,16 +56,26 @@ public class BindingCandidatesFinder {
       return Set.of();
     }
 
-    Set<String> goodConfigScopeIdCandidates = new HashSet<>();
+    var goodConfigScopeCandidates = new HashSet<ConfigurationScope>();
 
     for (var scope : configScopeCandidates) {
       cancelMonitor.checkCanceled();
       if (checkIfScopeIsGoodCandidateForBinding(scope, connectionId, projectKey, cancelMonitor)) {
-        goodConfigScopeIdCandidates.add(scope.getId());
+        goodConfigScopeCandidates.add(scope);
       }
     }
 
-    return goodConfigScopeIdCandidates;
+    // if both a parent and a child configuration scope are candidates, preference should be given to the higher scope in the hierarchy
+    // we prefer to bind at the broadest possible scope
+    return filterOutLeafCandidates(goodConfigScopeCandidates);
+  }
+
+  private static Set<String> filterOutLeafCandidates(Set<ConfigurationScope> candidates) {
+    var candidateIds = candidates.stream().map(ConfigurationScope::getId).collect(Collectors.toSet());
+    return candidates.stream().filter(scope -> {
+      var parentId = scope.getParentId();
+      return parentId == null || !candidateIds.contains(parentId);
+    }).map(ConfigurationScope::getId).collect(Collectors.toSet());
   }
 
   private boolean checkIfScopeIsGoodCandidateForBinding(ConfigurationScope scope, String connectionId, String projectKey, SonarLintCancelMonitor cancelMonitor) {
