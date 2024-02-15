@@ -59,9 +59,9 @@ public class SonarProjectBranchesSynchronizationService {
       }
       var newBranches = getProjectBranches(serverApi, sonarProjectKey, cancelMonitor);
       branchesStorage.store(newBranches);
-      if (oldBranches.isPresent() && !oldBranches.get().equals(newBranches)) {
+      if (oldBranches.isEmpty() || !oldBranches.get().equals(newBranches)) {
         LOG.debug("Project branches changed for project '{}'", sonarProjectKey);
-        eventPublisher.publishEvent(new SonarProjectBranchesChangedEvent(connectionId, sonarProjectKey, oldBranches.get(), newBranches));
+        eventPublisher.publishEvent(new SonarProjectBranchesChangedEvent(connectionId, sonarProjectKey));
       }
     });
   }
