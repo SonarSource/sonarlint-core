@@ -19,19 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.sync;
 
-import org.sonarsource.sonarlint.core.serverconnection.ProjectBranches;
-
 public class SonarProjectBranchesChangedEvent {
   private final String connectionId;
   private final String sonarProjectKey;
-  private final ProjectBranches oldBranches;
-  private final ProjectBranches newBranches;
 
-  public SonarProjectBranchesChangedEvent(String connectionId, String sonarProjectKey, ProjectBranches oldBranches, ProjectBranches newBranches) {
+  public SonarProjectBranchesChangedEvent(String connectionId, String sonarProjectKey) {
     this.connectionId = connectionId;
     this.sonarProjectKey = sonarProjectKey;
-    this.oldBranches = oldBranches;
-    this.newBranches = newBranches;
   }
 
   public String getConnectionId() {
@@ -40,13 +34,5 @@ public class SonarProjectBranchesChangedEvent {
 
   public String getSonarProjectKey() {
     return sonarProjectKey;
-  }
-
-  public ProjectBranches getOldBranches() {
-    return oldBranches;
-  }
-
-  public ProjectBranches getNewBranches() {
-    return newBranches;
   }
 }
