@@ -173,15 +173,10 @@ qa_task:
           CATEGORY: "-DexcludedGroups=SonarCloud"
           QA_CATEGORY: SQLatest
       -  env:
-          SQ_VERSION: "LATEST_RELEASE[8.9]"
-          JDK_VERSION: "11"
+          SQ_VERSION: "LATEST_RELEASE[9.9]"
+          JDK_VERSION: "17"
           CATEGORY: "-DexcludedGroups=SonarCloud"
-          QA_CATEGORY: SQLts89
-      -  env:
-          SQ_VERSION: "LATEST_RELEASE[7.9]"
-          JDK_VERSION: "11"
-          CATEGORY: "-DexcludedGroups=SonarCloud"
-          QA_CATEGORY: SQLts79
+          QA_CATEGORY: SQLts99
   <<: *MAVEN_CACHE_DEFINITION
   qa_script: |
     source cirrus-env QA
