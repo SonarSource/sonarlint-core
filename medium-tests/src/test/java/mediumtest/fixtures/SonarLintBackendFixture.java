@@ -207,9 +207,12 @@ public class SonarLintBackendFixture {
       return withSonarCloudConnection(connectionId, "orgKey");
     }
 
+    public SonarLintBackendBuilder withSonarCloudConnection(String connectionId, Consumer<StorageFixture.StorageBuilder> storageBuilder) {
+      return withSonarCloudConnection(connectionId, "orgKey", true, storageBuilder);
+    }
+
     public SonarLintBackendBuilder withSonarCloudConnection(String connectionId, String organizationKey) {
-      sonarCloudConnections.add(new SonarCloudConnectionConfigurationDto(connectionId, organizationKey, true));
-      return this;
+      return withSonarCloudConnection(connectionId, organizationKey, true, null);
     }
 
     public SonarLintBackendBuilder withUnboundConfigScope(String configurationScopeId) {

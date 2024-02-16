@@ -40,10 +40,12 @@ import org.slf4j.LoggerFactory;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsResponse;
@@ -71,6 +73,7 @@ import org.springframework.context.event.EventListener;
 
 import static org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter.adapt;
 import static org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter.toDto;
+import static org.sonarsource.sonarlint.core.serverconnection.ServerConnection.SECRET_ANALYSIS_MIN_SQ_VERSION;
 
 @Named
 @Singleton
@@ -82,22 +85,26 @@ public class RulesService {
   private final RulesRepository rulesRepository;
   private final StorageService storageService;
   private final SynchronizationService synchronizationService;
+  private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private static final String COULD_NOT_FIND_RULE = "Could not find rule '";
   private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfig = new ConcurrentHashMap<>();
 
   @Inject
   public RulesService(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository, StorageService storageService,
-    SynchronizationService synchronizationService, InitializeParams params) {
-    this(serverApiProvider, configurationRepository, rulesRepository, storageService, synchronizationService, params.getStandaloneRuleConfigByKey());
+    SynchronizationService synchronizationService, ConnectionConfigurationRepository connectionConfigurationRepository, InitializeParams params) {
+    this(serverApiProvider, configurationRepository, rulesRepository, storageService, synchronizationService, connectionConfigurationRepository,
+      params.getStandaloneRuleConfigByKey());
   }
 
   RulesService(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository, StorageService storageService,
-    SynchronizationService synchronizationService, @Nullable Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey) {
+    SynchronizationService synchronizationService, ConnectionConfigurationRepository connectionConfigurationRepository,
+    @Nullable Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey) {
     this.serverApiProvider = serverApiProvider;
     this.configurationRepository = configurationRepository;
     this.rulesRepository = rulesRepository;
     this.storageService = storageService;
     this.synchronizationService = synchronizationService;
+    this.connectionConfigurationRepository = connectionConfigurationRepository;
     if (standaloneRuleConfigByKey != null) {
       this.standaloneRuleConfig.putAll(standaloneRuleConfigByKey);
     }
@@ -139,7 +146,6 @@ public class RulesService {
         .map(r -> RuleDetails.from(r, standaloneRuleConfig.get(ruleKey)))
         .orElseThrow(() -> ruleNotFoundInPlugins(ruleKey, connectionId)));
   }
-
 
   private Optional<ServerActiveRule> findServerActiveRuleInStorage(Binding binding, String ruleKey) {
     AnalyzerConfiguration analyzerConfiguration;
@@ -193,13 +199,13 @@ public class RulesService {
   @NotNull
   private static ResponseErrorException ruleNotFoundInPlugins(String ruleKey, String connectionId) {
     var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in plugins loaded from '" + connectionId + "'",
-      new Object[]{connectionId, ruleKey});
+      new Object[] {connectionId, ruleKey});
     return new ResponseErrorException(error);
   }
 
   private static ResponseErrorException ruleNotFoundOnServer(String ruleKey, String connectionId) {
     var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' on server '" + connectionId + "'",
-      new Object[]{connectionId, ruleKey});
+      new Object[] {connectionId, ruleKey});
     return new ResponseErrorException(error);
   }
 
@@ -269,7 +275,7 @@ public class RulesService {
   public GetStandaloneRuleDescriptionResponse getStandaloneRuleDetails(String ruleKey) {
     var embeddedRule = rulesRepository.getEmbeddedRule(ruleKey);
     if (embeddedRule.isEmpty()) {
-      var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules", new Object[]{ruleKey});
+      var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules", new Object[] {ruleKey});
       throw new ResponseErrorException(error);
     }
     var ruleDefinition = embeddedRule.get();
@@ -363,6 +369,10 @@ public class RulesService {
   }
 
   public GetRuleDetailsResponse getRuleDetailsForConnectedAnalysis(Binding binding, String ruleKey) throws RuleNotFoundException {
+    if (ruleKey.startsWith("secrets:") && !supportsSecretAnalysis(binding.getConnectionId())) {
+      // before 9.9, SQ did not have the secrets plugin, so we pick the rules from the embedded one
+      return getRuleDetailsForStandaloneAnalysis(ruleKey);
+    }
     var activeRuleOpt = findServerActiveRuleInStorage(binding, ruleKey);
     if (activeRuleOpt.isEmpty()) {
       throw new RuleNotFoundException(COULD_NOT_FIND_RULE + ruleKey + "' in active rules", ruleKey);
@@ -384,5 +394,17 @@ public class RulesService {
       ruleDefinition.getDefaultImpacts().entrySet().stream().map(entry -> new ImpactDto(RuleDetailsAdapter.adapt(entry.getKey()), RuleDetailsAdapter.adapt(entry.getValue())))
         .collect(Collectors.toList()),
       ruleDefinition.getVulnerabilityProbability().map(RuleDetailsAdapter::adapt).orElse(null));
+  }
+
+  private boolean supportsSecretAnalysis(String connectionId) {
+    var connection = connectionConfigurationRepository.getConnectionById(connectionId);
+    if (connection == null) {
+      // Connection is gone
+      return false;
+    }
+    // when storage is not present, assume that secrets are not supported by server
+    return connection.getKind() == ConnectionKind.SONARCLOUD || storageService.connection(connectionId).serverInfo().read()
+      .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(SECRET_ANALYSIS_MIN_SQ_VERSION) >= 0)
+      .orElse(false);
   }
 }

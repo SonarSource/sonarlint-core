@@ -42,11 +42,11 @@ import org.sonarsource.sonarlint.core.analysis.command.NotifyModuleEventCommand;
 import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
 import org.sonarsource.sonarlint.core.analysis.command.UnregisterModuleCommand;
 import org.sonarsource.sonarlint.core.client.utils.ClientLogOutput;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.api.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.api.progress.ClientProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
@@ -188,10 +188,16 @@ public final class SonarLintAnalysisEngine {
     var ruleDetailsCache = new ConcurrentHashMap<String, GetRuleDetailsResponse>();
 
     var analyzeCommand = new AnalyzeCommand(configuration.moduleKey(), analysisConfig,
-      i -> rawIssueListener.handle(
-        new RawIssue(i, ruleDetailsCache.computeIfAbsent(i.getRuleKey(), k -> backend.getAnalysisService().getRuleDetails(new GetRuleDetailsParams(configScopeId, k)).join()))),
+      issue -> streamIssue(rawIssueListener, configScopeId, issue, ruleDetailsCache),
       toCoreLogOutput(logOutput));
     return postAnalysisCommandAndGetResult(analyzeCommand, monitor);
+  }
+
+  private void streamIssue(RawIssueListener rawIssueListener, String configScopeId, org.sonarsource.sonarlint.core.analysis.api.Issue issue,
+    ConcurrentHashMap<String, GetRuleDetailsResponse> ruleDetailsCache) {
+    var activeRule = ruleDetailsCache.computeIfAbsent(issue.getRuleKey(), k -> backend.getAnalysisService().getRuleDetails(new GetRuleDetailsParams(configScopeId, k)).join());
+    rawIssueListener.handle(
+      new RawIssue(issue, activeRule));
   }
 
   public void stop() {
@@ -209,7 +215,6 @@ public final class SonarLintAnalysisEngine {
   public Collection<PluginDetails> getPluginDetails() {
     return pluginDetails;
   }
-
 
   private static LogOutputAdapter toCoreLogOutput(@Nullable ClientLogOutput logOutput) {
     return logOutput == null ? null : new LogOutputAdapter(logOutput);
