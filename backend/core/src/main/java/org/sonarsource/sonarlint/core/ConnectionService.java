@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -36,7 +35,6 @@ import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionCredentialsChangedEvent;
-import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
@@ -46,12 +44,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.Tra
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.OrganizationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProjectDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.serverconnection.ServerVersionAndStatusChecker;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -163,9 +158,11 @@ public class ConnectionService {
       var validateCredentials = serverApi.authentication().validate(cancelMonitor);
       if (validateCredentials.success() && transientConnection.isRight()) {
         var organizationKey = transientConnection.getRight().getOrganization();
-        var organization = serverApi.organization().getOrganization(organizationKey, cancelMonitor);
-        if (organization.isEmpty()) {
-          return new ValidateConnectionResponse(false, "No organizations found for key: " + organizationKey);
+        if (organizationKey != null) {
+          var organization = serverApi.organization().getOrganization(organizationKey, cancelMonitor);
+          if (organization.isEmpty()) {
+            return new ValidateConnectionResponse(false, "No organizations found for key: " + organizationKey);
+          }
         }
       }
       return new ValidateConnectionResponse(validateCredentials.success(), validateCredentials.message());

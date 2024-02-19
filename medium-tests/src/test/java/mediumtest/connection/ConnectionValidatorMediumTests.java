@@ -20,7 +20,6 @@
 package mediumtest.connection;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
-import java.util.concurrent.ExecutionException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -117,6 +116,17 @@ class ConnectionValidatorMediumTests {
   }
 
   @Test
+  void testConnection_ok_without_org() {
+    serverMock.stubFor(get("/api/system/status")
+      .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"7.9\",\"status\": \"UP\"}")));
+    serverMock.stubFor(get("/api/authentication/validate?format=json")
+      .willReturn(aResponse().withBody("{\"valid\": true}")));
+    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarCloudConnectionDto(null, Either.forLeft(new TokenDto(null))))).join();
+
+    assertThat(response.isSuccess()).isTrue();
+  }
+
+  @Test
   void testUnsupportedServer() {
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}")));
@@ -128,7 +138,7 @@ class ConnectionValidatorMediumTests {
   }
 
   @Test
-  void testClientError() throws ExecutionException, InterruptedException {
+  void testClientError() {
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withStatus(400)));
 
@@ -139,7 +149,7 @@ class ConnectionValidatorMediumTests {
   }
 
   @Test
-  void testResponseError() throws ExecutionException, InterruptedException {
+  void testResponseError() {
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withBody("{\"id\": }")));
 
