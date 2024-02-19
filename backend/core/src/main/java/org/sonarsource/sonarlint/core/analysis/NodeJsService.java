@@ -72,7 +72,7 @@ public class NodeJsService {
       var newNodeJsVersion = helper.getNodeJsVersion();
 
       if (!Objects.equals(newNodeJsPath, this.nodeJsPath) || !Objects.equals(newNodeJsVersion, this.nodeJsVersion)) {
-        LOG.info("Node.js path set to: {} (version {})", newNodeJsPath, newNodeJsVersion);
+        LOG.debug("Node.js path set to: {} (version {})", newNodeJsPath, newNodeJsVersion);
         this.nodeJsPath = newNodeJsPath;
         this.nodeJsVersion = newNodeJsVersion;
         client.didChangeNodeJs(new DidChangeNodeJsParams(nodeJsPath, nodeJsVersion != null ? nodeJsVersion.toString() : null));
