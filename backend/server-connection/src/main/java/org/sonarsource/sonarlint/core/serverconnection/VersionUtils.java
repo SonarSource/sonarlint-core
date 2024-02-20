@@ -19,9 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.regex.Pattern;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.commons.Version;
@@ -30,7 +27,6 @@ public class VersionUtils {
 
   private static final Version CURRENT_LTS = Version.create("9.9");
   private static final Version MINIMAL_SUPPORTED_VERSION = Version.create("7.9");
-  private static final Instant CURRENT_LTS_RELEASE_DATE = ZonedDateTime.of(2023, 2, 1, 0, 0, 0, 0, ZoneId.systemDefault()).toInstant();
   private static final String VERSION_REGEX = ".*?(\\d+\\.\\d+(?:\\.\\d+)*).*";
   private static final Pattern JAR_VERSION_PATTERN = Pattern.compile(VERSION_REGEX);
 
@@ -38,8 +34,8 @@ public class VersionUtils {
   }
 
   public static boolean isVersionSupportedDuringGracePeriod(Version currentVersion) {
-    return currentVersion.compareTo(CURRENT_LTS) < 0 && currentVersion.compareToIgnoreQualifier(MINIMAL_SUPPORTED_VERSION) >= 0
-      && ZonedDateTime.now().minusYears(1).toInstant().compareTo(CURRENT_LTS_RELEASE_DATE) < 0;
+    return currentVersion.compareTo(CURRENT_LTS) < 0 &&
+      currentVersion.compareToIgnoreQualifier(MINIMAL_SUPPORTED_VERSION) >= 0;
   }
 
   public static Version getCurrentLts() {
