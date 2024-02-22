@@ -163,13 +163,21 @@ public final class SonarLintAnalysisEngine {
     }
   }
 
-  public synchronized AnalysisResults analyze(AnalysisConfiguration configuration, RawIssueListener rawIssueListener,
-    @Nullable ClientLogOutput logOutput,
-    @Nullable ClientProgressMonitor monitor, String configScopeId) {
+  public synchronized AnalysisResults analyze(AnalysisConfiguration configuration, RawIssueListener rawIssueListener, @Nullable ClientLogOutput logOutput,
+                                              @Nullable ClientProgressMonitor monitor, String configScopeId) {
     requireNonNull(configuration);
     requireNonNull(rawIssueListener);
     setLogging(logOutput);
+    try {
+      return doAnalyze(configuration, rawIssueListener, logOutput, monitor, configScopeId);
+    } finally {
+      setLogging(null);
+    }
+  }
 
+
+  private synchronized AnalysisResults doAnalyze(AnalysisConfiguration configuration, RawIssueListener rawIssueListener, @Nullable ClientLogOutput logOutput,
+    @Nullable ClientProgressMonitor monitor, String configScopeId) {
     var configFromRpc = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(configScopeId)).join();
     if (isRestartNeeded(configFromRpc)) {
       restart();
