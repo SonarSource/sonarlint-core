@@ -56,6 +56,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.ActiveRuleDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetGlobalConfigurationResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.NodeJsDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnalysisReadinessParams;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
@@ -149,20 +150,17 @@ public class AnalysisService {
     var enabledLanguages = languageSupportRepository.getEnabledLanguagesInStandaloneMode();
     var pluginPaths = pluginsService.getEmbeddedPluginPaths();
     var activeNodeJs = nodeJsService.getActiveNodeJs();
-    var activeNodeJsPath = activeNodeJs == null ? null : activeNodeJs.getPath();
-    var activeNodeJsVersion = activeNodeJs == null ? null : activeNodeJs.getVersion().toString();
-    return new GetGlobalConfigurationResponse(pluginPaths, enabledLanguages.stream().map(AnalysisService::toDto).collect(Collectors.toList()), activeNodeJsPath,
-      activeNodeJsVersion, false);
+    var nodeJsDetailsDto = activeNodeJs == null ? null : new NodeJsDetailsDto(activeNodeJs.getPath(), activeNodeJs.getVersion().toString());
+    return new GetGlobalConfigurationResponse(pluginPaths, enabledLanguages.stream().map(AnalysisService::toDto).collect(Collectors.toList()), nodeJsDetailsDto, false);
   }
 
   public GetGlobalConfigurationResponse getGlobalConnectedConfiguration(String connectionId) {
     var enabledLanguages = languageSupportRepository.getEnabledLanguagesInConnectedMode();
     var pluginPaths = pluginsService.getConnectedPluginPaths(connectionId);
     var activeNodeJs = nodeJsService.getActiveNodeJs();
-    var activeNodeJsPath = activeNodeJs == null ? null : activeNodeJs.getPath();
-    var activeNodeJsVersion = activeNodeJs == null ? null : activeNodeJs.getVersion().toString();
-    return new GetGlobalConfigurationResponse(pluginPaths, enabledLanguages.stream().map(AnalysisService::toDto).collect(Collectors.toList()), activeNodeJsPath,
-      activeNodeJsVersion, isDataflowBugDetectionEnabled);
+    var nodeJsDetailsDto = activeNodeJs == null ? null : new NodeJsDetailsDto(activeNodeJs.getPath(), activeNodeJs.getVersion().toString());
+    return new GetGlobalConfigurationResponse(pluginPaths, enabledLanguages.stream().map(AnalysisService::toDto).collect(Collectors.toList()), nodeJsDetailsDto,
+      isDataflowBugDetectionEnabled);
   }
 
   @NotNull
@@ -172,12 +170,13 @@ public class AnalysisService {
 
   public GetAnalysisConfigResponse getAnalysisConfig(String configScopeId) {
     var bindingOpt = configurationRepository.getEffectiveBinding(configScopeId);
-    if (bindingOpt.isEmpty()) {
-      return new GetAnalysisConfigResponse(buildStandaloneActiveRules(), Map.of());
-    } else {
-      return new GetAnalysisConfigResponse(buildConnectedActiveRules(bindingOpt.get()),
-        storageService.binding(bindingOpt.get()).analyzerConfiguration().read().getSettings().getAll());
-    }
+    var activeNodeJs = nodeJsService.getActiveNodeJs();
+
+    var nodeJsDetailsDto = activeNodeJs == null ? null : new NodeJsDetailsDto(activeNodeJs.getPath(), activeNodeJs.getVersion().toString());
+    return bindingOpt.map(binding -> new GetAnalysisConfigResponse(buildConnectedActiveRules(binding),
+      storageService.binding(binding).analyzerConfiguration().read().getSettings().getAll(), nodeJsDetailsDto,
+      Set.copyOf(pluginsService.getConnectedPluginPaths(binding.getConnectionId()))))
+      .orElseGet(() -> new GetAnalysisConfigResponse(buildStandaloneActiveRules(), Map.of(), nodeJsDetailsDto, Set.copyOf(pluginsService.getEmbeddedPluginPaths())));
   }
 
   private List<ActiveRuleDto> buildConnectedActiveRules(Binding binding) {

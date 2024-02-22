@@ -49,7 +49,7 @@ public class PluginsSynchronizer {
     this.embeddedPluginKeys = embeddedPluginKeys;
   }
 
-  public boolean synchronize(ServerApi serverApi, boolean supportsCustomSecrets, SonarLintCancelMonitor cancelMonitor) {
+  public void synchronize(ServerApi serverApi, boolean supportsCustomSecrets, SonarLintCancelMonitor cancelMonitor) {
     if (supportsCustomSecrets) {
       var embeddedPluginKeysCopy = new HashSet<>(embeddedPluginKeys);
       embeddedPluginKeysCopy.remove(SonarLanguage.SECRETS.getPluginKey());
@@ -62,7 +62,6 @@ public class PluginsSynchronizer {
       .filter(p -> shouldDownload(p, storedPluginsByKey))
       .collect(Collectors.toList());
     downloadAll(serverApi, pluginsToDownload, cancelMonitor);
-    return !pluginsToDownload.isEmpty();
   }
 
   private void downloadAll(ServerApi serverApi, List<ServerPlugin> pluginsToDownload, SonarLintCancelMonitor cancelMonitor) {

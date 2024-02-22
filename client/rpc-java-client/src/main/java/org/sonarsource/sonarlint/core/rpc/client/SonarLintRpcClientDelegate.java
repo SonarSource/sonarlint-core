@@ -21,14 +21,12 @@ package org.sonarsource.sonarlint.core.rpc.client;
 
 import java.net.URI;
 import java.net.URL;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
 import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -151,16 +149,12 @@ public interface SonarLintRpcClientDelegate {
 
   void didChangeMatchedSonarProjectBranch(String configScopeId, String newMatchedBranchName);
 
-  void didUpdatePlugins(String connectionId);
-
   TelemetryClientLiveAttributesResponse getTelemetryLiveAttributes();
 
   void didChangeTaintVulnerabilities(String configurationScopeId, Set<UUID> closedTaintVulnerabilityIds, List<TaintVulnerabilityDto> addedTaintVulnerabilities,
     List<TaintVulnerabilityDto> updatedTaintVulnerabilities);
 
   List<ClientFileDto> listFiles(String configScopeId) throws ConfigScopeNotFoundException;
-
-  void didChangeNodeJs(@Nullable Path nodeJsPath, @Nullable String version);
 
   void noBindingSuggestionFound(String projectKey);
   void didChangeAnalysisReadiness(Set<String> configurationScopeIds, boolean areReadyForAnalysis);

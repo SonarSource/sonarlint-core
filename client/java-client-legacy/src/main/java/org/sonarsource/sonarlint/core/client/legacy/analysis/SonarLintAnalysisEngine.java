@@ -20,7 +20,9 @@
 package org.sonarsource.sonarlint.core.client.legacy.analysis;
 
 import com.google.common.util.concurrent.MoreExecutors;
+import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -31,6 +33,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.AnalysisEngine;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
@@ -51,10 +54,12 @@ import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetGlobalConfigurationResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetGlobalConnectedConfigurationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.NodeJsDetailsDto;
 
 import static java.util.Objects.requireNonNull;
 
@@ -73,6 +78,9 @@ public final class SonarLintAnalysisEngine {
 
   private Collection<PluginDetails> pluginDetails;
 
+  private Set<Path> currentPluginPaths;
+  private NodeJsPathAndVersion currentNodeJsPathAndVersion;
+
   public SonarLintAnalysisEngine(EngineConfiguration globalConfig, SonarLintRpcServer backend, @Nullable String connectionId) {
     this.logOutput = toCoreLogOutput(globalConfig.getLogOutput());
     this.globalConfig = globalConfig;
@@ -80,18 +88,6 @@ public final class SonarLintAnalysisEngine {
     this.connectionId = connectionId;
     setLogging(null);
     restart();
-  }
-
-  /**
-   * This method needs to be called when plugins have changed after a sync, or when the NodeJS path has changed.
-   * As it is often called in reaction to a notification from the backend, we process it asynchronously to free the wire
-   */
-  public void restartAsync() {
-    executorService.submit(() -> {
-      setLogging(globalConfig.getLogOutput());
-      restart();
-      setLogging(null);
-    });
   }
 
   private void restart() {
@@ -102,21 +98,25 @@ public final class SonarLintAnalysisEngine {
       globalConfigFuture = backend.getAnalysisService().getGlobalConnectedConfiguration(new GetGlobalConnectedConfigurationParams(connectionId));
     }
     var globalConfigFromRpc = globalConfigFuture.join();
+    var nodeJsDetails = globalConfigFromRpc.getNodeJsDetails();
 
     var config = new PluginsLoader.Configuration(Set.copyOf(globalConfigFromRpc.getPluginPaths()),
       globalConfigFromRpc.getEnabledLanguages().stream().map(l -> SonarLanguage.valueOf(l.name())).collect(Collectors.toSet()),
       globalConfigFromRpc.isDataflowBugDetectionEnabled(),
-      Optional.ofNullable(globalConfigFromRpc.getNodeJsVersion()).map(Version::create));
+      Optional.ofNullable(nodeJsDetails).map(NodeJsDetailsDto::getVersion).map(Version::create));
     var loadingResult = new PluginsLoader().load(config);
 
     pluginDetails = loadingResult.getPluginCheckResultByKeys().values().stream()
       .map(c -> new PluginDetails(c.getPlugin().getKey(), c.getPlugin().getName(), c.getPlugin().getVersion().toString(), c.getSkipReason().orElse(null)))
       .collect(Collectors.toList());
 
+    currentNodeJsPathAndVersion = NodeJsPathAndVersion.fromDto(nodeJsDetails);
+    currentPluginPaths = Set.copyOf(globalConfigFromRpc.getPluginPaths());
+
     var analysisGlobalConfig = AnalysisEngineConfiguration.builder()
       .setClientPid(globalConfig.getClientPid())
       .setExtraProperties(globalConfig.extraProperties())
-      .setNodeJs(globalConfigFromRpc.getNodeJsPath())
+      .setNodeJs(nodeJsDetails == null ? null : nodeJsDetails.getPath())
       .setWorkDir(globalConfig.getWorkDir())
       .setModulesProvider(globalConfig.getModulesProvider())
       .build();
@@ -163,7 +163,7 @@ public final class SonarLintAnalysisEngine {
     }
   }
 
-  public AnalysisResults analyze(AnalysisConfiguration configuration, RawIssueListener rawIssueListener,
+  public synchronized AnalysisResults analyze(AnalysisConfiguration configuration, RawIssueListener rawIssueListener,
     @Nullable ClientLogOutput logOutput,
     @Nullable ClientProgressMonitor monitor, String configScopeId) {
     requireNonNull(configuration);
@@ -171,6 +171,9 @@ public final class SonarLintAnalysisEngine {
     setLogging(logOutput);
 
     var configFromRpc = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(configScopeId)).join();
+    if (isRestartNeeded(configFromRpc)) {
+      restart();
+    }
 
     var analysisConfig = org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration.builder()
       .addInputFiles(configuration.inputFiles())
@@ -191,6 +194,12 @@ public final class SonarLintAnalysisEngine {
       issue -> streamIssue(rawIssueListener, configScopeId, issue, ruleDetailsCache),
       toCoreLogOutput(logOutput));
     return postAnalysisCommandAndGetResult(analyzeCommand, monitor);
+  }
+
+  private boolean isRestartNeeded(GetAnalysisConfigResponse configFromRpc) {
+    var nodeJsDetails = configFromRpc.getNodeJsDetailsDto();
+    var pluginPaths = configFromRpc.getPluginPaths();
+    return !Objects.equals(pluginPaths, currentPluginPaths) || !Objects.equals(NodeJsPathAndVersion.fromDto(nodeJsDetails), currentNodeJsPathAndVersion);
   }
 
   private void streamIssue(RawIssueListener rawIssueListener, String configScopeId, org.sonarsource.sonarlint.core.analysis.api.Issue issue,
@@ -230,6 +239,38 @@ public final class SonarLintAnalysisEngine {
     @Override
     public void log(String formattedMessage, Level level) {
       clientLogOutput.log(formattedMessage, ClientLogOutput.Level.valueOf(level.name()));
+    }
+  }
+
+  private static class NodeJsPathAndVersion {
+    @CheckForNull
+    private static NodeJsPathAndVersion fromDto(@Nullable NodeJsDetailsDto dto) {
+      return dto == null ? null : new NodeJsPathAndVersion(dto.getPath(), dto.getVersion());
+    }
+
+    private final Path path;
+    private final String version;
+
+    private NodeJsPathAndVersion(Path path, String version) {
+      this.path = path;
+      this.version = version;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      NodeJsPathAndVersion that = (NodeJsPathAndVersion) o;
+      return Objects.equals(path, that.path) && Objects.equals(version, that.version);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(path, version);
     }
   }
 

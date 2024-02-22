@@ -21,7 +21,6 @@ package its;
 
 import java.net.URI;
 import java.net.URL;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,7 +28,6 @@ import java.util.UUID;
 import java.util.concurrent.CancellationException;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.jetbrains.annotations.Nullable;
 import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
@@ -165,11 +163,6 @@ public class MockSonarLintRpcClientDelegate implements SonarLintRpcClientDelegat
   }
 
   @Override
-  public void didUpdatePlugins(String connectionId) {
-
-  }
-
-  @Override
   public TelemetryClientLiveAttributesResponse getTelemetryLiveAttributes() {
     System.err.println("Telemetry should be disabled in ITs");
     throw new CancellationException("Telemetry should be disabled in ITs");
@@ -182,13 +175,8 @@ public class MockSonarLintRpcClientDelegate implements SonarLintRpcClientDelegat
   }
 
   @Override
-  public List<ClientFileDto> listFiles(String configScopeId) throws ConfigScopeNotFoundException {
+  public List<ClientFileDto> listFiles(String configScopeId) {
     return List.of();
-  }
-
-  @Override
-  public void didChangeNodeJs(@Nullable Path nodeJsPath, @Nullable String version) {
-
   }
 
   @Override

@@ -54,8 +54,7 @@ class NodeJsMediumTests {
 
     var globalConfig = backend.getAnalysisService().getGlobalStandaloneConfiguration().join();
 
-    assertThat(globalConfig.getNodeJsPath()).isNull();
-    assertThat(globalConfig.getNodeJsVersion()).isNull();
+    assertThat(globalConfig.getNodeJsDetails()).isNull();
     assertThat(client.getLogMessages()).contains("Unable to query node version");
 
     var ruleDetails = backend.getRulesService().getStandaloneRuleDetails(new GetStandaloneRuleDescriptionParams(JAVASCRIPT_S1481)).join().getRuleDefinition();

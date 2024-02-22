@@ -29,16 +29,14 @@ public class GetGlobalConfigurationResponse {
 
   private final List<Path> pluginPaths;
   private final List<Language> enabledLanguages;
-  private final Path nodeJsPath;
-  private final String nodeJsVersion;
+  private final NodeJsDetailsDto nodeJsDetails;
   private final boolean isDataflowBugDetectionEnabled;
 
-  public GetGlobalConfigurationResponse(List<Path> pluginPaths, List<Language> enabledLanguages, @Nullable Path nodeJsPath, @Nullable String nodeJsVersion,
+  public GetGlobalConfigurationResponse(List<Path> pluginPaths, List<Language> enabledLanguages, @Nullable NodeJsDetailsDto nodeJsDetails,
     boolean isDataflowBugDetectionEnabled) {
     this.pluginPaths = pluginPaths;
     this.enabledLanguages = enabledLanguages;
-    this.nodeJsPath = nodeJsPath;
-    this.nodeJsVersion = nodeJsVersion;
+    this.nodeJsDetails = nodeJsDetails;
     this.isDataflowBugDetectionEnabled = isDataflowBugDetectionEnabled;
   }
 
@@ -51,13 +49,8 @@ public class GetGlobalConfigurationResponse {
   }
 
   @CheckForNull
-  public Path getNodeJsPath() {
-    return nodeJsPath;
-  }
-
-  @CheckForNull
-  public String getNodeJsVersion() {
-    return nodeJsVersion;
+  public NodeJsDetailsDto getNodeJsDetails() {
+    return nodeJsDetails;
   }
 
   public boolean isDataflowBugDetectionEnabled() {

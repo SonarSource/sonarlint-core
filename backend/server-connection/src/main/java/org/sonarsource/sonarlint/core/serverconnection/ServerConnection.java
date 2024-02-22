@@ -53,8 +53,8 @@ public class ServerConnection {
     storage.plugins().cleanUp();
   }
 
-  public boolean sync(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
-    return storageSynchronizer.synchronizeServerInfosAndPlugins(serverApi, cancelMonitor);
+  public void sync(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
+    storageSynchronizer.synchronizeServerInfosAndPlugins(serverApi, cancelMonitor);
   }
 
   public AnalyzerSettingsUpdateSummary sync(ServerApi serverApi, String projectKey, SonarLintCancelMonitor cancelMonitor) {

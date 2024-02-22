@@ -33,7 +33,6 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeNodeJsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnalysisReadinessParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
@@ -61,7 +60,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidUpdatePluginsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
@@ -268,11 +266,6 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   }
 
   @Override
-  public void didUpdatePlugins(DidUpdatePluginsParams params) {
-    notify(() -> delegate.didUpdatePlugins(params.getConnectionId()));
-  }
-
-  @Override
   public CompletableFuture<ListFilesResponse> listFiles(ListFilesParams params) {
     return requestAsync(cancelChecker -> {
       try {
@@ -292,11 +285,6 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   public void didChangeTaintVulnerabilities(DidChangeTaintVulnerabilitiesParams params) {
     notify(() -> delegate.didChangeTaintVulnerabilities(params.getConfigurationScopeId(), params.getClosedTaintVulnerabilityIds(), params.getAddedTaintVulnerabilities(),
       params.getUpdatedTaintVulnerabilities()));
-  }
-
-  @Override
-  public void didChangeNodeJs(DidChangeNodeJsParams params) {
-    notify(() -> delegate.didChangeNodeJs(params.getNodeJsPath(), params.getVersion()));
   }
 
   @Override

@@ -49,7 +49,7 @@ public class LocalStorageSynchronizer {
     this.serverInfoSynchronizer = serverInfoSynchronizer;
   }
 
-  public boolean synchronizeServerInfosAndPlugins(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
+  public void synchronizeServerInfosAndPlugins(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
     serverInfoSynchronizer.synchronize(serverApi, cancelMonitor);
     var version = storage.serverInfo().read().orElseThrow().getVersion();
     // INFO: In order to download `sonar-text` alongside `sonar-text-enterprise` on SQ 10.4+ we have to change the
@@ -57,7 +57,7 @@ public class LocalStorageSynchronizer {
     //       downloaded for the first time and also everytime the plug-ins are refreshed (e.g. after IDE restart).
     var supportsCustomSecrets = !serverApi.isSonarCloud()
       && version.compareToIgnoreQualifier(CUSTOM_SECRETS_MIN_SQ_VERSION) >= 0;
-    return pluginsSynchronizer.synchronize(serverApi, supportsCustomSecrets, cancelMonitor);
+    pluginsSynchronizer.synchronize(serverApi, supportsCustomSecrets, cancelMonitor);
   }
 
   private static AnalyzerSettingsUpdateSummary diffAnalyzerConfiguration(AnalyzerConfiguration original, AnalyzerConfiguration updated) {

@@ -707,16 +707,6 @@ class SonarCloudTests extends AbstractConnectedTests {
       }
 
       @Override
-      public void didChangeNodeJs(@org.jetbrains.annotations.Nullable Path nodeJsPath, @org.jetbrains.annotations.Nullable String version) {
-        engine.restartAsync();
-      }
-
-      @Override
-      public void didUpdatePlugins(String connectionId) {
-        engine.restartAsync();
-      }
-
-      @Override
       public void log(LogParams params) {
         System.out.println(params.toString());
         rpcClientLogs.add(params);
