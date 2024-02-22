@@ -53,11 +53,10 @@ class PluginsSynchronizerTests {
       "]}");
 
     underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), new ConnectionStorage(dest, dest, "connectionId"), Set.of("text"));
-    var anyPluginUpdated = underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), false, new SonarLintCancelMonitor());
+    underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), false, new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).doesNotExist();
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-text-plugin-1.2.3.4.jar")).doesNotExist();
-    assertThat(anyPluginUpdated).isFalse();
   }
 
   /**
@@ -74,12 +73,11 @@ class PluginsSynchronizerTests {
     mockServer.addStringResponse("/api/plugins/download?plugin=textenterprise", "content-textenterprise");
 
     underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), new ConnectionStorage(dest, dest, "connectionId"), Set.of("text"));
-    var anyPluginUpdated = underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), true, new SonarLintCancelMonitor());
+    underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), true, new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-text-plugin-1.2.3.4.jar")).exists();
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-text-enterprise-plugin-5.6.7.8.jar")).exists();
-    assertThat(anyPluginUpdated).isTrue();
   }
 
 }

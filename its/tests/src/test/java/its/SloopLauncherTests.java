@@ -36,12 +36,10 @@ import java.util.concurrent.ExecutionException;
 import org.apache.commons.lang3.SystemUtils;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SloopLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
@@ -251,11 +249,6 @@ class SloopLauncherTests {
     }
 
     @Override
-    public void didUpdatePlugins(String connectionId) {
-
-    }
-
-    @Override
     public TelemetryClientLiveAttributesResponse getTelemetryLiveAttributes() {
       System.err.println("Telemetry should be disabled in tests");
       throw new CancellationException("Telemetry should be disabled in tests");
@@ -267,12 +260,8 @@ class SloopLauncherTests {
     }
 
     @Override
-    public List<ClientFileDto> listFiles(String configScopeId) throws ConfigScopeNotFoundException {
+    public List<ClientFileDto> listFiles(String configScopeId) {
       return List.of();
-    }
-
-    @Override
-    public void didChangeNodeJs(@Nullable Path nodeJsPath, @Nullable String version) {
     }
 
     @Override

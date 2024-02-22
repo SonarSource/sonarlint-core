@@ -44,8 +44,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.InstanceOfAssertFactories.MAP;
 import static org.awaitility.Awaitility.waitAtMost;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 
 class PluginSynchronizationMediumTests {
@@ -72,24 +70,6 @@ class PluginSynchronizationMediumTests {
         .containsOnly(
           entry("java", PluginReference.newBuilder().setFilename("sonar-java-plugin-7.15.0.30507.jar").setKey("java").setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH).build()));
     });
-  }
-
-  @Test
-  void it_should_notify_clients_when_plugins_have_been_pulled() {
-    var server = newSonarQubeServer("10.3")
-      .withPlugin(TestPlugin.JAVA)
-      .withProject("projectKey", project -> project.withBranch("main"))
-      .start();
-    var client = newFakeClient().build();
-    backend = newBackend()
-      .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
-      .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withFullSynchronization()
-      .build(client);
-
-    waitAtMost(3, SECONDS).untilAsserted(() -> assertThat(getPluginsStorageFolder()).isNotEmptyDirectory());
-    verify(client, timeout(2000)).didUpdatePlugins("connectionId");
   }
 
   @Test

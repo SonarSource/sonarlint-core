@@ -50,7 +50,6 @@ import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
-import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
@@ -647,18 +646,8 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public void didUpdatePlugins(String connectionId) {
-
-    }
-
-    @Override
-    public List<ClientFileDto> listFiles(String configScopeId) throws ConfigScopeNotFoundException {
+    public List<ClientFileDto> listFiles(String configScopeId) {
       return initialFilesByConfigScope.getOrDefault(configScopeId, List.of());
-    }
-
-    @Override
-    public void didChangeNodeJs(@org.jetbrains.annotations.Nullable Path nodeJsPath, @org.jetbrains.annotations.Nullable String version) {
-
     }
 
     @Override

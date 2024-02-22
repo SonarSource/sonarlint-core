@@ -26,7 +26,6 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeNodeJsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnalysisReadinessParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
@@ -54,7 +53,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidUpdatePluginsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
@@ -181,12 +179,6 @@ public interface SonarLintRpcClient {
   void didChangeMatchedSonarProjectBranch(DidChangeMatchedSonarProjectBranchParams params);
 
   /**
-   * Called when at least one plugin has been downloaded during the full synchronization
-   */
-  @JsonNotification
-  void didUpdatePlugins(DidUpdatePluginsParams params);
-
-  /**
    * Must return all file paths for the given configuration scope.
    */
   @JsonRequest
@@ -203,9 +195,6 @@ public interface SonarLintRpcClient {
    */
   @JsonNotification
   void didChangeTaintVulnerabilities(DidChangeTaintVulnerabilitiesParams params);
-
-  @JsonNotification
-  void didChangeNodeJs(DidChangeNodeJsParams params);
 
   @JsonNotification
   void noBindingSuggestionFound(NoBindingSuggestionFoundParams params);

@@ -54,7 +54,6 @@ import org.sonarsource.sonarlint.core.progress.TaskManager;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidUpdatePluginsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverconnection.ServerConnection;
@@ -254,11 +253,8 @@ public class SynchronizationService {
     var serverConnection = getServerConnection(connectionId, serverApi);
     try {
       LOG.debug("Synchronizing storage of connection '{}'", connectionId);
-      var anyPluginUpdated = serverConnection.sync(serverApi, cancelMonitor);
+      serverConnection.sync(serverApi, cancelMonitor);
       applicationEventPublisher.publishEvent(new PluginsSynchronizedEvent(connectionId));
-      if (anyPluginUpdated) {
-        client.didUpdatePlugins(new DidUpdatePluginsParams(connectionId));
-      }
       var scopesPerProjectKey = scopesToSync.stream().collect(groupingBy(BoundScope::getSonarProjectKey, mapping(BoundScope::getConfigScopeId, toSet())));
       scopesPerProjectKey.forEach((projectKey, configScopeIds) -> {
         LOG.debug("Synchronizing storage of Sonar project '{}' for connection '{}'", projectKey, connectionId);

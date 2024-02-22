@@ -19,18 +19,27 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 
 public class GetAnalysisConfigResponse {
 
   private final List<ActiveRuleDto> activeRules;
 
   private final Map<String, String> analysisProperties;
+  private final NodeJsDetailsDto nodeJsDetailsDto;
+  private final Set<Path> pluginPaths;
 
-  public GetAnalysisConfigResponse(List<ActiveRuleDto> activeRules, Map<String, String> analysisProperties) {
+  public GetAnalysisConfigResponse(List<ActiveRuleDto> activeRules, Map<String, String> analysisProperties, @Nullable NodeJsDetailsDto nodeJsDetailsDto,
+    Set<Path> pluginPaths) {
     this.activeRules = activeRules;
     this.analysisProperties = analysisProperties;
+    this.nodeJsDetailsDto = nodeJsDetailsDto;
+    this.pluginPaths = pluginPaths;
   }
 
   public List<ActiveRuleDto> getActiveRules() {
@@ -39,5 +48,14 @@ public class GetAnalysisConfigResponse {
 
   public Map<String, String> getAnalysisProperties() {
     return analysisProperties;
+  }
+
+  @CheckForNull
+  public NodeJsDetailsDto getNodeJsDetailsDto() {
+    return nodeJsDetailsDto;
+  }
+
+  public Set<Path> getPluginPaths() {
+    return pluginPaths;
   }
 }
