@@ -57,4 +57,10 @@ public interface AnalysisRpcService {
    */
   @JsonNotification
   void didChangeClientNodeJsPath(DidChangeClientNodeJsPathParams params);
+
+  /**
+   * @return The Node.js path and version that were automatically detected on the user's machine.
+   */
+  @JsonRequest
+  CompletableFuture<GetAutoDetectedNodeJsResponse> getAutoDetectedNodeJs();
 }

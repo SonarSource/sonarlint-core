@@ -19,69 +19,33 @@
  */
 package mediumtest.analysis;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import org.mockito.Mockito;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetStandaloneRuleDescriptionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
-import testutils.ConsoleConsumer;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.Mockito.verify;
 
 class NodeJsMediumTests {
 
   private static final String JAVASCRIPT_S1481 = "javascript:S1481";
 
-  private Path sonarlintUserHome;
   private SonarLintTestRpcServer backend;
-  private Path fakeTypeScriptProjectPath;
-  private Path baseDir;
-
-  @BeforeEach
-  void prepare(@TempDir Path temp) throws Exception {
-    sonarlintUserHome = temp.resolve("home");
-    fakeTypeScriptProjectPath = temp.resolve("ts");
-    baseDir = temp.resolve("basedir");
-    var packagejson = fakeTypeScriptProjectPath.resolve("package.json");
-    FileUtils.write(packagejson.toFile(), "{"
-      + "\"devDependencies\": {\n" +
-      "    \"typescript\": \"2.6.1\"\n" +
-      "  }"
-      + "}", StandardCharsets.UTF_8);
-    var pb = new ProcessBuilder("npm" + (SystemUtils.IS_OS_WINDOWS ? ".cmd" : ""), "install")
-      .directory(fakeTypeScriptProjectPath.toFile())
-      .redirectErrorStream(true);
-    var process = pb.start();
-    new Thread(new ConsoleConsumer(process)).start();
-    if (process.waitFor() != 0) {
-      fail("Unable to run npm install");
-    }
-
-  }
 
   @AfterEach
-  void stop() throws IOException {
+  void stop() {
     if (backend != null) {
       backend.shutdown();
     }
   }
 
   @Test
-  void wrong_node_path_can_still_load_rules() throws Exception {
+  void wrong_node_path_can_still_load_rules() {
     var client = newFakeClient().build();
     backend = newBackend()
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVASCRIPT)
@@ -90,17 +54,28 @@ class NodeJsMediumTests {
 
     var globalConfig = backend.getAnalysisService().getGlobalStandaloneConfiguration().join();
 
-    assertThat(globalConfig.getNodeJsPath()).isEqualTo(Paths.get("wrong"));
+    assertThat(globalConfig.getNodeJsPath()).isNull();
     assertThat(globalConfig.getNodeJsVersion()).isNull();
-
-    assertThat(client.getLogMessages()).contains("Unable to query node version", "Node.js path set to: wrong (version null)");
-
-    verify(client, Mockito.timeout(5000)).didChangeNodeJs(Paths.get("wrong"), null);
+    assertThat(client.getLogMessages()).contains("Unable to query node version");
 
     var ruleDetails = backend.getRulesService().getStandaloneRuleDetails(new GetStandaloneRuleDescriptionParams(JAVASCRIPT_S1481)).join().getRuleDefinition();
     assertThat(ruleDetails.getName()).isEqualTo("Unused local variables and functions should be removed");
     assertThat(ruleDetails.getLanguage()).isEqualTo(org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JS);
     assertThat(ruleDetails.getSeverity()).isEqualTo(IssueSeverity.MINOR);
+  }
+
+  @Test
+  void can_retrieve_auto_detected_node_js() {
+    var client = newFakeClient().build();
+    backend = newBackend()
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVASCRIPT)
+      .build(client);
+
+    var nodeJsDetails = backend.getAnalysisService().getAutoDetectedNodeJs().join().getDetails();
+
+    assertThat(nodeJsDetails).isNotNull();
+    assertThat(nodeJsDetails.getPath()).isNotNull();
+    assertThat(nodeJsDetails.getVersion()).isNotNull();
   }
 
 }

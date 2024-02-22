@@ -29,12 +29,14 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcS
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeClientNodeJsPathParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAutoDetectedNodeJsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetGlobalConfigurationResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetGlobalConnectedConfigurationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetSupportedFilePatternsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetSupportedFilePatternsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.NodeJsDetailsDto;
 import org.sonarsource.sonarlint.core.rules.RuleNotFoundException;
 import org.sonarsource.sonarlint.core.rules.RulesService;
 
@@ -76,7 +78,7 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
         try {
           return getBean(RulesService.class).getRuleDetailsForAnalysis(params.getConfigScopeId(), params.getRuleKey());
         } catch (RuleNotFoundException e) {
-          ResponseError error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, e.getMessage(), e.getRuleKey());
+          var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, e.getMessage(), e.getRuleKey());
           throw new ResponseErrorException(error);
         }
       }, params.getConfigScopeId());
@@ -85,5 +87,14 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
   @Override
   public void didChangeClientNodeJsPath(DidChangeClientNodeJsPathParams params) {
     notify(() -> getBean(NodeJsService.class).didChangeClientNodeJsPath(params.getClientNodeJsPath()));
+  }
+
+  @Override
+  public CompletableFuture<GetAutoDetectedNodeJsResponse> getAutoDetectedNodeJs() {
+    return requestAsync(cancelChecker -> {
+      var autoDetectedNodeJs = getBean(AnalysisService.class).getAutoDetectedNodeJs();
+      var dto = autoDetectedNodeJs == null ? null : new NodeJsDetailsDto(autoDetectedNodeJs.getPath(), autoDetectedNodeJs.getVersion().toString());
+      return new GetAutoDetectedNodeJsResponse(dto);
+    });
   }
 }

@@ -47,7 +47,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFileEdit;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
@@ -61,9 +60,10 @@ import org.sonarsource.sonarlint.core.client.legacy.analysis.RawIssue;
 import org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.api.progress.CanceledException;
 import org.sonarsource.sonarlint.core.commons.api.progress.ClientProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.nodejs.NodeJsHelper;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDefinitionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
@@ -141,7 +141,7 @@ class StandaloneIssueMediumTests {
     extraProperties.put("sonar.javascript.globals", "GLOBAL1");
 
     var nodeJsHelper = new NodeJsHelper();
-    nodeJsHelper.detect(null);
+    var detectedNodeJs = nodeJsHelper.detect(null);
 
     var configBuilder = EngineConfiguration.builder()
       .setLogOutput(TestUtils.createNoOpLogOutput())
@@ -150,7 +150,7 @@ class StandaloneIssueMediumTests {
 
     var backendBuilder = newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
-      .withClientNodeJsPath(nodeJsHelper.getNodeJsPath())
+      .withClientNodeJsPath(detectedNodeJs.getPath())
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVASCRIPT)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PHP)
