@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core;
+package org.sonarsource.sonarlint.core.nodejs;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -44,9 +44,6 @@ public class NodeJsHelper {
   private final Path pathHelperLocationOnMac;
   private final CommandExecutor commandExecutor;
 
-  private Path detectedNodePath;
-  private Version nodeJsVersion;
-
   public NodeJsHelper() {
     this(System2.INSTANCE, Paths.get("/usr/libexec/path_helper"), CommandExecutor.create());
   }
@@ -58,41 +55,47 @@ public class NodeJsHelper {
     this.commandExecutor = commandExecutor;
   }
 
-  public void detect(@Nullable Path configuredNodejsPath) {
-    detectedNodePath = locateNode(configuredNodejsPath);
+  @CheckForNull
+  public InstalledNodeJs autoDetect() {
+    return detect(null);
+  }
+
+  @CheckForNull
+  public InstalledNodeJs detect(@Nullable Path configuredNodejsPath) {
+    var detectedNodePath = locateNode(configuredNodejsPath);
     if (detectedNodePath != null) {
-      LOG.debug("Checking node version...");
-      String nodeVersionStr;
-      var forcedNodeVersion = System.getProperty("sonarlint.internal.nodejs.forcedVersion");
-      if (forcedNodeVersion != null) {
-        nodeVersionStr = forcedNodeVersion;
-      } else {
-        var command = Command.create(detectedNodePath.toString()).addArgument("-v");
-        nodeVersionStr = runSimpleCommand(command);
-      }
-      if (nodeVersionStr != null) {
-        var matcher = NODEJS_VERSION_PATTERN.matcher(nodeVersionStr);
-        if (matcher.matches()) {
-          var version = matcher.group(1);
-          nodeJsVersion = Version.create(version);
-          LOG.debug("Detected node version: {}", nodeJsVersion);
-        } else {
-          LOG.debug("Unable to parse node version: {}", nodeVersionStr);
-        }
-      }
+      var nodeJsVersion = readNodeVersion(detectedNodePath);
       if (nodeJsVersion == null) {
         LOG.warn("Unable to query node version");
+      } else {
+        return new InstalledNodeJs(detectedNodePath, nodeJsVersion);
       }
     }
+    return null;
   }
 
   @CheckForNull
-  public Path getNodeJsPath() {
-    return detectedNodePath;
-  }
-
-  @CheckForNull
-  public Version getNodeJsVersion() {
+  private Version readNodeVersion(Path detectedNodePath) {
+    LOG.debug("Checking node version...");
+    String nodeVersionStr;
+    var forcedNodeVersion = System.getProperty("sonarlint.internal.nodejs.forcedVersion");
+    if (forcedNodeVersion != null) {
+      nodeVersionStr = forcedNodeVersion;
+    } else {
+      var command = Command.create(detectedNodePath.toString()).addArgument("-v");
+      nodeVersionStr = runSimpleCommand(command);
+    }
+    Version nodeJsVersion = null;
+    if (nodeVersionStr != null) {
+      var matcher = NODEJS_VERSION_PATTERN.matcher(nodeVersionStr);
+      if (matcher.matches()) {
+        var version = matcher.group(1);
+        nodeJsVersion = Version.create(version);
+        LOG.debug("Detected node version: {}", nodeJsVersion);
+      } else {
+        LOG.debug("Unable to parse node version: {}", nodeVersionStr);
+      }
+    }
     return nodeJsVersion;
   }
 

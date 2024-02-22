@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.nodejs.InstalledNodeJs;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
@@ -132,7 +134,7 @@ class TelemetryServerAttributesProviderTests {
   void it_should_test_nodejs_version_telemetry_attr() {
     var nodeJsService = mock(NodeJsService.class);
     var version = "3.1.4.159";
-    when(nodeJsService.getNodeJsVersion()).thenReturn(Version.create(version));
+    when(nodeJsService.getActiveNodeJs()).thenReturn(new InstalledNodeJs(Paths.get(""), Version.create(version)));
     var underTest = new TelemetryServerAttributesProvider(mock(ConfigurationRepository.class), mock(ConnectionConfigurationRepository.class),  mock(RulesService.class), mock(RulesRepository.class), nodeJsService);
 
     assertThat(underTest.getTelemetryServerLiveAttributes().getNodeVersion()).isEqualTo(version);

@@ -37,7 +37,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.api.sonarlint.SonarLintSide;
-import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
@@ -51,6 +50,7 @@ import org.sonarsource.sonarlint.core.client.legacy.analysis.RawIssue;
 import org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.nodejs.NodeJsHelper;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
 import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileListener;
@@ -79,7 +79,7 @@ class ConnectedIssueMediumTests {
   @BeforeAll
   static void prepare(@TempDir Path slHome) {
     var nodeJsHelper = new NodeJsHelper();
-    nodeJsHelper.detect(null);
+    var detectedNodeJs = nodeJsHelper.detect(null);
 
     var config = EngineConfiguration.builder()
       .setSonarLintUserHome(slHome)
@@ -95,7 +95,7 @@ class ConnectedIssueMediumTests {
             .withActiveRule("java:S1220", "MINOR")
             .withActiveRule("java:S1481", "BLOCKER"))))
       .withBoundConfigScope(JAVA_MODULE_KEY, CONNECTION_ID, JAVA_MODULE_KEY)
-      .withClientNodeJsPath(nodeJsHelper.getNodeJsPath())
+      .withClientNodeJsPath(detectedNodeJs.getPath())
       .withEnabledLanguageInStandaloneMode(JAVA)
       .withEnabledLanguageInStandaloneMode(JS)
       .build();

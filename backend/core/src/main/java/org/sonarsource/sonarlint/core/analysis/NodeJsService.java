@@ -20,18 +20,15 @@
 package org.sonarsource.sonarlint.core.analysis;
 
 import java.nio.file.Path;
-import java.util.Objects;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.SystemUtils;
-import org.sonarsource.sonarlint.core.NodeJsHelper;
-import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.nodejs.InstalledNodeJs;
+import org.sonarsource.sonarlint.core.nodejs.NodeJsHelper;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeNodeJsParams;
 
 /**
  * Keep track of the Node.js executable to be used by analysis
@@ -41,68 +38,73 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeNode
 public class NodeJsService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-
-  private volatile boolean nodeInit;
-
+  private volatile boolean nodeAutoDetected;
   @Nullable
-  private Path nodeJsPath;
+  private InstalledNodeJs autoDetectedNodeJs;
   @Nullable
   private Path clientNodeJsPath;
-  private final SonarLintRpcClient client;
+  private boolean clientForcedNodeJsDetected;
   @Nullable
-  private Version nodeJsVersion;
+  private InstalledNodeJs clientForcedNodeJs;
 
-  public NodeJsService(InitializeParams initializeParams, SonarLintRpcClient client) {
+  public NodeJsService(InitializeParams initializeParams) {
     this.clientNodeJsPath = initializeParams.getClientNodeJsPath();
-    this.client = client;
   }
-
 
   public synchronized void didChangeClientNodeJsPath(@Nullable Path clientNodeJsPath) {
     this.clientNodeJsPath = clientNodeJsPath;
-    this.nodeInit = false;
+    this.clientForcedNodeJsDetected = false;
   }
 
-  private synchronized void initNodeIfNeeded() {
-    if (!nodeInit) {
+  @CheckForNull
+  public synchronized InstalledNodeJs getActiveNodeJs() {
+    return clientNodeJsPath == null ? getAutoDetectedNodeJs() : getClientForcedNodeJs();
+  }
+
+  @CheckForNull
+  public InstalledNodeJs getAutoDetectedNodeJs() {
+    if (!nodeAutoDetected) {
       var helper = new NodeJsHelper();
-      helper.detect(clientNodeJsPath);
-      this.nodeInit = true;
-      var newNodeJsPath = helper.getNodeJsPath();
-      var newNodeJsVersion = helper.getNodeJsVersion();
+      autoDetectedNodeJs = helper.autoDetect();
+      nodeAutoDetected = true;
+      logAutoDetectionResults(autoDetectedNodeJs);
+    }
+    return autoDetectedNodeJs;
+  }
 
-      if (!Objects.equals(newNodeJsPath, this.nodeJsPath) || !Objects.equals(newNodeJsVersion, this.nodeJsVersion)) {
-        LOG.debug("Node.js path set to: {} (version {})", newNodeJsPath, newNodeJsVersion);
-        this.nodeJsPath = newNodeJsPath;
-        this.nodeJsVersion = newNodeJsVersion;
-        client.didChangeNodeJs(new DidChangeNodeJsParams(nodeJsPath, nodeJsVersion != null ? nodeJsVersion.toString() : null));
-      }
+  @CheckForNull
+  private InstalledNodeJs getClientForcedNodeJs() {
+    if (!clientForcedNodeJsDetected) {
+      var helper = new NodeJsHelper();
+      clientForcedNodeJs = helper.detect(clientNodeJsPath);
+      clientForcedNodeJsDetected = true;
+      logClientForcedDetectionResults(clientForcedNodeJs);
+    }
+    return clientForcedNodeJs;
+  }
 
-      if (this.nodeJsPath == null) {
+  private static void logAutoDetectionResults(@Nullable InstalledNodeJs autoDetectedNode) {
+    if (autoDetectedNode != null) {
+      LOG.debug("Auto-detected Node.js path set to: {} (version {})", autoDetectedNode.getPath(), autoDetectedNode.getVersion());
+    } else {
+      LOG.warn(
+        "Node.js could not be automatically detected, has to be configured manually in the SonarLint preferences!");
+
+      if (SystemUtils.IS_OS_MAC_OSX) {
+        // In case of macOS or could not be found, just add the warning for the user and us if we have to provide
+        // support on that matter at some point.
         LOG.warn(
-          "Node.js could not be automatically detected, has to be configured manually in the SonarLint preferences!");
-
-        if (SystemUtils.IS_OS_MAC_OSX) {
-          // In case of macOS or could not be found, just add the warning for the user and us if we have to provide
-          // support on that matter at some point.
-          LOG.warn(
-            "Automatic detection does not work on macOS when added to PATH from user shell configuration (e.g. Bash)");
-        }
+          "Automatic detection does not work on macOS when added to PATH from user shell configuration (e.g. Bash)");
       }
     }
   }
 
-  @CheckForNull
-  public Path getNodeJsPath() {
-    initNodeIfNeeded();
-    return nodeJsPath;
+  private static void logClientForcedDetectionResults(@Nullable InstalledNodeJs detectedNode) {
+    if (detectedNode != null) {
+      LOG.debug("Node.js path set to: {} (version {})", detectedNode.getPath(), detectedNode.getVersion());
+    } else {
+      LOG.warn(
+        "Configured Node.js could not be detected, please check your configuration in the SonarLint settings");
+    }
   }
-
-  @CheckForNull
-  public Version getNodeJsVersion() {
-    initNodeIfNeeded();
-    return nodeJsVersion;
-  }
-
-
 }

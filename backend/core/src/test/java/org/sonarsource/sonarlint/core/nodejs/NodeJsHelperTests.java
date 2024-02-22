@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core;
+package org.sonarsource.sonarlint.core.nodejs;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import java.io.IOException;
@@ -36,7 +36,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.command.Command;
@@ -55,6 +54,7 @@ import static org.mockito.Mockito.when;
 class NodeJsHelperTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
+  private static final Path DUMMY_FILE_HELPER_LOCATION = Paths.get("");
 
   private static final Path FAKE_NODE_PATH = Paths.get("foo/node");
 
@@ -67,20 +67,16 @@ class NodeJsHelperTests {
   @BeforeEach
   void prepare() {
     commandExecutor = mock(CommandExecutor.class);
-    when(commandExecutor.execute(any(), any(), any(), anyLong())).thenAnswer(new Answer<Integer>() {
-
-      @Override
-      public Integer answer(InvocationOnMock invocation) throws Throwable {
-        var c = invocation.getArgument(0, Command.class);
-        for (Entry<Predicate<Command>, BiFunction<StreamConsumer, StreamConsumer, Integer>> answer : registeredCommandAnswers.entrySet()) {
-          if (answer.getKey().test(c)) {
-            var stdOut = invocation.getArgument(1, StreamConsumer.class);
-            var stdErr = invocation.getArgument(2, StreamConsumer.class);
-            return answer.getValue().apply(stdOut, stdErr);
-          }
+    when(commandExecutor.execute(any(), any(), any(), anyLong())).thenAnswer((Answer<Integer>) invocation -> {
+      var c = invocation.getArgument(0, Command.class);
+      for (Entry<Predicate<Command>, BiFunction<StreamConsumer, StreamConsumer, Integer>> answer : registeredCommandAnswers.entrySet()) {
+        if (answer.getKey().test(c)) {
+          var stdOut = invocation.getArgument(1, StreamConsumer.class);
+          var stdErr = invocation.getArgument(2, StreamConsumer.class);
+          return answer.getValue().apply(stdOut, stdErr);
         }
-        return fail("No answers registered for command: " + c.toString());
       }
+      return fail("No answers registered for command: " + c.toString());
     });
   }
 
@@ -89,17 +85,18 @@ class NodeJsHelperTests {
 
     registerNodeVersionAnswer("v10.5.4");
 
-    var underTest = new NodeJsHelper(system2, null, commandExecutor);
-    underTest.detect(FAKE_NODE_PATH);
+    var underTest = new NodeJsHelper(system2, DUMMY_FILE_HELPER_LOCATION, commandExecutor);
+    var result = underTest.detect(FAKE_NODE_PATH);
 
     assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).containsExactly(
-      "Node.js path provided by configuration: " + FAKE_NODE_PATH.toString(),
+      "Node.js path provided by configuration: " + FAKE_NODE_PATH,
       "Checking node version...",
-      "Execute command '" + FAKE_NODE_PATH.toString() + " -v'...",
-      "Command '" + FAKE_NODE_PATH.toString() + " -v' exited with 0\nstdout: v10.5.4",
+      "Execute command '" + FAKE_NODE_PATH + " -v'...",
+      "Command '" + FAKE_NODE_PATH + " -v' exited with 0\nstdout: v10.5.4",
       "Detected node version: 10.5.4");
-    assertThat(underTest.getNodeJsPath()).isEqualTo(FAKE_NODE_PATH);
-    assertThat(underTest.getNodeJsVersion()).isEqualTo(Version.create("10.5.4"));
+    assertThat(result).isNotNull();
+    assertThat(result.getPath()).isEqualTo(FAKE_NODE_PATH);
+    assertThat(result.getVersion()).isEqualTo(Version.create("10.5.4"));
   }
 
   @Test
@@ -107,17 +104,18 @@ class NodeJsHelperTests {
 
     registerNodeVersionAnswer("v15.0.0-nightly20200921039c274dde");
 
-    var underTest = new NodeJsHelper(system2, null, commandExecutor);
-    underTest.detect(FAKE_NODE_PATH);
+    var underTest = new NodeJsHelper(system2, DUMMY_FILE_HELPER_LOCATION, commandExecutor);
+    var result = underTest.detect(FAKE_NODE_PATH);
 
     assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).containsExactly(
-      "Node.js path provided by configuration: " + FAKE_NODE_PATH.toString(),
+      "Node.js path provided by configuration: " + FAKE_NODE_PATH,
       "Checking node version...",
-      "Execute command '" + FAKE_NODE_PATH.toString() + " -v'...",
-      "Command '" + FAKE_NODE_PATH.toString() + " -v' exited with 0\nstdout: v15.0.0-nightly20200921039c274dde",
+      "Execute command '" + FAKE_NODE_PATH + " -v'...",
+      "Command '" + FAKE_NODE_PATH + " -v' exited with 0\nstdout: v15.0.0-nightly20200921039c274dde",
       "Detected node version: 15.0.0-nightly20200921039c274dde");
-    assertThat(underTest.getNodeJsPath()).isEqualTo(FAKE_NODE_PATH);
-    assertThat(underTest.getNodeJsVersion()).isEqualTo(Version.create("15.0.0-nightly20200921039c274dde"));
+    assertThat(result).isNotNull();
+    assertThat(result.getPath()).isEqualTo(FAKE_NODE_PATH);
+    assertThat(result.getVersion()).isEqualTo(Version.create("15.0.0-nightly20200921039c274dde"));
   }
 
   @Test
@@ -127,121 +125,119 @@ class NodeJsHelperTests {
       return -1;
     });
 
-    var underTest = new NodeJsHelper(system2, null, commandExecutor);
-    underTest.detect(FAKE_NODE_PATH);
+    var underTest = new NodeJsHelper(system2, DUMMY_FILE_HELPER_LOCATION, commandExecutor);
+    var result = underTest.detect(FAKE_NODE_PATH);
 
     assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).containsExactly(
-      "Node.js path provided by configuration: " + FAKE_NODE_PATH.toString(),
+      "Node.js path provided by configuration: " + FAKE_NODE_PATH,
       "Checking node version...",
-      "Execute command '" + FAKE_NODE_PATH.toString() + " -v'...",
-      "Command '" + FAKE_NODE_PATH.toString() + " -v' exited with -1\nstderr: error",
+      "Execute command '" + FAKE_NODE_PATH + " -v'...",
+      "Command '" + FAKE_NODE_PATH + " -v' exited with -1\nstderr: error",
       "Unable to query node version");
-    assertThat(underTest.getNodeJsPath()).isEqualTo(FAKE_NODE_PATH);
-    assertThat(underTest.getNodeJsVersion()).isNull();
+    assertThat(result).isNull();
   }
 
   @Test
   void handleErrorDuringVersionCheck() {
     registerNodeVersionAnswer("wrong_version");
 
-    var underTest = new NodeJsHelper(system2, null, commandExecutor);
-    underTest.detect(FAKE_NODE_PATH);
+    var underTest = new NodeJsHelper(system2, DUMMY_FILE_HELPER_LOCATION, commandExecutor);
+    var result = underTest.detect(FAKE_NODE_PATH);
 
     assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).containsExactly(
-      "Node.js path provided by configuration: " + FAKE_NODE_PATH.toString(),
+      "Node.js path provided by configuration: " + FAKE_NODE_PATH,
       "Checking node version...",
-      "Execute command '" + FAKE_NODE_PATH.toString() + " -v'...",
-      "Command '" + FAKE_NODE_PATH.toString() + " -v' exited with 0\nstdout: wrong_version",
+      "Execute command '" + FAKE_NODE_PATH + " -v'...",
+      "Command '" + FAKE_NODE_PATH + " -v' exited with 0\nstdout: wrong_version",
       "Unable to parse node version: wrong_version",
       "Unable to query node version");
-    assertThat(underTest.getNodeJsPath()).isEqualTo(FAKE_NODE_PATH);
-    assertThat(underTest.getNodeJsVersion()).isNull();
+    assertThat(result).isNull();
   }
 
   @Test
-  void useWhichOnLinuxToResolveNodePath() throws IOException {
+  void useWhichOnLinuxToResolveNodePath() {
     registerWhichAnswer(FAKE_NODE_PATH.toString());
     registerNodeVersionAnswer("v10.5.4");
 
-    var underTest = new NodeJsHelper(system2, null, commandExecutor);
-    underTest.detect(null);
+    var underTest = new NodeJsHelper(system2, DUMMY_FILE_HELPER_LOCATION, commandExecutor);
+    var result = underTest.detect(null);
 
     assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).containsExactly(
       "Looking for node in the PATH",
       "Execute command '/usr/bin/which node'...",
-      "Command '/usr/bin/which node' exited with 0\nstdout: " + FAKE_NODE_PATH.toString(),
-      "Found node at " + FAKE_NODE_PATH.toString(),
+      "Command '/usr/bin/which node' exited with 0\nstdout: " + FAKE_NODE_PATH,
+      "Found node at " + FAKE_NODE_PATH,
       "Checking node version...",
-      "Execute command '" + FAKE_NODE_PATH.toString() + " -v'...",
-      "Command '" + FAKE_NODE_PATH.toString() + " -v' exited with 0\nstdout: v10.5.4",
+      "Execute command '" + FAKE_NODE_PATH + " -v'...",
+      "Command '" + FAKE_NODE_PATH + " -v' exited with 0\nstdout: v10.5.4",
       "Detected node version: 10.5.4");
-    assertThat(underTest.getNodeJsPath()).isEqualTo(FAKE_NODE_PATH);
-    assertThat(underTest.getNodeJsVersion()).isEqualTo(Version.create("10.5.4"));
+    assertThat(result).isNotNull();
+    assertThat(result.getPath()).isEqualTo(FAKE_NODE_PATH);
+    assertThat(result.getVersion()).isEqualTo(Version.create("10.5.4"));
   }
 
   @Test
-  void handleErrorDuringPathCheck() throws IOException {
+  void handleErrorDuringPathCheck() {
     registeredCommandAnswers.put(c -> true, (stdOut, stdErr) -> {
       stdErr.consumeLine("error");
       return -1;
     });
 
-    var underTest = new NodeJsHelper(system2, null, commandExecutor);
-    underTest.detect(null);
+    var underTest = new NodeJsHelper(system2, DUMMY_FILE_HELPER_LOCATION, commandExecutor);
+    var result = underTest.detect(null);
 
     assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).containsExactly(
       "Looking for node in the PATH",
       "Execute command '/usr/bin/which node'...",
       "Command '/usr/bin/which node' exited with -1\nstderr: error",
       "Unable to locate node");
-    assertThat(underTest.getNodeJsPath()).isNull();
-    assertThat(underTest.getNodeJsVersion()).isNull();
+    assertThat(result).isNull();
   }
 
   @Test
-  void handleEmptyResponseDuringPathCheck() throws IOException {
+  void handleEmptyResponseDuringPathCheck() {
     when(system2.isOsWindows()).thenReturn(true);
 
     registerWhereAnswer();
 
-    var underTest = new NodeJsHelper(system2, null, commandExecutor);
-    underTest.detect(null);
+    var underTest = new NodeJsHelper(system2, DUMMY_FILE_HELPER_LOCATION, commandExecutor);
+    var result = underTest.detect(null);
 
     assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).containsExactly(
       "Looking for node in the PATH",
       "Execute command 'C:\\Windows\\System32\\where.exe $PATH:node.exe'...",
       "Command 'C:\\Windows\\System32\\where.exe $PATH:node.exe' exited with 0",
       "Unable to locate node");
-    assertThat(underTest.getNodeJsPath()).isNull();
-    assertThat(underTest.getNodeJsVersion()).isNull();
+    assertThat(result).isNull();
   }
 
   @Test
-  void useWhereOnWindowsToResolveNodePath() throws IOException {
+  void useWhereOnWindowsToResolveNodePath() {
     when(system2.isOsWindows()).thenReturn(true);
 
     registerWhereAnswer(FAKE_NODE_PATH.toString());
     registerNodeVersionAnswer("v10.5.4");
 
-    var underTest = new NodeJsHelper(system2, null, commandExecutor);
-    underTest.detect(null);
+    var underTest = new NodeJsHelper(system2, DUMMY_FILE_HELPER_LOCATION, commandExecutor);
+    var result = underTest.detect(null);
 
     assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).containsExactly(
       "Looking for node in the PATH",
       "Execute command 'C:\\Windows\\System32\\where.exe $PATH:node.exe'...",
       "Command 'C:\\Windows\\System32\\where.exe $PATH:node.exe' exited with 0\nstdout: " + FAKE_NODE_PATH,
-      "Found node at " + FAKE_NODE_PATH.toString(),
+      "Found node at " + FAKE_NODE_PATH,
       "Checking node version...",
-      "Execute command '" + FAKE_NODE_PATH.toString() + " -v'...",
-      "Command '" + FAKE_NODE_PATH.toString() + " -v' exited with 0\nstdout: v10.5.4",
+      "Execute command '" + FAKE_NODE_PATH + " -v'...",
+      "Command '" + FAKE_NODE_PATH + " -v' exited with 0\nstdout: v10.5.4",
       "Detected node version: 10.5.4");
-    assertThat(underTest.getNodeJsPath()).isEqualTo(FAKE_NODE_PATH);
-    assertThat(underTest.getNodeJsVersion()).isEqualTo(Version.create("10.5.4"));
+    assertThat(result).isNotNull();
+    assertThat(result.getPath()).isEqualTo(FAKE_NODE_PATH);
+    assertThat(result.getVersion()).isEqualTo(Version.create("10.5.4"));
   }
 
   // SLCORE-281
   @Test
-  void whereOnWindowsCanReturnMultipleCandidates() throws IOException {
+  void whereOnWindowsCanReturnMultipleCandidates() {
     when(system2.isOsWindows()).thenReturn(true);
 
     var fake_node_path2 = Paths.get("foo2/node");
@@ -249,22 +245,22 @@ class NodeJsHelperTests {
     registerWhereAnswer(FAKE_NODE_PATH.toString(), fake_node_path2.toString());
     registerNodeVersionAnswer("v10.5.4");
 
-    var underTest = new NodeJsHelper(system2, null, commandExecutor);
-    underTest.detect(null);
+    var underTest = new NodeJsHelper(system2, DUMMY_FILE_HELPER_LOCATION, commandExecutor);
+    var result = underTest.detect(null);
 
     assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).containsExactly(
       "Looking for node in the PATH",
       "Execute command 'C:\\Windows\\System32\\where.exe $PATH:node.exe'...",
       "Command 'C:\\Windows\\System32\\where.exe $PATH:node.exe' exited with 0\nstdout: "
-        + FAKE_NODE_PATH.toString() + "\n" + fake_node_path2
-        .toString(),
-      "Found node at " + FAKE_NODE_PATH.toString(),
+        + FAKE_NODE_PATH + "\n" + fake_node_path2,
+      "Found node at " + FAKE_NODE_PATH,
       "Checking node version...",
-      "Execute command '" + FAKE_NODE_PATH.toString() + " -v'...",
-      "Command '" + FAKE_NODE_PATH.toString() + " -v' exited with 0\nstdout: v10.5.4",
+      "Execute command '" + FAKE_NODE_PATH + " -v'...",
+      "Command '" + FAKE_NODE_PATH + " -v' exited with 0\nstdout: v10.5.4",
       "Detected node version: 10.5.4");
-    assertThat(underTest.getNodeJsPath()).isEqualTo(FAKE_NODE_PATH);
-    assertThat(underTest.getNodeJsVersion()).isEqualTo(Version.create("10.5.4"));
+    assertThat(result).isNotNull();
+    assertThat(result.getPath()).isEqualTo(FAKE_NODE_PATH);
+    assertThat(result.getVersion()).isEqualTo(Version.create("10.5.4"));
   }
 
   @Test
@@ -279,21 +275,22 @@ class NodeJsHelperTests {
     var fakePathHelper = tempDir.resolve("path_helper.sh");
     Files.createFile(fakePathHelper);
     var underTest = new NodeJsHelper(system2, fakePathHelper, commandExecutor);
-    underTest.detect(null);
+    var result = underTest.detect(null);
 
     assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).containsExactly(
       "Looking for node in the PATH",
-      "Execute command '" + fakePathHelper.toString() + " -s'...",
-      "Command '" + fakePathHelper.toString() + " -s' exited with 0\nstdout: PATH=\"/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin/node\"; export PATH;",
+      "Execute command '" + fakePathHelper + " -s'...",
+      "Command '" + fakePathHelper + " -s' exited with 0\nstdout: PATH=\"/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin/node\"; export PATH;",
       "Execute command '/usr/bin/which node'...",
-      "Command '/usr/bin/which node' exited with 0\nstdout: " + FAKE_NODE_PATH.toString(),
-      "Found node at " + FAKE_NODE_PATH.toString(),
+      "Command '/usr/bin/which node' exited with 0\nstdout: " + FAKE_NODE_PATH,
+      "Found node at " + FAKE_NODE_PATH,
       "Checking node version...",
-      "Execute command '" + FAKE_NODE_PATH.toString() + " -v'...",
-      "Command '" + FAKE_NODE_PATH.toString() + " -v' exited with 0\nstdout: v10.5.4",
+      "Execute command '" + FAKE_NODE_PATH + " -v'...",
+      "Command '" + FAKE_NODE_PATH + " -v' exited with 0\nstdout: v10.5.4",
       "Detected node version: 10.5.4");
-    assertThat(underTest.getNodeJsPath()).isEqualTo(FAKE_NODE_PATH);
-    assertThat(underTest.getNodeJsVersion()).isEqualTo(Version.create("10.5.4"));
+    assertThat(result).isNotNull();
+    assertThat(result.getPath()).isEqualTo(FAKE_NODE_PATH);
+    assertThat(result.getVersion()).isEqualTo(Version.create("10.5.4"));
   }
 
   @Test
@@ -307,25 +304,26 @@ class NodeJsHelperTests {
     var fakePathHelper = tempDir.resolve("path_helper.sh");
     Files.createFile(fakePathHelper);
     var underTest = new NodeJsHelper(system2, fakePathHelper, commandExecutor);
-    underTest.detect(null);
+    var result = underTest.detect(null);
 
     assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).containsExactly(
       "Looking for node in the PATH",
-      "Execute command '" + fakePathHelper.toString() + " -s'...",
-      "Command '" + fakePathHelper.toString() + " -s' exited with 0\nstdout: wrong \n output",
+      "Execute command '" + fakePathHelper + " -s'...",
+      "Command '" + fakePathHelper + " -s' exited with 0\nstdout: wrong \n output",
       "Execute command '/usr/bin/which node'...",
-      "Command '/usr/bin/which node' exited with 0\nstdout: " + FAKE_NODE_PATH.toString(),
-      "Found node at " + FAKE_NODE_PATH.toString(),
+      "Command '/usr/bin/which node' exited with 0\nstdout: " + FAKE_NODE_PATH,
+      "Found node at " + FAKE_NODE_PATH,
       "Checking node version...",
-      "Execute command '" + FAKE_NODE_PATH.toString() + " -v'...",
-      "Command '" + FAKE_NODE_PATH.toString() + " -v' exited with 0\nstdout: v10.5.4",
+      "Execute command '" + FAKE_NODE_PATH + " -v'...",
+      "Command '" + FAKE_NODE_PATH + " -v' exited with 0\nstdout: v10.5.4",
       "Detected node version: 10.5.4");
-    assertThat(underTest.getNodeJsPath()).isEqualTo(FAKE_NODE_PATH);
-    assertThat(underTest.getNodeJsVersion()).isEqualTo(Version.create("10.5.4"));
+    assertThat(result).isNotNull();
+    assertThat(result.getPath()).isEqualTo(FAKE_NODE_PATH);
+    assertThat(result.getVersion()).isEqualTo(Version.create("10.5.4"));
   }
 
   @Test
-  void ignorePathHelperOnMacIfMissing() throws IOException {
+  void ignorePathHelperOnMacIfMissing() {
     when(system2.isOsMac()).thenReturn(true);
 
     registerPathHelperAnswer("wrong \n output");
@@ -333,32 +331,33 @@ class NodeJsHelperTests {
     registerNodeVersionAnswer("v10.5.4");
 
     var underTest = new NodeJsHelper(system2, Paths.get("not_exists"), commandExecutor);
-    underTest.detect(null);
+    var result = underTest.detect(null);
 
     assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).containsExactly(
       "Looking for node in the PATH",
       "Execute command '/usr/bin/which node'...",
-      "Command '/usr/bin/which node' exited with 0\nstdout: " + FAKE_NODE_PATH.toString(),
-      "Found node at " + FAKE_NODE_PATH.toString(),
+      "Command '/usr/bin/which node' exited with 0\nstdout: " + FAKE_NODE_PATH,
+      "Found node at " + FAKE_NODE_PATH,
       "Checking node version...",
-      "Execute command '" + FAKE_NODE_PATH.toString() + " -v'...",
-      "Command '" + FAKE_NODE_PATH.toString() + " -v' exited with 0\nstdout: v10.5.4",
+      "Execute command '" + FAKE_NODE_PATH + " -v'...",
+      "Command '" + FAKE_NODE_PATH + " -v' exited with 0\nstdout: v10.5.4",
       "Detected node version: 10.5.4");
-    assertThat(underTest.getNodeJsPath()).isEqualTo(FAKE_NODE_PATH);
-    assertThat(underTest.getNodeJsVersion()).isEqualTo(Version.create("10.5.4"));
+    assertThat(result).isNotNull();
+    assertThat(result.getPath()).isEqualTo(FAKE_NODE_PATH);
+    assertThat(result.getVersion()).isEqualTo(Version.create("10.5.4"));
   }
 
   @Test
   void logWhenUnableToGetNodeVersion() {
     var underTest = new NodeJsHelper();
-    underTest.detect(Paths.get("not_node"));
+    var result = underTest.detect(Paths.get("not_node"));
 
     assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).anyMatch(s -> s.startsWith("Unable to execute the command"));
-    assertThat(underTest.getNodeJsVersion()).isNull();
+    assertThat(result).isNull();
   }
 
   private void registerNodeVersionAnswer(String version) {
-    registeredCommandAnswers.put(c -> c.toString().endsWith(FAKE_NODE_PATH.toString() + " -v"), (stdOut, stdErr) -> {
+    registeredCommandAnswers.put(c -> c.toString().endsWith(FAKE_NODE_PATH + " -v"), (stdOut, stdErr) -> {
       stdOut.consumeLine(version);
       return 0;
     });
@@ -380,7 +379,7 @@ class NodeJsHelperTests {
 
   private void registerWhereAnswer(String... whereOutput) {
     registeredCommandAnswers.put(c -> c.toString().endsWith("C:\\Windows\\System32\\where.exe $PATH:node.exe"), (stdOut, stdErr) -> {
-      Stream.of(whereOutput).forEach(l -> stdOut.consumeLine(l));
+      Stream.of(whereOutput).forEach(stdOut::consumeLine);
       return 0;
     });
   }

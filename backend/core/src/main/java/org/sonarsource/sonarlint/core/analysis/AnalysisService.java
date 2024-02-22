@@ -47,6 +47,7 @@ import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
+import org.sonarsource.sonarlint.core.nodejs.InstalledNodeJs;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
@@ -147,19 +148,21 @@ public class AnalysisService {
   public GetGlobalConfigurationResponse getGlobalStandaloneConfiguration() {
     var enabledLanguages = languageSupportRepository.getEnabledLanguagesInStandaloneMode();
     var pluginPaths = pluginsService.getEmbeddedPluginPaths();
-    var nodeJsPath = nodeJsService.getNodeJsPath();
-    var nodeJsVersion = nodeJsService.getNodeJsVersion();
-    return new GetGlobalConfigurationResponse(pluginPaths, enabledLanguages.stream().map(AnalysisService::toDto).collect(Collectors.toList()),
-      nodeJsPath, nodeJsVersion != null ? nodeJsVersion.toString() : null, false);
+    var activeNodeJs = nodeJsService.getActiveNodeJs();
+    var activeNodeJsPath = activeNodeJs == null ? null : activeNodeJs.getPath();
+    var activeNodeJsVersion = activeNodeJs == null ? null : activeNodeJs.getVersion().toString();
+    return new GetGlobalConfigurationResponse(pluginPaths, enabledLanguages.stream().map(AnalysisService::toDto).collect(Collectors.toList()), activeNodeJsPath,
+      activeNodeJsVersion, false);
   }
 
   public GetGlobalConfigurationResponse getGlobalConnectedConfiguration(String connectionId) {
     var enabledLanguages = languageSupportRepository.getEnabledLanguagesInConnectedMode();
     var pluginPaths = pluginsService.getConnectedPluginPaths(connectionId);
-    var nodeJsPath = nodeJsService.getNodeJsPath();
-    var nodeJsVersion = nodeJsService.getNodeJsVersion();
-    return new GetGlobalConfigurationResponse(pluginPaths, enabledLanguages.stream().map(AnalysisService::toDto).collect(Collectors.toList()),
-      nodeJsPath, nodeJsVersion != null ? nodeJsVersion.toString() : null, isDataflowBugDetectionEnabled);
+    var activeNodeJs = nodeJsService.getActiveNodeJs();
+    var activeNodeJsPath = activeNodeJs == null ? null : activeNodeJs.getPath();
+    var activeNodeJsVersion = activeNodeJs == null ? null : activeNodeJs.getVersion().toString();
+    return new GetGlobalConfigurationResponse(pluginPaths, enabledLanguages.stream().map(AnalysisService::toDto).collect(Collectors.toList()), activeNodeJsPath,
+      activeNodeJsVersion, isDataflowBugDetectionEnabled);
   }
 
   @NotNull
@@ -431,5 +434,9 @@ public class AnalysisService {
       && storageService.binding(binding).analyzerConfiguration().isValid()
       // this is not strictly for analysis but for tracking
       && storageService.binding(binding).findings().wasEverUpdated();
+  }
+
+  public InstalledNodeJs getAutoDetectedNodeJs() {
+    return nodeJsService.getAutoDetectedNodeJs();
   }
 }
