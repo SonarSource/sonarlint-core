@@ -19,16 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.websocket;
 
+import com.google.common.util.concurrent.MoreExecutors;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.PreDestroy;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.push.SonarServerEvent;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
@@ -48,6 +53,7 @@ import org.springframework.context.event.EventListener;
 import static java.util.Objects.requireNonNull;
 
 public class WebSocketService {
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final Map<String, String> subscribedProjectKeysByConfigScopes = new HashMap<>();
   private final Set<String> connectionIdsInterestedInNotifications = new HashSet<>();
   private final boolean shouldEnableWebSockets;
@@ -57,6 +63,7 @@ public class WebSocketService {
   private final ApplicationEventPublisher eventPublisher;
   protected SonarCloudWebSocket sonarCloudWebSocket;
   private String connectionIdUsedToCreateConnection;
+  private final ExecutorService executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-websocket-subscriber"));
 
   public WebSocketService(ConnectionConfigurationRepository connectionConfigurationRepository, ConfigurationRepository configurationRepository,
     ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider, InitializeParams params,
@@ -69,11 +76,13 @@ public class WebSocketService {
   }
 
   protected void reopenConnectionOnClose() {
-    var connectionId = connectionIdsInterestedInNotifications.stream().findFirst().orElse(null);
-    if (this.sonarCloudWebSocket != null && connectionId != null) {
-      // If connection already exists, close it and create new one before it expires on its own
-      reopenConnection(connectionId, "WebSocket was closed by server or reached EOL");
-    }
+    executorService.submit(() -> {
+      var connectionId = connectionIdsInterestedInNotifications.stream().findFirst().orElse(null);
+      if (this.sonarCloudWebSocket != null && connectionId != null) {
+        // If connection already exists, close it and create new one before it expires on its own
+        reopenConnection(connectionId, "WebSocket was closed by server or reached EOL");
+      }
+    });
   }
 
   @EventListener
@@ -81,7 +90,7 @@ public class WebSocketService {
     if (!shouldEnableWebSockets) {
       return;
     }
-    considerScope(bindingConfigChangedEvent.getConfigScopeId());
+    executorService.submit(() -> considerScope(bindingConfigChangedEvent.getConfigScopeId()));
   }
 
   @EventListener
@@ -89,7 +98,7 @@ public class WebSocketService {
     if (!shouldEnableWebSockets) {
       return;
     }
-    considerAllBoundConfigurationScopes(configurationScopesAddedEvent.getAddedConfigurationScopeIds());
+    executorService.submit(() -> considerAllBoundConfigurationScopes(configurationScopesAddedEvent.getAddedConfigurationScopeIds()));
   }
 
   @EventListener
@@ -98,8 +107,10 @@ public class WebSocketService {
       return;
     }
     var removedConfigurationScopeId = configurationScopeRemovedEvent.getRemovedConfigurationScopeId();
-    forget(removedConfigurationScopeId);
-    closeSocketIfNoMoreNeeded();
+    executorService.submit(() -> {
+      forget(removedConfigurationScopeId);
+      closeSocketIfNoMoreNeeded();
+    });
   }
 
   @EventListener
@@ -108,7 +119,7 @@ public class WebSocketService {
       return;
     }
     // This is only to handle the case where binding was invalid (connection did not exist) and became valid (matching connection was created)
-    considerConnection(connectionConfigurationAddedEvent.getAddedConnectionId());
+    executorService.submit(() -> considerConnection(connectionConfigurationAddedEvent.getAddedConnectionId()));
   }
 
   @EventListener
@@ -117,11 +128,13 @@ public class WebSocketService {
       return;
     }
     var updatedConnectionId = connectionConfigurationUpdatedEvent.getUpdatedConnectionId();
-    if (didDisableNotifications(updatedConnectionId)) {
-      forgetConnection(updatedConnectionId, "Notifications were disabled");
-    } else if (didEnableNotifications(updatedConnectionId)) {
-      considerConnection(updatedConnectionId);
-    }
+    executorService.submit(() -> {
+      if (didDisableNotifications(updatedConnectionId)) {
+        forgetConnection(updatedConnectionId, "Notifications were disabled");
+      } else if (didEnableNotifications(updatedConnectionId)) {
+        considerConnection(updatedConnectionId);
+      }
+    });
   }
 
   @EventListener
@@ -130,7 +143,7 @@ public class WebSocketService {
       return;
     }
     String removedConnectionId = connectionConfigurationRemovedEvent.getRemovedConnectionId();
-    forgetConnection(removedConnectionId, "Connection was removed");
+    executorService.submit(() -> forgetConnection(removedConnectionId, "Connection was removed"));
   }
 
   @EventListener
@@ -139,9 +152,11 @@ public class WebSocketService {
       return;
     }
     var connectionId = connectionCredentialsChangedEvent.getConnectionId();
-    if (isEligibleConnection(connectionId) && connectionIdsInterestedInNotifications.contains(connectionId)) {
-      reopenConnection(connectionId, "Credentials have changed");
-    }
+    executorService.submit(() -> {
+      if (isEligibleConnection(connectionId) && connectionIdsInterestedInNotifications.contains(connectionId)) {
+        reopenConnection(connectionId, "Credentials have changed");
+      }
+    });
   }
 
   private boolean isEligibleConnection(String connectionId) {
@@ -296,6 +311,9 @@ public class WebSocketService {
 
   @PreDestroy
   public void shutdown() {
+    if (!MoreExecutors.shutdownAndAwaitTermination(executorService, 1, TimeUnit.SECONDS)) {
+      LOG.warn("Unable to stop websockets subscriber service in a timely manner");
+    }
     connectionIdsInterestedInNotifications.clear();
     subscribedProjectKeysByConfigScopes.clear();
     closeSocket("Backend is shutting down");
