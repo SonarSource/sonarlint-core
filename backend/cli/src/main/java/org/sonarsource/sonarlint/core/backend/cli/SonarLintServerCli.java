@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.backend.cli;
 
 import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.PrintStream;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
@@ -30,13 +32,20 @@ public class SonarLintServerCli implements Callable<Integer> {
 
   @Override
   public Integer call() {
-    var originalStdIn = System.in;
-    var originalStdOut = System.out;
+    return run(System.in, System.out);
+  }
+
+  int run(InputStream originalStdIn, PrintStream originalStdOut) {
+    var inputStream = new EndOfStreamAwareInputStream(originalStdIn);
     System.setIn(new ByteArrayInputStream(new byte[0]));
     // Redirect all logs to stderr for now, would be better to go to a file later
     System.setOut(System.err);
 
-    try (var rpcLauncher = new BackendJsonRpcLauncher(originalStdIn, originalStdOut)) {
+    try (var rpcLauncher = new BackendJsonRpcLauncher(inputStream, originalStdOut)) {
+      inputStream.onExit().thenRun(() -> {
+        System.err.println("Input stream has closed, exiting...");
+        rpcLauncher.getJavaImpl().shutdown();
+      });
       rpcLauncher.getLauncherFuture().get();
     } catch (CancellationException shutdown) {
       System.err.println("Server is shutting down...");
