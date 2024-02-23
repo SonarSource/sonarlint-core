@@ -108,7 +108,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
 
     this.launcherFuture = launcher.startListening();
 
-    LOG.info("SonarLint backend started");
+    LOG.info("SonarLint backend started, instance={}", this);
   }
 
   public Future<Void> getLauncherFuture() {
@@ -213,6 +213,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
 
   @Override
   public CompletableFuture<Void> shutdown() {
+    LOG.info("SonarLint backend shutting down, instance={}", this);
     var executor = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint Server shutdown"));
     CompletableFuture<Void> future = CompletableFutures.computeAsync(executor, cancelChecker -> {
       SonarLintLogger.setTarget(logOutput);
