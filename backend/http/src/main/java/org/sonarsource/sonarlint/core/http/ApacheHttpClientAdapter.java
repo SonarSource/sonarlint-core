@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.http;
 
+import java.io.InterruptedIOException;
 import java.net.URISyntaxException;
 import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
@@ -157,7 +158,7 @@ class ApacheHttpClientAdapter implements HttpClient {
 
         @Override
         public void failed(Exception cause) {
-          if (cause instanceof CancellationException) {
+          if (cause instanceof CancellationException || cause instanceof InterruptedIOException) {
             return;
           }
           LOG.error("Stream failed", cause);
@@ -268,7 +269,11 @@ class ApacheHttpClientAdapter implements HttpClient {
 
     @Override
     public void cancel() {
-      response.cancel(true);
+      try {
+        response.cancel(true);
+      } catch (Exception e) {
+        // ignore errors
+      }
     }
 
   }
