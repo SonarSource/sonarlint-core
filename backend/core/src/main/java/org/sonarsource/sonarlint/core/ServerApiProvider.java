@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import java.net.URI;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import javax.inject.Named;
@@ -31,7 +32,6 @@ import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
-import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
@@ -49,13 +49,14 @@ public class ServerApiProvider {
   private final ConnectionConfigurationRepository connectionRepository;
   private final ConnectionAwareHttpClientProvider awareHttpClientProvider;
   private final HttpClientProvider httpClientProvider;
+  private final URI sonarCloudUri;
 
-  public ServerApiProvider(ConnectionConfigurationRepository connectionRepository,
-    ConnectionAwareHttpClientProvider awareHttpClientProvider,
-    HttpClientProvider httpClientProvider) {
+  public ServerApiProvider(ConnectionConfigurationRepository connectionRepository, ConnectionAwareHttpClientProvider awareHttpClientProvider, HttpClientProvider httpClientProvider,
+    SonarCloudActiveEnvironment sonarCloudActiveEnvironment) {
     this.connectionRepository = connectionRepository;
     this.awareHttpClientProvider = awareHttpClientProvider;
     this.httpClientProvider = httpClientProvider;
+    this.sonarCloudUri = sonarCloudActiveEnvironment.getUri();
   }
 
   public Optional<ServerApi> getServerApi(String connectionId) {
@@ -68,7 +69,7 @@ public class ServerApiProvider {
   }
 
   public ServerApi getServerApi(String baseUrl, @Nullable String organization, String token) {
-    var params = new EndpointParams(baseUrl, SonarCloudConnectionConfiguration.getSonarCloudUrl().equals(baseUrl), organization);
+    var params = new EndpointParams(baseUrl, sonarCloudUri.toString().equals(baseUrl), organization);
     return new ServerApi(params, httpClientProvider.getHttpClientWithPreemptiveAuth(token));
   }
 
@@ -85,7 +86,7 @@ public class ServerApiProvider {
    * Used to do SonarCloud requests before knowing the organization
    */
   public ServerApi getForSonarCloudNoOrg(Either<TokenDto, UsernamePasswordDto> credentials) {
-    var endpointParams = new EndpointParams(SonarCloudConnectionConfiguration.getSonarCloudUrl(), true, null);
+    var endpointParams = new EndpointParams(sonarCloudUri.toString(), true, null);
     var httpClient = getClientFor(credentials);
     return new ServerApi(new ServerApiHelper(endpointParams, httpClient));
   }
@@ -93,7 +94,7 @@ public class ServerApiProvider {
   public ServerApi getForTransientConnection(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection) {
     var endpointParams = transientConnection.map(
       sq -> new EndpointParams(sq.getServerUrl(), false, null),
-      sc -> new EndpointParams(SonarCloudConnectionConfiguration.getSonarCloudUrl(), true, sc.getOrganization()));
+      sc -> new EndpointParams(sonarCloudUri.toString(), true, sc.getOrganization()));
     var httpClient = getClientFor(transientConnection
       .map(TransientSonarQubeConnectionDto::getCredentials, TransientSonarCloudConnectionDto::getCredentials));
     return new ServerApi(new ServerApiHelper(endpointParams, httpClient));

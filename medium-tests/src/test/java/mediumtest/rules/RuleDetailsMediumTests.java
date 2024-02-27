@@ -23,7 +23,6 @@ import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
@@ -37,21 +36,10 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 class RuleDetailsMediumTests {
 
   private SonarLintTestRpcServer backend;
-  private static String oldSonarCloudUrl;
-
-  @BeforeEach
-  void prepare() {
-    oldSonarCloudUrl = System.getProperty("sonarlint.internal.sonarcloud.url");
-  }
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
     backend.shutdown().get();
-    if (oldSonarCloudUrl == null) {
-      System.clearProperty("sonarlint.internal.sonarcloud.url");
-    } else {
-      System.setProperty("sonarlint.internal.sonarcloud.url", oldSonarCloudUrl);
-    }
   }
 
   @Test
@@ -99,8 +87,8 @@ class RuleDetailsMediumTests {
       .withProject("projectKey",
         project -> project.withBranch("branchName"))
       .start();
-    System.setProperty("sonarlint.internal.sonarcloud.url", server.baseUrl());
     backend = newBackend()
+      .withSonarCloudUrl(server.baseUrl())
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.TEXT)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
       .withServerSentEventsEnabled()

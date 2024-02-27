@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.websocket;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import java.net.URI;
 import java.net.http.WebSocket;
 import java.time.Duration;
 import java.util.Arrays;
@@ -39,8 +40,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.serverapi.push.SonarServerEvent;
 import org.sonarsource.sonarlint.core.http.WebSocketClient;
+import org.sonarsource.sonarlint.core.serverapi.push.SonarServerEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.EventParser;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.IssueChangedEventParser;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.SecurityHotspotChangedEventParser;
@@ -53,10 +54,6 @@ import org.sonarsource.sonarlint.core.websocket.parsing.SmartNotificationEventPa
 public class SonarCloudWebSocket {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-
-  public static String getUrl() {
-    return System.getProperty("sonarlint.internal.sonarcloud.websocket.url", "wss://events-api.sonarcloud.io/");
-  }
 
   private static final Map<String, EventParser<?>> parsersByTypeForProjectFilter = Map.of(
     "QualityGateChanged", new SmartNotificationEventParser("QUALITY_GATE"),
@@ -81,11 +78,12 @@ public class SonarCloudWebSocket {
   private final AtomicBoolean closingInitiated = new AtomicBoolean(false);
   private final CompletableFuture<?> webSocketInputClosed = new CompletableFuture<>();
 
-  public static SonarCloudWebSocket create(WebSocketClient webSocketClient, Consumer<SonarServerEvent> serverEventConsumer, Runnable connectionEndedRunnable) {
+  public static SonarCloudWebSocket create(URI webSocketsEndpointUri, WebSocketClient webSocketClient, Consumer<SonarServerEvent> serverEventConsumer,
+    Runnable connectionEndedRunnable) {
     var webSocket = new SonarCloudWebSocket();
     var currentThreadOutput = SonarLintLogger.getTargetForCopy();
-    LOG.info("Creating websocket connection to " + getUrl());
-    webSocket.wsFuture = webSocketClient.createWebSocketConnection(getUrl(), rawEvent -> webSocket.handleRawMessage(rawEvent, serverEventConsumer), () -> {
+    LOG.info("Creating websocket connection to " + webSocketsEndpointUri);
+    webSocket.wsFuture = webSocketClient.createWebSocketConnection(webSocketsEndpointUri, rawEvent -> webSocket.handleRawMessage(rawEvent, serverEventConsumer), () -> {
       webSocket.webSocketInputClosed.complete(null);
       // Don't call the callback if the closing has been triggered by the client
       if (!webSocket.closingInitiated.get()) {
@@ -100,7 +98,7 @@ public class SonarCloudWebSocket {
     });
     webSocket.wsFuture.exceptionally(t -> {
       SonarLintLogger.setTarget(currentThreadOutput);
-      LOG.error("Error while trying to create websocket connection for " + getUrl(), t);
+      LOG.error("Error while trying to create websocket connection for " + webSocketsEndpointUri, t);
       return null;
     });
     return webSocket;

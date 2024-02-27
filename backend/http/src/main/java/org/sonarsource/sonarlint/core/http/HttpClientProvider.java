@@ -22,16 +22,13 @@ package org.sonarsource.sonarlint.core.http;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.net.ProxySelector;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.Duration;
-import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
+import javax.net.ssl.SSLContext;
 import nl.altindag.ssl.SSLFactory;
 import nl.altindag.ssl.model.TrustManagerParameters;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
@@ -48,6 +45,7 @@ import org.apache.hc.core5.http2.HttpVersionPolicy;
 import org.apache.hc.core5.io.CloseMode;
 import org.apache.hc.core5.util.Timeout;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.http.ssl.SslConfig;
 
 import static org.sonarsource.sonarlint.core.http.ThreadFactories.threadWithNamePrefix;
 
@@ -62,33 +60,22 @@ public class HttpClientProvider {
    * Return an {@link HttpClientProvider} made for testing, with a dummy user agent, and basic configuration regarding proxy/SSL
    */
   public static HttpClientProvider forTesting() {
-    return new HttpClientProvider("SonarLint tests", null, null, ProxySelector.getDefault(), new BasicCredentialsProvider());
+    return new HttpClientProvider("SonarLint tests", new HttpConfig(new SslConfig(null, null), null, null, null, null), null, ProxySelector.getDefault(),
+      new BasicCredentialsProvider());
   }
 
-  public HttpClientProvider(String userAgent, @Nullable Path sonarlintUserHome,
-    @Nullable Predicate<TrustManagerParameters> trustManagerParametersPredicate, ProxySelector proxySelector, CredentialsProvider proxyCredentialsProvider) {
+  public HttpClientProvider(String userAgent, HttpConfig httpConfig, @Nullable Predicate<TrustManagerParameters> trustManagerParametersPredicate, ProxySelector proxySelector,
+    CredentialsProvider proxyCredentialsProvider) {
     this.userAgent = userAgent;
     this.webSocketThreadPool = Executors.newCachedThreadPool(threadWithNamePrefix("sonarcloud-websocket-"));
-    var sslFactoryBuilder = SSLFactory.builder()
-      .withDefaultTrustMaterial()
-      .withSystemTrustMaterial();
-    var sonarlintUserHomeOpt = Optional.ofNullable(sonarlintUserHome);
-    configureKeyStore(sslFactoryBuilder, sonarlintUserHomeOpt);
-    configureTrustStore(trustManagerParametersPredicate, sslFactoryBuilder, sonarlintUserHomeOpt);
-    var connectionConfigBuilder = ConnectionConfig.custom();
-    getTimeoutFromSystemProp("sonarlint.http.connectTimeout").ifPresent(connectionConfigBuilder::setConnectTimeout);
-    getTimeoutFromSystemProp("sonarlint.http.socketTimeout").ifPresent(connectionConfigBuilder::setSocketTimeout);
     var asyncConnectionManager = PoolingAsyncClientConnectionManagerBuilder.create()
-      .setTlsStrategy(new DefaultClientTlsStrategy(sslFactoryBuilder.build().getSslContext()))
+      .setTlsStrategy(new DefaultClientTlsStrategy(configureSsl(httpConfig.getSslConfig(), trustManagerParametersPredicate)))
       .setDefaultTlsConfig(TlsConfig.custom()
         // Force HTTP/1 since we know SQ/SC don't support HTTP/2 ATM
         .setVersionPolicy(HttpVersionPolicy.FORCE_HTTP_1)
         .build())
-      .setDefaultConnectionConfig(connectionConfigBuilder.build())
+      .setDefaultConnectionConfig(buildConnectionConfig(httpConfig.getConnectTimeout(), httpConfig.getSocketTimeout()))
       .build();
-    var requestConfigBuilder = RequestConfig.custom();
-    getTimeoutFromSystemProp("sonarlint.http.connectionRequestTimeout").ifPresent(requestConfigBuilder::setConnectionRequestTimeout);
-    getTimeoutFromSystemProp("sonarlint.http.responseTimeout").ifPresent(requestConfigBuilder::setResponseTimeout);
     this.sharedClient = HttpAsyncClients.custom()
       .setConnectionManager(asyncConnectionManager)
       .addResponseInterceptorFirst(new RedirectInterceptor())
@@ -96,47 +83,48 @@ public class HttpClientProvider {
       // proxy settings
       .setRoutePlanner(new SystemDefaultRoutePlanner(proxySelector))
       .setDefaultCredentialsProvider(proxyCredentialsProvider)
-      .setDefaultRequestConfig(
-        requestConfigBuilder
-          .build())
+      .setDefaultRequestConfig(buildRequestConfig(httpConfig.getConnectionRequestTimeout(), httpConfig.getResponseTimeout()))
       .build();
 
     sharedClient.start();
   }
 
-  private static void configureTrustStore(@Nullable Predicate<TrustManagerParameters> trustManagerParametersPredicate, SSLFactory.Builder sslFactoryBuilder,
-    Optional<Path> sonarlintUserHomeOpt) {
-    if (trustManagerParametersPredicate != null) {
-      var truststorePath = Optional.ofNullable(System.getProperty("sonarlint.ssl.trustStorePath")).map(Paths::get)
-        .orElse(sonarlintUserHomeOpt.map(p -> p.resolve("ssl/truststore.p12")).orElse(null));
-      if (truststorePath != null) {
-        var trustStorePwd = System.getProperty("sonarlint.ssl.trustStorePassword", "sonarlint").toCharArray();
-        var trustStoreType = System.getProperty("sonarlint.ssl.trustStoreType", "PKCS12");
-        sslFactoryBuilder.withInflatableTrustMaterial(truststorePath, trustStorePwd, trustStoreType, trustManagerParametersPredicate);
-      }
+  private static SSLContext configureSsl(SslConfig sslConfig, @Nullable Predicate<TrustManagerParameters> trustManagerParametersPredicate) {
+    var sslFactoryBuilder = SSLFactory.builder()
+      .withDefaultTrustMaterial()
+      .withSystemTrustMaterial();
+    var keyStore = sslConfig.getKeyStore();
+    if (keyStore != null && Files.exists(keyStore.getPath())) {
+      sslFactoryBuilder.withIdentityMaterial(keyStore.getPath(), keyStore.getKeyStorePassword().toCharArray(), keyStore.getKeyStoreType());
     }
+    var trustStore = sslConfig.getTrustStore();
+    if (trustStore != null) {
+      sslFactoryBuilder.withInflatableTrustMaterial(trustStore.getPath(), trustStore.getKeyStorePassword().toCharArray(), trustStore.getKeyStoreType(),
+        trustManagerParametersPredicate);
+    }
+    return sslFactoryBuilder.build().getSslContext();
   }
 
-  private static void configureKeyStore(SSLFactory.Builder sslFactoryBuilder, Optional<Path> sonarlintUserHomeOpt) {
-    var keystorePath = Optional.ofNullable(System.getProperty("sonarlint.ssl.keyStorePath")).map(Paths::get)
-      .orElse(sonarlintUserHomeOpt.map(p -> p.resolve("ssl/keystore.p12")).orElse(null));
-    if (keystorePath != null && Files.exists(keystorePath)) {
-      var keyStorePwd = System.getProperty("sonarlint.ssl.keyStorePassword", "sonarlint").toCharArray();
-      var keyStoreType = System.getProperty("sonarlint.ssl.keyStoreType", "PKCS12");
-      sslFactoryBuilder.withIdentityMaterial(keystorePath, keyStorePwd, keyStoreType);
+  private static ConnectionConfig buildConnectionConfig(@Nullable Timeout connectTimeout, @Nullable Timeout socketTimeout) {
+    var connectionConfig = ConnectionConfig.custom();
+    if (connectTimeout != null) {
+      connectionConfig.setConnectTimeout(connectTimeout);
     }
+    if (socketTimeout != null) {
+      connectionConfig.setSocketTimeout(socketTimeout);
+    }
+    return connectionConfig.build();
   }
 
-  private static Optional<Timeout> getTimeoutFromSystemProp(String key) {
-    return Optional.ofNullable(System.getProperty(key))
-      .map(s -> {
-        try {
-          return Duration.ofMinutes(Integer.parseInt(s));
-        } catch (NumberFormatException e) {
-          return Duration.parse(s);
-        }
-      })
-      .map(d -> Timeout.of(d.toMillis(), TimeUnit.MILLISECONDS));
+  private static RequestConfig buildRequestConfig(@Nullable Timeout connectionRequestTimeout, @Nullable Timeout responseTimeout) {
+    var requestConfig = RequestConfig.custom();
+    if (connectionRequestTimeout != null) {
+      requestConfig.setConnectionRequestTimeout(connectionRequestTimeout);
+    }
+    if (responseTimeout != null) {
+      requestConfig.setResponseTimeout(responseTimeout);
+    }
+    return requestConfig.build();
   }
 
   public HttpClient getHttpClient() {

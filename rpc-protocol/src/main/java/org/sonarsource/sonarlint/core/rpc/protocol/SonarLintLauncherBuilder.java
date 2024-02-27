@@ -20,7 +20,9 @@
 package org.sonarsource.sonarlint.core.rpc.protocol;
 
 import com.google.gson.GsonBuilder;
+import java.net.URI;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
@@ -29,10 +31,12 @@ import org.eclipse.lsp4j.jsonrpc.json.JsonRpcMethod;
 import org.eclipse.lsp4j.jsonrpc.json.MessageJsonHandler;
 import org.eclipse.lsp4j.jsonrpc.json.adapters.EitherTypeAdapter;
 import org.eclipse.lsp4j.jsonrpc.json.adapters.MessageTypeAdapter;
+import org.sonarsource.sonarlint.core.rpc.protocol.adapter.DurationTypeAdapter;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherServerOrLocalHotspotAdapterFactory;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherServerOrLocalIssueAdapterFactory;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.InstantTypeAdapter;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.PathTypeAdapter;
+import org.sonarsource.sonarlint.core.rpc.protocol.adapter.UriTypeAdapter;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.UuidTypeAdapter;
 
 /**
@@ -56,7 +60,9 @@ public class SonarLintLauncherBuilder<T> extends Launcher.Builder<T> {
           .registerTypeAdapterFactory(new MessageTypeAdapter.Factory(this))
           .registerTypeHierarchyAdapter(Path.class, new PathTypeAdapter())
           .registerTypeHierarchyAdapter(Instant.class, new InstantTypeAdapter())
-          .registerTypeHierarchyAdapter(UUID.class, new UuidTypeAdapter());
+          .registerTypeHierarchyAdapter(UUID.class, new UuidTypeAdapter())
+          .registerTypeHierarchyAdapter(URI.class, new UriTypeAdapter())
+          .registerTypeHierarchyAdapter(Duration.class, new DurationTypeAdapter());
       }
     };
   }

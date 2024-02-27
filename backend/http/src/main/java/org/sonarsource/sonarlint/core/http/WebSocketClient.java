@@ -51,14 +51,14 @@ public class WebSocketClient {
       .build();
   }
 
-  public CompletableFuture<WebSocket> createWebSocketConnection(String url, Consumer<String> messageConsumer, Runnable onClosedRunnable) {
+  public CompletableFuture<WebSocket> createWebSocketConnection(URI uri, Consumer<String> messageConsumer, Runnable onClosedRunnable) {
     // TODO handle handshake or other errors
     var currentThreadOutput = SonarLintLogger.getTargetForCopy();
     return httpClient
       .newWebSocketBuilder()
       .header(AUTHORIZATION_HEADER_NAME, "Bearer " + token)
       .header(USER_AGENT_HEADER_NAME, userAgent)
-      .buildAsync(URI.create(url), new MessageConsumerWrapper(messageConsumer, onClosedRunnable, currentThreadOutput));
+      .buildAsync(uri, new MessageConsumerWrapper(messageConsumer, onClosedRunnable, currentThreadOutput));
   }
 
   private static class MessageConsumerWrapper implements WebSocket.Listener {

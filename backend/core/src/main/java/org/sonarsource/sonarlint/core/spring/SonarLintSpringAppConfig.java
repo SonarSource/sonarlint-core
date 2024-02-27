@@ -24,9 +24,13 @@ import java.net.ProxySelector;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Optional;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import javax.inject.Named;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
+import org.apache.hc.core5.util.Timeout;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingClueProvider;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
@@ -34,6 +38,7 @@ import org.sonarsource.sonarlint.core.ConfigurationService;
 import org.sonarsource.sonarlint.core.ConnectionService;
 import org.sonarsource.sonarlint.core.OrganizationsCache;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.TokenGeneratorHelper;
 import org.sonarsource.sonarlint.core.VersionSoonUnsupportedHelper;
@@ -57,6 +62,9 @@ import org.sonarsource.sonarlint.core.http.ClientProxyCredentialsProvider;
 import org.sonarsource.sonarlint.core.http.ClientProxySelector;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
+import org.sonarsource.sonarlint.core.http.HttpConfig;
+import org.sonarsource.sonarlint.core.http.ssl.CertificateStore;
+import org.sonarsource.sonarlint.core.http.ssl.SslConfig;
 import org.sonarsource.sonarlint.core.issue.IssueService;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
@@ -66,7 +74,9 @@ import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SslConfigurationDto;
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
 import org.sonarsource.sonarlint.core.rules.RulesService;
 import org.sonarsource.sonarlint.core.server.event.ServerEventsService;
@@ -92,6 +102,9 @@ import org.springframework.context.annotation.Import;
 import org.springframework.context.event.ApplicationEventMulticaster;
 import org.springframework.context.event.SimpleApplicationEventMulticaster;
 import org.springframework.scheduling.support.TaskUtils;
+
+import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_PASSWORD;
+import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_STORE_TYPE;
 
 @Configuration
 // Can't use classpath scanning in OSGi, so waiting to move out of process, we have to declare our beans manually
@@ -185,10 +198,48 @@ public class SonarLintSpringAppConfig {
   }
 
   @Bean
+  SonarCloudActiveEnvironment provideSonarCloudActiveEnvironment(InitializeParams params) {
+    var alternativeSonarCloudEnv = params.getAlternativeSonarCloudEnvironment();
+    return alternativeSonarCloudEnv == null ? SonarCloudActiveEnvironment.prod()
+      : new SonarCloudActiveEnvironment(alternativeSonarCloudEnv.getUri(), alternativeSonarCloudEnv.getWebSocketsEndpointUri());
+  }
+
+  @Bean
   HttpClientProvider provideHttpClientProvider(InitializeParams params, @Named("userHome") Path sonarlintUserHome, AskClientCertificatePredicate askClientCertificatePredicate,
-    ProxySelector proxySelector,
-    CredentialsProvider proxyCredentialsProvider) {
-    return new HttpClientProvider(params.getClientConstantInfo().getUserAgent(), sonarlintUserHome, askClientCertificatePredicate, proxySelector, proxyCredentialsProvider);
+    ProxySelector proxySelector, CredentialsProvider proxyCredentialsProvider) {
+    return new HttpClientProvider(params.getClientConstantInfo().getUserAgent(), adapt(params.getHttpConfiguration(), sonarlintUserHome), askClientCertificatePredicate,
+      proxySelector, proxyCredentialsProvider);
+  }
+
+  private static HttpConfig adapt(HttpConfigurationDto dto, @Nullable Path sonarlintUserHome) {
+    return new HttpConfig(adapt(dto.getSslConfiguration(), sonarlintUserHome), toTimeout(dto.getConnectTimeout()), toTimeout(dto.getSocketTimeout()),
+      toTimeout(dto.getConnectionRequestTimeout()), toTimeout(dto.getResponseTimeout()));
+  }
+
+  private static SslConfig adapt(SslConfigurationDto dto, @Nullable Path sonarlintUserHome) {
+    return new SslConfig(
+      adaptStore(dto.getKeyStorePath(), dto.getKeyStorePassword(), dto.getKeyStoreType(), sonarlintUserHome, "keystore"),
+      adaptStore(dto.getTrustStorePath(), dto.getTrustStorePassword(), dto.getTrustStoreType(), sonarlintUserHome, "truststore"));
+  }
+
+  private static CertificateStore adaptStore(@Nullable Path storePathConfig, @Nullable String storePasswordConfig, @Nullable String storeTypeConfig,
+    @Nullable Path sonarlintUserHome,
+    String defaultStoreName) {
+    var storePath = storePathConfig;
+    if (storePath == null && sonarlintUserHome != null) {
+      storePath = sonarlintUserHome.resolve("ssl/" + defaultStoreName + ".p12");
+    }
+    if (storePath != null) {
+      var keyStorePassword = storePasswordConfig == null ? DEFAULT_PASSWORD : storePasswordConfig;
+      var keyStoreType = storeTypeConfig == null ? DEFAULT_STORE_TYPE : storeTypeConfig;
+      return new CertificateStore(storePath, keyStorePassword, keyStoreType);
+    }
+    return null;
+  }
+
+  @CheckForNull
+  private static Timeout toTimeout(@Nullable Duration duration) {
+    return duration == null ? null : Timeout.of(duration);
   }
 
   private static void createFolderIfNeeded(Path path) {

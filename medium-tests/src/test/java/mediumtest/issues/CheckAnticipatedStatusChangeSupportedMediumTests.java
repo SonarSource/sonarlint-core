@@ -25,7 +25,6 @@ import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckAnticipatedStatusChangeSupportedParams;
@@ -40,23 +39,11 @@ class CheckAnticipatedStatusChangeSupportedMediumTests {
 
   @RegisterExtension
   public final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
-  private String oldSonarCloudUrl;
-
-  @BeforeEach
-  void prepare() {
-    oldSonarCloudUrl = System.getProperty("sonarlint.internal.sonarcloud.url");
-  }
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
     backend.shutdown().get();
     mockWebServerExtension.shutdown();
-
-    if (oldSonarCloudUrl == null) {
-      System.clearProperty("sonarlint.internal.sonarcloud.url");
-    } else {
-      System.setProperty("sonarlint.internal.sonarcloud.url", oldSonarCloudUrl);
-    }
   }
 
   @Test
@@ -74,6 +61,7 @@ class CheckAnticipatedStatusChangeSupportedMediumTests {
   @Test
   void it_should_not_be_available_for_sonarcloud() {
     backend = newBackend()
+      .withSonarCloudUrl(mockWebServerExtension.endpointParams().getBaseUrl())
       .withSonarCloudConnection("connectionId", "orgKey")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();

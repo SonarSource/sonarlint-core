@@ -32,7 +32,6 @@ import mockwebserver3.MockResponse;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
@@ -60,12 +59,6 @@ class CheckResolutionStatusChangePermittedMediumTests {
   private ServerFixture.Server server;
   @RegisterExtension
   public final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
-  private String oldSonarCloudUrl;
-
-  @BeforeEach
-  void prepare() {
-    oldSonarCloudUrl = System.getProperty("sonarlint.internal.sonarcloud.url");
-  }
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
@@ -75,12 +68,6 @@ class CheckResolutionStatusChangePermittedMediumTests {
       server = null;
     }
     mockWebServerExtension.shutdown();
-
-    if (oldSonarCloudUrl == null) {
-      System.clearProperty("sonarlint.internal.sonarcloud.url");
-    } else {
-      System.setProperty("sonarlint.internal.sonarcloud.url", oldSonarCloudUrl);
-    }
   }
 
   @Test
@@ -134,8 +121,8 @@ class CheckResolutionStatusChangePermittedMediumTests {
   @Test
   void it_should_allow_2_statuses_when_user_has_permission_for_sonarcloud() {
     fakeServerWithIssue("issueKey", "orgKey", List.of("wontfix", "falsepositive"));
-    System.setProperty("sonarlint.internal.sonarcloud.url", mockWebServerExtension.endpointParams().getBaseUrl());
     backend = newBackend()
+      .withSonarCloudUrl(mockWebServerExtension.endpointParams().getBaseUrl())
       .withSonarCloudConnection("connectionId", "orgKey")
       .build();
 

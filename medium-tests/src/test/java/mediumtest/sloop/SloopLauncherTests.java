@@ -49,6 +49,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.Configur
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
@@ -124,7 +125,7 @@ class SloopLauncherTests {
     var clientInfo = new ClientConstantInfoDto("clientName", "integrationTests");
     var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false, false, false);
 
-    server.initialize(new InitializeParams(clientInfo, telemetryInitDto, featureFlags, sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
+    server.initialize(new InitializeParams(clientInfo, telemetryInitDto, HttpConfigurationDto.defaultConfig(), null, featureFlags, sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
       Set.of(PluginLocator.getPhpPluginPath().toAbsolutePath()), Collections.emptyMap(), Set.of(PHP), Collections.emptySet(), Collections.emptyList(),
       Collections.emptyList(), sonarUserHome.toString(), Map.of(), false, null)).get();
 
@@ -144,7 +145,7 @@ class SloopLauncherTests {
       "1.2.3", "4.5.6", Collections.emptyMap());
     var clientInfo = new ClientConstantInfoDto("clientName", "integrationTests");
     var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false, false, false);
-    server.initialize(new InitializeParams(clientInfo, telemetryInitDto, featureFlags, sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
+    server.initialize(new InitializeParams(clientInfo, telemetryInitDto, HttpConfigurationDto.defaultConfig(), null, featureFlags, sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
       Set.of(PluginLocator.getPhpPluginPath().toAbsolutePath()), Collections.emptyMap(), Set.of(PHP), Collections.emptySet(), Collections.emptyList(),
       Collections.emptyList(), sonarUserHome.toString(), Map.of(), false, null)).join();
     sloop.onExit().thenAccept(exitValue -> this.exitValue = exitValue);

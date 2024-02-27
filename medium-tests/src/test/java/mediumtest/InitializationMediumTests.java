@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
 
@@ -52,7 +53,7 @@ class InitializationMediumTests {
       .build();
     var telemetryInitDto = new TelemetryClientConstantAttributesDto("mediumTests", "mediumTests", "1.2.3", "4.5.6", emptyMap());
     var future = backend
-      .initialize(new InitializeParams(new ClientConstantInfoDto("name", "productKey"), telemetryInitDto, new FeatureFlagsDto(false, false, false, false, false, false, false, false),
+      .initialize(new InitializeParams(new ClientConstantInfoDto("name", "productKey"), telemetryInitDto, HttpConfigurationDto.defaultConfig(), null, new FeatureFlagsDto(false, false, false, false, false, false, false, false),
         Path.of("unused"), Path.of("unused"),
         emptySet(), emptyMap(), emptySet(), emptySet(),
         emptyList(), emptyList(), "home", emptyMap(), false, null));

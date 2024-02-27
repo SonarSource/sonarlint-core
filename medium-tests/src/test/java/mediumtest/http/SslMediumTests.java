@@ -37,9 +37,7 @@ import nl.altindag.ssl.util.CertificateUtils;
 import nl.altindag.ssl.util.KeyStoreUtils;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -83,11 +81,6 @@ class SslMediumTests {
     }
   }
 
-  @AfterAll
-  static void clearSonarCloudUrl() {
-    System.clearProperty("sonarlint.internal.sonarcloud.url");
-  }
-
   @Nested
   // TODO Can be removed when switching to Java 16+ and changing sonarcloudMock and mockSonarCloudUrl() to static
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -101,11 +94,6 @@ class SslMediumTests {
         .keystorePassword(KEYSTORE_PWD)
         .keyManagerPassword(KEYSTORE_PWD))
       .build();
-
-    @BeforeAll
-    void mockSonarCloudUrl() {
-      System.setProperty("sonarlint.internal.sonarcloud.url", sonarcloudMock.baseUrl());
-    }
 
     @BeforeEach
     void prepare() {
@@ -128,7 +116,9 @@ class SslMediumTests {
     @Test
     void it_should_not_trust_server_self_signed_certificate_by_default() {
       var fakeClient = newFakeClient().build();
-      backend = newBackend().build(fakeClient);
+      backend = newBackend()
+        .withSonarCloudUrl(sonarcloudMock.baseUrl())
+        .build(fakeClient);
 
       var future = backend.getConnectionService().getOrganization(new GetOrganizationParams(Either.forLeft(new TokenDto("token")), "myOrg"));
       var thrown = assertThrows(CompletionException.class, future::join);
@@ -140,7 +130,9 @@ class SslMediumTests {
     void it_should_ask_user_only_once_if_server_certificate_is_trusted() throws ExecutionException, InterruptedException, KeyStoreException {
       var fakeClient = newFakeClient().build();
 
-      backend = newBackend().build(fakeClient);
+      backend = newBackend()
+        .withSonarCloudUrl(sonarcloudMock.baseUrl())
+        .build(fakeClient);
 
       when(fakeClient.checkServerTrusted(any(), any()))
         .thenReturn(true);
@@ -186,11 +178,6 @@ class SslMediumTests {
         .trustStorePassword("pwdServerWithClientCA"))
       .build();
 
-    @BeforeAll
-    void mockSonarCloudUrl() {
-      System.setProperty("sonarlint.internal.sonarcloud.url", sonarcloudMock.baseUrl());
-    }
-
     @BeforeEach
     void prepare() {
       sonarcloudMock.stubFor(get("/api/organizations/search.protobuf?organizations=myOrg&ps=500&p=1")
@@ -209,15 +196,12 @@ class SslMediumTests {
             .build()))));
     }
 
-    @AfterEach
-    void cleanup() {
-      System.clearProperty("sonarlint.ssl.keyStorePath");
-    }
-
     @Test
     void it_should_fail_if_client_certificate_not_provided() {
       var fakeClient = newFakeClient().build();
-      backend = newBackend().build(fakeClient);
+      backend = newBackend()
+        .withSonarCloudUrl(sonarcloudMock.baseUrl())
+        .build(fakeClient);
 
       when(fakeClient.checkServerTrusted(any(), any()))
         .thenReturn(true);
@@ -232,11 +216,11 @@ class SslMediumTests {
 
     @Test
     void it_should_succeed_if_client_certificate_provided() {
-
-      System.setProperty("sonarlint.ssl.keyStorePath", toPath(Objects.requireNonNull(SslMediumTests.class.getResource("/ssl/client.p12"))).toString());
-      System.setProperty("sonarlint.ssl.keyStorePassword", "pwdClientCertP12");
       var fakeClient = newFakeClient().build();
-      backend = newBackend().build(fakeClient);
+      backend = newBackend()
+        .withKeyStore(toPath(Objects.requireNonNull(SslMediumTests.class.getResource("/ssl/client.p12"))), "pwdClientCertP12", null)
+        .withSonarCloudUrl(sonarcloudMock.baseUrl())
+        .build(fakeClient);
 
       when(fakeClient.checkServerTrusted(any(), any()))
         .thenReturn(true);

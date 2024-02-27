@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -89,7 +90,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.S
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarCloudAlternativeEnvironmentDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
@@ -125,7 +128,8 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.XML;
 @Tag("SonarCloud")
 class SonarCloudTests extends AbstractConnectedTests {
   private static final String SONAR_JAVA_FILE_SUFFIXES = "sonar.java.file.suffixes";
-  private static final String SONARCLOUD_STAGING_URL = "https://sc-staging.io";
+  private static final URI SONARCLOUD_STAGING_URL = URI.create("https://sc-staging.io");
+  private static final URI SONARCLOUD_WEBSOCKETS_STAGING_URL = URI.create("wss://events-api.sc-staging.io/");
   private static final String SONARCLOUD_ORGANIZATION = "sonarlint-it";
   private static final String SONARCLOUD_USER = "sonarlint-it";
   private static final String SONARCLOUD_PASSWORD = System.getenv("SONARCLOUD_IT_PASSWORD");
@@ -152,8 +156,6 @@ class SonarCloudTests extends AbstractConnectedTests {
 
   @BeforeAll
   static void prepare() throws Exception {
-    System.setProperty("sonarlint.internal.sonarcloud.url", SONARCLOUD_STAGING_URL);
-
     var clientToServerOutputStream = new PipedOutputStream();
     var clientToServerInputStream = new PipedInputStream(clientToServerOutputStream);
 
@@ -167,7 +169,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     var languages = Set.of(JAVA, PHP, JS, PYTHON, HTML, RUBY, KOTLIN, SCALA, XML);
     var featureFlags = new FeatureFlagsDto(false, true, true, false, true, true, false, true);
     backend.initialize(
-      new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, featureFlags, sonarUserHome.resolve("storage"),
+      new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(), new SonarCloudAlternativeEnvironmentDto(SONARCLOUD_STAGING_URL, SONARCLOUD_WEBSOCKETS_STAGING_URL), featureFlags, sonarUserHome.resolve("storage"),
         sonarUserHome.resolve("work"), emptySet(), emptyMap(), languages, emptySet(), emptyList(),
         List.of(new SonarCloudConnectionConfigurationDto(CONNECTION_ID, SONARCLOUD_ORGANIZATION, true)), sonarUserHome.toString(),
         emptyMap(), false, null));
@@ -641,7 +643,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
   public static WsClient newAdminWsClient() {
     return WsClientFactories.getDefault().newClient(HttpConnector.newBuilder()
-      .url(SONARCLOUD_STAGING_URL)
+      .url(SONARCLOUD_STAGING_URL.toString())
       .credentials(SONARCLOUD_USER, SONARCLOUD_PASSWORD)
       .build());
   }
