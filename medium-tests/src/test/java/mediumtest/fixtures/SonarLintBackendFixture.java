@@ -26,6 +26,7 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -49,6 +50,7 @@ import mediumtest.fixtures.storage.StorageFixture;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.jetbrains.annotations.NotNull;
+import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
@@ -60,7 +62,10 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.Son
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarCloudAlternativeEnvironmentDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SslConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
@@ -131,6 +136,12 @@ public class SonarLintBackendFixture {
     private boolean enableDataflowBugDetection;
 
     private Path clientNodeJsPath;
+    private String sonarCloudUrl;
+    private String sonarCloudWebSocketsUrl;
+    private Duration responseTimeout;
+    private Path keyStorePath;
+    private String keyStorePassword;
+    private String keyStoreType;
 
     public SonarLintBackendBuilder withSonarQubeConnection() {
       return withSonarQubeConnection("connectionId");
@@ -188,6 +199,16 @@ public class SonarLintBackendFixture {
       var storage = newStorage(connectionId);
       storageBuilder.accept(storage);
       storages.add(storage);
+      return this;
+    }
+
+    public SonarLintBackendBuilder withSonarCloudUrl(String sonarCloudUrl) {
+      this.sonarCloudUrl = sonarCloudUrl;
+      return this;
+    }
+
+    public SonarLintBackendBuilder withSonarCloudWebSocketsUrl(String sonarCloudWebSocketsUrl) {
+      this.sonarCloudWebSocketsUrl = sonarCloudWebSocketsUrl;
       return this;
     }
 
@@ -355,6 +376,18 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintBackendBuilder withHttpResponseTimeout(Duration responseTimeout) {
+      this.responseTimeout = responseTimeout;
+      return this;
+    }
+
+    public SonarLintBackendBuilder withKeyStore(Path keyStorePath, String password, String storeType) {
+      this.keyStorePath = keyStorePath;
+      this.keyStorePassword = password;
+      this.keyStoreType = storeType;
+      return this;
+    }
+
     public SonarLintTestRpcServer build(SonarLintRpcClientDelegate client) {
       var sonarlintUserHome = tempDirectory("slUserHome");
       var workDir = tempDirectory("work");
@@ -372,8 +405,19 @@ public class SonarLintBackendFixture {
         var featureFlags = new FeatureFlagsDto(manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, startEmbeddedServer, areSecurityHotspotsEnabled,
           manageServerSentEvents, enableDataflowBugDetection, shouldManageFullSynchronization);
 
+        SonarCloudAlternativeEnvironmentDto sonarCloudAlternativeEnvironment = null;
+        if (sonarCloudUrl != null || sonarCloudWebSocketsUrl != null) {
+          sonarCloudAlternativeEnvironment = new SonarCloudAlternativeEnvironmentDto(
+            sonarCloudUrl == null ? SonarCloudActiveEnvironment.PRODUCTION_URI : URI.create(sonarCloudUrl),
+            sonarCloudWebSocketsUrl == null ? SonarCloudActiveEnvironment.prod().getWebSocketsEndpointUri() : URI.create(sonarCloudWebSocketsUrl));
+        }
+
+        var sslConfiguration = new SslConfigurationDto(null, null, null, keyStorePath, keyStorePassword, keyStoreType);
+        var httpConfiguration = new HttpConfigurationDto(sslConfiguration, null, null, null, responseTimeout);
         sonarLintBackend
-          .initialize(new InitializeParams(clientInfo, telemetryInitDto, featureFlags,
+          .initialize(new InitializeParams(clientInfo, telemetryInitDto, httpConfiguration,
+            sonarCloudAlternativeEnvironment,
+            featureFlags,
             storageRoot, workDir, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
             enabledLanguages, extraEnabledLanguagesInConnectedMode, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
             standaloneConfigByKey, isFocusOnNewCode, clientNodeJsPath))
@@ -425,7 +469,6 @@ public class SonarLintBackendFixture {
           return readLength;
         }
       };
-
 
       var serverLauncher = new BackendJsonRpcLauncher(clientToServerInputStream, serverToClientOutputStream);
 
@@ -641,7 +684,8 @@ public class SonarLintBackendFixture {
     public void log(LogParams params) {
       this.logs.add(params);
       if (printLogsToStdOut) {
-        System.out.println((params.getThreadName() != null ? ("[" + params.getThreadName() + "] ") : "") + params.getLevel() + " " + (params.getConfigScopeId() != null ? ("[" + params.getConfigScopeId() + "] ") : "") + params.getMessage());
+        System.out.println((params.getThreadName() != null ? ("[" + params.getThreadName() + "] ") : "") + params.getLevel() + " "
+          + (params.getConfigScopeId() != null ? ("[" + params.getConfigScopeId() + "] ") : "") + params.getMessage());
       }
     }
 

@@ -19,22 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
 
-import org.junit.jupiter.api.Test;
+import java.net.URI;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+public class SonarCloudAlternativeEnvironmentDto {
+  private final URI uri;
+  private final URI webSocketsEndpointUri;
 
-class InitializeParamsTests {
-
-  @Test
-  void should_replace_null_collections_by_empty() {
-    var params = new InitializeParams(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, false, null);
-    assertNotNull(params.getEmbeddedPluginPaths());
-    assertNotNull(params.getConnectedModeEmbeddedPluginPathsByKey());
-    assertNotNull(params.getEnabledLanguagesInStandaloneMode());
-    assertNotNull(params.getExtraEnabledLanguagesInConnectedMode());
-    assertNotNull(params.getSonarQubeConnections());
-    assertNotNull(params.getSonarCloudConnections());
-    assertNotNull(params.getStandaloneRuleConfigByKey());
+  public SonarCloudAlternativeEnvironmentDto(URI uri, URI webSocketsEndpointUri) {
+    this.uri = uri;
+    this.webSocketsEndpointUri = webSocketsEndpointUri;
   }
 
+  public URI getUri() {
+    return uri;
+  }
+
+  public URI getWebSocketsEndpointUri() {
+    return webSocketsEndpointUri;
+  }
 }

@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core;
 
 import java.io.StringReader;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -42,7 +43,6 @@ import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.StringUtils.removeEnd;
 import static org.apache.commons.lang.StringUtils.trimToNull;
 import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singlePlural;
-import static org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration.getSonarCloudUrl;
 
 @Named
 @Singleton
@@ -56,10 +56,12 @@ public class BindingClueProvider {
 
   private final ConnectionConfigurationRepository connectionRepository;
   private final ClientFileSystemService clientFs;
+  private final URI sonarCloudUri;
 
-  public BindingClueProvider(ConnectionConfigurationRepository connectionRepository, ClientFileSystemService clientFs) {
+  public BindingClueProvider(ConnectionConfigurationRepository connectionRepository, ClientFileSystemService clientFs, SonarCloudActiveEnvironment sonarCloudActiveEnvironment) {
     this.connectionRepository = connectionRepository;
     this.clientFs = clientFs;
+    this.sonarCloudUri = sonarCloudActiveEnvironment.getUri();
   }
 
   public List<BindingClueWithConnections> collectBindingCluesWithConnections(String configScopeId, Set<String> connectionIds, SonarLintCancelMonitor cancelMonitor) {
@@ -170,7 +172,7 @@ public class BindingClueProvider {
   }
 
   @CheckForNull
-  private static BindingClue computeBindingClue(String filename, ScannerProperties scannerProps) {
+  private BindingClue computeBindingClue(String filename, ScannerProperties scannerProps) {
     if (AUTOSCAN_CONFIG_FILENAME.equals(filename)) {
       return new SonarCloudBindingClue(scannerProps.projectKey, scannerProps.organization);
     }
@@ -178,7 +180,7 @@ public class BindingClueProvider {
       return new SonarCloudBindingClue(scannerProps.projectKey, scannerProps.organization);
     }
     if (scannerProps.serverUrl != null) {
-      if (removeEnd(scannerProps.serverUrl, "/").equals(getSonarCloudUrl())) {
+      if (removeEnd(scannerProps.serverUrl, "/").equals(sonarCloudUri.toString())) {
         return new SonarCloudBindingClue(scannerProps.projectKey, null);
       } else {
         return new SonarQubeBindingClue(scannerProps.projectKey, scannerProps.serverUrl);

@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import java.net.URI;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -41,7 +42,7 @@ class ServerApiProviderTests {
   private final ConnectionConfigurationRepository connectionRepository = mock(ConnectionConfigurationRepository.class);
   private final ConnectionAwareHttpClientProvider awareHttpClientProvider = mock(ConnectionAwareHttpClientProvider.class);
   private final HttpClientProvider httpClientProvider = mock(HttpClientProvider.class);
-  private final ServerApiProvider underTest = new ServerApiProvider(connectionRepository, awareHttpClientProvider, httpClientProvider);
+  private final ServerApiProvider underTest = new ServerApiProvider(connectionRepository, awareHttpClientProvider, httpClientProvider, SonarCloudActiveEnvironment.prod());
 
   @Test
   void getServerApi_for_sonarqube() {
@@ -81,7 +82,7 @@ class ServerApiProviderTests {
     var httpClient = mock(HttpClient.class);
     when(httpClientProvider.getHttpClientWithPreemptiveAuth("token")).thenReturn(httpClient);
 
-    var serverApi = underTest.getServerApi(SonarCloudConnectionConfiguration.getSonarCloudUrl(), "organization", "token");
+    var serverApi = underTest.getServerApi("https://sonarcloud.io", "organization", "token");
     assertThat(serverApi.isSonarCloud()).isTrue();
   }
 
@@ -98,7 +99,7 @@ class ServerApiProviderTests {
 
   @Test
   void getServerApi_returns_empty_if_client_cant_provide_httpclient() {
-    when(connectionRepository.getConnectionById("sc1")).thenReturn(new SonarCloudConnectionConfiguration("sc1", "myorg", true));
+    when(connectionRepository.getConnectionById("sc1")).thenReturn(new SonarCloudConnectionConfiguration(URI.create("http://server1"), "sc1", "myorg", true));
     when(awareHttpClientProvider.getHttpClient("sc1")).thenReturn(null);
 
     var serverApi = underTest.getServerApi("sc1");

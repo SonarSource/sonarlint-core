@@ -26,9 +26,7 @@ import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.assertj.core.api.Assertions;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.FuzzySearchUserOrganizationsParams;
@@ -61,21 +59,12 @@ class OrganizationMediumTests {
     .options(wireMockConfig().dynamicPort())
     .build();
 
-  @BeforeAll
-  static void mockSonarCloudUrl() {
-    System.setProperty("sonarlint.internal.sonarcloud.url", sonarcloudMock.baseUrl());
-  }
-
-  @AfterAll
-  static void clearSonarCloudUrl() {
-    System.clearProperty("sonarlint.internal.sonarcloud.url");
-  }
-
   @Test
   void it_should_list_empty_user_organizations() throws ExecutionException, InterruptedException {
     var fakeClient = newFakeClient()
       .build();
     backend = newBackend()
+      .withSonarCloudUrl(sonarcloudMock.baseUrl())
       .build(fakeClient);
     sonarcloudMock.stubFor(get("/api/organizations/search.protobuf?member=true&ps=500&p=1")
       .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Organizations.SearchWsResponse.newBuilder()
@@ -88,10 +77,9 @@ class OrganizationMediumTests {
 
   @Test
   void it_should_list_user_organizations() throws ExecutionException, InterruptedException {
-    var fakeClient = newFakeClient()
-      .build();
     backend = newBackend()
-      .build(fakeClient);
+      .withSonarCloudUrl(sonarcloudMock.baseUrl())
+      .build();
     sonarcloudMock.stubFor(get("/api/organizations/search.protobuf?member=true&ps=500&p=1")
       .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Organizations.SearchWsResponse.newBuilder()
         .addOrganizations(Organizations.Organization.newBuilder()
@@ -121,10 +109,9 @@ class OrganizationMediumTests {
 
   @Test
   void it_should_get_organizations_by_key() throws ExecutionException, InterruptedException {
-    var fakeClient = newFakeClient()
-      .build();
     backend = newBackend()
-      .build(fakeClient);
+      .withSonarCloudUrl(sonarcloudMock.baseUrl())
+      .build();
     sonarcloudMock.stubFor(get("/api/organizations/search.protobuf?organizations=myCustomOrg&ps=500&p=1")
       .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Organizations.SearchWsResponse.newBuilder()
         .addOrganizations(Organizations.Organization.newBuilder()
@@ -149,10 +136,9 @@ class OrganizationMediumTests {
 
   @Test
   void it_should_fuzzy_search_and_cache_organizations_on_sonarcloud() {
-    var fakeClient = newFakeClient()
-      .build();
     backend = newBackend()
-      .build(fakeClient);
+      .withSonarCloudUrl(sonarcloudMock.baseUrl())
+      .build();
     sonarcloudMock.stubFor(get("/api/organizations/search.protobuf?member=true&ps=500&p=1")
       .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Organizations.SearchWsResponse.newBuilder()
         .addOrganizations(Organizations.Organization.newBuilder()

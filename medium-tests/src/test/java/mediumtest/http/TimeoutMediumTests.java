@@ -20,13 +20,12 @@
 package mediumtest.http;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
@@ -49,16 +48,6 @@ class TimeoutMediumTests {
     .options(wireMockConfig().dynamicPort())
     .build();
 
-  @BeforeAll
-  static void mockSonarCloudUrl() {
-    System.setProperty("sonarlint.internal.sonarcloud.url", sonarcloudMock.baseUrl());
-  }
-
-  @AfterAll
-  static void clearSonarCloudUrl() {
-    System.clearProperty("sonarlint.internal.sonarcloud.url");
-  }
-
   private SonarLintRpcServer backend;
 
   @AfterEach
@@ -71,10 +60,11 @@ class TimeoutMediumTests {
 
   @Test
   void it_should_timeout_on_long_response() {
-    System.setProperty("sonarlint.http.responseTimeout", "PT0.1S");
     var fakeClient = newFakeClient()
       .build();
     backend = newBackend()
+      .withHttpResponseTimeout(Duration.ofSeconds(1))
+      .withSonarCloudUrl(sonarcloudMock.baseUrl())
       .build(fakeClient);
     sonarcloudMock.stubFor(get("/api/organizations/search.protobuf?organizations=myOrg&ps=500&p=1")
       .willReturn(aResponse().withStatus(200)

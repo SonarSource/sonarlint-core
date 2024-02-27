@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import mediumtest.fixtures.SonarLintBackendFixture;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,12 +66,12 @@ class WebSocketMediumTests {
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private WebSocketServer webSocketServer;
-  private String oldSonarCloudWebSocketUrl;
   private SonarLintTestRpcServer backend;
 
   @BeforeEach
   void prepare() {
-    oldSonarCloudWebSocketUrl = System.getProperty("sonarlint.internal.sonarcloud.websocket.url");
+    webSocketServer = new WebSocketServer();
+    webSocketServer.start();
   }
 
   @AfterEach
@@ -81,21 +82,14 @@ class WebSocketMediumTests {
     if (webSocketServer != null) {
       webSocketServer.stop();
     }
-    if (oldSonarCloudWebSocketUrl == null) {
-      System.clearProperty("sonarlint.internal.sonarcloud.websocket.url");
-    } else {
-      System.setProperty("sonarlint.internal.sonarcloud.websocket.url", oldSonarCloudWebSocketUrl);
-    }
   }
 
   @Nested
   class WhenScopeBound {
     @Test
     void should_create_connection_and_subscribe_to_events() {
-      startWebSocketServer();
       var client = newFakeClient().withToken("connectionId", "token").build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withUnboundConfigScope("configScope")
         .build(client);
@@ -109,10 +103,8 @@ class WebSocketMediumTests {
 
     @Test
     void should_set_user_agent() {
-      startWebSocketServer();
       var client = newFakeClient().withToken("connectionId", "token").build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withUnboundConfigScope("configScope")
         .build(client);
@@ -126,12 +118,10 @@ class WebSocketMediumTests {
 
     @Test
     void should_not_create_websocket_connection_and_subscribe_when_bound_to_sonarqube() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarQubeConnection("connectionId")
         .withUnboundConfigScope("configScope")
         .build(client);
@@ -143,12 +133,10 @@ class WebSocketMediumTests {
 
     @Test
     void should_unsubscribe_from_old_project_and_subscribe_to_new_project_when_key_changed() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -164,12 +152,10 @@ class WebSocketMediumTests {
 
     @Test
     void should_unsubscribe_from_old_project_and_not_subscribe_to_new_project_if_it_is_already_subscribed() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope1", "connectionId", "projectKey1")
         .withBoundConfigScope("configScope2", "connectionId", "projectKey2")
@@ -186,12 +172,10 @@ class WebSocketMediumTests {
 
     @Test
     void should_not_open_connection_or_subscribe_if_notifications_disabled_on_connection() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnection("connectionId", "orgKey", true, null)
         .withUnboundConfigScope("configScope")
         .build(client);
@@ -203,12 +187,10 @@ class WebSocketMediumTests {
 
     @Test
     void should_not_resubscribe_if_project_already_bound() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnection("connectionId", "orgKey", true, null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -228,12 +210,10 @@ class WebSocketMediumTests {
   class WhenUnbindingScope {
     @Test
     void should_unsubscribe_bound_project() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -251,12 +231,10 @@ class WebSocketMediumTests {
 
     @Test
     void should_not_unsubscribe_if_the_same_project_key_is_used_in_another_binding() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope1", "connectionId", "projectKey")
         .withBoundConfigScope("configScope2", "connectionId", "projectKey")
@@ -271,12 +249,10 @@ class WebSocketMediumTests {
 
     @Test
     void should_not_unsubscribe_if_notifications_disabled_on_connection() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnection("connectionId", "orgKey", true, null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -296,12 +272,10 @@ class WebSocketMediumTests {
   class WhenScopeAdded {
     @Test
     void should_subscribe_if_bound_to_sonarcloud() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -315,12 +289,10 @@ class WebSocketMediumTests {
 
     @Test
     void should_not_subscribe_if_not_bound() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withUnboundConfigScope("configScope")
         .build(client);
@@ -330,12 +302,10 @@ class WebSocketMediumTests {
 
     @Test
     void should_not_subscribe_if_bound_to_sonarqube() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarQubeConnection("connectionId")
         .withUnboundConfigScope("configScope")
         .build(client);
@@ -345,12 +315,10 @@ class WebSocketMediumTests {
 
     @Test
     void should_not_subscribe_if_bound_to_sonarcloud_but_notifications_are_disabled() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnection("connectionId", "orgKey", true, null)
         .withUnboundConfigScope("configScope")
         .build(client);
@@ -363,12 +331,10 @@ class WebSocketMediumTests {
   class WhenScopeRemoved {
     @Test
     void should_unsubscribe_from_project() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -386,13 +352,11 @@ class WebSocketMediumTests {
 
     @Test
     void should_not_unsubscribe_if_another_scope_is_bound_to_same_project() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId1", "token1")
         .withToken("connectionId2", "token2")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId1", "orgKey1", null)
         .withSonarCloudConnectionAndNotifications("connectionId2", "orgKey2", null)
         .withBoundConfigScope("configScope1", "connectionId1", "projectKey")
@@ -409,12 +373,10 @@ class WebSocketMediumTests {
 
     @Test
     void should_not_unsubscribe_if_connection_was_already_closed() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -435,10 +397,8 @@ class WebSocketMediumTests {
   class WhenConnectionCredentialsChanged {
     @Test
     void should_close_and_reopen_connection_for_sonarcloud_if_already_open() {
-      startWebSocketServer();
       var client = newFakeClient().withToken("connectionId", "firstToken").build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -455,12 +415,10 @@ class WebSocketMediumTests {
 
     @Test
     void should_do_nothing_for_sonarcloud_if_not_already_open() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .build(client);
 
@@ -471,12 +429,10 @@ class WebSocketMediumTests {
 
     @Test
     void should_do_nothing_for_sonarqube() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarQubeConnection("connectionId")
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -492,12 +448,10 @@ class WebSocketMediumTests {
 
     @Test
     void should_subscribe_all_projects_bound_to_added_connection() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
 
@@ -511,21 +465,20 @@ class WebSocketMediumTests {
 
     @Test
     void should_log_failure_and_reconnect_later_if_server_unavailable() {
-      System.setProperty("sonarlint.internal.sonarcloud.websocket.url", "wss://not-found:1234");
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      webSocketServer.stop();
+      backend = newBackendWithWebSockets()
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
 
       backend.getConnectionService()
         .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", false))));
 
-      await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Error while trying to create websocket connection for wss://not-found:1234"));
+      await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Error while trying to create websocket connection for ws://localhost:54321/endpoint"));
 
-      startWebSocketServer();
+      webSocketServer.start();
       // Emulate a change on the connection to force websocket service to reconnect
       backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams("connectionId"));
 
@@ -539,12 +492,10 @@ class WebSocketMediumTests {
   class WhenConnectionRemoved {
     @Test
     void should_close_connection() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -559,13 +510,11 @@ class WebSocketMediumTests {
 
     @Test
     void should_not_close_connection_if_another_sonarcloud_connection_is_active() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId1", "token1")
         .withToken("connectionId2", "token2")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId1", "orgKey1", null)
         .withSonarCloudConnectionAndNotifications("connectionId2", "orgKey2", null)
         .withBoundConfigScope("configScope1", "connectionId1", "projectKey1")
@@ -587,12 +536,10 @@ class WebSocketMediumTests {
   class WhenConnectionUpdated {
     @Test
     void should_do_nothing_for_sonarqube() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarQubeConnection("connectionId")
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -606,12 +553,10 @@ class WebSocketMediumTests {
 
     @Test
     void should_do_nothing_when_no_project_bound_to_sonarcloud() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .build(client);
 
@@ -623,12 +568,10 @@ class WebSocketMediumTests {
 
     @Test
     void should_close_websocket_if_notifications_disabled() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -644,13 +587,11 @@ class WebSocketMediumTests {
 
     @Test
     void should_close_and_reopen_websocket_if_notifications_are_disabled_but_other_connection_is_active() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId1", "token1")
         .withToken("connectionId2", "token2")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId1", "orgKey1", null)
         .withSonarCloudConnectionAndNotifications("connectionId2", "orgKey2", null)
         .withBoundConfigScope("configScope1", "connectionId1", "projectKey1")
@@ -670,12 +611,10 @@ class WebSocketMediumTests {
 
     @Test
     void should_open_websocket_and_subscribe_to_all_bound_projects_if_enabled_notifications() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnection("connectionId", "orgKey", true, null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -693,13 +632,11 @@ class WebSocketMediumTests {
   class WhenReceivingSmartNotificationEvent {
     @Test
     void should_forward_to_client_as_smart_notifications() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
+      backend = newBackendWithWebSockets()
         .withSmartNotifications()
-        .withServerSentEventsEnabled()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -718,13 +655,11 @@ class WebSocketMediumTests {
 
     @Test
     void should_forward_my_new_issues_to_client_as_smart_notifications() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
+      backend = newBackendWithWebSockets()
         .withSmartNotifications()
-        .withServerSentEventsEnabled()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -743,13 +678,11 @@ class WebSocketMediumTests {
 
     @Test
     void should_not_forward_to_client_if_the_event_data_is_malformed() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
+      backend = newBackendWithWebSockets()
         .withSmartNotifications()
-        .withServerSentEventsEnabled()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -761,13 +694,11 @@ class WebSocketMediumTests {
     }
 
     void should_not_forward_to_client(String payload) {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
+      backend = newBackendWithWebSockets()
         .withSmartNotifications()
-        .withServerSentEventsEnabled()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -809,12 +740,10 @@ class WebSocketMediumTests {
     void should_change_issue_status() {
       var serverIssue = aServerIssue("myIssueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))
         .withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch("master", branch -> branch.withIssue(serverIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -846,12 +775,10 @@ class WebSocketMediumTests {
     void should_not_change_issue_if_the_event_data_is_malformed() {
       var serverIssue = aServerIssue("myIssueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))
         .withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch("master", branch -> branch.withIssue(serverIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -883,12 +810,10 @@ class WebSocketMediumTests {
     void should_change_issue_if_the_issue_key_is_missing() {
       var serverIssue = aServerIssue("myIssueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))
         .withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch("master", branch -> branch.withIssue(serverIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -919,12 +844,10 @@ class WebSocketMediumTests {
     void should_not_change_issue_if_the_resolution_is_missing() {
       var serverIssue = aServerIssue("myIssueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))
         .withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch("master", branch -> branch.withIssue(serverIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -955,12 +878,10 @@ class WebSocketMediumTests {
     void should_not_change_issue_if_the_project_is_missing() {
       var serverIssue = aServerIssue("myIssueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))
         .withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch("master", branch -> branch.withIssue(serverIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -992,12 +913,10 @@ class WebSocketMediumTests {
   class WhenReceivingTaintVulnerabilityRaisedEvent {
     @Test
     void should_create_taint_vulnerability() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey"))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -1064,12 +983,10 @@ class WebSocketMediumTests {
 
     @Test
     void should_not_create_taint_vulnerability_event_data_is_malformed() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey"))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -1141,12 +1058,10 @@ class WebSocketMediumTests {
     void should_remove_taint_vulnerability() {
       var serverTaintIssue = aServerTaintIssue("taintKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))
         .withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withTaintIssue(serverTaintIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -1172,12 +1087,10 @@ class WebSocketMediumTests {
     void should_not_remove_taint_vulnerability_event_data_is_malformed() {
       var serverTaintIssue = aServerTaintIssue("taintKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))
         .withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withTaintIssue(serverTaintIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -1206,12 +1119,10 @@ class WebSocketMediumTests {
     void should_update_security_hotspot() {
       var serverHotspot = aServerHotspot("hotspotKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))
         .withIntroductionDate(Instant.EPOCH.plusSeconds(1));
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withHotspot(serverHotspot))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -1242,12 +1153,10 @@ class WebSocketMediumTests {
     void should_not_update_security_hotspot_if_event_data_is_malformed() {
       var serverHotspot = aServerHotspot("hotspotKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))
         .withIntroductionDate(Instant.EPOCH.plusSeconds(1));
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withHotspot(serverHotspot))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -1279,12 +1188,10 @@ class WebSocketMediumTests {
   class WhenReceivingSecurityHotspotRaisedEvent {
     @Test
     void should_create_new_security_hotspot() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey"))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -1323,12 +1230,10 @@ class WebSocketMediumTests {
 
     @Test
     void should_not_create_security_hotspot_if_event_data_is_malformed() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey"))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -1372,12 +1277,10 @@ class WebSocketMediumTests {
     void should_remove_security_hotspot() {
       var serverHotspot = aServerHotspot("hotspotKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))
         .withIntroductionDate(Instant.EPOCH.plusSeconds(1));
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withHotspot(serverHotspot))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -1404,12 +1307,10 @@ class WebSocketMediumTests {
     void should_not_remove_security_hotspot() {
       var serverHotspot = aServerHotspot("hotspotKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))
         .withIntroductionDate(Instant.EPOCH.plusSeconds(1));
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withHotspot(serverHotspot))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -1437,12 +1338,10 @@ class WebSocketMediumTests {
   class WhenReceivingUnexpectedEvents {
     @Test
     void should_ignore_if_the_event_type_is_unknown() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -1455,12 +1354,10 @@ class WebSocketMediumTests {
 
     @Test
     void should_ignore_if_the_event_is_malformed() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -1473,12 +1370,10 @@ class WebSocketMediumTests {
 
     @Test
     void should_not_forward_to_client_duplicated_event() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -1503,12 +1398,10 @@ class WebSocketMediumTests {
   class WhenWebSocketClosed {
     @Test
     void should_refresh_connection_if_closed_by_server() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -1523,12 +1416,10 @@ class WebSocketMediumTests {
     }
     @Test
     void should_send_one_subscribe_message_per_project_key_when_reopening_connection() {
-      startWebSocketServer();
       var client = newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackend()
-        .withServerSentEventsEnabled()
+      backend = newBackendWithWebSockets()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .withBoundConfigScope("configScope2", "connectionId", "projectKey")
@@ -1544,10 +1435,10 @@ class WebSocketMediumTests {
     }
   }
 
-  private void startWebSocketServer() {
-    webSocketServer = new WebSocketServer();
-    webSocketServer.start();
-    System.setProperty("sonarlint.internal.sonarcloud.websocket.url", webSocketServer.getUrl());
+  public SonarLintBackendFixture.SonarLintBackendBuilder newBackendWithWebSockets() {
+    return newBackend()
+      .withServerSentEventsEnabled()
+      .withSonarCloudWebSocketsUrl(webSocketServer.getUrl());
   }
 
   public static class WebSocketPayloadBuilder {

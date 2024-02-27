@@ -41,7 +41,6 @@ import static testutils.TestUtils.protobufBody;
 
 class ConnectionValidatorMediumTests {
   private static SonarLintRpcServer backend;
-  private static String oldSonarCloudUrl;
 
   @RegisterExtension
   static WireMockExtension serverMock = WireMockExtension.newInstance()
@@ -50,20 +49,15 @@ class ConnectionValidatorMediumTests {
 
   @BeforeAll
   static void createBackend() {
-    oldSonarCloudUrl = System.getProperty("sonarlint.internal.sonarcloud.url");
-    System.setProperty("sonarlint.internal.sonarcloud.url", serverMock.baseUrl());
-    backend = newBackend().build();
+    backend = newBackend()
+      .withSonarCloudUrl(serverMock.baseUrl())
+      .build();
   }
 
   @AfterAll
   static void tearDown() {
     if (backend != null) {
       backend.shutdown().join();
-    }
-    if (oldSonarCloudUrl == null) {
-      System.clearProperty("sonarlint.internal.sonarcloud.url");
-    } else {
-      System.setProperty("sonarlint.internal.sonarcloud.url", oldSonarCloudUrl);
     }
   }
 

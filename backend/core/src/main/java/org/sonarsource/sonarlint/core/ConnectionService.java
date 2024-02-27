@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -60,20 +61,23 @@ public class ConnectionService {
 
   private final ApplicationEventPublisher applicationEventPublisher;
   private final ConnectionConfigurationRepository repository;
+  private final URI sonarCloudUri;
   private final ServerApiProvider serverApiProvider;
   private final TokenGeneratorHelper tokenGeneratorHelper;
 
   @Inject
   public ConnectionService(ApplicationEventPublisher applicationEventPublisher, ConnectionConfigurationRepository repository, InitializeParams params,
-    TokenGeneratorHelper tokenGeneratorHelper, ServerApiProvider serverApiProvider) {
-    this(applicationEventPublisher, repository, params.getSonarQubeConnections(), params.getSonarCloudConnections(), serverApiProvider, tokenGeneratorHelper);
+    SonarCloudActiveEnvironment sonarCloudActiveEnvironment, TokenGeneratorHelper tokenGeneratorHelper, ServerApiProvider serverApiProvider) {
+    this(applicationEventPublisher, repository, params.getSonarQubeConnections(), params.getSonarCloudConnections(), sonarCloudActiveEnvironment, serverApiProvider,
+      tokenGeneratorHelper);
   }
 
   ConnectionService(ApplicationEventPublisher applicationEventPublisher, ConnectionConfigurationRepository repository,
     @Nullable List<SonarQubeConnectionConfigurationDto> initSonarQubeConnections, @Nullable List<SonarCloudConnectionConfigurationDto> initSonarCloudConnections,
-    ServerApiProvider serverApiProvider, TokenGeneratorHelper tokenGeneratorHelper) {
+    SonarCloudActiveEnvironment sonarCloudActiveEnvironment, ServerApiProvider serverApiProvider, TokenGeneratorHelper tokenGeneratorHelper) {
     this.applicationEventPublisher = applicationEventPublisher;
     this.repository = repository;
+    this.sonarCloudUri = sonarCloudActiveEnvironment.getUri();
     this.serverApiProvider = serverApiProvider;
     this.tokenGeneratorHelper = tokenGeneratorHelper;
     if (initSonarQubeConnections != null) {
@@ -88,8 +92,8 @@ public class ConnectionService {
     return new SonarQubeConnectionConfiguration(sqDto.getConnectionId(), sqDto.getServerUrl(), sqDto.getDisableNotifications());
   }
 
-  private static SonarCloudConnectionConfiguration adapt(SonarCloudConnectionConfigurationDto scDto) {
-    return new SonarCloudConnectionConfiguration(scDto.getConnectionId(), scDto.getOrganization(), scDto.isDisableNotifications());
+  private SonarCloudConnectionConfiguration adapt(SonarCloudConnectionConfigurationDto scDto) {
+    return new SonarCloudConnectionConfiguration(sonarCloudUri, scDto.getConnectionId(), scDto.getOrganization(), scDto.isDisableNotifications());
   }
 
   private static void putAndLogIfDuplicateId(Map<String, AbstractConnectionConfiguration> map, AbstractConnectionConfiguration config) {

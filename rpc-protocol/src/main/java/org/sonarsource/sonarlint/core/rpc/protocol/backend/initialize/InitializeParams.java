@@ -32,6 +32,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 
 public class InitializeParams {
   private final ClientConstantInfoDto clientConstantInfo;
+  private final HttpConfigurationDto httpConfiguration;
+  private final SonarCloudAlternativeEnvironmentDto alternativeSonarCloudEnvironment;
   private final FeatureFlagsDto featureFlags;
   private final Path storageRoot;
   private final Path workDir;
@@ -56,6 +58,8 @@ public class InitializeParams {
   public InitializeParams(
     ClientConstantInfoDto clientConstantInfo,
     TelemetryClientConstantAttributesDto telemetryConstantAttributes,
+    HttpConfigurationDto httpConfiguration,
+    @Nullable SonarCloudAlternativeEnvironmentDto alternativeSonarCloudEnvironment,
     FeatureFlagsDto featureFlags,
     Path storageRoot,
     @Nullable Path workDir,
@@ -71,6 +75,8 @@ public class InitializeParams {
     @Nullable Path clientNodeJsPath) {
     this.clientConstantInfo = clientConstantInfo;
     this.telemetryConstantAttributes = telemetryConstantAttributes;
+    this.httpConfiguration = httpConfiguration;
+    this.alternativeSonarCloudEnvironment = alternativeSonarCloudEnvironment;
     this.featureFlags = featureFlags;
     this.storageRoot = storageRoot;
     this.workDir = workDir;
@@ -92,6 +98,15 @@ public class InitializeParams {
 
   public TelemetryClientConstantAttributesDto getTelemetryConstantAttributes() {
     return telemetryConstantAttributes;
+  }
+
+  public HttpConfigurationDto getHttpConfiguration() {
+    return httpConfiguration;
+  }
+
+  @CheckForNull
+  public SonarCloudAlternativeEnvironmentDto getAlternativeSonarCloudEnvironment() {
+    return alternativeSonarCloudEnvironment;
   }
 
   public FeatureFlagsDto getFeatureFlags() {

@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.repository.connection;
 
+import java.net.URI;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
@@ -26,14 +27,10 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
 public class SonarCloudConnectionConfiguration extends AbstractConnectionConfiguration {
 
-  public static String getSonarCloudUrl() {
-    return System.getProperty("sonarlint.internal.sonarcloud.url", "https://sonarcloud.io");
-  }
-
   private final String organization;
 
-  public SonarCloudConnectionConfiguration(String connectionId, String organization, boolean disableNotifications) {
-    super(connectionId, ConnectionKind.SONARCLOUD, disableNotifications, getSonarCloudUrl());
+  public SonarCloudConnectionConfiguration(URI uri, String connectionId, String organization, boolean disableNotifications) {
+    super(connectionId, ConnectionKind.SONARCLOUD, disableNotifications, uri.toString());
     this.organization = organization;
   }
 

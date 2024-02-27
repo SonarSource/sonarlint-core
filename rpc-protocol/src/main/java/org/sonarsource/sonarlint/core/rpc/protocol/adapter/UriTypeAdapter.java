@@ -17,24 +17,33 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
+package org.sonarsource.sonarlint.core.rpc.protocol.adapter;
 
-import org.junit.jupiter.api.Test;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
+import java.net.URI;
+import javax.annotation.Nullable;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
-class InitializeParamsTests {
-
-  @Test
-  void should_replace_null_collections_by_empty() {
-    var params = new InitializeParams(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, false, null);
-    assertNotNull(params.getEmbeddedPluginPaths());
-    assertNotNull(params.getConnectedModeEmbeddedPluginPathsByKey());
-    assertNotNull(params.getEnabledLanguagesInStandaloneMode());
-    assertNotNull(params.getExtraEnabledLanguagesInConnectedMode());
-    assertNotNull(params.getSonarQubeConnections());
-    assertNotNull(params.getSonarCloudConnections());
-    assertNotNull(params.getStandaloneRuleConfigByKey());
+public class UriTypeAdapter extends TypeAdapter<URI> {
+  @Override
+  public void write(JsonWriter out, @Nullable URI value) throws IOException {
+    if (value == null) {
+      out.nullValue();
+    } else {
+      out.value(value.toString());
+    }
   }
 
+  @Override
+  public URI read(JsonReader in) throws IOException {
+    var peek = in.peek();
+    if (peek == JsonToken.NULL) {
+      in.nextNull();
+      return null;
+    }
+    return URI.create(in.nextString());
+  }
 }

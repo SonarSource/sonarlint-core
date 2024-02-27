@@ -56,7 +56,7 @@ class TelemetryServerAttributesProviderTests {
     when(configurationRepository.getAllBoundScopes()).thenReturn(Set.of(new BoundScope(configurationScopeId, connectionId, projectKey)));
 
     var connectionConfigurationRepository = mock(ConnectionConfigurationRepository.class);
-    when(connectionConfigurationRepository.getConnectionById(connectionId)).thenReturn(new SonarCloudConnectionConfiguration(connectionId, "myTestOrg", false));
+    when(connectionConfigurationRepository.getConnectionById(connectionId)).thenReturn(new SonarCloudConnectionConfiguration(SonarCloudActiveEnvironment.PRODUCTION_URI, connectionId, "myTestOrg", false));
     var underTest = new TelemetryServerAttributesProvider(configurationRepository, connectionConfigurationRepository, mock(RulesService.class), mock(RulesRepository.class), mock(NodeJsService.class));
 
     var telemetryLiveAttributes = underTest.getTelemetryServerLiveAttributes();

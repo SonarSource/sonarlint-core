@@ -23,14 +23,13 @@ import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.ServerFixture;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.FuzzySearchProjectsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.FuzzySearchProjectsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProjectDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 
@@ -48,13 +47,7 @@ import static org.awaitility.Awaitility.await;
 
 class ConnectionGetAllProjectsMediumTests {
   private SonarLintRpcServer backend;
-  private String oldSonarCloudUrl;
   private ServerFixture.Server server;
-
-  @BeforeEach
-  void prepare() {
-    oldSonarCloudUrl = System.getProperty("sonarlint.internal.sonarcloud.url");
-  }
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
@@ -63,11 +56,6 @@ class ConnectionGetAllProjectsMediumTests {
     }
     if (server != null) {
       server.shutdown();
-    }
-    if (oldSonarCloudUrl == null) {
-      System.clearProperty("sonarlint.internal.sonarcloud.url");
-    } else {
-      System.setProperty("sonarlint.internal.sonarcloud.url", oldSonarCloudUrl);
     }
   }
 
@@ -84,8 +72,9 @@ class ConnectionGetAllProjectsMediumTests {
   @Test
   void it_should_return_an_empty_response_if_no_projects_in_sonarcloud_organization() {
     server = newSonarCloudServer("myOrg").start();
-    System.setProperty("sonarlint.internal.sonarcloud.url", server.baseUrl());
-    backend = newBackend().build();
+    backend = newBackend()
+      .withSonarCloudUrl(server.baseUrl())
+      .build();
 
     var response = getAllProjects(new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto("token"))));
 
@@ -150,8 +139,9 @@ class ConnectionGetAllProjectsMediumTests {
       .withProject("projectKey1", project -> project.withName("MyProject1"))
       .withProject("projectKey2", project -> project.withName("MyProject2"))
       .start();
-    System.setProperty("sonarlint.internal.sonarcloud.url", server.baseUrl());
-    backend = newBackend().build();
+    backend = newBackend()
+      .withSonarCloudUrl(server.baseUrl())
+      .build();
 
     var response = getAllProjects(new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto("token"))));
 

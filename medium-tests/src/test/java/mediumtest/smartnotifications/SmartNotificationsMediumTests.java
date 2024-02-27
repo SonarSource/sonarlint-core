@@ -27,7 +27,6 @@ import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -60,7 +59,6 @@ class SmartNotificationsMediumTests {
   private static final String CONNECTION_ID_2 = "connectionId2";
   private static final String DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ssZ";
   private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern(DATETIME_FORMAT);
-  private String oldSonarCloudUrl;
   private static final String EVENT_PROJECT_1 = "{\"events\": [" +
     "{\"message\": \"msg1\"," +
     "\"link\": \"lnk\"," +
@@ -107,20 +105,10 @@ class SmartNotificationsMediumTests {
   private SonarLintTestRpcServer backend;
   private WebSocketServer webSocketServer;
 
-  @BeforeEach
-  void prepare() {
-    oldSonarCloudUrl = System.getProperty("sonarlint.internal.sonarcloud.url");
-  }
-
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
     if (backend != null) {
       backend.shutdown().get();
-    }
-    if (oldSonarCloudUrl == null) {
-      System.clearProperty("sonarlint.internal.sonarcloud.url");
-    } else {
-      System.setProperty("sonarlint.internal.sonarcloud.url", oldSonarCloudUrl);
     }
     if (webSocketServer != null) {
       webSocketServer.stop();
@@ -271,12 +259,12 @@ class SmartNotificationsMediumTests {
   @Test
   void it_should_send_notification_handled_by_sonarcloud_websocket_as_fallback() {
     var fakeClient = newFakeClient().build();
-    System.setProperty("sonarlint.internal.sonarcloud.url", mockWebServerExtension.endpointParams().getBaseUrl());
     mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
     mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +
       UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1);
 
     backend = newBackend()
+      .withSonarCloudUrl(mockWebServerExtension.endpointParams().getBaseUrl())
       .withSonarCloudConnectionAndNotifications(CONNECTION_ID, "myOrg", storage -> storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
       .withBoundConfigScope("scopeId", CONNECTION_ID, PROJECT_KEY)
       .withSmartNotifications()
@@ -293,15 +281,15 @@ class SmartNotificationsMediumTests {
   void it_should_skip_polling_notifications_when_sonarcloud_websocket_opened() {
     webSocketServer = new WebSocketServer();
     webSocketServer.start();
-    System.setProperty("sonarlint.internal.sonarcloud.websocket.url", webSocketServer.getUrl());
     var fakeClient = newFakeClient().withToken(CONNECTION_ID, "token")
       .build();
-    System.setProperty("sonarlint.internal.sonarcloud.url", mockWebServerExtension.endpointParams().getBaseUrl());
     mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
     mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +
       UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1);
 
     backend = newBackend()
+      .withSonarCloudUrl(mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarCloudWebSocketsUrl(webSocketServer.getUrl())
       .withSonarCloudConnectionAndNotifications(CONNECTION_ID, "myOrg", storage -> storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
       .withBoundConfigScope("scopeId", CONNECTION_ID, PROJECT_KEY)
       .withSmartNotifications()

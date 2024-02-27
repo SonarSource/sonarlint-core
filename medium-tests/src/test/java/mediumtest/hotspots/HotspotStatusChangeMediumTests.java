@@ -28,7 +28,6 @@ import mediumtest.fixtures.ServerFixture;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -38,9 +37,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static mediumtest.fixtures.ServerFixture.ServerStatus.DOWN;
 import static mediumtest.fixtures.ServerFixture.newSonarCloudServer;
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
+import static mediumtest.fixtures.ServerFixture.ServerStatus.DOWN;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
@@ -51,12 +50,6 @@ class HotspotStatusChangeMediumTests {
 
   private SonarLintTestRpcServer backend;
   private ServerFixture.Server server;
-  private String oldSonarCloudUrl;
-
-  @BeforeEach
-  void prepare() {
-    oldSonarCloudUrl = System.getProperty("sonarlint.internal.sonarcloud.url");
-  }
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
@@ -64,12 +57,6 @@ class HotspotStatusChangeMediumTests {
     if (server != null) {
       server.shutdown();
       server = null;
-    }
-
-    if (oldSonarCloudUrl == null) {
-      System.clearProperty("sonarlint.internal.sonarcloud.url");
-    } else {
-      System.setProperty("sonarlint.internal.sonarcloud.url", oldSonarCloudUrl);
     }
   }
 
@@ -113,9 +100,9 @@ class HotspotStatusChangeMediumTests {
   @Test
   void it_should_update_the_status_on_sonarcloud_through_the_web_api() {
     server = newSonarCloudServer().start();
-    System.setProperty("sonarlint.internal.sonarcloud.url", server.baseUrl());
 
     backend = newBackend()
+      .withSonarCloudUrl(server.baseUrl())
       .withSonarCloudConnection("connectionId", "orgKey")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();

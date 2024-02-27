@@ -36,7 +36,6 @@ import java.util.stream.Collectors;
 import mediumtest.fixtures.ServerFixture;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -82,27 +81,16 @@ class ServerSentEventsMediumTests {
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester(true);
   private SonarLintTestRpcServer backend;
-  private String oldSonarCloudUrl;
 
   @RegisterExtension
   static WireMockExtension sonarServerMock = WireMockExtension.newInstance()
     .options(wireMockConfig().dynamicPort())
     .build();
 
-  @BeforeEach
-  void prepare() {
-    oldSonarCloudUrl = System.getProperty("sonarlint.internal.sonarcloud.url");
-  }
-
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
     if (backend != null) {
       backend.shutdown().get();
-    }
-    if (oldSonarCloudUrl == null) {
-      System.clearProperty("sonarlint.internal.sonarcloud.url");
-    } else {
-      System.setProperty("sonarlint.internal.sonarcloud.url", oldSonarCloudUrl);
     }
   }
 
@@ -126,8 +114,8 @@ class ServerSentEventsMediumTests {
 
     @Test
     void should_not_subscribe_for_events_if_sonarcloud_connection() {
-      System.setProperty("sonarlint.internal.sonarcloud.url", sonarServerMock.baseUrl());
       backend = newBackend()
+        .withSonarCloudUrl(sonarServerMock.baseUrl())
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -262,8 +250,8 @@ class ServerSentEventsMediumTests {
 
     @Test
     void should_not_subscribe_if_bound_to_sonarcloud() {
-      System.setProperty("sonarlint.internal.sonarcloud.url", sonarServerMock.baseUrl());
       backend = newBackend()
+        .withSonarCloudUrl(sonarServerMock.baseUrl())
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -301,8 +289,8 @@ class ServerSentEventsMediumTests {
 
     @Test
     void should_do_nothing_if_scope_was_bound_to_sonarcloud() {
-      System.setProperty("sonarlint.internal.sonarcloud.url", sonarServerMock.baseUrl());
       backend = newBackend()
+        .withSonarCloudUrl(sonarServerMock.baseUrl())
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -399,8 +387,8 @@ class ServerSentEventsMediumTests {
 
     @Test
     void should_do_nothing_if_sonarcloud() {
-      System.setProperty("sonarlint.internal.sonarcloud.url", sonarServerMock.baseUrl());
       backend = newBackend()
+        .withSonarCloudUrl(sonarServerMock.baseUrl())
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -487,8 +475,8 @@ class ServerSentEventsMediumTests {
 
     @Test
     void should_do_nothing_if_sonarcloud() {
-      System.setProperty("sonarlint.internal.sonarcloud.url", sonarServerMock.baseUrl());
       backend = newBackend()
+        .withSonarCloudUrl(sonarServerMock.baseUrl())
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -543,8 +531,8 @@ class ServerSentEventsMediumTests {
 
     @Test
     void should_not_resubscribe_if_sonarcloud() {
-      System.setProperty("sonarlint.internal.sonarcloud.url", sonarServerMock.baseUrl());
       backend = newBackend()
+        .withSonarCloudUrl(sonarServerMock.baseUrl())
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
