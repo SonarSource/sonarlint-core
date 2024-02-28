@@ -132,12 +132,12 @@ public class AnalysisConfiguration {
     }
 
     public Builder putAllExtraProperties(Map<String, String> extraProperties) {
-      this.extraProperties.putAll(extraProperties);
+      extraProperties.forEach(this::putExtraProperty);
       return this;
     }
 
     public Builder putExtraProperty(String key, String value) {
-      this.extraProperties.put(key, value);
+      this.extraProperties.put(key.trim(), value);
       return this;
     }
 
