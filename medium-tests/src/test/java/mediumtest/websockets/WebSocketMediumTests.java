@@ -978,7 +978,7 @@ class WebSocketMediumTests {
           "  }\n" +
           "}");
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey", true)).isTrue());
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey")).isTrue());
     }
 
     @Test
@@ -1048,7 +1048,7 @@ class WebSocketMediumTests {
           "  }\n" +
           "}");
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey", true)).isFalse());
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey")).isFalse());
     }
   }
 
@@ -1069,7 +1069,7 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey", true)).isTrue());
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey")).isTrue());
 
       webSocketServer.getConnections().get(0).sendMessage(
         "{\n" +
@@ -1080,7 +1080,7 @@ class WebSocketMediumTests {
           "  }\n" +
           "}");
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey", true)).isFalse());
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey")).isFalse());
     }
 
     @Test
@@ -1098,7 +1098,7 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey", true)).isTrue());
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey")).isTrue());
 
       webSocketServer.getConnections().get(0).sendMessage(
         "{\n" +
@@ -1109,7 +1109,7 @@ class WebSocketMediumTests {
           "  }\n" +
           "}");
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey", true)).isTrue());
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey")).isTrue());
     }
   }
 

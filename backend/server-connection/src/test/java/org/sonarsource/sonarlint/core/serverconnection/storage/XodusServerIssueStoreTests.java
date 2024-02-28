@@ -852,7 +852,7 @@ class XodusServerIssueStoreTests {
     store
       .replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setFilePath(filePath).setCreationDate(creationDate)));
 
-    assertThat(store.containsIssue("key", false)).isTrue();
+    assertThat(store.containsIssue("key")).isTrue();
   }
 
   @Test
@@ -862,7 +862,7 @@ class XodusServerIssueStoreTests {
     store
       .replaceAllTaintsOfBranch("branch", List.of(aServerTaintIssue().setFilePath(filePath).setCreationDate(creationDate)));
 
-    assertThat(store.containsIssue("key", true)).isTrue();
+    assertThat(store.containsIssue("key")).isTrue();
   }
 
   @Test
@@ -872,6 +872,6 @@ class XodusServerIssueStoreTests {
     store
       .replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setFilePath(filePath).setCreationDate(creationDate)));
 
-    assertThat(store.containsIssue("key_not_found", false)).isFalse();
+    assertThat(store.containsIssue("key_not_found")).isFalse();
   }
 }

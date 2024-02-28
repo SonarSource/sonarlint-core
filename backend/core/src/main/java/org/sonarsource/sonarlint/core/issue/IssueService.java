@@ -101,7 +101,7 @@ public class IssueService {
     var serverApi = serverApiProvider.getServerApiOrThrow(binding.getConnectionId());
     var reviewStatus = transitionByResolutionStatus.get(newStatus);
     var projectServerIssueStore = storageService.binding(binding).findings();
-    boolean isServerIssue = projectServerIssueStore.containsIssue(issueKey, isTaintIssue);
+    boolean isServerIssue = projectServerIssueStore.containsIssue(issueKey);
     if (isServerIssue) {
       serverApi.issue().changeStatus(issueKey, reviewStatus, cancelMonitor);
       projectServerIssueStore.updateIssueResolutionStatus(issueKey, isTaintIssue, true)
@@ -110,8 +110,7 @@ public class IssueService {
       var localIssueOpt = asUUID(issueKey)
         .flatMap(localOnlyIssueRepository::findByKey);
       if (localIssueOpt.isEmpty()) {
-        var error = new ResponseError(SonarLintRpcErrorCode.ISSUE_NOT_FOUND, "Issue key " + issueKey + " was not found", issueKey);
-        throw new ResponseErrorException(error);
+        throw issueNotFoundException(issueKey);
       }
       var coreStatus = org.sonarsource.sonarlint.core.commons.IssueStatus.valueOf(newStatus.name());
       var issue = localIssueOpt.get();
@@ -213,11 +212,18 @@ public class IssueService {
   }
 
   public void addComment(String configurationScopeId, String issueKey, String text, SonarLintCancelMonitor cancelMonitor) {
-    var optionalId = asUUID(issueKey);
-    if (optionalId.isPresent()) {
-      setCommentOnLocalOnlyIssue(configurationScopeId, optionalId.get(), text, cancelMonitor);
-    } else {
+    var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
+    var projectServerIssueStore = storageService.binding(binding).findings();
+    boolean isServerIssue = projectServerIssueStore.containsIssue(issueKey);
+    if (isServerIssue) {
       addCommentOnServerIssue(configurationScopeId, issueKey, text, cancelMonitor);
+    } else {
+      var optionalId = asUUID(issueKey);
+      if (optionalId.isPresent()) {
+        setCommentOnLocalOnlyIssue(configurationScopeId, optionalId.get(), text, cancelMonitor);
+      } else {
+        throw issueNotFoundException(issueKey);
+      }
     }
   }
 
@@ -225,7 +231,7 @@ public class IssueService {
     var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
     var serverApiConnection = serverApiProvider.getServerApiOrThrow(binding.getConnectionId());
     var projectServerIssueStore = storageService.binding(binding).findings();
-    boolean isServerIssue = projectServerIssueStore.containsIssue(issueId, isTaintIssue);
+    boolean isServerIssue = projectServerIssueStore.containsIssue(issueId);
     if (isServerIssue) {
       return reopenServerIssue(serverApiConnection, binding, issueId, projectServerIssueStore, isTaintIssue, cancelMonitor);
     } else {
@@ -275,7 +281,14 @@ public class IssueService {
         serverApi.issue().anticipatedTransitions(binding.getSonarProjectKey(), issuesToSync, cancelMonitor);
         localOnlyIssueStore.storeLocalOnlyIssue(configurationScopeId, commentedIssue);
       }
+    } else {
+      throw issueNotFoundException(issueId.toString());
     }
+  }
+
+  private static ResponseErrorException issueNotFoundException(String issueId) {
+    var error = new ResponseError(SonarLintRpcErrorCode.ISSUE_NOT_FOUND, "Issue key " + issueId + " was not found", issueId);
+    throw new ResponseErrorException(error);
   }
 
   private void addCommentOnServerIssue(String configurationScopeId, String issueKey, String comment, SonarLintCancelMonitor cancelMonitor) {
