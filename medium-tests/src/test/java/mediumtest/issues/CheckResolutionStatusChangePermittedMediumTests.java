@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
@@ -88,8 +89,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
   void it_should_allow_2_statuses_when_user_has_permission_for_sonarqube_103() {
     fakeServerWithIssue("issueKey", List.of("wontfix", "falsepositive"));
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("10.3"))
-      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
       .build();
 
     var response = checkStatusChangePermitted("connectionId", "issueKey");
@@ -105,8 +105,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
   void it_should_allow_2_statuses_when_user_has_permission_for_sonarqube_104() {
     fakeServerWithIssue("issueKey", List.of("accept", "falsepositive"));
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("10.4"))
-      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.4"))
       .build();
 
     var response = checkStatusChangePermitted("connectionId", "issueKey");
@@ -136,11 +135,27 @@ class CheckResolutionStatusChangePermittedMediumTests {
   }
 
   @Test
+  void it_should_fallback_to_server_check_if_the_issue_uuid_is_not_found_in_local_only_issues() {
+    var issueKey = UUID.randomUUID().toString();
+    fakeServerWithIssue(issueKey, List.of("accept", "falsepositive"));
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.4"))
+      .build();
+
+    var response = checkStatusChangePermitted("connectionId", issueKey);
+
+    assertThat(response)
+      .succeedsWithin(Duration.ofSeconds(2))
+      .extracting(CheckStatusChangePermittedResponse::getAllowedStatuses)
+      .asInstanceOf(InstanceOfAssertFactories.list(ResolutionStatus.class))
+      .containsExactly(ResolutionStatus.ACCEPT, ResolutionStatus.FALSE_POSITIVE);
+  }
+
+  @Test
   void it_should_not_permit_status_change_when_issue_misses_required_transitions() {
     fakeServerWithIssue("issueKey", List.of("confirm"));
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("10.3"))
-      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
       .build();
 
     var response = checkStatusChangePermitted("connectionId", "issueKey");
@@ -156,8 +171,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
   void it_should_fail_if_no_issue_is_returned_by_web_api() {
     fakeServerWithResponse("issueKey", null, Issues.SearchWsResponse.newBuilder().build());
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("10.3"))
-      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
       .build();
 
     var response = checkStatusChangePermitted("connectionId", "issueKey");
@@ -174,8 +188,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
   @Test
   void it_should_fail_if_web_api_returns_an_error() {
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("10.3"))
-      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
       .build();
 
     var response = checkStatusChangePermitted("connectionId", "issueKey");
@@ -191,8 +204,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
   void it_should_fail_if_web_api_returns_unexpected_body() {
     fakeServerWithWrongBody("issueKey");
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("10.3"))
-      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
       .build();
 
     var response = checkStatusChangePermitted("connectionId", "issueKey");

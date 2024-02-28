@@ -55,8 +55,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static mediumtest.fixtures.LocalOnlyIssueFixtures.aLocalOnlyIssueResolved;
-import static mediumtest.fixtures.ServerFixture.ServerStatus.DOWN;
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
+import static mediumtest.fixtures.ServerFixture.ServerStatus.DOWN;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static mediumtest.fixtures.storage.ServerIssueFixtures.aServerIssue;
@@ -163,7 +163,8 @@ class IssuesStatusChangeMediumTests {
     client.waitForSynchronization();
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of(Path.of("file/path"),
+        List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
     LocalOnlyIssueDto localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(Path.of("file/path")).get(0).getRight();
@@ -192,7 +193,8 @@ class IssuesStatusChangeMediumTests {
     client.waitForSynchronization();
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of(Path.of("file/path"),
+        List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
     LocalOnlyIssueDto localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(Path.of("file/path")).get(0).getRight();
@@ -226,7 +228,8 @@ class IssuesStatusChangeMediumTests {
     client.waitForSynchronization();
 
     var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
+      Map.of(Path.of("file/path"),
+        List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
     LocalOnlyIssueDto localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(Path.of("file/path")).get(0).getRight();
@@ -262,7 +265,8 @@ class IssuesStatusChangeMediumTests {
   void it_should_add_new_comment_to_server_issue() {
     server = newSonarQubeServer().start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server)
+      .withSonarQubeConnection("connectionId", server,
+        storage -> storage.withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(aServerIssue("myIssueKey")))))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
@@ -275,6 +279,28 @@ class IssuesStatusChangeMediumTests {
         .verify(WireMock.postRequestedFor(urlEqualTo("/api/issues/add_comment"))
           .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
           .withRequestBody(equalTo("issue=myIssueKey&text=That%27s+serious+issue")));
+    });
+  }
+
+  @Test
+  void it_should_add_new_comment_to_server_issue_with_uuid_key() {
+    var issueKey = UUID.randomUUID().toString();
+    server = newSonarQubeServer().start();
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", server,
+        storage -> storage.withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(aServerIssue(issueKey)))))
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .build();
+
+    var response = backend.getIssueService().addComment(new AddIssueCommentParams("configScopeId", issueKey, "That's " +
+      "serious issue"));
+
+    assertThat(response).succeedsWithin(Duration.ofSeconds(2));
+    waitAtMost(2, SECONDS).untilAsserted(() -> {
+      server.getMockServer()
+        .verify(WireMock.postRequestedFor(urlEqualTo("/api/issues/add_comment"))
+          .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
+          .withRequestBody(equalTo("issue=" + issueKey + "&text=That%27s+serious+issue")));
     });
   }
 
@@ -302,7 +328,8 @@ class IssuesStatusChangeMediumTests {
   void it_should_throw_if_server_response_is_not_OK_during_add_new_comment_to_issue() {
     server = newSonarQubeServer().withStatus(DOWN).start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server)
+      .withSonarQubeConnection("connectionId", server,
+        storage -> storage.withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(aServerIssue("myIssueKey")))))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
@@ -315,6 +342,47 @@ class IssuesStatusChangeMediumTests {
       .havingCause()
       .isInstanceOfSatisfying(ResponseErrorException.class, ex -> {
         assertThat(ex.getResponseError().getData().toString()).contains("Error 404 on", "/api/issues/add_comment");
+      });
+  }
+
+  @Test
+  void it_should_throw_if_issue_is_unknown_when_adding_a_comment() {
+    server = newSonarQubeServer().start();
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", server)
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .build();
+
+    var response = backend.getIssueService().addComment(new AddIssueCommentParams("configScopeId", "myIssueKey", "That's " +
+      "serious issue"));
+
+    assertThat(response)
+      .failsWithin(Duration.ofSeconds(2))
+      .withThrowableOfType(ExecutionException.class)
+      .havingCause()
+      .isInstanceOfSatisfying(ResponseErrorException.class, ex -> {
+        assertThat(ex.getResponseError().getData().toString()).contains("myIssueKey");
+      });
+  }
+
+  @Test
+  void it_should_throw_if_issue_with_uuid_key_is_unknown_when_adding_a_comment() {
+    server = newSonarQubeServer().start();
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", server)
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .build();
+    var issueKey = UUID.randomUUID().toString();
+
+    var response = backend.getIssueService().addComment(new AddIssueCommentParams("configScopeId", issueKey, "That's " +
+      "serious issue"));
+
+    assertThat(response)
+      .failsWithin(Duration.ofSeconds(2))
+      .withThrowableOfType(ExecutionException.class)
+      .havingCause()
+      .isInstanceOfSatisfying(ResponseErrorException.class, ex -> {
+        assertThat(ex.getResponseError().getData().toString()).contains(issueKey);
       });
   }
 
