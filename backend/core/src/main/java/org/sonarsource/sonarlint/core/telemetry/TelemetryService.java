@@ -102,6 +102,10 @@ public class TelemetryService {
   }
 
   public void enableTelemetry() {
+    if (isDisabledBySystemProperty()) {
+      LOG.warn("Telemetry is disabled by a system property. Ignoring client request.");
+      return;
+    }
     var telemetryLiveAttributes = getTelemetryLiveAttributes();
     if (Objects.nonNull(telemetryLiveAttributes)) {
       telemetryManager.enable(telemetryLiveAttributes);
