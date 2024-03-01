@@ -31,6 +31,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.OpenHotspotInBrowserParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddQuickFixAppliedForRuleParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddReportedRulesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDoneOnSingleLanguageParams;
@@ -112,6 +113,27 @@ class TelemetryMediumTests {
 
     this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "ab12ef45"));
     assertThat(backend.telemetryFilePath()).doesNotExist();
+  }
+
+  @Test
+  void it_should_not_enable_telemetry_if_disabled_by_system_property() throws ExecutionException, InterruptedException {
+    System.setProperty("sonarlint.telemetry.disabled", "true");
+    System.setProperty("sonarlint.internal.telemetry.initialDelay", "0");
+
+    var fakeClient = newFakeClient()
+      .build();
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", "http://localhost:12345", storage -> storage.withProject("projectKey",
+        project -> project.withMainBranch("master")))
+      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .build(fakeClient);
+
+    assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isFalse();
+    backend.getTelemetryService().enableTelemetry();
+
+    await().untilAsserted(() -> assertThat(fakeClient.getLogs()).extracting(LogParams::getMessage).contains(("Telemetry is " +
+      "disabled by a system property. Ignoring client request.")));
+    assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isFalse();
   }
 
   @Test
@@ -262,7 +284,7 @@ class TelemetryMediumTests {
       .build(fakeClient);
 
     assertThat(telemetryEndpointMock.getAllServeEvents()).isEmpty();
-    await().untilAsserted(() -> assertThat(fakeClient.getLogs()).anyMatch(logParams -> logParams.getMessage().equals("Failed to fetch telemetry payload")));
+    await().untilAsserted(() -> assertThat(fakeClient.getLogs()).extracting(LogParams::getMessage).contains(("Failed to fetch telemetry payload")));
     InternalDebug.setEnabled(originalValue);
     System.clearProperty("sonarlint.internal.telemetry.initialDelay");
   }
