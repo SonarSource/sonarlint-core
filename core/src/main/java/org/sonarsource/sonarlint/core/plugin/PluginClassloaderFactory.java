@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -125,6 +125,7 @@ public class PluginClassloaderFactory {
       .addInclusion("org/sonar/check/")
       .addInclusion("net/sourceforge/pmd/")
       .addInclusion("com/sonarsource/plugins/license/api/")
+      .addInclusion("org/sonarsource/sonarlint/plugin/api/")
 
       // API exclusions
       .addExclusion("org/sonar/api/internal/");

@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,24 +22,24 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 import java.nio.file.Path;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarqube.ws.QualityProfiles;
-import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
-import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+import org.sonarqube.ws.Qualityprofiles;
+import org.sonarqube.ws.Qualityprofiles.SearchWsResponse;
+import org.sonarqube.ws.Qualityprofiles.SearchWsResponse.QualityProfile;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles.QProfile;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class QualityProfilesDownloader {
   private static final Logger LOG = Loggers.get(QualityProfilesDownloader.class);
 
   private static final String DEFAULT_QP_SEARCH_URL = "/api/qualityprofiles/search.protobuf";
-  private final SonarLintWsClient wsClient;
+  private final ServerApiHelper serverApiHelper;
 
-  public QualityProfilesDownloader(SonarLintWsClient wsClient) {
-    this.wsClient = wsClient;
+  public QualityProfilesDownloader(ServerApiHelper serverApiHelper) {
+    this.serverApiHelper = serverApiHelper;
   }
 
   public void fetchQualityProfilesTo(Path destDir) {
@@ -51,12 +51,12 @@ public class QualityProfilesDownloader {
 
     StringBuilder searchUrl = new StringBuilder();
     searchUrl.append(DEFAULT_QP_SEARCH_URL);
-    wsClient.getOrganizationKey()
+    serverApiHelper.getOrganizationKey()
       .ifPresent(org -> searchUrl.append("?organization=").append(StringUtils.urlEncode(org)));
-    SonarLintWsClient.consumeTimed(
-      () -> wsClient.get(searchUrl.toString()),
+    ServerApiHelper.consumeTimed(
+      () -> serverApiHelper.get(searchUrl.toString()),
       response -> {
-        SearchWsResponse qpResponse = QualityProfiles.SearchWsResponse.parseFrom(response.contentStream());
+        SearchWsResponse qpResponse = Qualityprofiles.SearchWsResponse.parseFrom(response.bodyAsStream());
         for (QualityProfile qp : qpResponse.getProfilesList()) {
           QProfile.Builder qpBuilder = QProfile.newBuilder();
           qpBuilder.setKey(qp.getKey());

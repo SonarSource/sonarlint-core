@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,19 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.container.standalone.rule;
 
-import java.util.List;
-import org.sonar.api.batch.rule.Rules;
-import org.sonar.api.resources.Language;
 import org.sonar.api.server.rule.RulesDefinition.Context;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
+import org.sonarsource.sonarlint.core.container.ContainerLifespan;
+import org.sonarsource.sonarlint.core.container.analysis.SonarLintRules;
 import org.sonarsource.sonarlint.core.container.global.ExtensionInstaller;
+
+import static java.util.stream.Collectors.toList;
 
 public class StandaloneRuleRepositoryContainer extends ComponentContainer {
 
-  private Rules rules;
-  private StandaloneActiveRules standaloneActiveRules;
+  private SonarLintRules rules;
   private Context ruleDefinitions;
-  private List<Language> languages;
 
   public StandaloneRuleRepositoryContainer(ComponentContainer parent) {
     super(parent);
@@ -46,36 +45,29 @@ public class StandaloneRuleRepositoryContainer extends ComponentContainer {
   private void addCoreComponents() {
     add(StandaloneRuleDefinitionsLoader.class,
       new StandaloneSonarLintRulesProvider(),
-      StandaloneActiveRulesProvider.class,
       new EmptyConfiguration());
   }
 
   private void addPluginExtensions() {
-    getComponentByType(ExtensionInstaller.class).install(this, false);
+    getComponentByType(ExtensionInstaller.class).installEmbeddedOnly(this, ContainerLifespan.ANALYSIS);
   }
 
   @Override
   public void doAfterStart() {
-    rules = getComponentByType(Rules.class);
-    standaloneActiveRules = getComponentByType(StandaloneActiveRulesProvider.class).provide();
+    rules = getComponentByType(SonarLintRules.class);
     StandaloneRuleDefinitionsLoader offlineRulesLoader = getComponentByType(StandaloneRuleDefinitionsLoader.class);
     ruleDefinitions = offlineRulesLoader.getContext();
-    languages = getComponentsByType(Language.class);
   }
 
-  public Rules getRules() {
+  public SonarLintRules getRules() {
     return rules;
   }
 
   public StandaloneActiveRules getStandaloneActiveRules() {
-    return standaloneActiveRules;
+    return new StandaloneActiveRules(rules.findAll().stream().map(StandaloneRule.class::cast).collect(toList()));
   }
 
   public Context getRulesDefinitions() {
     return ruleDefinitions;
-  }
-
-  public List<Language> getLanguages() {
-    return languages;
   }
 }

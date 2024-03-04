@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,6 +23,8 @@ import org.junit.Test;
 import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.scan.issue.filter.FilterableIssue;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultTextPointer;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultTextRange;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -31,9 +33,9 @@ public class DefaultFilterableIssueTest {
 
   @Test
   public void delegate_textRange_to_rawIssue() {
-    TextRange textRange = mock(TextRange.class);
+    TextRange textRange = new DefaultTextRange(new DefaultTextPointer(0, 1), new DefaultTextPointer(2, 3));
     DefaultClientIssue rawIssue = new DefaultClientIssue(null, null, null, null, null, textRange, null, null);
     FilterableIssue underTest = new DefaultFilterableIssue(rawIssue, mock(InputComponent.class));
-    assertThat(underTest.textRange()).isSameAs(textRange);
+    assertThat(underTest.textRange()).usingRecursiveComparison().isEqualTo(textRange);
   }
 }

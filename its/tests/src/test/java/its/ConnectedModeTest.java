@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - ITs - Tests
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,8 +19,11 @@
  */
 package its;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.Parser;
 import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.MavenBuild;
+import com.sonar.orchestrator.http.HttpResponse;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
 import com.sonar.orchestrator.util.NetworkUtils;
@@ -33,10 +36,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
@@ -55,33 +58,36 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-import org.sonar.wsclient.services.PropertyCreateQuery;
-import org.sonar.wsclient.services.PropertyDeleteQuery;
-import org.sonar.wsclient.user.UserParameters;
-import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
-import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
-import org.sonarqube.ws.client.HttpConnector;
+import org.sonarqube.ws.Hotspots;
+import org.sonarqube.ws.Qualityprofiles.SearchWsResponse;
+import org.sonarqube.ws.Qualityprofiles.SearchWsResponse.QualityProfile;
 import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
-import org.sonarqube.ws.client.WsClientFactories;
 import org.sonarqube.ws.client.WsRequest;
 import org.sonarqube.ws.client.WsResponse;
-import org.sonarqube.ws.client.permission.RemoveGroupWsRequest;
-import org.sonarqube.ws.client.qualityprofile.SearchWsRequest;
-import org.sonarqube.ws.client.setting.SetRequest;
+import org.sonarqube.ws.client.qualityprofiles.ActivateRuleRequest;
+import org.sonarqube.ws.client.qualityprofiles.SearchRequest;
+import org.sonarqube.ws.client.settings.ResetRequest;
+import org.sonarqube.ws.client.settings.SetRequest;
+import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.WsHelperImpl;
+import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
+import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
-import org.sonarsource.sonarlint.core.client.api.connected.WsHelper;
-import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.GetSecurityHotspotRequestParams;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
+import org.sonarsource.sonarlint.core.serverapi.project.ProjectApi;
 
 import static its.tools.ItUtils.SONAR_VERSION;
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
@@ -112,6 +118,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @ClassRule
   public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
+    .defaultForceAuthentication()
     .setSonarVersion(SONAR_VERSION)
     .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", ItUtils.javaVersion))
     .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", ItUtils.pythonVersion))
@@ -162,17 +169,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   @BeforeClass
   public static void prepare() throws Exception {
     adminWsClient = newAdminWsClient(ORCHESTRATOR);
-    adminWsClient.settings().set(SetRequest.builder().setKey("sonar.forceAuthentication").setValue("true").build());
     sonarUserHome = temp.newFolder().toPath();
 
-    removeGroupPermission("anyone", "scan");
-
-    ORCHESTRATOR.getServer().adminWsClient().userClient()
-      .create(UserParameters.create()
-        .login(SONARLINT_USER)
-        .password(SONARLINT_PWD)
-        .passwordConfirmation(SONARLINT_PWD)
-        .name("SonarLint"));
+    adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA, "Sample Java");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVA_PACKAGE, "Sample Java Package");
@@ -204,7 +203,7 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_KOTLIN, "kotlin", "SonarLint IT Kotlin");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_SCALA, "scala", "SonarLint IT Scala");
     ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_XML, "xml", "SonarLint IT XML");
-    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_GLOBAL_EXTENSION, "global", "SonarLint IT Global Extension");
+    ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_GLOBAL_EXTENSION, "xoo", "SonarLint IT Global Extension");
 
     // Build project to have bytecode
     ORCHESTRATOR.executeBuild(MavenBuild.create(new File("projects/sample-java/pom.xml")).setGoals("clean compile"));
@@ -238,7 +237,9 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @AfterClass
   public static void after() throws Exception {
-    server.stop();
+    if (server != null) {
+      server.stop();
+    }
   }
 
   @Before
@@ -247,8 +248,12 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     Map<String, String> globalProps = new HashMap<>();
     globalProps.put("sonar.global.label", "It works");
     logs = new ArrayList<>();
+
+    NodeJsHelper nodeJsHelper = new NodeJsHelper();
+    nodeJsHelper.detect(null);
+
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
-      .setServerId("orchestrator")
+      .setConnectionId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
       .addEnabledLanguage(Language.JAVA)
       .addEnabledLanguage(Language.PHP)
@@ -263,8 +268,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
       .addEnabledLanguage(Language.XOO)
       .setLogOutput((msg, level) -> {
         logs.add(msg);
-        System.out.println(msg);
       })
+      .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
       .setExtraProperties(globalProps)
       .build());
     assertThat(engine.getGlobalStorageStatus()).isNull();
@@ -276,8 +281,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @After
   public void stop() {
-    ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes"));
-    ORCHESTRATOR.getServer().getAdminWsClient().delete(new PropertyDeleteQuery("sonar.java.file.suffixes", PROJECT_KEY_JAVA));
+    adminWsClient.settings().reset(new ResetRequest().setKeys(singletonList("sonar.java.file.suffixes")));
+    adminWsClient.settings().reset(new ResetRequest().setKeys(singletonList("sonar.java.file.suffixes")).setComponent(PROJECT_KEY_JAVA));
     try {
       engine.stop(true);
     } catch (Exception e) {
@@ -290,20 +295,20 @@ public class ConnectedModeTest extends AbstractConnectedTest {
     updateGlobal();
     assertThat(engine.allProjectsByKey()).hasSize(15);
     ORCHESTRATOR.getServer().provisionProject("foo-bar", "Foo");
-    assertThat(engine.downloadAllProjects(getServerConfig(), null)).hasSize(16).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
+    assertThat(engine.downloadAllProjects(endpointParams(ORCHESTRATOR), sqHttpClient(), null)).hasSize(16).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
     assertThat(engine.allProjectsByKey()).hasSize(16).containsKeys("foo-bar", PROJECT_KEY_JAVA, PROJECT_KEY_PHP);
   }
 
   @Test
   public void updateNoAuth() {
+    adminWsClient.settings().set(new SetRequest().setKey("sonar.forceAuthentication").setValue("true"));
     try {
-      engine.update(ServerConfiguration.builder()
-        .url(ORCHESTRATOR.getServer().getUrl())
-        .userAgent("SonarLint ITs")
-        .build(), null);
+      engine.update(endpointParams(ORCHESTRATOR), sqHttpClientNoAuth(), null);
       fail("Exception expected");
     } catch (Exception e) {
       assertThat(e).hasMessage("Not authorized. Please check server credentials.");
+    } finally {
+      adminWsClient.settings().set(new SetRequest().setKey("sonar.forceAuthentication").setValue("false"));
     }
   }
 
@@ -469,6 +474,39 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
+  public void canFetchHotspot() throws InvalidProtocolBufferException {
+    assumeTrue("SonarQube should support opening security hotspots",
+      ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 6));
+
+    analyzeMavenProject(PROJECT_KEY_JAVA_HOTSPOT);
+    HotspotApi securityHotspotsService = new ServerApi(endpointParams(ORCHESTRATOR), sqHttpClient()).hotspot();
+
+    Optional<ServerHotspot> remoteHotspot = securityHotspotsService
+      .fetch(new GetSecurityHotspotRequestParams(getFirstHotspotKey(PROJECT_KEY_JAVA_HOTSPOT), PROJECT_KEY_JAVA_HOTSPOT));
+
+    assertThat(remoteHotspot).isNotEmpty();
+    ServerHotspot actualHotspot = remoteHotspot.get();
+    assertThat(actualHotspot.message).isEqualTo("Make sure using this hardcoded IP address is safe here.");
+    assertThat(actualHotspot.filePath).isEqualTo("src/main/java/foo/Foo.java");
+    assertThat(actualHotspot.textRange).isEqualToComparingFieldByField(new TextRange(5, 14, 5, 29));
+    assertThat(actualHotspot.author).isEmpty();
+    assertThat(actualHotspot.status).isEqualTo(ServerHotspot.Status.TO_REVIEW);
+    assertThat(actualHotspot.resolution).isNull();
+    assertThat(actualHotspot.rule.key).isEqualTo("java:S1313");
+
+  }
+
+  private String getFirstHotspotKey(String projectKey) throws InvalidProtocolBufferException {
+    HttpResponse response = ORCHESTRATOR.getServer()
+      .newHttpCall("/api/hotspots/search.protobuf")
+      .setParam("projectKey", projectKey)
+      .setAdminCredentials()
+      .execute();
+    Parser<Hotspots.SearchWsResponse> parser = Hotspots.SearchWsResponse.parser();
+    return parser.parseFrom(response.getBody()).getHotspots(0).getKey();
+  }
+
+  @Test
   public void analysisIssueOnDirectory() throws Exception {
     updateGlobal();
     updateProject(PROJECT_KEY_JAVA_PACKAGE);
@@ -500,7 +538,6 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void globalExtension() throws Exception {
-    assumeTrue(ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 7));
     updateGlobal();
     updateProject(PROJECT_KEY_GLOBAL_EXTENSION);
 
@@ -508,7 +545,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_GLOBAL_EXTENSION, PROJECT_KEY_GLOBAL_EXTENSION,
-      "src/foo.glob"),
+      "src/foo.glob",
+      "sonar.xoo.file.suffixes", "glob"),
       issueListener, null, null);
 
     assertThat(issueListener.getIssues()).extracting("ruleKey", "message").containsOnly(
@@ -516,7 +554,8 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
     issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_GLOBAL_EXTENSION, PROJECT_KEY_GLOBAL_EXTENSION,
-      "src/foo.glob"),
+      "src/foo.glob",
+      "sonar.xoo.file.suffixes", "glob"),
       issueListener, null, null);
 
     assertThat(issueListener.getIssues()).extracting("ruleKey", "message").containsOnly(
@@ -539,11 +578,11 @@ public class ConnectedModeTest extends AbstractConnectedTest {
 
   @Test
   public void analysisTemplateRule() throws Exception {
-    SearchWsRequest searchReq = new SearchWsRequest();
+    SearchRequest searchReq = new SearchRequest();
     searchReq.setQualityProfile("SonarLint IT Java");
-    searchReq.setProjectKey(PROJECT_KEY_JAVA);
-    searchReq.setDefaults(false);
-    SearchWsResponse search = adminWsClient.qualityProfiles().search(searchReq);
+    searchReq.setProject(PROJECT_KEY_JAVA);
+    searchReq.setDefaults("false");
+    SearchWsResponse search = adminWsClient.qualityprofiles().search(searchReq);
     QualityProfile qp = null;
     for (QualityProfile q : search.getProfilesList()) {
       if (q.getName().equals("SonarLint IT Java")) {
@@ -648,84 +687,57 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void generateToken() {
-    WsHelper ws = new WsHelperImpl();
-    ServerConfiguration serverConfig = getServerConfig(true);
-
-    String token = ws.generateAuthenticationToken(serverConfig, "name", false);
-    assertThat(token).isNotNull();
-
-    token = ws.generateAuthenticationToken(serverConfig, "name", true);
-    assertThat(token).isNotNull();
-  }
-
-  @Test
   public void checkForUpdate() {
     updateGlobal();
     updateProject(PROJECT_KEY_JAVA);
 
-    ServerConfiguration serverConfig = getServerConfig(true);
+    EndpointParams serverConfig = endpointParamsNoOrg("http://localhost:" + redirectPort);
 
-    StorageUpdateCheckResult result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
+    StorageUpdateCheckResult result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, sqHttpClient(), null);
     assertThat(result.needUpdate()).isFalse();
 
     // restarting server should not lead to notify an update
     ORCHESTRATOR.restartServer();
-    result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
+    result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, sqHttpClient(), null);
     assertThat(result.needUpdate()).isFalse();
 
     // Change a global setting that is not in the whitelist
     setSettings(null, "sonar.foo", "bar");
-    result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
+    result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, sqHttpClient(), null);
     assertThat(result.needUpdate()).isFalse();
 
     // Change a global setting that *is* in the whitelist
     setSettingsMultiValue(null, "sonar.inclusions", "**/*");
     // Activate a new rule
-    SearchWsResponse response = newAdminWsClient(ORCHESTRATOR).qualityProfiles().search(new SearchWsRequest().setLanguage("java"));
+    SearchWsResponse response = newAdminWsClient(ORCHESTRATOR).qualityprofiles().search(new SearchRequest().setLanguage("java"));
     String profileKey = response.getProfilesList().stream().filter(p -> p.getName().equals("SonarLint IT Java")).findFirst().get().getKey();
-    ORCHESTRATOR.getServer().adminWsClient().post("api/qualityprofiles/activate_rule", "key", profileKey, "rule", javaRuleKey("S1228"));
+    adminWsClient.qualityprofiles().activateRule(new ActivateRuleRequest().setKey(profileKey).setRule(javaRuleKey("S1228")));
 
-    result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, null);
+    result = engine.checkIfGlobalStorageNeedUpdate(serverConfig, sqHttpClient(), null);
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Global settings updated", "Quality profile 'SonarLint IT Java' for language 'Java' updated");
 
-    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
+    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, sqHttpClient(), PROJECT_KEY_JAVA, null);
     assertThat(result.needUpdate()).isFalse();
 
     // Change a project setting that is not in the whitelist
     setSettings(PROJECT_KEY_JAVA, "sonar.foo", "biz");
-    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
+    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, sqHttpClient(), PROJECT_KEY_JAVA, null);
     assertThat(result.needUpdate()).isFalse();
 
     // Change a project setting that *is* in the whitelist
     setSettingsMultiValue(PROJECT_KEY_JAVA, "sonar.exclusions", "**/*.foo");
 
-    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, PROJECT_KEY_JAVA, null);
+    result = engine.checkIfProjectStorageNeedUpdate(serverConfig, sqHttpClient(), PROJECT_KEY_JAVA, null);
     assertThat(result.needUpdate()).isTrue();
     assertThat(result.changelog()).containsOnly("Project settings updated");
   }
 
   @Test
-  public void downloadOrganizations() throws Exception {
-    WsHelper helper = new WsHelperImpl();
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 3)) {
-      assertThat(helper.listOrganizations(getServerConfig(), null)).hasSize(1);
-    } else {
-      try {
-        helper.listOrganizations(getServerConfig(), null);
-        fail("Expected exception");
-      } catch (Exception e) {
-        assertThat(e).isInstanceOf(UnsupportedServerException.class);
-      }
-    }
-  }
-
-  @Test
-  public void getProject() throws Exception {
-    WsHelper helper = new WsHelperImpl();
-    assertThat(helper.getProject(getServerConfig(), "foo", null)).isNotPresent();
-    assertThat(helper.getProject(getServerConfig(), PROJECT_KEY_RUBY, null)).isPresent();
+  public void getProject() {
+    ProjectApi helper = new ServerApi(endpointParams(ORCHESTRATOR), sqHttpClient()).project();
+    assertThat(helper.getProject("foo", null)).isNotPresent();
+    assertThat(helper.getProject(PROJECT_KEY_RUBY, null)).isPresent();
   }
 
   @Test
@@ -769,62 +781,35 @@ public class ConnectedModeTest extends AbstractConnectedTest {
   }
 
   private void setSettingsMultiValue(@Nullable String moduleKey, String key, String value) {
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 3)) {
-      adminWsClient.settings().set(SetRequest.builder()
-        .setKey(key)
-        .setValues(Collections.singletonList(value))
-        .setComponent(moduleKey)
-        .build());
-    } else {
-      ORCHESTRATOR.getServer().getAdminWsClient()
-        .create(new PropertyCreateQuery(key, value).setResourceKeyOrId(moduleKey));
-    }
+    adminWsClient.settings().set(new SetRequest()
+      .setKey(key)
+      .setValues(singletonList(value))
+      .setComponent(moduleKey));
   }
 
   private void setSettings(@Nullable String moduleKey, String key, String value) {
-    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(6, 3)) {
-      adminWsClient.settings().set(SetRequest.builder()
-        .setKey(key)
-        .setValue(value)
-        .setComponent(moduleKey)
-        .build());
-    } else {
-      ORCHESTRATOR.getServer().getAdminWsClient()
-        .create(new PropertyCreateQuery(key, value).setResourceKeyOrId(moduleKey));
-    }
+    adminWsClient.settings().set(new SetRequest()
+      .setKey(key)
+      .setValue(value)
+      .setComponent(moduleKey));
   }
 
   private void updateProject(String projectKey) {
-    engine.updateProject(getServerConfig(), projectKey, null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, false, null);
   }
 
   private void updateGlobal() {
-    engine.update(getServerConfig(), null);
+    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
   }
 
-  private ServerConfiguration getServerConfig() {
-    return getServerConfig(false);
+  private static void analyzeMavenProject(String projectDirName) {
+    Path projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
+    Path pom = projectDir.resolve("pom.xml");
+    ORCHESTRATOR.executeBuild(MavenBuild.create(pom.toFile())
+      .setCleanPackageSonarGoals()
+      .setProperty("sonar.projectKey", projectDirName)
+      .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
+      .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
   }
 
-  private ServerConfiguration getServerConfig(boolean redirect) {
-    return ServerConfiguration.builder()
-      .url(redirect ? ("http://localhost:" + redirectPort) : ORCHESTRATOR.getServer().getUrl())
-      .userAgent("SonarLint ITs")
-      .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build();
-  }
-
-  private static void removeGroupPermission(String groupName, String permission) {
-    adminWsClient.permissions().removeGroup(new RemoveGroupWsRequest()
-      .setGroupName(groupName)
-      .setPermission(permission));
-  }
-
-  public static WsClient newAdminWsClient(Orchestrator orchestrator) {
-    com.sonar.orchestrator.container.Server server = orchestrator.getServer();
-    return WsClientFactories.getDefault().newClient(HttpConnector.newBuilder()
-      .url(server.getUrl())
-      .credentials(com.sonar.orchestrator.container.Server.ADMIN_LOGIN, com.sonar.orchestrator.container.Server.ADMIN_PASSWORD)
-      .build());
-  }
 }

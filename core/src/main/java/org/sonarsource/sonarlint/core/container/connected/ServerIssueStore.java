@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -51,7 +51,7 @@ public class ServerIssueStore implements IssueStore {
   @Override
   public synchronized void save(List<ServerIssue> issues) {
     // organize everything in memory to avoid making an IO access per issue
-    Map<String, List<ServerIssue>> issuesPerFile = issues.stream().collect(Collectors.groupingBy(ServerIssue::getPath));
+    Map<String, List<ServerIssue>> issuesPerFile = issues.stream().collect(Collectors.groupingBy(issue -> issue.getPrimaryLocation().getPath()));
 
     for (Map.Entry<String, List<ServerIssue>> entry : issuesPerFile.entrySet()) {
       try {

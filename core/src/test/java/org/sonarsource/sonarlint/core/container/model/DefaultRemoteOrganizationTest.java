@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Test;
 import org.sonarqube.ws.Organizations.Organization;
-import org.sonarsource.sonarlint.core.client.api.connected.RemoteOrganization;
+import org.sonarsource.sonarlint.core.serverapi.organization.ServerOrganization;
 
 public class DefaultRemoteOrganizationTest {
   @Test
@@ -33,7 +33,7 @@ public class DefaultRemoteOrganizationTest {
       .setKey("key")
       .setDescription("desc")
       .build();
-    RemoteOrganization remoteOrg = new DefaultRemoteOrganization(org);
+    ServerOrganization remoteOrg = new DefaultRemoteOrganization(org);
     assertThat(remoteOrg.getKey()).isEqualTo("key");
     assertThat(remoteOrg.getName()).isEqualTo("name");
     assertThat(remoteOrg.getDescription()).isEqualTo("desc");

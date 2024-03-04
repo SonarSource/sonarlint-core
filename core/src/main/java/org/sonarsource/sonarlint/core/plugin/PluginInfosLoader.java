@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -33,6 +33,8 @@ import org.sonar.api.utils.log.Profiler;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason;
+import org.sonarsource.sonarlint.core.client.api.common.SkipReason.UnsatisfiedRuntimeRequirement.RuntimeRequirement;
+import org.sonarsource.sonarlint.core.client.api.common.Version;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.plugin.PluginIndex.PluginReference;
@@ -41,23 +43,25 @@ import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 
 public class PluginInfosLoader {
 
-  private static final String IMPLEMENTED_SQ_API = "8.4";
+  private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
+
+  private static final String IMPLEMENTED_SQ_API = "8.9";
 
   private static final Logger LOG = Loggers.get(PluginInfosLoader.class);
 
   private final PluginCache pluginCache;
   private final PluginIndex pluginIndex;
-  private final Set<Language> enabledLanguages;
   private final PluginVersionChecker pluginVersionChecker;
   private final System2 system2;
+  private final AbstractGlobalConfiguration globalConfiguration;
 
   public PluginInfosLoader(PluginVersionChecker pluginVersionChecker, PluginCache pluginCache, PluginIndex pluginIndex, AbstractGlobalConfiguration globalConfiguration,
     System2 system2) {
     this.pluginVersionChecker = pluginVersionChecker;
     this.pluginCache = pluginCache;
     this.pluginIndex = pluginIndex;
+    this.globalConfiguration = globalConfiguration;
     this.system2 = system2;
-    this.enabledLanguages = globalConfiguration.getEnabledLanguages();
   }
 
   public Map<String, PluginInfo> load() {
@@ -71,7 +75,7 @@ public class PluginInfosLoader {
 
     for (PluginReference ref : pluginReferences) {
       Path jarFilePath = getFromCache(ref);
-      PluginInfo info = PluginInfo.create(jarFilePath);
+      PluginInfo info = PluginInfo.create(jarFilePath, ref.isEmbedded());
       Boolean sonarLintSupported = info.isSonarLintSupported();
       if (sonarLintSupported == null || !sonarLintSupported.booleanValue()) {
         LOG.debug("Plugin '{}' is not compatible with SonarLint. Skip loading it.", info.getName());
@@ -93,7 +97,7 @@ public class PluginInfosLoader {
   private void checkIfSkippedAndPopulateReason(PluginInfo info) {
     String pluginKey = info.getKey();
     Set<Language> languages = Language.getLanguagesByPluginKey(pluginKey);
-    if (!languages.isEmpty() && enabledLanguages.stream().noneMatch(languages::contains)) {
+    if (!languages.isEmpty() && globalConfiguration.getEnabledLanguages().stream().noneMatch(languages::contains)) {
       if (languages.size() > 1) {
         LOG.debug("Plugin '{}' is excluded because none of languages '{}' are enabled. Skip loading it.", info.getName(),
           languages.stream().map(Language::toString).collect(Collectors.joining(",")));
@@ -119,9 +123,21 @@ public class PluginInfosLoader {
     String javaSpecVersion = Objects.requireNonNull(system2.property("java.specification.version"), "Missing Java property 'java.specification.version'");
     if (jreMinVersion != null) {
       Version jreCurrentVersion = Version.create(javaSpecVersion);
-      if (jreCurrentVersion.compareTo(jreMinVersion) < 0) {
+      if (!jreCurrentVersion.satisfiesMinRequirement(jreMinVersion)) {
         LOG.debug("Plugin '{}' requires JRE {} while current is {}. Skip loading it.", info.getName(), jreMinVersion, jreCurrentVersion);
-        info.setSkipReason(new SkipReason.UnsatisfiedJreRequirement(jreCurrentVersion.toString(), jreMinVersion.toString()));
+        info.setSkipReason(
+          new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.JRE, jreCurrentVersion.toString(), jreMinVersion.toString()));
+      }
+    }
+    Version nodeMinVersion = info.getNodeJsMinVersion();
+    if (nodeMinVersion != null) {
+      Version nodeCurrentVersion = globalConfiguration.getNodeJsVersion();
+      if (nodeCurrentVersion == null) {
+        LOG.debug("Plugin '{}' requires Node.js {}. Skip loading it.", info.getName(), nodeMinVersion);
+        info.setSkipReason(new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.NODEJS, null, nodeMinVersion.toString()));
+      } else if (!nodeCurrentVersion.satisfiesMinRequirement(nodeMinVersion)) {
+        LOG.debug("Plugin '{}' requires Node.js {} while current is {}. Skip loading it.", info.getName(), nodeMinVersion, nodeCurrentVersion);
+        info.setSkipReason(new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.NODEJS, nodeCurrentVersion.toString(), nodeMinVersion.toString()));
       }
     }
   }
@@ -131,9 +147,11 @@ public class PluginInfosLoader {
       if ("license".equals(required.getKey())) {
         continue;
       }
-      if (Language.JS.getPluginKey().equals(info.getKey()) && Language.TS.getPluginKey().equals(required.getKey())) {
+      if (Language.JS.getPluginKey().equals(info.getKey()) && OLD_SONARTS_PLUGIN_KEY.equals(required.getKey())) {
         // Workaround for SLCORE-259
         // This dependency was added to ease migration on SonarQube, but can be ignored on SonarLint
+        // Note: The dependency was removed in SonarJS 6.3 but we should still keep the workaround as long as we want to support older
+        // versions
         continue;
       }
       PluginInfo depInfo = infosByKey.get(required.getKey());

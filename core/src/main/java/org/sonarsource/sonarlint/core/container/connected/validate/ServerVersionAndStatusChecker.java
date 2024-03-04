@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,21 +23,21 @@ import com.google.gson.Gson;
 import org.apache.commons.lang.StringUtils;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
+import org.sonarsource.sonarlint.core.client.api.common.Version;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 public class ServerVersionAndStatusChecker {
 
   private static final Logger LOG = Loggers.get(ServerVersionAndStatusChecker.class);
 
-  private static final String MIN_SQ_VERSION = "6.7";
-  private final SonarLintWsClient wsClient;
+  private static final String MIN_SQ_VERSION = "7.9";
+  private final ServerApiHelper serverApiHelper;
 
-  public ServerVersionAndStatusChecker(SonarLintWsClient wsClient) {
-    this.wsClient = wsClient;
+  public ServerVersionAndStatusChecker(ServerApiHelper serverApiHelper) {
+    this.serverApiHelper = serverApiHelper;
   }
 
   /**
@@ -93,10 +93,10 @@ public class ServerVersionAndStatusChecker {
   }
 
   private ServerInfos fetchServerInfos() {
-    return SonarLintWsClient.processTimed(
-      () -> wsClient.get("api/system/status"),
+    return ServerApiHelper.processTimed(
+      () -> serverApiHelper.get("api/system/status"),
       response -> {
-        String responseStr = response.content();
+        String responseStr = response.bodyAsString();
         try {
           SystemStatus status = new Gson().fromJson(responseStr, SystemStatus.class);
           ServerInfos.Builder builder = ServerInfos.newBuilder();

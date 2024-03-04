@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -36,6 +36,7 @@ import org.apache.commons.lang.StringUtils;
 import org.sonar.api.utils.MessageException;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason;
+import org.sonarsource.sonarlint.core.client.api.common.Version;
 
 import static java.util.Objects.requireNonNull;
 
@@ -125,7 +126,12 @@ public class PluginInfo implements Comparable<PluginInfo> {
   private Version jreMinVersion;
 
   @CheckForNull
+  private Version nodeJsMinVersion;
+
+  @CheckForNull
   private SkipReason skipReason;
+
+  private boolean embedded;
 
   public PluginInfo(String key) {
     requireNonNull(key, "Plugin key is missing from manifest");
@@ -199,6 +205,11 @@ public class PluginInfo implements Comparable<PluginInfo> {
     return jreMinVersion;
   }
 
+  @CheckForNull
+  public Version getNodeJsMinVersion() {
+    return nodeJsMinVersion;
+  }
+
   public Optional<SkipReason> getSkipReason() {
     return Optional.ofNullable(skipReason);
   }
@@ -266,8 +277,21 @@ public class PluginInfo implements Comparable<PluginInfo> {
     return this;
   }
 
+  private PluginInfo setMinimalNodeJsVersion(@Nullable Version nodeJsMinVersion) {
+    this.nodeJsMinVersion = nodeJsMinVersion;
+    return this;
+  }
+
   public void setSkipReason(@Nullable SkipReason skipReason) {
     this.skipReason = skipReason;
+  }
+
+  public void setEmbedded(boolean embedded) {
+    this.embedded = embedded;
+  }
+
+  public boolean isEmbedded() {
+    return embedded;
   }
 
   /**
@@ -323,17 +347,17 @@ public class PluginInfo implements Comparable<PluginInfo> {
       .result();
   }
 
-  public static PluginInfo create(Path jarFile) {
+  public static PluginInfo create(Path jarFile, boolean isEmbedded) {
     try {
       PluginManifest manifest = new PluginManifest(jarFile);
-      return create(jarFile, manifest);
+      return create(jarFile, manifest, isEmbedded);
 
     } catch (IOException e) {
       throw new IllegalStateException("Fail to extract plugin metadata from file: " + jarFile, e);
     }
   }
 
-  static PluginInfo create(Path jarPath, PluginManifest manifest) {
+  static PluginInfo create(Path jarPath, PluginManifest manifest, boolean isEmbedded) {
     if (StringUtils.isBlank(manifest.getKey())) {
       throw MessageException.of(String.format("File is not a plugin. Please delete it and restart: %s", jarPath.toAbsolutePath()));
     }
@@ -362,6 +386,11 @@ public class PluginInfo implements Comparable<PluginInfo> {
     if (jreMinVersion != null) {
       info.setMinimalJreVersion(Version.create(jreMinVersion));
     }
+    String nodejsMinVersion = manifest.getNodeJsMinVersion();
+    if (nodejsMinVersion != null) {
+      info.setMinimalNodeJsVersion(Version.create(nodejsMinVersion));
+    }
+    info.setEmbedded(isEmbedded);
     return info;
   }
 

@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Rule;
@@ -40,6 +41,9 @@ import org.sonarsource.sonarlint.core.container.model.DefaultServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration.Builder;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Flow;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.TextRange;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -49,11 +53,11 @@ public class IssueStoreReaderTest {
   private static final String PROJECT_KEY = "root";
 
   private IssueStoreReader issueStoreReader;
-  private IssueStore issueStore = new InMemoryIssueStore();
-  private StoragePaths storagePaths = mock(StoragePaths.class);
-  private StorageReader storageReader = mock(StorageReader.class);
-  private IssueStorePaths issueStorePaths = new IssueStorePaths();
-  private ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "");
+  private final IssueStore issueStore = new InMemoryIssueStore();
+  private final StoragePaths storagePaths = mock(StoragePaths.class);
+  private final StorageReader storageReader = mock(StorageReader.class);
+  private final IssueStorePaths issueStorePaths = new IssueStorePaths();
+  private final ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "");
   @Rule
   public ExpectedException exception = ExpectedException.none();
 
@@ -85,22 +89,22 @@ public class IssueStoreReaderTest {
 
     // setup issues
     issueStore.save(Arrays.asList(
-      createServerIssue(PROJECT_KEY, "module1/src/path1"),
-      createServerIssue(PROJECT_KEY, "module1/src/path2"),
-      createServerIssue(PROJECT_KEY, "module2/path1"),
-      createServerIssue(PROJECT_KEY, "module2/path2")));
+      createServerIssue("module1/src/path1"),
+      createServerIssue("module1/src/path2"),
+      createServerIssue("module2/path1"),
+      createServerIssue("module2/path2")));
 
     // test
 
     // matches module1 path
     assertThat(issueStoreReader.getServerIssues(projectBinding, "module1/src/path1"))
       .usingElementComparator(simpleComparator)
-      .containsOnly(createApiIssue(PROJECT_KEY, "module1/src/path1"));
+      .containsOnly(createApiIssue("module1/src/path1"));
 
     // matches module2
     assertThat(issueStoreReader.getServerIssues(projectBinding, "module2/path2"))
       .usingElementComparator(simpleComparator)
-      .containsOnly(createApiIssue(PROJECT_KEY, "module2/path2"));
+      .containsOnly(createApiIssue("module2/path2"));
 
     // no file found
     assertThat(issueStoreReader.getServerIssues(projectBinding, "module1/src/path3"))
@@ -111,7 +115,7 @@ public class IssueStoreReaderTest {
     exception.expectMessage("project not in storage");
     assertThat(issueStoreReader.getServerIssues(new ProjectBinding("root:module1", "", ""), "path2"))
       .usingElementComparator(simpleComparator)
-      .containsOnly(createApiIssue("module1", "path2"));
+      .containsOnly(createApiIssue("path2"));
   }
 
   @Test
@@ -125,29 +129,15 @@ public class IssueStoreReaderTest {
 
     // setup issues
     issueStore.save(Arrays.asList(
-      createServerIssue(PROJECT_KEY, "module12/path1"),
-      createServerIssue(PROJECT_KEY, "module12/path12")));
+      createServerIssue("module12/path1"),
+      createServerIssue("module12/path12")));
 
     // test
 
     // matches module12 path
     assertThat(issueStoreReader.getServerIssues(projectBinding, "module12/path12"))
       .usingElementComparator(simpleComparator)
-      .containsOnly(createApiIssue(PROJECT_KEY, "module12/path12"));
-  }
-
-  @Test
-  public void testDontSetTypeIfDoesntExist() {
-    setModulePaths(Collections.singletonMap(PROJECT_KEY, ""));
-
-    Sonarlint.ServerIssue serverIssue = Sonarlint.ServerIssue.newBuilder()
-      .setPath("path")
-      .build();
-
-    issueStore.save(Collections.singletonList(serverIssue));
-
-    ServerIssue issue = issueStoreReader.getServerIssues(projectBinding, "path").iterator().next();
-    assertThat(issue.type()).isNull();
+      .containsOnly(createApiIssue("module12/path12"));
   }
 
   @Test
@@ -155,14 +145,14 @@ public class IssueStoreReaderTest {
     setModulePaths(Collections.singletonMap(PROJECT_KEY, ""));
 
     // setup issues
-    issueStore.save(Collections.singletonList(createServerIssue(PROJECT_KEY, "src/path1")));
+    issueStore.save(Collections.singletonList(createServerIssue("src/path1")));
 
     // test
 
     // matches path
     assertThat(issueStoreReader.getServerIssues(projectBinding, "src/path1"))
       .usingElementComparator(simpleComparator)
-      .containsOnly(createApiIssue(PROJECT_KEY, "src/path1"));
+      .containsOnly(createApiIssue("src/path1"));
 
     // no file found
     assertThat(issueStoreReader.getServerIssues(projectBinding, "src/path3"))
@@ -178,7 +168,7 @@ public class IssueStoreReaderTest {
   public void return_empty_list_if_local_path_is_invalid() {
     setModulePaths(Collections.singletonMap(PROJECT_KEY, ""));
     ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "local");
-    issueStore.save(Collections.singletonList(createServerIssue(PROJECT_KEY, "src/path1")));
+    issueStore.save(Collections.singletonList(createServerIssue("src/path1")));
     assertThat(issueStoreReader.getServerIssues(projectBinding, "src/path1"))
       .isEmpty();
   }
@@ -189,14 +179,14 @@ public class IssueStoreReaderTest {
     ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "sq", "local");
 
     // setup issues
-    issueStore.save(Collections.singletonList(createServerIssue(PROJECT_KEY, "sq/src/path1")));
+    issueStore.save(Collections.singletonList(createServerIssue("sq/src/path1")));
 
     // test
 
     // matches path
     assertThat(issueStoreReader.getServerIssues(projectBinding, "local/src/path1"))
       .usingElementComparator(simpleComparator)
-      .containsOnly(createApiIssue(PROJECT_KEY, "local/src/path1"));
+      .containsOnly(createApiIssue("local/src/path1"));
   }
 
   @Test
@@ -205,14 +195,14 @@ public class IssueStoreReaderTest {
     ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "local");
 
     // setup issues
-    issueStore.save(Collections.singletonList(createServerIssue(PROJECT_KEY, "src/path1")));
+    issueStore.save(Collections.singletonList(createServerIssue("src/path1")));
 
     // test
 
     // matches path
     assertThat(issueStoreReader.getServerIssues(projectBinding, "local/src/path1"))
       .usingElementComparator(simpleComparator)
-      .containsOnly(createApiIssue(PROJECT_KEY, "local/src/path1"));
+      .containsOnly(createApiIssue("local/src/path1"));
   }
 
   @Test
@@ -221,33 +211,79 @@ public class IssueStoreReaderTest {
     ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "sq", "");
 
     // setup issues
-    issueStore.save(Collections.singletonList(createServerIssue(PROJECT_KEY, "sq/src/path1")));
+    issueStore.save(Collections.singletonList(createServerIssue("sq/src/path1")));
 
     // test
 
     // matches path
     assertThat(issueStoreReader.getServerIssues(projectBinding, "src/path1"))
       .usingElementComparator(simpleComparator)
-      .containsOnly(createApiIssue(PROJECT_KEY, "src/path1"));
+      .containsOnly(createApiIssue("src/path1"));
   }
 
-  private Comparator<ServerIssue> simpleComparator = (o1, o2) -> {
-    if (Objects.equal(o1.moduleKey(), o2.moduleKey()) && Objects.equal(o1.filePath(), o2.filePath())) {
+  @Test
+  public void canReadFlowsFromStorage() {
+    setModulePaths(Collections.singletonMap(PROJECT_KEY, ""));
+
+    // setup issues
+    issueStore.save(Collections.singletonList(Sonarlint.ServerIssue.newBuilder()
+      .setPrimaryLocation(
+        Location.newBuilder()
+          .setPath("src/path1")
+          .setMsg("Primary")
+          .setTextRange(TextRange.newBuilder().setStartLine(1).setStartLineOffset(2).setEndLine(3).setEndLineOffset(4))
+          .setCodeSnippet("Primary location code"))
+      .addFlow(Flow.newBuilder()
+        .addLocation(Location.newBuilder().setPath("src/path1").setMsg("Flow 1 - Location 1")
+          .setTextRange(TextRange.newBuilder().setStartLine(5).setStartLineOffset(6).setEndLine(7).setEndLineOffset(8))
+          .setCodeSnippet("Some code snipper\n\t with newline"))
+        .addLocation(Location.newBuilder().setPath("src/path1").setMsg("Flow 1 - Location 2 - Without text range"))
+        .addLocation(Location.newBuilder().setPath("src/path2")))
+      .build()));
+
+    List<ServerIssue> issuesReadFromStorage = issueStoreReader.getServerIssues(projectBinding, "src/path1");
+    assertThat(issuesReadFromStorage).hasSize(1);
+    ServerIssue serverIssue = issuesReadFromStorage.get(0);
+    assertThat(serverIssue.getFilePath()).isEqualTo("src/path1");
+    assertThat(serverIssue.getMessage()).isEqualTo("Primary");
+    assertThat(serverIssue.getTextRange().getStartLine()).isEqualTo(1);
+    assertThat(serverIssue.getTextRange().getStartLineOffset()).isEqualTo(2);
+    assertThat(serverIssue.getTextRange().getEndLine()).isEqualTo(3);
+    assertThat(serverIssue.getTextRange().getEndLineOffset()).isEqualTo(4);
+    assertThat(serverIssue.getCodeSnippet()).isEqualTo("Primary location code");
+
+    assertThat(serverIssue.getFlows()).hasSize(1);
+    assertThat(serverIssue.getFlows().get(0).locations()).hasSize(3);
+    assertThat(serverIssue.getFlows().get(0).locations().get(0).getFilePath()).isEqualTo("src/path1");
+    assertThat(serverIssue.getFlows().get(0).locations().get(0).getMessage()).isEqualTo("Flow 1 - Location 1");
+    assertThat(serverIssue.getFlows().get(0).locations().get(0).getTextRange().getStartLine()).isEqualTo(5);
+    assertThat(serverIssue.getFlows().get(0).locations().get(0).getTextRange().getStartLineOffset()).isEqualTo(6);
+    assertThat(serverIssue.getFlows().get(0).locations().get(0).getTextRange().getEndLine()).isEqualTo(7);
+    assertThat(serverIssue.getFlows().get(0).locations().get(0).getTextRange().getEndLineOffset()).isEqualTo(8);
+    assertThat(serverIssue.getFlows().get(0).locations().get(0).getCodeSnippet()).isEqualTo("Some code snipper\n\t with newline");
+
+    assertThat(serverIssue.getFlows().get(0).locations().get(1).getMessage()).isEqualTo("Flow 1 - Location 2 - Without text range");
+    assertThat(serverIssue.getFlows().get(0).locations().get(1).getTextRange()).isNull();
+
+    assertThat(serverIssue.getFlows().get(0).locations().get(2).getMessage()).isEmpty();
+    assertThat(serverIssue.getFlows().get(0).locations().get(2).getFilePath()).isEqualTo("src/path2");
+  }
+
+  private final Comparator<ServerIssue> simpleComparator = (o1, o2) -> {
+    if (Objects.equal(o1.getFilePath(), o2.getFilePath())) {
       return 0;
     }
     return 1;
   };
 
-  private ServerIssue createApiIssue(String moduleKey, String filePath) {
+  private ServerIssue createApiIssue(String filePath) {
     return new DefaultServerIssue()
-      .setFilePath(filePath)
-      .setModuleKey(moduleKey);
+      .setFilePath(filePath);
   }
 
-  private Sonarlint.ServerIssue createServerIssue(String moduleKey, String filePath) {
+  private Sonarlint.ServerIssue createServerIssue(String filePath) {
     return Sonarlint.ServerIssue.newBuilder()
-      .setPath(filePath)
-      .setModuleKey(moduleKey)
+      .setPrimaryLocation(Location.newBuilder().setPath(filePath))
       .build();
   }
 }

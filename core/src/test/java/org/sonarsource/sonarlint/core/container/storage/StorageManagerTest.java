@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -40,7 +40,7 @@ public class StorageManagerTest {
     Path sonarUserHome = temp.newFolder().toPath();
     StoragePaths manager = new StoragePaths(ConnectedGlobalConfiguration.builder()
       .setSonarLintUserHome(sonarUserHome)
-      .setServerId("server_id")
+      .setConnectionId("server_id")
       .build());
 
     Path moduleStorageRoot = manager.getProjectStorageRoot("module.:key/with_branch%");
@@ -54,7 +54,7 @@ public class StorageManagerTest {
     Path sonarUserHome = temp.newFolder().toPath();
     StoragePaths manager = new StoragePaths(ConnectedGlobalConfiguration.builder()
       .setSonarLintUserHome(sonarUserHome)
-      .setServerId("complicated.:name/with_invalid%chars")
+      .setConnectionId("complicated.:name/with_invalid%chars")
       .build());
 
     Path storageRoot = manager.getServerStorageRoot();
@@ -67,7 +67,7 @@ public class StorageManagerTest {
     Path sonarUserHome = temp.newFolder().toPath();
     StoragePaths manager = new StoragePaths(ConnectedGlobalConfiguration.builder()
       .setSonarLintUserHome(sonarUserHome)
-      .setServerId(StringUtils.repeat("a", 260))
+      .setConnectionId(StringUtils.repeat("a", 260))
       .build());
 
     Path storageRoot = manager.getServerStorageRoot();
@@ -81,7 +81,7 @@ public class StorageManagerTest {
     Path sonarUserHome = temp.newFolder().toPath();
     StoragePaths manager = new StoragePaths(ConnectedGlobalConfiguration.builder()
       .setSonarLintUserHome(sonarUserHome)
-      .setServerId("server")
+      .setConnectionId("server")
       .build());
 
     assertThat(manager.getServerIssuesPath("project")).isEqualTo(sonarUserHome

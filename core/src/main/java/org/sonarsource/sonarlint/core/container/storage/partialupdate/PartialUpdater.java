@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,9 +21,7 @@ package org.sonarsource.sonarlint.core.container.storage.partialupdate;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.sonar.api.utils.TempFolder;
-import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.container.connected.IssueStore;
@@ -34,6 +32,7 @@ import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDown
 import org.sonarsource.sonarlint.core.container.connected.update.perform.ServerIssueUpdater;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class PartialUpdater {
@@ -54,7 +53,8 @@ public class PartialUpdater {
     this.tempFolder = tempFolder;
   }
 
-  public void updateFileIssues(ProjectBinding projectBinding, Sonarlint.ProjectConfiguration projectConfiguration, String ideFilePath) {
+  public void updateFileIssues(ProjectBinding projectBinding, Sonarlint.ProjectConfiguration projectConfiguration, String ideFilePath, boolean fetchTaintVulnerabilities,
+    ProgressWrapper progress) {
     Path serverIssuesPath = storagePaths.getServerIssuesPath(projectBinding.projectKey());
     IssueStore issueStore = issueStoreFactory.apply(serverIssuesPath);
     String fileKey = issueStorePaths.idePathToFileKey(projectConfiguration, projectBinding, ideFilePath);
@@ -63,19 +63,16 @@ public class PartialUpdater {
     }
     List<ServerIssue> issues;
     try {
-      issues = downloader.apply(fileKey);
+      issues = downloader.download(fileKey, projectConfiguration, fetchTaintVulnerabilities, progress);
     } catch (Exception e) {
       // null as cause so that it doesn't get wrapped
       throw new DownloadException("Failed to update file issues: " + e.getMessage(), null);
     }
-    List<Sonarlint.ServerIssue> storageIssues = issues.stream()
-      .map(issue -> issueStorePaths.toStorageIssue(issue, projectConfiguration))
-      .collect(Collectors.toList());
-    issueStore.save(storageIssues);
+    issueStore.save(issues);
   }
 
-  public void updateFileIssues(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration) {
-    new ServerIssueUpdater(storagePaths, downloader, issueStoreFactory, issueStorePaths, tempFolder).update(projectKey, projectConfiguration);
+  public void updateFileIssues(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
+    new ServerIssueUpdater(storagePaths, downloader, issueStoreFactory, tempFolder).update(projectKey, projectConfiguration, fetchTaintVulnerabilities, progress);
   }
 
   public void updateProjectList(ProgressWrapper progress) {

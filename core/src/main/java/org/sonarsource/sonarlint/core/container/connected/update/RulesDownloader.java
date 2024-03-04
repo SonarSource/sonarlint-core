@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import javax.annotation.CheckForNull;
 import org.sonar.api.batch.rule.Severity;
 import org.sonar.api.rule.RuleKey;
@@ -34,27 +35,32 @@ import org.sonarqube.ws.Rules.Active.Param;
 import org.sonarqube.ws.Rules.ActiveList;
 import org.sonarqube.ws.Rules.Rule;
 import org.sonarqube.ws.Rules.SearchResponse;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Rules.Rule.Builder;
+import org.sonarsource.sonarlint.core.serverapi.HttpClient;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
-import org.sonarsource.sonarlint.core.util.ws.WsResponse;
 
+import static java.util.stream.Collectors.joining;
 import static org.sonarsource.sonarlint.core.container.storage.StoragePaths.encodeForFs;
 
 public class RulesDownloader {
   static final String RULES_SEARCH_URL = "/api/rules/search.protobuf?f=repo,name,severity,lang,htmlDesc,htmlNote,internalKey,isTemplate,templateKey,"
     + "actives&statuses=BETA,DEPRECATED,READY&types=CODE_SMELL,BUG,VULNERABILITY";
 
-  private final SonarLintWsClient wsClient;
+  private final ServerApiHelper serverApiHelper;
+  private final Set<Language> enabledLanguages;
 
-  public RulesDownloader(SonarLintWsClient wsClient) {
-    this.wsClient = wsClient;
+  public RulesDownloader(ServerApiHelper serverApiHelper, ConnectedGlobalConfiguration globalConfiguration) {
+    this.serverApiHelper = serverApiHelper;
+    this.enabledLanguages = globalConfiguration.getEnabledLanguages();
   }
 
   public void fetchRulesTo(Path destDir, ProgressWrapper progress) {
@@ -86,7 +92,7 @@ public class RulesDownloader {
 
     while (true) {
       page++;
-      SearchResponse response = loadFromStream(wsClient.get(getUrl(severity, page, pageSize)));
+      SearchResponse response = loadFromStream(serverApiHelper.get(getUrl(severity, page, pageSize)));
       if (response.getTotal() > 10_000) {
         throw new IllegalStateException(
           String.format("Found more than 10000 rules for severity '%s' in the SonarQube server, which is not supported by SonarLint.", severity));
@@ -104,16 +110,17 @@ public class RulesDownloader {
   private String getUrl(String severity, int page, int pageSize) {
     StringBuilder builder = new StringBuilder(1024);
     builder.append(RULES_SEARCH_URL);
-    wsClient.getOrganizationKey()
+    serverApiHelper.getOrganizationKey()
       .ifPresent(org -> builder.append("&organization=").append(StringUtils.urlEncode(org)));
     builder.append("&severities=").append(severity);
+    builder.append("&languages=").append(enabledLanguages.stream().map(Language::getLanguageKey).collect(joining(",")));
     builder.append("&p=").append(page);
     builder.append("&ps=").append(pageSize);
     return builder.toString();
   }
 
-  private static SearchResponse loadFromStream(WsResponse response) {
-    try (InputStream is = response.contentStream()) {
+  private static SearchResponse loadFromStream(HttpClient.Response response) {
+    try (HttpClient.Response toBeClosed = response; InputStream is = toBeClosed.bodyAsStream()) {
       return SearchResponse.parseFrom(is);
     } catch (IOException e) {
       throw new IllegalStateException("Failed to load rules", e);

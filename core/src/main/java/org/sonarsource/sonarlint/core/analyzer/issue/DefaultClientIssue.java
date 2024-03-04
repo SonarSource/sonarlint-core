@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -36,7 +36,7 @@ public final class DefaultClientIssue extends TextRangeLocation implements org.s
   private final Rule rule;
   private final List<Flow> flows;
 
-  public DefaultClientIssue(String severity, @Nullable String type, ActiveRule activeRule, Rule rule, String primaryMessage, @Nullable TextRange textRange,
+  public DefaultClientIssue(String severity, String type, ActiveRule activeRule, Rule rule, String primaryMessage, @Nullable TextRange textRange,
     @Nullable ClientInputFile clientInputFile, List<Flow> flows) {
     super(textRange);
     this.severity = severity;
@@ -91,8 +91,9 @@ public final class DefaultClientIssue extends TextRangeLocation implements org.s
     sb.append("[");
     sb.append("rule=").append(activeRule.ruleKey());
     sb.append(", severity=").append(severity);
-    if (textRange != null) {
-      sb.append(", line=").append(textRange.start().line());
+    Integer startLine = getStartLine();
+    if (startLine != null) {
+      sb.append(", line=").append(startLine);
     }
     if (clientInputFile != null) {
       sb.append(", file=").append(clientInputFile.uri());

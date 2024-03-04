@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -71,7 +71,7 @@ public class MapSettings extends Settings {
     props.remove(key);
   }
 
-  private Map<String, String> getProperties() {
+  public Map<String, String> getProperties() {
     return unmodifiableMap(props);
   }
 

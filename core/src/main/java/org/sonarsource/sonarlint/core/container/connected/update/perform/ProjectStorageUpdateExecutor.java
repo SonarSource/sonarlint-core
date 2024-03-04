@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,7 +27,6 @@ import java.util.Set;
 import org.apache.commons.lang.StringUtils;
 import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectConfigurationDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectFileListDownloader;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
@@ -43,30 +42,28 @@ import org.sonarsource.sonarlint.core.util.VersionUtils;
 public class ProjectStorageUpdateExecutor {
 
   private final StorageReader storageReader;
-  private final SonarLintWsClient wsClient;
   private final TempFolder tempFolder;
   private final ProjectConfigurationDownloader projectConfigurationDownloader;
   private final ProjectFileListDownloader projectFileListDownloader;
   private final ServerIssueUpdater serverIssueUpdater;
   private final StoragePaths storagePaths;
 
-  public ProjectStorageUpdateExecutor(StorageReader storageReader, StoragePaths storagePaths, SonarLintWsClient wsClient, TempFolder tempFolder,
+  public ProjectStorageUpdateExecutor(StorageReader storageReader, StoragePaths storagePaths, TempFolder tempFolder,
     ProjectConfigurationDownloader projectConfigurationDownloader, ProjectFileListDownloader projectFileListDownloader, ServerIssueUpdater serverIssueUpdater) {
     this.storageReader = storageReader;
     this.storagePaths = storagePaths;
-    this.wsClient = wsClient;
     this.tempFolder = tempFolder;
     this.projectConfigurationDownloader = projectConfigurationDownloader;
     this.projectFileListDownloader = projectFileListDownloader;
     this.serverIssueUpdater = serverIssueUpdater;
   }
 
-  public void update(String projectKey, ProgressWrapper progress) {
+  public void update(String projectKey, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
     GlobalProperties globalProps = storageReader.readGlobalProperties();
 
     FileUtils.replaceDir(temp -> {
       ProjectConfiguration projectConfiguration = updateConfiguration(projectKey, globalProps, temp, progress);
-      updateServerIssues(projectKey, temp, projectConfiguration);
+      updateServerIssues(projectKey, temp, projectConfiguration, fetchTaintVulnerabilities, progress);
       updateComponents(projectKey, temp, projectConfiguration, progress);
       updateStatus(temp);
     }, storagePaths.getProjectStorageRoot(projectKey), tempFolder.newDir().toPath());
@@ -104,15 +101,14 @@ public class ProjectStorageUpdateExecutor {
     ProtobufUtil.writeToFile(componentsBuilder.build(), temp.resolve(StoragePaths.COMPONENT_LIST_PB));
   }
 
-  private void updateServerIssues(String projectKey, Path temp, ProjectConfiguration projectConfiguration) {
+  private void updateServerIssues(String projectKey, Path temp, ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
     Path basedir = temp.resolve(StoragePaths.SERVER_ISSUES_DIR);
-    serverIssueUpdater.updateServerIssues(projectKey, projectConfiguration, basedir);
+    serverIssueUpdater.updateServerIssues(projectKey, projectConfiguration, basedir, fetchTaintVulnerabilities, progress);
   }
 
   private void updateStatus(Path temp) {
     StorageStatus storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(StoragePaths.STORAGE_VERSION)
-      .setClientUserAgent(wsClient.getUserAgent())
       .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
       .setUpdateTimestamp(new Date().getTime())
       .build();

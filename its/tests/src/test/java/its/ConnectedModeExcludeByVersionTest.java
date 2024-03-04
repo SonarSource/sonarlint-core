@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - ITs - Tests
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -33,37 +33,38 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-import org.sonar.wsclient.user.UserParameters;
+import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
-import org.sonarsource.sonarlint.core.WsHelperImpl;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine.State;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectionValidator;
 import org.sonarsource.sonarlint.core.client.api.connected.UpdateResult;
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assume.assumeTrue;
 
 /**
- * This test verifies that SonarPython 1.9 gets excluded due to being below minimum supported version.
+ * This test verifies that SonarPython 1.13 gets excluded due to being below minimum supported version.
  */
 public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
 
   @BeforeClass
   public static void beforeClass() {
-    boolean atMost72 = SONAR_VERSION.contains("6.7");
-    assumeTrue(atMost72);
+    boolean isLowestSupportedVersion = SONAR_VERSION.contains("7.9");
+    assumeTrue(isLowestSupportedVersion);
   }
 
   @Rule
   public Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
+    .defaultForceAuthentication()
     .setSonarVersion(SONAR_VERSION)
-    .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", "1.9.0.2010")).build();
+    .addPlugin(MavenLocation.of("org.sonarsource.python", "sonar-python-plugin", "1.13.0.2922")).build();
 
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
@@ -74,23 +75,18 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
   private static Path sonarUserHome;
 
   private ConnectedSonarLintEngine engine;
-  private List<String> logs = new ArrayList<>();
+  private final List<String> logs = new ArrayList<>();
 
   @Before
   public void prepare() throws Exception {
     sonarUserHome = temp.newFolder().toPath();
 
-    ORCHESTRATOR.getServer().adminWsClient().userClient()
-      .create(UserParameters.create()
-        .login(SONARLINT_USER)
-        .password(SONARLINT_PWD)
-        .passwordConfirmation(SONARLINT_PWD)
-        .name("SonarLint"));
+    newAdminWsClient(ORCHESTRATOR).users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
   }
 
   private ConnectedSonarLintEngine createEngine(Consumer<ConnectedGlobalConfiguration.Builder> configurator) {
     ConnectedGlobalConfiguration.Builder builder = ConnectedGlobalConfiguration.builder()
-      .setServerId("orchestrator")
+      .setConnectionId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
       .setLogOutput((msg, level) -> logs.add(msg));
     configurator.accept(builder);
@@ -112,24 +108,17 @@ public class ConnectedModeExcludeByVersionTest extends AbstractConnectedTest {
     assertThat(engine.getGlobalStorageStatus()).isNull();
     assertThat(engine.getState()).isEqualTo(State.NEVER_UPDATED);
 
-    UpdateResult update = engine.update(config(), null);
+    UpdateResult update = engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
     assertThat(update.status().getLastUpdateDate()).isNotNull();
     assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).doesNotContain(Language.PYTHON.getPluginKey());
-    assertThat(logs).contains("Code analyzer 'python' version '1.9.0.2010' is not supported (minimal version is '1.9.1.2080'). Skip downloading it.");
+    assertThat(logs).contains("Code analyzer 'python' version '1.13.0.2922' is not supported (minimal version is '1.14.0.3086'). Skip downloading it.");
   }
 
   @Test
   public void dontCheckMinimalPluginVersionWhenValidatingConnection() {
     engine = createEngine(e -> e.addEnabledLanguages(Language.PYTHON));
-    ValidationResult result = new WsHelperImpl().validateConnection(config());
+    ValidationResult result = new ConnectionValidator(new ServerApiHelper(endpointParams(ORCHESTRATOR), sqHttpClient())).validateConnection();
     assertThat(result.success()).isTrue();
   }
 
-  private ServerConfiguration config() {
-    return ServerConfiguration.builder()
-      .url(ORCHESTRATOR.getServer().getUrl())
-      .userAgent("SonarLint ITs")
-      .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build();
-  }
 }

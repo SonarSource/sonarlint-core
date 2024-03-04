@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import org.junit.Test;
+import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,8 +33,11 @@ public class ServerIssueTrackableTest {
   private final Trackable trackable = new ServerIssueTrackable(serverIssue);
 
   public ServerIssueTrackableTest() {
-    when(serverIssue.checksum()).thenReturn("blah");
+    when(serverIssue.lineHash()).thenReturn("blah");
     when(serverIssue.resolution()).thenReturn("non-empty");
+    TextRange serverTextRange = mock(TextRange.class);
+    when(serverTextRange.getStartLine()).thenReturn(22);
+    when(serverIssue.getTextRange()).thenReturn(serverTextRange);
   }
 
   @Test(expected = UnsupportedOperationException.class)
@@ -48,12 +52,12 @@ public class ServerIssueTrackableTest {
 
   @Test
   public void should_delegate_fields_to_protobuf_issue() {
-    assertThat(trackable.getMessage()).isEqualTo(serverIssue.message());
-    assertThat(trackable.getLineHash()).isEqualTo(serverIssue.checksum().hashCode());
+    assertThat(trackable.getMessage()).isEqualTo(serverIssue.getMessage());
+    assertThat(trackable.getLineHash()).isEqualTo(serverIssue.lineHash().hashCode());
     assertThat(trackable.getRuleKey()).isEqualTo(serverIssue.ruleKey());
     assertThat(trackable.isResolved()).isEqualTo(!serverIssue.resolution().isEmpty());
     assertThat(trackable.getAssignee()).isEqualTo(serverIssue.assigneeLogin());
     assertThat(trackable.getSeverity()).isEqualTo(serverIssue.severity());
-    assertThat(trackable.getTextRange().getStartLine()).isEqualTo(serverIssue.line());
+    assertThat(trackable.getTextRange().getStartLine()).isEqualTo(serverIssue.getTextRange().getStartLine());
   }
 }

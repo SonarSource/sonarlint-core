@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.Properties;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.plugin.Version;
+import org.sonarsource.sonarlint.core.client.api.common.Version;
 
 public class PluginVersionChecker {
   public static final String MIN_VERSIONS_FILE = "/plugins_min_versions.txt";

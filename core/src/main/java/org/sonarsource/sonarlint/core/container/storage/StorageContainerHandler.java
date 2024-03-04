@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -34,23 +34,22 @@ import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.RemoteProject;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
-import org.sonarsource.sonarlint.core.container.global.GlobalExtensionContainer;
+import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdater;
 import org.sonarsource.sonarlint.core.container.storage.partialupdate.PartialUpdaterFactory;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ActiveRules.ActiveRule;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.HttpClient;
+import org.sonarsource.sonarlint.core.serverapi.project.ServerProject;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
-import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class StorageContainerHandler {
   private final StorageAnalyzer storageAnalyzer;
@@ -79,24 +78,12 @@ public class StorageContainerHandler {
     this.partialUpdaterFactory = partialUpdaterFactory;
   }
 
-  public AnalysisResults analyze(GlobalExtensionContainer globalExtensionContainer, ConnectedAnalysisConfiguration configuration, IssueListener issueListener,
+  public AnalysisResults analyze(ComponentContainer container, ConnectedAnalysisConfiguration configuration, IssueListener issueListener,
     ProgressWrapper progress) {
-    return storageAnalyzer.analyze(globalExtensionContainer, configuration, issueListener, progress);
+    return storageAnalyzer.analyze(container, configuration, issueListener, progress);
   }
 
-  public ConnectedRuleDetails getRuleDetails(String ruleKeyStr) {
-    return getRuleDetailsWithSeverity(ruleKeyStr, null);
-  }
-
-  private ConnectedRuleDetails getRuleDetailsWithSeverity(String ruleKeyStr, @Nullable String overridenSeverity) {
-    Sonarlint.Rules.Rule rule = readRule(ruleKeyStr);
-    String type = StringUtils.isEmpty(rule.getType()) ? null : rule.getType();
-
-    return new DefaultRuleDetails(ruleKeyStr, rule.getName(), rule.getHtmlDesc(), overridenSeverity != null ? overridenSeverity : rule.getSeverity(), type, rule.getLang(),
-      rule.getHtmlNote());
-  }
-
-  private Sonarlint.Rules.Rule readRule(String ruleKeyStr) {
+  public Sonarlint.Rules.Rule readRuleFromStorage(String ruleKeyStr) {
     Sonarlint.Rules rulesFromStorage = storageReader.readRules();
     RuleKey ruleKey = RuleKey.parse(ruleKeyStr);
     Sonarlint.Rules.Rule rule = rulesFromStorage.getRulesByKeyMap().get(ruleKeyStr);
@@ -106,7 +93,7 @@ public class StorageContainerHandler {
     return rule;
   }
 
-  public ConnectedRuleDetails getRuleDetails(String ruleKeyStr, @Nullable String projectKey) {
+  public ActiveRule readActiveRuleFromStorage(String ruleKeyStr, @Nullable String projectKey) {
     QProfiles qProfiles = storageReader.readQProfiles();
     Map<String, String> qProfilesByLanguage;
     if (projectKey == null) {
@@ -117,8 +104,7 @@ public class StorageContainerHandler {
     for (String qProfileKey : qProfilesByLanguage.values()) {
       Sonarlint.ActiveRules activeRulesFromStorage = storageReader.readActiveRules(qProfileKey);
       if (activeRulesFromStorage.getActiveRulesByKeyMap().containsKey(ruleKeyStr)) {
-        ActiveRule ar = activeRulesFromStorage.getActiveRulesByKeyMap().get(ruleKeyStr);
-        return getRuleDetailsWithSeverity(ruleKeyStr, ar.getSeverity());
+        return activeRulesFromStorage.getActiveRulesByKeyMap().get(ruleKeyStr);
       }
     }
     throw new IllegalArgumentException("Unable to find active rule with key " + ruleKeyStr);
@@ -136,7 +122,7 @@ public class StorageContainerHandler {
     return projectStorageStatusReader.apply(projectKey);
   }
 
-  public Map<String, RemoteProject> allProjectsByKey() {
+  public Map<String, ServerProject> allProjectsByKey() {
     return allProjectReader.get();
   }
 
@@ -148,17 +134,18 @@ public class StorageContainerHandler {
     return storageExclusions.getExcludedFiles(projectBinding, files, ideFilePathExtractor, testFilePredicate);
   }
 
-  public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectBinding projectBinding, String ideFilePath) {
-    PartialUpdater updater = partialUpdaterFactory.create(serverConfig);
+  public List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
+    boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
+    PartialUpdater updater = partialUpdaterFactory.create(endpoint, client);
     Sonarlint.ProjectConfiguration configuration = storageReader.readProjectConfig(projectBinding.projectKey());
-    updater.updateFileIssues(projectBinding, configuration, ideFilePath);
+    updater.updateFileIssues(projectBinding, configuration, ideFilePath, fetchTaintVulnerabilities, progress);
     return getServerIssues(projectBinding, ideFilePath);
   }
 
-  public void downloadServerIssues(ServerConfiguration serverConfig, String projectKey) {
-    PartialUpdater updater = partialUpdaterFactory.create(serverConfig);
+  public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
+    PartialUpdater updater = partialUpdaterFactory.create(endpoint, client);
     Sonarlint.ProjectConfiguration configuration = storageReader.readProjectConfig(projectKey);
-    updater.updateFileIssues(projectKey, configuration);
+    updater.updateFileIssues(projectKey, configuration, fetchTaintVulnerabilities, progress);
   }
 
   public ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> ideFilePaths) {
@@ -177,8 +164,8 @@ public class StorageContainerHandler {
 
   }
 
-  public Map<String, RemoteProject> downloadProjectList(ServerConfiguration serverConfig, ProgressWrapper progress) {
-    PartialUpdater updater = partialUpdaterFactory.create(serverConfig);
+  public Map<String, ServerProject> downloadProjectList(EndpointParams endpoint, HttpClient client, ProgressWrapper progress) {
+    PartialUpdater updater = partialUpdaterFactory.create(endpoint, client);
     updater.updateProjectList(progress);
     return allProjectsByKey();
   }

@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -30,7 +30,7 @@ public class InMemoryIssueStore implements IssueStore {
 
   @Override
   public void save(List<ServerIssue> issues) {
-    issuesMap = issues.stream().collect(Collectors.groupingBy(ServerIssue::getPath));
+    issuesMap = issues.stream().collect(Collectors.groupingBy(issue -> issue.getPrimaryLocation().getPath()));
   }
 
   @Override

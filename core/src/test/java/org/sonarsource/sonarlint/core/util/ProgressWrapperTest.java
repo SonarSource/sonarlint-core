@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -53,11 +53,10 @@ public class ProgressWrapperTest {
 
   @Test
   public void testCancelSection() {
-    progress.finishNonCancelableSection();
-    progress.startNonCancelableSection();
+    Runnable r = mock(Runnable.class);
+    progress.executeNonCancelableSection(r);
 
-    verify(monitor).finishNonCancelableSection();
-    verify(monitor).startNonCancelableSection();
+    verify(monitor).executeNonCancelableSection(r);
   }
 
   @Test(expected = CanceledException.class)

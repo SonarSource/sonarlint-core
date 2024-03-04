@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-its</artifactId>
-    <version>4.13.0.19712-lite</version>
+    <version>6.0.0.32513-lite</version>
   </parent>
   <artifactId>sonarlint-core-its-tests</artifactId>
   <name>SonarLint Core - ITs - Tests</name>
@@ -24,7 +24,7 @@
     <dependency>
       <groupId>org.sonarsource.orchestrator</groupId>
       <artifactId>sonar-orchestrator</artifactId>
-      <version>3.26.0.2111</version>
+      <version>3.34.0.2692</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -42,15 +42,10 @@
       <artifactId>jetty-server</artifactId>
       <version>9.4.17.v20190418</version>
     </dependency>
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>26.0-android</version>
+    </dependency>
   </dependencies>
-
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>com.google.guava</groupId>
-        <artifactId>guava</artifactId>
-        <version>26.0-android</version>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
 </project>

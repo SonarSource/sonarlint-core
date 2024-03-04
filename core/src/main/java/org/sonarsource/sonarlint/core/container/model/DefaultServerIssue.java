@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,24 +20,26 @@
 package org.sonarsource.sonarlint.core.container.model;
 
 import java.time.Instant;
-
+import java.util.ArrayList;
+import java.util.List;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 
 public class DefaultServerIssue implements ServerIssue {
   private String key;
   private String resolution;
   private String ruleKey;
-  private int line;
   private String message;
-  private String checksum;
+  private String lineHash;
   private String assigneeLogin;
-  private String moduleKey;
   private String filePath;
-  private boolean manualSeverity;
   private Instant creationDate;
   private String severity;
   private String type;
+  private List<Flow> flows = new ArrayList<>();
+  private TextRange textRange;
+  private String codeSnippet;
 
   @Override
   public String key() {
@@ -55,18 +57,13 @@ public class DefaultServerIssue implements ServerIssue {
   }
 
   @Override
-  public int line() {
-    return line;
-  }
-
-  @Override
-  public String message() {
+  public String getMessage() {
     return message;
   }
 
   @Override
-  public String checksum() {
-    return checksum;
+  public String lineHash() {
+    return lineHash;
   }
 
   @Override
@@ -75,18 +72,8 @@ public class DefaultServerIssue implements ServerIssue {
   }
 
   @Override
-  public String moduleKey() {
-    return moduleKey;
-  }
-
-  @Override
-  public String filePath() {
+  public String getFilePath() {
     return filePath;
-  }
-
-  @Override
-  public boolean manualSeverity() {
-    return manualSeverity;
   }
 
   @Override
@@ -98,10 +85,25 @@ public class DefaultServerIssue implements ServerIssue {
   public String severity() {
     return severity;
   }
-  
+
   @Override
   public String type() {
     return type;
+  }
+
+  @Override
+  public TextRange getTextRange() {
+    return textRange;
+  }
+
+  @Override
+  public List<Flow> getFlows() {
+    return flows;
+  }
+
+  @Override
+  public String getCodeSnippet() {
+    return codeSnippet;
   }
 
   public DefaultServerIssue setKey(String key) {
@@ -119,18 +121,13 @@ public class DefaultServerIssue implements ServerIssue {
     return this;
   }
 
-  public DefaultServerIssue setLine(int line) {
-    this.line = line;
-    return this;
-  }
-
   public DefaultServerIssue setMessage(String message) {
     this.message = message;
     return this;
   }
 
-  public DefaultServerIssue setChecksum(String checksum) {
-    this.checksum = checksum;
+  public DefaultServerIssue setLineHash(String lineHash) {
+    this.lineHash = lineHash;
     return this;
   }
 
@@ -139,18 +136,8 @@ public class DefaultServerIssue implements ServerIssue {
     return this;
   }
 
-  public DefaultServerIssue setModuleKey(String moduleKey) {
-    this.moduleKey = moduleKey;
-    return this;
-  }
-
   public DefaultServerIssue setFilePath(String filePath) {
     this.filePath = filePath;
-    return this;
-  }
-
-  public DefaultServerIssue setManualSeverity(boolean manualSeverity) {
-    this.manualSeverity = manualSeverity;
     return this;
   }
 
@@ -163,9 +150,24 @@ public class DefaultServerIssue implements ServerIssue {
     this.severity = severity;
     return this;
   }
-  
-  public DefaultServerIssue setType(@Nullable String type) {
+
+  public DefaultServerIssue setType(String type) {
     this.type = type;
+    return this;
+  }
+
+  public DefaultServerIssue setTextRange(@Nullable TextRange textRange) {
+    this.textRange = textRange;
+    return this;
+  }
+
+  public DefaultServerIssue setFlows(List<Flow> flows) {
+    this.flows = flows;
+    return this;
+  }
+
+  public DefaultServerIssue setCodeSnippet(String codeSnippet) {
+    this.codeSnippet = codeSnippet;
     return this;
   }
 }

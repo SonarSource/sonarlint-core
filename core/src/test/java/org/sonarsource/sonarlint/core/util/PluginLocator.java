@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -30,9 +30,11 @@ public class PluginLocator {
 
   public static final String SONAR_JAVA_PLUGIN_JAR = "sonar-java-plugin-6.0.0.20538.jar";
   public static final String SONAR_JAVA_PLUGIN_JAR_HASH = "eb27aea472a0d7d91ed529086ce8ee1c";
-  public static final String SONAR_JAVASCRIPT_PLUGIN_JAR = "sonar-javascript-plugin-4.0.0.5862.jar";
-  public static final String SONAR_JAVASCRIPT_PLUGIN_JAR_HASH = "cc8ad346e85db9d3735898b533d37d34";
+  public static final String SONAR_JAVASCRIPT_PLUGIN_JAR = "sonar-javascript-plugin-6.5.0.13383.jar";
+  public static final String SONAR_JAVASCRIPT_PLUGIN_JAR_HASH = "2fab92be44e07f1d367f891a55258736";
   public static final String SONAR_XOO_PLUGIN_NAME = "sonar-xoo-plugin";
+  public static final String SONAR_PHP_PLUGIN_JAR = "sonar-php-plugin-3.2.0.4868.jar";
+  public static final String SONAR_PYTHON_PLUGIN_JAR = "sonar-python-plugin-1.14.0.3086.jar";
 
   public static URL getJavaPluginUrl() {
     return getPluginUrl(SONAR_JAVA_PLUGIN_JAR);
@@ -43,19 +45,15 @@ public class PluginLocator {
   }
 
   public static URL getPhpPluginUrl() {
-    return getPluginUrl("sonar-php-plugin-2.12.0.2871.jar");
+    return getPluginUrl(SONAR_PHP_PLUGIN_JAR);
   }
 
   public static URL getPythonPluginUrl() {
-    return getPluginUrl("sonar-python-plugin-1.9.1.2080.jar");
+    return getPluginUrl(SONAR_PYTHON_PLUGIN_JAR);
   }
 
   public static URL getCppPluginUrl() {
-    return getPluginUrl("sonar-cfamily-plugin-6.3.0.11371.jar");
-  }
-
-  public static URL getTypeScriptPluginUrl() {
-    return getPluginUrl("sonar-typescript-plugin-1.5.0.2122.jar");
+    return getPluginUrl("sonar-cfamily-plugin-6.18.0.29274.jar");
   }
 
   public static URL getXooPluginUrl() {

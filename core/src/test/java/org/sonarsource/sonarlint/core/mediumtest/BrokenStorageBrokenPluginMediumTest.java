@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -106,7 +106,7 @@ public class BrokenStorageBrokenPluginMediumTest {
     ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve(StoragePaths.encodeForFs(SERVER_ID)).resolve("global").resolve(StoragePaths.PLUGIN_REFERENCES_PB));
 
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
-      .setServerId(SERVER_ID)
+      .setConnectionId(SERVER_ID)
       .setSonarLintUserHome(slHome)
       .setStorageRoot(tmpStorage)
       .setLogOutput(createNoOpLogOutput())
@@ -126,7 +126,7 @@ public class BrokenStorageBrokenPluginMediumTest {
 
   @Test
   public void broken_startup() throws Exception {
-    assertThat(sonarlint.getState()).isEqualTo(ConnectedSonarLintEngine.State.UNKNOW);
+    assertThat(sonarlint.getState()).isEqualTo(ConnectedSonarLintEngine.State.UNKNOWN);
 
     ClientInputFile inputFile = prepareJavaInputFile();
 

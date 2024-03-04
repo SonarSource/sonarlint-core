@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,33 +21,32 @@ package org.sonarsource.sonarlint.core.analyzer.issue;
 
 import javax.annotation.Nullable;
 import org.sonar.api.batch.fs.TextRange;
+import org.sonarsource.sonarlint.core.client.api.common.IssueRangeAndMessage;
 
-abstract class TextRangeLocation implements org.sonarsource.sonarlint.core.client.api.common.analysis.IssueLocation {
+public abstract class TextRangeLocation implements IssueRangeAndMessage {
 
-  final TextRange textRange;
+  private final org.sonarsource.sonarlint.core.client.api.common.TextRange textRange;
 
-  TextRangeLocation(@Nullable TextRange textRange) {
-    this.textRange = textRange;
+  protected TextRangeLocation(@Nullable TextRange analyzerTextRange) {
+    this.textRange = analyzerTextRange != null ? new org.sonarsource.sonarlint.core.client.api.common.TextRange(
+      analyzerTextRange.start().line(),
+      analyzerTextRange.start().lineOffset(),
+      analyzerTextRange.end().line(),
+      analyzerTextRange.end().lineOffset())
+      : null;
+  }
+
+  protected TextRangeLocation(@Nullable org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.TextRange serverStorageTextRange) {
+    this.textRange = serverStorageTextRange != null ? new org.sonarsource.sonarlint.core.client.api.common.TextRange(
+      serverStorageTextRange.getStartLine(),
+      serverStorageTextRange.getStartLineOffset(),
+      serverStorageTextRange.getEndLine(),
+      serverStorageTextRange.getEndLineOffset())
+      : null;
   }
 
   @Override
-  public Integer getStartLineOffset() {
-    return textRange != null ? textRange.start().lineOffset() : null;
+  public org.sonarsource.sonarlint.core.client.api.common.TextRange getTextRange() {
+    return textRange;
   }
-
-  @Override
-  public Integer getStartLine() {
-    return textRange != null ? textRange.start().line() : null;
-  }
-
-  @Override
-  public Integer getEndLineOffset() {
-    return textRange != null ? textRange.end().lineOffset() : null;
-  }
-
-  @Override
-  public Integer getEndLine() {
-    return textRange != null ? textRange.end().line() : null;
-  }
-
 }

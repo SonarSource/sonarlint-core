@@ -1,6 +1,6 @@
 /*
  * Example Plugin with global extension
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -30,13 +30,19 @@ import static org.sonarsource.api.sonarlint.SonarLintSide.MULTIPLE_ANALYSES;
 @SonarLintSide(lifespan = MULTIPLE_ANALYSES)
 public class GlobalExtension implements Startable {
 
+  public static GlobalExtension getInstance() {
+    return instance;
+  }
+
   private static final Logger LOG = Loggers.get(GlobalExtension.class);
+  private static GlobalExtension instance;
 
   private int counter;
 
   private final Configuration config;
 
   public GlobalExtension(Configuration config) {
+    instance = this;
     this.config = config;
   }
 

@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -35,6 +35,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.utils.MessageException;
 import org.sonar.api.utils.ZipUtils;
+import org.sonarsource.sonarlint.core.client.api.common.Version;
 
 import static com.google.common.collect.Ordering.natural;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -143,7 +144,7 @@ public class PluginInfoTest {
     manifest.setMainClass("org.foo.FooPlugin");
 
     Path jarFile = temp.newFile().toPath();
-    PluginInfo pluginInfo = PluginInfo.create(jarFile, manifest);
+    PluginInfo pluginInfo = PluginInfo.create(jarFile, manifest, false);
 
     assertThat(pluginInfo.getKey()).isEqualTo("java");
     assertThat(pluginInfo.getName()).isEqualTo("Java");
@@ -155,6 +156,7 @@ public class PluginInfoTest {
     assertThat(pluginInfo.getMinimalSqVersion()).isNull();
     assertThat(pluginInfo.getRequiredPlugins()).isEmpty();
     assertThat(pluginInfo.getJreMinVersion()).isNull();
+    assertThat(pluginInfo.getNodeJsMinVersion()).isNull();
   }
 
   @Test
@@ -169,24 +171,38 @@ public class PluginInfoTest {
     manifest.setRequirePlugins(new String[] {"java:2.0", "pmd:1.3"});
     manifest.setImplementationBuild("SHA1");
     manifest.setJreMinVersion("11");
+    manifest.setNodeJsMinVersion("12.18.3");
 
     Path jarFile = temp.newFile().toPath();
-    PluginInfo pluginInfo = PluginInfo.create(jarFile, manifest);
+    PluginInfo pluginInfo = PluginInfo.create(jarFile, manifest, false);
 
     assertThat(pluginInfo.getBasePlugin()).isEqualTo("findbugs");
     assertThat(pluginInfo.getImplementationBuild()).isEqualTo("SHA1");
     assertThat(pluginInfo.getMinimalSqVersion().getName()).isEqualTo("4.5.1");
     assertThat(pluginInfo.getRequiredPlugins()).extracting("key").containsOnly("java", "pmd");
     assertThat(pluginInfo.getJreMinVersion().getName()).isEqualTo("11");
+    assertThat(pluginInfo.getNodeJsMinVersion().getName()).isEqualTo("12.18.3");
   }
 
   @Test
   public void create_from_file() throws URISyntaxException {
     Path checkstyleJar = Paths.get(getClass().getResource("/sonar-checkstyle-plugin-2.8.jar").toURI());
-    PluginInfo checkstyleInfo = PluginInfo.create(checkstyleJar);
+    PluginInfo checkstyleInfo = PluginInfo.create(checkstyleJar, false);
 
     assertThat(checkstyleInfo.getName()).isEqualTo("Checkstyle");
     assertThat(checkstyleInfo.getMinimalSqVersion()).isEqualTo(Version.create("2.8"));
+  }
+
+  @Test
+  public void is_embedded() throws URISyntaxException {
+    Path checkstyleJar = Paths.get(getClass().getResource("/sonar-checkstyle-plugin-2.8.jar").toURI());
+    PluginInfo checkstyleInfoEmbedded = PluginInfo.create(checkstyleJar, true);
+
+    assertThat(checkstyleInfoEmbedded.isEmbedded()).isTrue();
+
+    PluginInfo checkstyleInfo = PluginInfo.create(checkstyleJar, false);
+
+    assertThat(checkstyleInfo.isEmbedded()).isFalse();
   }
 
   @Test
@@ -219,7 +235,7 @@ public class PluginInfoTest {
     expectedException.expect(MessageException.class);
     expectedException.expectMessage("File is not a plugin. Please delete it and restart: " + jar.toAbsolutePath());
 
-    PluginInfo.create(jar);
+    PluginInfo.create(jar, false);
   }
 
   PluginInfo withMinSqVersion(@Nullable String version) {

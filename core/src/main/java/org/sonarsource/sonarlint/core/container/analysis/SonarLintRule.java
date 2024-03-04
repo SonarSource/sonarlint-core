@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,13 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.container.analysis;
 
-import javax.annotation.CheckForNull;
 import org.sonar.api.batch.rule.Rule;
 import org.sonar.api.rules.RuleType;
 
 public interface SonarLintRule extends Rule {
 
-  @CheckForNull
   RuleType type();
 
 }

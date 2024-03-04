@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - ITs - Tests
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -28,10 +28,10 @@ import java.nio.file.Path;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 
 public class TestClientInputFile implements ClientInputFile {
-  private Path path;
-  private boolean isTest;
-  private Charset encoding;
-  private Path baseDir;
+  private final Path path;
+  private final boolean isTest;
+  private final Charset encoding;
+  private final Path baseDir;
 
   public TestClientInputFile(final Path baseDir, final Path path, final boolean isTest, final Charset encoding) {
     this.baseDir = baseDir;

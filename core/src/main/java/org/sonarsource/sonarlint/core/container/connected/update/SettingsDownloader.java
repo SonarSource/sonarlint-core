@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -33,11 +33,11 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonarqube.ws.Settings.FieldValues.Value;
 import org.sonarqube.ws.Settings.Setting;
 import org.sonarqube.ws.Settings.ValuesWsResponse;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 import static java.util.stream.Collectors.joining;
@@ -46,10 +46,10 @@ public class SettingsDownloader {
   private static final Logger LOG = Loggers.get(SettingsDownloader.class);
 
   private static final String API_SETTINGS_PATH = "/api/settings/values.protobuf";
-  private final SonarLintWsClient wsClient;
+  private final ServerApiHelper serverApiHelper;
 
-  public SettingsDownloader(SonarLintWsClient wsClient) {
-    this.wsClient = wsClient;
+  public SettingsDownloader(ServerApiHelper serverApiHelper) {
+    this.serverApiHelper = serverApiHelper;
   }
 
   public void fetchGlobalSettingsTo(Path dest) {
@@ -72,10 +72,10 @@ public class SettingsDownloader {
     if (projectKey != null) {
       url.append("?component=").append(StringUtils.urlEncode(projectKey));
     }
-    SonarLintWsClient.consumeTimed(
-      () -> wsClient.get(url.toString()),
+    ServerApiHelper.consumeTimed(
+      () -> serverApiHelper.get(url.toString()),
       response -> {
-        try (InputStream is = response.contentStream()) {
+        try (InputStream is = response.bodyAsStream()) {
           ValuesWsResponse values = ValuesWsResponse.parseFrom(is);
           for (Setting s : values.getSettingsList()) {
             // Storage optimisation: don't store settings having same value than global settings
@@ -84,7 +84,7 @@ public class SettingsDownloader {
             }
           }
         } catch (IOException e) {
-          throw new IllegalStateException("Unable to parse properties from: " + response.content(), e);
+          throw new IllegalStateException("Unable to parse properties from: " + response.bodyAsString(), e);
         }
       },
       duration -> LOG.info("Downloaded settings in {}ms", duration));

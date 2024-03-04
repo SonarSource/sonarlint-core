@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,9 +23,9 @@ import java.nio.file.Path;
 import java.util.Date;
 import java.util.List;
 import org.sonar.api.utils.TempFolder;
+import org.sonarsource.sonarlint.core.client.api.common.Version;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginReferencesDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
@@ -35,7 +35,6 @@ import org.sonarsource.sonarlint.core.container.connected.update.SettingsDownloa
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
-import org.sonarsource.sonarlint.core.plugin.Version;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerInfos;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
@@ -50,15 +49,13 @@ public class GlobalStorageUpdateExecutor {
   private final TempFolder tempFolder;
   private final ProjectListDownloader projectListDownloader;
   private final ServerVersionAndStatusChecker statusChecker;
-  private final SonarLintWsClient wsClient;
   private final QualityProfilesDownloader qualityProfilesDownloader;
   private final PluginListDownloader pluginListDownloader;
 
-  public GlobalStorageUpdateExecutor(StoragePaths storageManager, SonarLintWsClient wsClient, ServerVersionAndStatusChecker statusChecker,
+  public GlobalStorageUpdateExecutor(StoragePaths storageManager, ServerVersionAndStatusChecker statusChecker,
     PluginReferencesDownloader pluginReferenceDownloader, SettingsDownloader globalPropertiesDownloader, RulesDownloader rulesDownloader,
     ProjectListDownloader projectListDownloader, QualityProfilesDownloader qualityProfilesDownloader, PluginListDownloader pluginListDownloader, TempFolder tempFolder) {
     this.storageManager = storageManager;
-    this.wsClient = wsClient;
     this.statusChecker = statusChecker;
     this.pluginReferenceDownloader = pluginReferenceDownloader;
     this.globalSettingsDownloader = globalPropertiesDownloader;
@@ -96,21 +93,21 @@ public class GlobalStorageUpdateExecutor {
       progress.setProgressAndCheckCancel("Fetching list of projects", 0.8f);
       projectListDownloader.fetchTo(temp, progress.subProgress(0.8f, 1.0f, "Fetching list of projects"));
 
-      progress.startNonCancelableSection();
       progress.setProgressAndCheckCancel("Finalizing...", 1.0f);
 
-      StorageStatus storageStatus = StorageStatus.newBuilder()
-        .setStorageVersion(StoragePaths.STORAGE_VERSION)
-        .setClientUserAgent(wsClient.getUserAgent())
-        .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
-        .setUpdateTimestamp(new Date().getTime())
-        .build();
-      ProtobufUtil.writeToFile(storageStatus, temp.resolve(StoragePaths.STORAGE_STATUS_PB));
+      progress.executeNonCancelableSection(() -> {
+        StorageStatus storageStatus = StorageStatus.newBuilder()
+          .setStorageVersion(StoragePaths.STORAGE_VERSION)
+          .setSonarlintCoreVersion(VersionUtils.getLibraryVersion())
+          .setUpdateTimestamp(new Date().getTime())
+          .build();
+        ProtobufUtil.writeToFile(storageStatus, temp.resolve(StoragePaths.STORAGE_STATUS_PB));
 
-      Path dest = storageManager.getGlobalStorageRoot();
-      FileUtils.deleteRecursively(dest);
-      FileUtils.mkdirs(dest.getParent());
-      FileUtils.moveDir(temp, dest);
+        Path dest = storageManager.getGlobalStorageRoot();
+        FileUtils.deleteRecursively(dest);
+        FileUtils.mkdirs(dest.getParent());
+        FileUtils.moveDir(temp, dest);
+      });
       return analyzers;
     } catch (RuntimeException e) {
       try {

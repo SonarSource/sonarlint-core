@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.container.standalone;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -29,10 +28,10 @@ import javax.annotation.CheckForNull;
 import org.sonar.api.Plugin;
 import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.batch.rule.Rules;
-import org.sonar.api.resources.Language;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
 import org.sonar.api.utils.Version;
+import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SensorsExecutor;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
@@ -52,6 +51,7 @@ import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
 import org.sonarsource.sonarlint.core.container.global.MetadataLoader;
 import org.sonarsource.sonarlint.core.container.global.SonarLintRuntimeImpl;
 import org.sonarsource.sonarlint.core.container.model.DefaultAnalysisResult;
+import org.sonarsource.sonarlint.core.container.module.ModuleRegistry;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneActiveRules;
 import org.sonarsource.sonarlint.core.container.standalone.rule.StandaloneRuleRepositoryContainer;
 import org.sonarsource.sonarlint.core.plugin.DefaultPluginJarExploder;
@@ -68,7 +68,7 @@ public class StandaloneGlobalContainer extends ComponentContainer {
   private Rules rules;
   private StandaloneActiveRules standaloneActiveRules;
   private GlobalExtensionContainer globalExtensionContainer;
-  private List<Language> languages;
+  private ModuleRegistry moduleRegistry;
 
   public static StandaloneGlobalContainer create(StandaloneGlobalConfiguration globalConfig) {
     StandaloneGlobalContainer container = new StandaloneGlobalContainer();
@@ -79,7 +79,9 @@ public class StandaloneGlobalContainer extends ComponentContainer {
 
   @Override
   protected void doBeforeStart() {
-    Version version = MetadataLoader.loadVersion(System2.INSTANCE);
+    Version sonarPluginApiVersion = MetadataLoader.loadSonarPluginApiVersion();
+    Version sonarlintPluginApiVersion = MetadataLoader.loadSonarLintPluginApiVersion();
+
     add(
       StandalonePluginIndex.class,
       PluginRepository.class,
@@ -89,10 +91,11 @@ public class StandaloneGlobalContainer extends ComponentContainer {
       PluginClassloaderFactory.class,
       DefaultPluginJarExploder.class,
       GlobalSettings.class,
+      NodeJsHelper.class,
       new GlobalConfigurationProvider(),
       ExtensionInstaller.class,
-      new SonarQubeVersion(version),
-      new SonarLintRuntimeImpl(version),
+      new SonarQubeVersion(sonarPluginApiVersion),
+      new SonarLintRuntimeImpl(sonarPluginApiVersion, sonarlintPluginApiVersion),
 
       new GlobalTempFolderProvider(),
       UriReader.class,
@@ -106,11 +109,16 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     loadRulesAndActiveRulesFromPlugins();
     globalExtensionContainer = new GlobalExtensionContainer(this);
     globalExtensionContainer.startComponents();
+    StandaloneGlobalConfiguration globalConfiguration = this.getComponentByType(StandaloneGlobalConfiguration.class);
+    this.moduleRegistry = new ModuleRegistry(globalExtensionContainer, globalConfiguration.getModulesProvider());
   }
 
   @Override
   public ComponentContainer stopComponents(boolean swallowException) {
     try {
+      if (moduleRegistry != null) {
+        moduleRegistry.stopAll();
+      }
       if (globalExtensionContainer != null) {
         globalExtensionContainer.stopComponents(swallowException);
       }
@@ -133,11 +141,10 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     container.execute();
     rules = container.getRules();
     standaloneActiveRules = container.getStandaloneActiveRules();
-    languages = container.getLanguages();
   }
 
-  public AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener, ProgressWrapper progress) {
-    AnalysisContainer analysisContainer = new AnalysisContainer(globalExtensionContainer, progress);
+  public AnalysisResults analyze(ComponentContainer moduleContainer, StandaloneAnalysisConfiguration configuration, IssueListener issueListener, ProgressWrapper progress) {
+    AnalysisContainer analysisContainer = new AnalysisContainer(moduleContainer, progress);
     analysisContainer.add(configuration);
     analysisContainer.add(issueListener);
     analysisContainer.add(rules);
@@ -174,7 +181,8 @@ public class StandaloneGlobalContainer extends ComponentContainer {
     return standaloneActiveRules.allRuleDetails();
   }
 
-  public Map<String, String> getAllLanguagesNameByKey() {
-    return languages.stream().collect(Collectors.toMap(Language::getKey, Language::getName));
+  public ModuleRegistry getModuleRegistry() {
+    return moduleRegistry;
   }
+
 }

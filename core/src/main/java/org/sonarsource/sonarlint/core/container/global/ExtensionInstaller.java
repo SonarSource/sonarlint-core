@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,9 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.container.global;
 
+import java.util.Collection;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.sonar.api.Plugin;
-import org.sonar.api.SonarRuntime;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.utils.AnnotationUtils;
@@ -31,21 +32,23 @@ import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
+import org.sonarsource.sonarlint.core.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.plugin.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.PluginRepository;
+import org.sonarsource.sonarlint.plugin.api.SonarLintRuntime;
 
 public class ExtensionInstaller {
 
   private static final Logger LOG = Loggers.get(ExtensionInstaller.class);
 
-  private final SonarRuntime sonarRuntime;
+  private final SonarLintRuntime sonarRuntime;
   private final PluginRepository pluginRepository;
   private final Configuration bootConfiguration;
   private final PluginVersionChecker pluginVersionChecker;
   private final Set<Language> enabledLanguages;
 
-  public ExtensionInstaller(SonarRuntime sonarRuntime, PluginRepository pluginRepository, Configuration bootConfiguration, PluginVersionChecker pluginVersionChecker,
+  public ExtensionInstaller(SonarLintRuntime sonarRuntime, PluginRepository pluginRepository, Configuration bootConfiguration, PluginVersionChecker pluginVersionChecker,
     AbstractGlobalConfiguration globalConfig) {
     this.sonarRuntime = sonarRuntime;
     this.pluginRepository = pluginRepository;
@@ -54,25 +57,32 @@ public class ExtensionInstaller {
     this.enabledLanguages = globalConfig.getEnabledLanguages();
   }
 
-  public ExtensionInstaller install(ComponentContainer container, boolean global) {
+  public void installEmbeddedOnly(ComponentContainer container, ContainerLifespan lifespan) {
+    Collection<PluginInfo> pluginInfos = pluginRepository.getActivePluginInfos().stream().filter(PluginInfo::isEmbedded).collect(Collectors.toList());
+    install(container, lifespan, pluginInfos);
+  }
 
-    // plugin extensions
-    for (PluginInfo pluginInfo : pluginRepository.getActivePluginInfos()) {
+  public ExtensionInstaller install(ComponentContainer container, ContainerLifespan lifespan) {
+    return install(container, lifespan, pluginRepository.getActivePluginInfos());
+  }
+
+  private ExtensionInstaller install(ComponentContainer container, ContainerLifespan lifespan, Collection<PluginInfo> pluginInfos) {
+    for (PluginInfo pluginInfo : pluginInfos) {
       Plugin plugin = pluginRepository.getPluginInstance(pluginInfo.getKey());
       Plugin.Context context = new PluginContextImpl.Builder()
         .setSonarRuntime(sonarRuntime)
         .setBootConfiguration(bootConfiguration)
         .build();
       plugin.define(context);
-      loadExtensions(container, pluginInfo, context, global);
+      loadExtensions(container, pluginInfo, context, lifespan);
     }
     return this;
   }
 
-  private void loadExtensions(ComponentContainer container, PluginInfo pluginInfo, Plugin.Context context, boolean global) {
+  private void loadExtensions(ComponentContainer container, PluginInfo pluginInfo, Plugin.Context context, ContainerLifespan lifespan) {
     Boolean isSlPluginOrNull = pluginInfo.isSonarLintSupported();
-    boolean isExplicitlySonarLintCompatible = isSlPluginOrNull != null && isSlPluginOrNull.booleanValue();
-    if (global && !isExplicitlySonarLintCompatible) {
+    boolean isExplicitlySonarLintCompatible = isSlPluginOrNull != null && isSlPluginOrNull;
+    if (lifespan.equals(ContainerLifespan.ENGINE) && !isExplicitlySonarLintCompatible) {
       // Don't support global extensions for old plugins
       return;
     }
@@ -80,7 +90,7 @@ public class ExtensionInstaller {
       if (isExplicitlySonarLintCompatible) {
         // When plugin itself claim to be compatible with SonarLint, only load @SonarLintSide extensions
         // filter out non officially supported Sensors
-        if (isSonarLintSide(extension) && (isGlobal(extension) == global) && onlySonarSourceSensor(pluginInfo, extension)) {
+        if (lifespan.equals(getSonarLintSideLifespan(extension)) && onlySonarSourceSensor(pluginInfo, extension)) {
           container.addExtension(pluginInfo, extension);
         }
       } else {
@@ -98,16 +108,21 @@ public class ExtensionInstaller {
     return pluginVersionChecker.getMinimumVersion(pluginInfo.getKey()) != null || isNotSensor(extension);
   }
 
-  private static boolean isSonarLintSide(Object extension) {
-    return ExtensionUtils.isSonarLintSide(extension);
-  }
-
-  /**
-   * Experimental. Used by SonarTS
-   */
-  private static boolean isGlobal(Object extension) {
-    SonarLintSide annotation = AnnotationUtils.getAnnotation(extension, SonarLintSide.class);
-    return annotation != null && SonarLintSide.MULTIPLE_ANALYSES.equals(annotation.lifespan());
+  private static ContainerLifespan getSonarLintSideLifespan(Object extension) {
+    SonarLintSide sonarPluginLegacyAnnotation = AnnotationUtils.getAnnotation(extension, SonarLintSide.class);
+    if (sonarPluginLegacyAnnotation != null) {
+      String lifespan = sonarPluginLegacyAnnotation.lifespan();
+      if (SonarLintSide.MULTIPLE_ANALYSES.equals(lifespan) || "ENGINE".equals(lifespan)) {
+        return ContainerLifespan.ENGINE;
+      }
+      if ("MODULE".equals(lifespan)) {
+        return ContainerLifespan.MODULE;
+      }
+      if (SonarLintSide.SINGLE_ANALYSIS.equals(lifespan)) {
+        return ContainerLifespan.ANALYSIS;
+      }
+    }
+    return null;
   }
 
   private static boolean isNotSensor(Object extension) {

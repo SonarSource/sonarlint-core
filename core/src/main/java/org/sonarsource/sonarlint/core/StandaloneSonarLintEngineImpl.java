@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -36,17 +35,18 @@ import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisCo
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
+import org.sonarsource.sonarlint.core.container.module.ModuleRegistry;
 import org.sonarsource.sonarlint.core.container.standalone.StandaloneGlobalContainer;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static java.util.Objects.requireNonNull;
 
-public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintEngine {
+public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine implements StandaloneSonarLintEngine {
 
   private final StandaloneGlobalConfiguration globalConfig;
   private StandaloneGlobalContainer globalContainer;
   private final ReadWriteLock rwl = new ReentrantReadWriteLock();
-  private LogOutput logOutput;
+  private final LogOutput logOutput;
 
   public StandaloneSonarLintEngineImpl(StandaloneGlobalConfiguration globalConfig) {
     this.globalConfig = globalConfig;
@@ -56,6 +56,11 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
 
   public StandaloneGlobalContainer getGlobalContainer() {
     return globalContainer;
+  }
+
+  @Override
+  protected ModuleRegistry getModuleRegistry() {
+    return getGlobalContainer().getModuleRegistry();
   }
 
   public void start() {
@@ -87,13 +92,15 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
     requireNonNull(issueListener);
     setLogging(logOutput);
     rwl.readLock().lock();
-    try {
-      return globalContainer.analyze(configuration, issueListener, new ProgressWrapper(monitor));
-    } catch (RuntimeException e) {
-      throw SonarLintWrappedException.wrap(e);
-    } finally {
-      rwl.readLock().unlock();
-    }
+    return withModule(configuration, moduleContainer -> {
+      try {
+        return globalContainer.analyze(moduleContainer, configuration, issueListener, new ProgressWrapper(monitor));
+      } catch (RuntimeException e) {
+        throw SonarLintWrappedException.wrap(e);
+      } finally {
+        rwl.readLock().unlock();
+      }
+    });
   }
 
   private void setLogging(@Nullable LogOutput logOutput) {
@@ -127,17 +134,6 @@ public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintE
     rwl.readLock().lock();
     try {
       return globalContainer.getPluginDetails();
-    } finally {
-      rwl.readLock().unlock();
-    }
-  }
-
-  @Override
-  public Map<String, String> getAllLanguagesNameByKey() {
-    setLogging(null);
-    rwl.readLock().lock();
-    try {
-      return globalContainer.getAllLanguagesNameByKey();
     } finally {
       rwl.readLock().unlock();
     }

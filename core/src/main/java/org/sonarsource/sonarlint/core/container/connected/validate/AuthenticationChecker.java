@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,28 +20,27 @@
 package org.sonarsource.sonarlint.core.container.connected.validate;
 
 import com.google.gson.Gson;
-
 import org.sonarsource.sonarlint.core.client.api.connected.ValidationResult;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.util.ws.WsResponse;
+import org.sonarsource.sonarlint.core.serverapi.HttpClient;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 public class AuthenticationChecker {
 
-  private final SonarLintWsClient wsClient;
+  private final ServerApiHelper serverApiHelper;
 
-  public AuthenticationChecker(SonarLintWsClient wsClient) {
-    this.wsClient = wsClient;
+  public AuthenticationChecker(ServerApiHelper serverApiHelper) {
+    this.serverApiHelper = serverApiHelper;
   }
 
   public ValidationResult validateCredentials() {
-    try (WsResponse response = wsClient.rawGet("api/authentication/validate?format=json")) {
+    try (HttpClient.Response response = serverApiHelper.rawGet("api/authentication/validate?format=json")) {
       int code = response.code();
       if (response.isSuccessful()) {
-        String responseStr = response.content();
+        String responseStr = response.bodyAsString();
         ValidateResponse validateResponse = new Gson().fromJson(responseStr, ValidateResponse.class);
         return new DefaultValidationResult(validateResponse.valid, validateResponse.valid ? "Authentication successful" : "Authentication failed");
       } else {
-        return new DefaultValidationResult(false, "HTTP Connection failed (" + code + "): " + response.content());
+        return new DefaultValidationResult(false, "HTTP Connection failed (" + code + "): " + response.bodyAsString());
       }
     }
   }

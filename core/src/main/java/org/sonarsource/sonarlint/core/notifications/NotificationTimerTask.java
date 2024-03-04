@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,27 +27,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimerTask;
 import java.util.function.BinaryOperator;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.NotificationConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
-import org.sonarsource.sonarlint.core.client.api.notifications.SonarQubeNotification;
+import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotification;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 class NotificationTimerTask extends TimerTask {
   // merge with most recent time
   private static final BinaryOperator<ZonedDateTime> MERGE_TIMES = (t1, t2) -> t1.toInstant().compareTo(t2.toInstant()) > 0 ? t1 : t2;
   private static final Logger LOG = Loggers.get(NotificationTimerTask.class);
-  private final NotificationCheckerFactory checkerFactory;
   private Collection<NotificationConfiguration> configuredProjects = Collections.emptyList();
+  private final Function<ServerApiHelper, NotificationChecker> notificationCheckerFactory;
 
   public NotificationTimerTask() {
-    this(new NotificationCheckerFactory());
+    this(NotificationChecker::new);
   }
 
-  public NotificationTimerTask(NotificationCheckerFactory checkerFactory) {
-    this.checkerFactory = checkerFactory;
+  NotificationTimerTask(Function<ServerApiHelper, NotificationChecker> notificationCheckerFactory) {
+    this.notificationCheckerFactory = notificationCheckerFactory;
   }
 
   public void setProjects(Collection<NotificationConfiguration> configurations) {
@@ -56,9 +57,9 @@ class NotificationTimerTask extends TimerTask {
 
   @Override
   public void run() {
-    Map<ServerConfiguration, List<NotificationConfiguration>> mapByServer = groupByServer();
+    Map<ServerApiHelper, List<NotificationConfiguration>> mapByServer = groupByServer();
 
-    for (Map.Entry<ServerConfiguration, List<NotificationConfiguration>> entry : mapByServer.entrySet()) {
+    for (Map.Entry<ServerApiHelper, List<NotificationConfiguration>> entry : mapByServer.entrySet()) {
       requestForServer(entry.getKey(), entry.getValue());
     }
   }
@@ -69,15 +70,15 @@ class NotificationTimerTask extends TimerTask {
     return lastTime.isAfter(oneDayAgo) ? lastTime : oneDayAgo;
   }
 
-  private void requestForServer(ServerConfiguration serverConfiguration, List<NotificationConfiguration> configs) {
+  private void requestForServer(ServerApiHelper serverApiHelper, List<NotificationConfiguration> configs) {
     try {
       Map<String, ZonedDateTime> request = configs.stream()
         .collect(Collectors.toMap(NotificationConfiguration::projectKey, NotificationTimerTask::getLastNotificationTime, MERGE_TIMES));
 
-      NotificationChecker notificationChecker = checkerFactory.create(serverConfiguration);
-      List<SonarQubeNotification> notifications = notificationChecker.request(request);
+      NotificationChecker notificationChecker = notificationCheckerFactory.apply(serverApiHelper);
+      List<ServerNotification> notifications = notificationChecker.request(request);
 
-      for (SonarQubeNotification n : notifications) {
+      for (ServerNotification n : notifications) {
         Stream<NotificationConfiguration> matchingConfStream = configs.stream();
         if (n.projectKey() != null) {
           matchingConfStream = matchingConfStream.filter(c -> c.projectKey().equals(n.projectKey()));
@@ -89,12 +90,12 @@ class NotificationTimerTask extends TimerTask {
         });
       }
     } catch (Exception e) {
-      LOG.warn("Failed to request SonarQube events to " + serverConfiguration.getUrl(), e);
+      LOG.warn("Failed to request SonarLint notifications", e);
     }
   }
 
-  private Map<ServerConfiguration, List<NotificationConfiguration>> groupByServer() {
-    return configuredProjects.stream().collect(Collectors.groupingBy(NotificationConfiguration::serverConfiguration));
+  private Map<ServerApiHelper, List<NotificationConfiguration>> groupByServer() {
+    return configuredProjects.stream().collect(Collectors.groupingBy(n -> new ServerApiHelper(n.endpoint().get(), n.client().get())));
   }
 
 }

@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -28,10 +28,10 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
-import org.sonarqube.ws.WsComponents;
-import org.sonarqube.ws.WsComponents.Component;
-import org.sonarsource.sonarlint.core.WsHelperImpl;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+import org.sonarqube.ws.Components;
+import org.sonarqube.ws.Components.Component;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
@@ -39,10 +39,10 @@ import static org.sonarsource.sonarlint.core.client.api.util.FileUtils.toSonarQu
 
 public class ModuleHierarchyDownloader {
   static final int PAGE_SIZE = 500;
-  private final SonarLintWsClient wsClient;
+  private final ServerApiHelper serverApiHelper;
 
-  public ModuleHierarchyDownloader(SonarLintWsClient wsClient) {
-    this.wsClient = wsClient;
+  public ModuleHierarchyDownloader(ServerApiHelper serverApiHelper) {
+    this.serverApiHelper = serverApiHelper;
   }
 
   /**
@@ -55,10 +55,10 @@ public class ModuleHierarchyDownloader {
   public Map<String, String> fetchModuleHierarchy(String projectKey, ProgressWrapper progress) {
     List<Component> modules = new ArrayList<>();
 
-    SonarLintWsClient.getPaginated(wsClient, "api/components/tree.protobuf?qualifiers=BRC&component=" + StringUtils.urlEncode(projectKey),
-      WsComponents.TreeWsResponse::parseFrom,
-      WsComponents.TreeWsResponse::getPaging,
-      WsComponents.TreeWsResponse::getComponentsList,
+    serverApiHelper.getPaginated("api/components/tree.protobuf?qualifiers=BRC&component=" + StringUtils.urlEncode(projectKey),
+      Components.TreeWsResponse::parseFrom,
+      Components.TreeWsResponse::getPaging,
+      Components.TreeWsResponse::getComponentsList,
       modules::add,
       true,
       progress);
@@ -94,8 +94,9 @@ public class ModuleHierarchyDownloader {
 
   @CheckForNull
   private String fetchAncestorKey(String moduleKey) {
-    return WsHelperImpl
-      .fetchComponent(wsClient, moduleKey)
+    return new ServerApi(serverApiHelper)
+      .project()
+      .fetchComponent(moduleKey)
       .flatMap(r -> r.getAncestorsList().stream().map(Component::getKey).findFirst())
       .orElse(null);
   }

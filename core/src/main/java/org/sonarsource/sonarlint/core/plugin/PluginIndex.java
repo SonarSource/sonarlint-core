@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -28,10 +28,12 @@ public interface PluginIndex {
   class PluginReference {
     private final String hash;
     private final String filename;
+    private final boolean embedded;
 
-    public PluginReference(String hash, String filename) {
+    public PluginReference(String hash, String filename, boolean embedded) {
       this.hash = hash;
       this.filename = filename;
+      this.embedded = embedded;
     }
 
     public String getHash() {
@@ -40,6 +42,10 @@ public interface PluginIndex {
 
     public String getFilename() {
       return filename;
+    }
+
+    public boolean isEmbedded() {
+      return embedded;
     }
   }
 }

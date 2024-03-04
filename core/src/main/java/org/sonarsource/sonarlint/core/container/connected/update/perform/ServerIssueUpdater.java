@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,45 +21,36 @@ package org.sonarsource.sonarlint.core.container.connected.update.perform;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.sonar.api.utils.TempFolder;
-import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class ServerIssueUpdater {
   private final StoragePaths storagePaths;
   private final IssueDownloader issueDownloader;
   private final IssueStoreFactory issueStoreFactory;
-  private final IssueStorePaths issueStorePaths;
   private final TempFolder tempFolder;
 
-  public ServerIssueUpdater(StoragePaths storagePaths, IssueDownloader issueDownloader, IssueStoreFactory issueStoreFactory,
-    IssueStorePaths issueStorePaths, TempFolder tempFolder) {
+  public ServerIssueUpdater(StoragePaths storagePaths, IssueDownloader issueDownloader, IssueStoreFactory issueStoreFactory, TempFolder tempFolder) {
     this.storagePaths = storagePaths;
     this.issueDownloader = issueDownloader;
     this.issueStoreFactory = issueStoreFactory;
-    this.issueStorePaths = issueStorePaths;
     this.tempFolder = tempFolder;
   }
 
-  public void update(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration) {
+  public void update(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
     Path work = tempFolder.newDir().toPath();
     Path target = storagePaths.getServerIssuesPath(projectKey);
-    FileUtils.replaceDir(path -> updateServerIssues(projectKey, projectConfiguration, path), target, work);
+    FileUtils.replaceDir(path -> updateServerIssues(projectKey, projectConfiguration, path, fetchTaintVulnerabilities, progress), target, work);
   }
 
-  public void updateServerIssues(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, Path path) {
-    List<ScannerInput.ServerIssue> issues = issueDownloader.apply(projectKey);
-    List<Sonarlint.ServerIssue> storageIssues = issues.stream()
-      .map(issue -> issueStorePaths.toStorageIssue(issue, projectConfiguration))
-      .collect(Collectors.toList());
-
-    issueStoreFactory.apply(path).save(storageIssues);
+  public void updateServerIssues(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, Path path, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
+    List<Sonarlint.ServerIssue> issues = issueDownloader.download(projectKey, projectConfiguration, fetchTaintVulnerabilities, progress);
+    issueStoreFactory.apply(path).save(issues);
   }
 
 }

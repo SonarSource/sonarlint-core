@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -82,7 +82,7 @@ public class ConnectedFileExclusionsMediumTest {
     writeStatus(tmpStorage, VersionUtils.getLibraryVersion());
 
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
-      .setServerId(SERVER_ID)
+      .setConnectionId(SERVER_ID)
       .setSonarLintUserHome(slHome)
       .setStorageRoot(tmpStorage)
       .setLogOutput(createNoOpLogOutput())
@@ -97,7 +97,6 @@ public class ConnectedFileExclusionsMediumTest {
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(StoragePaths.STORAGE_VERSION)
-      .setClientUserAgent("agent")
       .setSonarlintCoreVersion(version)
       .setUpdateTimestamp(new Date().getTime())
       .build();
@@ -110,7 +109,6 @@ public class ConnectedFileExclusionsMediumTest {
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(StoragePaths.STORAGE_VERSION)
-      .setClientUserAgent("agent")
       .setSonarlintCoreVersion(version)
       .setUpdateTimestamp(new Date().getTime())
       .build();

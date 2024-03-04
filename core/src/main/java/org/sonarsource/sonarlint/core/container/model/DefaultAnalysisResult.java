@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -25,13 +25,14 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 
 public class DefaultAnalysisResult implements AnalysisResults {
   private Set<ClientInputFile> failedAnalysisFiles = new LinkedHashSet<>();
   private int indexedFileCount;
-  private Map<ClientInputFile, String> languagePerFile = new LinkedHashMap<>();
+  private Map<ClientInputFile, Language> languagePerFile = new LinkedHashMap<>();
 
   public DefaultAnalysisResult setIndexedFileCount(int indexedFileCount) {
     this.indexedFileCount = indexedFileCount;
@@ -43,11 +44,11 @@ public class DefaultAnalysisResult implements AnalysisResults {
   }
 
   @Override
-  public Map<ClientInputFile, String> languagePerFile() {
+  public Map<ClientInputFile, Language> languagePerFile() {
     return languagePerFile;
   }
 
-  public void setLanguageForFile(ClientInputFile file, @Nullable String language) {
+  public void setLanguageForFile(ClientInputFile file, @Nullable Language language) {
     this.languagePerFile.put(file, language);
   }
 

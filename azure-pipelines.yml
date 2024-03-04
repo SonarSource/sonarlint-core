@@ -40,10 +40,7 @@ stages:
         fetchDepth: 1
       - task: Cache@2
         inputs:
-          key: 'maven | "$(Agent.OS)" | **/pom.xml'
-          restoreKeys: |
-            maven | "$(Agent.OS)"
-            maven
+          key: 'build | maven | "$(Agent.OS)" | **/pom.xml, !its/**'
           path: $(MAVEN_CACHE_FOLDER)
         displayName: Cache Maven local repo
       - task: DownloadSecureFile@1
@@ -56,6 +53,11 @@ stages:
         name: jks
         inputs:
           secureFile: 'SonarSource-2019-2021.jks'
+      - task: DownloadSecureFile@1
+        displayName: 'Download the sign key'
+        name: pgpSignKey
+        inputs:
+          secureFile: 'sign-key.asc'          
       - template: update-maven-version-steps.yml
         parameters:
           mavenSettingsFilePath: $(mavenSettings.secureFilePath)
@@ -65,6 +67,7 @@ stages:
         env:
           ARTIFACTORY_DEPLOY_USERNAME: $(ARTIFACTORY_DEPLOY_USERNAME)
           ARTIFACTORY_DEPLOY_PASSWORD: $(ARTIFACTORY_DEPLOY_PASSWORD)
+          PGP_PASSPHRASE: $(PGP_PASSPHRASE)
           GIT_SHA1: $(Build.SourceVersion)
           GITHUB_BRANCH: $(fixedBranch)
         inputs:
@@ -72,7 +75,8 @@ stages:
           options: >-
             $(commonMavenArguments)
             --settings $(mavenSettings.secureFilePath)
-            -Prelease
+            -Prelease,sign
+            -Dsign.keyFile=$(pgpSignKey.secureFilePath)
             -Djarsigner.skip=false
             -Dsonarsource.keystore.path=$(jks.secureFilePath)
             -Dsonarsource.keystore.password=$(jksPassword)
@@ -117,10 +121,7 @@ stages:
         fetchDepth: 1
       - task: Cache@2
         inputs:
-          key: 'maven | "$(Agent.OS)" | **/pom.xml'
-          restoreKeys: |
-            maven | "$(Agent.OS)"
-            maven
+          key: 'validate_win | maven | "$(Agent.OS)" | **/pom.xml, !its/**'
           path: $(MAVEN_CACHE_FOLDER)
         displayName: Cache Maven local repo
       - task: DownloadSecureFile@1
@@ -154,10 +155,7 @@ stages:
         fetchDepth: 1
       - task: Cache@2
         inputs:
-          key: 'maven | "$(Agent.OS)" | **/pom.xml'
-          restoreKeys: |
-            maven | "$(Agent.OS)"
-            maven
+          key: 'validate_linux | maven | "$(Agent.OS)" | **/pom.xml, !its/**'
           path: $(MAVEN_CACHE_FOLDER)
         displayName: Cache Maven local repo
       - task: DownloadSecureFile@1
@@ -187,10 +185,7 @@ stages:
       steps:
       - task: Cache@2
         inputs:
-          key: 'maven | "$(Agent.OS)" | **/pom.xml'
-          restoreKeys: |
-            maven | "$(Agent.OS)"
-            maven
+          key: 'sq | maven | "$(Agent.OS)" | **/pom.xml, !its/**'
           path: $(MAVEN_CACHE_FOLDER)
         displayName: Cache Maven local repo
       - task: DownloadSecureFile@1
@@ -236,13 +231,13 @@ stages:
             SQ_VERSION: 'LATEST_RELEASE'
             JDKVersion: '1.11'
             Category: '-DexcludedGroups=SonarCloud'
+          Lts89:
+            SQ_VERSION: 'LATEST_RELEASE[8.9]'
+            JDKVersion: '1.11'
+            Category: '-DexcludedGroups=SonarCloud'
           Lts79:
             SQ_VERSION: 'LATEST_RELEASE[7.9]'
             JDKVersion: '1.11'
-            Category: '-DexcludedGroups=SonarCloud'
-          Lts67:
-            SQ_VERSION: 'LATEST_RELEASE[6.7]'
-            JDKVersion: '1.8'
             Category: '-DexcludedGroups=SonarCloud'
       variables:
         MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
@@ -252,10 +247,7 @@ stages:
         fetchDepth: 1
       - task: Cache@2
         inputs:
-          key: 'maven | "$(Agent.OS)" | **/pom.xml'
-          restoreKeys: |
-            maven | "$(Agent.OS)"
-            maven
+          key: 'its | "$(SQ_VERSION)" | maven | "$(Agent.OS)" | **/pom.xml, !its/target**'
           path: $(MAVEN_CACHE_FOLDER)
         displayName: Cache Maven local repo
       - task: DownloadSecureFile@1

@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
+import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 
@@ -393,9 +394,11 @@ public class IssueTrackerTest {
 
     ServerIssue serverIssue = mock(ServerIssue.class);
     when(serverIssue.ruleKey()).thenReturn(ruleKey);
-    when(serverIssue.message()).thenReturn(message);
-    when(serverIssue.checksum()).thenReturn(DigestUtils.digest(lineContent));
-    when(serverIssue.line()).thenReturn(newLine + 3);
+    when(serverIssue.getMessage()).thenReturn(message);
+    when(serverIssue.lineHash()).thenReturn(DigestUtils.digest(lineContent));
+    TextRange serverTextRange = mock(TextRange.class);
+    when(serverTextRange.getStartLine()).thenReturn(newLine + 3);
+    when(serverIssue.getTextRange()).thenReturn(serverTextRange);
     when(serverIssue.creationDate()).thenReturn(Instant.now());
     when(serverIssue.key()).thenReturn(serverIssueKey);
     when(serverIssue.resolution()).thenReturn("fixed");

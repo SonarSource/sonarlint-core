@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -34,7 +34,7 @@ import org.sonarsource.sonarlint.core.analyzer.sensor.SensorOptimizer;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SensorsExecutor;
 import org.sonarsource.sonarlint.core.analyzer.sensor.SonarLintSensorStorage;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
-import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultLanguagesRepository;
+import org.sonarsource.sonarlint.core.container.ContainerLifespan;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileIndexer;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.FileMetadata;
 import org.sonarsource.sonarlint.core.container.analysis.filesystem.InputFileBuilder;
@@ -85,7 +85,6 @@ public class AnalysisContainer extends ComponentContainer {
 
       // lang
       Languages.class,
-      DefaultLanguagesRepository.class,
 
       MutableAnalysisSettings.class,
       new AnalysisConfigurationProvider(),
@@ -123,7 +122,7 @@ public class AnalysisContainer extends ComponentContainer {
   }
 
   private void addPluginExtensions() {
-    getComponentByType(ExtensionInstaller.class).install(this, false);
+    getComponentByType(ExtensionInstaller.class).install(this, ContainerLifespan.ANALYSIS);
   }
 
   @Override

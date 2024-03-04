@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -111,4 +111,16 @@ public class StringUtils {
     }
     return sb.toString();
   }
+
+  public static boolean equalsIgnoringTrailingSlash(String aString, String anotherString) {
+    return withTrailingSlash(aString).equals(withTrailingSlash(anotherString));
+  }
+
+  private static String withTrailingSlash(String str) {
+    if (!str.endsWith("/")) {
+      return str + '/';
+    }
+    return str;
+  }
+
 }

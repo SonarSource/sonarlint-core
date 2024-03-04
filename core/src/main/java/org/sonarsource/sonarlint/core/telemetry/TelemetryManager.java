@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,47 +20,39 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import java.nio.file.Path;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 
 import static org.sonarsource.sonarlint.core.telemetry.TelemetryUtils.dayChanged;
 
 /**
- * Manage telemetry data, in memory and persistent storage, and stateful telemetry actions.
+ * Manage telemetry data and persistent storage, and stateful telemetry actions.
  * The single central point for clients to manage telemetry.
  */
 public class TelemetryManager {
 
-  public static final String TELEMETRY_ENDPOINT = "https://chestnutsl.sonarsource.com";
-
   static final int MIN_HOURS_BETWEEN_UPLOAD = 5;
 
-  private final TelemetryStorage storage;
-  private final Supplier<Boolean> usesConnectedModeSupplier;
-  private final Supplier<Boolean> usesSonarCloudSupplier;
-  private final TelemetryData data;
-  private final TelemetryClient client;
+  private final TelemetryLocalStorageManager storage;
+  private final TelemetryHttpClient client;
+  private final TelemetryClientAttributesProvider attributesProvider;
 
-  public TelemetryManager(Path path, TelemetryClient client, Supplier<Boolean> usesConnectedModeSupplier, Supplier<Boolean> usesSonarCloudSupplier) {
+  public TelemetryManager(Path path, TelemetryHttpClient client, TelemetryClientAttributesProvider attributesProvider) {
     this.storage = newTelemetryStorage(path);
-    this.usesConnectedModeSupplier = usesConnectedModeSupplier;
-    this.usesSonarCloudSupplier = usesSonarCloudSupplier;
-    this.data = storage.tryLoad();
+    this.attributesProvider = attributesProvider;
     this.client = client;
   }
 
-  TelemetryStorage newTelemetryStorage(Path path) {
-    return new TelemetryStorage(path);
+  TelemetryLocalStorageManager newTelemetryStorage(Path path) {
+    return new TelemetryLocalStorageManager(path);
   }
 
   public boolean isEnabled() {
-    return data.enabled();
+    return storage.tryRead().enabled();
   }
 
   public void enable() {
-    tryMerge();
-    data.setEnabled(true);
-    saveNow();
+    storage.tryUpdateAtomically(data -> data.setEnabled(true));
     uploadLazily();
   }
 
@@ -68,10 +60,10 @@ public class TelemetryManager {
    * Disable telemetry (opt-out).
    */
   public void disable() {
-    tryMerge();
-    data.setEnabled(false);
-    saveNow();
-    client.optOut(data, usesConnectedModeSupplier.get(), usesSonarCloudSupplier.get());
+    storage.tryUpdateAtomically(data -> {
+      data.setEnabled(false);
+      client.optOut(data, attributesProvider);
+    });
   }
 
   /**
@@ -81,65 +73,56 @@ public class TelemetryManager {
    * To be called periodically once a day.
    */
   public void uploadLazily() {
-    if (!dayChanged(data.lastUploadTime(), MIN_HOURS_BETWEEN_UPLOAD)) {
+    TelemetryLocalStorage readData = storage.tryRead();
+    if (!dayChanged(readData.lastUploadTime(), MIN_HOURS_BETWEEN_UPLOAD)) {
       return;
     }
 
-    tryMerge();
-
-    if (!dayChanged(data.lastUploadTime(), MIN_HOURS_BETWEEN_UPLOAD)) {
-      return;
-    }
-
-    data.setLastUploadTime();
-    saveNow();
-    client.upload(data, usesConnectedModeSupplier.get(), usesSonarCloudSupplier.get());
-
-    data.clearAnalyzers();
-    saveNow();
+    storage.tryUpdateAtomically(data -> {
+      client.upload(data, attributesProvider);
+      data.setLastUploadTime();
+      data.clearAfterPing();
+    });
   }
 
-  public void analysisDoneOnSingleFile(@Nullable String fileExtension, int analysisTimeMs) {
-    String language = TelemetryUtils.getLanguage(fileExtension);
-    data.setUsedAnalysis(language, analysisTimeMs);
-    mergeAndSave();
-  }
-
-  public void analysisDoneOnSingleLanguage(@Nullable String language, int analysisTimeMs) {
-    if (language == null) {
-      data.setUsedAnalysis("others", analysisTimeMs);
-    } else {
-      data.setUsedAnalysis(language, analysisTimeMs);
-    }
-    mergeAndSave();
+  public void analysisDoneOnSingleLanguage(@Nullable Language language, int analysisTimeMs) {
+    storage.tryUpdateAtomically(data -> {
+      if (language == null) {
+        data.setUsedAnalysis("others", analysisTimeMs);
+      } else {
+        data.setUsedAnalysis(language.getLanguageKey(), analysisTimeMs);
+      }
+    });
   }
 
   public void analysisDoneOnMultipleFiles() {
-    data.setUsedAnalysis();
-    mergeAndSave();
+    storage.tryUpdateAtomically(TelemetryLocalStorage::setUsedAnalysis);
+  }
+
+  public void devNotificationsReceived(String eventType) {
+    storage.tryUpdateAtomically(s -> s.incrementDevNotificationsCount(eventType));
+  }
+
+  public void devNotificationsClicked(String eventType) {
+    storage.tryUpdateAtomically(s -> s.incrementDevNotificationsClicked(eventType));
+  }
+
+  public void showHotspotRequestReceived() {
+    storage.tryUpdateAtomically(TelemetryLocalStorage::incrementShowHotspotRequestCount);
+  }
+
+  public void taintVulnerabilitiesInvestigatedLocally() {
+    storage.tryUpdateAtomically(TelemetryLocalStorage::incrementTaintVulnerabilitiesInvestigatedLocallyCount);
+  }
+
+  public void taintVulnerabilitiesInvestigatedRemotely() {
+    storage.tryUpdateAtomically(TelemetryLocalStorage::incrementTaintVulnerabilitiesInvestigatedRemotelyCount);
   }
 
   /**
    * Save and upload lazily telemetry data.
    */
   public void stop() {
-    saveNow();
     uploadLazily();
-  }
-
-  private void mergeAndSave() {
-    tryMerge();
-    saveNow();
-  }
-
-  private void tryMerge() {
-    TelemetryData existing = storage.tryLoad();
-    if (existing != null) {
-      data.mergeFrom(existing);
-    }
-  }
-
-  private void saveNow() {
-    storage.trySave(data);
   }
 }

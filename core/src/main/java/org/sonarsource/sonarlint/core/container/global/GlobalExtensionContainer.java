@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.container.global;
 
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
+import org.sonarsource.sonarlint.core.container.ContainerLifespan;
 
 /**
  * Used to load plugin global extensions
@@ -32,7 +33,7 @@ public class GlobalExtensionContainer extends ComponentContainer {
 
   @Override
   protected void doBeforeStart() {
-    getComponentByType(ExtensionInstaller.class).install(this, true);
+    getComponentByType(ExtensionInstaller.class).install(this, ContainerLifespan.ENGINE);
   }
 
 }

@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -59,7 +59,7 @@ public class ConnectedStaleStorageMediumTest {
     storage = slHome.resolve("storage").resolve(encodeForFs(storageId));
 
     config = ConnectedGlobalConfiguration.builder()
-      .setServerId(storageId)
+      .setConnectionId(storageId)
       .setSonarLintUserHome(slHome)
       .setLogOutput(createNoOpLogOutput())
       .build();
@@ -69,7 +69,6 @@ public class ConnectedStaleStorageMediumTest {
   private static void writeUpdateStatus(Path storage, String version) throws IOException {
     StorageStatus storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(version)
-      .setClientUserAgent("agent")
       .setSonarlintCoreVersion("1.0")
       .setUpdateTimestamp(new Date().getTime())
       .build();

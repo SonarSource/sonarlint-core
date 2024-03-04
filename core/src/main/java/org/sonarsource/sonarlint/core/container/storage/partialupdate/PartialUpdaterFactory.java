@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,14 +20,16 @@
 package org.sonarsource.sonarlint.core.container.storage.partialupdate;
 
 import org.sonar.api.utils.TempFolder;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
-import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloaderImpl;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
 import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.HttpClient;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
+import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 
 public class PartialUpdaterFactory {
   private final StoragePaths storagePaths;
@@ -40,12 +42,11 @@ public class PartialUpdaterFactory {
     this.tempFolder = tempFolder;
   }
 
-  public PartialUpdater create(ServerConfiguration serverConfig) {
-    SonarLintWsClient client = new SonarLintWsClient(serverConfig);
+  public PartialUpdater create(EndpointParams endpoint, HttpClient client) {
+    ServerApiHelper serverApiHelper = new ServerApiHelper(endpoint, client);
     IssueStoreFactory issueStoreFactory = new IssueStoreFactory();
-    IssueDownloader downloader = new IssueDownloaderImpl(client);
-    ProjectListDownloader projectListDownloader = new ProjectListDownloader(client);
-    return new PartialUpdater(issueStoreFactory, downloader, storagePaths, projectListDownloader,
-      issueStorePaths, tempFolder);
+    IssueDownloader downloader = new IssueDownloader(new IssueApi(serverApiHelper), new SourceApi(serverApiHelper), issueStorePaths);
+    ProjectListDownloader projectListDownloader = new ProjectListDownloader(serverApiHelper);
+    return new PartialUpdater(issueStoreFactory, downloader, storagePaths, projectListDownloader, issueStorePaths, tempFolder);
   }
 }

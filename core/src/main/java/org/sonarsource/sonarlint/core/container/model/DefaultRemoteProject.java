@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,11 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.container.model;
 
-import org.sonarqube.ws.WsComponents.ShowWsResponse;
-import org.sonarsource.sonarlint.core.client.api.connected.RemoteProject;
+import org.sonarqube.ws.Components.ShowWsResponse;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList;
+import org.sonarsource.sonarlint.core.serverapi.project.ServerProject;
 
-public class DefaultRemoteProject implements RemoteProject {
+public class DefaultRemoteProject implements ServerProject {
   private final String key;
   private final String name;
 

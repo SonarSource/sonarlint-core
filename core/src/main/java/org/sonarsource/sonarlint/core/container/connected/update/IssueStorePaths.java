@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,11 +22,14 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 import java.time.Instant;
 import java.util.Map;
 import javax.annotation.CheckForNull;
-import org.sonar.scanner.protocol.input.ScannerInput;
+import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
+import org.sonarsource.sonarlint.core.container.model.DefaultServerFlow;
 import org.sonarsource.sonarlint.core.container.model.DefaultServerIssue;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
+
+import static org.apache.commons.lang.StringUtils.trimToNull;
 
 public class IssueStorePaths {
 
@@ -76,33 +79,6 @@ public class IssueStorePaths {
     return sqPathPrefix + ideFilePath.substring(localPrefixLen);
   }
 
-  public Sonarlint.ServerIssue toStorageIssue(ScannerInput.ServerIssue issue, Sonarlint.ProjectConfiguration projectConfiguration) {
-    String sqPath = fileKeyToSqPath(projectConfiguration, issue.getModuleKey(), issue.getPath());
-
-    Sonarlint.ServerIssue.Builder builder = Sonarlint.ServerIssue.newBuilder()
-      .setAssigneeLogin(issue.getAssigneeLogin())
-      .setChecksum(issue.getChecksum())
-      .setCreationDate(issue.getCreationDate())
-      .setKey(issue.getKey())
-      .setLine(issue.getLine())
-      .setManualSeverity(issue.getManualSeverity())
-      .setModuleKey(issue.getModuleKey())
-      .setMsg(issue.getMsg())
-      .setPath(sqPath)
-      .setResolution(issue.getResolution())
-      .setRuleKey(issue.getRuleKey())
-      .setRuleRepository(issue.getRuleRepository())
-      .setSeverity(issue.getSeverity().name())
-      .setStatus(issue.getStatus());
-
-    if (issue.hasType()) {
-      // type was added recently
-      builder.setType(issue.getType());
-    }
-
-    return builder.build();
-  }
-
   public String fileKeyToSqPath(Sonarlint.ProjectConfiguration projectConfiguration, String fileModuleKey, String filePath) {
     Map<String, String> modulePaths = projectConfiguration.getModulePathByKeyMap();
 
@@ -117,19 +93,23 @@ public class IssueStorePaths {
   public static ServerIssue toApiIssue(Sonarlint.ServerIssue pbIssue, String idePath) {
     DefaultServerIssue issue = new DefaultServerIssue();
     issue.setAssigneeLogin(pbIssue.getAssigneeLogin());
-    issue.setChecksum(pbIssue.getChecksum());
-    issue.setModuleKey(pbIssue.getModuleKey());
-    issue.setLine(pbIssue.getLine());
+    issue.setLineHash(pbIssue.getLineHash());
+    if (pbIssue.getPrimaryLocation().hasTextRange()) {
+      Sonarlint.ServerIssue.TextRange textRange = pbIssue.getPrimaryLocation().getTextRange();
+      issue.setTextRange(new TextRange(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset()));
+      issue.setCodeSnippet(trimToNull(pbIssue.getPrimaryLocation().getCodeSnippet()));
+    }
     issue.setFilePath(idePath);
-    issue.setManualSeverity(pbIssue.getManualSeverity());
-    issue.setMessage(pbIssue.getMsg());
+    issue.setMessage(pbIssue.getPrimaryLocation().getMsg());
     issue.setSeverity(pbIssue.getSeverity());
-    // type was added recently
-    issue.setType(pbIssue.getType().isEmpty() ? null : pbIssue.getType());
+    issue.setType(pbIssue.getType());
     issue.setCreationDate(Instant.ofEpochMilli(pbIssue.getCreationDate()));
     issue.setResolution(pbIssue.getResolution());
     issue.setKey(pbIssue.getKey());
     issue.setRuleKey(pbIssue.getRuleRepository() + ":" + pbIssue.getRuleKey());
+    for (Sonarlint.ServerIssue.Flow f : pbIssue.getFlowList()) {
+      issue.getFlows().add(new DefaultServerFlow(f.getLocationList()));
+    }
     return issue;
   }
 }

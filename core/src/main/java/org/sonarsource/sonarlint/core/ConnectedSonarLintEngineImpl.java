@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -43,8 +43,6 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEng
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.RemoteProject;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.StateListener;
@@ -54,13 +52,17 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateR
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.connected.ConnectedContainer;
+import org.sonarsource.sonarlint.core.container.module.ModuleRegistry;
 import org.sonarsource.sonarlint.core.container.storage.StorageContainer;
 import org.sonarsource.sonarlint.core.container.storage.StorageContainerHandler;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.HttpClient;
+import org.sonarsource.sonarlint.core.serverapi.project.ServerProject;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 import static java.util.Objects.requireNonNull;
 
-public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEngine {
+public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine implements ConnectedSonarLintEngine {
 
   private static final Logger LOG = Loggers.get(ConnectedSonarLintEngineImpl.class);
 
@@ -68,8 +70,8 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   private StorageContainer storageContainer;
   private final ReadWriteLock rwl = new ReentrantReadWriteLock();
   private final List<StateListener> stateListeners = new CopyOnWriteArrayList<>();
-  private volatile State state = State.UNKNOW;
-  private LogOutput logOutput = null;
+  private volatile State state = State.UNKNOWN;
+  private final LogOutput logOutput;
 
   public ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration globalConfig) {
     this.globalConfig = globalConfig;
@@ -100,14 +102,19 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   private StorageContainerHandler getHandler() {
-    if (storageContainer == null) {
-      throw new IllegalStateException("SonarLint Engine for server '" + globalConfig.getServerId() + "' is stopped.");
-    }
-    return storageContainer.getHandler();
+    return getGlobalContainer().getHandler();
   }
 
   public StorageContainer getGlobalContainer() {
+    if (storageContainer == null) {
+      throw new IllegalStateException("SonarLint Engine for connection '" + globalConfig.getConnectionId() + "' is stopped.");
+    }
     return storageContainer;
+  }
+
+  @Override
+  protected ModuleRegistry getModuleRegistry() {
+    return getGlobalContainer().getModuleRegistry();
   }
 
   public void start() {
@@ -128,7 +135,7 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
       changeState(State.NEED_UPDATE);
     } catch (RuntimeException e) {
       LOG.error("Unable to start the SonarLint engine", e);
-      changeState(State.UNKNOW);
+      changeState(State.UNKNOWN);
     } finally {
       rwl.writeLock().unlock();
     }
@@ -147,14 +154,16 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
     requireNonNull(configuration);
     requireNonNull(issueListener);
     return withReadLock(() -> {
-      try {
-        setLogging(logOutput);
-        return getHandler().analyze(storageContainer.getGlobalExtensionContainer(), configuration, issueListener, new ProgressWrapper(monitor));
-      } catch (RuntimeException e) {
-        throw SonarLintWrappedException.wrap(e);
-      }
-    });
+      setLogging(logOutput);
+      return withModule(configuration, moduleContainer -> {
+        try {
+          return getHandler().analyze(moduleContainer, configuration, issueListener, new ProgressWrapper(monitor));
+        } catch (RuntimeException e) {
+          throw SonarLintWrappedException.wrap(e);
+        }
+      });
 
+    });
   }
 
   @Override
@@ -163,15 +172,15 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public UpdateResult update(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor) {
-    requireNonNull(serverConfig);
+  public UpdateResult update(EndpointParams endpoint, HttpClient client, @Nullable ProgressMonitor monitor) {
+    requireNonNull(endpoint);
     setLogging(null);
     return withRwLock(() -> {
       stop(false);
       changeState(State.UPDATING);
       List<SonarAnalyzer> analyzers;
       try {
-        analyzers = runInConnectedContainer(serverConfig, container -> container.update(new ProgressWrapper(monitor)));
+        analyzers = runInConnectedContainer(endpoint, client, container -> container.update(new ProgressWrapper(monitor)));
       } finally {
         start();
       }
@@ -181,12 +190,12 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
 
   @Override
   public ConnectedRuleDetails getRuleDetails(String ruleKey) {
-    return withReadLock(() -> getHandler().getRuleDetails(ruleKey));
+    return withReadLock(() -> getGlobalContainer().getRuleDetails(ruleKey));
   }
 
   @Override
   public ConnectedRuleDetails getActiveRuleDetails(String ruleKey, @Nullable String projectKey) {
-    return withReadLock(() -> getHandler().getRuleDetails(ruleKey, projectKey));
+    return withReadLock(() -> getGlobalContainer().getRuleDetails(ruleKey, projectKey));
   }
 
   @Override
@@ -195,34 +204,35 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public StorageUpdateCheckResult checkIfGlobalStorageNeedUpdate(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor) {
-    requireNonNull(serverConfig);
-    return withReadLock(() -> runInConnectedContainer(serverConfig, container -> container.checkForUpdate(new ProgressWrapper(monitor))));
+  public StorageUpdateCheckResult checkIfGlobalStorageNeedUpdate(EndpointParams endpoint, HttpClient client, @Nullable ProgressMonitor monitor) {
+    requireNonNull(endpoint);
+    return withReadLock(() -> runInConnectedContainer(endpoint, client, container -> container.checkForUpdate(new ProgressWrapper(monitor))));
   }
 
   @Override
-  public StorageUpdateCheckResult checkIfProjectStorageNeedUpdate(ServerConfiguration serverConfig, String projectKey, @Nullable ProgressMonitor monitor) {
-    requireNonNull(serverConfig);
+  public StorageUpdateCheckResult checkIfProjectStorageNeedUpdate(EndpointParams endpoint, HttpClient client, String projectKey,
+    @Nullable ProgressMonitor monitor) {
+    requireNonNull(endpoint);
     requireNonNull(projectKey);
-    return withReadLock(() -> runInConnectedContainer(serverConfig, container -> container.checkForUpdate(projectKey, new ProgressWrapper(monitor))));
+    return withReadLock(() -> runInConnectedContainer(endpoint, client, container -> container.checkForUpdate(projectKey, new ProgressWrapper(monitor))));
   }
 
   @Override
-  public Map<String, RemoteProject> allProjectsByKey() {
+  public Map<String, ServerProject> allProjectsByKey() {
     return withReadLock(() -> getHandler().allProjectsByKey());
   }
 
   @Override
-  public Map<String, RemoteProject> downloadAllProjects(ServerConfiguration serverConfig, @Nullable ProgressMonitor monitor) {
+  public Map<String, ServerProject> downloadAllProjects(EndpointParams endpoint, HttpClient client, @Nullable ProgressMonitor monitor) {
     return withRwLock(() -> {
       checkUpdateStatus();
-      return getHandler().downloadProjectList(serverConfig, new ProgressWrapper(monitor));
+      return getHandler().downloadProjectList(endpoint, client, new ProgressWrapper(monitor));
     });
   }
 
   private void checkUpdateStatus() {
     if (state != State.UPDATED) {
-      throw new GlobalStorageUpdateRequiredException(globalConfig.getServerId());
+      throw new GlobalStorageUpdateRequiredException(globalConfig.getConnectionId());
     }
   }
 
@@ -237,17 +247,18 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public List<ServerIssue> downloadServerIssues(ServerConfiguration serverConfig, ProjectBinding projectBinding, String ideFilePath) {
+  public List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
+    boolean fetchTaintVulnerabilities, @Nullable ProgressMonitor monitor) {
     return withRwLock(() -> {
       checkUpdateStatus();
-      return getHandler().downloadServerIssues(serverConfig, projectBinding, ideFilePath);
+      return getHandler().downloadServerIssues(endpoint, client, projectBinding, ideFilePath, fetchTaintVulnerabilities, new ProgressWrapper(monitor));
     });
   }
 
   @Override
-  public void downloadServerIssues(ServerConfiguration serverConfig, String projectKey) {
+  public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable ProgressMonitor monitor) {
     withRwLock(() -> {
-      getHandler().downloadServerIssues(serverConfig, projectKey);
+      getHandler().downloadServerIssues(endpoint, client, projectKey, fetchTaintVulnerabilities, new ProgressWrapper(monitor));
       return null;
     });
   }
@@ -258,17 +269,17 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
   }
 
   @Override
-  public void updateProject(ServerConfiguration serverConfig, String projectKey, @Nullable ProgressMonitor monitor) {
-    requireNonNull(serverConfig);
+  public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable ProgressMonitor monitor) {
+    requireNonNull(endpoint);
     requireNonNull(projectKey);
     setLogging(null);
     rwl.writeLock().lock();
     checkUpdateStatus();
-    ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
+    ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, endpoint, client);
     try {
       changeState(State.UPDATING);
       connectedContainer.startComponents();
-      connectedContainer.updateProject(projectKey, new ProgressWrapper(monitor));
+      connectedContainer.updateProject(projectKey, fetchTaintVulnerabilities, new ProgressWrapper(monitor));
     } catch (RuntimeException e) {
       throw SonarLintWrappedException.wrap(e);
     } finally {
@@ -304,13 +315,13 @@ public final class ConnectedSonarLintEngineImpl implements ConnectedSonarLintEng
       throw SonarLintWrappedException.wrap(e);
     } finally {
       this.storageContainer = null;
-      changeState(State.UNKNOW);
+      changeState(State.UNKNOWN);
       rwl.writeLock().unlock();
     }
   }
 
-  private <U> U runInConnectedContainer(ServerConfiguration serverConfig, Function<ConnectedContainer, U> func) {
-    ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, serverConfig);
+  private <U> U runInConnectedContainer(EndpointParams endpoint, HttpClient client, Function<ConnectedContainer, U> func) {
+    ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, endpoint, client);
     try {
       connectedContainer.startComponents();
       return func.apply(connectedContainer);

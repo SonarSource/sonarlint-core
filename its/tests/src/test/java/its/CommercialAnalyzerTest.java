@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - ITs - Tests
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,6 +23,7 @@ import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.locator.FileLocation;
 import com.sonar.orchestrator.locator.MavenLocation;
+import com.sonar.orchestrator.version.Version;
 import its.tools.ItUtils;
 import java.io.File;
 import java.io.IOException;
@@ -34,23 +35,21 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-import org.sonar.wsclient.services.PropertyCreateQuery;
-import org.sonar.wsclient.user.UserParameters;
 import org.sonarqube.ws.client.WsClient;
-import org.sonarqube.ws.client.permission.RemoveGroupWsRequest;
+import org.sonarqube.ws.client.permissions.RemoveGroupRequest;
+import org.sonarqube.ws.client.settings.SetRequest;
+import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assume.assumeTrue;
 
 public class CommercialAnalyzerTest extends AbstractConnectedTest {
   private static final String PROJECT_KEY_COBOL = "sample-cobol";
@@ -60,6 +59,7 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
 
   @ClassRule
   public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv()
+    .defaultForceAuthentication()
     .setSonarVersion(SONAR_VERSION)
     .setEdition(Edition.ENTERPRISE)
     .restoreProfileAtStartup(FileLocation.ofClasspath("/c-sonarlint.xml"))
@@ -75,9 +75,6 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
   @ClassRule
   public static TemporaryFolder temp = new TemporaryFolder();
 
-  @Rule
-  public ExpectedException exception = ExpectedException.none();
-
   private static WsClient adminWsClient;
   private static Path sonarUserHome;
 
@@ -85,14 +82,13 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
 
   @BeforeClass
   public static void prepare() throws Exception {
-    adminWsClient = ConnectedModeTest.newAdminWsClient(ORCHESTRATOR);
-    ORCHESTRATOR.getServer().getAdminWsClient().create(new PropertyCreateQuery("sonar.forceAuthentication", "true"));
+    adminWsClient = newAdminWsClient(ORCHESTRATOR);
+    adminWsClient.settings().set(new SetRequest().setKey("sonar.forceAuthentication").setValue("true"));
     sonarUserHome = temp.newFolder().toPath();
 
     removeGroupPermission("anyone", "scan");
 
-    ORCHESTRATOR.getServer().adminWsClient().userClient()
-      .create(UserParameters.create().login(SONARLINT_USER).password(SONARLINT_PWD).passwordConfirmation(SONARLINT_PWD).name("SonarLint"));
+    adminWsClient.users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_C, "Sample C");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_COBOL, "Sample Cobol");
@@ -108,7 +104,7 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
   public void start() {
     FileUtils.deleteQuietly(sonarUserHome.toFile());
     engine = new ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration.builder()
-      .setServerId("orchestrator")
+      .setConnectionId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
       .addEnabledLanguage(Language.COBOL)
       .addEnabledLanguage(Language.C)
@@ -128,34 +124,64 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
   }
 
   @Test
-  public void analysisC() throws Exception {
+  public void analysisC_old_build_wrapper_prop() throws Exception {
     updateGlobal();
     updateProject(PROJECT_KEY_C);
     SaveIssueListener issueListener = new SaveIssueListener();
 
-    File buildWrapperOutput = temp.newFolder();
-    FileUtils.write(
-      new File(buildWrapperOutput, "build-wrapper-dump.json"),
-      "{\"version\":0,\"captures\":[" +
-        "{" +
-        "\"compiler\": \"clang\"," +
-        "\"executable\": \"compiler\"," +
-        "\"stdout\": \"#define __STDC_VERSION__ 201112L\n\"," +
-        "\"stderr\": \"\"" +
-        "}," +
-        "{" +
-        "\"compiler\": \"clang\"," +
-        "\"executable\": \"compiler\"," +
-        "\"stdout\": \"#define __cplusplus 201703L\n\"," +
-        "\"stderr\": \"\"" +
-        "}," +
-        "{\"compiler\":\"clang\",\"cwd\":\"" +
-        Paths.get("projects/" + PROJECT_KEY_C).toAbsolutePath().toString().replace("\\", "\\\\") +
-        "\",\"executable\":\"compiler\",\"cmd\":[\"cc\",\"src/file.c\"]}]}",
-      StandardCharsets.UTF_8);
+    String buildWrapperContent = "{\"version\":0,\"captures\":[" +
+      "{" +
+      "\"compiler\": \"clang\"," +
+      "\"executable\": \"compiler\"," +
+      "\"stdout\": \"#define __STDC_VERSION__ 201112L\n\"," +
+      "\"stderr\": \"\"" +
+      "}," +
+      "{" +
+      "\"compiler\": \"clang\"," +
+      "\"executable\": \"compiler\"," +
+      "\"stdout\": \"#define __cplusplus 201703L\n\"," +
+      "\"stderr\": \"\"" +
+      "}," +
+      "{\"compiler\":\"clang\",\"cwd\":\"" +
+      Paths.get("projects/" + PROJECT_KEY_C).toAbsolutePath().toString().replace("\\", "\\\\") +
+      "\",\"executable\":\"compiler\",\"cmd\":[\"cc\",\"src/file.c\"]}]}";
 
-    ConnectedAnalysisConfiguration analysisConfiguration = createAnalysisConfiguration(PROJECT_KEY_C, PROJECT_KEY_C, "src/file.c",
-      "sonar.cfamily.build-wrapper-output", buildWrapperOutput.getAbsolutePath());
+    File buildWrapperOutput = temp.newFolder();
+    FileUtils.write(new File(buildWrapperOutput, "build-wrapper-dump.json"), buildWrapperContent, StandardCharsets.UTF_8);
+    ConnectedAnalysisConfiguration analysisConfiguration = createAnalysisConfiguration(PROJECT_KEY_C, PROJECT_KEY_C, "src/file.c", "sonar.cfamily.build-wrapper-output",
+      buildWrapperOutput.getAbsolutePath());
+
+    engine.analyze(analysisConfiguration, issueListener, null, null);
+    assertThat(issueListener.getIssues()).hasSize(1);
+  }
+
+  @Test
+  public void analysisC_new_prop() throws Exception {
+    assumeTrue(ItUtils.cppVersion.equals(ItUtils.LATEST_RELEASE) || Version.create(ItUtils.cppVersion).isGreaterThanOrEquals(6, 18));
+
+    updateGlobal();
+    updateProject(PROJECT_KEY_C);
+    SaveIssueListener issueListener = new SaveIssueListener();
+
+    String buildWrapperContent = "{\"version\":0,\"captures\":[" +
+      "{" +
+      "\"compiler\": \"clang\"," +
+      "\"executable\": \"compiler\"," +
+      "\"stdout\": \"#define __STDC_VERSION__ 201112L\n\"," +
+      "\"stderr\": \"\"" +
+      "}," +
+      "{" +
+      "\"compiler\": \"clang\"," +
+      "\"executable\": \"compiler\"," +
+      "\"stdout\": \"#define __cplusplus 201703L\n\"," +
+      "\"stderr\": \"\"" +
+      "}," +
+      "{\"compiler\":\"clang\",\"cwd\":\"" +
+      Paths.get("projects/" + PROJECT_KEY_C).toAbsolutePath().toString().replace("\\", "\\\\") +
+      "\",\"executable\":\"compiler\",\"cmd\":[\"cc\",\"src/file.c\"]}]}";
+
+    ConnectedAnalysisConfiguration analysisConfiguration = createAnalysisConfiguration(PROJECT_KEY_C, PROJECT_KEY_C, "src/file.c", "sonar.cfamily.build-wrapper-content",
+      buildWrapperContent);
 
     engine.analyze(analysisConfiguration, issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
@@ -192,23 +218,15 @@ public class CommercialAnalyzerTest extends AbstractConnectedTest {
   }
 
   private void updateProject(String projectKey) {
-    engine.updateProject(ServerConfiguration.builder()
-      .url(ORCHESTRATOR.getServer().getUrl())
-      .userAgent("SonarLint ITs")
-      .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build(), projectKey, null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), projectKey, false, null);
   }
 
   private void updateGlobal() {
-    engine.update(ServerConfiguration.builder()
-      .url(ORCHESTRATOR.getServer().getUrl())
-      .userAgent("SonarLint ITs")
-      .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build(), null);
+    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
   }
 
   private static void removeGroupPermission(String groupName, String permission) {
-    adminWsClient.permissions().removeGroup(new RemoveGroupWsRequest()
+    adminWsClient.permissions().removeGroup(new RemoveGroupRequest()
       .setGroupName(groupName)
       .setPermission(permission));
   }

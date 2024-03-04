@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,15 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.container.connected;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,6 +31,11 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.Location;
+import org.sonarsource.sonarlint.core.proto.Sonarlint.ServerIssue.TextRange;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 public class ServerIssueStoreTest {
   @Rule
@@ -43,7 +44,6 @@ public class ServerIssueStoreTest {
   @Rule
   public ExpectedException exception = ExpectedException.none();
 
-  private final String moduleKey = "module1";
   private final String path1 = "path1";
   private final String path2 = "path2";
 
@@ -61,8 +61,9 @@ public class ServerIssueStoreTest {
     ServerIssue.Builder builder = ServerIssue.newBuilder();
     List<ServerIssue> issueList = new ArrayList<>();
 
-    issueList.add(builder.setModuleKey(moduleKey).setPath(path1).build());
-    issueList.add(builder.setModuleKey(moduleKey).setPath(path2).build());
+    issueList.add(builder.setPrimaryLocation(Location.newBuilder().setPath(path1)).build());
+    builder.clear();
+    issueList.add(builder.setPrimaryLocation(Location.newBuilder().setPath(path2)).build());
 
     store.save(issueList);
 
@@ -73,8 +74,8 @@ public class ServerIssueStoreTest {
 
   @Test
   public void should_read_object_replaced() {
-    ServerIssue issue1 = ServerIssue.newBuilder().setPath(path1).setModuleKey(moduleKey).setLine(11).build();
-    ServerIssue issue2 = ServerIssue.newBuilder().setPath(path1).setModuleKey(moduleKey).setLine(22).build();
+    ServerIssue issue1 = ServerIssue.newBuilder().setPrimaryLocation(Location.newBuilder().setPath(path1).setTextRange(TextRange.newBuilder().setStartLine(11))).build();
+    ServerIssue issue2 = ServerIssue.newBuilder().setPrimaryLocation(Location.newBuilder().setPath(path1).setTextRange(TextRange.newBuilder().setStartLine(22))).build();
 
     store.save(Collections.singletonList(issue1));
     assertThat(store.load(path1)).containsOnly(issue1);
@@ -96,7 +97,7 @@ public class ServerIssueStoreTest {
     }
 
     exception.expect(StorageException.class);
-    store.save(Collections.singletonList(ServerIssue.newBuilder().setModuleKey(moduleKey).setPath(path1).build()));
+    store.save(Collections.singletonList(ServerIssue.newBuilder().setPrimaryLocation(Location.newBuilder().setPath(path1)).build()));
   }
 
   @Test
@@ -120,8 +121,8 @@ public class ServerIssueStoreTest {
     ServerIssue.Builder builder = ServerIssue.newBuilder();
     List<ServerIssue> issueList = new ArrayList<>();
 
-    issueList.add(builder.setPath(path1).setModuleKey(moduleKey).build());
-    issueList.add(builder.setPath(path2).setModuleKey(moduleKey).build());
+    issueList.add(builder.setPrimaryLocation(Location.newBuilder().setPath(path1)).build());
+    issueList.add(builder.setPrimaryLocation(Location.newBuilder().setPath(path2)).build());
 
     store.save(issueList);
     store.delete(path1);

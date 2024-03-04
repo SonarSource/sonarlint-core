@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -98,7 +98,7 @@ public class FileIndexer {
   private void indexFile(InputFileCache inputFileCache, Progress progress, ClientInputFile file) {
     SonarLintInputFile inputFile = inputFileBuilder.create(file);
     if (accept(inputFile)) {
-      analysisResult.setLanguageForFile(file, inputFile.language());
+      analysisResult.setLanguageForFile(file, inputFile.getLanguage());
       indexFile(inputFileCache, progress, inputFile);
       issueExclusionsLoader.addMulticriteriaPatterns(inputFile);
     }

@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -25,6 +25,8 @@ import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.scan.issue.filter.FilterableIssue;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultTextPointer;
+import org.sonarsource.sonarlint.core.container.analysis.filesystem.DefaultTextRange;
 
 public class DefaultFilterableIssue implements FilterableIssue {
   private final DefaultClientIssue rawIssue;
@@ -33,7 +35,6 @@ public class DefaultFilterableIssue implements FilterableIssue {
   public DefaultFilterableIssue(DefaultClientIssue rawIssue, InputComponent component) {
     this.rawIssue = rawIssue;
     this.component = component;
-
   }
 
   @Override
@@ -86,7 +87,12 @@ public class DefaultFilterableIssue implements FilterableIssue {
 
   @Override
   public TextRange textRange() {
-    return rawIssue.textRange;
+    org.sonarsource.sonarlint.core.client.api.common.TextRange textRange = rawIssue.getTextRange();
+    if (textRange == null) {
+      return null;
+    }
+    return new DefaultTextRange(new DefaultTextPointer(textRange.getStartLine(), textRange.getStartLineOffset()),
+      new DefaultTextPointer(textRange.getEndLine(), textRange.getEndLineOffset()));
   }
 
 }

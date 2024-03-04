@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -25,52 +25,18 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
-
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryAnalyzerPerformancePayload;
+import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryNotificationsCounterPayload;
+import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryNotificationsPayload;
 
 class TelemetryUtils {
 
   private TelemetryUtils() {
     // utility class, forbidden constructor
-  }
-
-  static String getLanguage(@Nullable String fileExtension) {
-    if (fileExtension == null) {
-      return "others";
-    }
-    String fileExtensionLow = fileExtension.toLowerCase(Locale.US);
-    switch (fileExtensionLow) {
-      case "cpp":
-      case "c":
-      case "h":
-      case "m":
-      case "cc":
-      case "cxx":
-      case "c++":
-      case "hh":
-      case "hpp":
-      case "hxx":
-      case "h++":
-      case "ipp":
-        return "cfamily";
-      case "cls":
-        return "objectscript";  
-      case "java":
-      case "php":
-        return fileExtensionLow;
-      case "ts":
-        return "typescript";
-      case "js":
-        return "javascript";
-      case "py":
-        return "python";
-      default:
-        return "others";
-    }
   }
 
   /**
@@ -110,6 +76,16 @@ class TelemetryUtils {
     return new TelemetryAnalyzerPerformancePayload(language, distribution);
   }
 
+  static TelemetryNotificationsPayload toPayload(boolean devNotificationsDisabled, Map<String, TelemetryNotificationsCounter> notifications) {
+    return new TelemetryNotificationsPayload(devNotificationsDisabled, toNotifPayload(notifications));
+  }
+
+  private static Map<String, TelemetryNotificationsCounterPayload> toNotifPayload(Map<String, TelemetryNotificationsCounter> notifications) {
+    return notifications.entrySet().stream().collect(Collectors.toMap(e -> e.getKey(), e -> {
+      return new TelemetryNotificationsCounterPayload(e.getValue().getDevNotificationsCount(), e.getValue().getDevNotificationsClicked());
+    }));
+  }
+
   /**
    * Check if "now" is a different day than the reference, and some hours have elapsed.
    *
@@ -128,4 +104,5 @@ class TelemetryUtils {
       throw new IllegalStateException(String.format("Duplicate key %s", u));
     };
   }
+
 }

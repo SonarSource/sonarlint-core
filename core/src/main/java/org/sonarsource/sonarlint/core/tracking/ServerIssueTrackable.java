@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
+import org.sonarsource.sonarlint.core.client.api.common.TextRange;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 
@@ -49,7 +50,7 @@ public class ServerIssueTrackable implements Trackable {
   public String getSeverity() {
     return serverIssue.severity();
   }
-  
+
   @Override
   public String getType() {
     return serverIssue.type();
@@ -57,22 +58,22 @@ public class ServerIssueTrackable implements Trackable {
 
   @Override
   public String getMessage() {
-    return serverIssue.message();
+    return serverIssue.getMessage();
   }
 
   @Override
   public Integer getLine() {
-    return serverIssue.line();
+    return serverIssue.getStartLine();
   }
 
   @Override
   public Integer getLineHash() {
-    return serverIssue.checksum().hashCode();
+    return serverIssue.lineHash().hashCode();
   }
 
   @Override
   public TextRange getTextRange() {
-    return new TextRange(serverIssue.line());
+    return serverIssue.getTextRange();
   }
 
   @Override

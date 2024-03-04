@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -26,36 +26,38 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.model.DefaultSonarAnalyzer;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
 
 public class PluginListDownloader {
+
+  private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
 
   private static final Logger LOG = Loggers.get(PluginListDownloader.class);
 
   public static final String WS_PATH = "/api/plugins/installed";
 
-  private final SonarLintWsClient wsClient;
+  private final ServerApiHelper serverApiHelper;
   private final PluginVersionChecker pluginVersionChecker;
   private final Set<Language> enabledLanguages;
 
-  public PluginListDownloader(ConnectedGlobalConfiguration globalConfiguration, SonarLintWsClient wsClient, PluginVersionChecker pluginVersionChecker) {
-    this.wsClient = wsClient;
+  public PluginListDownloader(ConnectedGlobalConfiguration globalConfiguration, ServerApiHelper serverApiHelper, PluginVersionChecker pluginVersionChecker) {
+    this.serverApiHelper = serverApiHelper;
     this.pluginVersionChecker = pluginVersionChecker;
 
     this.enabledLanguages = globalConfiguration.getEnabledLanguages();
   }
 
   public List<SonarAnalyzer> downloadPluginList() {
-    return SonarLintWsClient.processTimed(
-      () -> wsClient.get(WS_PATH),
+    return ServerApiHelper.processTimed(
+      () -> serverApiHelper.get(WS_PATH),
       response -> {
-        InstalledPlugins installedPlugins = new Gson().fromJson(response.contentReader(), InstalledPlugins.class);
+        InstalledPlugins installedPlugins = new Gson().fromJson(response.bodyAsString(), InstalledPlugins.class);
         return Arrays.stream(installedPlugins.plugins).map(this::toSonarAnalyzer).collect(Collectors.toList());
       },
       duration -> LOG.info("Downloaded plugin list in {}ms", duration));
@@ -69,11 +71,16 @@ public class PluginListDownloader {
   }
 
   private boolean providesAtLeastOneEnabledLanguage(String pluginKey) {
+    // Special case for old TS plugin
+    if (OLD_SONARTS_PLUGIN_KEY.equals(pluginKey)) {
+      return enabledLanguages.contains(Language.TS);
+    }
     return enabledLanguages.stream().anyMatch(language -> pluginKey.equals(language.getPluginKey()));
   }
 
   private static boolean isKnownSonarSourceAnalyzer(String pluginKey) {
-    return Language.containsPlugin(pluginKey);
+    // Special case for old TS plugin
+    return OLD_SONARTS_PLUGIN_KEY.equals(pluginKey) || Language.containsPlugin(pluginKey);
   }
 
   private void checkMinVersion(DefaultSonarAnalyzer analyzer) {

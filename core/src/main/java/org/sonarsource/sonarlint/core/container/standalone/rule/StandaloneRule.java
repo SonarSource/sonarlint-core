@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import javax.annotation.CheckForNull;
 import javax.annotation.concurrent.Immutable;
 import org.sonar.api.batch.rule.RuleParam;
 import org.sonar.api.rule.RuleKey;
@@ -33,6 +32,7 @@ import org.sonar.api.rules.RuleType;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.api.server.rule.RulesDefinition.Param;
 import org.sonar.markdown.Markdown;
+import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleParam;
 import org.sonarsource.sonarlint.core.container.analysis.SonarLintRule;
@@ -49,10 +49,10 @@ public class StandaloneRule implements SonarLintRule, StandaloneRuleDetails {
   private final String description;
   private final String internalKey;
   private final Map<String, DefaultStandaloneRuleParam> params;
-  private boolean isActiveByDefault;
-  private final String languageKey;
+  private final boolean isActiveByDefault;
+  private final Language language;
   private final String[] tags;
-  private Set<RuleKey> deprecatedKeys;
+  private final Set<RuleKey> deprecatedKeys;
 
   public StandaloneRule(RulesDefinition.Rule rule) {
     this.key = RuleKey.of(rule.repository().key(), rule.key());
@@ -62,7 +62,7 @@ public class StandaloneRule implements SonarLintRule, StandaloneRuleDetails {
     this.description = rule.htmlDescription() != null ? rule.htmlDescription() : Markdown.convertToHtml(rule.markdownDescription());
     this.internalKey = rule.internalKey();
     this.isActiveByDefault = rule.activatedByDefault();
-    this.languageKey = rule.repository().language();
+    this.language = Language.forKey(rule.repository().language()).orElseThrow(() -> new IllegalStateException("Unknown language with key: " + rule.repository().language()));
     this.tags = rule.tags().toArray(new String[0]);
     this.deprecatedKeys = rule.deprecatedRuleKeys();
 
@@ -89,7 +89,6 @@ public class StandaloneRule implements SonarLintRule, StandaloneRuleDetails {
   }
 
   @Override
-  @CheckForNull
   public RuleType type() {
     return type;
   }
@@ -124,6 +123,7 @@ public class StandaloneRule implements SonarLintRule, StandaloneRuleDetails {
     return params.values().stream().map(p -> (StandaloneRuleParam) p).collect(toList());
   }
 
+  @Override
   public boolean isActiveByDefault() {
     return isActiveByDefault;
   }
@@ -144,8 +144,8 @@ public class StandaloneRule implements SonarLintRule, StandaloneRuleDetails {
   }
 
   @Override
-  public String getLanguageKey() {
-    return languageKey;
+  public Language getLanguage() {
+    return language;
   }
 
   @Override
@@ -155,7 +155,7 @@ public class StandaloneRule implements SonarLintRule, StandaloneRuleDetails {
 
   @Override
   public String getType() {
-    return type != null ? type.name() : null;
+    return type.name();
   }
 
   @Override

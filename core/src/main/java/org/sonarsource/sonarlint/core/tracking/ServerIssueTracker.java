@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,9 +27,10 @@ import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.HttpClient;
 
 public class ServerIssueTracker {
 
@@ -41,8 +42,9 @@ public class ServerIssueTracker {
     this.issueTracker = issueTracker;
   }
 
-  public void update(ServerConfiguration serverConfiguration, ConnectedSonarLintEngine engine, ProjectBinding projectBinding, Collection<String> fileKeys) {
-    update(fileKeys, fileKey -> fetchServerIssues(serverConfiguration, engine, projectBinding, fileKey));
+  public void update(EndpointParams endpoint, HttpClient client, ConnectedSonarLintEngine engine, ProjectBinding projectBinding,
+    Collection<String> fileKeys, boolean fetchTaintVulnerabilities) {
+    update(fileKeys, fileKey -> fetchServerIssues(endpoint, client, engine, projectBinding, fileKey, fetchTaintVulnerabilities));
   }
 
   public void update(ConnectedSonarLintEngine engine, ProjectBinding projectBinding, Collection<String> fileKeys) {
@@ -62,11 +64,11 @@ public class ServerIssueTracker {
     }
   }
 
-  private static List<ServerIssue> fetchServerIssues(ServerConfiguration serverConfiguration, ConnectedSonarLintEngine engine,
-    ProjectBinding projectBinding, String ideFilePath) {
+  private static List<ServerIssue> fetchServerIssues(EndpointParams endpoint, HttpClient client, ConnectedSonarLintEngine engine,
+    ProjectBinding projectBinding, String ideFilePath, boolean fetchTaintVulnerabilities) {
     try {
       LOGGER.debug("fetchServerIssues projectKey=" + projectBinding.projectKey() + ", ideFilePath=" + ideFilePath);
-      return engine.downloadServerIssues(serverConfiguration, projectBinding, ideFilePath);
+      return engine.downloadServerIssues(endpoint, client, projectBinding, ideFilePath, fetchTaintVulnerabilities, null);
     } catch (DownloadException e) {
       LOGGER.debug("Failed to download server issues", e);
       return engine.getServerIssues(projectBinding, ideFilePath);

@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,6 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.notifications;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -26,57 +30,52 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import javax.annotation.CheckForNull;
-
 import org.sonar.api.utils.DateUtils;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.client.api.notifications.SonarQubeNotification;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
-import org.sonarsource.sonarlint.core.container.model.DefaultSonarQubeNotification;
+import org.sonarsource.sonarlint.core.client.api.notifications.ServerNotification;
+import org.sonarsource.sonarlint.core.container.model.DefaultServerNotification;
+import org.sonarsource.sonarlint.core.serverapi.HttpClient;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
-import org.sonarsource.sonarlint.core.util.ws.WsResponse;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 class NotificationChecker {
   private static final Logger LOG = Loggers.get(NotificationChecker.class);
   private static final String API_PATH = "api/developers/search_events";
   private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern(DateUtils.DATETIME_FORMAT);
 
-  private final SonarLintWsClient wsClient;
+  private final ServerApiHelper serverApiHelper;
 
-  NotificationChecker(SonarLintWsClient wsClient) {
-    this.wsClient = wsClient;
+  NotificationChecker(ServerApiHelper serverApiHelper) {
+    this.serverApiHelper = serverApiHelper;
   }
 
   /**
-   * Get all notification events for a set of projects after a given timestamp. 
+   * Get all notification events for a set of projects after a given timestamp.
    * Returns an empty list if an error occurred making the request or parsing the response.
    */
   @CheckForNull
-  public List<SonarQubeNotification> request(Map<String, ZonedDateTime> projectTimestamps) {
+  public List<ServerNotification> request(Map<String, ZonedDateTime> projectTimestamps) {
     String path = getWsPath(projectTimestamps);
-    WsResponse wsResponse = wsClient.rawGet(path);
-    if (!wsResponse.isSuccessful()) {
-      LOG.debug("Failed to get notifications: {}, {}", wsResponse.code(), wsResponse.content());
-      return Collections.emptyList();
-    }
+    try (HttpClient.Response wsResponse = serverApiHelper.rawGet(path)) {
+      if (!wsResponse.isSuccessful()) {
+        LOG.debug("Failed to get notifications: {}, {}", wsResponse.code(), wsResponse.bodyAsString());
+        return Collections.emptyList();
+      }
 
-    return parseResponse(wsResponse.content());
+      return parseResponse(wsResponse.bodyAsString());
+    }
   }
 
   /**
-   * Checks whether a server supports notifications
+   * Checks whether a server supports notifications. Throws exception is the server can't be contacted.
    */
   public boolean isSupported() {
     String path = getWsPath(Collections.emptyMap());
-    WsResponse wsResponse = wsClient.rawGet(path);
-    return wsResponse.isSuccessful();
+    try (HttpClient.Response wsResponse = serverApiHelper.rawGet(path)) {
+      return wsResponse.isSuccessful();
+    }
   }
 
   private static String getWsPath(Map<String, ZonedDateTime> projectTimestamps) {
@@ -97,12 +96,11 @@ class NotificationChecker {
     return builder.toString();
   }
 
-  private static List<SonarQubeNotification> parseResponse(String contents) {
-    List<SonarQubeNotification> notifications = new ArrayList<>();
+  private static List<ServerNotification> parseResponse(String contents) {
+    List<ServerNotification> notifications = new ArrayList<>();
 
     try {
-      JsonParser parser = new JsonParser();
-      JsonObject root = parser.parse(contents).getAsJsonObject();
+      JsonObject root = JsonParser.parseString(contents).getAsJsonObject();
       JsonArray events = root.get("events").getAsJsonArray();
 
       for (JsonElement el : events) {
@@ -113,7 +111,7 @@ class NotificationChecker {
         String projectKey = getOrFail(event, "project");
         String dateTime = getOrFail(event, "date");
         ZonedDateTime time = ZonedDateTime.parse(dateTime, TIME_FORMATTER);
-        notifications.add(new DefaultSonarQubeNotification(category, message, link, projectKey, time));
+        notifications.add(new DefaultServerNotification(category, message, link, projectKey, time));
       }
 
     } catch (Exception e) {

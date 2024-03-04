@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - ITs - Tests
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -90,7 +90,7 @@ public class StandaloneTest {
   }
 
   @Test
-  public void checkRuleParameterDeclarations() throws Exception {
+  public void checkRuleParameterDeclarations() {
     Collection<StandaloneRuleDetails> ruleDetails = sonarlint.getAllRuleDetails();
     assertThat(ruleDetails).hasSize(1);
     StandaloneRuleDetails incRule = ruleDetails.iterator().next();
@@ -123,6 +123,7 @@ public class StandaloneTest {
       StandaloneAnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
+        .putExtraProperty("sonar.xoo.file.suffixes", "glob")
         .build(),
       issues::add, null, null);
     assertThat(issues).extracting("ruleKey", "inputFile.path", "message").containsOnly(
@@ -144,6 +145,7 @@ public class StandaloneTest {
       StandaloneAnalysisConfiguration.builder()
         .setBaseDir(baseDir.toPath())
         .addInputFile(inputFile)
+        .putExtraProperty("sonar.xoo.file.suffixes", "glob")
         .addRuleParameter(RuleKey.parse("global:inc"), "stringParam", "polop")
         .addRuleParameter(RuleKey.parse("global:inc"), "textParam", "")
         .addRuleParameter(RuleKey.parse("global:inc"), "multipleIntegersParam", "80,160")

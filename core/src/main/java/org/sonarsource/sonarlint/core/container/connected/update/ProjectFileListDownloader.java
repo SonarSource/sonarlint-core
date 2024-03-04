@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,27 +21,27 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.sonarqube.ws.WsComponents;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+import org.sonarqube.ws.Components;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class ProjectFileListDownloader {
   private static final String BASE_PATH = "api/components/tree.protobuf?qualifiers=FIL,UTS&";
-  private final SonarLintWsClient wsClient;
+  private final ServerApiHelper serverApiHelper;
 
-  public ProjectFileListDownloader(SonarLintWsClient wsClient) {
-    this.wsClient = wsClient;
+  public ProjectFileListDownloader(ServerApiHelper serverApiHelper) {
+    this.serverApiHelper = serverApiHelper;
   }
 
   public List<String> get(String projectKey, ProgressWrapper progress) {
     String path = buildPath(projectKey);
     List<String> files = new ArrayList<>();
 
-    SonarLintWsClient.getPaginated(wsClient, path,
-      WsComponents.TreeWsResponse::parseFrom,
-      WsComponents.TreeWsResponse::getPaging,
-      WsComponents.TreeWsResponse::getComponentsList,
+    serverApiHelper.getPaginated(path,
+      Components.TreeWsResponse::parseFrom,
+      Components.TreeWsResponse::getPaging,
+      Components.TreeWsResponse::getComponentsList,
       component -> files.add(component.getKey()), false, progress);
     return files;
   }
@@ -50,7 +50,7 @@ public class ProjectFileListDownloader {
     StringBuilder url = new StringBuilder();
     url.append(BASE_PATH);
     url.append("component=").append(StringUtils.urlEncode(projectKey));
-    wsClient.getOrganizationKey().ifPresent(org -> url.append("&organization=").append(StringUtils.urlEncode(org)));
+    serverApiHelper.getOrganizationKey().ifPresent(org -> url.append("&organization=").append(StringUtils.urlEncode(org)));
     return url.toString();
   }
 }

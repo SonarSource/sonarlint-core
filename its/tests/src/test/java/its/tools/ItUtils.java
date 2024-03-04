@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - ITs - Tests
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -28,6 +28,7 @@ import java.util.Properties;
 
 public class ItUtils {
 
+  public static final String LATEST_RELEASE = "LATEST_RELEASE";
   public static final String SONAR_VERSION = getSonarVersion();
   public static String javaVersion;
   public static String pythonVersion;
@@ -45,21 +46,19 @@ public class ItUtils {
   public static String cppVersion;
 
   static {
-    if ("LATEST_RELEASE[6.7]".equals(System.getProperty("sonar.runtimeVersion"))) {
+    if ("LATEST_RELEASE[7.9]".equals(System.getProperty("sonar.runtimeVersion"))) {
       Properties props = new Properties();
       try (Reader r = Files.newBufferedReader(Paths.get("../../core/src/main/resources/plugins_min_versions.txt"), StandardCharsets.UTF_8)) {
         props.load(r);
         javaVersion = props.getProperty("java");
         pythonVersion = props.getProperty("python");
         phpVersion = props.getProperty("php");
-        // Can't test the version 4.0.0 since there was a change of custom rule API
-        javascriptVersion = "4.2.0.6476";
+        javascriptVersion = props.getProperty("javascript");
         typescriptVersion = props.getProperty("typescript");
         kotlinVersion = props.getProperty("kotlin");
         rubyVersion = props.getProperty("ruby");
         scalaVersion = props.getProperty("sonarscala");
-        // Because of SONARHTML-91, it is simpler to test with 3.0.1.1444
-        webVersion = "3.0.1.1444";
+        webVersion = props.getProperty("web");
         xmlVersion = props.getProperty("xml");
         cobolVersion = props.getProperty("cobol");
         apexVersion = props.getProperty("sonarapex");
@@ -69,20 +68,20 @@ public class ItUtils {
         throw new IllegalStateException(e);
       }
     } else {
-      javaVersion = "LATEST_RELEASE";
-      pythonVersion = "LATEST_RELEASE";
-      phpVersion = "LATEST_RELEASE";
-      javascriptVersion = "LATEST_RELEASE";
-      typescriptVersion = "LATEST_RELEASE";
-      kotlinVersion = "LATEST_RELEASE";
-      rubyVersion = "LATEST_RELEASE";
-      scalaVersion = "LATEST_RELEASE";
-      webVersion = "LATEST_RELEASE";
-      xmlVersion = "LATEST_RELEASE";
-      cobolVersion = "LATEST_RELEASE";
-      apexVersion = "LATEST_RELEASE";
-      tsqlVersion = "LATEST_RELEASE";
-      cppVersion = "LATEST_RELEASE";
+      javaVersion = LATEST_RELEASE;
+      pythonVersion = LATEST_RELEASE;
+      phpVersion = LATEST_RELEASE;
+      javascriptVersion = LATEST_RELEASE;
+      typescriptVersion = LATEST_RELEASE;
+      kotlinVersion = LATEST_RELEASE;
+      rubyVersion = LATEST_RELEASE;
+      scalaVersion = LATEST_RELEASE;
+      webVersion = LATEST_RELEASE;
+      xmlVersion = LATEST_RELEASE;
+      cobolVersion = LATEST_RELEASE;
+      apexVersion = LATEST_RELEASE;
+      tsqlVersion = LATEST_RELEASE;
+      cppVersion = LATEST_RELEASE;
     }
   }
 
@@ -92,7 +91,7 @@ public class ItUtils {
 
   private static String getSonarVersion() {
     String versionProperty = System.getProperty("sonar.runtimeVersion");
-    return versionProperty != null ? versionProperty : "LATEST_RELEASE";
+    return versionProperty != null ? versionProperty : LATEST_RELEASE;
   }
 
 }

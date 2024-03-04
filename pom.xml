@@ -4,12 +4,12 @@
   <parent>
     <groupId>org.sonarsource.parent</groupId>
     <artifactId>parent</artifactId>
-    <version>54</version>
+    <version>59.0.29</version>
     <relativePath />
   </parent>
   <groupId>org.sonarsource.sonarlint.core</groupId>
   <artifactId>sonarlint-core-parent</artifactId>
-  <version>4.13.0.19712-lite</version>
+  <version>6.0.0.32513-lite</version>
   <packaging>pom</packaging>
   <name>SonarLint Core</name>
   <description>Library used by SonarLint flavors (Eclipse, IntelliJ, VSCode...)</description>
@@ -24,24 +24,25 @@
   </issueManagement>
 
   <modules>
-    <module>client-api</module>
     <module>core</module>
+    <module>plugin-api</module>
     <module>slf4j-sonar-log</module>
   </modules>
 
   <properties>
     <!-- Don't forget to also update PluginInfosLoader::IMPLEMENTED_SQ_API -->
-    <sonarqube.version>8.4.0.35506</sonarqube.version>
-    <sonar-ws.version>6.7</sonar-ws.version>
-    <sonar-scanner-protocol.version>6.7</sonar-scanner-protocol.version>
-    <protobuf.version>3.12.2</protobuf.version>
+    <sonarqube.version>8.9.0.43852</sonarqube.version>
+    <sonar-ws.version>8.5.1.38104</sonar-ws.version>
+    <sonar-scanner-protocol.version>7.9</sonar-scanner-protocol.version>
+    <protobuf.version>3.13.0</protobuf.version>
     <protobuf.compiler>${settings.localRepository}/com/google/protobuf/protoc/${protobuf.version}/protoc-${protobuf.version}-${os.detected.classifier}.exe</protobuf.compiler>
     <gitRepositoryName>sonarlint-core</gitRepositoryName>
-    <okhttp.version>3.14.2</okhttp.version>
-    <junit.version>4.12</junit.version>
-    <junit.jupiter.version>5.6.2</junit.jupiter.version>
-    <junit.vintage.version>5.6.2</junit.vintage.version>
-    <jarsigner.skip>true</jarsigner.skip>
+    <okhttp.version>3.14.9</okhttp.version>
+    <junit.version>4.13.1</junit.version>
+    <junit.jupiter.version>5.7.0</junit.jupiter.version>
+    <junit.vintage.version>5.7.0</junit.vintage.version>
+    <!-- Release: enable publication to Bintray -->
+    <artifactsToPublish>${project.groupId}:sonarlint-core:jar</artifactsToPublish>
   </properties>
 
   <dependencyManagement>
@@ -49,6 +50,11 @@
       <dependency>
         <groupId>org.junit.jupiter</groupId>
         <artifactId>junit-jupiter-api</artifactId>
+        <version>${junit.jupiter.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.junit.jupiter</groupId>
+        <artifactId>junit-jupiter-params</artifactId>
         <version>${junit.jupiter.version}</version>
       </dependency>
       <dependency>
@@ -69,12 +75,12 @@
       <dependency>
         <groupId>org.assertj</groupId>
         <artifactId>assertj-core</artifactId>
-        <version>3.15.0</version>
+        <version>3.18.0</version>
       </dependency>
       <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
-        <version>3.3.3</version>
+        <version>3.6.0</version>
       </dependency>
       <dependency>
         <groupId>com.google.code.findbugs</groupId>
@@ -90,7 +96,7 @@
         <plugin>
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
-          <version>4.1.0</version>
+          <version>5.1.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -101,19 +107,6 @@
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>build-helper-maven-plugin</artifactId>
           <version>3.2.0</version>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-jarsigner-plugin</artifactId>
-          <version>3.0.0</version>
-          <configuration>
-            <alias>sonarsource-codesign-2019-2021</alias>
-            <keystore>${sonarsource.keystore.path}</keystore>
-            <storepass>${sonarsource.keystore.password}</storepass>
-            <tsa>http://timestamp.digicert.com?alg=sha256</tsa>
-            <!-- Force resign of shaded dependencies -->
-            <removeExistingSignatures>true</removeExistingSignatures>
-          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -147,7 +140,7 @@
           <plugin>
             <groupId>org.jacoco</groupId>
             <artifactId>jacoco-maven-plugin</artifactId>
-            <version>0.8.5</version>
+            <version>0.8.6</version>
             <executions>
               <execution>
                 <id>prepare-agent</id>

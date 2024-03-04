@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-its</artifactId>
-    <version>4.13.0.19712-lite</version>
+    <version>6.0.0.32513-lite</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   
@@ -63,7 +63,7 @@
           <!-- Need to be one part of the sensor whitelist -->
           <pluginKey>xoo</pluginKey>
           <sonarLintSupported>true</sonarLintSupported>
-          <sonarQubeMinVersion>6.7</sonarQubeMinVersion>
+          <sonarQubeMinVersion>7.9</sonarQubeMinVersion>
         </configuration>
       </plugin>
       <plugin>

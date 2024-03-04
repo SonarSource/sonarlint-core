@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -25,14 +25,13 @@ import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
 import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
-import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloaderImpl;
+import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueStorePaths;
 import org.sonarsource.sonarlint.core.container.connected.update.ModuleHierarchyDownloader;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
@@ -60,29 +59,36 @@ import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginHashes;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.HttpClient;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
+import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class ConnectedContainer extends ComponentContainer {
 
   private static final Logger LOG = Loggers.get(ConnectedContainer.class);
 
-  private final ServerConfiguration serverConfiguration;
+  private final EndpointParams endpoint;
   private final ConnectedGlobalConfiguration globalConfig;
+  private final HttpClient client;
 
-  public ConnectedContainer(ConnectedGlobalConfiguration globalConfig, ServerConfiguration serverConfiguration) {
+  public ConnectedContainer(ConnectedGlobalConfiguration globalConfig, EndpointParams endpoint, HttpClient client) {
     this.globalConfig = globalConfig;
-    this.serverConfiguration = serverConfiguration;
+    this.endpoint = endpoint;
+    this.client = client;
   }
 
   @Override
   protected void doBeforeStart() {
     add(
       globalConfig,
-      serverConfiguration,
+      endpoint,
       new GlobalTempFolderProvider(),
       ServerVersionAndStatusChecker.class,
       PluginVersionChecker.class,
-      SonarLintWsClient.class,
+      new ServerApiHelper(endpoint, client),
       GlobalStorageUpdateExecutor.class,
       GlobalStorageUpdateChecker.class,
       ProjectStorageUpdateChecker.class,
@@ -102,7 +108,9 @@ public class ConnectedContainer extends ComponentContainer {
       ModuleHierarchyDownloader.class,
       RulesDownloader.class,
       QualityProfilesDownloader.class,
-      IssueDownloaderImpl.class,
+      IssueDownloader.class,
+      IssueApi.class,
+      SourceApi.class,
       IssueStoreFactory.class,
       new PluginCacheProvider(),
       PluginHashes.class,
@@ -115,12 +123,12 @@ public class ConnectedContainer extends ComponentContainer {
     return getComponentByType(GlobalStorageUpdateExecutor.class).update(progress);
   }
 
-  public void updateProject(String projectKey, ProgressWrapper progress) {
+  public void updateProject(String projectKey, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
     GlobalStorageStatus updateStatus = getComponentByType(StorageReader.class).getGlobalStorageStatus();
     if (updateStatus == null) {
-      throw new GlobalStorageUpdateRequiredException(globalConfig.getServerId());
+      throw new GlobalStorageUpdateRequiredException(globalConfig.getConnectionId());
     }
-    getComponentByType(ProjectStorageUpdateExecutor.class).update(projectKey, progress);
+    getComponentByType(ProjectStorageUpdateExecutor.class).update(projectKey, fetchTaintVulnerabilities, progress);
   }
 
   public StorageUpdateCheckResult checkForUpdate(ProgressWrapper progress) {

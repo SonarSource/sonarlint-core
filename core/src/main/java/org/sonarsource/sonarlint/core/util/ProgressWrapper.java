@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -78,12 +78,8 @@ public class ProgressWrapper {
     handler.setFraction(offset + fraction * factor);
   }
 
-  public void finishNonCancelableSection() {
-    handler.finishNonCancelableSection();
-  }
-
-  public void startNonCancelableSection() {
-    handler.startNonCancelableSection();
+  public void executeNonCancelableSection(Runnable r) {
+    handler.executeNonCancelableSection(r);
   }
 
   private static class NoOpProgressMonitor extends ProgressMonitor {

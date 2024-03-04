@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - ITs - Tests
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -40,15 +40,15 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-import org.sonar.wsclient.user.UserParameters;
+import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.NodeJsHelper;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.SkipReason;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
 
 import static its.tools.ItUtils.SONAR_VERSION;
 import static java.util.Arrays.asList;
@@ -58,12 +58,14 @@ import static org.junit.Assert.fail;
 
 public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
 
+  private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
   private static final String CUSTOM_JS_PLUGIN_KEY = "custom";
   private static final String PROJECT_KEY_JAVASCRIPT = "sample-javascript";
   private static final String PROJECT_KEY_TYPESCRIPT = "sample-typescript";
 
   @ClassRule
   public static Orchestrator ORCHESTRATOR = Orchestrator.builderEnv().setSonarVersion(SONAR_VERSION)
+    .defaultForceAuthentication()
     .addPlugin(MavenLocation.of("org.sonarsource.java", "sonar-java-plugin", ItUtils.javaVersion))
     .addPlugin(MavenLocation.of("org.sonarsource.php", "sonar-php-plugin", ItUtils.phpVersion))
     .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", ItUtils.javascriptVersion))
@@ -83,18 +85,13 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   private static Path sonarUserHome;
 
   private ConnectedSonarLintEngine engine;
-  private List<String> logs = new ArrayList<>();
+  private final List<String> logs = new ArrayList<>();
 
   @BeforeClass
   public static void prepare() throws Exception {
     sonarUserHome = temp.newFolder().toPath();
 
-    ORCHESTRATOR.getServer().adminWsClient().userClient()
-      .create(UserParameters.create()
-        .login(SONARLINT_USER)
-        .password(SONARLINT_PWD)
-        .passwordConfirmation(SONARLINT_PWD)
-        .name("SonarLint"));
+    newAdminWsClient(ORCHESTRATOR).users().create(new CreateRequest().setLogin(SONARLINT_USER).setPassword(SONARLINT_PWD).setName("SonarLint"));
 
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_JAVASCRIPT, "Sample Javascript");
     ORCHESTRATOR.getServer().provisionProject(PROJECT_KEY_TYPESCRIPT, "Sample Typescript");
@@ -108,13 +105,16 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   }
 
   private ConnectedSonarLintEngine createEngine(Consumer<ConnectedGlobalConfiguration.Builder> configurator) {
+    NodeJsHelper nodeJsHelper = new NodeJsHelper();
+    nodeJsHelper.detect(null);
+
     ConnectedGlobalConfiguration.Builder builder = ConnectedGlobalConfiguration.builder()
-      .setServerId("orchestrator")
+      .setConnectionId("orchestrator")
       .setSonarLintUserHome(sonarUserHome)
       .setLogOutput((msg, level) -> {
         logs.add(msg);
-        System.out.println(msg);
-      });
+      })
+      .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion());
     configurator.accept(builder);
     return new ConnectedSonarLintEngineImpl(builder.build());
   }
@@ -131,16 +131,16 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   @Test
   public void dontDownloadPluginIfNotEnabledLanguage() {
     engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP, Language.TS));
-    engine.update(config(), null);
+    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
     assertThat(logs).contains("Code analyzer 'java' is not compatible with SonarLint. Skip downloading it.");
-    assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).containsOnly(Language.JS.getPluginKey(), Language.PHP.getPluginKey(), Language.TS.getPluginKey(),
-      CUSTOM_JS_PLUGIN_KEY);
+    assertThat(engine.getPluginDetails().stream().map(PluginDetails::key))
+      .containsOnly(Language.JS.getPluginKey(), Language.PHP.getPluginKey(), OLD_SONARTS_PLUGIN_KEY, CUSTOM_JS_PLUGIN_KEY);
   }
 
   @Test
   public void dontFailIfMissingBasePlugin() {
     engine = createEngine(e -> e.addEnabledLanguages(Language.PHP));
-    engine.update(config(), null);
+    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
     assertThat(logs).contains("Plugin 'JavaScript Custom Rules Plugin' dependency on 'javascript' is unsatisfied. Skip loading it.");
     assertThat(engine.getPluginDetails()).extracting(PluginDetails::key, PluginDetails::skipReason)
       .contains(tuple(CUSTOM_JS_PLUGIN_KEY, Optional.of(new SkipReason.UnsatisfiedDependency("javascript"))));
@@ -149,13 +149,13 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   @Test
   public void dontLoadExcludedPlugin() {
     engine = createEngine(e -> e.addEnabledLanguages(Language.JAVA, Language.JS, Language.PHP));
-    engine.update(config(), null);
+    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
     assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains(Language.JAVA.getPluginKey());
     engine.stop(false);
 
     engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP));
     String javaDescription = ItUtils.javaVersion.compareTo("6.3") < 0 ? "SonarJava" : "Java Code Quality and Security";
-    String expectedLog = String.format("Plugin '%s' is excluded because language 'JAVA' is not enabled. Skip loading it.", javaDescription);
+    String expectedLog = String.format("Plugin '%s' is excluded because language 'Java' is not enabled. Skip loading it.", javaDescription);
     assertThat(logs).contains(expectedLog);
     assertThat(engine.getPluginDetails()).extracting(PluginDetails::key, PluginDetails::skipReason)
       .contains(tuple(Language.JAVA.getPluginKey(), Optional.of(new SkipReason.LanguagesNotEnabled(asList(Language.JAVA)))));
@@ -165,11 +165,11 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
   @Test
   public void analysisJavascriptWithoutTypescript() throws Exception {
     engine = createEngine(e -> e.addEnabledLanguages(Language.JS, Language.PHP));
-    engine.update(config(), null);
-    assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains(Language.JS.getPluginKey());
-    assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).doesNotContain(Language.TS.getPluginKey());
+    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
+    assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains("javascript");
+    assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).doesNotContain(OLD_SONARTS_PLUGIN_KEY);
 
-    engine.updateProject(config(), PROJECT_KEY_JAVASCRIPT, null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_JAVASCRIPT, false, null);
     SaveIssueListener issueListener = new SaveIssueListener();
     engine.analyze(createAnalysisConfiguration(PROJECT_KEY_JAVASCRIPT, PROJECT_KEY_JAVASCRIPT, "src/Person.js"), issueListener, null, null);
     assertThat(issueListener.getIssues()).hasSize(1);
@@ -197,11 +197,11 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     engine = createEngine(e -> e
       .setExtraProperties(extraProperties)
       .addEnabledLanguages(Language.JS, Language.PHP));
-    engine.update(config(), null);
+    engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
     assertThat(logs).doesNotContain("Code analyzer 'SonarJS' is transitively excluded in this version of SonarLint. Skip loading it.");
     assertThat(engine.getPluginDetails().stream().map(PluginDetails::key)).contains(Language.JS.getPluginKey());
 
-    engine.updateProject(config(), PROJECT_KEY_TYPESCRIPT, null);
+    engine.updateProject(endpointParams(ORCHESTRATOR), sqHttpClient(), PROJECT_KEY_TYPESCRIPT, false, null);
     SaveIssueListener issueListenerTs = new SaveIssueListener();
     engine.analyze(tsAnalysisConfig, issueListenerTs, null, null);
     assertThat(issueListenerTs.getIssues()).hasSize(0);
@@ -211,11 +211,4 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     assertThat(logs).doesNotContain("Execute Sensor: ESLint-based TypeScript analysis");
   }
 
-  private ServerConfiguration config() {
-    return ServerConfiguration.builder()
-      .url(ORCHESTRATOR.getServer().getUrl())
-      .userAgent("SonarLint ITs")
-      .credentials(SONARLINT_USER, SONARLINT_PWD)
-      .build();
-  }
 }

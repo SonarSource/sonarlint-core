@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,22 +20,22 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.nio.file.Path;
-import org.sonarqube.ws.WsComponents;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
+import org.sonarqube.ws.Components;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectList.Project.Builder;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class ProjectListDownloader {
 
   private static final String PROJECT_SEARCH_URL = "api/components/search.protobuf?qualifiers=TRK";
-  private final SonarLintWsClient wsClient;
+  private final ServerApiHelper serverApiHelper;
 
-  public ProjectListDownloader(SonarLintWsClient wsClient) {
-    this.wsClient = wsClient;
+  public ProjectListDownloader(ServerApiHelper serverApiHelper) {
+    this.serverApiHelper = serverApiHelper;
   }
 
   public void fetchTo(Path dest, ProgressWrapper progress) {
@@ -44,12 +44,12 @@ public class ProjectListDownloader {
 
     StringBuilder searchUrl = new StringBuilder();
     searchUrl.append(PROJECT_SEARCH_URL);
-    wsClient.getOrganizationKey()
+    serverApiHelper.getOrganizationKey()
       .ifPresent(org -> searchUrl.append("&organization=").append(StringUtils.urlEncode(org)));
-    SonarLintWsClient.getPaginated(wsClient, searchUrl.toString(),
-      WsComponents.SearchWsResponse::parseFrom,
-      WsComponents.SearchWsResponse::getPaging,
-      WsComponents.SearchWsResponse::getComponentsList,
+    serverApiHelper.getPaginated(searchUrl.toString(),
+      Components.SearchWsResponse::parseFrom,
+      Components.SearchWsResponse::getPaging,
+      Components.SearchWsResponse::getComponentsList,
       project -> {
         projectBuilder.clear();
         projectListBuilder.putProjectsByKey(project.getKey(), projectBuilder

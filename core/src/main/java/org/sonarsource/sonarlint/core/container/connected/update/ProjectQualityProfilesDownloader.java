@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,22 +22,22 @@ package org.sonarsource.sonarlint.core.container.connected.update;
 import java.util.List;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
-import org.sonarqube.ws.QualityProfiles;
-import org.sonarqube.ws.QualityProfiles.SearchWsResponse;
-import org.sonarqube.ws.QualityProfiles.SearchWsResponse.QualityProfile;
+import org.sonarqube.ws.Qualityprofiles;
+import org.sonarqube.ws.Qualityprofiles.SearchWsResponse;
+import org.sonarqube.ws.Qualityprofiles.SearchWsResponse.QualityProfile;
 import org.sonarsource.sonarlint.core.client.api.exceptions.ProjectNotFoundException;
-import org.sonarsource.sonarlint.core.container.connected.SonarLintWsClient;
 import org.sonarsource.sonarlint.core.container.connected.exceptions.NotFoundException;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class ProjectQualityProfilesDownloader {
 
   private static final Logger LOG = Loggers.get(ProjectQualityProfilesDownloader.class);
 
-  private final SonarLintWsClient wsClient;
+  private final ServerApiHelper serverApiHelper;
 
-  public ProjectQualityProfilesDownloader(SonarLintWsClient wsClient) {
-    this.wsClient = wsClient;
+  public ProjectQualityProfilesDownloader(ServerApiHelper serverApiHelper) {
+    this.serverApiHelper = serverApiHelper;
   }
 
   public List<QualityProfile> fetchModuleQualityProfiles(String projectKey) {
@@ -45,15 +45,15 @@ public class ProjectQualityProfilesDownloader {
     StringBuilder url = new StringBuilder();
     url.append("/api/qualityprofiles/search.protobuf?project=");
     url.append(StringUtils.urlEncode(projectKey));
-    wsClient.getOrganizationKey()
+    serverApiHelper.getOrganizationKey()
       .ifPresent(org -> url.append("&organization=").append(StringUtils.urlEncode(org)));
     try {
-      qpResponse = SonarLintWsClient.processTimed(
-        () -> wsClient.get(url.toString()),
-        response -> QualityProfiles.SearchWsResponse.parseFrom(response.contentStream()),
+      qpResponse = ServerApiHelper.processTimed(
+        () -> serverApiHelper.get(url.toString()),
+        response -> Qualityprofiles.SearchWsResponse.parseFrom(response.bodyAsStream()),
         duration -> LOG.debug("Downloaded project quality profiles in {}ms", duration));
     } catch (NotFoundException e) {
-      throw new ProjectNotFoundException(projectKey, wsClient.getOrganizationKey().orElse(null));
+      throw new ProjectNotFoundException(projectKey, serverApiHelper.getOrganizationKey().orElse(null));
     }
     return qpResponse.getProfilesList();
   }

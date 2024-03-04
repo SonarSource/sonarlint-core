@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2021 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.mediumtest;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -34,9 +35,15 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.ConnectedSonarLintEngineImpl;
+import org.sonarsource.sonarlint.core.NodeJsHelper;
+import org.sonarsource.sonarlint.core.OnDiskTestClientInputFile;
 import org.sonarsource.sonarlint.core.TestUtils;
+import org.sonarsource.sonarlint.core.client.api.common.ClientFileSystem;
+import org.sonarsource.sonarlint.core.client.api.common.ClientModuleFileEvent;
 import org.sonarsource.sonarlint.core.client.api.common.Language;
+import org.sonarsource.sonarlint.core.client.api.common.ModuleInfo;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
@@ -45,6 +52,8 @@ import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfig
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
+import org.sonarsource.sonarlint.core.container.ComponentContainer;
+import org.sonarsource.sonarlint.core.container.module.SonarLintModuleFileSystem;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
 import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
@@ -53,13 +62,19 @@ import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginRef
 import org.sonarsource.sonarlint.core.proto.Sonarlint.StorageStatus;
 import org.sonarsource.sonarlint.core.util.PluginLocator;
 import org.sonarsource.sonarlint.core.util.VersionUtils;
+import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
+import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileListener;
 
+import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpIssueListener;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
+import static org.sonarsource.sonarlint.core.client.api.common.ClientFileSystemFixtures.aClientFileSystemWith;
+import static org.sonarsource.sonarlint.core.client.api.common.ClientFileSystemFixtures.anEmptyClientFileSystem;
 import static org.sonarsource.sonarlint.core.container.storage.StoragePaths.encodeForFs;
 
 public class ConnectedIssueMediumTest {
@@ -111,12 +126,17 @@ public class ConnectedIssueMediumTest {
     writeProjectStatus(tmpStorage, "stale_module", "0");
     writeStatus(tmpStorage, VersionUtils.getLibraryVersion());
 
+    NodeJsHelper nodeJsHelper = new NodeJsHelper();
+    nodeJsHelper.detect(null);
+
     ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
-      .setServerId(SERVER_ID)
+      .setConnectionId(SERVER_ID)
       .setSonarLintUserHome(slHome)
       .setStorageRoot(tmpStorage)
       .setLogOutput(createNoOpLogOutput())
       .addEnabledLanguages(Language.JAVA, Language.JS)
+      .setNodeJs(nodeJsHelper.getNodeJsPath(), nodeJsHelper.getNodeJsVersion())
+      .setModulesProvider(() -> singletonList(new ModuleInfo("key", mock(ClientFileSystem.class))))
       .build();
     sonarlint = new ConnectedSonarLintEngineImpl(config);
 
@@ -128,7 +148,6 @@ public class ConnectedIssueMediumTest {
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(version)
-      .setClientUserAgent("agent")
       .setSonarlintCoreVersion("1.0")
       .setUpdateTimestamp(new Date().getTime())
       .build();
@@ -141,7 +160,6 @@ public class ConnectedIssueMediumTest {
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(StoragePaths.STORAGE_VERSION)
-      .setClientUserAgent("agent")
       .setSonarlintCoreVersion(version)
       .setUpdateTimestamp(new Date().getTime())
       .build();
@@ -169,6 +187,7 @@ public class ConnectedIssueMediumTest {
     ConnectedAnalysisConfiguration config = ConnectedAnalysisConfiguration.builder()
       .setProjectKey("stale_module")
       .setBaseDir(baseDir.toPath())
+      .setModuleKey("key")
       .build();
 
     try {
@@ -190,29 +209,28 @@ public class ConnectedIssueMediumTest {
   @Test
   public void simpleJavaScriptUnbinded() throws Exception {
 
-    String ruleKey = "javascript:UnusedVariable";
+    String ruleKey = "javascript:S1135";
     ConnectedRuleDetails ruleDetails = sonarlint.getRuleDetails(ruleKey);
     assertThat(ruleDetails.getKey()).isEqualTo(ruleKey);
-    assertThat(ruleDetails.getName()).isEqualTo("Unused local variables should be removed");
-    assertThat(ruleDetails.getLanguageKey()).isEqualTo("js");
-    assertThat(ruleDetails.getSeverity()).isEqualTo("MAJOR");
-    assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "If a local variable is declared but not used");
+    assertThat(ruleDetails.getName()).isEqualTo("\"TODO\" tags should be handled");
+    assertThat(ruleDetails.getLanguage()).isEqualTo(Language.JS);
+    assertThat(ruleDetails.getSeverity()).isEqualTo("INFO");
+    assertThat(ruleDetails.getHtmlDescription()).contains("<p>", "<code>TODO</code> tags are commonly used");
     assertThat(ruleDetails.getExtendedDescription()).isEmpty();
 
     ClientInputFile inputFile = prepareInputFile("foo.js", "function foo() {\n"
-      + "  var x;\n"
-      + "  var y; //NOSONAR\n"
+      + "  var x; //TODO\n"
       + "}", false);
 
     final List<Issue> issues = new ArrayList<>();
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
       .setBaseDir(baseDir.toPath())
       .addInputFile(inputFile)
+      .setModuleKey("key")
       .build(),
       new StoreIssueListener(issues), (m, l) -> System.out.println(m), null);
     assertThat(issues).extracting("ruleKey", "startLine", "inputFile.path").containsOnly(
       tuple(ruleKey, 2, inputFile.getPath()));
-
   }
 
   @Test
@@ -223,6 +241,7 @@ public class ConnectedIssueMediumTest {
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
       .setBaseDir(baseDir.toPath())
       .addInputFile(inputFile)
+      .setModuleKey("key")
       .build(),
       new StoreIssueListener(issues), null, null);
 
@@ -240,6 +259,7 @@ public class ConnectedIssueMediumTest {
     sonarlint.analyze(ConnectedAnalysisConfiguration.builder()
       .setBaseDir(baseDir.toPath())
       .addInputFile(inputFile)
+      .setModuleKey("key")
       .build(),
       new StoreIssueListener(issues), null, null);
 
@@ -259,6 +279,7 @@ public class ConnectedIssueMediumTest {
       .setProjectKey(JAVA_MODULE_KEY)
       .setBaseDir(baseDir.toPath())
       .addInputFile(inputFile)
+      .setModuleKey("key")
       .build(),
       new StoreIssueListener(issues), null, null);
 
@@ -266,6 +287,27 @@ public class ConnectedIssueMediumTest {
       tuple("java:S106", 4, inputFile.getPath(), "MAJOR"),
       tuple("java:S1220", null, inputFile.getPath(), "MINOR"),
       tuple("java:S1481", 3, inputFile.getPath(), "BLOCKER"));
+  }
+
+  @Test
+  public void rule_description_come_from_storage() {
+    assertThat(sonarlint.getRuleDetails("java:S106").getHtmlDescription()).isEqualTo("<p>When logging a message there are two important requirements which must be fulfilled:</p>\n"
+      + "<ul>\n"
+      + "  <li> The user must be able to easily retrieve the logs</li>\n"
+      + "  <li> The format of all logged message must be uniform to allow the user to easily read the log</li>\n"
+      + "</ul>\n"
+      + "\n"
+      + "<p>If a program directly writes to the standard outputs, there is absolutely no way to comply with those requirements. That's why defining and using a dedicated logger is highly recommended.</p>\n"
+      + "\n"
+      + "<h2>Noncompliant Code Example</h2>\n"
+      + "<pre>\n"
+      + "System.out.println(\"My Message\");  // Noncompliant\n"
+      + "</pre>\n"
+      + "\n"
+      + "<h2>Compliant Solution</h2>\n"
+      + "<pre>\n"
+      + "logger.log(\"My Message\");\n"
+      + "</pre>");
   }
 
   @Test
@@ -277,10 +319,54 @@ public class ConnectedIssueMediumTest {
       .setProjectKey("test-project")
       .setBaseDir(baseDir.toPath())
       .addInputFile(inputFile)
+      .setModuleKey("key")
       .build(),
       new StoreIssueListener(issues), null, null);
 
     assertThat(issues).isEmpty();
+  }
+
+  @Test
+  public void declare_module_should_create_a_module_container_with_loaded_extensions() {
+    sonarlint.declareModule(new ModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
+
+    ComponentContainer moduleContainer = sonarlint.getGlobalContainer().getModuleRegistry().getContainerFor("key");
+
+    assertThat(moduleContainer).isNotNull();
+    assertThat(moduleContainer.getComponentsByType(SonarLintModuleFileSystem.class)).isNotEmpty();
+  }
+
+  @Test
+  public void stop_module_should_stop_the_module_container() {
+    sonarlint.declareModule(new ModuleInfo("key", aClientFileSystemWith(new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null))));
+    ComponentContainer moduleContainer = sonarlint.getGlobalContainer().getModuleRegistry().getContainerFor("key");
+
+    sonarlint.stopModule("key");
+
+    assertThat(moduleContainer.getPicoContainer().getLifecycleState().isStarted()).isFalse();
+  }
+
+  @Test
+  public void should_forward_module_file_event_to_listener() {
+    // should not be located in global container in real life but easier for testing
+    FakeModuleFileListener moduleFileListener = new FakeModuleFileListener();
+    sonarlint.getGlobalContainer().add(moduleFileListener);
+    OnDiskTestClientInputFile clientInputFile = new OnDiskTestClientInputFile(Paths.get("main.py"), "main.py", false, StandardCharsets.UTF_8, null);
+    sonarlint.declareModule(new ModuleInfo("moduleKey", anEmptyClientFileSystem()));
+
+    sonarlint.fireModuleFileEvent("moduleKey", ClientModuleFileEvent.of(clientInputFile, ModuleFileEvent.Type.CREATED));
+
+    assertThat(moduleFileListener.events).hasSize(1);
+  }
+
+  @SonarLintSide(lifespan = "MODULE")
+  static class FakeModuleFileListener implements ModuleFileListener {
+    private final List<ModuleFileEvent> events = new ArrayList<>();
+
+    @Override
+    public void process(ModuleFileEvent event) {
+      events.add(event);
+    }
   }
 
   private ClientInputFile prepareJavaInputFile() throws IOException {
@@ -312,7 +398,7 @@ public class ConnectedIssueMediumTest {
   }
 
   static class StoreIssueListener implements IssueListener {
-    private List<Issue> issues;
+    private final List<Issue> issues;
 
     StoreIssueListener(List<Issue> issues) {
       this.issues = issues;
