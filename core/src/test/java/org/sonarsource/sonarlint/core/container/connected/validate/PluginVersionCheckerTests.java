@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.container.connected.validate;
 
-import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -42,6 +41,7 @@ class PluginVersionCheckerTests {
   @Test
   void isVersionSupported() {
     assertThat(underTest.isVersionSupported("java", "5.13.1.18282")).isTrue();
+    assertThat(underTest.isVersionSupported("java", "5.13.1.18282-SNAPSHOT")).isTrue();
     assertThat(underTest.isVersionSupported("java", "5.13.0.18197")).isFalse();
     assertThat(underTest.isVersionSupported("unknown", "4.0")).isTrue();
   }

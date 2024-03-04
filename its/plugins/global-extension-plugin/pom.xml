@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-its</artifactId>
-    <version>6.0.0.32513-lite</version>
+    <version>7.0.0.37656-lite</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   

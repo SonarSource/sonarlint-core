@@ -100,7 +100,7 @@ public class NodeJsHelper {
 
     String result;
     if (system2.isOsWindows()) {
-      result = runSimpleCommand(Command.create("where").addArgument("node"));
+      result = runSimpleCommand(Command.create("C:\\Windows\\System32\\where.exe").addArgument("$PATH:node.exe"));
     } else {
       Command which = Command.create("which").addArgument("node");
       computePathEnvForMacOs(which);

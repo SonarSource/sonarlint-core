@@ -57,7 +57,7 @@ public class PluginVersionChecker {
     String minVersion = getMinimumVersion(key);
     if (version != null && minVersion != null) {
       Version minimalVersion = Version.create(minVersion);
-      return version.compareTo(minimalVersion) >= 0;
+      return version.compareToIgnoreQualifier(minimalVersion) >= 0;
     }
     return true;
   }

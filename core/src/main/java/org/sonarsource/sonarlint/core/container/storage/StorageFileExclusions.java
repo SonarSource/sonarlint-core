@@ -41,8 +41,9 @@ public class StorageFileExclusions {
     this.issueStorePaths = issueStorePaths;
   }
 
-  public <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> fileIdePathExtractor, Predicate<G> testFilePredicate) {
-    GlobalProperties globalProps = storageReader.readGlobalProperties();
+  public <G> List<G> getExcludedFiles(GlobalSettingsStore globalSettingsStore, ProjectBinding projectBinding, Collection<G> files, Function<G, String> fileIdePathExtractor,
+    Predicate<G> testFilePredicate) {
+    GlobalProperties globalProps = globalSettingsStore.getAll();
     ProjectConfiguration projectConfig = storageReader.readProjectConfig(projectBinding.projectKey());
     MapSettings settings = new MapSettings();
     settings.addProperties(globalProps.getProperties());

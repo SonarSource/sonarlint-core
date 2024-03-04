@@ -31,7 +31,11 @@ import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nullable;
+import okhttp3.Call;
+import okhttp3.Callback;
 import okhttp3.Credentials;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -87,6 +91,36 @@ public abstract class AbstractConnectedTest {
         .url(url)
         .build();
       return executeRequest(request);
+    }
+
+    @Override
+    public CompletableFuture<Response> getAsync(String url) {
+      Request request = new Request.Builder()
+        .url(url)
+        .build();
+      return executeRequestAsync(request);
+    }
+
+    private CompletableFuture<Response> executeRequestAsync(Request request) {
+      Call call = okClient.newCall(request);
+      CompletableFuture<Response> futureResponse = new CompletableFuture<Response>()
+        .whenComplete((response, error) -> {
+          if (error instanceof CancellationException) {
+            call.cancel();
+          }
+        });
+      call.enqueue(new Callback() {
+        @Override
+        public void onFailure(Call call, IOException e) {
+          futureResponse.completeExceptionally(e);
+        }
+
+        @Override
+        public void onResponse(Call call, okhttp3.Response response) {
+          futureResponse.complete(wrap(response));
+        }
+      });
+      return futureResponse;
     }
 
     @Override

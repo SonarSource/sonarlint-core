@@ -59,7 +59,7 @@ import static org.junit.Assert.fail;
 public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
 
   private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
-  private static final String CUSTOM_JS_PLUGIN_KEY = "custom";
+  private static final String CUSTOM_JAVA_PLUGIN_KEY = "custom";
   private static final String PROJECT_KEY_JAVASCRIPT = "sample-javascript";
   private static final String PROJECT_KEY_TYPESCRIPT = "sample-typescript";
 
@@ -71,7 +71,7 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     .addPlugin(MavenLocation.of("org.sonarsource.javascript", "sonar-javascript-plugin", ItUtils.javascriptVersion))
     // With recent version of SonarJS, SonarTS is required
     .addPlugin(MavenLocation.of("org.sonarsource.typescript", "sonar-typescript-plugin", ItUtils.typescriptVersion))
-    .addPlugin(FileLocation.of("../plugins/javascript-custom-rules/target/javascript-custom-rules-plugin.jar"))
+    .addPlugin(FileLocation.of("../plugins/java-custom-rules/target/java-custom-rules-plugin.jar"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/javascript-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/typescript-sonarlint.xml"))
     .build();
@@ -134,16 +134,16 @@ public class ConnectedModeRequirementsTest extends AbstractConnectedTest {
     engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
     assertThat(logs).contains("Code analyzer 'java' is not compatible with SonarLint. Skip downloading it.");
     assertThat(engine.getPluginDetails().stream().map(PluginDetails::key))
-      .containsOnly(Language.JS.getPluginKey(), Language.PHP.getPluginKey(), OLD_SONARTS_PLUGIN_KEY, CUSTOM_JS_PLUGIN_KEY);
+      .containsOnly(Language.JS.getPluginKey(), Language.PHP.getPluginKey(), OLD_SONARTS_PLUGIN_KEY, CUSTOM_JAVA_PLUGIN_KEY);
   }
 
   @Test
-  public void dontFailIfMissingBasePlugin() {
+  public void dontFailIfMissingDependentPlugin() {
     engine = createEngine(e -> e.addEnabledLanguages(Language.PHP));
     engine.update(endpointParams(ORCHESTRATOR), sqHttpClient(), null);
-    assertThat(logs).contains("Plugin 'JavaScript Custom Rules Plugin' dependency on 'javascript' is unsatisfied. Skip loading it.");
+    assertThat(logs).contains("Plugin 'Java Custom Rules Plugin' dependency on 'java' is unsatisfied. Skip loading it.");
     assertThat(engine.getPluginDetails()).extracting(PluginDetails::key, PluginDetails::skipReason)
-      .contains(tuple(CUSTOM_JS_PLUGIN_KEY, Optional.of(new SkipReason.UnsatisfiedDependency("javascript"))));
+      .contains(tuple(CUSTOM_JAVA_PLUGIN_KEY, Optional.of(new SkipReason.UnsatisfiedDependency("java"))));
   }
 
   @Test

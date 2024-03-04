@@ -42,6 +42,7 @@ class StandaloneGlobalConfigurationTests {
     assertThat(config.getWorkDir()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint", "work"));
     assertThat(config.extraProperties()).isEmpty();
     assertThat(config.getEnabledLanguages()).isEmpty();
+    assertThat(config.getClientPid()).isZero();
   }
 
   @Test
@@ -85,5 +86,11 @@ class StandaloneGlobalConfigurationTests {
       .addEnabledLanguages(Language.JS, Language.TS)
       .build();
     assertThat(config.getEnabledLanguages()).containsExactly(Language.JAVA, Language.JS, Language.TS);
+  }
+
+  @Test
+  void providePid() {
+    StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder().setClientPid(123).build();
+    assertThat(config.getClientPid()).isEqualTo(123);
   }
 }

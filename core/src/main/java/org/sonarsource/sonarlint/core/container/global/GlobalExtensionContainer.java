@@ -33,7 +33,7 @@ public class GlobalExtensionContainer extends ComponentContainer {
 
   @Override
   protected void doBeforeStart() {
-    getComponentByType(ExtensionInstaller.class).install(this, ContainerLifespan.ENGINE);
+    getComponentByType(ExtensionInstaller.class).install(this, ContainerLifespan.INSTANCE);
   }
 
 }

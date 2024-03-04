@@ -25,6 +25,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.junit.Before;
@@ -74,6 +79,21 @@ public class TelemetryManagerTest {
     @Override
     public boolean devNotificationsDisabled() {
       return true;
+    }
+
+    @Override
+    public Collection<String> getNonDefaultEnabledRules() {
+      return null;
+    }
+
+    @Override
+    public Collection<String> getDefaultDisabledRules() {
+      return null;
+    }
+
+    @Override
+    public Map<String, Object> additionalAttributes() {
+      return Collections.emptyMap();
     }
 
   };
@@ -355,6 +375,8 @@ public class TelemetryManagerTest {
     manager.devNotificationsClicked(FOO_EVENT);
     manager.taintVulnerabilitiesInvestigatedLocally();
     manager.taintVulnerabilitiesInvestigatedRemotely();
+    manager.addReportedRules(new HashSet<>(Arrays.asList("ruleKey1", "ruleKey2")));
+    manager.addQuickFixAppliedForRule("ruleKey1");
 
     manager.uploadLazily();
 
@@ -364,6 +386,31 @@ public class TelemetryManagerTest {
     assertThat(reloaded.notifications()).isEmpty();
     assertThat(reloaded.taintVulnerabilitiesInvestigatedLocallyCount()).isZero();
     assertThat(reloaded.taintVulnerabilitiesInvestigatedRemotelyCount()).isZero();
+    assertThat(reloaded.getRaisedIssuesRules()).isEmpty();
+    assertThat(reloaded.getQuickFixesApplied()).isEmpty();
+  }
+
+  @Test
+  public void accumulate_rules_activation_settings_and_reported_rules() {
+    createAndSaveSampleData(storage);
+
+    manager.addReportedRules(new HashSet<>(Arrays.asList("ruleKey1", "ruleKey1", "ruleKey2")));
+
+    TelemetryLocalStorage reloaded = storage.tryRead();
+    assertThat(reloaded.getRaisedIssuesRules()).hasSize(2);
+    assertThat(reloaded.getRaisedIssuesRules()).contains("ruleKey1", "ruleKey2");
+  }
+
+  @Test
+  public void accumulate_applied_quick_fixes() {
+    createAndSaveSampleData(storage);
+
+    manager.addQuickFixAppliedForRule("ruleKey1");
+    manager.addQuickFixAppliedForRule("ruleKey2");
+    manager.addQuickFixAppliedForRule("ruleKey1");
+
+    TelemetryLocalStorage reloaded = storage.tryRead();
+    assertThat(reloaded.getQuickFixesApplied()).containsExactlyInAnyOrder("ruleKey1", "ruleKey2");
   }
 
   private void createAndSaveSampleData(TelemetryLocalStorageManager storage) {

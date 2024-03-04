@@ -46,7 +46,7 @@ public class TelemetryPathManager {
   }
 
   /**
-   * If telemetry storage doesn't exist at the current location,
+   * If telemetry storage doesn't exist at the current standard product-related location,
    * copy from the specified old path.
    *
    * @param productKey short name of the product, for example "idea", "eclipse"
@@ -54,6 +54,17 @@ public class TelemetryPathManager {
    */
   public static void migrate(String productKey, Path oldPath) {
     Path newPath = getPath(productKey);
+    migrate(oldPath, newPath);
+  }
+
+  /**
+   * If telemetry storage doesn't exist at the specified new path,
+   * copy from the specified old path.
+   *
+   * @param oldPath old path of telemetry storage
+   * @param newPath new path for telemetry storage
+   */
+  public static void migrate(Path oldPath, Path newPath) {
     if (newPath.toFile().isFile() || !oldPath.toFile().exists()) {
       return;
     }

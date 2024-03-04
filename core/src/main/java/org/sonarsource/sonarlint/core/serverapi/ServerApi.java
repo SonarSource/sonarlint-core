@@ -22,8 +22,13 @@ package org.sonarsource.sonarlint.core.serverapi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.organization.OrganizationApi;
+import org.sonarsource.sonarlint.core.serverapi.plugins.PluginsApi;
 import org.sonarsource.sonarlint.core.serverapi.project.ProjectApi;
+import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfileApi;
+import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
+import org.sonarsource.sonarlint.core.serverapi.settings.SettingsApi;
 import org.sonarsource.sonarlint.core.serverapi.source.SourceApi;
+import org.sonarsource.sonarlint.core.serverapi.system.SystemApi;
 
 public class ServerApi {
   private final ServerApiHelper helper;
@@ -56,4 +61,23 @@ public class ServerApi {
     return new SourceApi(helper);
   }
 
+  public SettingsApi settings() {
+    return new SettingsApi(helper);
+  }
+
+  public QualityProfileApi qualityProfile() {
+    return new QualityProfileApi(helper);
+  }
+
+  public PluginsApi plugins() {
+    return new PluginsApi(helper);
+  }
+
+  public RulesApi rules() {
+    return new RulesApi(helper);
+  }
+
+  public SystemApi system() {
+    return new SystemApi(helper);
+  }
 }

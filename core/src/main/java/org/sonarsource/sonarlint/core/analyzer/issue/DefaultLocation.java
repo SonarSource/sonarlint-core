@@ -19,17 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.analyzer.issue;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonar.api.batch.fs.TextRange;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueLocation;
 
-public class DefaultLocation extends TextRangeLocation implements IssueLocation {
+public class DefaultLocation implements IssueLocation {
   private final String message;
   private final ClientInputFile inputFile;
+  private final org.sonarsource.sonarlint.core.client.api.common.TextRange textRange;
 
   public DefaultLocation(@Nullable ClientInputFile inputFile, @Nullable TextRange textRange, @Nullable String message) {
-    super(textRange);
+    this.textRange = textRange != null ? TextRangeUtils.convert(textRange) : null;
     this.inputFile = inputFile;
     this.message = message;
   }
@@ -42,5 +44,11 @@ public class DefaultLocation extends TextRangeLocation implements IssueLocation 
   @Override
   public String getMessage() {
     return message;
+  }
+
+  @CheckForNull
+  @Override
+  public org.sonarsource.sonarlint.core.client.api.common.TextRange getTextRange() {
+    return textRange;
   }
 }

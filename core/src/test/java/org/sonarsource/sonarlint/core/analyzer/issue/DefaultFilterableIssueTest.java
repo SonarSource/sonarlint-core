@@ -34,7 +34,7 @@ public class DefaultFilterableIssueTest {
   @Test
   public void delegate_textRange_to_rawIssue() {
     TextRange textRange = new DefaultTextRange(new DefaultTextPointer(0, 1), new DefaultTextPointer(2, 3));
-    DefaultClientIssue rawIssue = new DefaultClientIssue(null, null, null, null, null, textRange, null, null);
+    DefaultClientIssue rawIssue = new DefaultClientIssue(null, null, null, null, null, textRange, null, null, null);
     FilterableIssue underTest = new DefaultFilterableIssue(rawIssue, mock(InputComponent.class));
     assertThat(underTest.textRange()).usingRecursiveComparison().isEqualTo(textRange);
   }

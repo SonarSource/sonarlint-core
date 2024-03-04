@@ -54,7 +54,7 @@ public class IssueStoreReaderTest {
 
   private IssueStoreReader issueStoreReader;
   private final IssueStore issueStore = new InMemoryIssueStore();
-  private final StoragePaths storagePaths = mock(StoragePaths.class);
+  private final ProjectStoragePaths projectStoragePaths = mock(ProjectStoragePaths.class);
   private final StorageReader storageReader = mock(StorageReader.class);
   private final IssueStorePaths issueStorePaths = new IssueStorePaths();
   private final ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "");
@@ -65,10 +65,10 @@ public class IssueStoreReaderTest {
   public void setUp() {
     IssueStoreFactory issueStoreFactory = mock(IssueStoreFactory.class);
     Path storagePath = mock(Path.class);
-    when(storagePaths.getServerIssuesPath(PROJECT_KEY)).thenReturn(storagePath);
+    when(projectStoragePaths.getServerIssuesPath(PROJECT_KEY)).thenReturn(storagePath);
     when(issueStoreFactory.apply(storagePath)).thenReturn(issueStore);
 
-    issueStoreReader = new IssueStoreReader(issueStoreFactory, issueStorePaths, storagePaths, storageReader);
+    issueStoreReader = new IssueStoreReader(issueStoreFactory, issueStorePaths, projectStoragePaths, storageReader);
   }
 
   private void setModulePaths(Map<String, String> modulePaths) {

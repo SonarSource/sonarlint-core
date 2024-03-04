@@ -20,22 +20,17 @@
 package org.sonarsource.sonarlint.core.container.connected.update;
 
 import java.nio.file.Path;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarqube.ws.Settings;
-import org.sonarqube.ws.Settings.FieldValues;
-import org.sonarqube.ws.Settings.FieldValues.Value;
 import org.sonarqube.ws.Settings.Setting;
 import org.sonarqube.ws.Settings.Values;
 import org.sonarqube.ws.Settings.ValuesWsResponse;
 import org.sonarsource.sonarlint.core.MockWebServerExtension;
+import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.GlobalProperties;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration;
-import org.sonarsource.sonarlint.core.proto.Sonarlint.ProjectConfiguration.Builder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -46,15 +41,10 @@ class SettingsDownloaderTests {
   @RegisterExtension
   static MockWebServerExtension mockServer = new MockWebServerExtension();
 
-  private SettingsDownloader underTest;
-
-  @BeforeEach
-  public void setUp() {
-    underTest = new SettingsDownloader(mockServer.serverApiHelper());
-  }
-
   @Test
-  void testFetchGlobalSettings(@TempDir Path tempDir) throws Exception {
+  void testFetchGlobalSettings(@TempDir Path tempDir) {
+    GlobalSettingsStore globalSettingsStore = new GlobalSettingsStore(new StorageFolder.Default(tempDir));
+    SettingsDownloader underTest = new SettingsDownloader(mockServer.serverApiHelper(), globalSettingsStore);
     ValuesWsResponse response = ValuesWsResponse.newBuilder()
       .addSettings(Setting.newBuilder()
         .setKey("sonar.core.treemap.colormetric")
@@ -69,57 +59,21 @@ class SettingsDownloaderTests {
       .build();
     mockServer.addProtobufResponse("/api/settings/values.protobuf", response);
 
-    underTest.fetchGlobalSettingsTo(tempDir);
+    underTest.fetchGlobalSettings();
 
-    GlobalProperties properties = ProtobufUtil.readFile(tempDir.resolve(StoragePaths.PROPERTIES_PB), GlobalProperties.parser());
+    GlobalProperties properties = ProtobufUtil.readFile(tempDir.resolve(GlobalSettingsStore.PROPERTIES_PB), GlobalProperties.parser());
     assertThat(properties.getPropertiesMap()).containsOnly(
       entry("sonar.core.treemap.sizemetric", "ncloc"),
       entry("views.servers", "135817900907501"));
   }
 
   @Test
-  void testFetchProjectSettings() throws Exception {
-
-    Settings.FieldValues.Value.Builder valuesBuilder = Value.newBuilder();
-    valuesBuilder.putValue("filepattern", "**/*.xml");
-    valuesBuilder.putValue("rulepattern", "*:S12345");
-    Value value1 = valuesBuilder.build();
-    valuesBuilder.clear();
-    valuesBuilder.putValue("filepattern", "**/*.java");
-    valuesBuilder.putValue("rulepattern", "*:S456");
-    Value value2 = valuesBuilder.build();
-
-    ValuesWsResponse response = ValuesWsResponse.newBuilder()
-      .addSettings(Setting.newBuilder()
-        .setKey("sonar.inclusions")
-        .setValues(Values.newBuilder().addValues("**/*.java")))
-      .addSettings(Setting.newBuilder()
-        .setKey("sonar.java.fileSuffixes")
-        .setValue("*.java"))
-      .addSettings(Setting.newBuilder()
-        .setKey("sonar.issue.exclusions.multicriteria")
-        .setFieldValues(FieldValues.newBuilder().addFieldValues(value1).addFieldValues(value2)).build())
-      .build();
-    mockServer.addProtobufResponse("/api/settings/values.protobuf?component=foo", response);
-
-    Builder builder = ProjectConfiguration.newBuilder();
-    underTest.fetchProjectSettings("foo", null, builder);
-
-    assertThat(builder.getPropertiesMap()).containsOnly(
-      entry("sonar.inclusions", "**/*.java"),
-      entry("sonar.java.fileSuffixes", "*.java"),
-      entry("sonar.issue.exclusions.multicriteria", "1,2"),
-      entry("sonar.issue.exclusions.multicriteria.1.filepattern", "**/*.xml"),
-      entry("sonar.issue.exclusions.multicriteria.1.rulepattern", "*:S12345"),
-      entry("sonar.issue.exclusions.multicriteria.2.filepattern", "**/*.java"),
-      entry("sonar.issue.exclusions.multicriteria.2.rulepattern", "*:S456"));
-  }
-
-  @Test
   void invalidResponseSettings(@TempDir Path tempDir) {
+    GlobalSettingsStore globalSettingsStore = new GlobalSettingsStore(new StorageFolder.Default(tempDir));
+    SettingsDownloader underTest = new SettingsDownloader(mockServer.serverApiHelper(), globalSettingsStore);
     mockServer.addStringResponse("/api/settings/values.protobuf", "foo bar");
 
-    assertThrows(IllegalStateException.class, () -> underTest.fetchGlobalSettingsTo(tempDir));
+    assertThrows(IllegalStateException.class, underTest::fetchGlobalSettings);
   }
 
 }

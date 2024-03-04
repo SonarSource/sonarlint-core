@@ -54,8 +54,10 @@ import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintException;
 import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
 import org.sonarsource.sonarlint.core.container.ComponentContainer;
 import org.sonarsource.sonarlint.core.container.module.SonarLintModuleFileSystem;
+import org.sonarsource.sonarlint.core.container.storage.PluginReferenceStore;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
+import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCache;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.PluginReferences.PluginReference;
@@ -75,7 +77,7 @@ import static org.sonarsource.sonarlint.core.TestUtils.createNoOpIssueListener;
 import static org.sonarsource.sonarlint.core.TestUtils.createNoOpLogOutput;
 import static org.sonarsource.sonarlint.core.client.api.common.ClientFileSystemFixtures.aClientFileSystemWith;
 import static org.sonarsource.sonarlint.core.client.api.common.ClientFileSystemFixtures.anEmptyClientFileSystem;
-import static org.sonarsource.sonarlint.core.container.storage.StoragePaths.encodeForFs;
+import static org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths.encodeForFs;
 
 public class ConnectedIssueMediumTest {
 
@@ -98,7 +100,7 @@ public class ConnectedIssueMediumTest {
     Path storage = Paths.get(ConnectedIssueMediumTest.class.getResource("/sample-storage").toURI());
     Path tmpStorage = slHome.resolve("storage");
     FileUtils.copyDirectory(storage.toFile(), tmpStorage.toFile());
-    Files.move(tmpStorage.resolve(encodeForFs("local")), tmpStorage.resolve(StoragePaths.encodeForFs(SERVER_ID)));
+    Files.move(tmpStorage.resolve(encodeForFs("local")), tmpStorage.resolve(ProjectStoragePaths.encodeForFs(SERVER_ID)));
     PluginCache cache = PluginCache.create(pluginCache);
 
     PluginReferences.Builder builder = PluginReferences.newBuilder();
@@ -118,11 +120,13 @@ public class ConnectedIssueMediumTest {
     cache.get(PluginLocator.SONAR_JAVA_PLUGIN_JAR, PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH,
       (filename, toFile) -> FileUtils.copyURLToFile(PluginLocator.getJavaPluginUrl(), toFile.toFile()));
 
-    ProtobufUtil.writeToFile(builder.build(), tmpStorage.resolve(StoragePaths.encodeForFs(SERVER_ID)).resolve("global").resolve(StoragePaths.PLUGIN_REFERENCES_PB));
+    Path globalFolderPath = tmpStorage.resolve(encodeForFs(SERVER_ID)).resolve("global");
+    org.sonarsource.sonarlint.core.client.api.util.FileUtils.mkdirs(globalFolderPath);
+    new PluginReferenceStore(new StorageFolder.Default(globalFolderPath)).store(builder.build());
 
     // update versions in test storage and create an empty stale project storage
-    writeProjectStatus(tmpStorage, "test-project", StoragePaths.STORAGE_VERSION);
-    writeProjectStatus(tmpStorage, JAVA_MODULE_KEY, StoragePaths.STORAGE_VERSION);
+    writeProjectStatus(tmpStorage, "test-project", ProjectStoragePaths.STORAGE_VERSION);
+    writeProjectStatus(tmpStorage, JAVA_MODULE_KEY, ProjectStoragePaths.STORAGE_VERSION);
     writeProjectStatus(tmpStorage, "stale_module", "0");
     writeStatus(tmpStorage, VersionUtils.getLibraryVersion());
 
@@ -144,7 +148,7 @@ public class ConnectedIssueMediumTest {
   }
 
   private static void writeProjectStatus(Path storage, String name, String version) throws IOException {
-    Path project = storage.resolve(StoragePaths.encodeForFs(SERVER_ID)).resolve("projects").resolve(StoragePaths.encodeForFs(name));
+    Path project = storage.resolve(ProjectStoragePaths.encodeForFs(SERVER_ID)).resolve("projects").resolve(ProjectStoragePaths.encodeForFs(name));
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
       .setStorageVersion(version)
@@ -152,19 +156,19 @@ public class ConnectedIssueMediumTest {
       .setUpdateTimestamp(new Date().getTime())
       .build();
     Files.createDirectories(project);
-    ProtobufUtil.writeToFile(storageStatus, project.resolve(StoragePaths.STORAGE_STATUS_PB));
+    ProtobufUtil.writeToFile(storageStatus, project.resolve(ProjectStoragePaths.STORAGE_STATUS_PB));
   }
 
   private static void writeStatus(Path storage, String version) throws IOException {
-    Path module = storage.resolve(StoragePaths.encodeForFs(SERVER_ID)).resolve("global");
+    Path module = storage.resolve(ProjectStoragePaths.encodeForFs(SERVER_ID)).resolve("global");
 
     StorageStatus storageStatus = StorageStatus.newBuilder()
-      .setStorageVersion(StoragePaths.STORAGE_VERSION)
+      .setStorageVersion(ProjectStoragePaths.STORAGE_VERSION)
       .setSonarlintCoreVersion(version)
       .setUpdateTimestamp(new Date().getTime())
       .build();
     Files.createDirectories(module);
-    ProtobufUtil.writeToFile(storageStatus, module.resolve(StoragePaths.STORAGE_STATUS_PB));
+    ProtobufUtil.writeToFile(storageStatus, module.resolve(ProjectStoragePaths.STORAGE_STATUS_PB));
   }
 
   @AfterClass
@@ -182,7 +186,7 @@ public class ConnectedIssueMediumTest {
   }
 
   @Test
-  public void testStaleProject() throws IOException {
+  public void testStaleProject() {
     assertThat(sonarlint.getProjectStorageStatus("stale_module").isStale()).isTrue();
     ConnectedAnalysisConfiguration config = ConnectedAnalysisConfiguration.builder()
       .setProjectKey("stale_module")

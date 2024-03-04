@@ -9,7 +9,7 @@
   </parent>
   <groupId>org.sonarsource.sonarlint.core</groupId>
   <artifactId>sonarlint-core-parent</artifactId>
-  <version>6.0.0.32513-lite</version>
+  <version>7.0.0.37656-lite</version>
   <packaging>pom</packaging>
   <name>SonarLint Core</name>
   <description>Library used by SonarLint flavors (Eclipse, IntelliJ, VSCode...)</description>
@@ -43,6 +43,7 @@
     <junit.vintage.version>5.7.0</junit.vintage.version>
     <!-- Release: enable publication to Bintray -->
     <artifactsToPublish>${project.groupId}:sonarlint-core:jar</artifactsToPublish>
+    <jdk.min.version>11</jdk.min.version>
   </properties>
 
   <dependencyManagement>
@@ -96,7 +97,7 @@
         <plugin>
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
-          <version>5.1.1</version>
+          <version>5.1.2</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -140,7 +141,7 @@
           <plugin>
             <groupId>org.jacoco</groupId>
             <artifactId>jacoco-maven-plugin</artifactId>
-            <version>0.8.6</version>
+            <version>0.8.7</version>
             <executions>
               <execution>
                 <id>prepare-agent</id>

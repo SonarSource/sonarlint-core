@@ -35,4 +35,10 @@ public interface SonarLintRuntime extends SonarRuntime {
    * @return the version of the sonarlint-plugin-api
    */
   Version getSonarLintPluginApiVersion();
+
+  /**
+   * @since 6.2
+   * @return the PID of the client (IDE)
+   */
+  long getClientPid();
 }

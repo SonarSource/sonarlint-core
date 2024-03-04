@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.container.connected;
 
 import java.util.List;
+import javax.annotation.Nullable;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
@@ -54,8 +55,11 @@ import org.sonarsource.sonarlint.core.container.connected.update.perform.ServerI
 import org.sonarsource.sonarlint.core.container.connected.validate.PluginVersionChecker;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
 import org.sonarsource.sonarlint.core.container.global.GlobalTempFolderProvider;
+import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
+import org.sonarsource.sonarlint.core.container.storage.GlobalStores;
+import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.container.storage.ProjectStorageStatusReader;
-import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.container.storage.QualityProfileStore;
 import org.sonarsource.sonarlint.core.container.storage.StorageReader;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginCacheProvider;
 import org.sonarsource.sonarlint.core.plugin.cache.PluginHashes;
@@ -70,12 +74,14 @@ public class ConnectedContainer extends ComponentContainer {
 
   private static final Logger LOG = Loggers.get(ConnectedContainer.class);
 
+  private final GlobalStores globalStores;
   private final EndpointParams endpoint;
   private final ConnectedGlobalConfiguration globalConfig;
   private final HttpClient client;
 
-  public ConnectedContainer(ConnectedGlobalConfiguration globalConfig, EndpointParams endpoint, HttpClient client) {
+  public ConnectedContainer(ConnectedGlobalConfiguration globalConfig, GlobalStores globalStores, EndpointParams endpoint, HttpClient client) {
     this.globalConfig = globalConfig;
+    this.globalStores = globalStores;
     this.endpoint = endpoint;
     this.client = client;
   }
@@ -85,6 +91,10 @@ public class ConnectedContainer extends ComponentContainer {
     add(
       globalConfig,
       endpoint,
+      globalStores,
+      globalStores.getGlobalStorage(),
+      globalStores.getPluginReferenceStore(),
+      globalStores.getQualityProfileStore(),
       new GlobalTempFolderProvider(),
       ServerVersionAndStatusChecker.class,
       PluginVersionChecker.class,
@@ -114,7 +124,7 @@ public class ConnectedContainer extends ComponentContainer {
       IssueStoreFactory.class,
       new PluginCacheProvider(),
       PluginHashes.class,
-      StoragePaths.class,
+      ProjectStoragePaths.class,
       StorageReader.class,
       ProjectStorageStatusReader.class);
   }
@@ -123,22 +133,21 @@ public class ConnectedContainer extends ComponentContainer {
     return getComponentByType(GlobalStorageUpdateExecutor.class).update(progress);
   }
 
-  public void updateProject(String projectKey, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
-    GlobalStorageStatus updateStatus = getComponentByType(StorageReader.class).getGlobalStorageStatus();
-    if (updateStatus == null) {
+  public void updateProject(String projectKey, boolean fetchTaintVulnerabilities, @Nullable GlobalStorageStatus globalStorageStatus, ProgressWrapper progress) {
+    if (globalStorageStatus == null) {
       throw new GlobalStorageUpdateRequiredException(globalConfig.getConnectionId());
     }
     getComponentByType(ProjectStorageUpdateExecutor.class).update(projectKey, fetchTaintVulnerabilities, progress);
   }
 
-  public StorageUpdateCheckResult checkForUpdate(ProgressWrapper progress) {
+  public StorageUpdateCheckResult checkForUpdate(GlobalSettingsStore globalSettingsStore, QualityProfileStore qualityProfileStore, ProgressWrapper progress) {
     try {
-      return getComponentByType(GlobalStorageUpdateChecker.class).checkForUpdate(progress);
+      return getComponentByType(GlobalStorageUpdateChecker.class).checkForUpdate(globalSettingsStore, qualityProfileStore, progress);
     } catch (Exception e) {
       String msg = "Error when checking for global configuration update";
       LOG.debug(msg, e);
       // null as cause so that it doesn't get wrapped
-      throw new DownloadException(msg + ": " + e.getMessage(), null);
+      throw new DownloadException(msg + ": " + e.getMessage(), e);
     }
   }
 

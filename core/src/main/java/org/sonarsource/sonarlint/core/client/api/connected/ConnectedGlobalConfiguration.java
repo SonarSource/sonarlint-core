@@ -39,13 +39,15 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
 
   private final String connectionId;
   private final Path storageRoot;
-  private final Map<String, URL> pluginUrlsByKey;
+  private final Map<String, URL> overriddenPluginsUrlsByKey;
+  private final Map<String, URL> extraPluginsUrlsByKey;
 
   private ConnectedGlobalConfiguration(Builder builder) {
     super(builder);
     this.connectionId = builder.connectionId;
     this.storageRoot = builder.storageRoot != null ? builder.storageRoot : getSonarLintUserHome().resolve(DEFAULT_STORAGE_DIR);
-    this.pluginUrlsByKey = new HashMap<>(builder.pluginUrlsByKey);
+    this.overriddenPluginsUrlsByKey = new HashMap<>(builder.overriddenPluginsUrlsByKey);
+    this.extraPluginsUrlsByKey = new HashMap<>(builder.extraPluginsUrlsByKey);
   }
 
   public static Builder builder() {
@@ -61,13 +63,18 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
   }
 
   public Map<String, URL> getEmbeddedPluginUrlsByKey() {
-    return pluginUrlsByKey;
+    return overriddenPluginsUrlsByKey;
+  }
+
+  public Map<String, URL> getExtraPluginsUrlsByKey() {
+    return extraPluginsUrlsByKey;
   }
 
   public static final class Builder extends AbstractBuilder<Builder> {
     private String connectionId;
     private Path storageRoot;
-    private final Map<String, URL> pluginUrlsByKey = new HashMap<>();
+    private final Map<String, URL> overriddenPluginsUrlsByKey = new HashMap<>();
+    private final Map<String, URL> extraPluginsUrlsByKey = new HashMap<>();
 
     private Builder() {
     }
@@ -96,10 +103,18 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
     }
 
     /**
+     * Register extra embedded plugin to be used in connected mode
+     */
+    public Builder addExtraPlugin(String pluginKey, URL pluginUrl) {
+      extraPluginsUrlsByKey.put(pluginKey, pluginUrl);
+      return this;
+    }
+
+    /**
      * Ask the engine to prefer the given plugin JAR instead of downloading the one from the server
      */
     public Builder useEmbeddedPlugin(String pluginKey, URL pluginUrl) {
-      pluginUrlsByKey.put(pluginKey, pluginUrl);
+      overriddenPluginsUrlsByKey.put(pluginKey, pluginUrl);
       return this;
     }
 

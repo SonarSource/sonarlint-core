@@ -25,7 +25,11 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nullable;
+import okhttp3.Call;
+import okhttp3.Callback;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -158,6 +162,14 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
       }
 
       @Override
+      public CompletableFuture<Response> getAsync(String url) {
+        Request request = new Request.Builder()
+          .url(url)
+          .build();
+        return executeRequestAsync(request);
+      }
+
+      @Override
       public Response delete(String url, String contentType, String bodyContent) {
         RequestBody body = RequestBody.create(MediaType.get(contentType), bodyContent);
         Request request = new Request.Builder()
@@ -173,6 +185,28 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
         } catch (IOException e) {
           throw new IllegalStateException("Unable to execute request: " + e.getMessage(), e);
         }
+      }
+
+      private CompletableFuture<Response> executeRequestAsync(Request request) {
+        Call call = okClient.newCall(request);
+        CompletableFuture<Response> futureResponse = new CompletableFuture<Response>()
+          .whenComplete((response, error) -> {
+            if (error instanceof CancellationException) {
+              call.cancel();
+            }
+          });
+        call.enqueue(new Callback() {
+          @Override
+          public void onFailure(Call call, IOException e) {
+            futureResponse.completeExceptionally(e);
+          }
+
+          @Override
+          public void onResponse(Call call, okhttp3.Response response) {
+            futureResponse.complete(wrap(response));
+          }
+        });
+        return futureResponse;
       }
 
       private Response wrap(okhttp3.Response wrapped) {

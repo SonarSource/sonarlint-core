@@ -26,7 +26,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.container.storage.ProtobufUtil;
-import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.container.storage.QualityProfileStore;
+import org.sonarsource.sonarlint.core.container.storage.StorageFolder;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.QProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,11 +44,12 @@ class QualityProfilesDownloaderTests {
   @Test
   void test(@TempDir Path tempDir) {
     mockServer.addResponseFromResource("/api/qualityprofiles/search.protobuf", "/update/qualityprofiles.pb");
-    underTest = new QualityProfilesDownloader(mockServer.serverApiHelper());
+    QualityProfileStore qualityProfileStore = new QualityProfileStore(new StorageFolder.Default(tempDir));
+    underTest = new QualityProfilesDownloader(mockServer.serverApiHelper(), qualityProfileStore);
 
-    underTest.fetchQualityProfilesTo(tempDir);
+    underTest.fetchQualityProfiles();
 
-    QProfiles qProfiles = ProtobufUtil.readFile(tempDir.resolve(StoragePaths.QUALITY_PROFILES_PB), QProfiles.parser());
+    QProfiles qProfiles = ProtobufUtil.readFile(tempDir.resolve(QualityProfileStore.QUALITY_PROFILES_PB), QProfiles.parser());
     assertThat(qProfiles.getQprofilesByKeyMap()).containsOnlyKeys(
       "cs-sonar-way-58886",
       "java-sonar-way-74592",
@@ -64,11 +66,12 @@ class QualityProfilesDownloaderTests {
   @Test
   void testWithOrg(@TempDir Path tempDir) {
     mockServer.addResponseFromResource("/api/qualityprofiles/search.protobuf?organization=myOrg", "/update/qualityprofiles.pb");
-    underTest = new QualityProfilesDownloader(mockServer.serverApiHelper("myOrg"));
+    QualityProfileStore qualityProfileStore = new QualityProfileStore(new StorageFolder.Default(tempDir));
+    underTest = new QualityProfilesDownloader(mockServer.serverApiHelper("myOrg"), qualityProfileStore);
 
-    underTest.fetchQualityProfilesTo(tempDir);
+    underTest.fetchQualityProfiles();
 
-    QProfiles qProfiles = ProtobufUtil.readFile(tempDir.resolve(StoragePaths.QUALITY_PROFILES_PB), QProfiles.parser());
+    QProfiles qProfiles = ProtobufUtil.readFile(tempDir.resolve(QualityProfileStore.QUALITY_PROFILES_PB), QProfiles.parser());
     assertThat(qProfiles.getQprofilesByKeyMap()).containsOnlyKeys(
       "cs-sonar-way-58886",
       "java-sonar-way-74592",
@@ -86,10 +89,11 @@ class QualityProfilesDownloaderTests {
   void testParsingError(@TempDir Path tempDir) throws IOException {
     // wrong file
     mockServer.addStringResponse("/api/qualityprofiles/search.protobuf", "foo bar");
+    QualityProfileStore qualityProfileStore = new QualityProfileStore(new StorageFolder.Default(tempDir));
 
-    underTest = new QualityProfilesDownloader(mockServer.serverApiHelper());
+    underTest = new QualityProfilesDownloader(mockServer.serverApiHelper(), qualityProfileStore);
 
-    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.fetchQualityProfilesTo(tempDir));
+    IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> underTest.fetchQualityProfiles());
     assertThat(thrown).hasMessageContaining("Protocol message tag had invalid wire type");
 
   }

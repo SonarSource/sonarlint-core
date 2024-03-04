@@ -19,6 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import okhttp3.mockwebserver.MockResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.MockWebServerExtension;
@@ -35,33 +38,18 @@ class ConnectionValidatorTests {
   @RegisterExtension
   static MockWebServerExtension mockServer = new MockWebServerExtension();
 
-  public static final String PLUGINS_INSTALLED = "{\"plugins\": [\n" +
-    "    {\n" +
-    "      \"key\": \"branch\",\n" +
-    "      \"filename\": \"sonar-branch-plugin-1.1.0.879.jar\",\n" +
-    "      \"sonarLintSupported\": false,\n" +
-    "      \"hash\": \"064d334d27aa14aab6e39315428ee3cf\",\n" +
-    "      \"version\": \"1.1 (build 879)\"\n" +
-    "    },\n" +
-    "    {\n" +
-    "      \"key\": \"javascript\",\n" +
-    "      \"filename\": \"sonar-javascript-plugin-3.4.0.5828.jar\",\n" +
-    "      \"sonarLintSupported\": true,\n" +
-    "      \"hash\": \"d136fdb31fe38c3d780650f7228a49fa\",\n" +
-    "      \"version\": \"3.4 (build 5828)\"\n" +
-    "    } ]}";
-
   private final ServerVersionAndStatusChecker serverChecker = mock(ServerVersionAndStatusChecker.class);
 
   @Test
-  void testConnection_ok() throws Exception {
+  void testConnection_ok() throws ExecutionException, InterruptedException {
     ConnectionValidator underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtension.httpClient()));
 
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"7.9\",\"status\": \"UP\"}");
     mockServer.addStringResponse("/api/authentication/validate?format=json", "{\"valid\": true}");
 
-    ValidationResult validation = underTest.validateConnection();
+    CompletableFuture<ValidationResult> futureValidation = underTest.validateConnection();
 
+    ValidationResult validation = futureValidation.get();
     assertThat(validation.success()).isTrue();
     assertThat(mockServer.takeRequest().getPath()).isEqualTo("/api/system/status");
     assertThat(mockServer.takeRequest().getPath()).isEqualTo("/api/authentication/validate?format=json");
@@ -75,8 +63,9 @@ class ConnectionValidatorTests {
     mockServer.addStringResponse("/api/authentication/validate?format=json", "{\"valid\": true}");
     mockServer.addResponseFromResource("/api/organizations/search.protobuf?organizations=myOrg&ps=500&p=1", "/orgs/empty.pb");
 
-    ValidationResult validation = underTest.validateConnection();
+    CompletableFuture<ValidationResult> futureValidation = underTest.validateConnection();
 
+    ValidationResult validation = futureValidation.get();
     assertThat(validation.success()).isFalse();
     assertThat(validation.message()).isEqualTo("No organizations found for key: myOrg");
   }
@@ -90,23 +79,53 @@ class ConnectionValidatorTests {
     mockServer.addResponseFromResource("/api/organizations/search.protobuf?organizations=henryju-github&ps=500&p=1", "/orgs/single.pb");
     mockServer.addResponseFromResource("/api/organizations/search.protobuf?organizations=henryju-github&ps=500&p=2", "/orgs/empty.pb");
 
-    ValidationResult validation = underTest.validateConnection();
+    CompletableFuture<ValidationResult> futureValidation = underTest.validateConnection();
 
+    ValidationResult validation = futureValidation.get();
     assertThat(validation.success()).isTrue();
   }
 
   @Test
-  void testUnsupportedServer() {
+  void testUnsupportedServer() throws ExecutionException, InterruptedException {
     ConnectionValidator underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtension.httpClient()));
 
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}");
 
     when(serverChecker.checkVersionAndStatus()).thenThrow(UnsupportedServerException.class);
 
-    ValidationResult validation = underTest.validateConnection();
+    CompletableFuture<ValidationResult> futureValidation = underTest.validateConnection();
 
+    ValidationResult validation = futureValidation.get();
     assertThat(validation.success()).isFalse();
     assertThat(validation.message()).isEqualTo("SonarQube server has version 6.7. Version should be greater or equal to 7.9");
+  }
+
+  @Test
+  void testClientError() throws ExecutionException, InterruptedException {
+    ConnectionValidator underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtension.httpClient()));
+
+    MockResponse mockResponse = new MockResponse();
+    mockResponse.setResponseCode(400);
+    mockServer.addResponse("/api/system/status", mockResponse);
+
+    CompletableFuture<ValidationResult> futureValidation = underTest.validateConnection();
+
+    ValidationResult validation = futureValidation.get();
+    assertThat(validation.success()).isFalse();
+    assertThat(validation.message()).isEqualTo("Error 400 on " + mockServer.endpointParams().getBaseUrl() + "api/system/status");
+  }
+
+  @Test
+  void testResponseError() throws ExecutionException, InterruptedException {
+    ConnectionValidator underTest = new ConnectionValidator(new ServerApiHelper(mockServer.endpointParams(), MockWebServerExtension.httpClient()));
+
+    mockServer.addStringResponse("/api/system/status", "{\"id\": }");
+
+    CompletableFuture<ValidationResult> futureValidation = underTest.validateConnection();
+
+    ValidationResult validation = futureValidation.get();
+    assertThat(validation.success()).isFalse();
+    assertThat(validation.message()).isEqualTo("Unable to parse server infos from: {\"id\": }");
   }
 
 }

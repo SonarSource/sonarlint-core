@@ -4,12 +4,12 @@
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-parent</artifactId>
-    <version>6.0.0.32513-lite</version>
+    <version>7.0.0.37656-lite</version>
   </parent>
   <artifactId>sonarlint-core</artifactId>
   <packaging>bundle</packaging>
   <name>SonarLint Core - Implementation</name>
-  <description>Library used by SonarLint clients (CLI, Eclipse, ...)</description>
+  <description>Common library used by some SonarLint flavors</description>
 
   <properties>
     <jarsigner.skip>true</jarsigner.skip>
@@ -102,6 +102,12 @@
       <groupId>org.sonarsource.sonarqube</groupId>
       <artifactId>sonar-plugin-api</artifactId>
       <version>${sonarqube.version}</version>
+    </dependency>
+    <!-- For RulesDefinitionXmlLoader, can be removed after upgrading sonar-plugin-api to 9.0 (SONAR-14882) -->
+    <dependency>
+      <groupId>com.fasterxml.staxmate</groupId>
+      <artifactId>staxmate</artifactId>
+      <version>2.4.0</version>
     </dependency>
 
     <!-- unit tests -->
@@ -346,8 +352,22 @@
                   </excludes>
                 </filter>
                 <filter>
-                    <!-- Shade the SonarLint Plugin API (avoids minimization) as it is used by plugins -->
+                  <!-- Shade the SonarLint Plugin API (avoids minimization) as it is used by plugins -->
                   <artifact>org.sonarsource.sonarlint.core:sonarlint-plugin-api</artifact>
+                  <includes>
+                    <include>**</include>
+                  </includes>
+                </filter>
+                <filter>
+                  <!-- Shade staxmate (but avoids minimization) as it is used by plugins -->
+                  <artifact>com.fasterxml.staxmate:staxmate</artifact>
+                  <includes>
+                    <include>**</include>
+                  </includes>
+                </filter>
+                <filter>
+                  <!-- Shade stax2-api (but avoids minimization) as it is used by plugins -->
+                  <artifact>org.codehaus.woodstox:stax2-api</artifact>
                   <includes>
                     <include>**</include>
                   </includes>
@@ -415,7 +435,7 @@
         <artifactId>maven-jarsigner-plugin</artifactId>
         <version>3.0.0</version>
         <configuration>
-          <alias>sonarsource-codesign-2019-2021</alias>
+          <alias>sonarsource-codesign-2021-2023</alias>
           <keystore>${sonarsource.keystore.path}</keystore>
           <storepass>${sonarsource.keystore.password}</storepass>
           <tsa>http://timestamp.digicert.com</tsa>

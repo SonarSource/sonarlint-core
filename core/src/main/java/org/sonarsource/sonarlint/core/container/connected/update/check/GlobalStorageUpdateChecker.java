@@ -24,6 +24,8 @@ import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
 import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
 import org.sonarsource.sonarlint.core.container.connected.update.PluginListDownloader;
 import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
+import org.sonarsource.sonarlint.core.container.storage.GlobalSettingsStore;
+import org.sonarsource.sonarlint.core.container.storage.QualityProfileStore;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class GlobalStorageUpdateChecker {
@@ -43,7 +45,7 @@ public class GlobalStorageUpdateChecker {
     this.qualityProfilesUpdateChecker = qualityProfilesUpdateChecker;
   }
 
-  public StorageUpdateCheckResult checkForUpdate(ProgressWrapper progress) {
+  public StorageUpdateCheckResult checkForUpdate(GlobalSettingsStore globalSettingsStore, QualityProfileStore qualityProfileStore, ProgressWrapper progress) {
     DefaultStorageUpdateCheckResult result = new DefaultStorageUpdateCheckResult();
 
     progress.setProgressAndCheckCancel("Checking server version and status", 0.1f);
@@ -51,14 +53,14 @@ public class GlobalStorageUpdateChecker {
     // Currently with don't check server version change since it is unlikely to have impact on SL
 
     progress.setProgressAndCheckCancel("Checking global properties", 0.3f);
-    globalSettingsUpdateChecker.checkForUpdates(result);
+    globalSettingsUpdateChecker.checkForUpdates(globalSettingsStore, result);
 
     progress.setProgressAndCheckCancel("Checking plugins", 0.5f);
     List<SonarAnalyzer> pluginList = pluginListDownloader.downloadPluginList();
     pluginsUpdateChecker.checkForUpdates(result, pluginList);
 
     progress.setProgressAndCheckCancel("Checking quality profiles", 0.7f);
-    qualityProfilesUpdateChecker.checkForUpdates(result);
+    qualityProfilesUpdateChecker.checkForUpdates(qualityProfileStore, result);
 
     progress.setProgressAndCheckCancel("Done", 1.0f);
 

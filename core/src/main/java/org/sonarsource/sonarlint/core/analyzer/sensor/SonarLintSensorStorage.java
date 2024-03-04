@@ -44,6 +44,7 @@ import org.sonar.api.utils.MessageException;
 import org.sonarsource.sonarlint.core.analyzer.issue.DefaultClientIssue;
 import org.sonarsource.sonarlint.core.analyzer.issue.DefaultFlow;
 import org.sonarsource.sonarlint.core.analyzer.issue.IssueFilters;
+import org.sonarsource.sonarlint.core.client.api.common.QuickFix;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.container.analysis.SonarLintRule;
@@ -77,28 +78,33 @@ public class SonarLintSensorStorage implements SensorStorage {
 
   @Override
   public void store(Issue issue) {
-    InputComponent inputComponent = issue.primaryLocation().inputComponent();
+    if (!(issue instanceof DefaultSonarLintIssue)) {
+      throw new IllegalArgumentException("Trying to store a non-SonarLint issue?");
+    }
+    DefaultSonarLintIssue sonarLintIssue = (DefaultSonarLintIssue) issue;
+    InputComponent inputComponent = sonarLintIssue.primaryLocation().inputComponent();
 
-    SonarLintRule rule = validateRule(issue);
-    ActiveRule activeRule = activeRules.find(issue.ruleKey());
+    SonarLintRule rule = validateRule(sonarLintIssue);
+    ActiveRule activeRule = activeRules.find(sonarLintIssue.ruleKey());
     if (activeRule == null) {
       // rule does not exist or is not enabled -> ignore the issue
       return;
     }
 
-    if (noSonar(inputComponent, issue)) {
+    if (noSonar(inputComponent, sonarLintIssue)) {
       return;
     }
 
-    String primaryMessage = defaultIfEmpty(issue.primaryLocation().message(), rule.name());
-    org.sonar.api.batch.rule.Severity overriddenSeverity = issue.overriddenSeverity();
+    String primaryMessage = defaultIfEmpty(sonarLintIssue.primaryLocation().message(), rule.name());
+    org.sonar.api.batch.rule.Severity overriddenSeverity = sonarLintIssue.overriddenSeverity();
     String severity = overriddenSeverity != null ? overriddenSeverity.name() : activeRule.severity();
     String type = rule.type().name();
 
-    List<org.sonarsource.sonarlint.core.client.api.common.analysis.Issue.Flow> flows = mapFlows(issue.flows());
+    List<org.sonarsource.sonarlint.core.client.api.common.analysis.Issue.Flow> flows = mapFlows(sonarLintIssue.flows());
+    List<QuickFix> quickFixes = sonarLintIssue.quickFixes();
 
     DefaultClientIssue newIssue = new DefaultClientIssue(severity, type, activeRule, rules.find(activeRule.ruleKey()), primaryMessage, issue.primaryLocation().textRange(),
-      inputComponent.isFile() ? ((SonarLintInputFile) inputComponent).getClientInputFile() : null, flows);
+      inputComponent.isFile() ? ((SonarLintInputFile) inputComponent).getClientInputFile() : null, flows, quickFixes);
     if (filters.accept(inputComponent, newIssue)) {
       issueListener.handle(newIssue);
     }

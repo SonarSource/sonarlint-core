@@ -25,18 +25,18 @@ import org.sonar.api.utils.TempFolder;
 import org.sonarsource.sonarlint.core.client.api.util.FileUtils;
 import org.sonarsource.sonarlint.core.container.connected.IssueStoreFactory;
 import org.sonarsource.sonarlint.core.container.connected.update.IssueDownloader;
-import org.sonarsource.sonarlint.core.container.storage.StoragePaths;
+import org.sonarsource.sonarlint.core.container.storage.ProjectStoragePaths;
 import org.sonarsource.sonarlint.core.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.util.ProgressWrapper;
 
 public class ServerIssueUpdater {
-  private final StoragePaths storagePaths;
+  private final ProjectStoragePaths projectStoragePaths;
   private final IssueDownloader issueDownloader;
   private final IssueStoreFactory issueStoreFactory;
   private final TempFolder tempFolder;
 
-  public ServerIssueUpdater(StoragePaths storagePaths, IssueDownloader issueDownloader, IssueStoreFactory issueStoreFactory, TempFolder tempFolder) {
-    this.storagePaths = storagePaths;
+  public ServerIssueUpdater(ProjectStoragePaths projectStoragePaths, IssueDownloader issueDownloader, IssueStoreFactory issueStoreFactory, TempFolder tempFolder) {
+    this.projectStoragePaths = projectStoragePaths;
     this.issueDownloader = issueDownloader;
     this.issueStoreFactory = issueStoreFactory;
     this.tempFolder = tempFolder;
@@ -44,7 +44,7 @@ public class ServerIssueUpdater {
 
   public void update(String projectKey, Sonarlint.ProjectConfiguration projectConfiguration, boolean fetchTaintVulnerabilities, ProgressWrapper progress) {
     Path work = tempFolder.newDir().toPath();
-    Path target = storagePaths.getServerIssuesPath(projectKey);
+    Path target = projectStoragePaths.getServerIssuesPath(projectKey);
     FileUtils.replaceDir(path -> updateServerIssues(projectKey, projectConfiguration, path, fetchTaintVulnerabilities, progress), target, work);
   }
 

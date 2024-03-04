@@ -21,10 +21,7 @@ package org.sonarsource.sonarlint.core;
 
 import java.util.Collection;
 import java.util.Optional;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nullable;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
 import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
@@ -45,12 +42,10 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
 
   private final StandaloneGlobalConfiguration globalConfig;
   private StandaloneGlobalContainer globalContainer;
-  private final ReadWriteLock rwl = new ReentrantReadWriteLock();
-  private final LogOutput logOutput;
 
   public StandaloneSonarLintEngineImpl(StandaloneGlobalConfiguration globalConfig) {
+    super(globalConfig.getLogOutput());
     this.globalConfig = globalConfig;
-    this.logOutput = globalConfig.getLogOutput();
     start();
   }
 
@@ -66,7 +61,7 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
   public void start() {
     setLogging(null);
     rwl.writeLock().lock();
-    this.globalContainer = StandaloneGlobalContainer.create(globalConfig);
+    this.globalContainer = new StandaloneGlobalContainer(globalConfig);
     try {
       globalContainer.startComponents();
     } catch (RuntimeException e) {
@@ -101,14 +96,6 @@ public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine
         rwl.readLock().unlock();
       }
     });
-  }
-
-  private void setLogging(@Nullable LogOutput logOutput) {
-    if (logOutput != null) {
-      Loggers.setTarget(logOutput);
-    } else {
-      Loggers.setTarget(this.logOutput);
-    }
   }
 
   @Override
