@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -28,30 +28,28 @@ import java.util.Map;
 import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModulesProvider;
+import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
+import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
 
-/**
- * To use SonarLint in connected mode please provide a server id that will identify the storage.
- * To use in standalone mode please provide list of plugin URLs.
- *
- */
-@Immutable
 public abstract class AbstractGlobalConfiguration {
 
   public static final String DEFAULT_WORK_DIR = "work";
 
-  private final LogOutput logOutput;
+  private final ClientLogOutput logOutput;
   private final Path sonarLintUserHome;
   private final Path workDir;
   private final EnumSet<Language> enabledLanguages;
   private final Map<String, String> extraProperties;
   private final Path nodeJsPath;
   private final Version nodeJsVersion;
-  private final ModulesProvider modulesProvider;
+  private final ClientModulesProvider modulesProvider;
   private final long clientPid;
 
   protected AbstractGlobalConfiguration(AbstractBuilder<?> builder) {
-    this.sonarLintUserHome = builder.sonarlintUserHome != null ? builder.sonarlintUserHome : SonarLintPathManager.home();
+    this.sonarLintUserHome = builder.sonarlintUserHome != null ? builder.sonarlintUserHome : SonarLintUserHome.get();
     this.workDir = builder.workDir != null ? builder.workDir : this.sonarLintUserHome.resolve(DEFAULT_WORK_DIR);
     this.enabledLanguages = builder.enabledLanguages;
     this.logOutput = builder.logOutput;
@@ -66,7 +64,7 @@ public abstract class AbstractGlobalConfiguration {
     return Collections.unmodifiableMap(extraProperties);
   }
 
-  public ModulesProvider getModulesProvider() {
+  public ClientModulesProvider getModulesProvider() {
     return modulesProvider;
   }
 
@@ -83,7 +81,7 @@ public abstract class AbstractGlobalConfiguration {
   }
 
   @CheckForNull
-  public LogOutput getLogOutput() {
+  public ClientLogOutput getLogOutput() {
     return logOutput;
   }
 
@@ -102,17 +100,17 @@ public abstract class AbstractGlobalConfiguration {
   }
 
   public abstract static class AbstractBuilder<G extends AbstractBuilder<G>> {
-    private LogOutput logOutput;
+    private ClientLogOutput logOutput;
     private Path sonarlintUserHome;
     private Path workDir;
     private final EnumSet<Language> enabledLanguages = EnumSet.noneOf(Language.class);
     private Map<String, String> extraProperties = Collections.emptyMap();
     private Path nodeJsPath;
     private Version nodeJsVersion;
-    private ModulesProvider modulesProvider;
+    private ClientModulesProvider modulesProvider;
     private long clientPid;
 
-    public G setLogOutput(@Nullable LogOutput logOutput) {
+    public G setLogOutput(@Nullable ClientLogOutput logOutput) {
       this.logOutput = logOutput;
       return (G) this;
     }
@@ -166,7 +164,7 @@ public abstract class AbstractGlobalConfiguration {
       return (G) this;
     }
 
-    public G setModulesProvider(ModulesProvider modulesProvider) {
+    public G setModulesProvider(ClientModulesProvider modulesProvider) {
       this.modulesProvider = modulesProvider;
       return (G) this;
     }

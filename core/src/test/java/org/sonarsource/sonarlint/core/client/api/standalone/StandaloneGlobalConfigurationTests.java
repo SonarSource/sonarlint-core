@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,14 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.client.api.standalone;
 
-import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.client.api.common.Language;
+import org.sonarsource.sonarlint.core.commons.Language;
 
 import static java.nio.file.Files.createDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,9 +34,9 @@ class StandaloneGlobalConfigurationTests {
 
   @Test
   void testDefaults() {
-    StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
+    var config = StandaloneGlobalConfiguration.builder()
       .build();
-    assertThat(config.getPluginUrls()).isEmpty();
+    assertThat(config.getPluginPaths()).isEmpty();
     assertThat(config.getSonarLintUserHome()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint"));
     assertThat(config.getWorkDir()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint", "work"));
     assertThat(config.extraProperties()).isEmpty();
@@ -46,10 +45,10 @@ class StandaloneGlobalConfigurationTests {
   }
 
   @Test
-  void extraProps() throws Exception {
+  void extraProps() {
     Map<String, String> extraProperties = new HashMap<>();
     extraProperties.put("foo", "bar");
-    StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
+    var config = StandaloneGlobalConfiguration.builder()
       .setExtraProperties(extraProperties)
       .build();
     assertThat(config.extraProperties()).containsEntry("foo", "bar");
@@ -57,9 +56,9 @@ class StandaloneGlobalConfigurationTests {
 
   @Test
   void overrideDirs(@TempDir Path temp) throws Exception {
-    Path sonarUserHome = createDirectory(temp.resolve("userHome"));
-    Path work = createDirectory(temp.resolve("work"));
-    StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
+    var sonarUserHome = createDirectory(temp.resolve("userHome"));
+    var work = createDirectory(temp.resolve("work"));
+    var config = StandaloneGlobalConfiguration.builder()
       .setSonarLintUserHome(sonarUserHome)
       .setWorkDir(work)
       .build();
@@ -68,20 +67,20 @@ class StandaloneGlobalConfigurationTests {
   }
 
   @Test
-  void configurePlugins() throws Exception {
-    URL plugin1 = new URL("file://plugin1.jar");
-    URL plugin2 = new URL("file://plugin2.jar");
-    URL plugin3 = new URL("file://plugin3.jar");
-    StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
+  void configurePlugins() {
+    var plugin1 = Paths.get("plugin1.jar");
+    var plugin2 = Paths.get("plugin2.jar");
+    var plugin3 = Paths.get("plugin3.jar");
+    var config = StandaloneGlobalConfiguration.builder()
       .addPlugin(plugin1)
       .addPlugins(plugin2, plugin3)
       .build();
-    assertThat(config.getPluginUrls()).containsExactly(plugin1, plugin2, plugin3);
+    assertThat(config.getPluginPaths()).containsExactlyInAnyOrder(plugin1, plugin2, plugin3);
   }
 
   @Test
-  void configureLanguages() throws Exception {
-    StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder()
+  void configureLanguages() {
+    var config = StandaloneGlobalConfiguration.builder()
       .addEnabledLanguage(Language.JAVA)
       .addEnabledLanguages(Language.JS, Language.TS)
       .build();
@@ -90,7 +89,7 @@ class StandaloneGlobalConfigurationTests {
 
   @Test
   void providePid() {
-    StandaloneGlobalConfiguration config = StandaloneGlobalConfiguration.builder().setClientPid(123).build();
+    var config = StandaloneGlobalConfiguration.builder().setClientPid(123).build();
     assertThat(config.getClientPid()).isEqualTo(123);
   }
 }

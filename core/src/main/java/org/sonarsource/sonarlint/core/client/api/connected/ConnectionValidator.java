@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,15 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import org.sonarsource.sonarlint.core.container.connected.validate.AuthenticationChecker;
-import org.sonarsource.sonarlint.core.container.connected.validate.DefaultValidationResult;
-import org.sonarsource.sonarlint.core.container.connected.validate.ServerVersionAndStatusChecker;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverapi.organization.ServerOrganization;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
+import org.sonarsource.sonarlint.core.serverapi.authentication.AuthenticationChecker;
+import org.sonarsource.sonarlint.core.serverapi.system.DefaultValidationResult;
+import org.sonarsource.sonarlint.core.serverapi.system.ValidationResult;
+import org.sonarsource.sonarlint.core.serverconnection.ServerVersionAndStatusChecker;
 
 public class ConnectionValidator {
   private final ServerApiHelper helper;
@@ -37,15 +36,16 @@ public class ConnectionValidator {
   }
 
   public CompletableFuture<ValidationResult> validateConnection() {
-    ServerVersionAndStatusChecker serverChecker = new ServerVersionAndStatusChecker(helper);
-    AuthenticationChecker authChecker = new AuthenticationChecker(helper);
+    var serverChecker = new ServerVersionAndStatusChecker(new ServerApi(helper));
+    var authChecker = new AuthenticationChecker(helper);
     return serverChecker.checkVersionAndStatusAsync()
       .thenApply(check -> {
-        ValidationResult validateCredentials = authChecker.validateCredentials();
-        Optional<String> organizationKey = helper.getOrganizationKey();
+        var validateCredentials = authChecker.validateCredentials();
+        var organizationKey = helper.getOrganizationKey();
         if (validateCredentials.success() && organizationKey.isPresent()) {
-          Optional<ServerOrganization> organization = new ServerApi(helper).organization().fetchOrganization(organizationKey.get(), new ProgressWrapper(null));
-          if (!organization.isPresent()) {
+          var organization = new ServerApi(helper).organization().getOrganization(organizationKey.get(),
+            new ProgressMonitor(null));
+          if (organization.isEmpty()) {
             return new DefaultValidationResult(false, "No organizations found for key: " + organizationKey.get());
           }
         }

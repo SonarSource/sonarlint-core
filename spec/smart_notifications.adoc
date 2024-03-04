@@ -1,0 +1,45 @@
+[#smart_notifications]
+= Smart notifications
+
+== Overview
+
+Smart notifications, sometimes called dev notifications, allow developers using xref:glossary.adoc#connected_mode[Connected Mode] in SonarLint to receive in-IDE notifications from SonarQube or SonarCloud when:
+
+* the Quality Gate status (failed/success) of a project open in the IDE changes
+* a SonarQube or SonarCloud analysis raises new xref:glossary.adoc#finding[findings] introduced by this developer in a project open in the IDE
+
+SonarLint will poll SonarQube or SonarCloud every minute to retrieve any new notifications up to 1 day old. When the polling has been done, the timestamp of the polling date is stored and will be used next time as a reference, so the client cannot retrieve the same notification later.
+
+== Activate/deactivate notifications
+
+The activation or deactivation of notifications must be done individually by each developer directly in SonarLint (on the IDE side). When setting up the connection to SonarQube or SonarCloud, it is possible to check a box to activate smart notifications.
+
+== Algorithm
+
+=== Retrieve and send notifications
+
+1. Retrieve all `configScopeId` per `projectKey`, for each `connectionId` where the xref:glossary.adoc#binding[binding] is valid, then for each xref:glossary.adoc#connection[connection]:
+* 2. Make sure the connection is valid and that the smart notifications are enabled
+* 3. Group all the project keys inside this connection and retrieve the last event polling timestamp stored locally for each. This enables SonarLint to request the server only once for a given connection
+* 4. Send a request to `api/developers/search_events?projects=&from=` with the list of project keys and the last event polling timestamp previously retrieved. As a result, we get a list of `ServerNotification`
+* 5. Send each notification to the client  using the method `showSmartNotification(ShowSmartNotificationParams params)`. For each notification, all the xref:glossary.adoc#configuration_scope[configuration scope ids] for the project key where this notification is linked should be gathered. This will be used on the client side to display the notification.
+
+=== Polling mechanism
+
+To avoid retrieving already sent notifications, every 60 seconds, the backend will try to retrieve all new notifications since the last polling. This last polling information is stored as a timestamp - later used as a `ZonedDateTime` -  inside a protobuf file under `connectionId/projectKey/last_event_polling.pb`.
+
+=== Displaying notifications
+
+This part is handled on the client side where the method `showSmartNotification(ShowSmartNotificationParams params)` should be implemented.
+
+The `params` parameter corresponds to the list of notifications to display. Among the fields received:
+
+* the client has the responsibility to display the smart notifications on the right project(s) based on the list of `configScopeId`.
+* `category` is used for telemetry when a smart notification link is clicked
+* `connectionId` is used to know whether the smart notification is from SonarQube or SonarCloud
+* `link` to be shown within the smart notification
+* `text` is the smart notification message
+
+=== Telemetry
+
+Currently, the telemetry is handled both on the backend side (smart notification received) and the client side (smart notification clicked).

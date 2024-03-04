@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,10 +19,65 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.RuleDetails;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 
-public interface ConnectedRuleDetails extends RuleDetails {
+public class ConnectedRuleDetails implements RuleDetails {
 
-  String getExtendedDescription();
+  private final String key;
+  private final Language language;
+  private final String name;
+  private final String htmlDescription;
+  private final IssueSeverity defaultSeverity;
+  private final RuleType type;
+  private final String extendedDescription;
+
+  public ConnectedRuleDetails(String key, String name, @Nullable String htmlDescription, IssueSeverity defaultSeverity, RuleType type, Language language,
+    String extendedDescription) {
+    this.key = key;
+    this.name = name;
+    this.htmlDescription = htmlDescription;
+    this.defaultSeverity = defaultSeverity;
+    this.type = type;
+    this.language = language;
+    this.extendedDescription = extendedDescription;
+  }
+
+  @Override
+  public String getKey() {
+    return key;
+  }
+
+  @Override
+  public String getName() {
+    return name;
+  }
+
+  @Override
+  public String getHtmlDescription() {
+    return htmlDescription;
+  }
+
+  @Override
+  public Language getLanguage() {
+    return language;
+  }
+
+  @Override
+  public IssueSeverity getDefaultSeverity() {
+    return defaultSeverity;
+  }
+
+  @Override
+  public RuleType getType() {
+    return type;
+  }
+
+  public String getExtendedDescription() {
+    return extendedDescription;
+  }
 
 }

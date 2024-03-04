@@ -1,6 +1,6 @@
 /*
  * Java Custom Rules Plugin
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -49,6 +49,10 @@ public class MyJavaRulesDefinition implements RulesDefinition {
     ruleMetadataLoader.addRulesByAnnotatedClass(repository, new ArrayList<>(RulesList.getChecks()));
 
     setTemplates(repository);
+
+    repository.createRule("markdown")
+      .setName("A rule with Markdown description")
+      .setMarkdownDescription("  = Title\n  * one\n* two");
 
     repository.done();
   }

@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,6 +20,9 @@
 package org.sonarsource.sonarlint.core.client.api.common;
 
 import java.util.Collection;
+import java.util.concurrent.CompletableFuture;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 
 /**
  * Entry point for SonarLint.
@@ -32,9 +35,9 @@ public interface SonarLintEngine {
    */
   Collection<PluginDetails> getPluginDetails();
 
-  void declareModule(ModuleInfo module);
+  CompletableFuture<Void> declareModule(ClientModuleInfo module);
 
-  void stopModule(Object moduleKey);
+  CompletableFuture<Void> stopModule(Object moduleKey);
 
-  void fireModuleFileEvent(Object moduleKey, ClientModuleFileEvent event);
+  CompletableFuture<Void> fireModuleFileEvent(Object moduleKey, ClientModuleFileEvent event);
 }

@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.client.api.exceptions;
 
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.SonarLintException;
 
 /**
  * Client should not depend on this technical class
@@ -38,11 +39,7 @@ public class SonarLintWrappedException extends SonarLintException {
       return null;
     }
 
-    if (t instanceof MessageException) {
-      return (SonarLintException) t;
-    }
-
-    if (t.getCause() == null && t instanceof SonarLintException) {
+    if ((t instanceof MessageException) || (t.getCause() == null && t instanceof SonarLintException)) {
       return (SonarLintException) t;
     }
 
@@ -51,7 +48,7 @@ public class SonarLintWrappedException extends SonarLintException {
       return (SonarLintException) cause;
     }
 
-    SonarLintWrappedException sonarLintException = new SonarLintWrappedException(t.toString(), t.getMessage(), cause);
+    var sonarLintException = new SonarLintWrappedException(t.toString(), t.getMessage(), cause);
     sonarLintException.setStackTrace(t.getStackTrace());
     for (Throwable suppressed : t.getSuppressed()) {
       sonarLintException.addSuppressed(wrap(suppressed));

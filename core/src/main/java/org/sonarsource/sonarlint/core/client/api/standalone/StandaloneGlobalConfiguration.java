@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,47 +19,45 @@
  */
 package org.sonarsource.sonarlint.core.client.api.standalone;
 
-import java.net.URL;
-import java.util.ArrayList;
+import java.nio.file.Path;
 import java.util.Collections;
-import java.util.List;
-import javax.annotation.concurrent.Immutable;
+import java.util.HashSet;
+import java.util.Set;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 
 /**
- * To use in standalone mode please provide list of plugin URLs.  
+ * To use in standalone mode please provide list of plugin URLs.
  */
-@Immutable
 public class StandaloneGlobalConfiguration extends AbstractGlobalConfiguration {
 
-  private final List<URL> pluginUrls;
+  private final Set<Path> pluginPaths;
 
   private StandaloneGlobalConfiguration(Builder builder) {
     super(builder);
-    this.pluginUrls = builder.pluginUrls;
+    this.pluginPaths = builder.pluginPaths;
   }
 
   public static Builder builder() {
     return new Builder();
   }
 
-  public List<URL> getPluginUrls() {
-    return Collections.unmodifiableList(pluginUrls);
+  public Set<Path> getPluginPaths() {
+    return Collections.unmodifiableSet(pluginPaths);
   }
 
   public static final class Builder extends AbstractBuilder<Builder> {
-    private final List<URL> pluginUrls = new ArrayList<>();
+    private final Set<Path> pluginPaths = new HashSet<>();
 
     private Builder() {
     }
 
-    public Builder addPlugins(URL... pluginUrls) {
-      Collections.addAll(this.pluginUrls, pluginUrls);
+    public Builder addPlugins(Path... pluginPaths) {
+      Collections.addAll(this.pluginPaths, pluginPaths);
       return this;
     }
 
-    public Builder addPlugin(URL pluginUrl) {
-      this.pluginUrls.add(pluginUrl);
+    public Builder addPlugin(Path pluginPath) {
+      this.pluginPaths.add(pluginPath);
       return this;
     }
 

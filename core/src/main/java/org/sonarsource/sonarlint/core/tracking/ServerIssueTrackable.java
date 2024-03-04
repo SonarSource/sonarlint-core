@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,9 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
-import org.sonarsource.sonarlint.core.client.api.common.TextRange;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
+import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.issuetracking.Trackable;
+import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 
 public class ServerIssueTrackable implements Trackable {
 
@@ -31,29 +36,28 @@ public class ServerIssueTrackable implements Trackable {
     this.serverIssue = serverIssue;
   }
 
+  public ServerIssue getServerIssue() {
+    return serverIssue;
+  }
+
   @Override
-  public Issue getIssue() {
+  public Object getClientObject() {
     throw new UnsupportedOperationException();
   }
 
   @Override
   public String getRuleKey() {
-    return serverIssue.ruleKey();
+    return serverIssue.getRuleKey();
   }
 
   @Override
-  public String getRuleName() {
-    throw new UnsupportedOperationException();
+  public IssueSeverity getSeverity() {
+    return serverIssue.getUserSeverity();
   }
 
   @Override
-  public String getSeverity() {
-    return serverIssue.severity();
-  }
-
-  @Override
-  public String getType() {
-    return serverIssue.type();
+  public RuleType getType() {
+    return serverIssue.getType();
   }
 
   @Override
@@ -63,42 +67,48 @@ public class ServerIssueTrackable implements Trackable {
 
   @Override
   public Integer getLine() {
-    return serverIssue.getStartLine();
+    if (serverIssue instanceof LineLevelServerIssue) {
+      return ((LineLevelServerIssue) serverIssue).getLine();
+    }
+    if (serverIssue instanceof RangeLevelServerIssue) {
+      return ((RangeLevelServerIssue) serverIssue).getTextRange().getStartLine();
+    }
+    return null;
   }
 
   @Override
-  public Integer getLineHash() {
-    return serverIssue.lineHash().hashCode();
+  public String getLineHash() {
+    if (serverIssue instanceof LineLevelServerIssue) {
+      return ((LineLevelServerIssue) serverIssue).getLineHash();
+    }
+    return null;
   }
 
   @Override
-  public TextRange getTextRange() {
-    return serverIssue.getTextRange();
-  }
-
-  @Override
-  public Integer getTextRangeHash() {
-    // note: not available from server API
+  public TextRangeWithHash getTextRange() {
+    if (serverIssue instanceof RangeLevelServerIssue) {
+      return ((RangeLevelServerIssue) serverIssue).getTextRange();
+    }
     return null;
   }
 
   @Override
   public Long getCreationDate() {
-    return serverIssue.creationDate().toEpochMilli();
+    return serverIssue.getCreationDate().toEpochMilli();
   }
 
   @Override
   public String getServerIssueKey() {
-    return serverIssue.key();
+    return serverIssue.getKey();
   }
 
   @Override
   public boolean isResolved() {
-    return !serverIssue.resolution().isEmpty();
+    return serverIssue.isResolved();
   }
 
   @Override
-  public String getAssignee() {
-    return serverIssue.assigneeLogin();
+  public HotspotReviewStatus getReviewStatus() {
+    return null;
   }
 }

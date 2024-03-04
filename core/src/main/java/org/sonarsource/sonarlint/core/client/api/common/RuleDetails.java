@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,10 +20,10 @@
 package org.sonarsource.sonarlint.core.client.api.common;
 
 import javax.annotation.CheckForNull;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 
-/**
- * @since 1.2
- */
 public interface RuleDetails {
 
   String getKey();
@@ -35,9 +35,8 @@ public interface RuleDetails {
 
   Language getLanguage();
 
-  String getSeverity();
+  IssueSeverity getDefaultSeverity();
 
-  @CheckForNull
-  String getType();
+  RuleType getType();
 
 }

@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,9 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
-import org.sonarsource.sonarlint.core.client.api.common.TextRange;
+import org.apache.commons.lang3.StringUtils;
+import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 import org.sonarsource.sonarlint.core.proto.Sonarlint.Issues.Issue;
-import org.sonarsource.sonarlint.core.util.StringUtils;
 
 public class ProtobufIssueTrackable implements Trackable {
 
@@ -32,7 +36,7 @@ public class ProtobufIssueTrackable implements Trackable {
   }
 
   @Override
-  public org.sonarsource.sonarlint.core.client.api.common.analysis.Issue getIssue() {
+  public Object getClientObject() {
     throw new UnsupportedOperationException();
   }
 
@@ -47,23 +51,13 @@ public class ProtobufIssueTrackable implements Trackable {
   }
 
   @Override
-  public Integer getTextRangeHash() {
-    return null;
-  }
-
-  @Override
-  public Integer getLineHash() {
-    return issue.getChecksum();
+  public String getLineHash() {
+    return issue.getLineHash();
   }
 
   @Override
   public String getRuleKey() {
     return issue.getRuleKey();
-  }
-
-  @Override
-  public String getRuleName() {
-    throw new UnsupportedOperationException();
   }
 
   @Override
@@ -82,22 +76,22 @@ public class ProtobufIssueTrackable implements Trackable {
   }
 
   @Override
-  public String getAssignee() {
-    return issue.getAssignee();
+  public HotspotReviewStatus getReviewStatus() {
+    return null;
   }
 
   @Override
-  public String getSeverity() {
-    throw new UnsupportedOperationException();
-  }
-  
-  @Override
-  public String getType() {
+  public IssueSeverity getSeverity() {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public TextRange getTextRange() {
+  public RuleType getType() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public TextRangeWithHash getTextRange() {
     throw new UnsupportedOperationException();
   }
 }

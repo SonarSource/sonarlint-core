@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,331 +19,511 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+import org.apache.commons.lang3.StringUtils;
+import org.sonar.api.batch.fs.InputFile.Type;
+import org.sonarsource.sonarlint.core.analysis.AnalysisEngine;
+import org.sonarsource.sonarlint.core.analysis.api.ActiveRule;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
+import org.sonarsource.sonarlint.core.analysis.api.Issue;
+import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
-import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.DefaultClientIssue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.connected.GlobalStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
-import org.sonarsource.sonarlint.core.client.api.connected.ProjectStorageStatus;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
-import org.sonarsource.sonarlint.core.client.api.connected.SonarAnalyzer;
-import org.sonarsource.sonarlint.core.client.api.connected.StateListener;
-import org.sonarsource.sonarlint.core.client.api.connected.StorageUpdateCheckResult;
-import org.sonarsource.sonarlint.core.client.api.connected.UpdateResult;
-import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
-import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
+import org.sonarsource.sonarlint.core.client.api.connected.ProjectBranches;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
-import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
-import org.sonarsource.sonarlint.core.container.connected.ConnectedContainer;
-import org.sonarsource.sonarlint.core.container.connected.update.ProjectListDownloader;
-import org.sonarsource.sonarlint.core.container.module.ModuleRegistry;
-import org.sonarsource.sonarlint.core.container.storage.GlobalStores;
-import org.sonarsource.sonarlint.core.container.storage.GlobalUpdateStatusReader;
-import org.sonarsource.sonarlint.core.container.storage.StorageContainer;
-import org.sonarsource.sonarlint.core.container.storage.StorageContainerHandler;
+import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.RuleKey;
+import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
+import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
+import org.sonarsource.sonarlint.core.http.HttpClient;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoadResult;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader.Configuration;
+import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
-import org.sonarsource.sonarlint.core.serverapi.HttpClient;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
-import org.sonarsource.sonarlint.core.serverapi.project.ServerProject;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
+import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
+import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
+import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
+import org.sonarsource.sonarlint.core.serverconnection.IssueStorePaths;
+import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
+import org.sonarsource.sonarlint.core.serverconnection.ServerConnection;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
+import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toMap;
+import static org.apache.commons.lang3.StringUtils.trimToNull;
 
 public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine implements ConnectedSonarLintEngine {
 
-  private static final Logger LOG = Loggers.get(ConnectedSonarLintEngineImpl.class);
-
   private final ConnectedGlobalConfiguration globalConfig;
-  private final GlobalUpdateStatusReader globalStatusReader;
-  private StorageContainer storageContainer;
-  private final List<StateListener> stateListeners = new CopyOnWriteArrayList<>();
-  private volatile State state = State.UNKNOWN;
-  private final GlobalStores globalStores;
+  private final ServerConnection serverConnection;
+  private final AtomicReference<AnalysisContext> analysisContext = new AtomicReference<>();
 
   public ConnectedSonarLintEngineImpl(ConnectedGlobalConfiguration globalConfig) {
     super(globalConfig.getLogOutput());
     this.globalConfig = globalConfig;
-    this.globalStores = new GlobalStores(globalConfig);
-    this.globalStatusReader = new GlobalUpdateStatusReader(globalStores.getServerInfoStore(), globalStores.getStorageStatusStore());
 
+    serverConnection = new ServerConnection(globalConfig.getStorageRoot(), globalConfig.getConnectionId(), globalConfig.isSonarCloud(), globalConfig.getEnabledLanguages(),
+      globalConfig.getEmbeddedPluginPathsByKey().keySet(), globalConfig.getWorkDir());
     start();
   }
 
   @Override
-  public State getState() {
-    return state;
+  public AnalysisEngine getAnalysisEngine() {
+    return analysisContext.get().analysisEngine;
   }
 
-  @Override
-  public void addStateListener(StateListener listener) {
-    stateListeners.add(listener);
-  }
-
-  @Override
-  public void removeStateListener(StateListener listener) {
-    stateListeners.remove(listener);
-  }
-
-  private void changeState(State state) {
-    this.state = state;
-    for (StateListener listener : stateListeners) {
-      listener.stateChanged(state);
-    }
-  }
-
-  private StorageContainerHandler getHandler() {
-    return getGlobalContainer().getHandler();
-  }
-
-  public StorageContainer getGlobalContainer() {
-    if (storageContainer == null) {
-      throw new IllegalStateException("SonarLint Engine for connection '" + globalConfig.getConnectionId() + "' is stopped.");
-    }
-    return storageContainer;
-  }
-
-  @Override
-  protected ModuleRegistry getModuleRegistry() {
-    return getGlobalContainer().getModuleRegistry();
-  }
-
-  public void start() {
+  public AnalysisContext start() {
     setLogging(null);
-    rwl.writeLock().lock();
-    storageContainer = new StorageContainer(globalConfig, this.globalStores, globalStatusReader);
-    try {
-      storageContainer.startComponents();
-      GlobalStorageStatus globalStorageStatus = globalStatusReader.read();
-      if (globalStorageStatus == null) {
-        changeState(State.NEVER_UPDATED);
-      } else if (globalStorageStatus.isStale()) {
-        changeState(State.NEED_UPDATE);
-      } else {
-        changeState(State.UPDATED);
+    return analysisContext.getAndSet(loadAnalysisContext());
+  }
+
+  private AnalysisContext loadAnalysisContext() {
+    var loadingResult = loadPlugins();
+    var pluginDetails = loadingResult.getPluginCheckResultByKeys().values().stream().map(p -> new PluginDetails(p.getPlugin().getKey(), p.getPlugin().getName(),
+      Optional.ofNullable(p.getPlugin().getVersion()).map(Version::toString).orElse(null), p.getSkipReason().orElse(null))).collect(Collectors.toList());
+
+    var allRulesDefinitionsByKey = loadPluginMetadata(loadingResult.getLoadedPlugins(), globalConfig.getEnabledLanguages(), true, globalConfig.isHotspotsEnabled());
+
+    var analysisGlobalConfig = AnalysisEngineConfiguration.builder()
+      .setClientPid(globalConfig.getClientPid())
+      .setExtraProperties(globalConfig.extraProperties())
+      .setNodeJs(globalConfig.getNodeJsPath())
+      .setWorkDir(globalConfig.getWorkDir())
+      .setModulesProvider(globalConfig.getModulesProvider())
+      .build();
+    var analysisEngine = new AnalysisEngine(analysisGlobalConfig, loadingResult.getLoadedPlugins(), logOutput);
+    return new AnalysisContext(pluginDetails, allRulesDefinitionsByKey, analysisEngine);
+  }
+
+  private PluginsLoadResult loadPlugins() {
+    Map<String, Path> pluginsToLoadByKey = new HashMap<>();
+    // order is important as e.g. embedded takes precedence over stored
+    pluginsToLoadByKey.putAll(serverConnection.getStoredPluginPathsByKey());
+    pluginsToLoadByKey.putAll(globalConfig.getEmbeddedPluginPathsByKey());
+    Set<Path> plugins = new HashSet<>(pluginsToLoadByKey.values());
+
+    var config = new Configuration(plugins, globalConfig.getEnabledLanguages(), Optional.ofNullable(globalConfig.getNodeJsVersion()));
+    return new PluginsLoader().load(config);
+  }
+
+  private static class ActiveRulesContext {
+    private final boolean shouldSkipCleanCodeTaxonomy;
+    private final List<ActiveRule> activeRules = new ArrayList<>();
+    private final Map<String, ActiveRuleMetadata> activeRulesMetadata = new HashMap<>();
+
+    private ActiveRulesContext(boolean shouldSkipCleanCodeTaxonomy) {
+      this.shouldSkipCleanCodeTaxonomy = shouldSkipCleanCodeTaxonomy;
+    }
+
+    public void includeRule(SonarLintRuleDefinition ruleOrTemplateDefinition, ServerActiveRule activeRule) {
+      var activeRuleForAnalysis = new ActiveRule(activeRule.getRuleKey(), ruleOrTemplateDefinition.getLanguage().getLanguageKey());
+      activeRuleForAnalysis.setTemplateRuleKey(trimToNull(activeRule.getTemplateKey()));
+      activeRuleForAnalysis.setParams(getEffectiveParams(ruleOrTemplateDefinition, activeRule));
+      activeRules.add(activeRuleForAnalysis);
+      activeRulesMetadata.put(activeRule.getRuleKey(),
+        new ActiveRuleMetadata(activeRule.getSeverity(), ruleOrTemplateDefinition.getType(),
+          ruleOrTemplateDefinition.getCleanCodeAttribute().orElse(CleanCodeAttribute.defaultCleanCodeAttribute()), ruleOrTemplateDefinition.getDefaultImpacts()));
+    }
+
+    private static Map<String, String> getEffectiveParams(SonarLintRuleDefinition ruleOrTemplateDefinition, ServerActiveRule activeRule) {
+      Map<String, String> effectiveParams = new HashMap<>(ruleOrTemplateDefinition.getDefaultParams());
+      activeRule.getParams().forEach((paramName, paramValue) -> {
+        if (!ruleOrTemplateDefinition.getParams().containsKey(paramName)) {
+          LOG.debug("Rule parameter '{}' for rule '{}' does not exist in embedded analyzer, ignoring.", paramName, ruleOrTemplateDefinition.getKey());
+          return;
+        }
+        effectiveParams.put(paramName, paramValue);
+      });
+      return effectiveParams;
+    }
+
+    public void includeRule(SonarLintRuleDefinition rule) {
+      var activeRuleForAnalysis = new ActiveRule(rule.getKey(), rule.getLanguage().getLanguageKey());
+      activeRuleForAnalysis.setParams(rule.getDefaultParams());
+      activeRules.add(activeRuleForAnalysis);
+      activeRulesMetadata.put(activeRuleForAnalysis.getRuleKey(), new ActiveRuleMetadata(rule.getDefaultSeverity(), rule.getType(),
+        rule.getCleanCodeAttribute().orElse(CleanCodeAttribute.defaultCleanCodeAttribute()), rule.getDefaultImpacts()));
+    }
+
+    private ActiveRuleMetadata getRuleMetadata(String ruleKey) {
+      return activeRulesMetadata.get(ruleKey);
+    }
+
+    private static class ActiveRuleMetadata {
+      private final IssueSeverity severity;
+      private final RuleType type;
+
+      private final CleanCodeAttribute cleanCodeAttribute;
+
+      private final Map<SoftwareQuality, ImpactSeverity> defaultImpacts;
+
+      private ActiveRuleMetadata(IssueSeverity severity, RuleType type, CleanCodeAttribute cleanCodeAttribute, Map<SoftwareQuality, ImpactSeverity> defaultImpacts) {
+        this.severity = severity;
+        this.type = type;
+        this.cleanCodeAttribute = cleanCodeAttribute;
+        this.defaultImpacts = defaultImpacts;
       }
-    } catch (StorageException e) {
-      LOG.debug(e.getMessage(), e);
-      changeState(State.NEED_UPDATE);
-    } catch (RuntimeException e) {
-      LOG.error("Unable to start the SonarLint engine", e);
-      changeState(State.UNKNOWN);
-    } finally {
-      rwl.writeLock().unlock();
     }
   }
 
   @Override
-  public AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener, @Nullable LogOutput logOutput, @Nullable ProgressMonitor monitor) {
+  public AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener, @Nullable ClientLogOutput logOutput,
+    @Nullable ClientProgressMonitor monitor) {
     requireNonNull(configuration);
     requireNonNull(issueListener);
-    return withReadLock(() -> {
-      setLogging(logOutput);
-      return withModule(configuration, moduleContainer -> {
-        try {
-          return getHandler().analyze(moduleContainer, configuration, issueListener, new ProgressWrapper(monitor));
-        } catch (RuntimeException e) {
-          throw SonarLintWrappedException.wrap(e);
+
+    setLogging(logOutput);
+
+    var analysisConfigBuilder = AnalysisConfiguration.builder()
+      .addInputFiles(configuration.inputFiles());
+    var projectKey = configuration.getProjectKey();
+    analysisConfigBuilder.putAllExtraProperties(serverConnection.getAnalyzerConfiguration(projectKey).getSettings().getAll());
+    analysisConfigBuilder.putAllExtraProperties(globalConfig.extraProperties());
+    var activeRulesContext = buildActiveRulesContext(configuration);
+    if (activeRulesContext.activeRules.isEmpty()) {
+      LOG.info("Skipping analysis, no synchronization has been made with the server");
+      return new AnalysisResults();
+    }
+    analysisConfigBuilder.putAllExtraProperties(configuration.extraProperties())
+      .addActiveRules(activeRulesContext.activeRules)
+      .setBaseDir(configuration.baseDir())
+      .build();
+
+    var analysisConfiguration = analysisConfigBuilder.build();
+
+    var analyzeCommand = new AnalyzeCommand(configuration.moduleKey(), analysisConfiguration, issue -> streamIssue(issueListener, issue, activeRulesContext), logOutput);
+    return postAnalysisCommandAndGetResult(analyzeCommand, monitor);
+  }
+
+  private void streamIssue(IssueListener issueListener, Issue newIssue, ActiveRulesContext activeRulesContext) {
+    var ruleMetadata = activeRulesContext.getRuleMetadata(newIssue.getRuleKey());
+    var vulnerabilityProbability = analysisContext.get().findRule(newIssue.getRuleKey()).flatMap(SonarLintRuleDefinition::getVulnerabilityProbability);
+    var effectiveCleanCodeAttribute = activeRulesContext.shouldSkipCleanCodeTaxonomy ? null : ruleMetadata.cleanCodeAttribute;
+    var effectiveImpacts = activeRulesContext.shouldSkipCleanCodeTaxonomy ? Map.<SoftwareQuality, ImpactSeverity>of() : ruleMetadata.defaultImpacts;
+    issueListener.handle(new DefaultClientIssue(newIssue, ruleMetadata.severity, ruleMetadata.type, effectiveCleanCodeAttribute,
+      effectiveImpacts, vulnerabilityProbability));
+  }
+
+  private ActiveRulesContext buildActiveRulesContext(ConnectedAnalysisConfiguration configuration) {
+    var analysisRulesContext = new ActiveRulesContext(serverConnection.shouldSkipCleanCodeTaxonomy());
+    var projectKey = configuration.getProjectKey();
+    var ruleSetByLanguageKey = serverConnection.getAnalyzerConfiguration(projectKey).getRuleSetByLanguageKey();
+    if (ruleSetByLanguageKey.isEmpty()) {
+      // could be the case before the first sync
+      return analysisRulesContext;
+    }
+    ruleSetByLanguageKey.entrySet()
+      .stream().filter(e -> Language.forKey(e.getKey()).filter(l -> globalConfig.getEnabledLanguages().contains(l)).isPresent())
+      .forEach(e -> {
+        var languageKey = e.getKey();
+        var ruleSet = e.getValue();
+
+        LOG.debug("  * {}: {} active rules", languageKey, ruleSet.getRules().size());
+        for (ServerActiveRule possiblyDeprecatedActiveRuleFromStorage : ruleSet.getRules()) {
+          var activeRuleFromStorage = tryConvertDeprecatedKeys(possiblyDeprecatedActiveRuleFromStorage);
+          SonarLintRuleDefinition ruleOrTemplateDefinition;
+          if (StringUtils.isNotBlank(activeRuleFromStorage.getTemplateKey())) {
+            ruleOrTemplateDefinition = analysisContext.get().findRule(activeRuleFromStorage.getTemplateKey()).orElse(null);
+            if (ruleOrTemplateDefinition == null) {
+              LOG.debug("Rule {} is enabled on the server, but its template {} is not available in SonarLint", activeRuleFromStorage.getRuleKey(),
+                activeRuleFromStorage.getTemplateKey());
+              continue;
+            }
+          } else {
+            ruleOrTemplateDefinition = analysisContext.get().findRule(activeRuleFromStorage.getRuleKey()).orElse(null);
+            if (ruleOrTemplateDefinition == null) {
+              LOG.debug("Rule {} is enabled on the server, but not available in SonarLint", activeRuleFromStorage.getRuleKey());
+              continue;
+            }
+          }
+          if (shouldIncludeRuleForAnalysis(ruleOrTemplateDefinition)) {
+            analysisRulesContext.includeRule(ruleOrTemplateDefinition, activeRuleFromStorage);
+          }
         }
       });
 
-    });
+    var supportSecretAnalysis = serverConnection.supportsSecretAnalysis();
+    if (!supportSecretAnalysis) {
+      analysisContext.get().allRulesDefinitionsByKey.values().stream()
+        .filter(ruleDefinition -> ruleDefinition.getLanguage() == Language.SECRETS)
+        .filter(this::shouldIncludeRuleForAnalysis)
+        .forEach(analysisRulesContext::includeRule);
+    }
+    return analysisRulesContext;
   }
 
-  @Override
-  public GlobalStorageStatus getGlobalStorageStatus() {
-    return wrapErrors(globalStatusReader::read);
+  private boolean shouldIncludeRuleForAnalysis(SonarLintRuleDefinition ruleDefinition) {
+    return !ruleDefinition.getType().equals(RuleType.SECURITY_HOTSPOT) ||
+      (globalConfig.isHotspotsEnabled() && serverConnection.permitsHotspotTracking());
   }
 
-  @Override
-  public UpdateResult update(EndpointParams endpoint, HttpClient client, @Nullable ProgressMonitor monitor) {
-    requireNonNull(endpoint);
-    setLogging(null);
-    return withRwLock(() -> {
-      stop(false);
-      changeState(State.UPDATING);
-      List<SonarAnalyzer> analyzers;
-      try {
-        analyzers = runInConnectedContainer(endpoint, client, container -> container.update(new ProgressWrapper(monitor)));
-      } finally {
-        start();
+  private ServerActiveRule tryConvertDeprecatedKeys(ServerActiveRule possiblyDeprecatedActiveRuleFromStorage) {
+    SonarLintRuleDefinition ruleOrTemplateDefinition;
+    if (StringUtils.isNotBlank(possiblyDeprecatedActiveRuleFromStorage.getTemplateKey())) {
+      ruleOrTemplateDefinition = analysisContext.get().findRule(possiblyDeprecatedActiveRuleFromStorage.getTemplateKey()).orElse(null);
+      if (ruleOrTemplateDefinition == null) {
+        // The rule template is not known among our loaded analyzers, so return it untouched, to let calling code take appropriate decision
+        return possiblyDeprecatedActiveRuleFromStorage;
       }
-      return new UpdateResult(globalStatusReader.read(), analyzers);
-    });
+      var ruleKeyPossiblyWithDeprecatedRepo = RuleKey.parse(possiblyDeprecatedActiveRuleFromStorage.getRuleKey());
+      var templateRuleKeyWithCorrectRepo = RuleKey.parse(ruleOrTemplateDefinition.getKey());
+      var ruleKey = new RuleKey(templateRuleKeyWithCorrectRepo.repository(), ruleKeyPossiblyWithDeprecatedRepo.rule()).toString();
+      return new ServerActiveRule(ruleKey, possiblyDeprecatedActiveRuleFromStorage.getSeverity(), possiblyDeprecatedActiveRuleFromStorage.getParams(),
+        ruleOrTemplateDefinition.getKey());
+    } else {
+      ruleOrTemplateDefinition = analysisContext.get().findRule(possiblyDeprecatedActiveRuleFromStorage.getRuleKey()).orElse(null);
+      if (ruleOrTemplateDefinition == null) {
+        // The rule is not known among our loaded analyzers, so return it untouched, to let calling code take appropriate decision
+        return possiblyDeprecatedActiveRuleFromStorage;
+      }
+      return new ServerActiveRule(ruleOrTemplateDefinition.getKey(), possiblyDeprecatedActiveRuleFromStorage.getSeverity(), possiblyDeprecatedActiveRuleFromStorage.getParams(),
+        null);
+    }
   }
 
   @Override
-  public ConnectedRuleDetails getRuleDetails(String ruleKey) {
-    return withReadLock(() -> getGlobalContainer().getRuleDetails(ruleKey));
+  public void sync(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, @Nullable ClientProgressMonitor monitor) {
+    var result = serverConnection.sync(endpoint, client, projectKeys, new ProgressMonitor(monitor));
+    if (result.hasAnalyzerBeenUpdated()) {
+      restartAnalysisEngine();
+    }
+  }
+
+  private void restartAnalysisEngine() {
+    var oldAnalysisContext = start();
+    oldAnalysisContext.finishGracefully();
   }
 
   @Override
-  public ConnectedRuleDetails getActiveRuleDetails(String ruleKey, @Nullable String projectKey) {
-    return withReadLock(() -> getGlobalContainer().getRuleDetails(ruleKey, projectKey));
+  public CompletableFuture<ConnectedRuleDetails> getActiveRuleDetails(EndpointParams endpoint, HttpClient client, String ruleKey, @Nullable String projectKey) {
+    var ruleDefFromPluginOpt = analysisContext.get().findRule(ruleKey);
+    if (ruleDefFromPluginOpt.isPresent()) {
+      var ruleDefFromPlugin = ruleDefFromPluginOpt.get();
+      if ((!serverConnection.supportsSecretAnalysis() && ruleDefFromPlugin.getLanguage().equals(Language.SECRETS)) || projectKey == null) {
+        // if no project key, or secrets are not supported by server and it's a secret rule
+        return CompletableFuture.completedFuture(
+          new ConnectedRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(), ruleDefFromPlugin.getDefaultSeverity(),
+            ruleDefFromPlugin.getType(),
+            ruleDefFromPlugin.getLanguage(), ""));
+      }
+    }
+    if (projectKey != null) {
+      var analyzerConfiguration = serverConnection.getAnalyzerConfiguration(projectKey);
+      var storageActiveRule = analyzerConfiguration.getRuleSetByLanguageKey().values().stream()
+        .flatMap(s -> s.getRules().stream())
+        .filter(r -> tryConvertDeprecatedKeys(r).getRuleKey().equals(ruleKey)).findFirst();
+      if (storageActiveRule.isPresent()) {
+        var activeRuleFromStorage = storageActiveRule.get();
+        var serverSeverity = activeRuleFromStorage.getSeverity();
+        if (StringUtils.isNotBlank(activeRuleFromStorage.getTemplateKey())) {
+          var templateRuleDefFromPlugin = analysisContext.get().findRule(activeRuleFromStorage.getTemplateKey())
+            .orElseThrow(() -> new IllegalStateException("Unable to find rule definition for rule template " + activeRuleFromStorage.getTemplateKey()));
+          return new ServerApi(new ServerApiHelper(endpoint, client)).rules().getRule(activeRuleFromStorage.getRuleKey())
+            .thenApply(
+              serverRule -> new ConnectedRuleDetails(
+                ruleKey,
+                serverRule.getName(),
+                serverRule.getHtmlDesc(),
+                serverSeverity,
+                templateRuleDefFromPlugin.getType(),
+                templateRuleDefFromPlugin.getLanguage(),
+                serverRule.getHtmlNote()));
+        } else {
+          return new ServerApi(new ServerApiHelper(endpoint, client)).rules().getRule(activeRuleFromStorage.getRuleKey())
+            .thenApply(serverRule -> ruleDefFromPluginOpt
+              .map(ruleDefFromPlugin -> new ConnectedRuleDetails(ruleKey, ruleDefFromPlugin.getName(), ruleDefFromPlugin.getHtmlDescription(),
+                Optional.ofNullable(serverSeverity).orElse(ruleDefFromPlugin.getDefaultSeverity()), ruleDefFromPlugin.getType(), ruleDefFromPlugin.getLanguage(),
+                serverRule.getHtmlNote()))
+              .orElse(new ConnectedRuleDetails(ruleKey, serverRule.getName(), serverRule.getHtmlDesc(),
+                Optional.ofNullable(serverSeverity).orElse(serverRule.getSeverity()),
+                serverRule.getType(), serverRule.getLanguage(), serverRule.getHtmlNote())));
+        }
+      }
+    }
+    throw new IllegalStateException("Unable to find rule details for '" + ruleKey + "'");
   }
 
   @Override
   public Collection<PluginDetails> getPluginDetails() {
-    return withReadLock(() -> getHandler().getPluginDetails());
+    return analysisContext.get().pluginDetails;
   }
 
   @Override
-  public StorageUpdateCheckResult checkIfGlobalStorageNeedUpdate(EndpointParams endpoint, HttpClient client, @Nullable ProgressMonitor monitor) {
-    requireNonNull(endpoint);
-    return checkUpToDateThen(() -> runInConnectedContainer(endpoint, client,
-      container -> container.checkForUpdate(globalStores.getGlobalSettingsStore(), globalStores.getQualityProfileStore(), new ProgressWrapper(monitor))));
+  public Map<String, ServerProject> downloadAllProjects(EndpointParams endpoint, HttpClient client, @Nullable ClientProgressMonitor monitor) {
+    return wrapErrors(() -> serverConnection.downloadAllProjects(endpoint, client, new ProgressMonitor(monitor)));
   }
 
   @Override
-  public StorageUpdateCheckResult checkIfProjectStorageNeedUpdate(EndpointParams endpoint, HttpClient client, String projectKey,
-    @Nullable ProgressMonitor monitor) {
-    requireNonNull(endpoint);
-    requireNonNull(projectKey);
-    return withReadLock(() -> runInConnectedContainer(endpoint, client, container -> container.checkForUpdate(projectKey, new ProgressWrapper(monitor))));
+  public ProjectBranches getServerBranches(String projectKey) {
+    var projectBranchesFromStorage = serverConnection.getProjectBranches(projectKey);
+    return toApi(projectBranchesFromStorage);
+  }
+
+  private static ProjectBranches toApi(org.sonarsource.sonarlint.core.serverconnection.ProjectBranches projectBranchesFromStorage) {
+    return new ProjectBranches(projectBranchesFromStorage.getBranchNames(), projectBranchesFromStorage.getMainBranchName());
   }
 
   @Override
-  public Map<String, ServerProject> allProjectsByKey() {
-    return checkUpToDateThen(() -> globalStores.getServerProjectsStore().getAll());
+  public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String branchName, String ideFilePath) {
+    return serverConnection.getServerIssues(projectBinding, branchName, ideFilePath);
   }
 
   @Override
-  public Map<String, ServerProject> downloadAllProjects(EndpointParams endpoint, HttpClient client, @Nullable ProgressMonitor monitor) {
-    return wrapErrors(() -> {
-      try {
-        return new ProjectListDownloader(new ServerApiHelper(endpoint, client), globalStores.getServerProjectsStore()).fetch(new ProgressWrapper(monitor));
-      } catch (Exception e) {
-        // null as cause so that it doesn't get wrapped
-        throw new DownloadException("Failed to update module list: " + e.getMessage(), null);
-      }
-    });
+  public List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName, String ideFilePath, boolean includeResolved) {
+    return serverConnection.getServerTaintIssues(projectBinding, branchName, ideFilePath, includeResolved);
   }
 
-  private void checkUpdateStatus() {
-    if (state != State.UPDATED) {
-      throw new GlobalStorageUpdateRequiredException(globalConfig.getConnectionId());
+  @Override
+  public List<ServerTaintIssue> getAllServerTaintIssues(ProjectBinding projectBinding, String branchName) {
+    return serverConnection.getServerTaintIssues(projectBinding, branchName);
+  }
+
+  @Override
+  public <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> fileIdePathExtractor, Predicate<G> testFilePredicate) {
+    AnalyzerConfiguration analyzerConfig;
+    try {
+      analyzerConfig = serverConnection.getAnalyzerConfiguration(projectBinding.projectKey());
+    } catch (StorageException e) {
+      LOG.debug("Unable to read settings in local storage", e);
+      return List.of();
     }
+    var settings = new MapSettings(analyzerConfig.getSettings().getAll());
+    var exclusionFilters = new ServerFileExclusions(settings.asConfig());
+    exclusionFilters.prepare();
+
+    List<G> excluded = new ArrayList<>();
+
+    for (G file : files) {
+      var idePath = fileIdePathExtractor.apply(file);
+      if (idePath == null) {
+        continue;
+      }
+      var sqPath = IssueStorePaths.idePathToServerPath(projectBinding, idePath);
+      if (sqPath == null) {
+        // we can't map it to a SonarQube path, so just apply exclusions to the original ide path
+        sqPath = idePath;
+      }
+      var type = testFilePredicate.test(file) ? Type.TEST : Type.MAIN;
+      if (!exclusionFilters.accept(sqPath, type)) {
+        excluded.add(file);
+      }
+    }
+    return excluded;
   }
 
   @Override
-  public List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String ideFilePath) {
-    return withReadLock(() -> getHandler().getServerIssues(projectBinding, ideFilePath));
+  public void subscribeForEvents(EndpointParams endpoint, HttpClient client, Set<String> projectKeys,
+    Consumer<ServerEvent> eventConsumer, @Nullable ClientLogOutput clientLogOutput) {
+    serverConnection.subscribeForEvents(endpoint, client, projectKeys, eventConsumer);
   }
 
   @Override
-  public <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> ideFilePathExtractor, Predicate<G> testFilePredicate) {
-    return withReadLock(() -> getHandler().getExcludedFiles(projectBinding, files, ideFilePathExtractor, testFilePredicate));
+  public void downloadAllServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
+    @Nullable ClientProgressMonitor monitor) {
+    serverConnection.downloadServerIssuesForFile(endpoint, client, projectBinding, ideFilePath, branchName);
   }
 
   @Override
-  public List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
-    boolean fetchTaintVulnerabilities, @Nullable ProgressMonitor monitor) {
-    return withRwLock(() -> {
-      checkUpdateStatus();
-      return getHandler().downloadServerIssues(endpoint, client, projectBinding, ideFilePath, fetchTaintVulnerabilities, new ProgressWrapper(monitor));
-    });
+  public void downloadAllServerTaintIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
+    @Nullable ClientProgressMonitor monitor) {
+    serverConnection.downloadServerTaintIssuesForFile(endpoint, client, projectBinding, ideFilePath, branchName, new ProgressMonitor(monitor));
   }
 
   @Override
-  public void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable ProgressMonitor monitor) {
-    withRwLock(() -> {
-      getHandler().downloadServerIssues(endpoint, client, projectKey, fetchTaintVulnerabilities, new ProgressWrapper(monitor));
-      return null;
-    });
+  public void downloadAllServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor) {
+    serverConnection.downloadServerIssuesForProject(endpoint, client, projectKey, branchName);
+  }
+
+  @Override
+  public void syncServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor) {
+    serverConnection.syncServerIssuesForProject(endpoint, client, projectKey, branchName);
+  }
+
+  @Override
+  public void syncServerTaintIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor) {
+    serverConnection.syncServerTaintIssuesForProject(endpoint, client, projectKey, branchName);
+  }
+
+  @Override
+  public void syncServerHotspots(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor) {
+    serverConnection.syncServerHotspotsForProject(endpoint, client, projectKey, branchName);
+  }
+
+  @Override
+  public void downloadAllServerHotspots(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor) {
+    serverConnection.downloadAllServerHotspots(endpoint, client, projectKey, branchName, new ProgressMonitor(monitor));
+  }
+
+  @Override
+  public void downloadAllServerHotspotsForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
+    @Nullable ClientProgressMonitor monitor) {
+    serverConnection.downloadAllServerHotspotsForFile(endpoint, client, projectBinding, ideFilePath, branchName);
+  }
+
+  @Override
+  public Collection<ServerHotspot> getServerHotspots(ProjectBinding projectBinding, String branchName, String ideFilePath) {
+    return serverConnection.getServerHotspots(projectBinding, branchName, ideFilePath);
   }
 
   @Override
   public ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> ideFilePaths) {
-    return withReadLock(() -> getHandler().calculatePathPrefixes(projectKey, ideFilePaths));
+    return serverConnection.calculatePathPrefixes(projectKey, ideFilePaths);
   }
 
   @Override
-  public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable ProgressMonitor monitor) {
+  public void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable ClientProgressMonitor monitor) {
     requireNonNull(endpoint);
     requireNonNull(projectKey);
     setLogging(null);
-    rwl.writeLock().lock();
-    checkUpdateStatus();
-    ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, globalStores, endpoint, client);
-    try {
-      changeState(State.UPDATING);
-      connectedContainer.startComponents();
-      connectedContainer.updateProject(projectKey, fetchTaintVulnerabilities, globalStatusReader.read(), new ProgressWrapper(monitor));
-    } catch (RuntimeException e) {
-      throw SonarLintWrappedException.wrap(e);
-    } finally {
-      try {
-        connectedContainer.stopComponents(false);
-      } catch (Exception e) {
-        // Ignore
-      }
-      changeState(globalStatusReader.read() != null ? State.UPDATED : State.NEVER_UPDATED);
-      rwl.writeLock().unlock();
-    }
-  }
 
-  @Override
-  public ProjectStorageStatus getProjectStorageStatus(String projectKey) {
-    requireNonNull(projectKey);
-    return withReadLock(() -> getHandler().getProjectStorageStatus(projectKey), false);
+    serverConnection.updateProject(endpoint, client, projectKey, new ProgressMonitor(monitor));
   }
 
   @Override
   public void stop(boolean deleteStorage) {
     setLogging(null);
-    rwl.writeLock().lock();
     try {
-      if (storageContainer == null) {
-        return;
-      }
-      if (deleteStorage) {
-        globalStores.deleteAll();
-      }
-      storageContainer.stopComponents(false);
-    } catch (RuntimeException e) {
-      throw SonarLintWrappedException.wrap(e);
-    } finally {
-      this.storageContainer = null;
-      changeState(State.UNKNOWN);
-      rwl.writeLock().unlock();
-    }
-  }
-
-  private <U> U runInConnectedContainer(EndpointParams endpoint, HttpClient client, Function<ConnectedContainer, U> func) {
-    ConnectedContainer connectedContainer = new ConnectedContainer(globalConfig, globalStores, endpoint, client);
-    try {
-      connectedContainer.startComponents();
-      return func.apply(connectedContainer);
-    } finally {
-      try {
-        connectedContainer.stopComponents(false);
-      } catch (Exception e) {
-        // Ignore
-      }
-    }
-  }
-
-  private <T> T checkUpToDateThen(Supplier<T> callable) {
-    setLogging(null);
-    try {
-      checkUpdateStatus();
-      return callable.get();
-    } catch (RuntimeException e) {
+      analysisContext.get().destroy();
+      serverConnection.stop(deleteStorage);
+    } catch (Exception e) {
       throw SonarLintWrappedException.wrap(e);
     }
   }
@@ -357,22 +537,36 @@ public final class ConnectedSonarLintEngineImpl extends AbstractSonarLintEngine 
     }
   }
 
-  private <T> T withReadLock(Supplier<T> callable) {
-    return withReadLock(callable, true);
+  private static class AnalysisContext {
+    private final Collection<PluginDetails> pluginDetails;
+    private final Map<String, SonarLintRuleDefinition> allRulesDefinitionsByKey;
+    private final Map<String, String> deprecatedRuleKeysMapping;
+    private final AnalysisEngine analysisEngine;
+
+    public AnalysisContext(List<PluginDetails> pluginDetails, Map<String, SonarLintRuleDefinition> allRulesDefinitionsByKey, AnalysisEngine analysisEngine) {
+      this.pluginDetails = pluginDetails;
+      this.allRulesDefinitionsByKey = allRulesDefinitionsByKey;
+      this.analysisEngine = analysisEngine;
+      this.deprecatedRuleKeysMapping = allRulesDefinitionsByKey.values().stream()
+        .flatMap(r -> r.getDeprecatedKeys().stream().map(dk -> Map.entry(dk, r.getKey())))
+        .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    public void destroy() {
+      analysisEngine.stop();
+    }
+
+    public void finishGracefully() {
+      analysisEngine.finishGracefully();
+    }
+
+    public Optional<SonarLintRuleDefinition> findRule(String ruleKey) {
+      if (deprecatedRuleKeysMapping.containsKey(ruleKey)) {
+        return Optional.of(allRulesDefinitionsByKey.get(deprecatedRuleKeysMapping.get(ruleKey)));
+      }
+      return Optional.ofNullable(allRulesDefinitionsByKey.get(ruleKey));
+    }
+
   }
 
-  private <T> T withReadLock(Supplier<T> callable, boolean checkUpdateStatus) {
-    setLogging(null);
-    rwl.readLock().lock();
-    try {
-      if (checkUpdateStatus) {
-        checkUpdateStatus();
-      }
-      return callable.get();
-    } catch (RuntimeException e) {
-      throw SonarLintWrappedException.wrap(e);
-    } finally {
-      rwl.readLock().unlock();
-    }
-  }
 }

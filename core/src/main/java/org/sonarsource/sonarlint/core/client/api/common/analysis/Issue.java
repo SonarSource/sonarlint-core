@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,24 +20,36 @@
 package org.sonarsource.sonarlint.core.client.api.common.analysis;
 
 import java.util.List;
-import org.sonarsource.sonarlint.core.client.api.common.QuickFix;
+import java.util.Map;
+import java.util.Optional;
+import org.sonarsource.sonarlint.core.analysis.api.Flow;
+import org.sonarsource.sonarlint.core.analysis.api.IssueLocation;
+import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
+import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
+import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 
 public interface Issue extends IssueLocation {
 
-  String getSeverity();
+  IssueSeverity getSeverity();
 
-  String getType();
+  RuleType getType();
+
+  Optional<CleanCodeAttribute> getCleanCodeAttribute();
+
+  Map<SoftwareQuality, ImpactSeverity> getImpacts();
 
   String getRuleKey();
-
-  String getRuleName();
 
   List<Flow> flows();
 
   List<QuickFix> quickFixes();
 
-  interface Flow {
-    List<IssueLocation> locations();
-  }
+  Optional<String> getRuleDescriptionContextKey();
+
+  Optional<VulnerabilityProbability> getVulnerabilityProbability();
 
 }

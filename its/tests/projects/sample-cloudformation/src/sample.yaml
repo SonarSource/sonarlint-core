@@ -1,0 +1,11 @@
+AWSTemplateFormatVersion: 2010-09-09
+Resources:
+  S3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      BucketName: "mybucketname"
+      Tags:
+        - Key: "anycompany:cost-center" # Noncompliant
+          Value: "Accounting"
+        - Key: "anycompany:EnvironmentType" # Noncompliant
+          Value: "PROD"

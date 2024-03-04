@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -56,14 +56,14 @@ class SonarLintWrappedExceptionTests {
 
   @Test
   void extractMessageException() {
-    MessageException e = new MessageException("a");
+    var e = new MessageException("a");
     Exception a = new IllegalStateException("a", new IllegalStateException("b", e));
     assertThat(SonarLintWrappedException.wrap(a)).isEqualTo(e);
   }
 
   @Test
   void suppressedExceptionsWrappingTest() {
-    MyCustomException myCustomException = new MyCustomException("Foo");
+    var myCustomException = new MyCustomException("Foo");
     myCustomException.addSuppressed(new MyCustomException("Bar"));
     myCustomException.addSuppressed(new MyCustomException("Baz"));
 

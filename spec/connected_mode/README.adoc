@@ -1,0 +1,6 @@
+[#connected_mode]
+= Connected mode
+
+== Overview
+
+link:binding_suggestion.adoc[Binding suggestions]

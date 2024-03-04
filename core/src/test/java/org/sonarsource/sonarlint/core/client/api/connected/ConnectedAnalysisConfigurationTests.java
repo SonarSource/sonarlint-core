@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -25,12 +25,14 @@ import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.client.api.TestClientInputFile;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
+import org.sonarsource.sonarlint.core.client.api.connected.ConnectedAnalysisConfiguration.Builder;
+import testutils.TestClientInputFile;
 
 import static java.nio.file.Files.createDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ConnectedAnalysisConfigurationTests {
 
@@ -39,20 +41,20 @@ class ConnectedAnalysisConfigurationTests {
     Map<String, String> props = new HashMap<>();
     props.put("sonar.java.libraries", "foo bar");
 
-    final Path srcFile1 = createDirectory(temp.resolve("src1"));
-    final Path srcFile2 = createDirectory(temp.resolve("src2"));
+    final var srcFile1 = createDirectory(temp.resolve("src1"));
+    final var srcFile2 = createDirectory(temp.resolve("src2"));
 
     ClientInputFile inputFile = new TestClientInputFile(temp, srcFile1, false, StandardCharsets.UTF_8, null);
     ClientInputFile testInputFile = new TestClientInputFile(temp, srcFile2, true, StandardCharsets.UTF_8, null);
 
-    Path baseDir = createDirectory(temp.resolve("baseDir"));
-    ConnectedAnalysisConfiguration config = ConnectedAnalysisConfiguration.builder()
+    var baseDir = createDirectory(temp.resolve("baseDir"));
+    var config = ConnectedAnalysisConfiguration.builder()
       .setProjectKey("foo")
       .setBaseDir(baseDir)
       .addInputFiles(inputFile, testInputFile)
       .putAllExtraProperties(props)
       .build();
-    assertThat(config.toString()).isEqualTo("[\n" +
+    assertThat(config).hasToString("[\n" +
       "  projectKey: foo\n" +
       "  baseDir: " + baseDir.toString() + "\n" +
       "  extraProperties: {sonar.java.libraries=foo bar}\n" +
@@ -64,23 +66,14 @@ class ConnectedAnalysisConfigurationTests {
       "]\n");
     assertThat(config.baseDir()).isEqualTo(baseDir);
     assertThat(config.inputFiles()).containsExactly(inputFile, testInputFile);
-    assertThat(config.projectKey()).isEqualTo("foo");
+    assertThat(config.getProjectKey()).isEqualTo("foo");
     assertThat(config.extraProperties()).containsExactly(entry("sonar.java.libraries", "foo bar"));
+  }
 
-    config = ConnectedAnalysisConfiguration.builder()
-      .setBaseDir(baseDir)
-      .addInputFiles(inputFile, testInputFile)
-      .putAllExtraProperties(props)
-      .build();
-    assertThat(config.toString()).isEqualTo("[\n" +
-      "  baseDir: " + baseDir.toString() + "\n" +
-      "  extraProperties: {sonar.java.libraries=foo bar}\n" +
-      "  moduleKey: null\n" +
-      "  inputFiles: [\n" +
-      "    " + srcFile1.toUri().toString() + " (UTF-8)\n" +
-      "    " + srcFile2.toUri().toString() + " (UTF-8) [test]\n" +
-      "  ]\n" +
-      "]\n");
-
+  @Test
+  void test_projectKey_is_mandatory() {
+    Builder builder = ConnectedAnalysisConfiguration.builder();
+    var e = assertThrows(IllegalStateException.class, builder::build);
+    assertThat(e).hasMessage("'projectKey' is mandatory");
   }
 }

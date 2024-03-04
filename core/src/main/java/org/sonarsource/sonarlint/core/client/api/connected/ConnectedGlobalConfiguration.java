@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,39 +19,48 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
-import java.net.URL;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractGlobalConfiguration;
 
 /**
- * To use SonarLint in connected mode please provide a server id that will identify the storage.
- * To use in standalone mode please provide list of plugin URLs.
- *
+ * To use SonarLint in connected mode please provide a connection id that will identify the storage.
  */
-@Immutable
 public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
 
   public static final String DEFAULT_STORAGE_DIR = "storage";
 
   private final String connectionId;
   private final Path storageRoot;
-  private final Map<String, URL> overriddenPluginsUrlsByKey;
-  private final Map<String, URL> extraPluginsUrlsByKey;
+  private final Map<String, Path> overriddenPluginsPathsByKey;
+  private final boolean isSonarCloud;
+  private final boolean isHotspotsEnabled;
 
   private ConnectedGlobalConfiguration(Builder builder) {
     super(builder);
     this.connectionId = builder.connectionId;
     this.storageRoot = builder.storageRoot != null ? builder.storageRoot : getSonarLintUserHome().resolve(DEFAULT_STORAGE_DIR);
-    this.overriddenPluginsUrlsByKey = new HashMap<>(builder.overriddenPluginsUrlsByKey);
-    this.extraPluginsUrlsByKey = new HashMap<>(builder.extraPluginsUrlsByKey);
+    this.overriddenPluginsPathsByKey = new HashMap<>(builder.overriddenPluginsPathsByKey);
+    this.isSonarCloud = builder.isSonarCloud;
+    this.isHotspotsEnabled = builder.isHotspotsEnabled;
   }
 
-  public static Builder builder() {
-    return new Builder();
+  public static Builder sonarQubeBuilder() {
+    return new Builder(false);
+  }
+
+  public static Builder sonarCloudBuilder() {
+    return new Builder(true);
+  }
+
+  public boolean isSonarCloud() {
+    return isSonarCloud;
+  }
+
+  public boolean isHotspotsEnabled() {
+    return isHotspotsEnabled;
   }
 
   public Path getStorageRoot() {
@@ -62,21 +71,20 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
     return connectionId;
   }
 
-  public Map<String, URL> getEmbeddedPluginUrlsByKey() {
-    return overriddenPluginsUrlsByKey;
+  public Map<String, Path> getEmbeddedPluginPathsByKey() {
+    return overriddenPluginsPathsByKey;
   }
 
-  public Map<String, URL> getExtraPluginsUrlsByKey() {
-    return extraPluginsUrlsByKey;
-  }
 
   public static final class Builder extends AbstractBuilder<Builder> {
     private String connectionId;
     private Path storageRoot;
-    private final Map<String, URL> overriddenPluginsUrlsByKey = new HashMap<>();
-    private final Map<String, URL> extraPluginsUrlsByKey = new HashMap<>();
+    private final Map<String, Path> overriddenPluginsPathsByKey = new HashMap<>();
+    private final boolean isSonarCloud;
+    private boolean isHotspotsEnabled;
 
-    private Builder() {
+    private Builder(boolean isSonarCloud) {
+      this.isSonarCloud = isSonarCloud;
     }
 
     /**
@@ -103,18 +111,15 @@ public class ConnectedGlobalConfiguration extends AbstractGlobalConfiguration {
     }
 
     /**
-     * Register extra embedded plugin to be used in connected mode
+     * Ask the engine to prefer the given plugin JAR instead of downloading the one from the server
      */
-    public Builder addExtraPlugin(String pluginKey, URL pluginUrl) {
-      extraPluginsUrlsByKey.put(pluginKey, pluginUrl);
+    public Builder useEmbeddedPlugin(String pluginKey, Path pluginPath) {
+      overriddenPluginsPathsByKey.put(pluginKey, pluginPath);
       return this;
     }
 
-    /**
-     * Ask the engine to prefer the given plugin JAR instead of downloading the one from the server
-     */
-    public Builder useEmbeddedPlugin(String pluginKey, URL pluginUrl) {
-      overriddenPluginsUrlsByKey.put(pluginKey, pluginUrl);
+    public Builder enableHotspots() {
+      this.isHotspotsEnabled = true;
       return this;
     }
 

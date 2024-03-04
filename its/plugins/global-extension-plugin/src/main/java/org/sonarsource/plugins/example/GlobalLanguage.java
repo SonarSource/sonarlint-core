@@ -1,6 +1,6 @@
 /*
  * Example Plugin with global extension
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -24,7 +24,7 @@ import org.sonar.api.resources.AbstractLanguage;
 public class GlobalLanguage extends AbstractLanguage {
 
   // Need to use a key that is available in the Language enum
-  static final String LANGUAGE_KEY = "xoo";
+  static final String LANGUAGE_KEY = "cobol";
 
   public GlobalLanguage() {
     super(LANGUAGE_KEY, "Global");

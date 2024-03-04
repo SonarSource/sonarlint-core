@@ -6,15 +6,15 @@
     <!-- Using hardcoded IP addresses is security-sensitive. Hotspot that should not be visible in SonarLint -->
     <rule>
       <repositoryKey>java</repositoryKey>
-      <key>S1313</key>
-      <priority>MAJOR</priority>
+      <key>S4792</key>
+      <priority>BLOCKER</priority>
     </rule>
 
     <!-- Keep for pre 6.0 sonar-java version -->
     <rule>
       <repositoryKey>squid</repositoryKey>
-      <key>S1313</key>
-      <priority>MAJOR</priority>
+      <key>S4792</key>
+      <priority>BLOCKER</priority>
     </rule>
   </rules>
 </profile>

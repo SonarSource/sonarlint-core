@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -28,14 +28,14 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class FileExclusionsTests {
-  FileExclusions fileExclusions;
+  ClientFileExclusions fileExclusions;
 
   @BeforeEach
-  public void before() {
+  void before() {
     Set<String> glob = Collections.singleton("**/*.js");
     Set<String> files = Collections.singleton(new File("dir/file.java").getAbsolutePath());
     Set<String> dir = Collections.singleton("src");
-    fileExclusions = new FileExclusions(files, dir, glob);
+    fileExclusions = new ClientFileExclusions(files, dir, glob);
   }
 
   @Test

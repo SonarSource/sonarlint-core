@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -32,13 +31,12 @@ import org.sonar.api.utils.System2;
 import org.sonar.api.utils.command.Command;
 import org.sonar.api.utils.command.CommandException;
 import org.sonar.api.utils.command.CommandExecutor;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.client.api.common.Version;
+import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class NodeJsHelper {
 
-  private static final Logger LOG = Loggers.get(NodeJsHelper.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final Pattern NODEJS_VERSION_PATTERN = Pattern.compile("v?(\\d+\\.\\d+\\.\\d+(-.*)?)");
   private final System2 system2;
   private final Path pathHelperLocationOnMac;
@@ -62,12 +60,12 @@ public class NodeJsHelper {
     detectedNodePath = locateNode(configuredNodejsPath);
     if (detectedNodePath != null) {
       LOG.debug("Checking node version...");
-      Command command = Command.create(detectedNodePath.toString()).addArgument("-v");
-      String nodeVersionStr = runSimpleCommand(command);
+      var command = Command.create(detectedNodePath.toString()).addArgument("-v");
+      var nodeVersionStr = runSimpleCommand(command);
       if (nodeVersionStr != null) {
-        Matcher matcher = NODEJS_VERSION_PATTERN.matcher(nodeVersionStr);
+        var matcher = NODEJS_VERSION_PATTERN.matcher(nodeVersionStr);
         if (matcher.matches()) {
-          String version = matcher.group(1);
+          var version = matcher.group(1);
           nodeJsVersion = Version.create(version);
           LOG.debug("Detected node version: {}", nodeJsVersion);
         } else {
@@ -102,7 +100,8 @@ public class NodeJsHelper {
     if (system2.isOsWindows()) {
       result = runSimpleCommand(Command.create("C:\\Windows\\System32\\where.exe").addArgument("$PATH:node.exe"));
     } else {
-      Command which = Command.create("which").addArgument("node");
+      // INFO: Based on the Linux / macOS shell we require the full path as "which" is a built-in on some shells!
+      var which = Command.create("/usr/bin/which").addArgument("node");
       computePathEnvForMacOs(which);
       result = runSimpleCommand(which);
     }
@@ -117,11 +116,11 @@ public class NodeJsHelper {
 
   private void computePathEnvForMacOs(Command which) {
     if (system2.isOsMac() && Files.exists(pathHelperLocationOnMac)) {
-      Command command = Command.create(pathHelperLocationOnMac.toString()).addArgument("-s");
-      String pathHelperOutput = runSimpleCommand(command);
+      var command = Command.create(pathHelperLocationOnMac.toString()).addArgument("-s");
+      var pathHelperOutput = runSimpleCommand(command);
       if (pathHelperOutput != null) {
-        Pattern regex = Pattern.compile(".*PATH=\"(.*)\"; export PATH;.*");
-        Matcher matchResult = regex.matcher(pathHelperOutput);
+        var regex = Pattern.compile(".*PATH=\"(.*)\"; export PATH;.*");
+        var matchResult = regex.matcher(pathHelperOutput);
         if (matchResult.matches()) {
           which.setEnvironmentVariable("PATH", matchResult.group(1));
         }
@@ -146,7 +145,7 @@ public class NodeJsHelper {
       LOG.debug("Unable to execute the command", e);
       return null;
     }
-    StringBuilder msg = new StringBuilder(String.format("Command '%s' exited with %s", command.toString(), exitCode));
+    var msg = new StringBuilder(String.format("Command '%s' exited with %s", command.toString(), exitCode));
     if (!stdOut.isEmpty()) {
       msg.append("\nstdout: ").append(String.join("\n", stdOut));
     }

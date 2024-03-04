@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -26,7 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.annotation.concurrent.Immutable;
 import org.sonarsource.sonarlint.core.client.api.common.AbstractAnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
+import org.sonarsource.sonarlint.core.commons.RuleKey;
 
 @Immutable
 public class StandaloneAnalysisConfiguration extends AbstractAnalysisConfiguration {
@@ -66,7 +66,7 @@ public class StandaloneAnalysisConfiguration extends AbstractAnalysisConfigurati
   }
 
   private String generateToString() {
-    StringBuilder sb = new StringBuilder();
+    var sb = new StringBuilder();
     sb.append("[\n");
     generateToStringCommon(sb);
     sb.append("  excludedRules: ").append(excludedRules).append("\n");

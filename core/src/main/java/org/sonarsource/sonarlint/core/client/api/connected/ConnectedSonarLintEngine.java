@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,94 +22,79 @@ package org.sonarsource.sonarlint.core.client.api.connected;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
-import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.SonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
-import org.sonarsource.sonarlint.core.client.api.exceptions.CanceledException;
-import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
-import org.sonarsource.sonarlint.core.client.api.exceptions.GlobalStorageUpdateRequiredException;
-import org.sonarsource.sonarlint.core.client.api.exceptions.StorageException;
-import org.sonarsource.sonarlint.core.client.api.exceptions.UnsupportedServerException;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.GetEffectiveRuleDetailsParams;
+import org.sonarsource.sonarlint.core.clientapi.backend.rules.RulesService;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.push.ServerEvent;
+import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
-import org.sonarsource.sonarlint.core.serverapi.HttpClient;
-import org.sonarsource.sonarlint.core.serverapi.project.ServerProject;
+import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
+import org.sonarsource.sonarlint.core.serverconnection.DownloadException;
+import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
+import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
 /**
  * Entry point for SonarLint.
  */
 public interface ConnectedSonarLintEngine extends SonarLintEngine {
 
-  enum State {
-    UNKNOWN,
-    UPDATING,
-    NEVER_UPDATED,
-    NEED_UPDATE,
-    UPDATED
-  }
-
-  State getState();
-
   void stop(boolean deleteStorage);
 
-  void addStateListener(StateListener listener);
-
-  void removeStateListener(StateListener listener);
-
   /**
-   * Return global rule details (not specific to any quality profile).
-   */
-  ConnectedRuleDetails getRuleDetails(String ruleKey);
-
-  /**
-   * Return rule details in the context of a given project (severity may have been overriden in the quality profile).
+   * Return rule details in the context of a given project (severity may have been overridden in the quality profile).
    * @param projectKey if null, the default QP will be considered
+   * @deprecated use {@link RulesService#getEffectiveRuleDetails(GetEffectiveRuleDetailsParams)} instead
    */
-  ConnectedRuleDetails getActiveRuleDetails(String ruleKey, @Nullable String projectKey);
+  @Deprecated(since = "8.12")
+  CompletableFuture<ConnectedRuleDetails> getActiveRuleDetails(EndpointParams endpoint, HttpClient client, String ruleKey, @Nullable String projectKey);
 
   /**
    * Trigger an analysis
    */
-  AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener, @Nullable LogOutput logOutput, @Nullable ProgressMonitor monitor);
+  AnalysisResults analyze(ConnectedAnalysisConfiguration configuration, IssueListener issueListener, @Nullable ClientLogOutput logOutput, @Nullable ClientProgressMonitor monitor);
 
   /**
    * Gets locally stored server issues for a given file.
    *
-   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ProgressMonitor)})
+   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ClientProgressMonitor)})
    * @param filePath       relative to the project.
    * @return All server issues in the local storage for the given file. If file has no issues, an empty list is returned.
+   * @deprecated tracking is managed by the new backend
    */
-  List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String filePath);
+  @Deprecated(since = "9.3")
+  List<ServerIssue> getServerIssues(ProjectBinding projectBinding, String branchName, String filePath);
 
   /**
-   * Get information about current global storage state
+   * Gets locally stored server taint issues for a given file.
    *
-   * @return null if storage was never updated
-   * @since 2.6
+   * @param projectBinding  information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ClientProgressMonitor)})
+   * @param branchName      branch name
+   * @param filePath        relative to the project.
+   * @param includeResolved whether the resolved Taint Vulnerabilities should be included or not
+   * @return All server taint issues in the local storage for the given file. If file has no issues, an empty list is returned.
    */
-  @CheckForNull
-  GlobalStorageStatus getGlobalStorageStatus();
+  List<ServerTaintIssue> getServerTaintIssues(ProjectBinding projectBinding, String branchName, String filePath, boolean includeResolved);
 
   /**
-   * Get information about project storage state
+   * Gets locally stored server taint issues.
    *
-   * @return null if module was never updated
-   * @since 2.6
+   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ClientProgressMonitor)})
+   * @param branchName     branch name
+   * @return All server taint issues in the local storage for the given branch.
    */
-  @CheckForNull
-  ProjectStorageStatus getProjectStorageStatus(String projectKey);
-
-  /**
-   * Return all projects by key
-   *
-   * @since 2.0
-   */
-  Map<String, ServerProject> allProjectsByKey();
+  List<ServerTaintIssue> getAllServerTaintIssues(ProjectBinding projectBinding, String branchName);
 
   /**
    * Tries to find the best way to match files in a IDE project with files in the sonarqube project identified
@@ -121,70 +106,110 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    */
   ProjectBinding calculatePathPrefixes(String projectKey, Collection<String> ideFilePaths);
 
+  /**
+   * Returns analyzed branches for a given project. Requires a {@link #sync(EndpointParams, HttpClient, Set, ClientProgressMonitor)} to have been successfully done before for this project.
+   *
+   * @param projectKey
+   * @return branches analyzed on the server for this project.
+   */
+  ProjectBranches getServerBranches(String projectKey);
+
   // REQUIRES SERVER TO BE REACHABLE
 
   /**
-   * Attempts to download and store the list of projects and to return all projects by key
+   * Attempts to download the list of projects and to return all projects by key
    *
    * @throws DownloadException if it fails to download
    * @since 2.5
    */
-  Map<String, ServerProject> downloadAllProjects(EndpointParams endpoint, HttpClient client, @Nullable ProgressMonitor monitor);
+  Map<String, ServerProject> downloadAllProjects(EndpointParams endpoint, HttpClient client, @Nullable ClientProgressMonitor monitor);
 
-  /**
-   * Update current server.
-   *
-   * @throws UnsupportedServerException if server version is too low
-   * @throws CanceledException          if the update task was cancelled
-   * @since 2.0
-   */
-  UpdateResult update(EndpointParams endpoint, HttpClient client, @Nullable ProgressMonitor monitor);
+  void sync(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, @Nullable ClientProgressMonitor monitor);
 
   /**
    * Update given project.
    *
    * @since 2.0
    */
-  void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable ProgressMonitor monitor);
+  void updateProject(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable ClientProgressMonitor monitor);
 
   /**
-   * Check server to see if global storage need updates.
+   * Downloads and stores server issues for a given file. Starting from SQ 9.6, this is noop as issues updates are coming by SSE.
    *
-   * @throws GlobalStorageUpdateRequiredException if global storage is not initialized or stale (see {@link #getGlobalStorageStatus()})
-   * @throws DownloadException             if it fails to download
-   * @since 2.6
-   */
-  StorageUpdateCheckResult checkIfGlobalStorageNeedUpdate(EndpointParams endpoint, HttpClient client, @Nullable ProgressMonitor monitor);
-
-  /**
-   * Check server to see if project storage need updates.
-   *
-   * @throws StorageException  if project storage is not initialized or stale (see {@link #getProjectStorageStatus(String)})
-   * @throws DownloadException if it fails to download
-   * @since 2.6
-   */
-  StorageUpdateCheckResult checkIfProjectStorageNeedUpdate(EndpointParams endpoint, HttpClient client, String projectKey, @Nullable ProgressMonitor monitor);
-
-  /**
-   * Downloads, stores and returns server issues for a given file.
-   *
-   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ProgressMonitor)})
+   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ClientProgressMonitor)})
    * @param ideFilePath    relative to the project in the IDE.
-   * @return All server issues in the local storage for the given file. If file has no issues, an empty list is returned.
    * @throws DownloadException if it fails to download
-   * @since 2.5
+   * @deprecated synchronization is managed by the new backend
    */
-  List<ServerIssue> downloadServerIssues(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath,
-    boolean fetchTaintVulnerabilities, @Nullable ProgressMonitor monitor);
+  @Deprecated(since = "9.3")
+  void downloadAllServerIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
+    @Nullable ClientProgressMonitor monitor);
 
   /**
-   * Downloads and stores server issues for a given project.
+   * Downloads and stores server taint issues for a given file. Starting from SQ 9.6, this is noop as taint issues updates are coming by SSE.
+   *
+   * @param projectBinding information about the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ClientProgressMonitor)})
+   * @param ideFilePath    relative to the project in the IDE.
+   * @throws DownloadException if it fails to download
+   */
+  void downloadAllServerTaintIssuesForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
+    @Nullable ClientProgressMonitor monitor);
+
+  /**
+   * Downloads and stores all server issues for a given project.
    *
    * @param endpoint from which to download issues
-   * @param projectKey   key of the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ProgressMonitor)})
-   * @since 2.9
+   * @param projectKey   key of the project (must have been previously updated with {@link #updateProject(EndpointParams, HttpClient, String, ClientProgressMonitor)})
    */
-  void downloadServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, boolean fetchTaintVulnerabilities, @Nullable ProgressMonitor monitor);
+  void downloadAllServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor);
+
+  /**
+   * Sync server issues incrementally for a given project (will only work for supported servers).
+   *
+   * @param endpoint from which to download issues
+   * @param projectKey   key of the project
+   */
+  void syncServerIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor);
+
+  /**
+   * Sync server taint issues incrementally for a given project (will only work for supported servers).
+   *
+   * @param endpoint from which to download issues
+   * @param projectKey   key of the project
+   */
+  void syncServerTaintIssues(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor);
+
+  /**
+   * Sync server hotspots incrementally for a given project (will only work for supported servers).
+   *
+   * @param endpoint from which to download issues
+   * @param projectKey   key of the project
+   */
+  void syncServerHotspots(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor);
+
+  /**
+   * Download all hotspots, regardless of their status, from a project.
+   * Download will be made only for servers that return enough data to achieve local hotspot tracking.
+   * @deprecated synchronization is managed by the new backend
+   */
+  @Deprecated(since = "9.3")
+  void downloadAllServerHotspots(EndpointParams endpoint, HttpClient client, String projectKey, String branchName, @Nullable ClientProgressMonitor monitor);
+
+  /**
+   * Fetch all hotspots, regardless of their status, from a project on the server, and store them in local storage.
+   * Download will be made only for servers that return enough data to achieve local hotspot tracking.
+   * @deprecated synchronization is managed by the new backend
+   */
+  @Deprecated(since = "9.3")
+  void downloadAllServerHotspotsForFile(EndpointParams endpoint, HttpClient client, ProjectBinding projectBinding, String ideFilePath, String branchName,
+    @Nullable ClientProgressMonitor monitor);
+
+  /**
+   * Returns locally stored hotspots that were previously downloaded from the server.
+   * @deprecated tracking is managed by the new backend
+   */
+  @Deprecated(since = "9.3")
+  Collection<ServerHotspot> getServerHotspots(ProjectBinding projectBinding, String branchName, String ideFilePath);
 
   /**
    * Get a list of files that are excluded from analysis, out of the provided files.
@@ -196,5 +221,11 @@ public interface ConnectedSonarLintEngine extends SonarLintEngine {
    * @return The list of files that are excluded from analysis.
    */
   <G> List<G> getExcludedFiles(ProjectBinding projectBinding, Collection<G> files, Function<G, String> ideFilePathExtractor, Predicate<G> testFilePredicate);
+
+  /**
+   * @deprecated this is now managed entirely by the backend. Activate the flag in {@link org.sonarsource.sonarlint.core.clientapi.backend.initialize.FeatureFlagsDto}
+   */
+  @Deprecated(since = "9.3")
+  void subscribeForEvents(EndpointParams endpoint, HttpClient client, Set<String> projectKeys, Consumer<ServerEvent> eventConsumer, @Nullable ClientLogOutput clientLogOutput);
 
 }

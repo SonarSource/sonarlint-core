@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,10 +27,10 @@ import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.client.api.TestClientInputFile;
-import org.sonarsource.sonarlint.core.client.api.common.Language;
-import org.sonarsource.sonarlint.core.client.api.common.RuleKey;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
+import org.sonarsource.sonarlint.core.commons.Language;
+import org.sonarsource.sonarlint.core.commons.RuleKey;
+import testutils.TestClientInputFile;
 
 import static java.nio.file.Files.createDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,13 +43,13 @@ class StandaloneAnalysisConfigurationTests {
     Map<String, String> props = new HashMap<>();
     props.put("sonar.java.libraries", "foo bar");
 
-    final Path srcFile1 = createDirectory(temp.resolve("src1"));
-    final Path srcFile2 = createDirectory(temp.resolve("src2"));
-    final Path srcFile3 = createDirectory(temp.resolve("src3"));
+    final var srcFile1 = createDirectory(temp.resolve("src1"));
+    final var srcFile2 = createDirectory(temp.resolve("src2"));
+    final var srcFile3 = createDirectory(temp.resolve("src3"));
     ClientInputFile inputFile = new TestClientInputFile(temp, srcFile1, false, StandardCharsets.UTF_8, null);
     ClientInputFile inputFileWithLanguage = new TestClientInputFile(temp, srcFile2, false, StandardCharsets.UTF_8, Language.JAVA);
     ClientInputFile testInputFile = new TestClientInputFile(temp, srcFile3, true, null, Language.PHP);
-    Path baseDir = createDirectory(temp.resolve("baseDir"));
+    var baseDir = createDirectory(temp.resolve("baseDir"));
     Collection<RuleKey> excludedRules = Arrays.asList(new RuleKey("squid", "S1135"), new RuleKey("squid", "S1181"));
     Collection<RuleKey> includedRules = Arrays.asList(new RuleKey("javascript", "S2424"), new RuleKey("javascript", "S1442"));
     Map<String, String> squidS5Parameters = new HashMap<>();
@@ -60,7 +60,7 @@ class StandaloneAnalysisConfigurationTests {
     squidS6Parameters.put("s6param2", "s6value2");
     Map<RuleKey, Map<String, String>> ruleParameters = new HashMap<>();
     ruleParameters.put(RuleKey.parse("squid:S6"), squidS6Parameters);
-    StandaloneAnalysisConfiguration config = StandaloneAnalysisConfiguration.builder()
+    var config = StandaloneAnalysisConfiguration.builder()
       .setBaseDir(baseDir)
       .addInputFile(inputFile)
       .addInputFiles(inputFileWithLanguage)

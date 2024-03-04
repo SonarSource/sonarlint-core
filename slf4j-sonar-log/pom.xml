@@ -3,31 +3,22 @@
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-parent</artifactId>
-    <version>7.0.0.37656-lite</version>
+    <version>9.4.0.76070-lite</version>
   </parent>
   <artifactId>sonarlint-slf4j-sonar-log</artifactId>
-  <name>SonarLint slf4j log adaptor</name>
-  <description>Adapts slf4j logs to sonar logging framework</description>
-  <dependencies>
+  <name>SonarLint Core - SLF4J log adaptor</name>
+  <description>Redirect SLF4J logs to sonarlint logging facade</description>
 
+  <properties>
+    <!-- The library is bundled into sonarlint-plugin-commons -->
+    <maven.deploy.skip>true</maven.deploy.skip>
+  </properties>
+
+  <dependencies>
     <dependency>
-      <groupId>org.sonarsource.sonarqube</groupId>
-      <artifactId>sonar-plugin-api</artifactId>
-      <version>${sonarqube.version}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>jfree</groupId>
-          <artifactId>jcommon</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>jfree</groupId>
-          <artifactId>jfreechart</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.codehaus.woodstox</groupId>
-          <artifactId>woodstox-core-lgpl</artifactId>
-        </exclusion>
-      </exclusions>
+      <groupId>org.sonarsource.sonarlint.core</groupId>
+      <artifactId>sonarlint-commons</artifactId>
+      <version>${project.version}</version>
     </dependency>
   </dependencies>
 </project>

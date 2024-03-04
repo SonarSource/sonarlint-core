@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.client.api.common;
 
-import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,13 +26,15 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.ClientInputFile;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 
 @Immutable
 public abstract class AbstractAnalysisConfiguration {
 
-  private final Iterable<ClientInputFile> inputFiles;
+  private final List<ClientInputFile> inputFiles;
   private final Map<String, String> extraProperties;
   private final Path baseDir;
   private final Object moduleKey;
@@ -53,11 +54,12 @@ public abstract class AbstractAnalysisConfiguration {
     return baseDir;
   }
 
+  @CheckForNull
   public Object moduleKey() {
     return moduleKey;
   }
 
-  public Iterable<ClientInputFile> inputFiles() {
+  public List<ClientInputFile> inputFiles() {
     return inputFiles;
   }
 
@@ -75,7 +77,7 @@ public abstract class AbstractAnalysisConfiguration {
       if (inputFile.isTest()) {
         sb.append(" [test]");
       }
-      Language language = inputFile.language();
+      var language = inputFile.language();
       if (language != null) {
         sb.append(" [" + language.getLanguageKey() + "]");
       }
@@ -85,13 +87,13 @@ public abstract class AbstractAnalysisConfiguration {
   }
 
   private static String getCharsetLabel(ClientInputFile inputFile) {
-    Charset charset = inputFile.getCharset();
+    var charset = inputFile.getCharset();
     return charset != null ? charset.displayName() : "default";
   }
 
   public abstract static class AbstractBuilder<G extends AbstractBuilder<G>> {
-    private List<ClientInputFile> inputFiles = new ArrayList<>();
-    private Map<String, String> extraProperties = new HashMap<>();
+    private final List<ClientInputFile> inputFiles = new ArrayList<>();
+    private final Map<String, String> extraProperties = new HashMap<>();
     private Path baseDir;
     private Object moduleKey;
 
@@ -125,7 +127,7 @@ public abstract class AbstractAnalysisConfiguration {
       return (G) this;
     }
 
-    public G setModuleKey(Object moduleKey) {
+    public G setModuleKey(@Nullable Object moduleKey) {
       this.moduleKey = moduleKey;
       return (G) this;
     }

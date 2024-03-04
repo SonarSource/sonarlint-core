@@ -5,14 +5,14 @@
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-its</artifactId>
-    <version>7.0.0.37656-lite</version>
+    <version>9.4.0.76070-lite</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   
   <groupId>org.sonarsource.plugins.example</groupId>
   <artifactId>custom-sensor-plugin</artifactId>
   <packaging>sonar-plugin</packaging>
-  <version>7.0.0.37656-lite</version>
+  <version>9.4.0.76070-lite</version>
 
   <name>Example Plugin for SonarQube</name>
   <description>Example of plugin for SonarQube</description>
@@ -20,7 +20,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <sonar.apiVersion>5.6</sonar.apiVersion>
-    <jdk.min.version>1.8</jdk.min.version>
+    <jdk.min.version>11</jdk.min.version>
   </properties>
 
   <dependencies>

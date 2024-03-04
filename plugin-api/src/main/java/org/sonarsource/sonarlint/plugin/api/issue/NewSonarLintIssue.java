@@ -1,6 +1,6 @@
 /*
  * SonarLint Plugin API
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,7 +22,9 @@ package org.sonarsource.sonarlint.plugin.api.issue;
 /**
  * Extension interface to add {@link NewQuickFix}es to a {@link org.sonar.api.batch.sensor.issue.NewIssue}
  * @since 6.3
+ * @deprecated use org.sonar.api.batch.sensor.issue.NewIssue from the sonar-plugin-api instead
  */
+@Deprecated(since = "8.12")
 public interface NewSonarLintIssue {
 
   /**

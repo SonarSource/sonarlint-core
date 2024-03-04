@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -29,7 +29,7 @@ class TextSearchIndexTests {
   private TextSearchIndex<String> index;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     index = new TextSearchIndex<>();
   }
 

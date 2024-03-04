@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,17 +21,17 @@ package org.sonarsource.sonarlint.core.tracking;
 
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
-import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
+import org.sonarsource.sonarlint.core.http.HttpClientProvider;
+import org.sonarsource.sonarlint.core.issuetracking.CachingIssueTracker;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
-import org.sonarsource.sonarlint.core.serverapi.HttpClient;
+import org.sonarsource.sonarlint.core.serverconnection.DownloadException;
+import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 
 class ServerIssueTrackerTests {
   private final String projectKey = "dummy project";
@@ -42,28 +42,29 @@ class ServerIssueTrackerTests {
   private final ServerIssueTracker tracker = new ServerIssueTracker(mock(CachingIssueTracker.class));
 
   @Test
-  void should_get_issues_from_engine_without_downloading() {
-    ServerIssueTracker tracker = new ServerIssueTracker(mock(CachingIssueTracker.class));
-    tracker.update(engine, projectBinding, Collections.singleton(filePath));
-    verify(engine).getServerIssues(projectBinding, filePath);
+  void should_get_hotspots_from_engine_without_downloading() {
+    var tracker = new ServerIssueTracker(mock(CachingIssueTracker.class));
+    tracker.update(engine, projectBinding, "branch", Collections.singleton(filePath));
+    verify(engine).getServerHotspots(projectBinding, "branch", filePath);
     verifyNoMoreInteractions(engine);
   }
 
   @Test
-  void should_download_issues_from_engine() {
-    HttpClient client = MockWebServerExtension.httpClient();
-    tracker.update(endpoint, client, engine, projectBinding, Collections.singleton(filePath), true);
-    verify(engine).downloadServerIssues(endpoint, client, projectBinding, filePath, true, null);
+  void should_download_hotspots_from_engine() {
+    var client = HttpClientProvider.forTesting().getHttpClient();
+    tracker.update(endpoint, client, engine, projectBinding, Collections.singleton(filePath), null);
+    verify(engine).downloadAllServerHotspotsForFile(endpoint, client, projectBinding, filePath, null, null);
+    verify(engine).getServerHotspots(projectBinding, null, filePath);
     verifyNoMoreInteractions(engine);
   }
 
   @Test
-  void should_get_issues_from_engine_if_download_failed() {
-    HttpClient client = MockWebServerExtension.httpClient();
-    when(engine.downloadServerIssues(endpoint, client, projectBinding, filePath, false, null)).thenThrow(new DownloadException());
-    tracker.update(endpoint, client, engine, projectBinding, Collections.singleton(filePath), false);
-    verify(engine).downloadServerIssues(endpoint, client, projectBinding, filePath, false, null);
-    verify(engine).getServerIssues(projectBinding, filePath);
+  void should_get_hotspots_from_engine_if_download_failed() {
+    var client = HttpClientProvider.forTesting().getHttpClient();
+    doThrow(DownloadException.class).when(engine).downloadAllServerHotspotsForFile(endpoint, client, projectBinding, filePath, null, null);
+    tracker.update(endpoint, client, engine, projectBinding, Collections.singleton(filePath), null);
+    verify(engine).downloadAllServerHotspotsForFile(endpoint, client, projectBinding, filePath, null, null);
+    verify(engine).getServerHotspots(projectBinding, null, filePath);
     verifyNoMoreInteractions(engine);
   }
 }

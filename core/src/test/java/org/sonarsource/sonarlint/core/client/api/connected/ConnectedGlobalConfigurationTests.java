@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2021 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,15 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.client.api.connected;
 
-import java.net.MalformedURLException;
-import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.client.api.common.Language;
+import org.sonarsource.sonarlint.core.commons.Language;
 
 import static java.nio.file.Files.createDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,22 +36,22 @@ class ConnectedGlobalConfigurationTests {
 
   @Test
   void testDefaults() {
-    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
       .build();
     assertThat(config.getConnectionId()).isNull();
     assertThat(config.getSonarLintUserHome()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint"));
     assertThat(config.getStorageRoot()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint", "storage"));
     assertThat(config.getWorkDir()).isEqualTo(Paths.get(System.getProperty("user.home"), ".sonarlint", "work"));
     assertThat(config.extraProperties()).isEmpty();
-    assertThat(config.getEmbeddedPluginUrlsByKey()).isEmpty();
+    assertThat(config.getEmbeddedPluginPathsByKey()).isEmpty();
     assertThat(config.getClientPid()).isZero();
   }
 
   @Test
-  void extraProps() throws Exception {
+  void extraProps() {
     Map<String, String> extraProperties = new HashMap<>();
     extraProperties.put("foo", "bar");
-    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setExtraProperties(extraProperties)
       .build();
     assertThat(config.extraProperties()).containsEntry("foo", "bar");
@@ -61,10 +59,10 @@ class ConnectedGlobalConfigurationTests {
 
   @Test
   void overrideDirs(@TempDir Path temp) throws Exception {
-    Path sonarUserHome = createDirectory(temp.resolve("userHome"));
-    Path storage = createDirectory(temp.resolve("storage"));
-    Path work = createDirectory(temp.resolve("work"));
-    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
+    var sonarUserHome = createDirectory(temp.resolve("userHome"));
+    var storage = createDirectory(temp.resolve("storage"));
+    var work = createDirectory(temp.resolve("work"));
+    var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setSonarLintUserHome(sonarUserHome)
       .setStorageRoot(storage)
       .setWorkDir(work)
@@ -76,7 +74,7 @@ class ConnectedGlobalConfigurationTests {
 
   @Test
   void enableLanguages() {
-    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
+    var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
       .addEnabledLanguages(Language.JAVA, Language.ABAP)
       .addEnabledLanguage(Language.C)
       .build();
@@ -84,26 +82,36 @@ class ConnectedGlobalConfigurationTests {
   }
 
   @Test
-  void overridesPlugins() throws MalformedURLException {
-    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
-      .useEmbeddedPlugin(Language.JAVA.getLanguageKey(), URI.create("file://java.jar").toURL())
-      .useEmbeddedPlugin(Language.ABAP.getLanguageKey(), URI.create("file://abap.jar").toURL())
+  void overridesPlugins() {
+    var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
+      .useEmbeddedPlugin(Language.JAVA.getLanguageKey(), Paths.get("java.jar"))
+      .useEmbeddedPlugin(Language.ABAP.getLanguageKey(), Paths.get("abap.jar"))
+      .useEmbeddedPlugin(Language.GO.getLanguageKey(), Paths.get("go.jar"))
+      .useEmbeddedPlugin(Language.CLOUDFORMATION.getLanguageKey(), Paths.get("iac.jar"))
+      .useEmbeddedPlugin(Language.DOCKER.getLanguageKey(), Paths.get("iac.jar"))
+      .useEmbeddedPlugin(Language.KUBERNETES.getLanguageKey(), Paths.get("iac.jar"))
+      .useEmbeddedPlugin(Language.TERRAFORM.getLanguageKey(), Paths.get("iac.jar"))
       .build();
-    assertThat(config.getEmbeddedPluginUrlsByKey()).containsOnly(entry("java", URI.create("file://java.jar").toURL()),
-      entry("abap", URI.create("file://abap.jar").toURL()));
+    assertThat(config.getEmbeddedPluginPathsByKey()).containsOnly(entry("java", Paths.get("java.jar")),
+      entry("abap", Paths.get("abap.jar")),
+      entry("go", Paths.get("go.jar")),
+      entry("cloudformation", Paths.get("iac.jar")),
+      entry("docker", Paths.get("iac.jar")),
+      entry("kubernetes", Paths.get("iac.jar")),
+      entry("terraform", Paths.get("iac.jar")));
   }
 
   @Test
-  void configureServerId() throws Exception {
-    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder()
+  void configureServerId() {
+    var config = ConnectedGlobalConfiguration.sonarQubeBuilder()
       .setConnectionId("myServer")
       .build();
     assertThat(config.getConnectionId()).isEqualTo("myServer");
   }
 
   @Test
-  void validateServerId() throws Exception {
-    ConnectedGlobalConfiguration.Builder builder = ConnectedGlobalConfiguration.builder();
+  void validateServerId() {
+    var builder = ConnectedGlobalConfiguration.sonarQubeBuilder();
     expectFailure(builder, "");
     expectFailure(builder, null);
   }
@@ -119,7 +127,7 @@ class ConnectedGlobalConfigurationTests {
 
   @Test
   void providePid() {
-    ConnectedGlobalConfiguration config = ConnectedGlobalConfiguration.builder().setClientPid(123).build();
+    var config = ConnectedGlobalConfiguration.sonarQubeBuilder().setClientPid(123).build();
     assertThat(config.getClientPid()).isEqualTo(123);
   }
 }
