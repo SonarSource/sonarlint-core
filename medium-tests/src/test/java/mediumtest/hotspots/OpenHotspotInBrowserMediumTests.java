@@ -30,6 +30,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.OpenHotspotIn
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
@@ -56,7 +57,7 @@ class OpenHotspotInBrowserMediumTests {
 
     verify(fakeClient, timeout(5000)).openUrlInBrowser(new URL("http://localhost:12345/security_hotspots?id=projectKey&branch=master&hotspots=ab12ef45"));
 
-    assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"openHotspotInBrowserCount\":1");
+    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"openHotspotInBrowserCount\":1"));
   }
 
   @Test
