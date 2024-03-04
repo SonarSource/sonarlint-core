@@ -55,7 +55,7 @@ public class ModuleHierarchyDownloader {
   public Map<String, String> fetchModuleHierarchy(String projectKey, ProgressWrapper progress) {
     List<Component> modules = new ArrayList<>();
 
-    serverApiHelper.getPaginated("api/components/tree.protobuf?qualifiers=BRC&component=" + StringUtils.urlEncode(projectKey),
+    serverApiHelper.getPaginated("api/components/tree.protobuf?qualifiers=FIL,UTS&component=" + StringUtils.urlEncode(projectKey),
       Components.TreeWsResponse::parseFrom,
       Components.TreeWsResponse::getPaging,
       Components.TreeWsResponse::getComponentsList,

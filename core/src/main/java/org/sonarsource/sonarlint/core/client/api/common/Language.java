@@ -53,6 +53,7 @@ public enum Language {
     "sonar.typescript.file.suffixes"),
   JSP("jsp", "web", "JSP", new String[] {".jsp", ".jspf", ".jspx"}, "sonar.jsp.file.suffixes"),
   XML("xml", "xml", "XML", new String[] {".xml", ".xsd", ".xsl"}, "sonar.xml.file.suffixes"),
+  OBJECTSCRIPT("objectscript", "objectscript", "Objectscript", new String[] {".cls", ".int", ".mac"}, "sonar.objectscript.file.suffixes"),
   // For ITs
   XOO("xoo", "xoo", "Xoo", new String[] {".xoo"}, "sonar.xoo.file.suffixes");
 
