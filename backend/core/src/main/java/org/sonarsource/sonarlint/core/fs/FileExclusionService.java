@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.event.EventListener;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
 
 public class FileExclusionService {
@@ -120,8 +121,13 @@ public class FileExclusionService {
   @EventListener
   public void onBindingChanged(BindingConfigChangedEvent event) {
     if (event.getNewConfig().isBound()) {
-      LOG.debug("Binding changed for config scope '{}', recompute file exclusions...", event.getConfigScopeId());
-      clientFileSystemService.getFiles(event.getConfigScopeId()).forEach(f -> serverExclusionByUriCache.refreshAsync(f.getUri()));
+      var connectionId = requireNonNull(event.getNewConfig().getConnectionId());
+      var projectKey = requireNonNull(event.getNewConfig().getSonarProjectKey());
+      // do not recompute exclusions if storage does not yey contain settings (will be done by onFileExclusionSettingsChanged later)
+      if (storageService.getStorageFacade().connection(connectionId).project(projectKey).analyzerConfiguration().isValid()) {
+        LOG.debug("Binding changed for config scope '{}', recompute file exclusions...", event.getConfigScopeId());
+        clientFileSystemService.getFiles(event.getConfigScopeId()).forEach(f -> serverExclusionByUriCache.refreshAsync(f.getUri()));
+      }
     } else {
       LOG.debug("Binding removed for config scope '{}', clearing file exclusions...", event.getConfigScopeId());
       clientFileSystemService.getFiles(event.getConfigScopeId()).forEach(f -> serverExclusionByUriCache.clear(f.getUri()));
@@ -136,10 +142,6 @@ public class FileExclusionService {
     event.getAddedOrUpdated().forEach(f -> serverExclusionByUriCache.refreshAsync(f.getUri()));
   }
 
-  private static boolean isFileExclusionSettingsDifferent(Map<String, String> updatedSettingsValueByKey) {
-    return ALL_EXCLUSION_RELATED_SETTINGS.stream().anyMatch(updatedSettingsValueByKey::containsKey);
-  }
-
   @EventListener
   public void onFileExclusionSettingsChanged(SonarServerSettingsChangedEvent event) {
     var settingsDiff = event.getUpdatedSettingsValueByKey();
@@ -148,6 +150,10 @@ public class FileExclusionService {
       event.getConfigScopeIds().forEach(configScopeId -> clientFileSystemService.getFiles(configScopeId)
         .forEach(f -> serverExclusionByUriCache.refreshAsync(f.getUri())));
     }
+  }
+
+  private static boolean isFileExclusionSettingsDifferent(Map<String, String> updatedSettingsValueByKey) {
+    return ALL_EXCLUSION_RELATED_SETTINGS.stream().anyMatch(updatedSettingsValueByKey::containsKey);
   }
 
   public Map<URI, FileStatusDto> getFilesStatus(Map<String, List<URI>> fileUrisByConfigScope) {
