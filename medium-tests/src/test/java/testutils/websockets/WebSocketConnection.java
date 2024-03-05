@@ -88,18 +88,19 @@ public class WebSocketConnection {
   }
 
   public void sendMessage(String message) {
-    if (session != null) {
-      if (!isOpened) {
-        throw new IllegalStateException("Cannot send a message, the WebSocket is not opened");
-      }
-      if (throwable != null) {
-        throw new IllegalStateException("Cannot send a message, the WebSocket previously errored", throwable);
-      }
-      try {
-        session.getBasicRemote().sendText(message);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+    if (session == null) {
+      throw new IllegalStateException("Cannot send a message, session is null");
+    }
+    if (!isOpened) {
+      throw new IllegalStateException("Cannot send a message, the WebSocket is not opened");
+    }
+    if (throwable != null) {
+      throw new IllegalStateException("Cannot send a message, the WebSocket previously errored", throwable);
+    }
+    try {
+      session.getBasicRemote().sendText(message);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 
