@@ -21,41 +21,27 @@ package testutils.websockets;
 
 import jakarta.websocket.Session;
 import java.io.IOException;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.CopyOnWriteArrayList;
-import javax.annotation.CheckForNull;
 
 public class WebSocketConnection {
-  private final String authorizationHeader;
-  private final String userAgent;
-  private boolean isOpened;
+  private final WebSocketRequest request;
+  private boolean isOpened = true;
   private final List<String> receivedMessages = new CopyOnWriteArrayList<>();
-  private final Queue<String> preparedAnswers = new LinkedList<>();
   private Throwable throwable;
-  private Session session;
+  private final Session session;
 
-  public WebSocketConnection(String authorizationHeader, String userAgent) {
-    this.authorizationHeader = authorizationHeader;
-    this.userAgent = userAgent;
-  }
-
-  public void setSession(Session session) {
+  public WebSocketConnection(WebSocketRequest request, Session session) {
+    this.request = request;
     this.session = session;
-    setIsOpened();
   }
 
   public String getAuthorizationHeader() {
-    return authorizationHeader;
+    return request.getAuthorizationHeader();
   }
 
   public String getUserAgent() {
-    return userAgent;
-  }
-
-  public void setIsOpened() {
-    isOpened = true;
+    return request.getUserAgent();
   }
 
   public boolean isOpened() {
@@ -78,15 +64,6 @@ public class WebSocketConnection {
     this.throwable = throwable;
   }
 
-  @CheckForNull
-  public Throwable getThrowable() {
-    return throwable;
-  }
-
-  public void addPreparedAnswer(String answer) {
-    preparedAnswers.offer(answer);
-  }
-
   public void sendMessage(String message) {
     if (session == null) {
       throw new IllegalStateException("Cannot send a message, session is null");
@@ -102,11 +79,6 @@ public class WebSocketConnection {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  @CheckForNull
-  public String pollPreparedAnswer() {
-    return preparedAnswers.poll();
   }
 
   public void close() {
