@@ -26,34 +26,43 @@ import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.server.ServerEndpoint;
 
+import static testutils.websockets.WebSocketServer.CONNECTION_REPOSITORY_ATTRIBUTE_KEY;
+
 @ServerEndpoint(value = "/endpoint", configurator = ServletAwareConfig.class)
 public class WebSocketEndpoint {
-  public static final String WS_CONNECTION_USER_PROPERTY_KEY = "wsConnection";
+  public static final String WS_REQUEST_KEY = "wsRequest";
+  private static WebSocketConnection connection;
 
   @OnOpen
   public void onOpen(final Session session) {
-    var wsConnection = getWsConnection(session);
-    wsConnection.setSession(session);
+    connection = createWsConnection(session);
   }
 
   @OnMessage
-  public String handleTextMessage(Session session, String message) {
-    var wsConnection = getWsConnection(session);
-    wsConnection.addReceivedMessage(message);
-    return wsConnection.pollPreparedAnswer();
+  public void handleTextMessage(Session session, String message) {
+    System.out.println("Message received by web socket server: " + message);
+    connection.addReceivedMessage(message);
   }
 
   @OnClose
   public void onClose(final Session session) {
-    getWsConnection(session).setIsClosed();
+    connection.setIsClosed();
   }
 
   @OnError
   public void onError(final Session session, final Throwable throwable) {
-    getWsConnection(session).setIsError(throwable);
+    connection.setIsError(throwable);
   }
 
-  private static WebSocketConnection getWsConnection(Session session) {
-    return (WebSocketConnection) session.getUserProperties().get(WS_CONNECTION_USER_PROPERTY_KEY);
+  private static WebSocketConnection createWsConnection(Session session) {
+    var connectionRepository = getWebSocketConnectionRepository(session);
+    var webSocketRequest = (WebSocketRequest) session.getUserProperties().get(WS_REQUEST_KEY);
+    var webSocketConnection = new WebSocketConnection(webSocketRequest, session);
+    connectionRepository.add(webSocketConnection);
+    return webSocketConnection;
+  }
+
+  private static WebSocketConnectionRepository getWebSocketConnectionRepository(Session session) {
+    return (WebSocketConnectionRepository) session.getUserProperties().get(CONNECTION_REPOSITORY_ATTRIBUTE_KEY);
   }
 }

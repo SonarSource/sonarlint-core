@@ -24,15 +24,15 @@ import jakarta.websocket.HandshakeResponse;
 import jakarta.websocket.server.HandshakeRequest;
 import jakarta.websocket.server.ServerEndpointConfig;
 
-import static testutils.websockets.WebSocketEndpoint.WS_CONNECTION_USER_PROPERTY_KEY;
+import static testutils.websockets.WebSocketEndpoint.WS_REQUEST_KEY;
 import static testutils.websockets.WebSocketServer.CONNECTION_REPOSITORY_ATTRIBUTE_KEY;
 
 public class ServletAwareConfig extends ServerEndpointConfig.Configurator {
   @Override
   public void modifyHandshake(ServerEndpointConfig config, HandshakeRequest request, HandshakeResponse response) {
-    var webSocketConnection = new WebSocketConnection(request.getHeaders().get("Authorization").get(0), request.getHeaders().get("User-Agent").get(0));
-    getWebSocketConnectionRepository(request).add(webSocketConnection);
-    config.getUserProperties().put(WS_CONNECTION_USER_PROPERTY_KEY, webSocketConnection);
+    var webSocketRequest = new WebSocketRequest(request.getHeaders().get("Authorization").get(0), request.getHeaders().get("User-Agent").get(0));
+    config.getUserProperties().put(WS_REQUEST_KEY, webSocketRequest);
+    config.getUserProperties().put(CONNECTION_REPOSITORY_ATTRIBUTE_KEY, getWebSocketConnectionRepository(request));
     super.modifyHandshake(config, request, response);
   }
 
