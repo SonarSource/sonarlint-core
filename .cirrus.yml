@@ -80,8 +80,8 @@ build_task:
     - mvn -B -e -V -Pits dependency:go-offline # populate cache including ITs deps too
   cleanup_before_cache_script: cleanup_maven_repository
   on_failure:
-    slack_notification_script:
-      - ./.cirrus/slack-notification.sh
+    slack_notification_script: |
+      .cirrus/slack-notification.sh
 
 test_linux_task:
   # Run unit tests on Linux with Java 17 and SonarQube analysis on Next
@@ -102,8 +102,8 @@ test_linux_task:
     junit_artifacts:
       path: '**/target/surefire-reports/TEST-*.xml'
       format: junit
-    slack_notification_script:
-      - ./.cirrus/slack-notification.sh
+    slack_notification_script: |
+      .cirrus/slack-notification.sh
 
 test_windows_task:
   # Run UTs on Windows (Java 17)
@@ -125,8 +125,8 @@ test_windows_task:
     junit_artifacts:
       path: '**/target/surefire-reports/TEST-*.xml'
       format: junit
-    slack_notification_script:
-      - ./.cirrus/slack-notification.sh
+    slack_notification_script: |
+      .cirrus/slack-notification.sh
 
 mend_scan_task:
   # Run Mend analysis
@@ -150,8 +150,8 @@ mend_scan_task:
     ws_artifacts:
       path: "whitesource/**/*"
   on_failure:
-    slack_notification_script:
-      - ./.cirrus/slack-notification.sh
+    slack_notification_script: |
+      .cirrus/slack-notification.sh
 
 qa_task:
   # Run ITs
@@ -211,8 +211,8 @@ qa_task:
       format: junit
     log_artifacts:
       path: "**/target/**/sonarqube*/logs/*.log"
-    slack_notification_script:
-      - ./.cirrus/slack-notification.sh
+    slack_notification_script: |
+      .cirrus/slack-notification.sh
 
 promote_task:
   # Promotion
@@ -237,5 +237,5 @@ promote_task:
   script: cirrus_promote_maven
   cleanup_before_cache_script: cleanup_maven_repository
   on_failure:
-    slack_notification_script:
-      - ./.cirrus/slack-notification.sh
+    slack_notification_script: |
+      .cirrus/slack-notification.sh
