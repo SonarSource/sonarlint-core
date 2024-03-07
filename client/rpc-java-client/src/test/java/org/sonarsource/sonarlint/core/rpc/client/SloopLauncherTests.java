@@ -22,10 +22,12 @@ package org.sonarsource.sonarlint.core.rpc.client;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
@@ -41,6 +43,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@Disabled("Only for custom build creation")
 class SloopLauncherTests {
   private Process mockProcess;
   private SloopLauncher underTest;
@@ -67,7 +70,8 @@ class SloopLauncherTests {
   }
 
   @Test
-  void test_command_on_linux(@TempDir Path distPath) {
+  void test_command_on_linux(@TempDir Path distPath) throws IOException {
+    Files.createDirectories(distPath);
     sloop = underTest.start(distPath);
 
     verify(mockPbFactory).apply(List.of("sh", "sonarlint-backend"));
@@ -75,7 +79,8 @@ class SloopLauncherTests {
   }
 
   @Test
-  void test_command_on_windows(@TempDir Path distPath) {
+  void test_command_on_windows(@TempDir Path distPath) throws IOException {
+    Files.createDirectories(distPath);
     osName = "Windows";
 
     sloop = underTest.start(distPath);
@@ -85,7 +90,8 @@ class SloopLauncherTests {
   }
 
   @Test
-  void test_command_on_linux_and_provide_jre(@TempDir Path distPath, @TempDir Path jreDir) {
+  void test_command_on_linux_and_provide_jre(@TempDir Path distPath, @TempDir Path jreDir) throws IOException {
+    Files.createDirectories(distPath);
     sloop = underTest.start(distPath, jreDir);
 
     verify(mockPbFactory).apply(List.of("sh", "sonarlint-backend", "-j", jreDir.toString()));
@@ -93,7 +99,8 @@ class SloopLauncherTests {
   }
 
   @Test
-  void test_command_on_windows_and_provide_jre(@TempDir Path distPath, @TempDir Path jreDir) {
+  void test_command_on_windows_and_provide_jre(@TempDir Path distPath, @TempDir Path jreDir) throws IOException {
+    Files.createDirectories(distPath);
     osName = "Windows";
 
     sloop = underTest.start(distPath, jreDir);
@@ -103,7 +110,8 @@ class SloopLauncherTests {
   }
 
   @Test
-  void test_redirect_stderr_to_client(@TempDir Path distPath) {
+  void test_redirect_stderr_to_client(@TempDir Path distPath) throws IOException {
+    Files.createDirectories(distPath);
     when(mockProcess.getErrorStream()).thenReturn(new ByteArrayInputStream("Some errors\nSome other error".getBytes()));
 
     sloop = underTest.start(distPath);

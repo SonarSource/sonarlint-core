@@ -103,12 +103,20 @@ public class SloopLauncher {
     }
 
     var processBuilder = processBuilderFactory.apply(commands);
-    processBuilder.directory(binDirPath.toFile());
+    var binDirFile = binDirPath.toFile();
+    if (!binDirFile.exists()) {
+      logToClient(LogLevel.INFO, "File does not exist " + binDirFile, null);
+      throw new IllegalStateException("File does not exist " + binDirFile);
+    }
+    processBuilder.directory(binDirFile);
     processBuilder.redirectOutput(ProcessBuilder.Redirect.PIPE);
     processBuilder.redirectInput(ProcessBuilder.Redirect.PIPE);
     processBuilder.redirectError(ProcessBuilder.Redirect.PIPE);
 
+    logToClient(LogLevel.INFO, "About to start the SonarLint backend, command=" + commands, null);
     var process = processBuilder.start();
+
+    logToClient(LogLevel.INFO, "SonarLint process started!", null);
 
     // redirect process.getErrorStream() to the client logs
     new StreamGobbler(process.getErrorStream(), stdErrLogConsumer()).start();
@@ -116,8 +124,12 @@ public class SloopLauncher {
     var serverToClientInputStream = process.getInputStream();
     // use process.getOutputStream() as the standard input of a subprocess that can be written to
     var clientToServerOutputStream = process.getOutputStream();
+
+    logToClient(LogLevel.INFO, "Creating the SonarLint client launcher", null);
     var clientLauncher = new ClientJsonRpcLauncher(serverToClientInputStream, clientToServerOutputStream, rpcClient);
 
+
+    logToClient(LogLevel.INFO, "Accessing the SonarLint server proxy", null);
     var serverProxy = clientLauncher.getServerProxy();
     return new Sloop(serverProxy, process);
   }
