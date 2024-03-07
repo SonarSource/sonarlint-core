@@ -42,7 +42,7 @@ public abstract class AbstractConnectionConfiguration {
     this.connectionId = connectionId;
     this.kind = kind;
     this.disableNotifications = disableNotifications;
-    this.url = url;
+    this.url = removeEnd(url, "/");
   }
 
   public String getConnectionId() {
