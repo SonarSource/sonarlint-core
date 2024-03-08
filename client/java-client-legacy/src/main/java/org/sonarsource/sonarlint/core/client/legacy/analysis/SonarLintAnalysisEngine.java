@@ -67,7 +67,7 @@ public final class SonarLintAnalysisEngine {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final ExecutorService executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-analysis-engine-restarter"));
-  private final AtomicReference<AnalysisEngine> analysisEngine = new AtomicReference<>();
+  final AtomicReference<AnalysisEngine> analysisEngine = new AtomicReference<>();
 
   @Nullable
   private final LogOutput logOutput;
@@ -212,9 +212,16 @@ public final class SonarLintAnalysisEngine {
 
   private void streamIssue(RawIssueListener rawIssueListener, String configScopeId, org.sonarsource.sonarlint.core.analysis.api.Issue issue,
     ConcurrentHashMap<String, GetRuleDetailsResponse> ruleDetailsCache) {
-    var activeRule = ruleDetailsCache.computeIfAbsent(issue.getRuleKey(), k -> backend.getAnalysisService().getRuleDetails(new GetRuleDetailsParams(configScopeId, k)).join());
-    rawIssueListener.handle(
-      new RawIssue(issue, activeRule));
+    var activeRule = ruleDetailsCache.computeIfAbsent(issue.getRuleKey(), k -> {
+      try {
+        return backend.getAnalysisService().getRuleDetails(new GetRuleDetailsParams(configScopeId, k)).join();
+      } catch (Exception e) {
+        return null;
+      }
+    });
+    if (activeRule != null) {
+      rawIssueListener.handle(new RawIssue(issue, activeRule));
+    }
   }
 
   public void stop() {
