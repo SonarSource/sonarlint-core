@@ -19,17 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.fs;
 
-import com.google.common.util.concurrent.MoreExecutors;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -69,8 +66,7 @@ public class ClientFileSystemService {
   }
 
   private static ClientFile fromDto(ClientFileDto clientFileDto) {
-    var dtoCharset = clientFileDto.getCharset();
-    var charset = dtoCharset != null ? Charset.forName(dtoCharset) : null;
+    var charset = charsetFromDto(clientFileDto.getCharset());
     var file = new ClientFile(clientFileDto.getUri(), clientFileDto.getConfigScopeId(),
       clientFileDto.getIdeRelativePath(),
       clientFileDto.isTest(),
@@ -80,6 +76,18 @@ public class ClientFileSystemService {
       file.setDirty(clientFileDto.getContent());
     }
     return file;
+  }
+
+  @Nullable
+  private static Charset charsetFromDto(@Nullable String dtoCharset) {
+    if (dtoCharset == null) {
+      return null;
+    }
+    try {
+      return Charset.forName(dtoCharset);
+    } catch (Exception e) {
+      return null;
+    }
   }
 
   public List<ClientFile> findFileByNamesInScope(String configScopeId, List<String> filenames) {
