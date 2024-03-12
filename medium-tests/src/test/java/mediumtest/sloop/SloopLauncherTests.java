@@ -123,7 +123,7 @@ class SloopLauncherTests {
     var telemetryInitDto = new TelemetryClientConstantAttributesDto("SonarLint ITs", "SonarLint ITs",
       "1.2.3", "4.5.6", Collections.emptyMap());
     var clientInfo = new ClientConstantInfoDto("clientName", "integrationTests");
-    var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false, false, false);
+    var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false, false, false, false);
 
     server.initialize(new InitializeParams(clientInfo, telemetryInitDto, HttpConfigurationDto.defaultConfig(), null, featureFlags, sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
       Set.of(PluginLocator.getPhpPluginPath().toAbsolutePath()), Collections.emptyMap(), Set.of(PHP), Collections.emptySet(), Collections.emptyList(),
@@ -144,7 +144,7 @@ class SloopLauncherTests {
     var telemetryInitDto = new TelemetryClientConstantAttributesDto("SonarLint ITs", "SonarLint ITs",
       "1.2.3", "4.5.6", Collections.emptyMap());
     var clientInfo = new ClientConstantInfoDto("clientName", "integrationTests");
-    var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false, false, false);
+    var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false, false, false, false);
     server.initialize(new InitializeParams(clientInfo, telemetryInitDto, HttpConfigurationDto.defaultConfig(), null, featureFlags, sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
       Set.of(PluginLocator.getPhpPluginPath().toAbsolutePath()), Collections.emptyMap(), Set.of(PHP), Collections.emptySet(), Collections.emptyList(),
       Collections.emptyList(), sonarUserHome.toString(), Map.of(), false, null)).join();

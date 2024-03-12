@@ -63,7 +63,6 @@ class TelemetryMediumTests {
     .build();
 
   private SonarLintTestRpcServer backend;
-  private String oldValue;
   private boolean oldDebugValue;
 
   @BeforeAll
@@ -83,27 +82,19 @@ class TelemetryMediumTests {
   }
 
   @BeforeEach
-  void saveTelemetryFlag() {
+  void saveInternalDebugFlag() {
     this.oldDebugValue = InternalDebug.isEnabled();
     InternalDebug.setEnabled(true);
-    oldValue = System.getProperty("sonarlint.telemetry.disabled");
   }
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
     backend.shutdown().get();
-
-    if (oldValue == null) {
-      System.clearProperty("sonarlint.telemetry.disabled");
-    } else {
-      System.setProperty("sonarlint.telemetry.disabled", oldValue);
-    }
     InternalDebug.setEnabled(oldDebugValue);
   }
 
   @Test
   void it_should_not_create_telemetry_file_if_telemetry_disabled_by_system_property() throws ExecutionException, InterruptedException {
-    System.setProperty("sonarlint.telemetry.disabled", "true");
     backend = newBackend()
       .withSonarQubeConnection("connectionId", "http://localhost:12345", storage -> storage.withProject("projectKey", project -> project.withMainBranch("master")))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
@@ -117,7 +108,6 @@ class TelemetryMediumTests {
 
   @Test
   void it_should_not_enable_telemetry_if_disabled_by_system_property() throws ExecutionException, InterruptedException {
-    System.setProperty("sonarlint.telemetry.disabled", "true");
     System.setProperty("sonarlint.internal.telemetry.initialDelay", "0");
 
     var fakeClient = newFakeClient()
@@ -131,14 +121,13 @@ class TelemetryMediumTests {
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isFalse();
     backend.getTelemetryService().enableTelemetry();
 
-    await().untilAsserted(() -> assertThat(fakeClient.getLogs()).extracting(LogParams::getMessage).contains(("Telemetry is " +
-      "disabled by a system property. Ignoring client request.")));
+    await().untilAsserted(() -> assertThat(fakeClient.getLogs()).extracting(LogParams::getMessage).contains(("Telemetry was disabled on " +
+      "server startup. Ignoring client request.")));
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isFalse();
   }
 
   @Test
   void it_should_create_telemetry_file_if_telemetry_enabled() {
-    System.clearProperty("sonarlint.telemetry.disabled");
     System.setProperty("sonarlint.internal.telemetry.initialDelay", "0");
 
     var fakeClient = newFakeClient()
@@ -147,6 +136,7 @@ class TelemetryMediumTests {
     backend = newBackend()
       .withSonarQubeConnection("connectionId", "http://localhost:12345", storage -> storage.withProject("projectKey", project -> project.withMainBranch("master")))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withTelemetryEnabled()
       .build(fakeClient);
 
     this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "ab12ef45"));
@@ -169,10 +159,10 @@ class TelemetryMediumTests {
 
   @Test
   void it_should_consider_telemetry_status_in_file() throws ExecutionException, InterruptedException {
-    System.clearProperty("sonarlint.telemetry.disabled");
     backend = newBackend()
       .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withTelemetryEnabled()
       .build();
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isTrue();
@@ -188,11 +178,10 @@ class TelemetryMediumTests {
   @Test
   void it_should_ping_telemetry_endpoint() throws ExecutionException, InterruptedException {
     System.setProperty("sonarlint.internal.telemetry.initialDelay", "0");
-    System.clearProperty("sonarlint.telemetry.disabled");
     var fakeClient = newFakeClient().build();
     when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryClientLiveAttributesResponse(emptyMap()));
 
-    backend = newBackend().build(fakeClient);
+    backend = newBackend().withTelemetryEnabled().build(fakeClient);
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isTrue();
 
@@ -217,7 +206,7 @@ class TelemetryMediumTests {
     var fakeClient = newFakeClient().build();
     when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryClientLiveAttributesResponse(emptyMap()));
 
-    backend = newBackend().build(fakeClient);
+    backend = newBackend().withTelemetryEnabled().build(fakeClient);
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isTrue();
 
@@ -249,6 +238,7 @@ class TelemetryMediumTests {
     backend = newBackend()
       .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withTelemetryEnabled()
       .build(fakeClient);
 
     backend.getTelemetryService().disableTelemetry();
@@ -281,6 +271,7 @@ class TelemetryMediumTests {
     backend = newBackend()
       .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withTelemetryEnabled()
       .build(fakeClient);
 
     assertThat(telemetryEndpointMock.getAllServeEvents()).isEmpty();
@@ -394,6 +385,7 @@ class TelemetryMediumTests {
     backend = newBackend()
       .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withTelemetryEnabled()
       .build(fakeClient);
   }
 

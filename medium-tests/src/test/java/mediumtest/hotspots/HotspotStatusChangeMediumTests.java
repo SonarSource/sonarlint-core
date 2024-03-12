@@ -20,7 +20,6 @@
 package mediumtest.hotspots;
 
 import com.github.tomakehurst.wiremock.client.WireMock;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -30,23 +29,20 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.ChangeHotspotStatusParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static mediumtest.fixtures.ServerFixture.ServerStatus.DOWN;
 import static mediumtest.fixtures.ServerFixture.newSonarCloudServer;
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
-import static mediumtest.fixtures.ServerFixture.ServerStatus.DOWN;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
 
 class HotspotStatusChangeMediumTests {
-  @TempDir
-  Path storageDir;
 
   private SonarLintTestRpcServer backend;
   private ServerFixture.Server server;
@@ -127,18 +123,15 @@ class HotspotStatusChangeMediumTests {
     var response = setStatusToSafe("configScopeId", "hotspotKey");
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    waitAtMost(2, SECONDS).untilAsserted(() -> {
-      server.getMockServer()
-        .verify(WireMock.postRequestedFor(urlEqualTo("/api/hotspots/change_status"))
-          .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
-          .withRequestBody(equalTo("hotspot=hotspotKey&status=REVIEWED&resolution=SAFE")));
-    });
+    waitAtMost(2, SECONDS).untilAsserted(() -> server.getMockServer()
+      .verify(WireMock.postRequestedFor(urlEqualTo("/api/hotspots/change_status"))
+        .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
+        .withRequestBody(equalTo("hotspot=hotspotKey&status=REVIEWED&resolution=SAFE"))));
   }
 
   @Test
   @Disabled("TODO")
   void it_should_update_the_hotspot_status_in_the_storage() {
-    // newStorage("connectionId").withProject("projectKey", project -> project.withHotspot("hotspotKey")).create(storageDir);
     server = newSonarQubeServer().start();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server)
@@ -160,6 +153,7 @@ class HotspotStatusChangeMediumTests {
     backend = newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withTelemetryEnabled()
       .build();
 
     var response = setStatusToSafe("configScopeId", "hotspotKey");

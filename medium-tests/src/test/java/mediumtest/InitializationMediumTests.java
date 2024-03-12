@@ -52,8 +52,10 @@ class InitializationMediumTests {
     backend = newBackend()
       .build();
     var telemetryInitDto = new TelemetryClientConstantAttributesDto("mediumTests", "mediumTests", "1.2.3", "4.5.6", emptyMap());
+    var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false, false, false, false);
     var future = backend
-      .initialize(new InitializeParams(new ClientConstantInfoDto("name", "productKey"), telemetryInitDto, HttpConfigurationDto.defaultConfig(), null, new FeatureFlagsDto(false, false, false, false, false, false, false, false),
+      .initialize(new InitializeParams(new ClientConstantInfoDto("name", "productKey"), telemetryInitDto,
+        HttpConfigurationDto.defaultConfig(), null, featureFlags,
         Path.of("unused"), Path.of("unused"),
         emptySet(), emptyMap(), emptySet(), emptySet(),
         emptyList(), emptyList(), "home", emptyMap(), false, null));

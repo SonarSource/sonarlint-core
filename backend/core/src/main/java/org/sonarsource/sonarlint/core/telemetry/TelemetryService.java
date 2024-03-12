@@ -48,7 +48,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 public class TelemetryService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final String DISABLE_PROPERTY_KEY = "sonarlint.telemetry.disabled";
   private static final long TELEMETRY_UPLOAD_DELAY = TimeUnit.HOURS.toMinutes(6);
 
   private final TelemetryLocalStorageManager telemetryLocalStorageManager;
@@ -57,10 +56,12 @@ public class TelemetryService {
   private final TelemetryServerAttributesProvider telemetryServerAttributesProvider;
   private final SonarLintRpcClient client;
   private final Path userHome;
+  private final boolean isTelemetryEnabled;
 
   public TelemetryService(InitializeParams initializeParams, SonarLintRpcClient sonarlintClient, HttpClientProvider httpClientProvider,
     TelemetryServerAttributesProvider telemetryServerAttributesProvider, @Named("userHome") Path userHome) {
     this.userHome = userHome;
+    this.isTelemetryEnabled = initializeParams.getFeatureFlags().isEnableTelemetry();
     this.client = sonarlintClient;
     this.telemetryServerAttributesProvider = telemetryServerAttributesProvider;
     var telemetryInitParams = initializeParams.getTelemetryConstantAttributes();
@@ -81,8 +82,8 @@ public class TelemetryService {
   }
 
   private void initTelemetryAndScheduleUpload(InitializeParams initializeParams) {
-    if (isDisabledBySystemProperty()) {
-      LOG.info("Telemetry disabled by a system property");
+    if (!isTelemetryEnabled) {
+      LOG.info("Telemetry disabled on server startup");
       return;
     }
     this.telemetryLocalStorageManager.tryUpdateAtomically(storage -> storage.setInitialNewCodeFocus(initializeParams.isFocusOnNewCode()));
@@ -102,8 +103,8 @@ public class TelemetryService {
   }
 
   public void enableTelemetry() {
-    if (isDisabledBySystemProperty()) {
-      LOG.warn("Telemetry is disabled by a system property. Ignoring client request.");
+    if (!isTelemetryEnabled) {
+      LOG.warn("Telemetry was disabled on server startup. Ignoring client request.");
       return;
     }
     var telemetryLiveAttributes = getTelemetryLiveAttributes();
@@ -138,10 +139,6 @@ public class TelemetryService {
     return null;
   }
 
-  private static boolean isDisabledBySystemProperty() {
-    return "true".equals(System.getProperty(DISABLE_PROPERTY_KEY));
-  }
-
   private TelemetryLocalStorageManager getTelemetryLocalStorageManager() {
     if (telemetryLocalStorageManager == null) {
       throw new IllegalStateException("Telemetry service has not been initialized");
@@ -150,7 +147,7 @@ public class TelemetryService {
   }
 
   public boolean isEnabled() {
-    return !isDisabledBySystemProperty() && telemetryLocalStorageManager != null && telemetryLocalStorageManager.tryRead().enabled();
+    return isTelemetryEnabled && telemetryLocalStorageManager != null && telemetryLocalStorageManager.tryRead().enabled();
   }
 
   public void hotspotOpenedInBrowser() {

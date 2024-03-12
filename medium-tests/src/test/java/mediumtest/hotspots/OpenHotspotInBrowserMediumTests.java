@@ -51,6 +51,7 @@ class OpenHotspotInBrowserMediumTests {
     backend = newBackend()
       .withSonarQubeConnection("connectionId", "http://localhost:12345", storage -> storage.withProject("projectKey", project -> project.withMainBranch("master")))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withTelemetryEnabled()
       .build(fakeClient);
 
     this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "ab12ef45"));
