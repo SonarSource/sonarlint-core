@@ -112,6 +112,7 @@ class OpenIssueInIdeMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, serverWithIssues)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withEmbeddedServer()
+      .withTelemetryEnabled()
       .build(fakeClient);
 
     assertThat(backend.telemetryFilePath())

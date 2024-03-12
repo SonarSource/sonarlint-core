@@ -133,7 +133,7 @@ class OpenHotspotInIdeMediumTests {
   }
 
   @Test
-  void it_should_open_hotspot_in_ide_when_project_bound() throws InterruptedException {
+  void it_should_open_hotspot_in_ide_when_project_bound() {
     var fakeClient = newFakeClient().build();
     backend = newBackend()
       .withSonarQubeConnection(CONNECTION_ID, serverWithHotspot)
@@ -160,6 +160,7 @@ class OpenHotspotInIdeMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, serverWithHotspot)
       .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withEmbeddedServer()
+      .withTelemetryEnabled()
       .build();
 
     requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
@@ -218,7 +219,7 @@ class OpenHotspotInIdeMediumTests {
   }
 
   @Test
-  void it_should_display_a_message_when_failing_to_fetch_the_hotspot() throws InterruptedException {
+  void it_should_display_a_message_when_failing_to_fetch_the_hotspot() {
     var fakeClient = newFakeClient().build();
     backend = newBackend()
       .withSonarQubeConnection(CONNECTION_ID, serverWithoutHotspot)

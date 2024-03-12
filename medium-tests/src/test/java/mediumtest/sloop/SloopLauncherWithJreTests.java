@@ -38,6 +38,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFla
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import testutils.PluginLocator;
 
 import static mediumtest.sloop.UnArchiveUtils.unarchiveDistribution;
@@ -79,7 +80,7 @@ class SloopLauncherWithJreTests {
     var telemetryInitDto = new TelemetryClientConstantAttributesDto("SonarLint ITs", "SonarLint ITs",
       "1.2.3", "4.5.6", Collections.emptyMap());
     var clientInfo = new ClientConstantInfoDto("clientName", "integrationTests");
-    var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false, false, false);
+    var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false, false, false, false);
 
     server.initialize(new InitializeParams(clientInfo, telemetryInitDto, HttpConfigurationDto.defaultConfig(), null, featureFlags, sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
     Set.of(PluginLocator.getPhpPluginPath().toAbsolutePath()), Collections.emptyMap(), Set.of(PHP), Collections.emptySet(), Collections.emptyList(),
@@ -88,7 +89,7 @@ class SloopLauncherWithJreTests {
     var result = server.getRulesService().listAllStandaloneRulesDefinitions().join();
     assertThat(result.getRulesByKey()).hasSize(219);
     var expectedJreLog = "Using JRE from " + (SystemUtils.IS_OS_WINDOWS ? JreLocator.getWindowsJrePath() : JreLocator.getLinuxJrePath());
-    assertThat(client.getLogs()).anyMatch(logParams -> logParams.getMessage().equals(expectedJreLog));
+    assertThat(client.getLogs()).extracting(LogParams::getMessage).contains(expectedJreLog);
   }
 
   @NotNull

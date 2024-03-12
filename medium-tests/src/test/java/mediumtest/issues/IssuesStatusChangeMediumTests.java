@@ -115,6 +115,7 @@ class IssuesStatusChangeMediumTests {
                 .withType(RuleType.BUG))))
         .withServerVersion("9.8"))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withTelemetryEnabled()
       .build();
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", "myIssueKey",
@@ -223,6 +224,7 @@ class IssuesStatusChangeMediumTests {
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
+      .withTelemetryEnabled()
       .build(client);
 
     client.waitForSynchronization();

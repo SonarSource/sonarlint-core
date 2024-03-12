@@ -126,6 +126,7 @@ public class SonarLintBackendFixture {
     private boolean synchronizeProjects;
     private boolean shouldManageFullSynchronization;
     private boolean taintVulnerabilitiesEnabled = true;
+    private boolean telemetryEnabled;
     private boolean manageServerSentEvents;
     private String userAgent = USER_AGENT_FOR_TESTS;
     private String clientName = "SonarLint Backend Fixture";
@@ -388,6 +389,11 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintBackendBuilder withTelemetryEnabled(){
+      this.telemetryEnabled = true;
+      return this;
+    }
+
     public SonarLintTestRpcServer build(SonarLintRpcClientDelegate client) {
       var sonarlintUserHome = tempDirectory("slUserHome");
       var workDir = tempDirectory("work");
@@ -403,7 +409,7 @@ public class SonarLintBackendFixture {
           "1.2.3", "4.5.6", emptyMap());
         var clientInfo = new ClientConstantInfoDto(clientName, userAgent);
         var featureFlags = new FeatureFlagsDto(manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, startEmbeddedServer, areSecurityHotspotsEnabled,
-          manageServerSentEvents, enableDataflowBugDetection, shouldManageFullSynchronization);
+          manageServerSentEvents, enableDataflowBugDetection, shouldManageFullSynchronization, telemetryEnabled);
 
         SonarCloudAlternativeEnvironmentDto sonarCloudAlternativeEnvironment = null;
         if (sonarCloudUrl != null || sonarCloudWebSocketsUrl != null) {
@@ -491,9 +497,9 @@ public class SonarLintBackendFixture {
   }
 
   public static class SonarLintClientBuilder {
-    private Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId = new HashMap<>();
+    private final Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId = new HashMap<>();
     private boolean printLogsToStdOut;
-    private Map<String, List<ClientFileDto>> initialFilesByConfigScope = new HashMap<>();
+    private final Map<String, List<ClientFileDto>> initialFilesByConfigScope = new HashMap<>();
     private final Map<String, String> matchedBranchPerScopeId = new HashMap<>();
 
     public SonarLintClientBuilder withCredentials(String connectionId, String user, String password) {
