@@ -63,7 +63,7 @@ public class ClientProxyCredentialsProvider implements CredentialsProvider {
       var targetHostURI = HttpClientContext.adapt(context).getRequest().getUri();
       var protocol = getProtocol(authScope);
       var response = client.getProxyPasswordAuthentication(
-        new GetProxyPasswordAuthenticationParams(authScope.getHost(), authScope.getPort(), protocol,
+        new GetProxyPasswordAuthenticationParams(host, authScope.getPort(), protocol,
           authScope.getRealm(), authScope.getSchemeName(), targetHostURI.toURL()))
         .get();
       var proxyUser = response.getProxyUser();
