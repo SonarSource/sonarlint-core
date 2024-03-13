@@ -55,7 +55,7 @@ class TelemetryUtils {
   static TelemetryAnalyzerPerformancePayload[] toPayload(Map<String, TelemetryAnalyzerPerformance> analyzers) {
     return analyzers.entrySet().stream()
       .map(TelemetryUtils::toPayload)
-      .toArray(size -> new TelemetryAnalyzerPerformancePayload[size]);
+      .toArray(TelemetryAnalyzerPerformancePayload[]::new);
   }
 
   private static TelemetryAnalyzerPerformancePayload toPayload(Map.Entry<String, TelemetryAnalyzerPerformance> entry) {
@@ -81,9 +81,8 @@ class TelemetryUtils {
   }
 
   private static Map<String, TelemetryNotificationsCounterPayload> toNotifPayload(Map<String, TelemetryNotificationsCounter> notifications) {
-    return notifications.entrySet().stream().collect(Collectors.toMap(e -> e.getKey(), e -> {
-      return new TelemetryNotificationsCounterPayload(e.getValue().getDevNotificationsCount(), e.getValue().getDevNotificationsClicked());
-    }));
+    return notifications.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
+      e -> new TelemetryNotificationsCounterPayload(e.getValue().getDevNotificationsCount(), e.getValue().getDevNotificationsClicked())));
   }
 
   /**

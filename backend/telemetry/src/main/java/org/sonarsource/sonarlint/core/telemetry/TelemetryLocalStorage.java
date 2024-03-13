@@ -49,7 +49,7 @@ public class TelemetryLocalStorage {
   private int taintVulnerabilitiesInvestigatedLocallyCount;
   private int taintVulnerabilitiesInvestigatedRemotelyCount;
   private int hotspotStatusChangedCount;
-  private Set<String> issueStatusChangedRuleKeys;
+  private final Set<String> issueStatusChangedRuleKeys;
   private final Set<String> raisedIssuesRules;
   private final Set<String> quickFixesApplied;
   private final Map<String, TelemetryHelpAndFeedbackCounter> helpAndFeedbackLinkClickedCount;

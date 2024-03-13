@@ -123,6 +123,20 @@ class TelemetryPayloadTests {
       .containsExactly(true, 2);
     assertThat(m.issuePayload().getStatusChangedRuleKeys()).isEqualTo(Set.of("java:S123"));
     assertThat(m.additionalAttributes()).containsExactlyEntriesOf(additionalProps);
+    assertThat(m.getShowHotspotPayload().requestsCount).isEqualTo(4);
+    assertThat(m.getShowIssuePayload().requestsCount).isEqualTo(3);
+    assertThat(m.getHotspotPayload().openInBrowserCount).isEqualTo(5);
+    assertThat(m.getHotspotPayload().statusChangedCount).isEqualTo(3);
+    assertThat(m.getTaintVulnerabilitiesPayload().investigatedLocallyCount).isEqualTo(6);
+    assertThat(m.getTaintVulnerabilitiesPayload().investigatedRemotelyCount).isEqualTo(7);
+    assertThat(m.getTelemetryRulesPayload().defaultDisabled).containsExactly("disabledRuleKey1", "disabledRuleKey2");
+    assertThat(m.getTelemetryRulesPayload().nonDefaultEnabled).containsExactly("enabledRuleKey1", "enabledRuleKey2");
+    assertThat(m.getTelemetryRulesPayload().raisedIssues).containsExactly("reportedRuleKey1", "reportedRuleKey2");
+    assertThat(m.getTelemetryRulesPayload().quickFixesApplied).containsExactly("quickFixedRuleKey1", "quickFixedRuleKey2");
+    assertThat(m.getIdeVersion()).isEqualTo("Pycharm 3.2");
+    assertThat(m.getPlatform()).isEqualTo("platform");
+    assertThat(m.getArchitecture()).isEqualTo("architecture");
+    assertThat(m.getInstallTime()).hasToString("2017-11-10T12:01:14.984123123+02:00");
   }
 
   @Test
