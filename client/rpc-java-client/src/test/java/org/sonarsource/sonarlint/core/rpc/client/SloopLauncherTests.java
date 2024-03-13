@@ -21,14 +21,18 @@ package org.sonarsource.sonarlint.core.rpc.client;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,6 +42,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -47,11 +52,20 @@ class SloopLauncherTests {
   private Sloop sloop;
   private Function<List<String>, ProcessBuilder> mockPbFactory;
   private SonarLintRpcClientDelegate rpcClient;
-
   private String osName = "Linux";
+  private Path fakeJreHomePath;
+  private Path fakeJreJavaLinuxPath;
+  private Path fakeJreJavaWindowsPath;
 
   @BeforeEach
-  void prepare() throws IOException {
+  void prepare(@TempDir Path fakeJreHomePath) throws IOException {
+    this.fakeJreHomePath = fakeJreHomePath;
+    var fakeJreBinFolder = this.fakeJreHomePath.resolve("bin");
+    Files.createDirectories(fakeJreBinFolder);
+    fakeJreJavaLinuxPath = fakeJreBinFolder.resolve("java");
+    Files.createFile(fakeJreJavaLinuxPath);
+    fakeJreJavaWindowsPath = fakeJreBinFolder.resolve("java.exe");
+    Files.createFile(fakeJreJavaWindowsPath);
     mockPbFactory = mock();
     var mockProcessBuilder = mock(ProcessBuilder.class);
     when(mockPbFactory.apply(any())).thenReturn(mockProcessBuilder);
@@ -67,38 +81,34 @@ class SloopLauncherTests {
   }
 
   @Test
-  void test_command_on_linux(@TempDir Path distPath) {
-    sloop = underTest.start(distPath);
-
-    verify(mockPbFactory).apply(List.of("sh", "sonarlint-backend"));
-    assertThat(sloop.getRpcServer()).isNotNull();
-  }
-
-  @Test
-  void test_command_on_windows(@TempDir Path distPath) {
-    osName = "Windows";
+  void test_command_with_embedded_jre(@TempDir Path distPath) throws IOException {
+    var bundledJreBinPath = distPath.resolve("jre").resolve("bin");
+    Files.createDirectories(bundledJreBinPath);
+    var bundledJrejavaPath = bundledJreBinPath.resolve("java");
+    Files.createFile(bundledJrejavaPath);
 
     sloop = underTest.start(distPath);
 
-    verify(mockPbFactory).apply(List.of("cmd.exe", "/c", "sonarlint-backend.bat"));
+    verify(mockPbFactory).apply(List.of(bundledJrejavaPath.toString(), "-classpath", distPath.resolve("lib") + File.separator + '*', "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli"));
     assertThat(sloop.getRpcServer()).isNotNull();
   }
 
   @Test
-  void test_command_on_linux_and_provide_jre(@TempDir Path distPath, @TempDir Path jreDir) {
-    sloop = underTest.start(distPath, jreDir);
+  void test_command_with_custom_jre_on_linux(@TempDir Path distPath) {
+    sloop = underTest.start(distPath, fakeJreHomePath);
 
-    verify(mockPbFactory).apply(List.of("sh", "sonarlint-backend", "-j", jreDir.toString()));
+    verify(mockPbFactory)
+      .apply(List.of(fakeJreJavaLinuxPath.toString(), "-classpath", distPath.resolve("lib") + File.separator + '*', "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli"));
     assertThat(sloop.getRpcServer()).isNotNull();
   }
 
   @Test
-  void test_command_on_windows_and_provide_jre(@TempDir Path distPath, @TempDir Path jreDir) {
+  void test_command_with_custom_jre_on_windows(@TempDir Path distPath) {
     osName = "Windows";
+    sloop = underTest.start(distPath, fakeJreHomePath);
 
-    sloop = underTest.start(distPath, jreDir);
-
-    verify(mockPbFactory).apply(List.of("cmd.exe", "/c", "sonarlint-backend.bat", "-j", jreDir.toString()));
+    verify(mockPbFactory)
+      .apply(List.of(fakeJreJavaWindowsPath.toString(), "-classpath", distPath.resolve("lib") + File.separator + '*', "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli"));
     assertThat(sloop.getRpcServer()).isNotNull();
   }
 
@@ -106,12 +116,13 @@ class SloopLauncherTests {
   void test_redirect_stderr_to_client(@TempDir Path distPath) {
     when(mockProcess.getErrorStream()).thenReturn(new ByteArrayInputStream("Some errors\nSome other error".getBytes()));
 
-    sloop = underTest.start(distPath);
+    sloop = underTest.start(distPath, fakeJreHomePath);
 
     ArgumentCaptor<LogParams> captor = ArgumentCaptor.captor();
-    verify(rpcClient, timeout(1000).times(2)).log(captor.capture());
+    verify(rpcClient, timeout(1000).times(3)).log(captor.capture());
 
     assertThat(captor.getAllValues())
+      .filteredOn(m -> m.getLevel() == LogLevel.ERROR)
       .extracting(LogParams::getMessage)
       .containsExactly("StdErr: Some errors", "StdErr: Some other error");
   }
@@ -120,14 +131,20 @@ class SloopLauncherTests {
   void test_log_stacktrace(@TempDir Path distPath) {
     doThrow(new IllegalStateException("Some error")).when(mockProcess).getInputStream();
 
-    assertThrows(IllegalStateException.class, () -> sloop = underTest.start(distPath));
+    assertThrows(IllegalStateException.class, () -> sloop = underTest.start(distPath, fakeJreHomePath));
 
     ArgumentCaptor<LogParams> captor = ArgumentCaptor.captor();
-    verify(rpcClient).log(captor.capture());
+    verify(rpcClient, times(2)).log(captor.capture());
 
     var log = captor.getValue();
 
     assertThat(log.getMessage()).isEqualTo("Unable to start the SonarLint backend");
     assertThat(log.getStackTrace()).startsWith("java.lang.IllegalStateException: Some error");
+  }
+
+  @Test
+  void test_throw_error_if_java_path_does_not_exist(@TempDir Path distPath) {
+    var wrongPath = Paths.get("wrongPath");
+    assertThrows(IllegalStateException.class, () -> sloop = underTest.start(distPath, wrongPath));
   }
 }

@@ -34,18 +34,6 @@
       </includes>
     </fileSet>
 
-    <!-- The launcher script-->
-    <fileSet>
-      <directory>src/main/assembly/bin</directory>
-      <outputDirectory>bin</outputDirectory>
-      <fileMode>0755</fileMode>
-      <lineEnding>unix</lineEnding>
-      <filtered>true</filtered>
-      <includes>
-        <include>sonarlint-backend</include>
-      </includes>
-    </fileSet>
-
     <!-- jre basic, except bin/ and misc -->
     <fileSet>
       <directory>${unpack.dir}/macosx_aarch64/${jre.dirname.macosx}</directory>
