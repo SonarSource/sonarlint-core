@@ -19,11 +19,19 @@
  */
 package org.sonarsource.sonarlint.core.embedded.server;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.HttpException;
+import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.http.message.BasicClassicHttpRequest;
+import org.apache.hc.core5.http.protocol.HttpContext;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
@@ -45,24 +53,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class ShowIssueRequestHandlerTests {
 
   @Test
   void should_transform_ServerIssueDetail_to_ShowIssueParams() {
-    var repository = mock(ConnectionConfigurationRepository.class);
-    var configurationRepository = mock(ConfigurationRepository.class);
-    var bindingSuggestionProvider = mock(BindingSuggestionProvider.class);
-    var bindingCandidatesFinder = mock(BindingCandidatesFinder.class);
-    var serverApiProvider = mock(ServerApiProvider.class);
-    var telemetryService = mock(TelemetryService.class);
-    var sonarLintClient = mock(SonarLintRpcClient.class);
-    var serverApi = mock(ServerApi.class);
-    var issueApi = mock(IssueApi.class);
-    var pathTranslationService = mock(PathTranslationService.class);
-    var userTokenService = mock(UserTokenService.class);
-
     var connectionId = "connectionId";
     var configScopeId = "configScopeId";
     var issueKey = "issueKey";
@@ -82,12 +80,7 @@ class ShowIssueRequestHandlerTests {
     var issueComponentKey = "IssueComponentKey";
     var codeSnippet = "//todo remove this";
 
-    when(serverApiProvider.getServerApi(any())).thenReturn(Optional.of(serverApi));
-    when(serverApi.issue()).thenReturn(issueApi);
-    when(issueApi.getCodeSnippet(eq(locationComponentKey_1), any(), any(), any(), any())).thenReturn(Optional.of(locationCodeSnippet_1));
-
-    var showIssueRequestHandler = new ShowIssueRequestHandler(sonarLintClient, serverApiProvider, telemetryService,
-      new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintClient, repository, configurationRepository, userTokenService), pathTranslationService);
+    var showIssueRequestHandler = getShowIssueRequestHandler(locationComponentKey_1, locationCodeSnippet_1);
 
     var flow = Common.Flow.newBuilder()
       .addLocations(Common.Location.newBuilder().setTextRange(locationTextRange_1).setComponent(locationComponentKey_1).setMsg(locationMessage_1))
@@ -139,6 +132,22 @@ class ShowIssueRequestHandlerTests {
   }
 
   @Test
+  void should_trigger_telemetry() throws HttpException, IOException, URISyntaxException {
+    var request = mock(ClassicHttpRequest.class);
+    when(request.getUri()).thenReturn(URI.create("http://localhost:8000/issue?project=pk&issue=ik&branch=b&server=s"));
+    when(request.getMethod()).thenReturn(Method.GET.name());
+    var response = mock(ClassicHttpResponse.class);
+    var context = mock(HttpContext.class);
+    var telemetryService = mock(TelemetryService.class);
+    var showIssueRequestHandler = getShowIssueRequestHandler(telemetryService, "comp", "snippet");
+
+    showIssueRequestHandler.handle(request,response, context);
+
+    verify(telemetryService).showIssueRequestReceived();
+    verifyNoMoreInteractions(telemetryService);
+  }
+
+  @Test
   void should_extract_query_from_request_without_token() {
     var issueQuery = ShowIssueRequestHandler.extractQuery(new BasicClassicHttpRequest("GET", "/sonarlint/api/issues/show?server=" +
       "https%3A%2F%2Fnext.sonarqube.com%2Fsonarqube&project=org.sonarsource.sonarlint" +
@@ -183,5 +192,29 @@ class ShowIssueRequestHandlerTests {
   void should_detect_taint_issues() {
     assertThat(ShowIssueRequestHandler.isIssueTaint("java:S1144")).isFalse();
     assertThat(ShowIssueRequestHandler.isIssueTaint("javasecurity:S3649")).isTrue();
+  }
+
+  private static ShowIssueRequestHandler getShowIssueRequestHandler(String locationComponentKey, String locationCodeSnippet) {
+    var telemetryService = mock(TelemetryService.class);
+    return getShowIssueRequestHandler(telemetryService, locationComponentKey, locationCodeSnippet);
+  }
+
+  private static ShowIssueRequestHandler getShowIssueRequestHandler(TelemetryService telemetryService, String locationComponentKey, String locationCodeSnippet) {
+    var serverApi = mock(ServerApi.class);
+    var serverApiProvider = mock(ServerApiProvider.class);
+    var issueApi = mock(IssueApi.class);
+    when(serverApiProvider.getServerApi(any())).thenReturn(Optional.of(serverApi));
+    when(serverApi.issue()).thenReturn(issueApi);
+    when(issueApi.getCodeSnippet(eq(locationComponentKey), any(), any(), any(), any())).thenReturn(Optional.of(locationCodeSnippet));
+    var repository = mock(ConnectionConfigurationRepository.class);
+    var configurationRepository = mock(ConfigurationRepository.class);
+    var bindingSuggestionProvider = mock(BindingSuggestionProvider.class);
+    var bindingCandidatesFinder = mock(BindingCandidatesFinder.class);
+
+    var sonarLintClient = mock(SonarLintRpcClient.class);
+    var pathTranslationService = mock(PathTranslationService.class);
+    var userTokenService = mock(UserTokenService.class);
+    return new ShowIssueRequestHandler(sonarLintClient, serverApiProvider, telemetryService,
+      new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintClient, repository, configurationRepository, userTokenService), pathTranslationService);
   }
 }

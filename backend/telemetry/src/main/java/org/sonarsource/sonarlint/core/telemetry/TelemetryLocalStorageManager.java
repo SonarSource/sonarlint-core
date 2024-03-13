@@ -67,11 +67,11 @@ public class TelemetryLocalStorageManager {
     Files.createDirectories(path.getParent());
     try (var fileChannel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.SYNC);
       var lock = fileChannel.lock()) {
-      var newData = readAtomically(fileChannel);
+      var storageData = readAtomically(fileChannel);
 
-      updater.accept(newData);
+      updater.accept(storageData);
 
-      writeAtomically(fileChannel, newData);
+      writeAtomically(fileChannel, storageData);
     }
   }
 

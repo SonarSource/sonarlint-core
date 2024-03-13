@@ -25,13 +25,13 @@ import java.util.Collection;
 public class TelemetryRulesPayload {
 
   @SerializedName("non_default_enabled")
-  private final Collection<String> nonDefaultEnabled;
+  public final Collection<String> nonDefaultEnabled;
   @SerializedName("default_disabled")
-  private final Collection<String> defaultDisabled;
+  public final Collection<String> defaultDisabled;
   @SerializedName("raised_issues")
-  private final Collection<String> raisedIssues;
+  public final Collection<String> raisedIssues;
   @SerializedName("quick_fix_applied")
-  private final Collection<String> quickFixesApplied;
+  public final Collection<String> quickFixesApplied;
 
   public TelemetryRulesPayload(Collection<String> nonDefaultEnabled, Collection<String> defaultDisabled, Collection<String> raisedIssues, Collection<String> quickFixesApplied) {
     this.nonDefaultEnabled = nonDefaultEnabled;

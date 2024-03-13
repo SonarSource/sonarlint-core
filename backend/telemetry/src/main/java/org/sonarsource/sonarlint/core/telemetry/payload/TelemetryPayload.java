@@ -205,6 +205,42 @@ public class TelemetryPayload {
     return additionalAttributes;
   }
 
+  public ShowHotspotPayload getShowHotspotPayload() {
+    return showHotspotPayload;
+  }
+
+  public ShowIssuePayload getShowIssuePayload() {
+    return showIssuePayload;
+  }
+
+  public TaintVulnerabilitiesPayload getTaintVulnerabilitiesPayload() {
+    return taintVulnerabilitiesPayload;
+  }
+
+  public TelemetryRulesPayload getTelemetryRulesPayload() {
+    return telemetryRulesPayload;
+  }
+
+  public HotspotPayload getHotspotPayload() {
+    return hotspotPayload;
+  }
+
+  public String getIdeVersion() {
+    return ideVersion;
+  }
+
+  public String getPlatform() {
+    return platform;
+  }
+
+  public String getArchitecture() {
+    return architecture;
+  }
+
+  public OffsetDateTime getInstallTime() {
+    return installTime;
+  }
+
   public String toJson() {
     var gson = new GsonBuilder()
       .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeAdapter())
