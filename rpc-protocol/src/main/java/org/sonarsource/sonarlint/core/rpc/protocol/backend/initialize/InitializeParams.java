@@ -32,6 +32,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 
 public class InitializeParams {
   private final ClientConstantInfoDto clientConstantInfo;
+  private final TelemetryClientConstantAttributesDto telemetryConstantAttributes;
   private final HttpConfigurationDto httpConfiguration;
   private final SonarCloudAlternativeEnvironmentDto alternativeSonarCloudEnvironment;
   private final FeatureFlagsDto featureFlags;
@@ -46,8 +47,7 @@ public class InitializeParams {
   private final String sonarlintUserHome;
   private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey;
   private final boolean isFocusOnNewCode;
-  private final TelemetryClientConstantAttributesDto telemetryConstantAttributes;
-  private final Path clientNodeJsPath;
+  private final LanguageSpecificRequirements languageSpecificRequirements;
 
   /**
    * @param telemetryConstantAttributes Static information about the client, that will be sent with the telemetry payload
@@ -72,7 +72,7 @@ public class InitializeParams {
     @Nullable String sonarlintUserHome,
     @Nullable Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey,
     boolean isFocusOnNewCode,
-    @Nullable Path clientNodeJsPath) {
+    @Nullable LanguageSpecificRequirements languageSpecificRequirements) {
     this.clientConstantInfo = clientConstantInfo;
     this.telemetryConstantAttributes = telemetryConstantAttributes;
     this.httpConfiguration = httpConfiguration;
@@ -89,7 +89,7 @@ public class InitializeParams {
     this.sonarlintUserHome = sonarlintUserHome;
     this.standaloneRuleConfigByKey = standaloneRuleConfigByKey;
     this.isFocusOnNewCode = isFocusOnNewCode;
-    this.clientNodeJsPath = clientNodeJsPath;
+    this.languageSpecificRequirements = languageSpecificRequirements;
   }
 
   public ClientConstantInfoDto getClientConstantInfo() {
@@ -159,8 +159,8 @@ public class InitializeParams {
     return isFocusOnNewCode;
   }
 
-  @CheckForNull
-  public Path getClientNodeJsPath() {
-    return clientNodeJsPath;
+  @Nullable
+  public LanguageSpecificRequirements getLanguageSpecificRequirements() {
+    return languageSpecificRequirements;
   }
 }
