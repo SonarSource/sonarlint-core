@@ -64,7 +64,7 @@ public abstract class AbstractConnectedTests {
   @RegisterExtension
   static LogOnTestFailure logOnTestFailure = new LogOnTestFailure(rpcClientLogs);
 
-  public static final ClientConstantInfoDto IT_CLIENT_INFO = new ClientConstantInfoDto("clientName", "integrationTests");
+  public static final ClientConstantInfoDto IT_CLIENT_INFO = new ClientConstantInfoDto("clientName", "integrationTests", 0);
   protected static final String SONARLINT_USER = "sonarlint";
   protected static final String SONARLINT_PWD = "sonarlintpwd";
   protected static final String MAIN_BRANCH_NAME = "master";
