@@ -19,39 +19,28 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
 
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import java.nio.file.Path;
 
-/**
- * Static information to describe the client. Dynamic information will be provided when needed by calling {@link SonarLintRpcClient#getClientLiveInfo()}
- */
-public class ClientConstantInfoDto {
-  /**
-   * Name of the client, that could be used outside the IDE, e.g. for the sonarlint/api/status endpoint or when opening the page to generate the user token
-   */
-  private final String name;
+public class OmnisharpRequirementsDto {
+  private final Path monoDistributionPath;
+  private final Path dotNet6DistributionPath;
+  private final Path dotNet472DistributionPath;
 
-  /**
-   * User agent used for all HTTP requests made by the backend
-   */
-  private final String userAgent;
-
-  private final long pid;
-
-  public ClientConstantInfoDto(String name, String userAgent, long pid) {
-    this.name = name;
-    this.userAgent = userAgent;
-    this.pid = pid;
+  public OmnisharpRequirementsDto(Path monoDistributionPath, Path dotNet6DistributionPath, Path dotNet472DistributionPath) {
+    this.monoDistributionPath = monoDistributionPath;
+    this.dotNet6DistributionPath = dotNet6DistributionPath;
+    this.dotNet472DistributionPath = dotNet472DistributionPath;
   }
 
-  public String getName() {
-    return name;
+  public Path getMonoDistributionPath() {
+    return monoDistributionPath;
   }
 
-  public String getUserAgent() {
-    return userAgent;
+  public Path getDotNet6DistributionPath() {
+    return dotNet6DistributionPath;
   }
 
-  public long getPid() {
-    return pid;
+  public Path getDotNet472DistributionPath() {
+    return dotNet472DistributionPath;
   }
 }
