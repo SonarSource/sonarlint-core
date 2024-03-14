@@ -19,39 +19,26 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
 
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import java.nio.file.Path;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 
-/**
- * Static information to describe the client. Dynamic information will be provided when needed by calling {@link SonarLintRpcClient#getClientLiveInfo()}
- */
-public class ClientConstantInfoDto {
-  /**
-   * Name of the client, that could be used outside the IDE, e.g. for the sonarlint/api/status endpoint or when opening the page to generate the user token
-   */
-  private final String name;
+public class LanguageSpecificRequirements {
+  private final Path clientNodeJsPath;
+  private final OmnisharpRequirementsDto omnisharpRequirements;
 
-  /**
-   * User agent used for all HTTP requests made by the backend
-   */
-  private final String userAgent;
-
-  private final long pid;
-
-  public ClientConstantInfoDto(String name, String userAgent, long pid) {
-    this.name = name;
-    this.userAgent = userAgent;
-    this.pid = pid;
+  public LanguageSpecificRequirements(@Nullable Path clientNodeJsPath, @Nullable OmnisharpRequirementsDto omnisharpRequirements) {
+    this.clientNodeJsPath = clientNodeJsPath;
+    this.omnisharpRequirements = omnisharpRequirements;
   }
 
-  public String getName() {
-    return name;
+  @CheckForNull
+  public Path getClientNodeJsPath() {
+    return clientNodeJsPath;
   }
 
-  public String getUserAgent() {
-    return userAgent;
-  }
-
-  public long getPid() {
-    return pid;
+  @CheckForNull
+  public OmnisharpRequirementsDto getOmnisharpRequirements() {
+    return omnisharpRequirements;
   }
 }
