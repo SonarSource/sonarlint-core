@@ -40,6 +40,8 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 
 class TelemetryHttpClientTests {
   @RegisterExtension
@@ -75,9 +77,23 @@ class TelemetryHttpClientTests {
 
   @Test
   void upload() {
+    assertTelemetryUploaded(false);
+    assertThat(logTester.logs(Level.INFO)).noneMatch(l -> l.matches("Sending telemetry payload."));
+  }
+
+  @Test
+  void upload_with_telemetry_debug_enabled() {
+    assertTelemetryUploaded(true);
+    assertThat(logTester.logs(Level.INFO)).anyMatch(l -> l.matches("Sending telemetry payload."));
+    assertThat(logTester.logs(Level.INFO)).anyMatch(l -> l.contains("{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"platform\",\"architecture\":\"architecture\""));
+  }
+
+  private void assertTelemetryUploaded(boolean isDebugEnabled) {
+    var spy = spy(underTest);
+    doReturn(isDebugEnabled).when(spy).isDebugTelemetryEnabled();
     sonarqubeMock.stubFor(post("/")
       .willReturn(aResponse()));
-    underTest.upload(new TelemetryLocalStorage(), getTelemetryLiveAttributesDto());
+    spy.upload(new TelemetryLocalStorage(), getTelemetryLiveAttributesDto());
 
     sonarqubeMock.verify(postRequestedFor(urlEqualTo("/"))
       .withRequestBody(

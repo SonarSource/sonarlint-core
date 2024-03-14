@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -124,10 +125,19 @@ public class TelemetryHttpClient {
   }
 
   private void sendPost(TelemetryPayload payload) {
+    if (isDebugTelemetryEnabled()) {
+      LOG.info("Sending telemetry payload.");
+      LOG.info(payload.toJson());
+    }
     try (var response = client.post(endpoint, HttpClient.JSON_CONTENT_TYPE, payload.toJson())) {
       if (!response.isSuccessful() && InternalDebug.isEnabled()) {
         LOG.error("Failed to upload telemetry data: {}", response.toString());
       }
     }
+  }
+
+  @VisibleForTesting
+  boolean isDebugTelemetryEnabled(){
+    return  Boolean.parseBoolean(System.getenv("SONARLINT_INTERNAL_TELEMETRY_DEBUG"));
   }
 }
