@@ -125,7 +125,7 @@ public class TelemetryHttpClient {
   }
 
   private void sendPost(TelemetryPayload payload) {
-    if (isDebugTelemetryEnabled()) {
+    if (isTelemetryLogEnabled()) {
       LOG.info("Sending telemetry payload.");
       LOG.info(payload.toJson());
     }
@@ -137,7 +137,7 @@ public class TelemetryHttpClient {
   }
 
   @VisibleForTesting
-  boolean isDebugTelemetryEnabled(){
-    return  Boolean.parseBoolean(System.getenv("SONARLINT_INTERNAL_TELEMETRY_DEBUG"));
+  boolean isTelemetryLogEnabled(){
+    return  Boolean.parseBoolean(System.getenv("SONARLINT_TELEMETRY_LOG"));
   }
 }

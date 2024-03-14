@@ -90,7 +90,7 @@ class TelemetryHttpClientTests {
 
   private void assertTelemetryUploaded(boolean isDebugEnabled) {
     var spy = spy(underTest);
-    doReturn(isDebugEnabled).when(spy).isDebugTelemetryEnabled();
+    doReturn(isDebugEnabled).when(spy).isTelemetryLogEnabled();
     sonarqubeMock.stubFor(post("/")
       .willReturn(aResponse()));
     spy.upload(new TelemetryLocalStorage(), getTelemetryLiveAttributesDto());
