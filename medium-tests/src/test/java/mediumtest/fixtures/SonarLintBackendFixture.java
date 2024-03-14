@@ -64,6 +64,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientCons
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSpecificRequirements;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarCloudAlternativeEnvironmentDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SslConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
@@ -413,7 +414,7 @@ public class SonarLintBackendFixture {
         var sonarLintBackend = createTestBackend(client);
         var telemetryInitDto = new TelemetryClientConstantAttributesDto("mediumTests", "mediumTests",
           "1.2.3", "4.5.6", emptyMap());
-        var clientInfo = new ClientConstantInfoDto(clientName, userAgent);
+        var clientInfo = new ClientConstantInfoDto(clientName, userAgent, 0);
         var featureFlags = new FeatureFlagsDto(manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, startEmbeddedServer, areSecurityHotspotsEnabled,
           manageServerSentEvents, enableDataflowBugDetection, shouldManageFullSynchronization, telemetryEnabled);
 
@@ -432,7 +433,7 @@ public class SonarLintBackendFixture {
             featureFlags,
             storageRoot, workDir, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
             enabledLanguages, extraEnabledLanguagesInConnectedMode, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
-            standaloneConfigByKey, isFocusOnNewCode, clientNodeJsPath))
+            standaloneConfigByKey, isFocusOnNewCode, new LanguageSpecificRequirements(clientNodeJsPath, null)))
           .get();
         sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
         return sonarLintBackend;

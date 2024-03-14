@@ -48,7 +48,8 @@ public class NodeJsService {
   private InstalledNodeJs clientForcedNodeJs;
 
   public NodeJsService(InitializeParams initializeParams) {
-    this.clientNodeJsPath = initializeParams.getClientNodeJsPath();
+    var languageSpecificRequirements = initializeParams.getLanguageSpecificRequirements();
+    this.clientNodeJsPath = languageSpecificRequirements == null ? null : languageSpecificRequirements.getClientNodeJsPath();
   }
 
   public synchronized void didChangeClientNodeJsPath(@Nullable Path clientNodeJsPath) {
