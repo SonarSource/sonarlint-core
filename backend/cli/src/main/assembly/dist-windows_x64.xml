@@ -34,18 +34,6 @@
       </includes>
     </fileSet>
 
-    <!-- The launcher script-->
-    <fileSet>
-      <directory>src/main/assembly/bin</directory>
-      <outputDirectory>bin</outputDirectory>
-      <fileMode>0755</fileMode>
-      <lineEnding>dos</lineEnding>
-      <filtered>true</filtered>
-      <includes>
-        <include>sonarlint-backend.bat</include>
-      </includes>
-    </fileSet>
-
     <!-- jre basic, except bin/ -->
     <fileSet>
       <directory>${unpack.dir}/windows_x64/${jre.dirname.windows}</directory>

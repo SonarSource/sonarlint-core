@@ -20,11 +20,13 @@
 package org.sonarsource.sonarlint.core.rpc.client;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -37,9 +39,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 
 public class SloopLauncher {
-
-  private static final String WIN_LAUNCHER_SCRIPT = "sonarlint-backend.bat";
-  private static final String UNIX_LAUNCHER_SCRIPT = "sonarlint-backend";
+  public static final String SLOOP_CLI_ENTRYPOINT_CLASS = "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli";
   private final SonarLintRpcClientDelegate rpcClient;
   private final Function<List<String>, ProcessBuilder> processBuilderFactory;
   private final Supplier<String> osNameSupplier;
@@ -86,23 +86,14 @@ public class SloopLauncher {
   }
 
   private Sloop execute(Path distPath, @Nullable Path jrePath) throws IOException {
-    var binDirPath = distPath.resolve("bin");
-    List<String> commands = new ArrayList<>();
-    if (isWindows()) {
-      commands.add("cmd.exe");
-      commands.add("/c");
-      commands.add(WIN_LAUNCHER_SCRIPT);
-    } else {
-      commands.add("sh");
-      commands.add(UNIX_LAUNCHER_SCRIPT);
+    var jreHomePath = jrePath == null ? distPath.resolve("jre") : jrePath;
+    logToClient(LogLevel.INFO, "Using JRE from " + jreHomePath, null);
+    var binDirPath = jreHomePath.resolve("bin");
+    var jreJavaExePath = binDirPath.resolve("java" + (isWindows() ? ".exe" : ""));
+    if (!Files.exists(jreJavaExePath)) {
+      throw new IllegalArgumentException("The provided JRE path does not exist: " + jreJavaExePath);
     }
-    if (jrePath != null) {
-      logToClient(LogLevel.INFO, "Using JRE from " + jrePath, null);
-      commands.add("-j");
-      commands.add(jrePath.toString());
-    }
-
-    var processBuilder = processBuilderFactory.apply(commands);
+    var processBuilder = processBuilderFactory.apply(createCommand(distPath, jreJavaExePath));
     processBuilder.directory(binDirPath.toFile());
     processBuilder.redirectOutput(ProcessBuilder.Redirect.PIPE);
     processBuilder.redirectInput(ProcessBuilder.Redirect.PIPE);
@@ -120,6 +111,21 @@ public class SloopLauncher {
 
     var serverProxy = clientLauncher.getServerProxy();
     return new Sloop(serverProxy, process);
+  }
+
+  private static List<String> createCommand(Path distPath, Path jreJavaExePath) {
+    var libFolderPath = distPath.resolve("lib");
+    var classpath = libFolderPath.toAbsolutePath().normalize() + File.separator + '*';
+    List<String> commands = new ArrayList<>();
+    commands.add(jreJavaExePath.toAbsolutePath().normalize().toString());
+    var sonarlintJvmOpts = System.getenv("SONARLINT_JVM_OPTS");
+    if (sonarlintJvmOpts != null) {
+      commands.add(sonarlintJvmOpts);
+    }
+    commands.add("-classpath");
+    commands.add(classpath);
+    commands.add(SLOOP_CLI_ENTRYPOINT_CLASS);
+    return commands;
   }
 
   private Consumer<String> stdErrLogConsumer() {
