@@ -55,7 +55,7 @@ class TelemetryPayloadTests {
     var showIssuePayload = new ShowIssuePayload(3);
     var hotspotPayload = new HotspotPayload(5, 3);
     var taintVulnerabilitiesPayload = new TaintVulnerabilitiesPayload(6, 7);
-    var issuePayload = new IssuePayload(Set.of("java:S123"));
+    var issuePayload = new IssuePayload(Set.of("java:S123"), 1);
     var rulesPayload = new TelemetryRulesPayload(Arrays.asList("enabledRuleKey1", "enabledRuleKey2"), Arrays.asList("disabledRuleKey1", "disabledRuleKey2"),
       Arrays.asList("reportedRuleKey1", "reportedRuleKey2"), Arrays.asList("quickFixedRuleKey1", "quickFixedRuleKey2"));
     Map<String, TelemetryHelpAndFeedbackCounter> helpAndFeedbackCounter = new HashMap<>();
@@ -96,7 +96,7 @@ class TelemetryPayloadTests {
       + "\"taint_vulnerabilities\":{\"investigated_locally_count\":6,\"investigated_remotely_count\":7},"
       + "\"rules\":{\"non_default_enabled\":[\"enabledRuleKey1\",\"enabledRuleKey2\"],\"default_disabled\":[\"disabledRuleKey1\",\"disabledRuleKey2\"],\"raised_issues\":[\"reportedRuleKey1\",\"reportedRuleKey2\"],\"quick_fix_applied\":[\"quickFixedRuleKey1\",\"quickFixedRuleKey2\"]},"
       + "\"hotspot\":{\"open_in_browser_count\":5,\"status_changed_count\":3},"
-      + "\"issue\":{\"status_changed_rule_keys\":[\"java:S123\"]},"
+      + "\"issue\":{\"status_changed_rule_keys\":[\"java:S123\"],\"status_changed_count\":1},"
       + "\"help_and_feedback\":{\"count_by_link\":{\"docs\":5,\"faq\":4}},"
       + "\"cayc\":{\"new_code_focus\":{\"enabled\":true,\"changes\":2}},"
       + "\"aString\":\"stringValue\","
@@ -122,6 +122,7 @@ class TelemetryPayloadTests {
       .extracting(NewCodeFocusPayload::isEnabled, NewCodeFocusPayload::getChanges)
       .containsExactly(true, 2);
     assertThat(m.issuePayload().getStatusChangedRuleKeys()).isEqualTo(Set.of("java:S123"));
+    assertThat(m.issuePayload().statusChangedCount).isEqualTo(1);
     assertThat(m.additionalAttributes()).containsExactlyEntriesOf(additionalProps);
     assertThat(m.getShowHotspotPayload().requestsCount).isEqualTo(4);
     assertThat(m.getShowIssuePayload().requestsCount).isEqualTo(3);

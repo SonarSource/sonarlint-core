@@ -207,4 +207,16 @@ class TelemetryLocalStorageManagerTests {
     var data = storage.tryRead();
     assertThat(data.hotspotStatusChangedCount()).isEqualTo(3);
   }
+
+  @Test
+  void should_increment_issue_status_changed() {
+    var storage = new TelemetryLocalStorageManager(filePath);
+
+    storage.tryUpdateAtomically(telemetryLocalStorage -> telemetryLocalStorage.addIssueStatusChanged("ruleKey1"));
+    storage.tryUpdateAtomically(telemetryLocalStorage -> telemetryLocalStorage.addIssueStatusChanged("ruleKey2"));
+
+    var data = storage.tryRead();
+    assertThat(data.issueStatusChangedCount()).isEqualTo(2);
+    assertThat(data.issueStatusChangedRuleKeys()).containsExactlyInAnyOrder("ruleKey1", "ruleKey2");
+  }
 }
