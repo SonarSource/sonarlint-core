@@ -50,6 +50,7 @@ public class TelemetryLocalStorage {
   private int taintVulnerabilitiesInvestigatedRemotelyCount;
   private int hotspotStatusChangedCount;
   private final Set<String> issueStatusChangedRuleKeys;
+  private int issueStatusChangedCount;
   private final Set<String> raisedIssuesRules;
   private final Set<String> quickFixesApplied;
   private final Map<String, TelemetryHelpAndFeedbackCounter> helpAndFeedbackLinkClickedCount;
@@ -157,6 +158,7 @@ public class TelemetryLocalStorage {
     taintVulnerabilitiesInvestigatedRemotelyCount = 0;
     hotspotStatusChangedCount = 0;
     issueStatusChangedRuleKeys.clear();
+    issueStatusChangedCount = 0;
     raisedIssuesRules.clear();
     quickFixesApplied.clear();
     this.helpAndFeedbackLinkClickedCount.clear();
@@ -317,10 +319,15 @@ public class TelemetryLocalStorage {
   public void addIssueStatusChanged(String ruleKey) {
     markSonarLintAsUsedToday();
     issueStatusChangedRuleKeys.add(ruleKey);
+    issueStatusChangedCount++;
   }
 
   public Set<String> issueStatusChangedRuleKeys() {
     return issueStatusChangedRuleKeys;
+  }
+
+  public int issueStatusChangedCount() {
+    return issueStatusChangedCount;
   }
 
   public void setInitialNewCodeFocus(boolean focusOnNewCode) {

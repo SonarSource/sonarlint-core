@@ -25,9 +25,12 @@ import java.util.Set;
 public class IssuePayload {
   @SerializedName("status_changed_rule_keys")
   public final Set<String> statusChangedRuleKeys;
+  @SerializedName("status_changed_count")
+  public final int statusChangedCount;
 
-  public IssuePayload(Set<String> statusChangedRuleKeys) {
+  public IssuePayload(Set<String> statusChangedRuleKeys, int statusChangedCount) {
     this.statusChangedRuleKeys = statusChangedRuleKeys;
+    this.statusChangedCount = statusChangedCount;
   }
 
   public Set<String> getStatusChangedRuleKeys() {
