@@ -54,6 +54,7 @@ public class PluginsStorage {
       rwLock.read(() -> ProtobufFileUtil.readFile(pluginReferencesFilePath, Sonarlint.PluginReferences.parser()));
       return true;
     } catch (Exception e) {
+      LOG.error("Could not load plugins storage", e);
       return false;
     }
   }

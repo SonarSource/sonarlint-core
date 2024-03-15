@@ -429,10 +429,17 @@ public class AnalysisService {
   }
 
   private boolean isReadyForAnalysis(Binding binding) {
-    return storageService.connection(binding.getConnectionId()).plugins().isValid()
-      && storageService.binding(binding).analyzerConfiguration().isValid()
+    var pluginsValid = storageService.connection(binding.getConnectionId()).plugins().isValid();
+    var bindingStorage = storageService.binding(binding);
+    var analyzerConfigValid = bindingStorage.analyzerConfiguration().isValid();
+    var branchStorageValid = bindingStorage.findings().wasEverUpdated();
+    var isReady = pluginsValid
+      && analyzerConfigValid
       // this is not strictly for analysis but for tracking
-      && storageService.binding(binding).findings().wasEverUpdated();
+      && branchStorageValid;
+    LOG.debug("isReadyForAnalysis(plugins: {}, analyzer config: {}, branches: {}) => {}",
+      pluginsValid, analyzerConfigValid, branchStorageValid, isReady);
+    return isReady;
   }
 
   public InstalledNodeJs getAutoDetectedNodeJs() {
