@@ -69,7 +69,6 @@ class TelemetryMediumTests {
   static void mockTelemetryEndpoint() {
     System.setProperty("sonarlint.internal.nodejs.forcedPath", "/path/to/nodeJS");
     System.setProperty("sonarlint.internal.nodejs.forcedVersion", "v3.1.4");
-    System.setProperty("sonarlint.internal.telemetry.endpoint", telemetryEndpointMock.baseUrl() + "/sonarlint-telemetry");
     telemetryEndpointMock.stubFor(post("/sonarlint-telemetry").willReturn(aResponse().withStatus(200)));
   }
 
@@ -136,7 +135,7 @@ class TelemetryMediumTests {
     backend = newBackend()
       .withSonarQubeConnection("connectionId", "http://localhost:12345", storage -> storage.withProject("projectKey", project -> project.withMainBranch("master")))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withTelemetryEnabled()
+      .withTelemetryEnabled(telemetryEndpointMock.baseUrl() + "/sonarlint-telemetry")
       .build(fakeClient);
 
     this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "ab12ef45"));
@@ -181,7 +180,9 @@ class TelemetryMediumTests {
     var fakeClient = newFakeClient().build();
     when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryClientLiveAttributesResponse(emptyMap()));
 
-    backend = newBackend().withTelemetryEnabled().build(fakeClient);
+    backend = newBackend()
+      .withTelemetryEnabled(telemetryEndpointMock.baseUrl() + "/sonarlint-telemetry")
+      .build(fakeClient);
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isTrue();
 
@@ -206,7 +207,9 @@ class TelemetryMediumTests {
     var fakeClient = newFakeClient().build();
     when(fakeClient.getTelemetryLiveAttributes()).thenReturn(new TelemetryClientLiveAttributesResponse(emptyMap()));
 
-    backend = newBackend().withTelemetryEnabled().build(fakeClient);
+    backend = newBackend()
+      .withTelemetryEnabled(telemetryEndpointMock.baseUrl() + "/sonarlint-telemetry")
+      .build(fakeClient);
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isTrue();
 
