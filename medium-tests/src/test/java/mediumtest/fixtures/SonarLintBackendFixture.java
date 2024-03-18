@@ -389,8 +389,13 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintBackendBuilder withTelemetryEnabled(){
+    public SonarLintBackendBuilder withTelemetryEnabled() {
+      return withTelemetryEnabled("http://telemetryEndpoint.sonarlint");
+    }
+
+    public SonarLintBackendBuilder withTelemetryEnabled(String endpointUrl) {
       this.telemetryEnabled = true;
+      System.setProperty("sonarlint.internal.telemetry.endpoint", endpointUrl);
       return this;
     }
 
