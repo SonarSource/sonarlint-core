@@ -19,9 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
-import java.nio.file.Path;
-import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import java.util.function.Consumer;
 
 import static org.sonarsource.sonarlint.core.telemetry.TelemetryUtils.dayChanged;
 
@@ -33,20 +31,16 @@ public class TelemetryManager {
 
   static final int MIN_HOURS_BETWEEN_UPLOAD = 5;
 
-  private final TelemetryLocalStorageManager storage;
+  private final TelemetryLocalStorageManager storageManager;
   private final TelemetryHttpClient client;
 
-  TelemetryManager(Path path, TelemetryHttpClient client) {
-    this.storage = newTelemetryStorage(path);
+  TelemetryManager(TelemetryLocalStorageManager storageManager, TelemetryHttpClient client) {
+    this.storageManager = storageManager;
     this.client = client;
   }
 
-  TelemetryLocalStorageManager newTelemetryStorage(Path path) {
-    return new TelemetryLocalStorageManager(path);
-  }
-
   void enable(TelemetryLiveAttributes telemetryLiveAttributes) {
-    storage.tryUpdateAtomically(data -> data.setEnabled(true));
+    storageManager.tryUpdateAtomically(data -> data.setEnabled(true));
     uploadLazily(telemetryLiveAttributes);
   }
 
@@ -54,7 +48,7 @@ public class TelemetryManager {
    * Disable telemetry (opt-out).
    */
   void disable(TelemetryLiveAttributes telemetryLiveAttributes) {
-    storage.tryUpdateAtomically(data -> {
+    storageManager.tryUpdateAtomically(data -> {
       data.setEnabled(false);
       client.optOut(data, telemetryLiveAttributes);
     });
@@ -67,25 +61,25 @@ public class TelemetryManager {
    * To be called periodically once a day.
    */
   void uploadLazily(TelemetryLiveAttributes telemetryLiveAttributes) {
-    var readData = storage.tryRead();
+    var readData = storageManager.tryRead();
     if (!dayChanged(readData.lastUploadTime(), MIN_HOURS_BETWEEN_UPLOAD)) {
       return;
     }
 
-    storage.tryUpdateAtomically(data -> {
+    storageManager.tryUpdateAtomically(data -> {
       client.upload(data, telemetryLiveAttributes);
       data.setLastUploadTime();
       data.clearAfterPing();
     });
   }
 
-  void analysisDoneOnSingleLanguage(@Nullable SonarLanguage language, int analysisTimeMs) {
-    storage.tryUpdateAtomically(data -> {
-      if (language == null) {
-        data.setUsedAnalysis("others", analysisTimeMs);
-      } else {
-        data.setUsedAnalysis(language.getSonarLanguageKey(), analysisTimeMs);
-      }
-    });
+  public void updateTelemetry(Consumer<TelemetryLocalStorage> updater) {
+    if(isTelemetryEnabledByUser()) {
+      storageManager.tryUpdateAtomically(updater);
+    }
+  }
+
+  public boolean isTelemetryEnabledByUser() {
+    return storageManager.tryRead().enabled();
   }
 }
