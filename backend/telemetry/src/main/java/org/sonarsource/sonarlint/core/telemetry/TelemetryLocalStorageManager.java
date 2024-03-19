@@ -104,7 +104,9 @@ public class TelemetryLocalStorageManager {
     var decoded = Base64.getDecoder().decode(bytes);
     var json = new String(decoded, StandardCharsets.UTF_8);
     var rawData = gson.fromJson(json, TelemetryLocalStorage.class);
-    return TelemetryLocalStorage.validateAndMigrate(rawData);
+    rawData.validateAndMigrate();
+
+    return rawData;
   }
 
   public void tryUpdateAtomically(Consumer<TelemetryLocalStorage> updater) {
@@ -125,7 +127,7 @@ public class TelemetryLocalStorageManager {
     try (var fileChannel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.SYNC);
          var ignored = fileChannel.lock()) {
       updater.accept(storageData);
-      TelemetryLocalStorage.validateAndMigrate(storageData);
+      storageData.validateAndMigrate();
       writeAtomically(fileChannel, storageData);
     }
     updateLastModified();
