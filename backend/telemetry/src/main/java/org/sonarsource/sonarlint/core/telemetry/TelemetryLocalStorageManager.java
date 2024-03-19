@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.io.IOException;
@@ -42,6 +43,8 @@ public class TelemetryLocalStorageManager {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final Path path;
   private final Gson gson;
+  private TelemetryLocalStorage inMemoryStorage = new TelemetryLocalStorage();
+  private long lastModified = Long.MAX_VALUE;
 
   public TelemetryLocalStorageManager(Path path) {
     this.path = path;
@@ -52,10 +55,63 @@ public class TelemetryLocalStorageManager {
       .create();
   }
 
+  @VisibleForTesting
+  TelemetryLocalStorage tryRead() {
+    return getStorage();
+  }
+
+  private TelemetryLocalStorage getStorage() {
+    if (!path.toFile().exists()) {
+      inMemoryStorage = new TelemetryLocalStorage();
+      invalidateCache();
+    } else if (isCacheInvalid()) {
+      refreshInMemoryStorage();
+    }
+    return inMemoryStorage;
+  }
+
+  private boolean isCacheInvalid() {
+    return lastModified != path.toFile().lastModified();
+  }
+
+  private void invalidateCache() {
+    lastModified = Long.MAX_VALUE;
+  }
+
+  private synchronized void refreshInMemoryStorage() {
+    try {
+      if (isCacheInvalid()) {
+        inMemoryStorage = read();
+        updateLastModified();
+      }
+    } catch (Exception e) {
+      if (InternalDebug.isEnabled()) {
+        LOG.error("Error loading telemetry data", e);
+        throw new IllegalStateException(e);
+      }
+    }
+  }
+
+  private void updateLastModified() {
+    lastModified = path.toFile().lastModified();
+  }
+
+  private TelemetryLocalStorage read() throws IOException {
+    var bytes = Files.readAllBytes(path);
+    if (bytes.length == 0) {
+      return new TelemetryLocalStorage();
+    }
+    var decoded = Base64.getDecoder().decode(bytes);
+    var json = new String(decoded, StandardCharsets.UTF_8);
+    var rawData = gson.fromJson(json, TelemetryLocalStorage.class);
+    return TelemetryLocalStorage.validateAndMigrate(rawData);
+  }
+
   public void tryUpdateAtomically(Consumer<TelemetryLocalStorage> updater) {
     try {
       updateAtomically(updater);
     } catch (Exception e) {
+      invalidateCache();
       if (InternalDebug.isEnabled()) {
         LOG.error("Error updating telemetry data", e);
         throw new IllegalStateException(e);
@@ -65,35 +121,14 @@ public class TelemetryLocalStorageManager {
 
   private synchronized void updateAtomically(Consumer<TelemetryLocalStorage> updater) throws IOException {
     Files.createDirectories(path.getParent());
+    var storageData = getStorage();
     try (var fileChannel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.SYNC);
-      var lock = fileChannel.lock()) {
-      var storageData = readAtomically(fileChannel);
-
+         var ignored = fileChannel.lock()) {
       updater.accept(storageData);
-
+      TelemetryLocalStorage.validateAndMigrate(storageData);
       writeAtomically(fileChannel, storageData);
     }
-  }
-
-  private TelemetryLocalStorage readAtomically(FileChannel fileChannel) {
-    try {
-      if (fileChannel.size() == 0) {
-        return new TelemetryLocalStorage();
-      }
-      final var buf = ByteBuffer.allocate((int) fileChannel.size());
-      fileChannel.read(buf);
-      var decoded = Base64.getDecoder().decode(buf.array());
-      var oldJson = new String(decoded, StandardCharsets.UTF_8);
-      var previousData = gson.fromJson(oldJson, TelemetryLocalStorage.class);
-
-      return TelemetryLocalStorage.validateAndMigrate(previousData);
-    } catch (Exception e) {
-      if (InternalDebug.isEnabled()) {
-        LOG.error("Error reading telemetry data", e);
-        throw new IllegalStateException(e);
-      }
-      return new TelemetryLocalStorage();
-    }
+    updateLastModified();
   }
 
   private void writeAtomically(FileChannel fileChannel, TelemetryLocalStorage newData) throws IOException {
@@ -105,27 +140,11 @@ public class TelemetryLocalStorageManager {
     fileChannel.write(ByteBuffer.wrap(encoded));
   }
 
-  public TelemetryLocalStorage tryRead() {
-    try {
-      if (!Files.exists(path)) {
-        return new TelemetryLocalStorage();
-      }
-      return read();
-    } catch (Exception e) {
-      if (InternalDebug.isEnabled()) {
-        LOG.error("Error loading telemetry data", e);
-        throw new IllegalStateException(e);
-      }
-      return new TelemetryLocalStorage();
-    }
+  public LocalDateTime lastUploadTime() {
+    return getStorage().lastUploadTime();
   }
 
-  private TelemetryLocalStorage read() throws IOException {
-    var bytes = Files.readAllBytes(path);
-    var decoded = Base64.getDecoder().decode(bytes);
-    var json = new String(decoded, StandardCharsets.UTF_8);
-    var rawData = gson.fromJson(json, TelemetryLocalStorage.class);
-    return TelemetryLocalStorage.validateAndMigrate(rawData);
+  public boolean isEnabled() {
+    return getStorage().enabled();
   }
-
 }

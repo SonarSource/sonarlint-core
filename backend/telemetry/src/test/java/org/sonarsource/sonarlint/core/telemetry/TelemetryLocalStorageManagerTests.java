@@ -111,8 +111,7 @@ class TelemetryLocalStorageManagerTests {
     });
 
     var data2 = storage.tryRead();
-    // Truncate because nano precision is lost during JSON serialization
-    assertThat(data2.installTime()).isEqualTo(tenDaysAgo.truncatedTo(ChronoUnit.MILLIS));
+    assertThat(data2.installTime()).isEqualTo(tenDaysAgo);
     assertThat(data2.lastUseDate()).isEqualTo(today);
     assertThat(data2.numUseDays()).isEqualTo(11);
   }
