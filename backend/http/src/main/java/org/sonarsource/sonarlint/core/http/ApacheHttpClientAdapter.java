@@ -87,12 +87,12 @@ class ApacheHttpClientAdapter implements HttpClient {
   }
 
   @Override
-  public Response delete(String url, String contentType, String bodyContent) {
+  public CompletableFuture<Response> deleteAsync(String url, String contentType, String body) {
     var httpRequest = SimpleRequestBuilder
       .delete(url)
-      .setBody(bodyContent, ContentType.parse(contentType))
+      .setBody(body, ContentType.parse(contentType))
       .build();
-    return waitFor(executeAsync(httpRequest));
+    return executeAsync(httpRequest);
   }
 
   private static Response waitFor(CompletableFuture<Response> f) {

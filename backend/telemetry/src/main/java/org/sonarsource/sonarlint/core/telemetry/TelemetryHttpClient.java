@@ -24,6 +24,7 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.http.HttpClient;
@@ -116,24 +117,35 @@ public class TelemetryHttpClient {
       hotspotPayload, issuePayload, helpAndFeedbackPayload, cleanAsYouCodePayload, mergedAdditionalAttributes);
   }
 
-  private void sendDelete(TelemetryPayload payload) {
-    try (var response = client.delete(endpoint, HttpClient.JSON_CONTENT_TYPE, payload.toJson())) {
-      if (!response.isSuccessful() && InternalDebug.isEnabled()) {
-        LOG.error("Failed to upload telemetry opt-out: {}", response.toString());
-      }
-    }
+  private void sendPost(TelemetryPayload payload) {
+    logTelemetryPayload(payload);
+    var responseCompletableFuture = client.postAsync(endpoint, HttpClient.JSON_CONTENT_TYPE, payload.toJson());
+    handleTelemetryResponse(responseCompletableFuture, "data");
   }
 
-  private void sendPost(TelemetryPayload payload) {
+  private void logTelemetryPayload(TelemetryPayload payload) {
     if (isTelemetryLogEnabled()) {
       LOG.info("Sending telemetry payload.");
       LOG.info(payload.toJson());
     }
-    try (var response = client.post(endpoint, HttpClient.JSON_CONTENT_TYPE, payload.toJson())) {
+  }
+
+  private void sendDelete(TelemetryPayload payload) {
+    var responseCompletableFuture = client.deleteAsync(endpoint, HttpClient.JSON_CONTENT_TYPE, payload.toJson());
+    handleTelemetryResponse(responseCompletableFuture, "opt-out");
+  }
+
+  private static void handleTelemetryResponse(CompletableFuture<HttpClient.Response> responseCompletableFuture, String uploadType) {
+    responseCompletableFuture.thenAccept(response -> {
       if (!response.isSuccessful() && InternalDebug.isEnabled()) {
-        LOG.error("Failed to upload telemetry data: {}", response.toString());
+        LOG.error("Failed to upload telemetry {}: {}", uploadType, response.toString());
       }
-    }
+    }).exceptionally(exception -> {
+      if (InternalDebug.isEnabled()) {
+        LOG.error(String.format("Failed to upload telemetry %s", uploadType), exception);
+      }
+      return null;
+    });
   }
 
   @VisibleForTesting

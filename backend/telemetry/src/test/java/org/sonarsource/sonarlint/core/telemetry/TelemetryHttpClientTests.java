@@ -40,6 +40,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 
@@ -68,24 +69,28 @@ class TelemetryHttpClientTests {
 
     underTest.optOut(new TelemetryLocalStorage(), getTelemetryLiveAttributesDto());
 
-    sonarqubeMock.verify(deleteRequestedFor(urlEqualTo("/"))
+    await().untilAsserted(() -> sonarqubeMock.verify(deleteRequestedFor(urlEqualTo("/"))
       .withRequestBody(
         equalToJson(
           "{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"platform\",\"architecture\":\"architecture\"}",
-          true, true)));
+          true, true))));
   }
 
   @Test
   void upload() {
-    assertTelemetryUploaded(false);
-    assertThat(logTester.logs(Level.INFO)).noneMatch(l -> l.matches("Sending telemetry payload."));
+    await().untilAsserted(() -> {
+      assertTelemetryUploaded(false);
+      assertThat(logTester.logs(Level.INFO)).noneMatch(l -> l.matches("Sending telemetry payload."));
+    });
   }
 
   @Test
   void upload_with_telemetry_debug_enabled() {
-    assertTelemetryUploaded(true);
-    assertThat(logTester.logs(Level.INFO)).anyMatch(l -> l.matches("Sending telemetry payload."));
-    assertThat(logTester.logs(Level.INFO)).anyMatch(l -> l.contains("{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"platform\",\"architecture\":\"architecture\""));
+    await().untilAsserted(() -> {
+      assertTelemetryUploaded(true);
+      assertThat(logTester.logs(Level.INFO)).anyMatch(l -> l.matches("Sending telemetry payload."));
+      assertThat(logTester.logs(Level.INFO)).anyMatch(l -> l.contains("{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"platform\",\"architecture\":\"architecture\""));
+    });
   }
 
   private void assertTelemetryUploaded(boolean isDebugEnabled) {
@@ -109,7 +114,7 @@ class TelemetryHttpClientTests {
 
     underTest.upload(new TelemetryLocalStorage(), getTelemetryLiveAttributesDto());
 
-    sonarqubeMock.verify(postRequestedFor(urlEqualTo("/")));
+    await().untilAsserted(() -> sonarqubeMock.verify(postRequestedFor(urlEqualTo("/"))));
   }
 
   @Test
@@ -119,7 +124,7 @@ class TelemetryHttpClientTests {
 
     underTest.optOut(new TelemetryLocalStorage(), getTelemetryLiveAttributesDto());
 
-    sonarqubeMock.verify(deleteRequestedFor(urlEqualTo("/")));
+    await().untilAsserted(() -> sonarqubeMock.verify(deleteRequestedFor(urlEqualTo("/"))));
   }
 
   @Test
@@ -128,7 +133,7 @@ class TelemetryHttpClientTests {
 
     underTest.upload(new TelemetryLocalStorage(), getTelemetryLiveAttributesDto());
 
-    assertThat(logTester.logs(Level.ERROR)).anyMatch(l -> l.matches("Failed to upload telemetry data: .*404.*"));
+    await().untilAsserted(() -> assertThat(logTester.logs(Level.ERROR)).anyMatch(l -> l.matches("Failed to upload telemetry data: .*404.*")));
   }
 
   @Test
@@ -137,7 +142,7 @@ class TelemetryHttpClientTests {
 
     underTest.optOut(new TelemetryLocalStorage(), getTelemetryLiveAttributesDto());
 
-    assertThat(logTester.logs(Level.ERROR)).anyMatch(l -> l.matches("Failed to upload telemetry opt-out: .*404.*"));
+    await().untilAsserted(() -> assertThat(logTester.logs(Level.ERROR)).anyMatch(l -> l.matches("Failed to upload telemetry opt-out: .*404.*")));
   }
 
   private static TelemetryLiveAttributes getTelemetryLiveAttributesDto() {
