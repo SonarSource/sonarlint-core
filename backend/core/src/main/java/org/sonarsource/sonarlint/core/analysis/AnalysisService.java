@@ -432,13 +432,13 @@ public class AnalysisService {
     var pluginsValid = storageService.connection(binding.getConnectionId()).plugins().isValid();
     var bindingStorage = storageService.binding(binding);
     var analyzerConfigValid = bindingStorage.analyzerConfiguration().isValid();
-    var branchStorageValid = bindingStorage.findings().wasEverUpdated();
+    var findingsStorageValid = bindingStorage.findings().wasEverUpdated();
     var isReady = pluginsValid
       && analyzerConfigValid
       // this is not strictly for analysis but for tracking
-      && branchStorageValid;
-    LOG.debug("isReadyForAnalysis(plugins: {}, analyzer config: {}, branches: {}) => {}",
-      pluginsValid, analyzerConfigValid, branchStorageValid, isReady);
+      && findingsStorageValid;
+    LOG.debug("isReadyForAnalysis(connectionId: {}, sonarProjectKey: {}, plugins: {}, analyzer config: {}, findings: {}) => {}",
+      binding.getConnectionId(), binding.getSonarProjectKey(), pluginsValid, analyzerConfigValid, findingsStorageValid, isReady);
     return isReady;
   }
 
