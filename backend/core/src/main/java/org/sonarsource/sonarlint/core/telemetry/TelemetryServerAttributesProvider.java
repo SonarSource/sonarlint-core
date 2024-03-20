@@ -26,7 +26,6 @@ import java.util.function.Predicate;
 import javax.annotation.CheckForNull;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.apache.commons.lang3.SystemUtils;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -53,12 +52,6 @@ public class TelemetryServerAttributesProvider {
     this.rulesService = rulesService;
     this.rulesRepository = rulesRepository;
     this.nodeJsService = nodeJsService;
-  }
-
-  public TelemetryServerConstantAttributes getTelemetryServerConstantAttributes() {
-    var architecture = SystemUtils.OS_ARCH;
-    var platform = SystemUtils.OS_NAME;
-    return new TelemetryServerConstantAttributes(platform, architecture);
   }
 
   public TelemetryServerLiveAttributes getTelemetryServerLiveAttributes() {

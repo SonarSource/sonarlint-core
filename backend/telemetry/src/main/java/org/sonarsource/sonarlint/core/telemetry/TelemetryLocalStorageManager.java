@@ -34,11 +34,15 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.function.Consumer;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 /**
  * Serialize and deserialize telemetry data to persistent storage.
  */
+@Named
+@Singleton
 public class TelemetryLocalStorageManager {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final Path path;
@@ -46,8 +50,8 @@ public class TelemetryLocalStorageManager {
   private TelemetryLocalStorage inMemoryStorage = new TelemetryLocalStorage();
   private long lastModified = Long.MAX_VALUE;
 
-  public TelemetryLocalStorageManager(Path path) {
-    this.path = path;
+  public TelemetryLocalStorageManager(Path telemetryPath) {
+    this.path = telemetryPath;
     this.gson = new GsonBuilder()
       .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeAdapter().nullSafe())
       .registerTypeAdapter(LocalDate.class, new LocalDateAdapter().nullSafe())

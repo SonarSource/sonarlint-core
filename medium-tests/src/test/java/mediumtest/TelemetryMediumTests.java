@@ -41,6 +41,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryCli
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.telemetry.InternalDebug;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorageManager;
+import org.sonarsource.sonarlint.core.telemetry.TelemetrySpringConfig;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
@@ -54,6 +55,7 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.when;
+import static org.sonarsource.sonarlint.core.telemetry.TelemetrySpringConfig.PROPERTY_TELEMETRY_ENDPOINT;
 
 class TelemetryMediumTests {
 
@@ -74,7 +76,7 @@ class TelemetryMediumTests {
 
   @AfterAll
   static void clearTelemetryEndpoint() {
-    System.clearProperty("sonarlint.internal.telemetry.endpoint");
+    System.clearProperty(PROPERTY_TELEMETRY_ENDPOINT);
     System.clearProperty("sonarlint.internal.telemetry.initialDelay");
     System.clearProperty("sonarlint.internal.nodejs.forcedPath");
     System.clearProperty("sonarlint.internal.nodejs.forcedVersion");

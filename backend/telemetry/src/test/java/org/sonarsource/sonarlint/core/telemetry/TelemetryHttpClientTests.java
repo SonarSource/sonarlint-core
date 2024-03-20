@@ -28,6 +28,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput.Level;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -42,7 +44,9 @@ import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 class TelemetryHttpClientTests {
   @RegisterExtension
@@ -58,8 +62,12 @@ class TelemetryHttpClientTests {
 
   @BeforeEach
   void setUp() {
-    underTest = new TelemetryHttpClient("product", "version", "ideversion", "platform", "architecture",
-      HttpClientProvider.forTesting().getHttpClient(), sonarqubeMock.baseUrl(), Map.of("additionalKey", "additionalValue"));
+    InitializeParams initializeParams = mock(InitializeParams.class);
+    when(initializeParams.getTelemetryConstantAttributes())
+      .thenReturn(new TelemetryClientConstantAttributesDto(null, "product", "version", "ideversion", Map.of("additionalKey", "additionalValue")));
+    TelemetryServerConstantAttributes serverConstantAttributes = new TelemetryServerConstantAttributes("platform", "architecture");
+
+    underTest = new TelemetryHttpClient(initializeParams, serverConstantAttributes, HttpClientProvider.forTesting(), sonarqubeMock.baseUrl());
   }
 
   @Test

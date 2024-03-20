@@ -46,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class TelemetryLocalStorageManagerTests {
@@ -142,16 +143,18 @@ class TelemetryLocalStorageManagerTests {
   }
 
   @Test
-  void should_not_crash_when_cannot_read_storage(@TempDir Path temp) throws IOException {
+  void should_not_crash_when_cannot_read_storage(@TempDir Path temp) {
     InternalDebug.setEnabled(false);
-    new TelemetryLocalStorageManager(temp).tryRead();
+    assertThatCode(() -> new TelemetryLocalStorageManager(temp).tryRead())
+      .doesNotThrowAnyException();
+
   }
 
   @Test
-  void should_not_crash_when_cannot_write_storage(@TempDir Path temp) throws IOException {
+  void should_not_crash_when_cannot_write_storage(@TempDir Path temp) {
     InternalDebug.setEnabled(false);
-    new TelemetryLocalStorageManager(temp).tryUpdateAtomically(d -> {
-    });
+    assertThatCode(() -> new TelemetryLocalStorageManager(temp).tryUpdateAtomically(d -> {}))
+      .doesNotThrowAnyException();
   }
 
   @Test

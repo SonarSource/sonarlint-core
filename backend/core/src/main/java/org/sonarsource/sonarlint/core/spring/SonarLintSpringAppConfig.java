@@ -88,8 +88,6 @@ import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationSe
 import org.sonarsource.sonarlint.core.sync.SynchronizationService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationTimestampRepository;
 import org.sonarsource.sonarlint.core.sync.TaintSynchronizationService;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryServerAttributesProvider;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.tracking.IssueMatchingService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
 import org.sonarsource.sonarlint.core.tracking.SecurityHotspotMatchingService;
@@ -154,8 +152,6 @@ import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_S
   RequestHandlerBindingAssistant.class,
   SynchronizationTimestampRepository.class,
   TaintVulnerabilityTrackingService.class,
-  TelemetryService.class,
-  TelemetryServerAttributesProvider.class,
   SonarProjectBranchesSynchronizationService.class,
   TaintSynchronizationService.class,
   IssueSynchronizationService.class,
