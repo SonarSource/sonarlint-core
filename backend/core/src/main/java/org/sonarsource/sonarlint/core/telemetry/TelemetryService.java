@@ -81,7 +81,7 @@ public class TelemetryService {
   private void upload() {
     var telemetryLiveAttributes = getTelemetryLiveAttributes();
     if (Objects.nonNull(telemetryLiveAttributes)) {
-      telemetryManager.uploadLazily(telemetryLiveAttributes);
+      telemetryManager.uploadAndClearTelemetry(telemetryLiveAttributes);
     }
   }
 

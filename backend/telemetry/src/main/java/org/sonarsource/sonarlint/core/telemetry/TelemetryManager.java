@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import java.time.LocalDateTime;
 import java.util.function.Consumer;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -44,8 +45,22 @@ public class TelemetryManager {
   }
 
   void enable(TelemetryLiveAttributes telemetryLiveAttributes) {
-    storageManager.tryUpdateAtomically(data -> data.setEnabled(true));
-    uploadLazily(telemetryLiveAttributes);
+    storageManager.tryUpdateAtomically(localStorage -> {
+      localStorage.setEnabled(true);
+      if (isGracePeriodElapsed(localStorage.lastUploadTime())) {
+        uploadAndClearTelemetry(telemetryLiveAttributes, localStorage);
+      }
+    });
+  }
+
+  private static boolean isGracePeriodElapsed(LocalDateTime lastUploadTime) {
+    return dayChanged(lastUploadTime, MIN_HOURS_BETWEEN_UPLOAD);
+  }
+
+  private void uploadAndClearTelemetry(TelemetryLiveAttributes telemetryLiveAttributes, TelemetryLocalStorage localStorage) {
+    client.upload(localStorage, telemetryLiveAttributes);
+    localStorage.setLastUploadTime();
+    localStorage.clearAfterPing();
   }
 
   /**
@@ -64,20 +79,14 @@ public class TelemetryManager {
    * - the grace period has elapsed since the last upload
    * To be called periodically once a day.
    */
-  void uploadLazily(TelemetryLiveAttributes telemetryLiveAttributes) {
-    if (!dayChanged(storageManager.lastUploadTime(), MIN_HOURS_BETWEEN_UPLOAD)) {
-      return;
+  void uploadAndClearTelemetry(TelemetryLiveAttributes telemetryLiveAttributes) {
+    if (isGracePeriodElapsed(storageManager.lastUploadTime())) {
+      storageManager.tryUpdateAtomically(localStorage -> uploadAndClearTelemetry(telemetryLiveAttributes, localStorage));
     }
-
-    storageManager.tryUpdateAtomically(data -> {
-      client.upload(data, telemetryLiveAttributes);
-      data.setLastUploadTime();
-      data.clearAfterPing();
-    });
   }
 
   public void updateTelemetry(Consumer<TelemetryLocalStorage> updater) {
-    if(isTelemetryEnabledByUser()) {
+    if (isTelemetryEnabledByUser()) {
       storageManager.tryUpdateAtomically(updater);
     }
   }
