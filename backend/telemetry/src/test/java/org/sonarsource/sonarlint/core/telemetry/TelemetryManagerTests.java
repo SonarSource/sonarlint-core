@@ -37,6 +37,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -118,6 +119,7 @@ class TelemetryManagerTests {
     var telemetryPayload = getTelemetryLiveAttributesDto();
 
     createAndSaveSampleData(storageManager);
+    storageManager.tryUpdateAtomically(telemetryLocalStorage -> telemetryLocalStorage.setEnabled(true));
     telemetryManager.uploadAndClearTelemetry(telemetryPayload);
 
     var data = storageManager.tryRead();
@@ -134,7 +136,19 @@ class TelemetryManagerTests {
   }
 
   @Test
-  void updateTelemetry_should_not_trigger_upload_if_telemetry_disabled_by_user() {
+  void uploadAndClearTelemetry_should_not_trigger_upload_if_telemetry_disabled_by_user() {
+    createAndSaveSampleData(storageManager);
+    TelemetryLiveAttributes telemetryLiveAttributesDto = getTelemetryLiveAttributesDto();
+
+    telemetryManager.uploadAndClearTelemetry(telemetryLiveAttributesDto);
+
+    assertThat(storageManager.isEnabled()).isFalse();
+    verify(client, never()).upload(any(TelemetryLocalStorage.class), eq(telemetryLiveAttributesDto));
+    verifyNoMoreInteractions(client);
+  }
+
+  @Test
+  void updateTelemetry_should_not_trigger_update_if_telemetry_disabled_by_user() {
     createAndSaveSampleData(storageManager);
 
     telemetryManager.updateTelemetry(telemetryLocalStorage -> telemetryLocalStorage.setNumUseDays(10));
