@@ -29,6 +29,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.nodejs.InstalledNodeJs;
 import org.sonarsource.sonarlint.core.nodejs.NodeJsHelper;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.springframework.context.ApplicationEventPublisher;
 
 /**
  * Keep track of the Node.js executable to be used by analysis
@@ -38,6 +39,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 public class NodeJsService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private final ApplicationEventPublisher eventPublisher;
   private volatile boolean nodeAutoDetected;
   @Nullable
   private InstalledNodeJs autoDetectedNodeJs;
@@ -47,14 +49,18 @@ public class NodeJsService {
   @Nullable
   private InstalledNodeJs clientForcedNodeJs;
 
-  public NodeJsService(InitializeParams initializeParams) {
+  public NodeJsService(InitializeParams initializeParams, ApplicationEventPublisher eventPublisher) {
     var languageSpecificRequirements = initializeParams.getLanguageSpecificRequirements();
     this.clientNodeJsPath = languageSpecificRequirements == null ? null : languageSpecificRequirements.getClientNodeJsPath();
+    this.eventPublisher = eventPublisher;
   }
 
   public synchronized void didChangeClientNodeJsPath(@Nullable Path clientNodeJsPath) {
-    this.clientNodeJsPath = clientNodeJsPath;
-    this.clientForcedNodeJsDetected = false;
+    if (this.clientNodeJsPath != clientNodeJsPath) {
+      this.clientNodeJsPath = clientNodeJsPath;
+      this.clientForcedNodeJsDetected = false;
+      this.eventPublisher.publishEvent(new ClientNodeJsPathChanged());
+    }
   }
 
   @CheckForNull

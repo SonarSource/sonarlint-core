@@ -34,6 +34,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnalysisReadinessParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidRaiseIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSuggestionFoundParams;
@@ -47,6 +48,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredenti
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SuggestConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetBaseDirParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetBaseDirResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListFilesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.ShowHotspotParams;
@@ -273,6 +276,17 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   }
 
   @Override
+  public CompletableFuture<GetBaseDirResponse> getBaseDir(GetBaseDirParams params) {
+    return requestAsync(cancelChecker -> {
+      try {
+        return new GetBaseDirResponse(delegate.getBaseDir(params.getConfigurationScopeId()));
+      } catch (ConfigScopeNotFoundException e) {
+        throw configScopeNotFoundError(params.getConfigurationScopeId());
+      }
+    });
+  }
+
+  @Override
   public CompletableFuture<ListFilesResponse> listFiles(ListFilesParams params) {
     return requestAsync(cancelChecker -> {
       try {
@@ -301,5 +315,10 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   public void didChangeAnalysisReadiness(DidChangeAnalysisReadinessParams params) {
     notify(() -> delegate.didChangeAnalysisReadiness(params.getConfigurationScopeIds(), params.areReadyForAnalysis()));
+  }
+
+  @Override
+  public void didRaiseIssue(DidRaiseIssueParams params) {
+    notify(() -> delegate.didRaiseIssue(params.getConfigurationScopeId(), params.getRawIssue()));
   }
 }

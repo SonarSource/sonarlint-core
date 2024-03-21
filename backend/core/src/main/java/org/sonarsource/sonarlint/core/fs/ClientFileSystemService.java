@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.fs;
 
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,7 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetBaseDirParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.springframework.context.ApplicationEventPublisher;
@@ -52,6 +54,7 @@ public class ClientFileSystemService {
   private final SonarLintRpcClient rpcClient;
   private final ApplicationEventPublisher eventPublisher;
   private final Map<URI, ClientFile> filesByUri = new ConcurrentHashMap<>();
+  private final Map<String, Path> baseDirPerConfigScopeId = new ConcurrentHashMap<>();
 
   private final SmartCancelableLoadingCache<String, Map<URI, ClientFile>> filesByConfigScopeIdCache =
     new SmartCancelableLoadingCache<>("sonarlint-filesystem", this::initializeFileSystem);
@@ -162,5 +165,17 @@ public class ClientFileSystemService {
   @CheckForNull
   public ClientFile getClientFile(URI fileUri) {
     return filesByUri.get(fileUri);
+  }
+
+  @CheckForNull
+  public Path getBaseDir(String configurationScopeId) {
+    return baseDirPerConfigScopeId.computeIfAbsent(configurationScopeId, k -> {
+      try {
+        return rpcClient.getBaseDir(new GetBaseDirParams(configurationScopeId)).join().getBaseDir();
+      } catch (Exception e) {
+        LOG.error("Error when getting the base dir from the client", e);
+        return null;
+      }
+    });
   }
 }
