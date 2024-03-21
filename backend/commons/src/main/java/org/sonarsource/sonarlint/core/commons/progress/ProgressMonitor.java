@@ -24,6 +24,29 @@ import org.sonarsource.sonarlint.core.commons.api.progress.CanceledException;
 import org.sonarsource.sonarlint.core.commons.api.progress.ClientProgressMonitor;
 
 public class ProgressMonitor {
+  public static ProgressMonitor wrapping(SonarLintCancelMonitor cancelMonitor) {
+    return new ProgressMonitor(new ClientProgressMonitor() {
+      @Override
+      public void setMessage(String msg) {
+        // no-op
+      }
+
+      @Override
+      public void setFraction(float fraction) {
+        // no-op
+      }
+
+      @Override
+      public void setIndeterminate(boolean indeterminate) {
+        // no-op
+      }
+
+      @Override
+      public boolean isCanceled() {
+        return cancelMonitor.isCanceled();
+      }
+    });
+  }
 
   private final ClientProgressMonitor clientMonitor;
   private final float offset;

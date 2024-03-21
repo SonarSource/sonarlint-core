@@ -167,4 +167,8 @@ public class FileExclusionService {
       .map(k -> Map.entry(k, serverExclusionByUriCache.get(k)))
       .collect(toMap(Map.Entry::getKey, e -> new FileStatusDto(e.getValue())));
   }
+
+  public boolean isExcluded(URI fileUri) {
+    return Boolean.TRUE.equals(serverExclusionByUriCache.get(fileUri));
+  }
 }

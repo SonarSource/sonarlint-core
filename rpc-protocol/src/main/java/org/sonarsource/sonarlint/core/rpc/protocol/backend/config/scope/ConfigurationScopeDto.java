@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope;
 
+import java.nio.file.Path;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
@@ -33,6 +34,7 @@ public class ConfigurationScopeDto {
    */
   private final String name;
   private final BindingConfigurationDto binding;
+  private final Path baseDir;
 
   public ConfigurationScopeDto(String id, @Nullable String parentId, boolean bindable, String name, @Nullable BindingConfigurationDto binding) {
     this.id = id;
@@ -40,6 +42,7 @@ public class ConfigurationScopeDto {
     this.bindable = bindable;
     this.name = name;
     this.binding = binding;
+    this.baseDir = null;
   }
 
   public String getId() {
@@ -62,5 +65,10 @@ public class ConfigurationScopeDto {
   @CheckForNull
   public BindingConfigurationDto getBinding() {
     return binding;
+  }
+
+  @CheckForNull
+  public Path getBaseDir() {
+    return baseDir;
   }
 }
