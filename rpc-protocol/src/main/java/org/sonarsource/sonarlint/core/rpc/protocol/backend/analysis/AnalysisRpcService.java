@@ -63,4 +63,10 @@ public interface AnalysisRpcService {
    */
   @JsonRequest
   CompletableFuture<GetAutoDetectedNodeJsResponse> getAutoDetectedNodeJs();
+
+  /**
+   * Analyze the provided files.
+   */
+  @JsonRequest
+  CompletableFuture<AnalyzeFilesResponse> analyzeFiles(AnalyzeFilesParams params);
 }

@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,42 +17,25 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.repository.config;
+package org.sonarsource.sonarlint.core.rpc.protocol.client.analysis;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
+import java.util.List;
 
-public class ConfigurationScope {
+public class QuickFixDto {
 
-  private final String id;
-  private final String parentId;
-  private final boolean bindable;
-  /**
-   * The name of this configuration scope. Used for auto-binding.
-   */
-  private final String name;
+  private final List<FileEditDto> inputFileEdits;
+  private final String message;
 
-  public ConfigurationScope(String id, @Nullable String parentId, boolean bindable, String name) {
-    this.id = id;
-    this.parentId = parentId;
-    this.bindable = bindable;
-    this.name = name;
+  public QuickFixDto(List<FileEditDto> inputFileEdits, String message) {
+    this.inputFileEdits = inputFileEdits;
+    this.message = message;
   }
 
-  public String getId() {
-    return id;
+  public List<FileEditDto> fileEdits() {
+    return inputFileEdits;
   }
 
-  @CheckForNull
-  public String getParentId() {
-    return parentId;
-  }
-
-  public boolean isBindable() {
-    return bindable;
-  }
-
-  public String getName() {
-    return name;
+  public String message() {
+    return message;
   }
 }
