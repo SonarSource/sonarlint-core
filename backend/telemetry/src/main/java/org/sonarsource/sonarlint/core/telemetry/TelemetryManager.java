@@ -19,14 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import java.time.LocalDateTime;
 import java.util.function.Consumer;
-
-import static org.sonarsource.sonarlint.core.telemetry.TelemetryUtils.dayChanged;
+import javax.inject.Named;
+import javax.inject.Singleton;
 
 /**
  * Manage telemetry data and persistent storage, and stateful telemetry actions.
  * The single central point for clients to manage telemetry.
  */
+@Named
+@Singleton
 public class TelemetryManager {
 
   static final int MIN_HOURS_BETWEEN_UPLOAD = 5;
@@ -40,8 +43,22 @@ public class TelemetryManager {
   }
 
   void enable(TelemetryLiveAttributes telemetryLiveAttributes) {
-    storageManager.tryUpdateAtomically(data -> data.setEnabled(true));
-    uploadLazily(telemetryLiveAttributes);
+    storageManager.tryUpdateAtomically(localStorage -> {
+      localStorage.setEnabled(true);
+      if (isGracePeriodElapsedAndDayChanged(localStorage.lastUploadTime())) {
+        uploadAndClearTelemetry(telemetryLiveAttributes, localStorage);
+      }
+    });
+  }
+
+  private static boolean isGracePeriodElapsedAndDayChanged(LocalDateTime lastUploadTime) {
+    return TelemetryUtils.isGracePeriodElapsedAndDayChanged(lastUploadTime, MIN_HOURS_BETWEEN_UPLOAD);
+  }
+
+  private void uploadAndClearTelemetry(TelemetryLiveAttributes telemetryLiveAttributes, TelemetryLocalStorage localStorage) {
+    client.upload(localStorage, telemetryLiveAttributes);
+    localStorage.setLastUploadTime();
+    localStorage.clearAfterPing();
   }
 
   /**
@@ -60,20 +77,14 @@ public class TelemetryManager {
    * - the grace period has elapsed since the last upload
    * To be called periodically once a day.
    */
-  void uploadLazily(TelemetryLiveAttributes telemetryLiveAttributes) {
-    if (!dayChanged(storageManager.lastUploadTime(), MIN_HOURS_BETWEEN_UPLOAD)) {
-      return;
+  void uploadAndClearTelemetry(TelemetryLiveAttributes telemetryLiveAttributes) {
+    if (isGracePeriodElapsedAndDayChanged(storageManager.lastUploadTime())) {
+      storageManager.tryUpdateAtomically(localStorage -> uploadAndClearTelemetry(telemetryLiveAttributes, localStorage));
     }
-
-    storageManager.tryUpdateAtomically(data -> {
-      client.upload(data, telemetryLiveAttributes);
-      data.setLastUploadTime();
-      data.clearAfterPing();
-    });
   }
 
   public void updateTelemetry(Consumer<TelemetryLocalStorage> updater) {
-    if(isTelemetryEnabledByUser()) {
+    if (isTelemetryEnabledByUser()) {
       storageManager.tryUpdateAtomically(updater);
     }
   }
