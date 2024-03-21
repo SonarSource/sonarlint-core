@@ -27,6 +27,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientCons
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnalysisReadinessParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidRaiseIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSuggestionFoundParams;
@@ -40,6 +41,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreat
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetBaseDirParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetBaseDirResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListFilesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.ShowHotspotParams;
@@ -186,6 +189,13 @@ public interface SonarLintRpcClient {
   void didChangeMatchedSonarProjectBranch(DidChangeMatchedSonarProjectBranchParams params);
 
   /**
+   * Returns the base dir for the given configuration scope.
+   * Can be null if the configuration scope does not correspond to a file system
+   */
+  @JsonRequest
+  CompletableFuture<GetBaseDirResponse> getBaseDir(GetBaseDirParams params);
+
+  /**
    * Must return all file paths for the given configuration scope.
    */
   @JsonRequest
@@ -212,4 +222,12 @@ public interface SonarLintRpcClient {
    */
   @JsonNotification
   void didChangeAnalysisReadiness(DidChangeAnalysisReadinessParams params);
+
+  /**
+   * Called as soon as one of the analyzer discovered an issue.
+   * A "raw" issue is an issue as it is raised by the analyzer, without any effort to match it to a previously raised issue (this happens at a later stage).
+   * This is to let clients track the issue with previous local issues, and potentially show them to users via streaming
+   */
+  @JsonNotification
+  default void didRaiseIssue(DidRaiseIssueParams params){}
 }

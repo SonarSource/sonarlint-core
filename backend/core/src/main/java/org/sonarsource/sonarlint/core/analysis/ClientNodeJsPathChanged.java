@@ -17,42 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.repository.config;
+package org.sonarsource.sonarlint.core.analysis;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
-
-public class ConfigurationScope {
-
-  private final String id;
-  private final String parentId;
-  private final boolean bindable;
-  /**
-   * The name of this configuration scope. Used for auto-binding.
-   */
-  private final String name;
-
-  public ConfigurationScope(String id, @Nullable String parentId, boolean bindable, String name) {
-    this.id = id;
-    this.parentId = parentId;
-    this.bindable = bindable;
-    this.name = name;
-  }
-
-  public String getId() {
-    return id;
-  }
-
-  @CheckForNull
-  public String getParentId() {
-    return parentId;
-  }
-
-  public boolean isBindable() {
-    return bindable;
-  }
-
-  public String getName() {
-    return name;
-  }
+public class ClientNodeJsPathChanged {
 }

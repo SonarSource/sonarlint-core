@@ -300,6 +300,7 @@ public class SynchronizationService {
     try {
       LOG.debug("Synchronizing storage of connection '{}'", connectionId);
       serverConnection.sync(serverApi, cancelMonitor);
+      // TODO rename event and send only if plugins changed
       applicationEventPublisher.publishEvent(new PluginsSynchronizedEvent(connectionId));
       scopesToSync = scopesToSync.stream()
         .filter(boundScope -> shouldSynchronizeBinding(new Binding(connectionId, boundScope.getSonarProjectKey()))).collect(toList());
