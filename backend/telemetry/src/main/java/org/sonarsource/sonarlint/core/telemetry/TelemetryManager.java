@@ -73,12 +73,13 @@ public class TelemetryManager {
 
   /**
    * Upload telemetry data, when all conditions are satisfied:
+   * - telemetry is enabled
    * - the day is different from the last upload
    * - the grace period has elapsed since the last upload
    * To be called periodically once a day.
    */
   void uploadAndClearTelemetry(TelemetryLiveAttributes telemetryLiveAttributes) {
-    if (isGracePeriodElapsedAndDayChanged(storageManager.lastUploadTime())) {
+    if (isTelemetryEnabledByUser() && isGracePeriodElapsedAndDayChanged(storageManager.lastUploadTime())) {
       storageManager.tryUpdateAtomically(localStorage -> uploadAndClearTelemetry(telemetryLiveAttributes, localStorage));
     }
   }
