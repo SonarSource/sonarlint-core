@@ -32,6 +32,7 @@ public enum Language {
   HTML("HTML"),
   IPYTHON("IPython Notebooks"),
   JAVA("Java"),
+  JCL("JCL"),
   JS("JavaScript"),
   KOTLIN("Kotlin"),
   PHP("PHP"),
@@ -90,6 +91,8 @@ public enum Language {
         return IPYTHON;
       case JAVA:
         return JAVA;
+      case JCL:
+        return JCL;
       case JS:
         return JS;
       case KOTLIN:
