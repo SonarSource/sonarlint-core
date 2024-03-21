@@ -37,7 +37,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -244,7 +243,7 @@ class TelemetryManagerTests {
   }
 
   private static TelemetryLiveAttributes getTelemetryLiveAttributesDto() {
-    var serverAttributes = new TelemetryServerLiveAttributes(true, true, false, Collections.emptyList(), Collections.emptyList(), "3.1.7");
+    var serverAttributes = new TelemetryServerAttributes(true, true, false, Collections.emptyList(), Collections.emptyList(), "3.1.7");
     var clientAttributes = new TelemetryClientLiveAttributesResponse(emptyMap());
     return new TelemetryLiveAttributes(serverAttributes, clientAttributes);
   }

@@ -26,10 +26,10 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryCli
 
 public class TelemetryLiveAttributes {
 
-  private final TelemetryServerLiveAttributes serverAttributes;
+  private final TelemetryServerAttributes serverAttributes;
   private final TelemetryClientLiveAttributesResponse clientAttributes;
 
-  public TelemetryLiveAttributes(TelemetryServerLiveAttributes serverAttributes,
+  public TelemetryLiveAttributes(TelemetryServerAttributes serverAttributes,
     TelemetryClientLiveAttributesResponse clientAttributes) {
     this.serverAttributes = serverAttributes;
     this.clientAttributes = clientAttributes;

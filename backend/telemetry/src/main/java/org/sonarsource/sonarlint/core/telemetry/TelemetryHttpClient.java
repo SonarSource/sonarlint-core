@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.apache.commons.lang3.SystemUtils;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
@@ -58,14 +59,13 @@ public class TelemetryHttpClient {
   private final String endpoint;
   private final Map<String, Object> additionalAttributes;
 
-  public TelemetryHttpClient(InitializeParams initializeParams, TelemetryServerConstantAttributes serverConstantAttributes,
-    HttpClientProvider httpClientProvider, String telemetryEndpoint) {
+  public TelemetryHttpClient(InitializeParams initializeParams, HttpClientProvider httpClientProvider, String telemetryEndpoint) {
     TelemetryClientConstantAttributesDto attributes = initializeParams.getTelemetryConstantAttributes();
     this.product = attributes.getProductName();
     this.version = attributes.getProductVersion();
     this.ideVersion = attributes.getIdeVersion();
-    this.platform = serverConstantAttributes.getPlatform();
-    this.architecture = serverConstantAttributes.getArchitecture();
+    this.platform = SystemUtils.OS_NAME;
+    this.architecture = SystemUtils.OS_ARCH;
     this.client = httpClientProvider.getHttpClient();
     this.endpoint = telemetryEndpoint;
     this.additionalAttributes = attributes.getAdditionalAttributes();
@@ -102,7 +102,6 @@ public class TelemetryHttpClient {
     var taintVulnerabilitiesPayload = new TaintVulnerabilitiesPayload(data.taintVulnerabilitiesInvestigatedLocallyCount(),
       data.taintVulnerabilitiesInvestigatedRemotelyCount());
     var issuePayload = new IssuePayload(data.issueStatusChangedRuleKeys(), data.issueStatusChangedCount());
-    var os = System.getProperty("os.name");
     var jre = System.getProperty("java.version");
     var telemetryRulesPayload = new TelemetryRulesPayload(telemetryLiveAttrs.getNonDefaultEnabledRules(),
       telemetryLiveAttrs.getDefaultDisabledRules(), data.getRaisedIssuesRules(), data.getQuickFixesApplied());
@@ -111,7 +110,7 @@ public class TelemetryHttpClient {
     var mergedAdditionalAttributes = new HashMap<>(telemetryLiveAttrs.getAdditionalAttributes());
     mergedAdditionalAttributes.putAll(additionalAttributes);
     return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version, ideVersion, platform, architecture,
-      telemetryLiveAttrs.usesConnectedMode(), telemetryLiveAttrs.usesSonarCloud(), systemTime, data.installTime(), os, jre,
+      telemetryLiveAttrs.usesConnectedMode(), telemetryLiveAttrs.usesSonarCloud(), systemTime, data.installTime(), platform, jre,
       telemetryLiveAttrs.getNodeVersion(), analyzers, notifications, showHotspotPayload,
       showIssuePayload, taintVulnerabilitiesPayload, telemetryRulesPayload,
       hotspotPayload, issuePayload, helpAndFeedbackPayload, cleanAsYouCodePayload, mergedAdditionalAttributes);

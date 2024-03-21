@@ -45,7 +45,7 @@ class TelemetryUtils {
    * @param date reference date
    * @return true if it's a different day than the reference
    */
-  static boolean dayChanged(@Nullable LocalDate date) {
+  static boolean isGracePeriodElapsedAndDayChanged(@Nullable LocalDate date) {
     return date == null || !date.equals(LocalDate.now());
   }
 
@@ -92,7 +92,7 @@ class TelemetryUtils {
    * @param hours minimum hours that must have elapsed
    * @return true if it's a different day than the reference and at least hours have elapsed
    */
-  static boolean dayChanged(@Nullable LocalDateTime dateTime, long hours) {
+  static boolean isGracePeriodElapsedAndDayChanged(@Nullable LocalDateTime dateTime, long hours) {
     return dateTime == null ||
       (!LocalDate.now().equals(dateTime.toLocalDate())
         && (dateTime.until(LocalDateTime.now(), ChronoUnit.HOURS) >= hours));

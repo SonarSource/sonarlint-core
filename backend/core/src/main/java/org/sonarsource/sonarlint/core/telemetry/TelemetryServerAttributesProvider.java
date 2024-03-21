@@ -54,7 +54,7 @@ public class TelemetryServerAttributesProvider {
     this.nodeJsService = nodeJsService;
   }
 
-  public TelemetryServerLiveAttributes getTelemetryServerLiveAttributes() {
+  public TelemetryServerAttributes getTelemetryServerLiveAttributes() {
     var allBindings = configurationRepository.getAllBoundScopes();
 
     var usesConnectedMode = !allBindings.isEmpty();
@@ -82,7 +82,7 @@ public class TelemetryServerAttributesProvider {
 
     var nodeJsVersion = getNodeJsVersion();
 
-    return new TelemetryServerLiveAttributes(usesConnectedMode, usesSonarCloud, devNotificationsDisabled, nonDefaultEnabledRules,
+    return new TelemetryServerAttributes(usesConnectedMode, usesSonarCloud, devNotificationsDisabled, nonDefaultEnabledRules,
       defaultDisabledRules, nodeJsVersion);
   }
 

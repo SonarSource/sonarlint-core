@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.telemetry;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.util.Collections;
 import java.util.Map;
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -53,6 +54,8 @@ class TelemetryHttpClientTests {
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private TelemetryHttpClient underTest;
+  private static final String platform = SystemUtils.OS_NAME;
+  private static final String architecture = SystemUtils.OS_ARCH;
 
   @RegisterExtension
   static WireMockExtension sonarqubeMock = WireMockExtension.newInstance()
@@ -65,9 +68,8 @@ class TelemetryHttpClientTests {
     InitializeParams initializeParams = mock(InitializeParams.class);
     when(initializeParams.getTelemetryConstantAttributes())
       .thenReturn(new TelemetryClientConstantAttributesDto(null, "product", "version", "ideversion", Map.of("additionalKey", "additionalValue")));
-    TelemetryServerConstantAttributes serverConstantAttributes = new TelemetryServerConstantAttributes("platform", "architecture");
 
-    underTest = new TelemetryHttpClient(initializeParams, serverConstantAttributes, HttpClientProvider.forTesting(), sonarqubeMock.baseUrl());
+    underTest = new TelemetryHttpClient(initializeParams, HttpClientProvider.forTesting(), sonarqubeMock.baseUrl());
   }
 
   @Test
@@ -77,11 +79,13 @@ class TelemetryHttpClientTests {
 
     underTest.optOut(new TelemetryLocalStorage(), getTelemetryLiveAttributesDto());
 
-    await().untilAsserted(() -> sonarqubeMock.verify(deleteRequestedFor(urlEqualTo("/"))
-      .withRequestBody(
-        equalToJson(
-          "{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"platform\",\"architecture\":\"architecture\"}",
-          true, true))));
+    await().untilAsserted(() -> {
+      sonarqubeMock.verify(deleteRequestedFor(urlEqualTo("/"))
+        .withRequestBody(
+          equalToJson(
+            "{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"" + platform + "\",\"architecture\":\"" + architecture + "\"}",
+            true, true)));
+    });
   }
 
   @Test
@@ -97,7 +101,7 @@ class TelemetryHttpClientTests {
     await().untilAsserted(() -> {
       assertTelemetryUploaded(true);
       assertThat(logTester.logs(Level.INFO)).anyMatch(l -> l.matches("Sending telemetry payload."));
-      assertThat(logTester.logs(Level.INFO)).anyMatch(l -> l.contains("{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"platform\",\"architecture\":\"architecture\""));
+      assertThat(logTester.logs(Level.INFO)).anyMatch(l -> l.contains("{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\""+platform+"\",\"architecture\":\""+architecture+"\""));
     });
   }
 
@@ -111,7 +115,7 @@ class TelemetryHttpClientTests {
     sonarqubeMock.verify(postRequestedFor(urlEqualTo("/"))
       .withRequestBody(
         equalToJson(
-          "{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"platform\",\"architecture\":\"architecture\",\"additionalKey\" : \"additionalValue\"}",
+          "{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"" + platform + "\",\"architecture\":\""+architecture+"\",\"additionalKey\" : \"additionalValue\"}",
           true, true)));
   }
 
@@ -154,7 +158,7 @@ class TelemetryHttpClientTests {
   }
 
   private static TelemetryLiveAttributes getTelemetryLiveAttributesDto() {
-    var serverAttributes = new TelemetryServerLiveAttributes(true, true, false, Collections.emptyList(), Collections.emptyList(), "3.1.7");
+    var serverAttributes = new TelemetryServerAttributes(true, true, false, Collections.emptyList(), Collections.emptyList(), "3.1.7");
     var clientAttributes = new TelemetryClientLiveAttributesResponse(emptyMap());
     return new TelemetryLiveAttributes(serverAttributes, clientAttributes);
   }

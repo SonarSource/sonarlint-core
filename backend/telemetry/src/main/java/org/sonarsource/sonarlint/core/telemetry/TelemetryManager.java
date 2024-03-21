@@ -24,8 +24,6 @@ import java.util.function.Consumer;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
-import static org.sonarsource.sonarlint.core.telemetry.TelemetryUtils.dayChanged;
-
 /**
  * Manage telemetry data and persistent storage, and stateful telemetry actions.
  * The single central point for clients to manage telemetry.
@@ -47,14 +45,14 @@ public class TelemetryManager {
   void enable(TelemetryLiveAttributes telemetryLiveAttributes) {
     storageManager.tryUpdateAtomically(localStorage -> {
       localStorage.setEnabled(true);
-      if (isGracePeriodElapsed(localStorage.lastUploadTime())) {
+      if (isGracePeriodElapsedAndDayChanged(localStorage.lastUploadTime())) {
         uploadAndClearTelemetry(telemetryLiveAttributes, localStorage);
       }
     });
   }
 
-  private static boolean isGracePeriodElapsed(LocalDateTime lastUploadTime) {
-    return dayChanged(lastUploadTime, MIN_HOURS_BETWEEN_UPLOAD);
+  private static boolean isGracePeriodElapsedAndDayChanged(LocalDateTime lastUploadTime) {
+    return TelemetryUtils.isGracePeriodElapsedAndDayChanged(lastUploadTime, MIN_HOURS_BETWEEN_UPLOAD);
   }
 
   private void uploadAndClearTelemetry(TelemetryLiveAttributes telemetryLiveAttributes, TelemetryLocalStorage localStorage) {
@@ -80,7 +78,7 @@ public class TelemetryManager {
    * To be called periodically once a day.
    */
   void uploadAndClearTelemetry(TelemetryLiveAttributes telemetryLiveAttributes) {
-    if (isGracePeriodElapsed(storageManager.lastUploadTime())) {
+    if (isGracePeriodElapsedAndDayChanged(storageManager.lastUploadTime())) {
       storageManager.tryUpdateAtomically(localStorage -> uploadAndClearTelemetry(telemetryLiveAttributes, localStorage));
     }
   }

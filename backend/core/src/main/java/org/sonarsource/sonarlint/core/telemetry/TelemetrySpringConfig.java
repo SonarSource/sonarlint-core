@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import java.nio.file.Path;
-import org.apache.commons.lang3.SystemUtils;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -50,8 +49,4 @@ public class TelemetrySpringConfig {
     return System.getProperty(PROPERTY_TELEMETRY_ENDPOINT, TELEMETRY_ENDPOINT);
   }
 
-  @Bean
-  TelemetryServerConstantAttributes provideServerConstantAttribute() {
-    return new TelemetryServerConstantAttributes(SystemUtils.OS_NAME, SystemUtils.OS_ARCH);
-  }
 }
