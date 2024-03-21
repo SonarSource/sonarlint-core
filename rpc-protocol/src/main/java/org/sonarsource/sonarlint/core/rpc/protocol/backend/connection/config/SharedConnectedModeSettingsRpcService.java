@@ -17,28 +17,28 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.usertoken;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config;
 
-public class RevokeTokenParams {
-  private final String baseUrl;
-  private final String tokenName;
-  private final String tokenValue;
+import java.util.concurrent.CompletableFuture;
+import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.RevokeTokenParams;
 
-  public RevokeTokenParams(String baseUrl, String tokenName, String tokenValue) {
-    this.baseUrl = baseUrl;
-    this.tokenName = tokenName;
-    this.tokenValue = tokenValue;
-  }
+public interface SharedConnectedModeSettingsRpcService {
+  /**
+   * <p> It gets file contents for a shared Connected Mode configuration file.
+   * It returns file contents that look like either
+   <li>{
+   "sonarCloudOrganization": "$organization",
+   "projectKey": "$projectKey"
+   }</li>
+   OR
+   <li>   {
+   "sonarQubeUri": "$serverUrl",
+   "projectKey": "$projectKey"
+   }</li>
 
-  public String getBaseUrl() {
-    return baseUrl;
-  }
+   */
+  @JsonRequest
+  CompletableFuture<GetSharedConnectedModeConfigFileResponse> getSharedConnectedModeConfigFileContents(GetSharedConnectedModeConfigFileParams params);
 
-  public String getTokenName() {
-    return tokenName;
-  }
-
-  public String getTokenValue() {
-    return tokenValue;
-  }
 }
