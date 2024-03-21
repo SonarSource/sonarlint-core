@@ -61,8 +61,7 @@ public class TelemetryManager {
    * To be called periodically once a day.
    */
   void uploadLazily(TelemetryLiveAttributes telemetryLiveAttributes) {
-    var readData = storageManager.tryRead();
-    if (!dayChanged(readData.lastUploadTime(), MIN_HOURS_BETWEEN_UPLOAD)) {
+    if (!dayChanged(storageManager.lastUploadTime(), MIN_HOURS_BETWEEN_UPLOAD)) {
       return;
     }
 
@@ -80,6 +79,6 @@ public class TelemetryManager {
   }
 
   public boolean isTelemetryEnabledByUser() {
-    return storageManager.tryRead().enabled();
+    return storageManager.isEnabled();
   }
 }

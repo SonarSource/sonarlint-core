@@ -51,7 +51,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 public class TelemetryService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final long TELEMETRY_UPLOAD_DELAY = TimeUnit.HOURS.toMinutes(6);
+  private static final long TELEMETRY_UPLOAD_DELAY = TimeUnit.HOURS.toMinutes(TelemetryManager.MIN_HOURS_BETWEEN_UPLOAD + 1L);
 
   private final ScheduledExecutorService scheduledExecutor;
   private final TelemetryManager telemetryManager;
