@@ -507,6 +507,7 @@ public class SonarLintBackendFixture {
   public static class SonarLintClientBuilder {
     private final Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId = new HashMap<>();
     private boolean printLogsToStdOut;
+    private final Map<String, Path> baseDirsByConfigScope = new HashMap<>();
     private final Map<String, List<ClientFileDto>> initialFilesByConfigScope = new HashMap<>();
     private final Map<String, String> matchedBranchPerScopeId = new HashMap<>();
 
@@ -521,7 +522,7 @@ public class SonarLintBackendFixture {
     }
 
     public FakeSonarLintRpcClient build() {
-      return spy(new FakeSonarLintRpcClient(credentialsByConnectionId, printLogsToStdOut, matchedBranchPerScopeId, initialFilesByConfigScope));
+      return spy(new FakeSonarLintRpcClient(credentialsByConnectionId, printLogsToStdOut, matchedBranchPerScopeId, baseDirsByConfigScope, initialFilesByConfigScope));
     }
 
     public SonarLintClientBuilder printLogsToStdOut() {
@@ -538,6 +539,12 @@ public class SonarLintBackendFixture {
       initialFilesByConfigScope.put(configScopeId, clientFileDtos);
       return this;
     }
+
+    public SonarLintClientBuilder withInitialFs(String configScopeId, Path baseDir, List<ClientFileDto> clientFileDtos) {
+      initialFilesByConfigScope.put(configScopeId, clientFileDtos);
+      baseDirsByConfigScope.put(configScopeId, baseDir);
+      return this;
+    }
   }
 
   public static class FakeSonarLintRpcClient implements SonarLintRpcClientDelegate {
@@ -550,13 +557,15 @@ public class SonarLintBackendFixture {
     private final Queue<LogParams> logs = new ConcurrentLinkedQueue<>();
     private final List<DidChangeTaintVulnerabilitiesParams> taintVulnerabilityChanges = new CopyOnWriteArrayList<>();
     private final Map<String, String> matchedBranchPerScopeId;
+    private final Map<String, Path> baseDirsByConfigScope;
     private final Map<String, List<ClientFileDto>> initialFilesByConfigScope;
 
     public FakeSonarLintRpcClient(Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId, boolean printLogsToStdOut,
-      Map<String, String> matchedBranchPerScopeId, Map<String, List<ClientFileDto>> initialFilesByConfigScope) {
+      Map<String, String> matchedBranchPerScopeId, Map<String, Path> baseDirsByConfigScope, Map<String, List<ClientFileDto>> initialFilesByConfigScope) {
       this.credentialsByConnectionId = credentialsByConnectionId;
       this.printLogsToStdOut = printLogsToStdOut;
       this.matchedBranchPerScopeId = matchedBranchPerScopeId;
+      this.baseDirsByConfigScope = baseDirsByConfigScope;
       this.initialFilesByConfigScope = initialFilesByConfigScope;
     }
 
@@ -706,6 +715,11 @@ public class SonarLintBackendFixture {
         System.out.println((params.getThreadName() != null ? ("[" + params.getThreadName() + "] ") : "") + params.getLevel() + " "
           + (params.getConfigScopeId() != null ? ("[" + params.getConfigScopeId() + "] ") : "") + params.getMessage());
       }
+    }
+
+    @Override
+    public Path getBaseDir(String configurationScopeId) {
+      return baseDirsByConfigScope.get(configurationScopeId);
     }
 
     @Override

@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.branch;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.classic.spi.LoggingEvent;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;

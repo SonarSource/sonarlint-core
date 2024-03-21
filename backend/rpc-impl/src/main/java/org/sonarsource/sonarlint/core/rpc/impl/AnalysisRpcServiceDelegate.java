@@ -26,6 +26,8 @@ import org.sonarsource.sonarlint.core.analysis.AnalysisService;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeClientNodeJsPathParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigResponse;
@@ -95,6 +97,14 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
       var autoDetectedNodeJs = getBean(AnalysisService.class).getAutoDetectedNodeJs();
       var dto = autoDetectedNodeJs == null ? null : new NodeJsDetailsDto(autoDetectedNodeJs.getPath(), autoDetectedNodeJs.getVersion().toString());
       return new GetAutoDetectedNodeJsResponse(dto);
+    });
+  }
+
+  @Override
+  public CompletableFuture<AnalyzeFilesResponse> analyzeFiles(AnalyzeFilesParams params) {
+    return requestAsync(cancelChecker -> {
+      var analysisResults = getBean(AnalysisService.class).analyze(cancelChecker, params.getConfigurationScopeId(), params.getFilesToAnalyze(), params.getExtraProperties(), params.getStartTime()).join();
+      return new AnalyzeFilesResponse();
     });
   }
 }
