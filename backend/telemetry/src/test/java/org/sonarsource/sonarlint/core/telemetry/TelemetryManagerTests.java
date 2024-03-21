@@ -37,6 +37,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -131,6 +132,17 @@ class TelemetryManagerTests {
 
     verify(client, times(2)).upload(any(TelemetryLocalStorage.class), eq(telemetryPayload));
     verifyNoMoreInteractions(client);
+  }
+
+  @Test
+  void updateTelemetry_should_not_trigger_upload_if_telemetry_disabled_by_user() {
+    createAndSaveSampleData(storageManager);
+
+    telemetryManager.updateTelemetry(telemetryLocalStorage -> telemetryLocalStorage.setNumUseDays(10));
+
+    TelemetryLocalStorage localStorage = storageManager.tryRead();
+    assertThat(localStorage.enabled()).isFalse();
+    assertThat(localStorage.numUseDays()).isEqualTo(5);
   }
 
   @Test
