@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,42 +17,19 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.repository.config;
+package org.sonarsource.sonarlint.core.rpc.protocol.client.analysis;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
+import java.util.List;
 
-public class ConfigurationScope {
+public class RawIssueFlowDto {
 
-  private final String id;
-  private final String parentId;
-  private final boolean bindable;
-  /**
-   * The name of this configuration scope. Used for auto-binding.
-   */
-  private final String name;
+  private final List<RawIssueLocationDto> locations;
 
-  public ConfigurationScope(String id, @Nullable String parentId, boolean bindable, String name) {
-    this.id = id;
-    this.parentId = parentId;
-    this.bindable = bindable;
-    this.name = name;
+  public RawIssueFlowDto(List<RawIssueLocationDto> locations) {
+    this.locations = locations;
   }
 
-  public String getId() {
-    return id;
-  }
-
-  @CheckForNull
-  public String getParentId() {
-    return parentId;
-  }
-
-  public boolean isBindable() {
-    return bindable;
-  }
-
-  public String getName() {
-    return name;
+  public List<RawIssueLocationDto> getLocations() {
+    return locations;
   }
 }

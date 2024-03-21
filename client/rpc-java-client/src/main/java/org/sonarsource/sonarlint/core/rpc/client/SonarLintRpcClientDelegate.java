@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.rpc.client;
 
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,6 +33,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
@@ -154,8 +156,16 @@ public interface SonarLintRpcClientDelegate {
   void didChangeTaintVulnerabilities(String configurationScopeId, Set<UUID> closedTaintVulnerabilityIds, List<TaintVulnerabilityDto> addedTaintVulnerabilities,
     List<TaintVulnerabilityDto> updatedTaintVulnerabilities);
 
+  default Path getBaseDir(String configurationScopeId) throws ConfigScopeNotFoundException {
+    return null;
+  }
+
   List<ClientFileDto> listFiles(String configScopeId) throws ConfigScopeNotFoundException;
 
   void noBindingSuggestionFound(String projectKey);
+
   void didChangeAnalysisReadiness(Set<String> configurationScopeIds, boolean areReadyForAnalysis);
+
+  default void didRaiseIssue(String configurationScopeId, RawIssueDto rawIssue) {
+  }
 }

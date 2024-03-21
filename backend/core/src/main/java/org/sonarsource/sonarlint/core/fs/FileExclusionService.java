@@ -66,7 +66,7 @@ public class FileExclusionService {
   private final ClientFileSystemService clientFileSystemService;
 
   private final SmartCancelableLoadingCache<URI, Boolean> serverExclusionByUriCache =
-    new SmartCancelableLoadingCache<>("sonarlint-file-exclusions", this::computeExclusion, (key, oldValue, newValue) -> {
+    new SmartCancelableLoadingCache<>("sonarlint-file-exclusions", this::computeIfExcluded, (key, oldValue, newValue) -> {
     });
 
   public FileExclusionService(ConfigurationRepository configRepo, StorageService storageService, PathTranslationService pathTranslationService,
@@ -77,7 +77,7 @@ public class FileExclusionService {
     this.clientFileSystemService = clientFileSystemService;
   }
 
-  public boolean computeExclusion(URI fileUri, SonarLintCancelMonitor cancelMonitor) {
+  public boolean computeIfExcluded(URI fileUri, SonarLintCancelMonitor cancelMonitor) {
     LOG.debug("Computing file exclusion for uri '{}'", fileUri);
     var clientFile = clientFileSystemService.getClientFile(fileUri);
     if (clientFile == null) {
@@ -166,5 +166,9 @@ public class FileExclusionService {
     return existingFileUris.stream()
       .map(k -> Map.entry(k, serverExclusionByUriCache.get(k)))
       .collect(toMap(Map.Entry::getKey, e -> new FileStatusDto(e.getValue())));
+  }
+
+  public boolean isExcluded(URI fileUri) {
+    return Boolean.TRUE.equals(serverExclusionByUriCache.get(fileUri));
   }
 }
