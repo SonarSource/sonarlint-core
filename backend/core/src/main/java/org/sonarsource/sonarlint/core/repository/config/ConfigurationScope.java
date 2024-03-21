@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.repository.config;
 
+import java.nio.file.Path;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
@@ -31,12 +32,18 @@ public class ConfigurationScope {
    * The name of this configuration scope. Used for auto-binding.
    */
   private final String name;
+  private final Path baseDir;
 
   public ConfigurationScope(String id, @Nullable String parentId, boolean bindable, String name) {
+    this(id, parentId, bindable, name, null);
+  }
+
+  public ConfigurationScope(String id, @Nullable String parentId, boolean bindable, String name, @Nullable Path baseDir) {
     this.id = id;
     this.parentId = parentId;
     this.bindable = bindable;
     this.name = name;
+    this.baseDir = baseDir;
   }
 
   public String getId() {
@@ -56,4 +63,8 @@ public class ConfigurationScope {
     return name;
   }
 
+  @CheckForNull
+  public Path getBaseDir() {
+    return baseDir;
+  }
 }
