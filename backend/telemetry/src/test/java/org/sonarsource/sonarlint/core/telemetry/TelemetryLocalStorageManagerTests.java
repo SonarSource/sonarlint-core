@@ -273,10 +273,16 @@ class TelemetryLocalStorageManagerTests {
     assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isEqualTo(1);
 
     TelemetryLocalStorage newStorage = new TelemetryLocalStorage();
-    IntStream.range(0, 100).forEach(value -> newStorage.incrementShowIssueRequestCount());
+    newStorage.incrementShowIssueRequestCount();
+    newStorage.incrementShowIssueRequestCount();
+
+    //unfortunately windows doesn't always give the lastModified info correctly when the file is changed programmatically.
+    //to overcome this issue we delete and recreate the file to trigger windows to refresh the last modification time
+    filePath.toFile().delete();
+    filePath.toFile().createNewFile();
     writeToLocalStorageFile(newStorage);
 
-    assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isEqualTo(100);
+    assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isEqualTo(2);
   }
 
   private void writeToLocalStorageFile(TelemetryLocalStorage newStorage) throws IOException {
