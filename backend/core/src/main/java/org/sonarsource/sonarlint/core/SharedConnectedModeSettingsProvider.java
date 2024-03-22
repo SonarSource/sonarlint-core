@@ -21,11 +21,15 @@ package org.sonarsource.sonarlint.core;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.inject.Named;
+import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.SonarLintException;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 
+@Named
+@Singleton
 public class SharedConnectedModeSettingsProvider {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final ConfigurationRepository configurationRepository;

@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config;
 
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.RevokeTokenParams;
 
 public interface SharedConnectedModeSettingsRpcService {
   /**
