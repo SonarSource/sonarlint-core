@@ -40,6 +40,7 @@ import javax.inject.Singleton;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.branch.MatchedSonarProjectBranchChangedEvent;
+import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
@@ -83,22 +84,22 @@ public class SynchronizationService {
   private final Set<String> connectedModeEmbeddedPluginKeys;
   private final boolean branchSpecificSynchronizationEnabled;
   private final boolean fullSynchronizationEnabled;
-  private final SynchronizationTimestampRepository synchronizationTimestampRepository;
+  private final SynchronizationTimestampRepository<String> scopeSynchronizationTimestampRepository = new SynchronizationTimestampRepository<>();
+  private final SynchronizationTimestampRepository<Binding> bindingSynchronizationTimestampRepository = new SynchronizationTimestampRepository<>();
   private final TaintSynchronizationService taintSynchronizationService;
   private final IssueSynchronizationService issueSynchronizationService;
   private final HotspotSynchronizationService hotspotSynchronizationService;
   private final SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService;
   private final ApplicationEventPublisher applicationEventPublisher;
-  private final ExecutorServiceShutdownWatchable<ScheduledExecutorService> scheduledSynchronizer
-    = new ExecutorServiceShutdownWatchable<>(Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "SonarLint Local Storage Synchronizer")));
+  private final ExecutorServiceShutdownWatchable<ScheduledExecutorService> scheduledSynchronizer = new ExecutorServiceShutdownWatchable<>(
+    Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "SonarLint Local Storage Synchronizer")));
   private final Set<String> ignoreBranchEventForScopes = ConcurrentHashMap.newKeySet();
 
   public SynchronizationService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
-                                ServerApiProvider serverApiProvider, StorageService storageService, InitializeParams params,
-                                SynchronizationTimestampRepository synchronizationTimestampRepository, TaintSynchronizationService taintSynchronizationService,
-                                IssueSynchronizationService issueSynchronizationService, HotspotSynchronizationService hotspotSynchronizationService,
-                                SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService,
-                                ApplicationEventPublisher applicationEventPublisher) {
+    ServerApiProvider serverApiProvider, StorageService storageService, InitializeParams params, TaintSynchronizationService taintSynchronizationService,
+    IssueSynchronizationService issueSynchronizationService, HotspotSynchronizationService hotspotSynchronizationService,
+    SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService,
+    ApplicationEventPublisher applicationEventPublisher) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
@@ -108,7 +109,6 @@ public class SynchronizationService {
     this.connectedModeEmbeddedPluginKeys = params.getConnectedModeEmbeddedPluginPathsByKey().keySet();
     this.branchSpecificSynchronizationEnabled = params.getFeatureFlags().shouldSynchronizeProjects();
     this.fullSynchronizationEnabled = params.getFeatureFlags().shouldManageFullSynchronization();
-    this.synchronizationTimestampRepository = synchronizationTimestampRepository;
     this.taintSynchronizationService = taintSynchronizationService;
     this.issueSynchronizationService = issueSynchronizationService;
     this.hotspotSynchronizationService = hotspotSynchronizationService;
@@ -166,8 +166,8 @@ public class SynchronizationService {
   }
 
   private void synchronizeProjectsOfTheSameConnection(String connectionId, Map<String, Collection<BoundScope>> boundScopeBySonarProject, ProgressNotifier notifier,
-                                                      Set<String> synchronizedConfScopeIds,
-                                                      float progress, float progressGap, SonarLintCancelMonitor cancelMonitor) {
+    Set<String> synchronizedConfScopeIds,
+    float progress, float progressGap, SonarLintCancelMonitor cancelMonitor) {
     if (boundScopeBySonarProject.isEmpty()) {
       return;
     }
@@ -207,13 +207,28 @@ public class SynchronizationService {
 
   @EventListener
   public void onConfigurationScopeRemoved(ConfigurationScopeRemovedEvent event) {
-    synchronizationTimestampRepository.clearLastSynchronizationTimestamp(event.getRemovedConfigurationScopeId());
+    scopeSynchronizationTimestampRepository.clearLastSynchronizationTimestamp(event.getRemovedConfigurationScopeId());
+    var previousBinding = event.getRemovedBindingConfiguration();
+    if (previousBinding.isBound()) {
+      var connectionId = requireNonNull(previousBinding.getConnectionId());
+      var projectKey = requireNonNull(previousBinding.getSonarProjectKey());
+      var scopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, projectKey);
+      if (scopes.isEmpty()) {
+        // no remaining scope bound to this connection and project, clear the cache
+        bindingSynchronizationTimestampRepository.clearLastSynchronizationTimestamp(new Binding(connectionId, projectKey));
+      }
+    }
   }
 
   @EventListener
   public void onBindingChanged(BindingConfigChangedEvent event) {
     var configScopeId = event.getConfigScopeId();
-    synchronizationTimestampRepository.clearLastSynchronizationTimestamp(configScopeId);
+    scopeSynchronizationTimestampRepository.clearLastSynchronizationTimestamp(configScopeId);
+    if (event.getPreviousConfig().isBound()) {
+      // when unbinding, we want to let future rebinds trigger a sync
+      var previousBinding = new Binding(requireNonNull(event.getPreviousConfig().getConnectionId()), requireNonNull(event.getPreviousConfig().getSonarProjectKey()));
+      bindingSynchronizationTimestampRepository.clearLastSynchronizationTimestamp(previousBinding);
+    }
     var newConnectionId = event.getNewConfig().getConnectionId();
     if (newConnectionId != null) {
       synchronizeConnectionAndProjectsIfNeededAsync(newConnectionId,
@@ -230,16 +245,18 @@ public class SynchronizationService {
     LOG.debug("Synchronizing connection '{}' after credentials changed", connectionId);
     var bindingsForUpdatedConnection = configurationRepository.getBoundScopesToConnection(connectionId);
     // Clear the synchronization timestamp for all the scopes so that sync is not skipped
-    bindingsForUpdatedConnection.forEach(boundScope -> synchronizationTimestampRepository.clearLastSynchronizationTimestamp(boundScope.getConfigScopeId()));
+    bindingsForUpdatedConnection.forEach(boundScope -> {
+      scopeSynchronizationTimestampRepository.clearLastSynchronizationTimestamp(boundScope.getConfigScopeId());
+      bindingSynchronizationTimestampRepository.clearLastSynchronizationTimestamp(new Binding(connectionId, boundScope.getSonarProjectKey()));
+    });
     synchronizeConnectionAndProjectsIfNeededAsync(connectionId, bindingsForUpdatedConnection);
   }
 
   private void synchronizeConnectionAndProjectsIfNeededAsync(String connectionId, Collection<BoundScope> boundScopes) {
     var cancelMonitor = new SonarLintCancelMonitor();
     cancelMonitor.watchForShutdown(scheduledSynchronizer);
-    scheduledSynchronizer.submit(() ->
-      serverApiProvider.getServerApi(connectionId)
-        .ifPresent(serverApi -> synchronizeConnectionAndProjectsIfNeededSync(connectionId, serverApi, boundScopes, cancelMonitor)));
+    scheduledSynchronizer.submit(() -> serverApiProvider.getServerApi(connectionId)
+      .ifPresent(serverApi -> synchronizeConnectionAndProjectsIfNeededSync(connectionId, serverApi, boundScopes, cancelMonitor)));
   }
 
   private void synchronizeConnectionAndProjectsIfNeededSync(String connectionId, ServerApi serverApi, Collection<BoundScope> boundScopes, SonarLintCancelMonitor cancelMonitor) {
@@ -247,7 +264,7 @@ public class SynchronizationService {
     if (scopesToSync.isEmpty()) {
       return;
     }
-    scopesToSync.forEach(scope -> synchronizationTimestampRepository.setLastSynchronizationTimestampToNow(scope.getConfigScopeId()));
+    scopesToSync.forEach(scope -> scopeSynchronizationTimestampRepository.setLastSynchronizationTimestampToNow(scope.getConfigScopeId()));
     // We will already trigger a sync of the project storage so we can temporarily ignore branch changed event for these config scopes
     ignoreBranchEventForScopes.addAll(scopesToSync.stream().map(BoundScope::getConfigScopeId).collect(toSet()));
     var serverConnection = getServerConnection(connectionId, serverApi);
@@ -255,22 +272,26 @@ public class SynchronizationService {
       LOG.debug("Synchronizing storage of connection '{}'", connectionId);
       serverConnection.sync(serverApi, cancelMonitor);
       applicationEventPublisher.publishEvent(new PluginsSynchronizedEvent(connectionId));
-      var scopesPerProjectKey = scopesToSync.stream().collect(groupingBy(BoundScope::getSonarProjectKey, mapping(BoundScope::getConfigScopeId, toSet())));
+      scopesToSync = scopesToSync.stream()
+        .filter(boundScope -> shouldSynchronizeBinding(new Binding(connectionId, boundScope.getSonarProjectKey()))).collect(toList());
+      var scopesPerProjectKey = scopesToSync.stream()
+        .collect(groupingBy(BoundScope::getSonarProjectKey, mapping(BoundScope::getConfigScopeId, toSet())));
       scopesPerProjectKey.forEach((projectKey, configScopeIds) -> {
+        bindingSynchronizationTimestampRepository.setLastSynchronizationTimestampToNow(new Binding(connectionId, projectKey));
         LOG.debug("Synchronizing storage of Sonar project '{}' for connection '{}'", projectKey, connectionId);
         var analyzerConfigUpdateSummary = serverConnection.sync(serverApi, projectKey, cancelMonitor);
         // XXX we might want to group those 2 events under one
         if (!analyzerConfigUpdateSummary.getUpdatedSettingsValueByKey().isEmpty()) {
           applicationEventPublisher.publishEvent(
-            new SonarServerSettingsChangedEvent(configScopeIds, analyzerConfigUpdateSummary.getUpdatedSettingsValueByKey())
-          );
+            new SonarServerSettingsChangedEvent(configScopeIds, analyzerConfigUpdateSummary.getUpdatedSettingsValueByKey()));
         }
         applicationEventPublisher.publishEvent(new AnalyzerConfigurationSynchronized(configScopeIds));
         sonarProjectBranchesSynchronizationService.sync(connectionId, projectKey, cancelMonitor);
       });
       synchronizeProjectsSync(
         Map.of(connectionId, scopesToSync.stream().map(scope -> new BoundScope(scope.getConfigScopeId(), connectionId, scope.getSonarProjectKey()))
-          .collect(groupingBy(BoundScope::getSonarProjectKey, toCollection(ArrayList::new)))), cancelMonitor);
+          .collect(groupingBy(BoundScope::getSonarProjectKey, toCollection(ArrayList::new)))),
+        cancelMonitor);
     } catch (Exception e) {
       LOG.error("Error during synchronization", e);
     } finally {
@@ -278,9 +299,20 @@ public class SynchronizationService {
     }
   }
 
+  private boolean shouldSynchronizeBinding(Binding binding) {
+    var syncPeriod = Long.parseLong(System.getProperty("sonarlint.internal.synchronization.scope.period", "300"));
+    boolean result = bindingSynchronizationTimestampRepository.getLastSynchronizationDate(binding)
+      .map(lastSync -> lastSync.isBefore(Instant.now().minus(syncPeriod, ChronoUnit.SECONDS)))
+      .orElse(true);
+    if (!result) {
+      LOG.debug("Skipping synchronization of binding '{}' because it was synchronized recently", binding);
+    }
+    return result;
+  }
+
   private boolean shouldSynchronizeScope(BoundScope configScope) {
     var syncPeriod = Long.parseLong(System.getProperty("sonarlint.internal.synchronization.scope.period", "300"));
-    boolean result = synchronizationTimestampRepository.getLastSynchronizationDate(configScope.getConfigScopeId())
+    boolean result = scopeSynchronizationTimestampRepository.getLastSynchronizationDate(configScope.getConfigScopeId())
       .map(lastSync -> lastSync.isBefore(Instant.now().minus(syncPeriod, ChronoUnit.SECONDS)))
       .orElse(true);
     if (!result) {
