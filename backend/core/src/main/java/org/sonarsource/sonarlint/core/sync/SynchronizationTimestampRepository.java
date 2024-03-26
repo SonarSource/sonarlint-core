@@ -23,22 +23,19 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.inject.Named;
-import javax.inject.Singleton;
 
-@Named
-@Singleton
-public class SynchronizationTimestampRepository {
-  private final Map<String, Instant> lastSynchronizationTimestampPerConfigScopeId = new ConcurrentHashMap<>();
-  public Optional<Instant> getLastSynchronizationDate(String configurationScopeId) {
-    return Optional.ofNullable(lastSynchronizationTimestampPerConfigScopeId.get(configurationScopeId));
+public class SynchronizationTimestampRepository<T> {
+  private final Map<T, Instant> lastSynchronizationTimestampPerSource = new ConcurrentHashMap<>();
+
+  public Optional<Instant> getLastSynchronizationDate(T source) {
+    return Optional.ofNullable(lastSynchronizationTimestampPerSource.get(source));
   }
 
-  public void setLastSynchronizationTimestampToNow(String configurationScopeId) {
-    lastSynchronizationTimestampPerConfigScopeId.put(configurationScopeId, Instant.now());
+  public void setLastSynchronizationTimestampToNow(T source) {
+    lastSynchronizationTimestampPerSource.put(source, Instant.now());
   }
 
-  public void clearLastSynchronizationTimestamp(String configurationScopeId) {
-    lastSynchronizationTimestampPerConfigScopeId.remove(configurationScopeId);
+  public void clearLastSynchronizationTimestamp(T source) {
+    lastSynchronizationTimestampPerSource.remove(source);
   }
 }

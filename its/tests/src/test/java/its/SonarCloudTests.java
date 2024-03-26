@@ -289,6 +289,7 @@ class SonarCloudTests extends AbstractConnectedTests {
   @Test
   void testRuleDescription() throws Exception {
     openBoundConfigurationScope("testRuleDescription", PROJECT_KEY_JAVA);
+    waitForAnalysisToBeReady("testRuleDescription");
 
     var ruleDetails = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("testRuleDescription", "java:S106", null)).get();
 
