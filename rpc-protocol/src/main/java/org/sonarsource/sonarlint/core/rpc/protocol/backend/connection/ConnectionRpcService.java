@@ -41,6 +41,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.G
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.FuzzySearchProjectsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.FuzzySearchProjectsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetProjectNamesByKeyParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetProjectNamesByKeyResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -117,6 +119,7 @@ public interface ConnectionRpcService {
   /**
    * Get all Sonar projects existing on SonarQube or in a SonarCloud organization.
    * As this data might be needed during connection creation, it accepts a transient connection.
+   * The number of returned projects is limited to 10000.
    */
   @JsonRequest
   CompletableFuture<GetAllProjectsResponse> getAllProjects(GetAllProjectsParams params);
@@ -127,4 +130,9 @@ public interface ConnectionRpcService {
   @JsonRequest
   CompletableFuture<FuzzySearchProjectsResponse> fuzzySearchProjects(FuzzySearchProjectsParams params);
 
+  /**
+   * Returns a map of project names by project key; project name is null if it wasn't found
+   */
+  @JsonRequest
+  CompletableFuture<GetProjectNamesByKeyResponse> getProjectNamesByKey(GetProjectNamesByKeyParams params);
 }
