@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core;
 
 import java.net.URI;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
@@ -189,6 +190,132 @@ class BindingClueProviderTests {
     assertThat(logTester.logs(LogOutput.Level.ERROR)).contains("Unable to parse content of file 'file://path/to/sonar-project.properties'");
   }
 
+  @Test
+  void should_detect_sonarlint_configuration_file_for_sonarqube() {
+    mockFindSonarlintConfigurationFilesByScope(List.of(buildClientFile("connectedMode.json", ".sonarlint/connectedMode.json", "{\"projectKey\": \"pKey\",\"serverUrl\": \"http://mysonarqube.org\"}")));
+
+    when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
+
+    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SQ_CONNECTION_ID_1), new SonarLintCancelMonitor());
+
+    assertThat(bindingClueWithConnections).hasSize(1);
+    var bindingClueWithConnections1 = bindingClueWithConnections.get(0);
+    assertThat(bindingClueWithConnections1.getBindingClue()).isInstanceOf(BindingClueProvider.SonarQubeBindingClue.class);
+    assertThat(((BindingClueProvider.SonarQubeBindingClue) bindingClueWithConnections1.getBindingClue()).getServerUrl()).isEqualTo("http://mysonarqube.org");
+    assertThat(bindingClueWithConnections1.getBindingClue().getSonarProjectKey()).isEqualTo("pKey");
+    assertThat(bindingClueWithConnections1.getConnectionIds()).containsOnly(SQ_CONNECTION_ID_1);
+  }
+
+  @Test
+  void should_detect_sonarlint_configuration_file_for_sonarcloud() {
+    mockFindSonarlintConfigurationFilesByScope(List.of(buildClientFile("connectedMode.json", ".sonarlint/connectedMode.json", "{\"projectKey\": \"pKey\",\"organization\": \"org\"}")));
+
+    when(connectionRepository.getConnectionById(SC_CONNECTION_ID_1)).thenReturn(new SonarCloudConnectionConfiguration(SonarCloudActiveEnvironment.PRODUCTION_URI, SC_CONNECTION_ID_1, "org", true));
+
+    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SC_CONNECTION_ID_1), new SonarLintCancelMonitor());
+
+    assertThat(bindingClueWithConnections).hasSize(1);
+    var bindingClueWithConnections1 = bindingClueWithConnections.get(0);
+    assertThat(bindingClueWithConnections1.getBindingClue()).isInstanceOf(BindingClueProvider.SonarCloudBindingClue.class);
+    assertThat(((BindingClueProvider.SonarCloudBindingClue) bindingClueWithConnections1.getBindingClue()).getOrganization()).isEqualTo("org");
+    assertThat(bindingClueWithConnections1.getBindingClue().getSonarProjectKey()).isEqualTo("pKey");
+    assertThat(bindingClueWithConnections1.getConnectionIds()).containsOnly(SC_CONNECTION_ID_1);
+  }
+
+  @Test
+  void should_detect_sonarlint_configuration_file_with_long_path() {
+    mockFindSonarlintConfigurationFilesByScope(List.of(buildClientFile("connectedMode.json", "/path/to/.sonarlint/connectedMode.json", "{\"projectKey\": \"pKey\",\"serverUrl\": \"http://mysonarqube.org\"}")));
+
+    when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
+
+    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SQ_CONNECTION_ID_1), new SonarLintCancelMonitor());
+
+    assertThat(bindingClueWithConnections).hasSize(1);
+    var bindingClueWithConnections1 = bindingClueWithConnections.get(0);
+    assertThat(bindingClueWithConnections1.getBindingClue()).isInstanceOf(BindingClueProvider.SonarQubeBindingClue.class);
+    assertThat(((BindingClueProvider.SonarQubeBindingClue) bindingClueWithConnections1.getBindingClue()).getServerUrl()).isEqualTo("http://mysonarqube.org");
+    assertThat(bindingClueWithConnections1.getBindingClue().getSonarProjectKey()).isEqualTo("pKey");
+    assertThat(bindingClueWithConnections1.getConnectionIds()).containsOnly(SQ_CONNECTION_ID_1);
+  }
+
+  @Test
+  void should_not_detect_sonarlint_configuration_file_if_wrong_content() {
+    mockFindSonarlintConfigurationFilesByScope(List.of(buildClientFile("connectedMode.json", "/path/to/.sonarlint/connectedMode.json", "{\"organization\": \"org\",\"serverUrl\": \"http://mysonarqube.org\"}")));
+
+    when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
+
+    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SQ_CONNECTION_ID_1), new SonarLintCancelMonitor());
+
+    assertThat(bindingClueWithConnections).isEmpty();
+  }
+
+  @Test
+  void should_not_detect_sonarlint_configuration_file_if_not_in_right_folder() {
+    mockFindSonarlintConfigurationFilesByScope(List.of(buildClientFile("connectedMode.json", "/path/to/connections/connectedMode.json", "{\"projectKey\": \"pKey\",\"serverUrl\": \"http://mysonarqube.org\"}")));
+
+    when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
+
+    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SQ_CONNECTION_ID_1), new SonarLintCancelMonitor());
+
+    assertThat(bindingClueWithConnections).isEmpty();
+  }
+
+  @Test
+  void should_detect_multiple_sonarlint_configuration_files() {
+    mockFindSonarlintConfigurationFilesByScope(List.of(
+      buildClientFile("connectedMode.json", "/path/to/.sonarlint/connectedMode.json", "{\"projectKey\": \"pKey\",\"serverUrl\": \"http://mysonarqube.org\"}"),
+      buildClientFile("module.json", "/path/to/.sonarlint/module.json", "{\"projectKey\": \"pKey2\",\"serverUrl\": \"http://mysonarqube.org\"}")));
+
+    when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
+
+    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SQ_CONNECTION_ID_1), new SonarLintCancelMonitor());
+
+    assertThat(bindingClueWithConnections).hasSize(2);
+
+    var bindingClueWithConnections1 = bindingClueWithConnections.get(0);
+    assertThat(bindingClueWithConnections1.getBindingClue()).isInstanceOf(BindingClueProvider.SonarQubeBindingClue.class);
+    assertThat(((BindingClueProvider.SonarQubeBindingClue) bindingClueWithConnections1.getBindingClue()).getServerUrl()).isEqualTo("http://mysonarqube.org");
+    assertThat(bindingClueWithConnections1.getBindingClue().getSonarProjectKey()).isEqualTo("pKey");
+    assertThat(bindingClueWithConnections1.getConnectionIds()).containsOnly(SQ_CONNECTION_ID_1);
+
+    var bindingClueWithConnections2 = bindingClueWithConnections.get(1);
+    assertThat(bindingClueWithConnections2.getBindingClue()).isInstanceOf(BindingClueProvider.SonarQubeBindingClue.class);
+    assertThat(((BindingClueProvider.SonarQubeBindingClue) bindingClueWithConnections2.getBindingClue()).getServerUrl()).isEqualTo("http://mysonarqube.org");
+    assertThat(bindingClueWithConnections2.getBindingClue().getSonarProjectKey()).isEqualTo("pKey2");
+    assertThat(bindingClueWithConnections2.getConnectionIds()).containsOnly(SQ_CONNECTION_ID_1);
+  }
+
+  @Test
+  void should_detect_in_priority_sonarlint_configuration_file() {
+    mockFindSonarlintConfigurationFilesByScope(List.of(buildClientFile("connectedMode.json", "/path/to/.sonarlint/connectedMode.json", "{\"projectKey\": \"pKey\",\"serverUrl\": \"http://mysonarqube.org\"}")));
+    mockFindFileByNamesInScope(List.of(buildClientFile("sonar-project.properties", "path/to/sonar-project.properties", "sonar.host.url=http://mysonarqube.org\n")));
+
+    when(connectionRepository.getConnectionById(SQ_CONNECTION_ID_1)).thenReturn(new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_1, "http://mysonarqube.org", true));
+
+    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SQ_CONNECTION_ID_1), new SonarLintCancelMonitor());
+
+    assertThat(bindingClueWithConnections).hasSize(1);
+    var bindingClueWithConnections1 = bindingClueWithConnections.get(0);
+    assertThat(bindingClueWithConnections1.getBindingClue()).isInstanceOf(BindingClueProvider.SonarQubeBindingClue.class);
+    assertThat(((BindingClueProvider.SonarQubeBindingClue) bindingClueWithConnections1.getBindingClue()).getServerUrl()).isEqualTo("http://mysonarqube.org");
+    assertThat(bindingClueWithConnections1.getBindingClue().getSonarProjectKey()).isEqualTo("pKey");
+    assertThat(bindingClueWithConnections1.getConnectionIds()).containsOnly(SQ_CONNECTION_ID_1);
+  }
+
+  @Test
+  void should_not_detect_sonarlint_configuration_file_if_not_json() {
+    var file = new ClientFile(URI.create("/path/to/.sonarlint/connectedMode.txt"), CONFIG_SCOPE_ID, Path.of("/path/to/.sonarlint/connectedMode.txt"), false, null, null);
+
+    assertThat(file.isSonarlintConfigurationFile()).isFalse();
+  }
+
+  @Test
+  void should_not_detect_sonarlint_configuration_file_if_wrong_folder() {
+    var file = new ClientFile(URI.create("/path/to/.sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, Path.of("/path/to/.sonarlint2/connectedMode.json"), false, null, null);
+
+    assertThat(file.isSonarlintConfigurationFile()).isFalse();
+  }
+
   private ClientFile buildClientFile(String filename, String relativePath, String content) {
     var file = new ClientFile(URI.create("file://" + relativePath), CONFIG_SCOPE_ID, Paths.get(relativePath), false, null, null);
     file.setDirty(content);
@@ -196,7 +323,11 @@ class BindingClueProviderTests {
   }
 
   private void mockFindFileByNamesInScope(List<ClientFile> files) {
-    when(clientFs.findFileByNamesInScope(any(), any())).thenReturn(files);
+    when(clientFs.findFilesByNamesInScope(any(), any())).thenReturn(files);
+  }
+
+  private void mockFindSonarlintConfigurationFilesByScope(List<ClientFile> files) {
+    when(clientFs.findSonarlintConfigurationFilesByScope(any())).thenReturn(files);
   }
 
 }

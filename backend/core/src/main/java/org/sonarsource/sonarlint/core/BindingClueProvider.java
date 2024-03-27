@@ -19,9 +19,13 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 import java.io.StringReader;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
@@ -49,6 +53,7 @@ import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singleP
 public class BindingClueProvider {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private static final String CLUES = "CLUES";
   private static final String SONAR_SCANNER_CONFIG_FILENAME = "sonar-project.properties";
   private static final String AUTOSCAN_CONFIG_FILENAME = ".sonarcloud.properties";
 
@@ -78,7 +83,7 @@ public class BindingClueProvider {
         cluesAndConnections.add(new BindingClueWithConnections(bindingClue, connectionsIds));
       }
     }
-    LOG.debug("{} {} having at least one matching connection", cluesAndConnections.size(), singlePlural(cluesAndConnections.size(), "clue", "clues"));
+    LOG.debug("{} {} having at least one matching connection", cluesAndConnections.size(), singlePlural(cluesAndConnections.size(), "clue", CLUES));
     return cluesAndConnections;
   }
 
@@ -100,21 +105,45 @@ public class BindingClueProvider {
     }
   }
 
-  private List<BindingClue> collectBindingClues(String checkedConfigScopeId, SonarLintCancelMonitor cancelMonitor) {
-    var files = clientFs.findFileByNamesInScope(checkedConfigScopeId, List.copyOf(ALL_BINDING_CLUE_FILENAMES));
-    List<BindingClue> bindingClues = new ArrayList<>();
+  public List<BindingClue> collectBindingClues(String checkedConfigScopeId, SonarLintCancelMonitor cancelMonitor) {
+    var sonarlintConfigurationFiles = clientFs.findSonarlintConfigurationFilesByScope(checkedConfigScopeId);
+    if (!sonarlintConfigurationFiles.isEmpty()) {
+      var collectedClues = collectFromFiles(sonarlintConfigurationFiles, cancelMonitor);
+      if (!collectedClues.isEmpty()) {
+        LOG.debug("Found {} binding {} from SonarLint configuration files", collectedClues.size(), singlePlural(collectedClues.size(), "clue", CLUES));
+        return collectedClues;
+      }
+    }
+
+    var bindingCluesFiles = clientFs.findFilesByNamesInScope(checkedConfigScopeId, List.copyOf(ALL_BINDING_CLUE_FILENAMES));
+    if (!bindingCluesFiles.isEmpty()) {
+      var collectedClues = collectFromFiles(bindingCluesFiles, cancelMonitor);
+      if (!collectedClues.isEmpty()) {
+        LOG.debug("Found {} binding {}", collectedClues.size(), singlePlural(collectedClues.size(), "clue", CLUES));
+        return collectedClues;
+      }
+    }
+
+    LOG.debug("No binding clues were found");
+    return Collections.emptyList();
+  }
+
+  private List<BindingClue> collectFromFiles(List<ClientFile> files, SonarLintCancelMonitor cancelMonitor) {
+    var bindingClues = new ArrayList<BindingClue>();
     for (var foundFile : files) {
       cancelMonitor.checkCanceled();
-      var scannerProps = extractScannerProperties(foundFile);
+      var scannerProps = extractConnectionProperties(foundFile);
       if (scannerProps == null) {
         continue;
       }
       var bindingClue = computeBindingClue(foundFile.getFileName(), scannerProps);
       if (bindingClue != null) {
+        if (foundFile.isSonarlintConfigurationFile() && !(bindingClue instanceof UnknownBindingClue)) {
+          LOG.debug("Found a SonarLint configuration file with a clue");
+        }
         bindingClues.add(bindingClue);
       }
     }
-    LOG.debug("Found {} binding {}", bindingClues.size(), singlePlural(bindingClues.size(), "clue", "clues"));
     return bindingClues;
   }
 
@@ -141,17 +170,36 @@ public class BindingClueProvider {
   }
 
   @CheckForNull
-  private static ScannerProperties extractScannerProperties(ClientFile matchedFile) {
-    LOG.debug("Extracting scanner properties from {}", matchedFile);
-    var properties = new Properties();
+  private static ConnectionProperties  extractSonarLintConfiguration(ClientFile sonarLintConfigurationFile) {
     try {
-      properties.load(new StringReader(matchedFile.getContent()));
-    } catch (Exception e) {
-      LOG.error("Unable to parse content of file '{}'", matchedFile, e);
+      var configuration = new Gson().fromJson(sonarLintConfigurationFile.getContent(), JsonObject.class);
+      var projectKey = configuration.get("projectKey");
+      var organization = configuration.get("organization");
+      var serverUrl = configuration.get("serverUrl");
+      return new ConnectionProperties(projectKey != null ? projectKey.getAsString() : null,
+        organization != null ? organization.getAsString() : null,
+        serverUrl != null ? serverUrl.getAsString() : null);
+    } catch (JsonSyntaxException e) {
       return null;
     }
-    return new ScannerProperties(getAndTrim(properties, "sonar.projectKey"), getAndTrim(properties, "sonar.organization"),
-      getAndTrim(properties, "sonar.host.url"));
+  }
+
+  @CheckForNull
+  private static ConnectionProperties extractConnectionProperties(ClientFile matchedFile) {
+    LOG.debug("Extracting scanner properties from {}", matchedFile);
+    if (matchedFile.isSonarlintConfigurationFile()) {
+      return extractSonarLintConfiguration(matchedFile);
+    } else {
+      var properties = new Properties();
+      try {
+        properties.load(new StringReader(matchedFile.getContent()));
+      } catch (Exception e) {
+        LOG.error("Unable to parse content of file '{}'", matchedFile, e);
+        return null;
+      }
+      return new ConnectionProperties(getAndTrim(properties, "sonar.projectKey"), getAndTrim(properties, "sonar.organization"),
+        getAndTrim(properties, "sonar.host.url"));
+    }
   }
 
   @CheckForNull
@@ -159,12 +207,12 @@ public class BindingClueProvider {
     return trimToNull(properties.getProperty(key));
   }
 
-  private static class ScannerProperties {
+  private static class ConnectionProperties {
     private final String projectKey;
     private final String organization;
     private final String serverUrl;
 
-    private ScannerProperties(@Nullable String projectKey, @Nullable String organization, @Nullable String serverUrl) {
+    private ConnectionProperties(@Nullable String projectKey, @Nullable String organization, @Nullable String serverUrl) {
       this.projectKey = projectKey;
       this.organization = organization;
       this.serverUrl = serverUrl;
@@ -172,7 +220,7 @@ public class BindingClueProvider {
   }
 
   @CheckForNull
-  private BindingClue computeBindingClue(String filename, ScannerProperties scannerProps) {
+  private BindingClue computeBindingClue(String filename, ConnectionProperties scannerProps) {
     if (AUTOSCAN_CONFIG_FILENAME.equals(filename)) {
       return new SonarCloudBindingClue(scannerProps.projectKey, scannerProps.organization);
     }
@@ -227,6 +275,10 @@ public class BindingClueProvider {
       return sonarProjectKey;
     }
 
+    public String getServerUrl() {
+      return serverUrl;
+    }
+
   }
 
   public static class SonarCloudBindingClue implements BindingClue {
@@ -243,6 +295,11 @@ public class BindingClueProvider {
     public String getSonarProjectKey() {
       return sonarProjectKey;
     }
+
+    public String getOrganization() {
+      return organization;
+    }
+
   }
 
 }

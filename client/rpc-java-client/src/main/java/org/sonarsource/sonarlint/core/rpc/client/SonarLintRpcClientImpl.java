@@ -45,6 +45,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreat
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SuggestConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListFilesResponse;
@@ -131,6 +132,11 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   @Override
   public void suggestBinding(SuggestBindingParams params) {
     notify(() -> delegate.suggestBinding(params.getSuggestions()));
+  }
+
+  @Override
+  public void suggestConnection(SuggestConnectionParams params) {
+    notify(() -> delegate.suggestConnection(params.getSuggestions()));
   }
 
   @Override

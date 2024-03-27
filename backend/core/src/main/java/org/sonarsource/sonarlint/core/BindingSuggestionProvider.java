@@ -100,7 +100,7 @@ public class BindingSuggestionProvider {
     suggestBindingForGivenScopesAndAllConnections(configScopeIds);
   }
 
-  private void suggestBindingForGivenScopesAndAllConnections(Set<String> configScopeIdsToSuggest) {
+  public void suggestBindingForGivenScopesAndAllConnections(Set<String> configScopeIdsToSuggest) {
     if (!configScopeIdsToSuggest.isEmpty()) {
       var allConnectionIds = connectionRepository.getConnectionsById().keySet();
       if (allConnectionIds.isEmpty()) {

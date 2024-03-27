@@ -1,0 +1,138 @@
+/*
+ * SonarLint Core - Implementation
+ * Copyright (C) 2016-2024 SonarSource SA
+ * mailto:info AT sonarsource DOT com
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+package org.sonarsource.sonarlint.core;
+
+import java.util.HashMap;
+import java.util.Set;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.fs.ClientFile;
+import org.sonarsource.sonarlint.core.fs.FileSystemUpdatedEvent;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.ConnectionSuggestionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SuggestConnectionParams;
+import org.springframework.context.event.EventListener;
+
+import static org.sonarsource.sonarlint.core.BindingClueProvider.ALL_BINDING_CLUE_FILENAMES;
+
+@Named
+@Singleton
+public class ConnectionSuggestionProvider {
+
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
+
+  private final ConfigurationRepository configRepository;
+  private final ConnectionConfigurationRepository connectionRepository;
+  private final SonarLintRpcClient client;
+  private final BindingClueProvider bindingClueProvider;
+  private final ExecutorServiceShutdownWatchable<?> executorService;
+  private final BindingSuggestionProvider bindingSuggestionProvider;
+
+  @Inject
+  public ConnectionSuggestionProvider(ConfigurationRepository configRepository, ConnectionConfigurationRepository connectionRepository, SonarLintRpcClient client,
+                                   BindingClueProvider bindingClueProvider, BindingSuggestionProvider bindingSuggestionProvider) {
+    this.configRepository = configRepository;
+    this.connectionRepository = connectionRepository;
+    this.client = client;
+    this.bindingClueProvider = bindingClueProvider;
+    this.executorService = new ExecutorServiceShutdownWatchable<>(new ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS,
+      new LinkedBlockingQueue<>(), r -> new Thread(r, "Connection Suggestion Provider")));
+    this.bindingSuggestionProvider = bindingSuggestionProvider;
+  }
+
+  @EventListener
+  public void filesystemUpdated(FileSystemUpdatedEvent event) {
+    var listConfigScopeIds = event.getAddedOrUpdated().stream()
+      .filter(f -> ALL_BINDING_CLUE_FILENAMES.contains(f.getFileName()) || f.isSonarlintConfigurationFile())
+      .map(ClientFile::getConfigScopeId)
+      .collect(Collectors.toSet());
+
+    if (!listConfigScopeIds.isEmpty()) {
+      var cancelMonitor = new SonarLintCancelMonitor();
+      cancelMonitor.watchForShutdown(executorService);
+      executorService.submit(() -> suggestConnectionForGivenScopes(listConfigScopeIds, cancelMonitor));
+    }
+  }
+
+  private void suggestConnectionForGivenScopes(Set<String> listOfFilesPerConfigScopeIds, SonarLintCancelMonitor cancelMonitor) {
+    LOG.debug("Computing connection suggestions");
+    var connectionSuggestionsByConfigScopeIds = new HashMap<String, ConnectionSuggestionDto>();
+    for (var configScopeId : listOfFilesPerConfigScopeIds) {
+      var effectiveBinding = configRepository.getEffectiveBinding(configScopeId);
+      if (effectiveBinding.isPresent()) {
+        LOG.debug("A binding already exist, skipping the connection suggestion");
+        continue;
+      }
+
+      var bindingClues = bindingClueProvider.collectBindingClues(configScopeId, cancelMonitor);
+      if (bindingClues.size() == 1) {
+        var bindingClue = bindingClues.get(0);
+        var projectKey = bindingClue.getSonarProjectKey();
+        if (projectKey != null) {
+          handleBindingClue(connectionSuggestionsByConfigScopeIds, bindingClue, configScopeId, projectKey);
+        }
+      } else if (bindingClues.size() > 1) {
+        LOG.debug("Multiple binding clues found, skipping the suggestion");
+      }
+    }
+    if (!connectionSuggestionsByConfigScopeIds.isEmpty()) {
+      LOG.debug("Found {} suggestion(s)", connectionSuggestionsByConfigScopeIds.size());
+      client.suggestConnection(new SuggestConnectionParams(connectionSuggestionsByConfigScopeIds));
+    }
+  }
+
+  private void handleBindingClue(HashMap<String, ConnectionSuggestionDto> connectionSuggestionsByConfigScopeIds,
+                                          BindingClueProvider.BindingClue bindingClue, String configScopeId, String projectKey) {
+    if (bindingClue instanceof BindingClueProvider.SonarCloudBindingClue) {
+      LOG.debug("Found a SonarCloud binding clue");
+      var organization = ((BindingClueProvider.SonarCloudBindingClue) bindingClue).getOrganization();
+      var connection = connectionRepository.findByOrganization(organization);
+      if (connection.isEmpty()) {
+        connectionSuggestionsByConfigScopeIds.put(configScopeId, new ConnectionSuggestionDto(null, organization, projectKey));
+      } else {
+        LOG.debug("A connection to organization {} already exists, suggesting a binding", organization);
+        bindingSuggestionProvider.suggestBindingForGivenScopesAndAllConnections(Set.of(configScopeId));
+      }
+    } else if (bindingClue instanceof BindingClueProvider.SonarQubeBindingClue) {
+      LOG.debug("Found a SonarQube binding clue");
+      var serverUrl = ((BindingClueProvider.SonarQubeBindingClue) bindingClue).getServerUrl();
+      var connection = connectionRepository.findByUrl(serverUrl);
+      if (connection.isEmpty()) {
+        connectionSuggestionsByConfigScopeIds.put(configScopeId, new ConnectionSuggestionDto(serverUrl, null, projectKey));
+      } else {
+        LOG.debug("A connection to {} already exists, suggesting a binding", serverUrl);
+        bindingSuggestionProvider.suggestBindingForGivenScopesAndAllConnections(Set.of(configScopeId));
+      }
+    } else {
+      LOG.debug("Found an invalid binding clue");
+    }
+  }
+
+}
