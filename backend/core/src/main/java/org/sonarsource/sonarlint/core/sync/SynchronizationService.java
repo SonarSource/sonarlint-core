@@ -207,7 +207,9 @@ public class SynchronizationService {
 
   @EventListener
   public void onConfigurationScopeRemoved(ConfigurationScopeRemovedEvent event) {
-    scopeSynchronizationTimestampRepository.clearLastSynchronizationTimestamp(event.getRemovedConfigurationScopeId());
+    var scopeId = event.getRemovedConfigurationScopeId();
+    LOG.debug("Config scope {} removed, managing caches", scopeId);
+    scopeSynchronizationTimestampRepository.clearLastSynchronizationTimestamp(scopeId);
     var previousBinding = event.getRemovedBindingConfiguration();
     if (previousBinding.isBound()) {
       var connectionId = requireNonNull(previousBinding.getConnectionId());
@@ -215,8 +217,13 @@ public class SynchronizationService {
       var scopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, projectKey);
       if (scopes.isEmpty()) {
         // no remaining scope bound to this connection and project, clear the cache
+        LOG.debug("Clearing the synchronization cache for {}, binding={}", scopeId, previousBinding);
         bindingSynchronizationTimestampRepository.clearLastSynchronizationTimestamp(new Binding(connectionId, projectKey));
+      } else {
+        LOG.debug("Other config scopes are still bound to {}, see {}, keeping the cache", previousBinding, scopes);
       }
+    } else {
+      LOG.debug("Removed config scope was not bound, {}, keeping the cache", previousBinding);
     }
   }
 
