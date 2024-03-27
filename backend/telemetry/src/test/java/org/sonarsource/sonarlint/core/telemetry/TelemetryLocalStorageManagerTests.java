@@ -45,8 +45,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class TelemetryLocalStorageManagerTests {
@@ -273,10 +275,17 @@ class TelemetryLocalStorageManagerTests {
     assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isEqualTo(1);
 
     TelemetryLocalStorage newStorage = new TelemetryLocalStorage();
-    IntStream.range(0, 100).forEach(value -> newStorage.incrementShowIssueRequestCount());
+    newStorage.incrementShowIssueRequestCount();
+    newStorage.incrementShowIssueRequestCount();
+
+    //unfortunately windows doesn't always give the lastModified info correctly when the file is changed programmatically.
+    //to overcome this issue we delete and recreate the file to trigger windows to refresh the last modification time
+    filePath.toFile().delete();
+    assertThat(filePath).doesNotExist();
+    filePath.toFile().createNewFile();
     writeToLocalStorageFile(newStorage);
 
-    assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isEqualTo(100);
+    await().atMost(10, SECONDS).untilAsserted(() -> assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isEqualTo(2));
   }
 
   private void writeToLocalStorageFile(TelemetryLocalStorage newStorage) throws IOException {

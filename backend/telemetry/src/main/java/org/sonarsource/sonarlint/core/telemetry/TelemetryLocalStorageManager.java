@@ -101,16 +101,9 @@ public class TelemetryLocalStorageManager {
   }
 
   private TelemetryLocalStorage read() throws IOException {
-    var bytes = Files.readAllBytes(path);
-    if (bytes.length == 0) {
-      return new TelemetryLocalStorage();
+    try (var fileChannel = FileChannel.open(path, StandardOpenOption.READ)) {
+      return read(fileChannel);
     }
-    var decoded = Base64.getDecoder().decode(bytes);
-    var json = new String(decoded, StandardCharsets.UTF_8);
-    var rawData = gson.fromJson(json, TelemetryLocalStorage.class);
-    rawData.validateAndMigrate();
-
-    return rawData;
   }
 
   public void tryUpdateAtomically(Consumer<TelemetryLocalStorage> updater) {
@@ -127,14 +120,37 @@ public class TelemetryLocalStorageManager {
 
   private synchronized void updateAtomically(Consumer<TelemetryLocalStorage> updater) throws IOException {
     Files.createDirectories(path.getParent());
-    var storageData = getStorage();
     try (var fileChannel = FileChannel.open(path, StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.SYNC);
          var ignored = fileChannel.lock()) {
+      var storageData = read(fileChannel);
       updater.accept(storageData);
       storageData.validateAndMigrate();
       writeAtomically(fileChannel, storageData);
+      inMemoryStorage = storageData;
     }
     updateLastModified();
+  }
+
+  private TelemetryLocalStorage read(FileChannel fileChannel) {
+    try {
+      if (fileChannel.size() == 0) {
+        return new TelemetryLocalStorage();
+      }
+      final var buf = ByteBuffer.allocate((int) fileChannel.size());
+      fileChannel.read(buf);
+      var decoded = Base64.getDecoder().decode(buf.array());
+      var oldJson = new String(decoded, StandardCharsets.UTF_8);
+      var localStorage = gson.fromJson(oldJson, TelemetryLocalStorage.class);
+      localStorage.validateAndMigrate();
+
+      return localStorage;
+    } catch (Exception e) {
+      if (InternalDebug.isEnabled()) {
+        LOG.error("Error reading telemetry data", e);
+        throw new IllegalStateException(e);
+      }
+      return new TelemetryLocalStorage();
+    }
   }
 
   private void writeAtomically(FileChannel fileChannel, TelemetryLocalStorage newData) throws IOException {
