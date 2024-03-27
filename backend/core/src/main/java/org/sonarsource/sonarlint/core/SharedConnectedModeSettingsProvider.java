@@ -20,13 +20,16 @@
 package org.sonarsource.sonarlint.core;
 
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.SonarLintException;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
+
+import static java.lang.String.format;
 
 @Named
 @Singleton
@@ -55,18 +58,16 @@ public class SharedConnectedModeSettingsProvider {
       var connectionId = bindingConfiguration.getConnectionId();
 
       var connection =  Objects.requireNonNull(connectionRepository.getConnectionById(Objects.requireNonNull(connectionId)));
-      if (connection.getEndpointParams().isSonarCloud()) {
-        AtomicReference<String> fileContents = new AtomicReference<>();
-        connection.getEndpointParams().getOrganization().ifPresent(organization ->
-          fileContents.set(String.format(SONARCLOUD_CONNECTED_MODE_CONFIG, organization, projectKey))
-        );
-        return fileContents.get();
+      if (connection.getKind() == ConnectionKind.SONARCLOUD) {
+        var organization = ((SonarCloudConnectionConfiguration) connection).getOrganization();
+
+        return format(SONARCLOUD_CONNECTED_MODE_CONFIG, organization, projectKey);
       } else {
-        return String.format(SONARQUBE_CONNECTED_MODE_CONFIG, connection.getEndpointParams().getBaseUrl(), projectKey);
+        return format(SONARQUBE_CONNECTED_MODE_CONFIG, connection.getEndpointParams().getBaseUrl(), projectKey);
       }
     } else {
       LOG.warn("Request for generating shared Connected Mode configuration file content failed; Binding not yet available for '{}'", configScopeId);
-      throw new SonarLintException("Binding not found; Cannot generate shared Connected Mode file contents");
+      throw new SonarLintException(format("Binding not found for '%s'; Cannot generate shared Connected Mode file contents", configScopeId));
     }
   }
 }

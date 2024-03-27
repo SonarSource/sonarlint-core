@@ -17,27 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.binding;
 
-import java.util.concurrent.CompletableFuture;
-import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
+public class GetSharedConnectedModeConfigFileResponse {
+  private String jsonFileContent;
 
-public interface SharedConnectedModeSettingsRpcService {
-  /**
-   * <p> It gets file contents for a shared Connected Mode configuration file.
-   * It returns file contents that look like either
-   <li>{
-   "sonarCloudOrganization": "$organization",
-   "projectKey": "$projectKey"
-   }</li>
-   OR
-   <li>   {
-   "sonarQubeUri": "$serverUrl",
-   "projectKey": "$projectKey"
-   }</li>
+  public GetSharedConnectedModeConfigFileResponse(String jsonFileContent) {
+    this.jsonFileContent = jsonFileContent;
+  }
 
-   */
-  @JsonRequest
-  CompletableFuture<GetSharedConnectedModeConfigFileResponse> getSharedConnectedModeConfigFileContents(GetSharedConnectedModeConfigFileParams params);
+  public String getJsonFileContent() {
+    return jsonFileContent;
+  }
 
+  public void setJsonFileContent(String jsonFileContent) {
+    this.jsonFileContent = jsonFileContent;
+  }
 }

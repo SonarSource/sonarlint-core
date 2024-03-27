@@ -25,8 +25,8 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.GetSharedConnectedModeConfigFileParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.GetSharedConnectedModeConfigFileResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetSharedConnectedModeConfigFileParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetSharedConnectedModeConfigFileResponse;
 
 import static mediumtest.fixtures.ServerFixture.newSonarCloudServer;
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
@@ -103,7 +103,7 @@ class SharedConnectedModeSettingsMediumTests {
   }
 
   private CompletableFuture<GetSharedConnectedModeConfigFileResponse> getFileContents(String configScopeId) {
-    return backend.getSharedConnectedModeSettingsService()
+    return backend.getBindingService()
       .getSharedConnectedModeConfigFileContents(
         new GetSharedConnectedModeConfigFileParams(configScopeId));
   }

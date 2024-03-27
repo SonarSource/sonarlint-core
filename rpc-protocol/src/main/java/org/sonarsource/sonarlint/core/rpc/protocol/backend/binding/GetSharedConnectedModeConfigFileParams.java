@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.binding;
 
 public class GetSharedConnectedModeConfigFileParams {
   private String configScopeId;
