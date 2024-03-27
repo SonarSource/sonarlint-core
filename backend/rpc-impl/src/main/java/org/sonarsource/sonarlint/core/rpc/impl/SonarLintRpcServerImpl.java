@@ -20,8 +20,12 @@
 package org.sonarsource.sonarlint.core.rpc.impl;
 
 import com.google.common.util.concurrent.MoreExecutors;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -88,6 +92,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
       .setOutput(out)
       .setExecutorService(messageReaderExecutor)
       .wrapMessages(m -> new SingleThreadedMessageConsumer(m, messageWriterExecutor, System.err::println))
+      .traceMessages(getMessageTracer())
       .create();
 
     this.client = launcher.getRemoteProxy();
@@ -105,10 +110,21 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     rpcAppender.start();
     rootLogger.addAppender(rpcAppender);
 
-
     this.launcherFuture = launcher.startListening();
 
     LOG.info("SonarLint backend started, instance={}", this);
+  }
+
+  private static PrintWriter getMessageTracer() {
+    if ("true".equals(System.getProperty("sonarlint.debug.rpc"))) {
+      try {
+        return new PrintWriter(Paths.get(System.getProperty("user.home")).resolve(".sonarlint").resolve("rpc_session.log").toFile(), StandardCharsets.UTF_8);
+      } catch (IOException e) {
+        System.err.println("Cannot write rpc debug logs file");
+        e.printStackTrace();
+      }
+    }
+    return null;
   }
 
   public Future<Void> getLauncherFuture() {
