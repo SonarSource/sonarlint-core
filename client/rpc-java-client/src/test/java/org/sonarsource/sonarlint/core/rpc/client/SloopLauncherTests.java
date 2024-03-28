@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.function.Function;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -45,6 +46,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sonarsource.sonarlint.core.rpc.client.SloopLauncher.SONARLINT_JVM_OPTS;
 
 class SloopLauncherTests {
   private Process mockProcess;
@@ -80,6 +82,11 @@ class SloopLauncherTests {
     underTest = new SloopLauncher(rpcClient, mockPbFactory, () -> osName);
   }
 
+  @AfterEach
+  void cleanup() {
+    System.clearProperty(SONARLINT_JVM_OPTS);
+  }
+
   @Test
   void test_command_with_embedded_jre(@TempDir Path distPath) throws IOException {
     var bundledJreBinPath = distPath.resolve("jre").resolve("bin");
@@ -89,7 +96,8 @@ class SloopLauncherTests {
 
     sloop = underTest.start(distPath);
 
-    verify(mockPbFactory).apply(List.of(bundledJrejavaPath.toString(), "-classpath", distPath.resolve("lib") + File.separator + '*', "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli"));
+    verify(mockPbFactory).apply(List.of(bundledJrejavaPath.toString(), "-Xmx2048m", "-classpath",
+      distPath.resolve("lib") + File.separator + '*', "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli"));
     assertThat(sloop.getRpcServer()).isNotNull();
   }
 
@@ -98,7 +106,8 @@ class SloopLauncherTests {
     sloop = underTest.start(distPath, fakeJreHomePath);
 
     verify(mockPbFactory)
-      .apply(List.of(fakeJreJavaLinuxPath.toString(), "-classpath", distPath.resolve("lib") + File.separator + '*', "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli"));
+      .apply(List.of(fakeJreJavaLinuxPath.toString(), "-Xmx2048m", "-classpath",
+        distPath.resolve("lib") + File.separator + '*', "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli"));
     assertThat(sloop.getRpcServer()).isNotNull();
   }
 
@@ -108,7 +117,8 @@ class SloopLauncherTests {
     sloop = underTest.start(distPath, fakeJreHomePath);
 
     verify(mockPbFactory)
-      .apply(List.of(fakeJreJavaWindowsPath.toString(), "-classpath", distPath.resolve("lib") + File.separator + '*', "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli"));
+      .apply(List.of(fakeJreJavaWindowsPath.toString(), "-Xmx2048m", "-classpath",
+        distPath.resolve("lib") + File.separator + '*', "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli"));
     assertThat(sloop.getRpcServer()).isNotNull();
   }
 
@@ -147,4 +157,35 @@ class SloopLauncherTests {
     var wrongPath = Paths.get("wrongPath");
     assertThrows(IllegalStateException.class, () -> sloop = underTest.start(distPath, wrongPath));
   }
+
+  @Test
+  void test_command_with_default_heap_size_when_property_not_present(@TempDir Path distPath) {
+    sloop = underTest.start(distPath, fakeJreHomePath);
+
+    verify(mockPbFactory)
+      .apply(List.of(fakeJreJavaLinuxPath.toString(), "-Xmx2048m", "-classpath",
+        distPath.resolve("lib") + File.separator + '*', "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli"));
+  }
+
+  @Test
+  void test_command_with_default_heap_size_when_property_doesnt_contain_heap_limit(@TempDir Path distPath) {
+    System.setProperty(SONARLINT_JVM_OPTS, "");
+    sloop = underTest.start(distPath, fakeJreHomePath);
+
+    verify(mockPbFactory)
+      .apply(List.of(fakeJreJavaLinuxPath.toString(), "","-Xmx2048m", "-classpath",
+        distPath.resolve("lib") + File.separator + '*', "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli"));
+  }
+
+  @Test
+  void test_command_with_heap_size_from_system_env(@TempDir Path distPath) {
+    System.setProperty(SONARLINT_JVM_OPTS, "-Xmx512m");
+
+    sloop = underTest.start(distPath, fakeJreHomePath);
+
+    verify(mockPbFactory)
+      .apply(List.of(fakeJreJavaLinuxPath.toString(), "-Xmx512m", "-classpath",
+        distPath.resolve("lib") + File.separator + '*', "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli"));
+  }
+
 }

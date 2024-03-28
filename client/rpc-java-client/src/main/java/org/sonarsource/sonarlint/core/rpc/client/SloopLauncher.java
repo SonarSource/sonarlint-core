@@ -40,6 +40,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 
 public class SloopLauncher {
   public static final String SLOOP_CLI_ENTRYPOINT_CLASS = "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli";
+  static final String SONARLINT_JVM_OPTS = "SONARLINT_JVM_OPTS";
+  private static final String DEFAULT_JVM_HEAP_LIMIT = "-Xmx2048m";
   private final SonarLintRpcClientDelegate rpcClient;
   private final Function<List<String>, ProcessBuilder> processBuilderFactory;
   private final Supplier<String> osNameSupplier;
@@ -118,9 +120,12 @@ public class SloopLauncher {
     var classpath = libFolderPath.toAbsolutePath().normalize() + File.separator + '*';
     List<String> commands = new ArrayList<>();
     commands.add(jreJavaExePath.toAbsolutePath().normalize().toString());
-    var sonarlintJvmOpts = System.getenv("SONARLINT_JVM_OPTS");
+    var sonarlintJvmOpts = System.getProperty(SONARLINT_JVM_OPTS);
     if (sonarlintJvmOpts != null) {
       commands.add(sonarlintJvmOpts);
+    }
+    if (sonarlintJvmOpts == null || !sonarlintJvmOpts.contains("-Xmx")) {
+      commands.add(DEFAULT_JVM_HEAP_LIMIT);
     }
     commands.add("-classpath");
     commands.add(classpath);
