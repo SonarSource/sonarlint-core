@@ -89,6 +89,10 @@ public class ServerFilePathsProvider {
       .or(() -> fetchPathsFromServer(binding, cancelMonitor));
   }
 
+  private Optional<List<Path>> getPathsFromInMemoryCache(Binding binding) {
+    return Optional.ofNullable(temporaryInMemoryFilePathCacheByBinding.getIfPresent(binding));
+  }
+
   private Optional<List<Path>> getPathsFromFileCache(Binding binding) {
     return Optional.ofNullable(cachedResponseFilePathByBinding.get(binding))
       .filter(path -> path.toFile().exists())
@@ -97,6 +101,24 @@ public class ServerFilePathsProvider {
         putToInMemoryCache(binding, paths);
         return paths;
       });
+  }
+
+  private Optional<List<Path>> fetchPathsFromServer(Binding binding, SonarLintCancelMonitor cancelMonitor) {
+    var serverApiOpt = serverApiProvider.getServerApi(binding.getConnectionId());
+    if (serverApiOpt.isEmpty()) {
+      LOG.debug("Connection '{}' does not exist", binding.getConnectionId());
+      return Optional.empty();
+    }
+    try {
+      List<Path> paths = fetchPathsFromServer(serverApiOpt.get(), binding.getSonarProjectKey(), cancelMonitor);
+      cacheServerPaths(binding, paths);
+      return Optional.of(paths);
+    } catch (CancellationException e) {
+      throw e;
+    } catch (Exception e) {
+      LOG.debug("Error while getting server file paths for project '{}'", binding.getSonarProjectKey(), e);
+      return Optional.empty();
+    }
   }
 
   private static List<Path> readServerPathsFromFile(Path responsePath) {
@@ -108,26 +130,8 @@ public class ServerFilePathsProvider {
     }
   }
 
-  private Optional<List<Path>> getPathsFromInMemoryCache(Binding binding) {
-    return Optional.ofNullable(temporaryInMemoryFilePathCacheByBinding.getIfPresent(binding));
-  }
-
-  private Optional<List<Path>> fetchPathsFromServer(Binding binding, SonarLintCancelMonitor cancelMonitor) {
-    var serverApiOpt = serverApiProvider.getServerApi(binding.getConnectionId());
-    if (serverApiOpt.isEmpty()) {
-      LOG.debug("Connection '{}' does not exist", binding.getConnectionId());
-      return Optional.empty();
-    }
-    try {
-      List<Path> paths = fetchPathsFromServer(serverApiOpt.get(), binding.getSonarProjectKey(), cancelMonitor);
-      putToFileCache(binding, paths);
-      return Optional.of(paths);
-    } catch (CancellationException e) {
-      throw e;
-    } catch (Exception e) {
-      LOG.debug("Error while getting server file paths for project '{}'", binding.getSonarProjectKey(), e);
-      return Optional.empty();
-    }
+  private void putToInMemoryCache(Binding binding, List<Path> paths) {
+    temporaryInMemoryFilePathCacheByBinding.put(binding, paths);
   }
 
   private static List<Path> fetchPathsFromServer(ServerApi serverApi, String projectKey, SonarLintCancelMonitor cancelMonitor) {
@@ -137,7 +141,7 @@ public class ServerFilePathsProvider {
       .collect(toList());
   }
 
-  private void putToFileCache(Binding binding, List<Path> paths) {
+  private void cacheServerPaths(Binding binding, List<Path> paths) {
     var fileName = UUID.randomUUID().toString();
     var filePath = cacheDirectoryPath.resolve(fileName);
     try {
@@ -156,10 +160,6 @@ public class ServerFilePathsProvider {
         bufferedWriter.write(path + System.lineSeparator());
       }
     }
-  }
-
-  private void putToInMemoryCache(Binding binding, List<Path> paths) {
-    temporaryInMemoryFilePathCacheByBinding.put(binding, paths);
   }
 
   @VisibleForTesting
