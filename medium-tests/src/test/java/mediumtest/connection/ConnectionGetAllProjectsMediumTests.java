@@ -151,7 +151,7 @@ class ConnectionGetAllProjectsMediumTests {
   }
 
   @Test
-  void it_should_support_cancellation() throws InterruptedException {
+  void it_should_support_cancellation() {
     server = newSonarQubeServer().start();
     server.getMockServer().stubFor(get("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1").willReturn(aResponse()
       .withStatus(200)

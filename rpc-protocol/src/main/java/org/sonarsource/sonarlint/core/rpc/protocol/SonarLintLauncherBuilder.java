@@ -62,7 +62,8 @@ public class SonarLintLauncherBuilder<T> extends Launcher.Builder<T> {
           .registerTypeHierarchyAdapter(Instant.class, new InstantTypeAdapter())
           .registerTypeHierarchyAdapter(UUID.class, new UuidTypeAdapter())
           .registerTypeHierarchyAdapter(URI.class, new UriTypeAdapter())
-          .registerTypeHierarchyAdapter(Duration.class, new DurationTypeAdapter());
+          .registerTypeHierarchyAdapter(Duration.class, new DurationTypeAdapter())
+          .serializeNulls();
       }
     };
   }
