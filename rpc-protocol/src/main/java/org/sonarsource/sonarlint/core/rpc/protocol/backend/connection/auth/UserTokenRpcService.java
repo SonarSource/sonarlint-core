@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Implementation
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,25 +17,28 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.impl;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth;
 
 import java.util.concurrent.CompletableFuture;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.RevokeTokenParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.UserTokenRpcService;
-import org.sonarsource.sonarlint.core.usertoken.UserTokenService;
+import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 
-public class UserTokenRpcServiceDelegate extends AbstractRpcServiceDelegate implements UserTokenRpcService {
-
-  public UserTokenRpcServiceDelegate(SonarLintRpcServerImpl server) {
-    super(server);
-  }
-
-  @Override
-  public CompletableFuture<Void> revokeToken(RevokeTokenParams params) {
-    return requestAsync(cancelMonitor -> {
-      getBean(UserTokenService.class).revokeToken(params, cancelMonitor);
-      return null;
-    });
-  }
+public interface UserTokenRpcService {
+  /**
+   * <p> It revokes a user token that is existing on the server and was handed over to the client.
+   * It silently deals with the following conditions:
+   * <ul>
+   *   <li>the token provided by name (identified by {@link RevokeTokenParams#getTokenName()} exists</li>
+   * </ul>
+   * In those cases a completed future will be returned.
+   * </p>
+   * <p>
+   * It returns a failed future if:
+   * <ul>
+   *   <li>there is a communication problem with the server: network outage, server is down, unauthorized</li>
+   * </ul>
+   * </p>
+   */
+  @JsonRequest
+  CompletableFuture<Void> revokeToken(RevokeTokenParams params);
 
 }
