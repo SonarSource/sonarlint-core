@@ -33,4 +33,22 @@ public interface BindingRpcService {
    */
   @JsonRequest
   CompletableFuture<GetBindingSuggestionsResponse> getBindingSuggestions(GetBindingSuggestionParams params);
+
+  /**
+   * <p> It gets file contents for a shared Connected Mode configuration file.
+   * It returns file contents that look like either
+   <li>{
+   "sonarCloudOrganization": "$organization",
+   "projectKey": "$projectKey"
+   }</li>
+   OR
+   <li>   {
+   "sonarQubeUri": "$serverUrl",
+   "projectKey": "$projectKey"
+   }</li>
+
+   <p>Fails if there is no binding found for the configScopeId</p>
+   */
+  @JsonRequest
+  CompletableFuture<GetSharedConnectedModeConfigFileResponse> getSharedConnectedModeConfigFileContents(GetSharedConnectedModeConfigFileParams params);
 }

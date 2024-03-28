@@ -38,6 +38,7 @@ import org.sonarsource.sonarlint.core.ConfigurationService;
 import org.sonarsource.sonarlint.core.ConnectionService;
 import org.sonarsource.sonarlint.core.OrganizationsCache;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.SharedConnectedModeSettingsProvider;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.TokenGeneratorHelper;
@@ -161,7 +162,8 @@ import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_S
   FileExclusionService.class,
   NodeJsService.class,
   OrganizationsCache.class,
-  BindingCandidatesFinder.class
+  BindingCandidatesFinder.class,
+  SharedConnectedModeSettingsProvider.class
 })
 public class SonarLintSpringAppConfig {
 

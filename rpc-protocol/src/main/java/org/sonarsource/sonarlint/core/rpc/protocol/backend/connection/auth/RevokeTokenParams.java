@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Implementation
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,25 +17,28 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.impl;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth;
 
-import java.util.concurrent.CompletableFuture;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.RevokeTokenParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.UserTokenRpcService;
-import org.sonarsource.sonarlint.core.usertoken.UserTokenService;
+public class RevokeTokenParams {
+  private final String baseUrl;
+  private final String tokenName;
+  private final String tokenValue;
 
-public class UserTokenRpcServiceDelegate extends AbstractRpcServiceDelegate implements UserTokenRpcService {
-
-  public UserTokenRpcServiceDelegate(SonarLintRpcServerImpl server) {
-    super(server);
+  public RevokeTokenParams(String baseUrl, String tokenName, String tokenValue) {
+    this.baseUrl = baseUrl;
+    this.tokenName = tokenName;
+    this.tokenValue = tokenValue;
   }
 
-  @Override
-  public CompletableFuture<Void> revokeToken(RevokeTokenParams params) {
-    return requestAsync(cancelMonitor -> {
-      getBean(UserTokenService.class).revokeToken(params, cancelMonitor);
-      return null;
-    });
+  public String getBaseUrl() {
+    return baseUrl;
   }
 
+  public String getTokenName() {
+    return tokenName;
+  }
+
+  public String getTokenValue() {
+    return tokenValue;
+  }
 }
