@@ -54,6 +54,7 @@ import org.sonarsource.sonarlint.core.embedded.server.ShowHotspotRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.ShowIssueRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.StatusRequestHandler;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
+import org.sonarsource.sonarlint.core.file.ServerFilePathsProvider;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.fs.FileExclusionService;
 import org.sonarsource.sonarlint.core.hotspot.HotspotService;
@@ -158,6 +159,7 @@ import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_S
   HotspotSynchronizationService.class,
   ClientFileSystemService.class,
   PathTranslationService.class,
+  ServerFilePathsProvider.class,
   FileExclusionService.class,
   NodeJsService.class,
   OrganizationsCache.class,
