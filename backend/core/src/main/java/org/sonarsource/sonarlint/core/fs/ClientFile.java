@@ -25,8 +25,11 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import javax.annotation.Nullable;
+import org.apache.commons.compress.utils.FileNameUtils;
 
 public class ClientFile {
+
+  private static final String SONARLINT_FOLDER_NAME = ".sonarlint";
 
   /**
    * Unique identifier for this file on the client side
@@ -121,6 +124,11 @@ public class ClientFile {
   public void setClean() {
     this.isDirty = false;
     this.clientProvidedContent = null;
+  }
+
+  public boolean isSonarlintConfigurationFile() {
+    var sonarlintPath = getClientRelativePath().getParent();
+    return "json".equals(FileNameUtils.getExtension(getClientRelativePath())) && sonarlintPath != null && SONARLINT_FOLDER_NAME.equals(sonarlintPath.getFileName().toString());
   }
 
   public boolean isTest() {

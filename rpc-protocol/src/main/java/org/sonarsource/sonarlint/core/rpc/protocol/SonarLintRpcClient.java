@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingP
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSuggestionFoundParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SuggestConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.DidChangeMatchedSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchResponse;
@@ -70,6 +71,12 @@ public interface SonarLintRpcClient {
    */
   @JsonNotification
   void suggestBinding(SuggestBindingParams params);
+
+  /**
+   * Suggest to create a connection and a binding to the client
+   */
+  @JsonNotification
+  void suggestConnection(SuggestConnectionParams params);
 
   @JsonNotification
   void openUrlInBrowser(OpenUrlInBrowserParams params);

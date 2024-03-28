@@ -47,7 +47,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
 
 class BranchSpecificSynchronizationMediumTests {
 
@@ -173,6 +176,29 @@ class BranchSpecificSynchronizationMediumTests {
       assertThat(fakeClient.getSynchronizedConfigScopeIds()).contains("configScopeId");
       assertThat(fakeClient.getProgressReportsByTaskId()).isEmpty();
     });
+  }
+
+  @Test
+  void it_should_skip_second_consecutive_synchronization_for_the_same_server_project() {
+    var fakeClient = newFakeClient()
+      .build();
+    server = newSonarQubeServer("9.6")
+      .withProject("projectKey")
+      .withProject("projectKey2")
+      .start();
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", server)
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withFullSynchronization()
+      .build(fakeClient);
+    fakeClient.waitForSynchronization();
+    reset(fakeClient);
+
+    backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
+      new ConfigurationScopeDto("configScope2", null, true, "Child1", new BindingConfigurationDto("connectionId", "projectKey", true))
+      )));
+
+    verify(fakeClient, after(2000).times(0)).didSynchronizeConfigurationScopes(any());
   }
 
   private static Condition<String> isUUID() {

@@ -146,7 +146,7 @@ public class SonarProjectsCache {
           LOG.debug("No projects found for connection '{}'", connectionId);
           return new TextSearchIndex<>();
         } else {
-          LOG.debug("Creating index for {} {}", projects.size(), singlePlural(projects.size(), "project", "projects"));
+          LOG.debug("Creating index for {} {}", projects.size(), singlePlural(projects.size(), "project"));
           var index = new TextSearchIndex<ServerProject>();
           projects.forEach(p -> index.index(p, p.getKey() + " " + p.getName()));
           return index;

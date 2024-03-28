@@ -90,9 +90,15 @@ public class ClientFileSystemService {
     }
   }
 
-  public List<ClientFile> findFileByNamesInScope(String configScopeId, List<String> filenames) {
+  public List<ClientFile> findFilesByNamesInScope(String configScopeId, List<String> filenames) {
     return getFiles(configScopeId).stream()
       .filter(f -> filenames.contains(f.getClientRelativePath().getFileName().toString()))
+      .collect(toList());
+  }
+
+  public List<ClientFile> findSonarlintConfigurationFilesByScope(String configScopeId) {
+    return getFiles(configScopeId).stream()
+      .filter(ClientFile::isSonarlintConfigurationFile)
       .collect(toList());
   }
 

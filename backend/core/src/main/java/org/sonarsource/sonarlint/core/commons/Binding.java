@@ -55,4 +55,12 @@ public class Binding {
   public int hashCode() {
     return Objects.hash(connectionId, sonarProjectKey);
   }
+
+  @Override
+  public String toString() {
+    return "Binding{" +
+      "connectionId='" + connectionId + '\'' +
+      ", sonarProjectKey='" + sonarProjectKey + '\'' +
+      '}';
+  }
 }

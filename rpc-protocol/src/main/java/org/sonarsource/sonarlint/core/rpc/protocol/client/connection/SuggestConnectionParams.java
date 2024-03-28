@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,25 +17,21 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.sync;
+package org.sonarsource.sonarlint.core.rpc.protocol.client.connection;
 
-import java.time.Instant;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
-public class SynchronizationTimestampRepository<T> {
-  private final Map<T, Instant> lastSynchronizationTimestampPerSource = new ConcurrentHashMap<>();
+public class SuggestConnectionParams {
 
-  public Optional<Instant> getLastSynchronizationDate(T source) {
-    return Optional.ofNullable(lastSynchronizationTimestampPerSource.get(source));
+  private final Map<String, List<ConnectionSuggestionDto>> suggestionsByConfigScopeId;
+
+  public SuggestConnectionParams(Map<String, List<ConnectionSuggestionDto>> suggestionsByConfigScopeId) {
+    this.suggestionsByConfigScopeId = suggestionsByConfigScopeId;
   }
 
-  public void setLastSynchronizationTimestampToNow(T source) {
-    lastSynchronizationTimestampPerSource.put(source, Instant.now());
+  public Map<String, List<ConnectionSuggestionDto>> getSuggestionsByConfigScopeId() {
+    return suggestionsByConfigScopeId;
   }
 
-  public void clearLastSynchronizationTimestamp(T source) {
-    lastSynchronizationTimestampPerSource.remove(source);
-  }
 }

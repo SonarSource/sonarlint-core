@@ -23,15 +23,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CancellationException;
 import javax.annotation.CheckForNull;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.SonarLintMDC;
 import org.sonarsource.sonarlint.core.branch.MatchedSonarProjectBranchChangedEvent;
 import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
@@ -41,7 +38,6 @@ import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverconnection.prefix.FileTreeMatcher;
 import org.springframework.context.event.EventListener;
 
@@ -57,17 +53,16 @@ import static java.util.stream.Collectors.toList;
 public class PathTranslationService {
   private static final Logger LOG = LoggerFactory.getLogger(PathTranslationService.class);
   private final ClientFileSystemService clientFs;
-  private final ServerApiProvider serverApiProvider;
   private final ConfigurationRepository configurationRepository;
-
+  private final ServerFilePathsProvider serverFilePathsProvider;
   private final SmartCancelableLoadingCache<String, FilePathTranslation> cachedPathsTranslationByConfigScope =
     new SmartCancelableLoadingCache<>("sonarlint-path-translation", this::computePaths, (key, oldValue, newValue) -> {
     });
 
-  public PathTranslationService(ClientFileSystemService clientFs, ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository) {
+  public PathTranslationService(ClientFileSystemService clientFs, ConfigurationRepository configurationRepository, ServerFilePathsProvider serverFilePathsProvider) {
     this.clientFs = clientFs;
-    this.serverApiProvider = serverApiProvider;
     this.configurationRepository = configurationRepository;
+    this.serverFilePathsProvider = serverFilePathsProvider;
   }
 
   @CheckForNull
@@ -75,26 +70,14 @@ public class PathTranslationService {
     SonarLintMDC.putConfigScopeId(configScopeId);
     LOG.debug("Computing paths translation for config scope '{}'...", configScopeId);
     var fileMatcher = new FileTreeMatcher();
-    var boundScope = configurationRepository.getBoundScope(configScopeId);
-    if (boundScope == null) {
+    var binding = configurationRepository.getEffectiveBinding(configScopeId).orElse(null);
+    if (binding == null) {
       LOG.debug("Config scope '{}' does not exist or is not bound", configScopeId);
       return null;
     }
-    var serverApiOpt = serverApiProvider.getServerApi(boundScope.getConnectionId());
-    if (serverApiOpt.isEmpty()) {
-      LOG.debug("Connection '{}' does not exist", boundScope.getConnectionId());
-      return null;
-    }
-    List<Path> serverFilePaths;
-    try {
-      serverFilePaths = listAllFilePathsFromServer(serverApiOpt.get(), boundScope.getSonarProjectKey(), cancelMonitor);
-    } catch (CancellationException e) {
-      throw e;
-    } catch (Exception e) {
-      LOG.debug("Error while getting server file paths for project '{}'", boundScope.getSonarProjectKey(), e);
-      return null;
-    }
-    return matchPaths(boundScope.getConfigScopeId(), fileMatcher, serverFilePaths);
+    return serverFilePathsProvider.getServerPaths(binding, cancelMonitor)
+      .map(paths -> matchPaths(configScopeId, fileMatcher, paths))
+      .orElse(null);
   }
 
   private FilePathTranslation matchPaths(String configScopeId, FileTreeMatcher fileMatcher, List<Path> serverFilePaths) {
@@ -108,13 +91,6 @@ public class PathTranslationService {
     var match = fileMatcher.match(serverFilePaths, localFilePaths.stream().map(ClientFile::getClientRelativePath).collect(toList()));
     LOG.debug("Matched paths for config scope '{}':\n  * idePrefix={}\n  * serverPrefix={}", configScopeId, match.idePrefix(), match.sqPrefix());
     return new FilePathTranslation(match.idePrefix(), match.sqPrefix());
-  }
-
-  private static List<Path> listAllFilePathsFromServer(ServerApi serverApi, String projectKey, SonarLintCancelMonitor cancelMonitor) {
-    return serverApi.component().getAllFileKeys(projectKey, cancelMonitor).stream()
-      .map(fileKey -> StringUtils.substringAfterLast(fileKey, ":"))
-      .map(Paths::get)
-      .collect(toList());
   }
 
   @EventListener

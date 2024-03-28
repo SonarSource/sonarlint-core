@@ -85,7 +85,7 @@ public class OrganizationsCache {
           LOG.debug("No organizations found");
           return new TextSearchIndex<>();
         } else {
-          LOG.debug("Creating index for {} {}", orgs.size(), singlePlural(orgs.size(), "organization", "organizations"));
+          LOG.debug("Creating index for {} {}", orgs.size(), singlePlural(orgs.size(), "organization"));
           var index = new TextSearchIndex<OrganizationDto>();
           orgs.forEach(org -> index.index(org, org.getKey() + " " + org.getName()));
           return index;

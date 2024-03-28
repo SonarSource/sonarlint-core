@@ -100,7 +100,7 @@ public class BindingSuggestionProvider {
     suggestBindingForGivenScopesAndAllConnections(configScopeIds);
   }
 
-  private void suggestBindingForGivenScopesAndAllConnections(Set<String> configScopeIdsToSuggest) {
+  public void suggestBindingForGivenScopesAndAllConnections(Set<String> configScopeIdsToSuggest) {
     if (!configScopeIdsToSuggest.isEmpty()) {
       var allConnectionIds = connectionRepository.getConnectionsById().keySet();
       if (allConnectionIds.isEmpty()) {
@@ -174,7 +174,7 @@ public class BindingSuggestionProvider {
     for (var configScopeId : eligibleConfigScopesForBindingSuggestion) {
       cancelMonitor.checkCanceled();
       var scopeSuggestions = suggestBindingForEligibleScope(configScopeId, candidateConnectionIds, cancelMonitor);
-      LOG.debug("Found {} {} for configuration scope '{}'", scopeSuggestions.size(), singlePlural(scopeSuggestions.size(), "suggestion", "suggestions"), configScopeId);
+      LOG.debug("Found {} {} for configuration scope '{}'", scopeSuggestions.size(), singlePlural(scopeSuggestions.size(), "suggestion"), configScopeId);
       suggestionsByConfigScope.put(configScopeId, scopeSuggestions);
     }
 
