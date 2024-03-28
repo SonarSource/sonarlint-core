@@ -52,8 +52,8 @@ class ConnectionServiceTests {
 
   private final ConnectionConfigurationRepository repository = new ConnectionConfigurationRepository();
 
-  public static final SonarQubeConnectionConfigurationDto SQ_DTO_1 = new SonarQubeConnectionConfigurationDto("sq1", "url1", true);
-  public static final SonarQubeConnectionConfigurationDto SQ_DTO_1_DUP = new SonarQubeConnectionConfigurationDto("sq1", "url1_dup", true);
+  public static final SonarQubeConnectionConfigurationDto SQ_DTO_1 = new SonarQubeConnectionConfigurationDto("sq1", "http://url1/", true);
+  public static final SonarQubeConnectionConfigurationDto SQ_DTO_1_DUP = new SonarQubeConnectionConfigurationDto("sq1", "http://url1_dup/", true);
   public static final SonarQubeConnectionConfigurationDto SQ_DTO_2 = new SonarQubeConnectionConfigurationDto("sq2", "url2", true);
   public static final SonarCloudConnectionConfigurationDto SC_DTO_1 = new SonarCloudConnectionConfigurationDto("sc1", "org1", true);
   public static final SonarCloudConnectionConfigurationDto SC_DTO_2 = new SonarCloudConnectionConfigurationDto("sc2", "org2", true);
@@ -83,7 +83,7 @@ class ConnectionServiceTests {
       .asInstanceOf(InstanceOfAssertFactories.type(SonarQubeConnectionConfiguration.class))
       .extracting(SonarQubeConnectionConfiguration::getConnectionId, SonarQubeConnectionConfiguration::getUrl, SonarQubeConnectionConfiguration::isDisableNotifications,
         SonarQubeConnectionConfiguration::getKind)
-      .containsOnly("sq1", "url1", true, ConnectionKind.SONARQUBE);
+      .containsOnly("sq1", "http://url1", true, ConnectionKind.SONARQUBE);
 
     underTest.didUpdateConnections(List.of(SQ_DTO_1, SQ_DTO_2), List.of());
     assertThat(repository.getConnectionsById()).containsOnlyKeys("sq1", "sq2");
@@ -114,7 +114,7 @@ class ConnectionServiceTests {
       .asInstanceOf(InstanceOfAssertFactories.type(SonarQubeConnectionConfiguration.class))
       .extracting(SonarQubeConnectionConfiguration::getConnectionId, SonarQubeConnectionConfiguration::getUrl, SonarQubeConnectionConfiguration::isDisableNotifications,
         SonarQubeConnectionConfiguration::getKind)
-      .containsOnly("sq1", "url1_dup", true, ConnectionKind.SONARQUBE);
+      .containsOnly("sq1", "http://url1_dup", true, ConnectionKind.SONARQUBE);
 
     assertThat(logTester.logs(LogOutput.Level.ERROR)).containsExactly("Duplicate connection registered: sq1");
   }
@@ -161,7 +161,7 @@ class ConnectionServiceTests {
       .asInstanceOf(InstanceOfAssertFactories.type(SonarQubeConnectionConfiguration.class))
       .extracting(SonarQubeConnectionConfiguration::getConnectionId, SonarQubeConnectionConfiguration::getUrl, SonarQubeConnectionConfiguration::isDisableNotifications,
         SonarQubeConnectionConfiguration::getKind)
-      .containsOnly("sq1", "url1_dup", true, ConnectionKind.SONARQUBE);
+      .containsOnly("sq1", "http://url1_dup", true, ConnectionKind.SONARQUBE);
 
     var captor = ArgumentCaptor.forClass(ConnectionConfigurationUpdatedEvent.class);
     verify(eventPublisher, times(1)).publishEvent(captor.capture());
