@@ -204,7 +204,6 @@ class ConnectedFileExclusionsMediumTests {
       .withInitialFs(CONFIG_SCOPE_ID,
         List.of(mainFile1Dto))
       .build();
-    mockSonarProjectSettings(server, Map.of("sonar.exclusions", "src/**"));
 
     backend = newBackend()
       .withSonarQubeConnection(MYSONAR, server)
