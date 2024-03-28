@@ -50,7 +50,6 @@ import static org.sonarsource.sonarlint.core.rpc.client.SloopLauncher.SONARLINT_
 
 class SloopLauncherTests {
   private Process mockProcess;
-  private ProcessBuilder processBuilder;
   private SloopLauncher underTest;
   private Sloop sloop;
   private Function<List<String>, ProcessBuilder> mockPbFactory;
@@ -70,10 +69,10 @@ class SloopLauncherTests {
     fakeJreJavaWindowsPath = fakeJreBinFolder.resolve("java.exe");
     Files.createFile(fakeJreJavaWindowsPath);
     mockPbFactory = mock();
-    processBuilder = mock(ProcessBuilder.class);
-    when(mockPbFactory.apply(any())).thenReturn(processBuilder);
+    var mockProcessBuilder = mock(ProcessBuilder.class);
+    when(mockPbFactory.apply(any())).thenReturn(mockProcessBuilder);
     mockProcess = mock(Process.class);
-    doReturn(mockProcess).when(processBuilder).start();
+    doReturn(mockProcess).when(mockProcessBuilder).start();
 
     when(mockProcess.getInputStream()).thenReturn(new ByteArrayInputStream(new byte[0]));
     when(mockProcess.getErrorStream()).thenReturn(new ByteArrayInputStream(new byte[0]));
