@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<profile>
+  <name>SonarLint IT JCL</name>
+  <language>jcl</language>
+  <rules>
+    <rule>
+      <repositoryKey>jcl</repositoryKey>
+      <key>S6935</key>
+      <priority>MAJOR</priority>
+    </rule>
+  </rules>
+</profile>
