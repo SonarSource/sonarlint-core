@@ -136,7 +136,7 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   @Override
   public void suggestConnection(SuggestConnectionParams params) {
-    notify(() -> delegate.suggestConnection(params.getSuggestions()));
+    notify(() -> delegate.suggestConnection(params.getSuggestionsByConfigScopeId()));
   }
 
   @Override

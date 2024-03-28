@@ -19,19 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.connection;
 
-import java.util.List;
-import java.util.Map;
+public class SonarQubeConnectionSuggestionDto {
 
-public class SuggestConnectionParams {
+  private final String serverUrl;
+  private final String projectKey;
 
-  private final Map<String, List<ConnectionSuggestionDto>> suggestionsByConfigScopeId;
-
-  public SuggestConnectionParams(Map<String, List<ConnectionSuggestionDto>> suggestionsByConfigScopeId) {
-    this.suggestionsByConfigScopeId = suggestionsByConfigScopeId;
+  public SonarQubeConnectionSuggestionDto(String serverUrl, String projectKey) {
+    this.serverUrl = serverUrl;
+    this.projectKey = projectKey;
   }
 
-  public Map<String, List<ConnectionSuggestionDto>> getSuggestionsByConfigScopeId() {
-    return suggestionsByConfigScopeId;
+  public String getServerUrl() {
+    return serverUrl;
+  }
+
+  public String getProjectKey() {
+    return projectKey;
   }
 
 }

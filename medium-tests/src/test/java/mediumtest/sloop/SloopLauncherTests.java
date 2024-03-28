@@ -171,7 +171,7 @@ class SloopLauncherTests {
     }
 
     @Override
-    public void suggestConnection(Map<String, ConnectionSuggestionDto> suggestionsByConfigScope) {
+    public void suggestConnection(Map<String, List<ConnectionSuggestionDto>> suggestionsByConfigScope) {
 
     }
 

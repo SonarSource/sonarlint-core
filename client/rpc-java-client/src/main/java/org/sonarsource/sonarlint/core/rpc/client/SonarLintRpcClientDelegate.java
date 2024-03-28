@@ -63,7 +63,7 @@ public interface SonarLintRpcClientDelegate {
 
   void suggestBinding(Map<String, List<BindingSuggestionDto>> suggestionsByConfigScope);
 
-  void suggestConnection(Map<String, ConnectionSuggestionDto> suggestionsByConfigScope);
+  void suggestConnection(Map<String, List<ConnectionSuggestionDto>> suggestionsByConfigScope);
 
   void openUrlInBrowser(URL url);
 

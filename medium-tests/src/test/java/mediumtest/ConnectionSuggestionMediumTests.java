@@ -31,20 +31,28 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.ConnectionSuggestionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarCloudConnectionSuggestionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarQubeConnectionSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
@@ -67,11 +75,11 @@ class ConnectionSuggestionMediumTests {
   }
 
   @Test
-  void should_suggest_connection_when_initializing_fs(@TempDir Path tmp) throws IOException {
+  void should_suggest_sonarqube_connection_when_initializing_fs(@TempDir Path tmp) throws IOException {
     var sonarlintDir = tmp.resolve(".sonarlint/");
     Files.createDirectory(sonarlintDir);
     var clue = tmp.resolve(".sonarlint/connectedMode.json");
-    Files.writeString(clue, "{\"projectKey\": \"" + SLCORE_PROJECT_KEY + "\",\"serverUrl\": \"" + sonarqubeMock.baseUrl() + "\"}", StandardCharsets.UTF_8);
+    Files.writeString(clue, "{\"projectKey\": \"" + SLCORE_PROJECT_KEY + "\",\"sonarQubeUri\": \"" + sonarqubeMock.baseUrl() + "\"}", StandardCharsets.UTF_8);
     var fileDto = new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null);
     var fakeClient = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID,
@@ -83,14 +91,43 @@ class ConnectionSuggestionMediumTests {
 
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
 
-    ArgumentCaptor<Map<String, ConnectionSuggestionDto>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
+    ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
     verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
 
     var connectionSuggestion = suggestionCaptor.getValue();
     assertThat(connectionSuggestion).containsOnlyKeys(CONFIG_SCOPE_ID);
-    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).getOrganization()).isNull();
-    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).getServerUrl()).isEqualTo(sonarqubeMock.baseUrl());
-    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID)).hasSize(1);
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft()).isNotNull();
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft().getServerUrl()).isEqualTo(sonarqubeMock.baseUrl());
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft().getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
+  }
+
+  @Test
+  void should_suggest_sonarcloud_connection_when_initializing_fs(@TempDir Path tmp) throws IOException {
+    var sonarlintDir = tmp.resolve(".sonarlint/");
+    Files.createDirectory(sonarlintDir);
+    var clue = tmp.resolve(".sonarlint/connectedMode.json");
+    Files.writeString(clue, "{\"projectKey\": \"" + SLCORE_PROJECT_KEY + "\",\"sonarCloudOrganization\": \"" + ORGANIZATION + "\"}", StandardCharsets.UTF_8);
+    var fileDto = new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null);
+    var fakeClient = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID,
+        List.of(fileDto))
+      .build();
+
+    backend = newBackend()
+      .build(fakeClient);
+
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
+
+    ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
+
+    var connectionSuggestion = suggestionCaptor.getValue();
+    assertThat(connectionSuggestion).containsOnlyKeys(CONFIG_SCOPE_ID);
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID)).hasSize(1);
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getRight()).isNotNull();
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getRight().getOrganization()).isEqualTo(ORGANIZATION);
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getRight().getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
   }
 
   @Test
@@ -102,7 +139,7 @@ class ConnectionSuggestionMediumTests {
     sonarlintDir = tmp.resolve("random/path/.sonarlint");
     Files.createDirectory(sonarlintDir);
     var clue = tmp.resolve("random/path/.sonarlint/random_name.json");
-    Files.writeString(clue, "{\"projectKey\": \"" + SLCORE_PROJECT_KEY + "\",\"serverUrl\": \"" + sonarqubeMock.baseUrl() + "\"}", StandardCharsets.UTF_8);
+    Files.writeString(clue, "{\"projectKey\": \"" + SLCORE_PROJECT_KEY + "\",\"sonarQubeUri\": \"" + sonarqubeMock.baseUrl() + "\"}", StandardCharsets.UTF_8);
     var fileDto = new ClientFileDto(clue.toUri(), Paths.get("random/path/.sonarlint/random_name.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null);
     var fakeClient = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID,
@@ -114,14 +151,15 @@ class ConnectionSuggestionMediumTests {
 
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
 
-    ArgumentCaptor<Map<String, ConnectionSuggestionDto>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
+    ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
     verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
 
     var connectionSuggestion = suggestionCaptor.getValue();
     assertThat(connectionSuggestion).containsOnlyKeys(CONFIG_SCOPE_ID);
-    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).getOrganization()).isNull();
-    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).getServerUrl()).isEqualTo(sonarqubeMock.baseUrl());
-    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID)).hasSize(1);
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft()).isNotNull();
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft().getServerUrl()).isEqualTo(sonarqubeMock.baseUrl());
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft().getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
   }
 
   @Test
@@ -139,14 +177,15 @@ class ConnectionSuggestionMediumTests {
 
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
 
-    ArgumentCaptor<Map<String, ConnectionSuggestionDto>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
+    ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
     verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
 
     var connectionSuggestion = suggestionCaptor.getValue();
     assertThat(connectionSuggestion).containsOnlyKeys(CONFIG_SCOPE_ID);
-    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).getOrganization()).isNull();
-    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).getServerUrl()).isEqualTo(sonarqubeMock.baseUrl());
-    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID)).hasSize(1);
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft()).isNotNull();
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft().getServerUrl()).isEqualTo(sonarqubeMock.baseUrl());
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft().getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
   }
 
   @Test
@@ -164,14 +203,179 @@ class ConnectionSuggestionMediumTests {
 
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
 
-    ArgumentCaptor<Map<String, ConnectionSuggestionDto>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
+    ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
     verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
 
     var connectionSuggestion = suggestionCaptor.getValue();
     assertThat(connectionSuggestion).containsOnlyKeys(CONFIG_SCOPE_ID);
-    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).getOrganization()).isEqualTo(ORGANIZATION);
-    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).getServerUrl()).isNull();
-    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID)).hasSize(1);
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getRight()).isNotNull();
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getRight().getOrganization()).isEqualTo(ORGANIZATION);
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getRight().getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
+  }
+
+  @Test
+  void should_suggest_connection_when_config_scope_added(@TempDir Path tmp) throws IOException {
+    var sonarlintDir = tmp.resolve(".sonarlint/");
+    Files.createDirectory(sonarlintDir);
+    var clue = tmp.resolve(".sonarlint/connectedMode.json");
+    Files.writeString(clue, "{\"projectKey\": \"" + SLCORE_PROJECT_KEY + "\",\"sonarQubeUri\": \"" + sonarqubeMock.baseUrl() + "\"}", StandardCharsets.UTF_8);
+    var fileDto = new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null);
+    var fakeClient = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID,
+        List.of(fileDto))
+      .build();
+
+    backend = newBackend()
+      .build(fakeClient);
+
+    backend.getConfigurationService()
+      .didAddConfigurationScopes(
+        new DidAddConfigurationScopesParams(List.of(
+          new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "sonarlint-core",
+            new BindingConfigurationDto(null, null, false)))));
+
+    ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
+
+    var connectionSuggestion = suggestionCaptor.getValue();
+    assertThat(connectionSuggestion).containsOnlyKeys(CONFIG_SCOPE_ID);
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID)).hasSize(1);
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft()).isNotNull();
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft().getServerUrl()).isEqualTo(sonarqubeMock.baseUrl());
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft().getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
+  }
+
+  @Test
+  void should_suggest_connection_with_multiple_bindings_when_config_scope_added(@TempDir Path tmp) throws IOException {
+    var sonarlintDir = tmp.resolve(".sonarlint/");
+    Files.createDirectory(sonarlintDir);
+    var sqClue = tmp.resolve(".sonarlint/connectedMode1.json");
+    Files.writeString(sqClue, "{\"projectKey\": \"" + SLCORE_PROJECT_KEY + "\",\"sonarQubeUri\": \"" + sonarqubeMock.baseUrl() + "\"}", StandardCharsets.UTF_8);
+    var scClue = tmp.resolve(".sonarlint/connectedMode2.json");
+    Files.writeString(scClue, "{\"projectKey\": \"" + SLCORE_PROJECT_KEY + "\",\"sonarCloudOrganization\": \"" + ORGANIZATION + "\"}", StandardCharsets.UTF_8);
+    var sqFileDto = new ClientFileDto(sqClue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), sqClue, null);
+    var scFileDto = new ClientFileDto(scClue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), scClue, null);
+    var fakeClient = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID,
+        List.of(sqFileDto, scFileDto))
+      .build();
+
+    backend = newBackend()
+      .build(fakeClient);
+
+    backend.getConfigurationService()
+      .didAddConfigurationScopes(
+        new DidAddConfigurationScopesParams(List.of(
+          new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "sonarlint-core",
+            new BindingConfigurationDto(null, null, false)))));
+
+    ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
+
+    var connectionSuggestion = suggestionCaptor.getValue();
+    assertThat(connectionSuggestion).containsOnlyKeys(CONFIG_SCOPE_ID);
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID)).hasSize(2);
+    for (var suggestion : connectionSuggestion.get(CONFIG_SCOPE_ID)) {
+      if (suggestion.getConnectionSuggestion().isLeft()) {
+        assertThat(suggestion.getConnectionSuggestion().getLeft().getServerUrl()).isEqualTo(sonarqubeMock.baseUrl());
+        assertThat(suggestion.getConnectionSuggestion().getLeft().getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
+      } else {
+        assertThat(suggestion.getConnectionSuggestion().getRight().getOrganization()).isEqualTo(ORGANIZATION);
+        assertThat(suggestion.getConnectionSuggestion().getRight().getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
+      }
+    }
+  }
+
+  @Test
+  void should_suggest_sonarlint_configuration_in_priority(@TempDir Path tmp) throws IOException {
+    var sonarlintDir = tmp.resolve(".sonarlint/");
+    Files.createDirectory(sonarlintDir);
+    var sqClue = tmp.resolve(".sonarlint/connectedMode1.json");
+    Files.writeString(sqClue, "{\"projectKey\": \"" + SLCORE_PROJECT_KEY + "\",\"sonarQubeUri\": \"" + sonarqubeMock.baseUrl() + "\"}", StandardCharsets.UTF_8);
+    var propertyClue = tmp.resolve("sonar-project.properties");
+    Files.writeString(propertyClue, "sonar.host.url=https://sonarcloud.io\nsonar.projectKey=", StandardCharsets.UTF_8);
+    var sqFileDto = new ClientFileDto(sqClue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), sqClue, null);
+    var scFileDto = new ClientFileDto(propertyClue.toUri(), Paths.get("sonar-project.properties"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), propertyClue, null);
+    var fakeClient = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID,
+        List.of(sqFileDto, scFileDto))
+      .build();
+
+    backend = newBackend()
+      .build(fakeClient);
+
+    backend.getConfigurationService()
+      .didAddConfigurationScopes(
+        new DidAddConfigurationScopesParams(List.of(
+          new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "sonarlint-core",
+            new BindingConfigurationDto(null, null, false)))));
+
+    ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
+
+    var connectionSuggestion = suggestionCaptor.getValue();
+    assertThat(connectionSuggestion).containsOnlyKeys(CONFIG_SCOPE_ID);
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID)).hasSize(1);
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft()).isNotNull();
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft().getServerUrl()).isEqualTo(sonarqubeMock.baseUrl());
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft().getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
+  }
+
+  @Test
+  void should_suggest_sonarqube_connection_when_pascal_case(@TempDir Path tmp) throws IOException {
+    var sonarlintDir = tmp.resolve(".sonarlint/");
+    Files.createDirectory(sonarlintDir);
+    var clue = tmp.resolve(".sonarlint/connectedMode.json");
+    Files.writeString(clue, "{\"ProjectKey\": \"" + SLCORE_PROJECT_KEY + "\",\"SonarQubeUri\": \"" + sonarqubeMock.baseUrl() + "\"}", StandardCharsets.UTF_8);
+    var fileDto = new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null);
+    var fakeClient = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID,
+        List.of(fileDto))
+      .build();
+
+    backend = newBackend()
+      .build(fakeClient);
+
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
+
+    ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
+
+    var connectionSuggestion = suggestionCaptor.getValue();
+    assertThat(connectionSuggestion).containsOnlyKeys(CONFIG_SCOPE_ID);
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID)).hasSize(1);
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft()).isNotNull();
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft().getServerUrl()).isEqualTo(sonarqubeMock.baseUrl());
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft().getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
+  }
+
+  @Test
+  void should_suggest_sonarcloud_connection_when_pascal_case(@TempDir Path tmp) throws IOException {
+    var sonarlintDir = tmp.resolve(".sonarlint/");
+    Files.createDirectory(sonarlintDir);
+    var clue = tmp.resolve(".sonarlint/connectedMode.json");
+    Files.writeString(clue, "{\"ProjectKey\": \"" + SLCORE_PROJECT_KEY + "\",\"SonarCloudOrganization\": \"" + ORGANIZATION + "\"}", StandardCharsets.UTF_8);
+    var fileDto = new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null);
+    var fakeClient = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID,
+        List.of(fileDto))
+      .build();
+
+    backend = newBackend()
+      .build(fakeClient);
+
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
+
+    ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
+
+    var connectionSuggestion = suggestionCaptor.getValue();
+    assertThat(connectionSuggestion).containsOnlyKeys(CONFIG_SCOPE_ID);
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID)).hasSize(1);
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getRight()).isNotNull();
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getRight().getOrganization()).isEqualTo(ORGANIZATION);
+    assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getRight().getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
   }
 
 }

@@ -19,32 +19,29 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.connection;
 
-import javax.annotation.Nullable;
+import com.google.gson.annotations.JsonAdapter;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherSonarQubeSonarCloudConnectionAdapterFactory;
 
 public class ConnectionSuggestionDto {
 
-  private final String serverUrl;
-  private final String organization;
-  private final String projectKey;
+  @JsonAdapter(EitherSonarQubeSonarCloudConnectionAdapterFactory.class)
+  private final Either<SonarQubeConnectionSuggestionDto, SonarCloudConnectionSuggestionDto> connectionSuggestion;
 
-  public ConnectionSuggestionDto(@Nullable String serverUrl, @Nullable String organization, String projectKey) {
-    this.serverUrl = serverUrl;
-    this.organization = organization;
-    this.projectKey = projectKey;
+  public ConnectionSuggestionDto(Either<SonarQubeConnectionSuggestionDto, SonarCloudConnectionSuggestionDto> connectionSuggestion) {
+    this.connectionSuggestion = connectionSuggestion;
   }
 
-  @Nullable
-  public String getServerUrl() {
-    return serverUrl;
+  public ConnectionSuggestionDto(SonarQubeConnectionSuggestionDto connection) {
+    this(Either.forLeft(connection));
   }
 
-  @Nullable
-  public String getOrganization() {
-    return organization;
+  public ConnectionSuggestionDto(SonarCloudConnectionSuggestionDto connection) {
+    this(Either.forRight(connection));
   }
 
-  public String getProjectKey() {
-    return projectKey;
+  public Either<SonarQubeConnectionSuggestionDto, SonarCloudConnectionSuggestionDto> getConnectionSuggestion() {
+    return connectionSuggestion;
   }
 
 }
