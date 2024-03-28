@@ -21,17 +21,31 @@ package its.utils;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 
 public class PluginLocator {
 
   public static Path getCppPluginPath() {
     return getPluginPath("sonar-cfamily-plugin-6.32.0.44918.jar");
   }
+
   public static Path getGoPluginPath() {
     return getPluginPath("sonar-go-plugin-1.12.0.4259.jar");
   }
+
   public static Path getIacPluginPath() {
     return getPluginPath("sonar-iac-plugin-1.16.0.3845.jar");
+  }
+
+  public static Path getJavascriptPluginPath() {
+    return getPluginPath("sonar-javascript-plugin-10.12.0.25537.jar");
+  }
+
+  public static Map<String, Path> getEmbeddedPluginsByKeyForTests() {
+    return Map.of(
+      "javascript", getJavascriptPluginPath(),
+      "go", PluginLocator.getGoPluginPath(),
+      "iac", PluginLocator.getIacPluginPath());
   }
 
   private static Path getPluginPath(String file) {
