@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,6 +49,7 @@ import static org.mockito.Mockito.when;
 
 class SloopLauncherTests {
   private Process mockProcess;
+  private ProcessBuilder processBuilder;
   private SloopLauncher underTest;
   private Sloop sloop;
   private Function<List<String>, ProcessBuilder> mockPbFactory;
@@ -67,10 +69,10 @@ class SloopLauncherTests {
     fakeJreJavaWindowsPath = fakeJreBinFolder.resolve("java.exe");
     Files.createFile(fakeJreJavaWindowsPath);
     mockPbFactory = mock();
-    var mockProcessBuilder = mock(ProcessBuilder.class);
-    when(mockPbFactory.apply(any())).thenReturn(mockProcessBuilder);
+    processBuilder = mock(ProcessBuilder.class);
+    when(mockPbFactory.apply(any())).thenReturn(processBuilder);
     mockProcess = mock(Process.class);
-    doReturn(mockProcess).when(mockProcessBuilder).start();
+    doReturn(mockProcess).when(processBuilder).start();
 
     when(mockProcess.getInputStream()).thenReturn(new ByteArrayInputStream(new byte[0]));
     when(mockProcess.getErrorStream()).thenReturn(new ByteArrayInputStream(new byte[0]));
@@ -89,7 +91,8 @@ class SloopLauncherTests {
 
     sloop = underTest.start(distPath);
 
-    verify(mockPbFactory).apply(List.of(bundledJrejavaPath.toString(), "-classpath", distPath.resolve("lib") + File.separator + '*', "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli"));
+    verify(mockPbFactory).apply(List.of(bundledJrejavaPath.toString(), "-Xmx2048m", "-classpath",
+      distPath.resolve("lib") + File.separator + '*', "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli"));
     assertThat(sloop.getRpcServer()).isNotNull();
   }
 
@@ -98,7 +101,8 @@ class SloopLauncherTests {
     sloop = underTest.start(distPath, fakeJreHomePath);
 
     verify(mockPbFactory)
-      .apply(List.of(fakeJreJavaLinuxPath.toString(), "-classpath", distPath.resolve("lib") + File.separator + '*', "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli"));
+      .apply(List.of(fakeJreJavaLinuxPath.toString(), "-Xmx2048m", "-classpath",
+        distPath.resolve("lib") + File.separator + '*', "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli"));
     assertThat(sloop.getRpcServer()).isNotNull();
   }
 
@@ -108,7 +112,8 @@ class SloopLauncherTests {
     sloop = underTest.start(distPath, fakeJreHomePath);
 
     verify(mockPbFactory)
-      .apply(List.of(fakeJreJavaWindowsPath.toString(), "-classpath", distPath.resolve("lib") + File.separator + '*', "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli"));
+      .apply(List.of(fakeJreJavaWindowsPath.toString(), "-Xmx2048m", "-classpath",
+        distPath.resolve("lib") + File.separator + '*', "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli"));
     assertThat(sloop.getRpcServer()).isNotNull();
   }
 
@@ -147,4 +152,25 @@ class SloopLauncherTests {
     var wrongPath = Paths.get("wrongPath");
     assertThrows(IllegalStateException.class, () -> sloop = underTest.start(distPath, wrongPath));
   }
+
+  @Test
+  void test_command_with_default_heap_size(@TempDir Path distPath) {
+    sloop = underTest.start(distPath, fakeJreHomePath);
+
+    verify(mockPbFactory)
+      .apply(List.of(fakeJreJavaLinuxPath.toString(), "-Xmx2048m", "-classpath",
+        distPath.resolve("lib") + File.separator + '*', "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli"));
+  }
+
+  @Test
+  void test_command_with_heap_size_from_system_env(@TempDir Path distPath) {
+    when(processBuilder.environment()).thenReturn(Map.of("SONARLINT_JVM_OPTS", "-Xmx512m"));
+
+    sloop = underTest.start(distPath, fakeJreHomePath);
+
+    verify(mockPbFactory)
+      .apply(List.of(fakeJreJavaLinuxPath.toString(), "-Xmx2048m", "-classpath",
+        distPath.resolve("lib") + File.separator + '*', "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli"));
+  }
+
 }
