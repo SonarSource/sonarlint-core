@@ -1,8 +1,8 @@
 #!/bin/bash
 
-set -euo pipefail
+set -eo pipefail
 
-if [[ $CIRRUS_PR == "" ]]; then
+if [[ "$CIRRUS_PR" == "" ]]; then
 	curl -X POST https://slack.com/api/chat.postMessage \
 	-H "Authorization: Bearer ${SLACK_TOKEN}" \
 	-H 'Content-type: application/json; charset=utf-8' \
