@@ -215,7 +215,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
           new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(), null, featureFlags,
             sonarUserHome.resolve("storage"),
             sonarUserHome.resolve("work"),
-            Collections.emptySet(), Map.of("go", PluginLocator.getGoPluginPath(), "iac", PluginLocator.getIacPluginPath()),
+            Collections.emptySet(), PluginLocator.getEmbeddedPluginsByKeyForTests(),
             languages, Collections.emptySet(),
             List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), false),
               new SonarQubeConnectionConfigurationDto(CONNECTION_ID_WRONG_CREDENTIALS, ORCHESTRATOR.getServer().getUrl(), false)),
