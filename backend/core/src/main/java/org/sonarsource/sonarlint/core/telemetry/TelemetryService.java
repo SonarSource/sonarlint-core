@@ -30,6 +30,7 @@ import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.sonarsource.sonarlint.core.analysis.AnalysisFinishedEvent;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.LocalOnlyIssueStatusChangedEvent;
@@ -211,6 +212,18 @@ public class TelemetryService {
   @EventListener
   public void onLocalOnlyIssueStatusChanged(LocalOnlyIssueStatusChangedEvent event) {
     issueStatusChanged(event.getIssue().getRuleKey());
+  }
+
+  @EventListener
+  public void onAnalysisFinished(AnalysisFinishedEvent event) {
+    var analyzedLanguages = event.getAnalyzedLanguages();
+    if (analyzedLanguages.size() == 1 && event.succeededForAllFiles()) {
+      var fileLanguage = analyzedLanguages.iterator().next();
+      analysisDoneOnSingleLanguage(fileLanguage == null ? null : Language.valueOf(fileLanguage.name()), (int) event.getAnalysisDuration());
+    } else {
+      analysisDoneOnMultipleFiles();
+    }
+    addReportedRules(event.getReportedRuleKeys());
   }
 
   @PreDestroy
