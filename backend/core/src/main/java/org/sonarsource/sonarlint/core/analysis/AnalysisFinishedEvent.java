@@ -27,12 +27,15 @@ public class AnalysisFinishedEvent {
   private final long analysisDuration;
   private final Set<SonarLanguage> analyzedLanguages;
   private final boolean succeededForAllFiles;
+  private final Set<String> reportedRuleKeys;
 
-  public AnalysisFinishedEvent(String configurationScopeId, long analysisDuration, Set<SonarLanguage> analyzedLanguages, boolean succeededForAllFiles) {
+  public AnalysisFinishedEvent(String configurationScopeId, long analysisDuration, Set<SonarLanguage> analyzedLanguages, boolean succeededForAllFiles,
+    Set<String> reportedRuleKeys) {
     this.configurationScopeId = configurationScopeId;
     this.analysisDuration = analysisDuration;
     this.analyzedLanguages = analyzedLanguages;
     this.succeededForAllFiles = succeededForAllFiles;
+    this.reportedRuleKeys = reportedRuleKeys;
   }
 
   public String getConfigurationScopeId() {
@@ -49,5 +52,9 @@ public class AnalysisFinishedEvent {
 
   public boolean succeededForAllFiles() {
     return succeededForAllFiles;
+  }
+
+  public Set<String> getReportedRuleKeys() {
+    return reportedRuleKeys;
   }
 }

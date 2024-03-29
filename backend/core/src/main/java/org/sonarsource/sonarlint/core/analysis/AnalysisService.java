@@ -85,6 +85,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.NodeJsDetail
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnalysisReadinessParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidDetectSecretParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidRaiseIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.FileEditDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.QuickFixDto;
@@ -137,6 +138,7 @@ public class AnalysisService {
   private final ApplicationEventPublisher eventPublisher;
   private final boolean isDataflowBugDetectionEnabled;
   private final Map<String, Boolean> analysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
+  private boolean alreadyDetectedSecret;
 
   public AnalysisService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
     StorageService storageService, PluginsService pluginsService, RulesService rulesService, RulesRepository rulesRepository,
@@ -533,20 +535,22 @@ public class AnalysisService {
     var ruleDetailsCache = new ConcurrentHashMap<String, GetRuleDetailsResponse>();
 
     cancelMonitor.checkCanceled();
+    var reportedRuleKeys = new HashSet<String>();
     var analyzeCommand = new AnalyzeCommand(configurationScopeId, analysisConfig,
-      issue -> streamIssue(configurationScopeId, issue, ruleDetailsCache), SonarLintLogger.getTargetForCopy());
+      issue -> streamIssue(configurationScopeId, issue, ruleDetailsCache, reportedRuleKeys), SonarLintLogger.getTargetForCopy());
     return analysisEngine.post(analyzeCommand, ProgressMonitor.wrapping(cancelMonitor))
       .whenComplete((results, error) -> {
         long endTime = System.currentTimeMillis();
         if (error == null) {
           var analyzedLanguages = new HashSet<>(results.languagePerFile().values());
-          eventPublisher.publishEvent(new AnalysisFinishedEvent(configurationScopeId, endTime - startTime, analyzedLanguages, results.failedAnalysisFiles().isEmpty()));
+          eventPublisher.publishEvent(new AnalysisFinishedEvent(configurationScopeId, endTime - startTime, analyzedLanguages, results.failedAnalysisFiles().isEmpty(), reportedRuleKeys));
         }
       });
   }
 
-  private void streamIssue(String configScopeId, Issue issue, ConcurrentHashMap<String, GetRuleDetailsResponse> ruleDetailsCache) {
-    var activeRule = ruleDetailsCache.computeIfAbsent(issue.getRuleKey(), k -> {
+  private void streamIssue(String configScopeId, Issue issue, ConcurrentHashMap<String, GetRuleDetailsResponse> ruleDetailsCache, HashSet<String> reportedRuleKeys) {
+    var ruleKey = issue.getRuleKey();
+    var activeRule = ruleDetailsCache.computeIfAbsent(ruleKey, k -> {
       try {
         return rulesService.getRuleDetailsForAnalysis(configScopeId, k);
       } catch (Exception e) {
@@ -554,7 +558,12 @@ public class AnalysisService {
       }
     });
     if (activeRule != null) {
+      reportedRuleKeys.add(ruleKey);
       client.didRaiseIssue(new DidRaiseIssueParams(configScopeId, toDto(issue, activeRule)));
+      if (ruleKey.contains("secrets") && !alreadyDetectedSecret) {
+        alreadyDetectedSecret = true;
+        client.didDetectSecret(new DidDetectSecretParams());
+      }
     }
   }
 
