@@ -23,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingPluginParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
@@ -212,5 +213,16 @@ public interface SonarLintRpcClient {
    * A "raw" issue is an issue as it is raised by the analyzer, without any effort to match it to a previously raised issue (this happens at a later stage).
    * This is to let clients track the issue with previous local issues, and potentially show them to users via streaming
    */
-  default void didRaiseIssue(DidRaiseIssueParams params){}
+  default void didRaiseIssue(DidRaiseIssueParams params) {
+  }
+
+  /**
+   * Called at the end of an analysis when a language was supposed to be analyzed but the corresponding plugin could not be loaded.
+   * The skip reason is provided in the parameters.
+   * Clients are expected to display a visual notification to users, ideally suggesting them fixes.
+   * This method is called only once per session per skipped plugin.
+   * Clients can decide to persist that they already notified the user, and can skip showing the notification for next sessions.
+   */
+  default void didSkipLoadingPlugin(DidSkipLoadingPluginParams params) {
+  }
 }
