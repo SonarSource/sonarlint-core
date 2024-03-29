@@ -23,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddQuickFixAppliedForRuleParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddReportedRulesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDoneOnSingleLanguageParams;
@@ -41,10 +42,18 @@ public interface TelemetryRpcService {
   @JsonNotification
   void disableTelemetry();
 
+  /**
+   * @deprecated managed automatically when using {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFiles(AnalyzeFilesParams)}
+   */
   @JsonNotification
+  @Deprecated(since = "10.1")
   void analysisDoneOnSingleLanguage(AnalysisDoneOnSingleLanguageParams params);
 
+  /**
+   * @deprecated managed automatically when using {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFiles(AnalyzeFilesParams)}
+   */
   @JsonNotification
+  @Deprecated(since = "10.1")
   void analysisDoneOnMultipleFiles();
 
   @JsonNotification
@@ -56,7 +65,11 @@ public interface TelemetryRpcService {
   @JsonNotification
   void taintVulnerabilitiesInvestigatedRemotely();
 
+  /**
+   * @deprecated managed automatically when using {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFiles(AnalyzeFilesParams)}
+   */
   @JsonNotification
+  @Deprecated(since = "10.1")
   void addReportedRules(AddReportedRulesParams params);
 
   @JsonNotification

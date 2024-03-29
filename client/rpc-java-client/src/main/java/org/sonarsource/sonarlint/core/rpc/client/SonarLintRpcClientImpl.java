@@ -34,6 +34,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnalysisReadinessParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidDetectSecretParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidRaiseIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
@@ -63,6 +64,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingPluginParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
@@ -94,7 +96,8 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   protected <R> CompletableFuture<R> requestAsync(Function<CancelChecker, R> code) {
     CompletableFuture<CancelChecker> start = new CompletableFuture<>();
-    // First we schedule the processing of the request on the sequential executor, to maintain ordering of notifications, requests, responses, and cancellations
+    // First we schedule the processing of the request on the sequential executor, to maintain ordering of notifications, requests, responses,
+    // and cancellations
     var sequentialFuture = start.thenApplyAsync(cancelChecker -> {
       // We can maybe cancel early
       cancelChecker.checkCanceled();
@@ -111,7 +114,8 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   protected CompletableFuture<Void> runAsync(Consumer<CancelChecker> code) {
     CompletableFuture<CancelChecker> start = new CompletableFuture<>();
-    // First we schedule the processing of the request on the sequential executor, to maintain ordering of notifications, requests, responses, and cancellations
+    // First we schedule the processing of the request on the sequential executor, to maintain ordering of notifications, requests, responses,
+    // and cancellations
     var sequentialFuture = start.thenApplyAsync(cancelChecker -> {
       // We can maybe cancel early
       cancelChecker.checkCanceled();
@@ -313,5 +317,15 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   @Override
   public void didRaiseIssue(DidRaiseIssueParams params) {
     notify(() -> delegate.didRaiseIssue(params.getConfigurationScopeId(), params.getRawIssue()));
+  }
+
+  @Override
+  public void didSkipLoadingPlugin(DidSkipLoadingPluginParams params) {
+    notify(() -> delegate.didSkipLoadingPlugin(params.getConfigurationScopeId(), params.getLanguage(), params.getReason(), params.getMinVersion(), params.getCurrentVersion()));
+  }
+
+  @Override
+  public void didDetectSecret(DidDetectSecretParams params) {
+    notify(delegate::didDetectSecret);
   }
 }

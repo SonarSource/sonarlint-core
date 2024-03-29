@@ -24,8 +24,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -34,7 +36,11 @@ import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoadResult;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
+import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginRequirementsCheckResult;
+import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPlugin;
+import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.event.EventListener;
@@ -46,22 +52,26 @@ import static org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronize
 public class PluginsService {
   private final SonarLintLogger logger = SonarLintLogger.get();
   private final PluginsRepository pluginsRepository;
+  private final SkippedPluginsRepository skippedPluginsRepository;
   private final LanguageSupportRepository languageSupportRepository;
   private final StorageService storageService;
   private final Set<Path> embeddedPluginPaths;
   private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
+  private final SonarLintRpcClient client;
   private final boolean enableDataflowBugDetection;
 
-  public PluginsService(PluginsRepository pluginsRepository, LanguageSupportRepository languageSupportRepository, StorageService storageService, InitializeParams params,
-    ConnectionConfigurationRepository connectionConfigurationRepository) {
+  public PluginsService(PluginsRepository pluginsRepository, SkippedPluginsRepository skippedPluginsRepository, LanguageSupportRepository languageSupportRepository,
+    StorageService storageService, InitializeParams params, ConnectionConfigurationRepository connectionConfigurationRepository, SonarLintRpcClient client) {
     this.pluginsRepository = pluginsRepository;
+    this.skippedPluginsRepository = skippedPluginsRepository;
     this.languageSupportRepository = languageSupportRepository;
     this.storageService = storageService;
     this.embeddedPluginPaths = params.getEmbeddedPluginPaths();
     this.connectedModeEmbeddedPluginPathsByKey = params.getConnectedModeEmbeddedPluginPathsByKey();
     this.enableDataflowBugDetection = params.getFeatureFlags().isEnableDataflowBugDetection();
     this.connectionConfigurationRepository = connectionConfigurationRepository;
+    this.client = client;
   }
 
   public LoadedPlugins getEmbeddedPlugins() {
@@ -70,8 +80,17 @@ public class PluginsService {
       var result = loadPlugins(languageSupportRepository.getEnabledLanguagesInStandaloneMode(), embeddedPluginPaths, enableDataflowBugDetection);
       loadedEmbeddedPlugins = result.getLoadedPlugins();
       pluginsRepository.setLoadedEmbeddedPlugins(loadedEmbeddedPlugins);
+      skippedPluginsRepository.setSkippedEmbeddedPlugins(getSkippedPlugins(result));
     }
     return loadedEmbeddedPlugins;
+  }
+
+  @NotNull
+  private static List<SkippedPlugin> getSkippedPlugins(PluginsLoadResult result) {
+    return result.getPluginCheckResultByKeys().values().stream()
+      .filter(PluginRequirementsCheckResult::isSkipped)
+      .map(plugin -> new SkippedPlugin(plugin.getPlugin().getKey(), plugin.getSkipReason().get()))
+      .collect(Collectors.toList());
   }
 
   public LoadedPlugins getPlugins(String connectionId) {
@@ -80,6 +99,7 @@ public class PluginsService {
       var result = loadPlugins(connectionId);
       loadedPlugins = result.getLoadedPlugins();
       pluginsRepository.setLoadedPlugins(connectionId, loadedPlugins);
+      skippedPluginsRepository.setSkippedPlugins(connectionId, getSkippedPlugins(result));
     }
     return loadedPlugins;
   }
