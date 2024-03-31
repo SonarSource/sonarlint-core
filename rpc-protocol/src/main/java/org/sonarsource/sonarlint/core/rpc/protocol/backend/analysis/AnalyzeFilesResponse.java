@@ -19,5 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis;
 
+import java.net.URI;
+import java.util.Set;
+
 public class AnalyzeFilesResponse {
+  private final Set<URI> failedAnalysisFiles;
+
+  public AnalyzeFilesResponse(Set<URI> failedAnalysisFiles) {
+    this.failedAnalysisFiles = failedAnalysisFiles;
+  }
+
+  public Set<URI> getFailedAnalysisFiles() {
+    return failedAnalysisFiles;
+  }
 }

@@ -71,7 +71,7 @@ class AnalysisMediumTests {
     var result = backend.getAnalysisService()
       .analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, List.of(tempDir.resolve("File.java").toUri()), Map.of(), System.currentTimeMillis())).join();
 
-    assertThat(result).isNotNull();
+    assertThat(result.getFailedAnalysisFiles()).isEmpty();
     verify(client, never()).didRaiseIssue(eq(CONFIG_SCOPE_ID), any());
   }
 
@@ -96,7 +96,7 @@ class AnalysisMediumTests {
 
     var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
 
-    assertThat(result).isNotNull();
+    assertThat(result.getFailedAnalysisFiles()).isEmpty();
     var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
     verify(client).didRaiseIssue(eq(CONFIG_SCOPE_ID), rawIssueCaptor.capture());
     var rawIssue = rawIssueCaptor.getValue();
@@ -136,7 +136,7 @@ class AnalysisMediumTests {
 
     var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
 
-    assertThat(result).isNotNull();
+    assertThat(result.getFailedAnalysisFiles()).isEmpty();
     var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
     verify(client).didRaiseIssue(eq(CONFIG_SCOPE_ID), rawIssueCaptor.capture());
     var rawIssue = rawIssueCaptor.getValue();
