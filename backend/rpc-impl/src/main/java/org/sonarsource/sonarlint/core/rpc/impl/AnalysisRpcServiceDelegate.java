@@ -19,11 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.rpc.impl;
 
+import java.net.URI;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.analysis.AnalysisService;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
@@ -103,8 +106,9 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
   @Override
   public CompletableFuture<AnalyzeFilesResponse> analyzeFiles(AnalyzeFilesParams params) {
     return requestAsync(cancelChecker -> {
-      var analysisResults = getBean(AnalysisService.class).analyze(cancelChecker, params.getConfigurationScopeId(), params.getFilesToAnalyze(), params.getExtraProperties(), params.getStartTime()).join();
-      return new AnalyzeFilesResponse();
+      var analysisResults = getBean(AnalysisService.class)
+        .analyze(cancelChecker, params.getConfigurationScopeId(), params.getFilesToAnalyze(), params.getExtraProperties(), params.getStartTime()).join();
+      return new AnalyzeFilesResponse(analysisResults.failedAnalysisFiles().stream().map(ClientInputFile::getClientObject).map(URI.class::cast).collect(Collectors.toSet()));
     });
   }
 }
