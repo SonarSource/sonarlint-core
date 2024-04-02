@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingP
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.ConnectionSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordAuthenticationResponse;
@@ -61,6 +62,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 public interface SonarLintRpcClientDelegate {
 
   void suggestBinding(Map<String, List<BindingSuggestionDto>> suggestionsByConfigScope);
+
+  void suggestConnection(Map<String, List<ConnectionSuggestionDto>> suggestionsByConfigScope);
 
   void openUrlInBrowser(URL url);
 
