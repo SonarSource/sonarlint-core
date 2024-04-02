@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.BindingClueProvider;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
 import org.sonarsource.sonarlint.core.ConfigurationService;
 import org.sonarsource.sonarlint.core.ConnectionService;
+import org.sonarsource.sonarlint.core.ConnectionSuggestionProvider;
 import org.sonarsource.sonarlint.core.OrganizationsCache;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.SharedConnectedModeSettingsProvider;
@@ -132,6 +133,7 @@ import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_S
   ShowHotspotRequestHandler.class,
   ShowIssueRequestHandler.class,
   BindingSuggestionProvider.class,
+  ConnectionSuggestionProvider.class,
   BindingClueProvider.class,
   SonarProjectsCache.class,
   SonarProjectBranchTrackingService.class,

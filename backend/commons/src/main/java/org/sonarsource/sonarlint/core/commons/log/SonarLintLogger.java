@@ -144,8 +144,11 @@ public class SonarLintLogger {
     logOutput.log(tuple.getMessage(), level, tuple.getThrowable());
   }
 
-  public static String singlePlural(int count, String singular, String plural) {
-    return count == 1 ? singular : plural;
+  /**
+   * Append an 's' at the end of the word
+   */
+  public static String singlePlural(int count, String singular) {
+    return count == 1 ? singular : (singular + "s");
   }
 
 }
