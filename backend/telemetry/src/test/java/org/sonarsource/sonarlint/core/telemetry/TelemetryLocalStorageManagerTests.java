@@ -43,6 +43,8 @@ import org.apache.commons.io.FileUtils;
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -265,7 +267,12 @@ class TelemetryLocalStorageManagerTests {
     assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isZero();
   }
 
+
+  /**
+   * Disabled on Windows because it doesn't always give the file modification time correctly
+   */
   @Test
+  @DisabledOnOs(OS.WINDOWS)
   void tryRead_should_be_aware_of_file_modification() throws IOException {
     var storageManager = new TelemetryLocalStorageManager(filePath);
 
@@ -278,14 +285,9 @@ class TelemetryLocalStorageManagerTests {
     newStorage.incrementShowIssueRequestCount();
     newStorage.incrementShowIssueRequestCount();
 
-    //unfortunately windows doesn't always give the lastModified info correctly when the file is changed programmatically.
-    //to overcome this issue we delete and recreate the file to trigger windows to refresh the last modification time
-    filePath.toFile().delete();
-    assertThat(filePath).doesNotExist();
-    filePath.toFile().createNewFile();
     writeToLocalStorageFile(newStorage);
 
-    await().atMost(10, SECONDS).untilAsserted(() -> assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isEqualTo(2));
+    await().atMost(5, SECONDS).untilAsserted(() -> assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isEqualTo(2));
   }
 
   private void writeToLocalStorageFile(TelemetryLocalStorage newStorage) throws IOException {
