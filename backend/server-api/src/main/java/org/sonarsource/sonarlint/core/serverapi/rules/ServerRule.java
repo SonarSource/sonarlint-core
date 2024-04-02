@@ -20,9 +20,15 @@
 package org.sonarsource.sonarlint.core.serverapi.rules;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 
@@ -35,9 +41,12 @@ public class ServerRule {
   private final RuleType type;
   private final SonarLanguage language;
   private final Set<String> educationPrincipleKeys;
+  private final CleanCodeAttribute cleanCodeAttribute;
+  private final Map<SoftwareQuality, ImpactSeverity> impacts;
+
 
   public ServerRule(String name, IssueSeverity severity, RuleType type, String language, String htmlDesc, List<DescriptionSection> descriptionSections, String htmlNote,
-    Set<String> educationPrincipleKeys) {
+    Set<String> educationPrincipleKeys, @Nullable CleanCodeAttribute cleanCodeAttribute, Map<SoftwareQuality, ImpactSeverity> impacts) {
     this.name = name;
     this.severity = severity;
     this.type = type;
@@ -46,6 +55,8 @@ public class ServerRule {
     this.descriptionSections = descriptionSections;
     this.htmlNote = htmlNote;
     this.educationPrincipleKeys = educationPrincipleKeys;
+    this.cleanCodeAttribute = cleanCodeAttribute;
+    this.impacts = impacts;
   }
 
   public String getName() {
@@ -78,6 +89,15 @@ public class ServerRule {
 
   public Set<String> getEducationPrincipleKeys() {
     return educationPrincipleKeys;
+  }
+
+  @CheckForNull
+  public CleanCodeAttribute getCleanCodeAttribute() {
+    return cleanCodeAttribute;
+  }
+
+  public Map<SoftwareQuality, ImpactSeverity> getImpacts() {
+    return impacts;
   }
 
   public static class DescriptionSection {

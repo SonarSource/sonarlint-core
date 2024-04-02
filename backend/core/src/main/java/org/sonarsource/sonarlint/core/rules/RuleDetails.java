@@ -46,6 +46,39 @@ public class RuleDetails {
 
   public static final String DEFAULT_SECTION = "default";
 
+  private final String key;
+  private final SonarLanguage language;
+  private final String name;
+  private final String htmlDescription;
+  private final Map<String, List<DescriptionSection>> descriptionSectionsByKey;
+  private final IssueSeverity defaultSeverity;
+  private final RuleType type;
+  private final CleanCodeAttribute cleanCodeAttribute;
+  private final Map<SoftwareQuality, ImpactSeverity> defaultImpacts;
+  private final Collection<EffectiveRuleParam> params;
+  private final String extendedDescription;
+  private final Set<String> educationPrincipleKeys;
+  private final VulnerabilityProbability vulnerabilityProbability;
+
+  public RuleDetails(String key, SonarLanguage language, String name, String htmlDescription, Map<String, List<DescriptionSection>> descriptionSectionsByKey,
+    IssueSeverity defaultSeverity, RuleType type, @Nullable CleanCodeAttribute cleanCodeAttribute, Map<SoftwareQuality, ImpactSeverity> defaultImpacts,
+    @Nullable String extendedDescription, Collection<EffectiveRuleParam> params, Set<String> educationPrincipleKeys,
+    @Nullable VulnerabilityProbability vulnerabilityProbability) {
+    this.key = key;
+    this.language = language;
+    this.name = name;
+    this.htmlDescription = htmlDescription;
+    this.descriptionSectionsByKey = descriptionSectionsByKey;
+    this.defaultSeverity = defaultSeverity;
+    this.type = type;
+    this.cleanCodeAttribute = cleanCodeAttribute;
+    this.defaultImpacts = defaultImpacts;
+    this.params = params;
+    this.extendedDescription = extendedDescription;
+    this.educationPrincipleKeys = educationPrincipleKeys;
+    this.vulnerabilityProbability = vulnerabilityProbability;
+  }
+
   public static RuleDetails from(SonarLintRuleDefinition ruleDefinition, @Nullable StandaloneRuleConfigDto ruleConfig) {
     return new RuleDetails(
       ruleDefinition.getKey(),
@@ -79,8 +112,8 @@ public class RuleDetails {
         .collect(Collectors.groupingBy(DescriptionSection::getKey)),
       Optional.ofNullable(activeRuleFromStorage.getSeverity()).orElse(serverRule.getSeverity()),
       serverRule.getType(),
-      null, // TODO get clean code attribute from storage or server rule?
-      Map.of(), // TODO get impacts from storage?
+      serverRule.getCleanCodeAttribute(),
+      serverRule.getImpacts(),
       serverRule.getHtmlNote(), Collections.emptyList(),
       serverRule.getEducationPrincipleKeys(),
       null); // TODO get vulnerability probability from storage?
@@ -117,39 +150,6 @@ public class RuleDetails {
       defaultImpacts,
       serverRule.getHtmlNote(),
       Collections.emptyList(), templateRuleDefFromPlugin.getEducationPrincipleKeys(), templateRuleDefFromPlugin.getVulnerabilityProbability().orElse(null));
-  }
-
-  private final String key;
-  private final SonarLanguage language;
-  private final String name;
-  private final String htmlDescription;
-  private final Map<String, List<DescriptionSection>> descriptionSectionsByKey;
-  private final IssueSeverity defaultSeverity;
-  private final RuleType type;
-  private final CleanCodeAttribute cleanCodeAttribute;
-  private final Map<SoftwareQuality, ImpactSeverity> defaultImpacts;
-  private final Collection<EffectiveRuleParam> params;
-  private final String extendedDescription;
-  private final Set<String> educationPrincipleKeys;
-  private final VulnerabilityProbability vulnerabilityProbability;
-
-  public RuleDetails(String key, SonarLanguage language, String name, String htmlDescription, Map<String, List<DescriptionSection>> descriptionSectionsByKey,
-    IssueSeverity defaultSeverity, RuleType type, @Nullable CleanCodeAttribute cleanCodeAttribute, Map<SoftwareQuality, ImpactSeverity> defaultImpacts,
-    @Nullable String extendedDescription, Collection<EffectiveRuleParam> params, Set<String> educationPrincipleKeys,
-    @Nullable VulnerabilityProbability vulnerabilityProbability) {
-    this.key = key;
-    this.language = language;
-    this.name = name;
-    this.htmlDescription = htmlDescription;
-    this.descriptionSectionsByKey = descriptionSectionsByKey;
-    this.defaultSeverity = defaultSeverity;
-    this.type = type;
-    this.cleanCodeAttribute = cleanCodeAttribute;
-    this.defaultImpacts = defaultImpacts;
-    this.params = params;
-    this.extendedDescription = extendedDescription;
-    this.educationPrincipleKeys = educationPrincipleKeys;
-    this.vulnerabilityProbability = vulnerabilityProbability;
   }
 
   public String getKey() {

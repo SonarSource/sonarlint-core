@@ -23,18 +23,19 @@ import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
-import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.tuple;
 
 class RulesApiTests {
@@ -66,6 +67,8 @@ class RulesApiTests {
             .setLang(SonarLanguage.PYTHON.getSonarLanguageKey())
             .setHtmlDesc("htmlDesc")
             .setHtmlNote("htmlNote")
+            .setCleanCodeAttribute(Common.CleanCodeAttribute.COMPLETE)
+            .setImpacts(Rules.Rule.Impacts.newBuilder().addImpacts(Common.Impact.newBuilder().setSeverity(Common.ImpactSeverity.HIGH).setSoftwareQuality(Common.SoftwareQuality.MAINTAINABILITY).build()).build())
             .build())
         .build());
 
@@ -73,8 +76,8 @@ class RulesApiTests {
 
     var rule = rulesApi.getRule("java:S1234", new SonarLintCancelMonitor()).get();
 
-    assertThat(rule).extracting("name", "severity", "type", "language", "htmlDesc", "htmlNote")
-      .contains("name", IssueSeverity.MINOR, RuleType.VULNERABILITY, SonarLanguage.PYTHON, "htmlDesc", "htmlNote");
+    assertThat(rule).extracting("name", "severity", "type", "language", "htmlDesc", "htmlNote", "cleanCodeAttribute", "impacts")
+      .contains("name", IssueSeverity.MINOR, RuleType.VULNERABILITY, SonarLanguage.PYTHON, "htmlDesc", "htmlNote", CleanCodeAttribute.COMPLETE, Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.HIGH));
   }
 
   @Test
@@ -94,6 +97,8 @@ class RulesApiTests {
                   .setKey("contextKey").setDisplayName("displayName").build()).build())
               .build())
             .setHtmlNote("htmlNote")
+            .setCleanCodeAttribute(Common.CleanCodeAttribute.CONVENTIONAL)
+            .setImpacts(Rules.Rule.Impacts.newBuilder().addImpacts(Common.Impact.newBuilder().setSeverity(Common.ImpactSeverity.LOW).setSoftwareQuality(Common.SoftwareQuality.RELIABILITY).build()).build())
             .build())
         .build());
 
@@ -101,8 +106,8 @@ class RulesApiTests {
 
     var rule = rulesApi.getRule("java:S1234", new SonarLintCancelMonitor()).get();
 
-    assertThat(rule).extracting("name", "severity", "type", "language", "htmlDesc", "htmlNote")
-      .contains("name", IssueSeverity.MINOR, RuleType.VULNERABILITY, SonarLanguage.PYTHON, "htmlDesc", "htmlNote");
+    assertThat(rule).extracting("name", "severity", "type", "language", "htmlDesc", "htmlNote", "cleanCodeAttribute", "impacts")
+      .contains("name", IssueSeverity.MINOR, RuleType.VULNERABILITY, SonarLanguage.PYTHON, "htmlDesc", "htmlNote", CleanCodeAttribute.CONVENTIONAL, Map.of(SoftwareQuality.RELIABILITY, ImpactSeverity.LOW));
 
     var sections = rule.getDescriptionSections();
     assertThat(sections).hasSize(2);
