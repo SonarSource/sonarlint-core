@@ -48,11 +48,11 @@ message Rule {
   optional string name = 3;
   optional string htmlDesc = 5 [deprecated=true];
   optional string htmlNote = 6;
-  optional string severity = 10;
+  optional string severity = 10 [deprecated=true];
   optional string templateKey = 14;
   optional string lang = 19;
 
-  optional sonarqube.ws.commons.RuleType type = 37;
+  optional sonarqube.ws.commons.RuleType type = 37 [deprecated=true];
   optional DescriptionSections descriptionSections = 49;
   optional EducationPrinciples educationPrinciples = 50;
 
