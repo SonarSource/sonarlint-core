@@ -24,11 +24,13 @@ public class BindingSuggestionDto {
   private final String connectionId;
   private final String sonarProjectKey;
   private final String sonarProjectName;
+  private final boolean isFromSharedConfiguration;
 
-  public BindingSuggestionDto(String connectionId, String sonarProjectKey, String sonarProjectName) {
+  public BindingSuggestionDto(String connectionId, String sonarProjectKey, String sonarProjectName, boolean isFromSharedConfiguration) {
     this.connectionId = connectionId;
     this.sonarProjectKey = sonarProjectKey;
     this.sonarProjectName = sonarProjectName;
+    this.isFromSharedConfiguration = isFromSharedConfiguration;
   }
 
   public String getConnectionId() {
@@ -41,5 +43,9 @@ public class BindingSuggestionDto {
 
   public String getSonarProjectName() {
     return sonarProjectName;
+  }
+
+  public boolean isFromSharedConfiguration() {
+    return isFromSharedConfiguration;
   }
 }

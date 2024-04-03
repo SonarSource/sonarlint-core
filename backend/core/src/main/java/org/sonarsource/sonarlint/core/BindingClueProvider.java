@@ -107,7 +107,7 @@ public class BindingClueProvider {
   public List<BindingClue> collectBindingClues(String checkedConfigScopeId, SonarLintCancelMonitor cancelMonitor) {
     var sonarlintConfigurationFiles = clientFs.findSonarlintConfigurationFilesByScope(checkedConfigScopeId);
     if (!sonarlintConfigurationFiles.isEmpty()) {
-      var collectedClues = collectFromFiles(sonarlintConfigurationFiles, cancelMonitor);
+      var collectedClues = collectFromFiles(sonarlintConfigurationFiles, cancelMonitor, true);
       if (!collectedClues.isEmpty()) {
         LOG.debug("Found {} binding {} from SonarLint configuration files", collectedClues.size(), singlePlural(collectedClues.size(), "clue"));
         return collectedClues;
@@ -116,7 +116,7 @@ public class BindingClueProvider {
 
     var bindingCluesFiles = clientFs.findFilesByNamesInScope(checkedConfigScopeId, List.copyOf(ALL_BINDING_CLUE_FILENAMES));
     if (!bindingCluesFiles.isEmpty()) {
-      var collectedClues = collectFromFiles(bindingCluesFiles, cancelMonitor);
+      var collectedClues = collectFromFiles(bindingCluesFiles, cancelMonitor, false);
       if (!collectedClues.isEmpty()) {
         LOG.debug("Found {} binding {}", collectedClues.size(), singlePlural(collectedClues.size(), "clue"));
         return collectedClues;
@@ -127,7 +127,7 @@ public class BindingClueProvider {
     return Collections.emptyList();
   }
 
-  private List<BindingClue> collectFromFiles(List<ClientFile> files, SonarLintCancelMonitor cancelMonitor) {
+  private List<BindingClue> collectFromFiles(List<ClientFile> files, SonarLintCancelMonitor cancelMonitor, boolean isFromSharedConfiguration) {
     var bindingClues = new ArrayList<BindingClue>();
     for (var foundFile : files) {
       cancelMonitor.checkCanceled();
@@ -135,7 +135,7 @@ public class BindingClueProvider {
       if (scannerProps == null) {
         continue;
       }
-      var bindingClue = computeBindingClue(foundFile.getFileName(), scannerProps);
+      var bindingClue = computeBindingClue(foundFile.getFileName(), scannerProps, isFromSharedConfiguration);
       if (bindingClue != null) {
         if (foundFile.isSonarlintConfigurationFile() && !(bindingClue instanceof UnknownBindingClue)) {
           LOG.debug("Found a SonarLint configuration file with a clue");
@@ -225,22 +225,22 @@ public class BindingClueProvider {
   }
 
   @CheckForNull
-  private BindingClue computeBindingClue(String filename, BindingProperties scannerProps) {
+  private BindingClue computeBindingClue(String filename, BindingProperties scannerProps, boolean isFromSharedConfiguration) {
     if (AUTOSCAN_CONFIG_FILENAME.equals(filename)) {
-      return new SonarCloudBindingClue(scannerProps.projectKey, scannerProps.organization);
+      return new SonarCloudBindingClue(scannerProps.projectKey, scannerProps.organization, false);
     }
     if (scannerProps.organization != null) {
-      return new SonarCloudBindingClue(scannerProps.projectKey, scannerProps.organization);
+      return new SonarCloudBindingClue(scannerProps.projectKey, scannerProps.organization, isFromSharedConfiguration);
     }
     if (scannerProps.serverUrl != null) {
       if (removeEnd(scannerProps.serverUrl, "/").equals(sonarCloudUri.toString())) {
-        return new SonarCloudBindingClue(scannerProps.projectKey, null);
+        return new SonarCloudBindingClue(scannerProps.projectKey, null, isFromSharedConfiguration);
       } else {
-        return new SonarQubeBindingClue(scannerProps.projectKey, scannerProps.serverUrl);
+        return new SonarQubeBindingClue(scannerProps.projectKey, scannerProps.serverUrl, isFromSharedConfiguration);
       }
     }
     if (scannerProps.projectKey != null) {
-      return new UnknownBindingClue(scannerProps.projectKey);
+      return new UnknownBindingClue(scannerProps.projectKey, false);
     }
     return null;
   }
@@ -250,18 +250,27 @@ public class BindingClueProvider {
     @CheckForNull
     String getSonarProjectKey();
 
+    boolean isFromSharedConfiguration();
+
   }
 
   public static class UnknownBindingClue implements BindingClue {
     private final String sonarProjectKey;
+    private final boolean isFromSharedConfiguration;
 
-    UnknownBindingClue(String sonarProjectKey) {
+    UnknownBindingClue(String sonarProjectKey, boolean isFromSharedConfiguration) {
       this.sonarProjectKey = sonarProjectKey;
+      this.isFromSharedConfiguration = isFromSharedConfiguration;
     }
 
     @Override
     public String getSonarProjectKey() {
       return sonarProjectKey;
+    }
+
+    @Override
+    public boolean isFromSharedConfiguration() {
+      return isFromSharedConfiguration;
     }
   }
 
@@ -269,15 +278,22 @@ public class BindingClueProvider {
 
     private final String sonarProjectKey;
     private final String serverUrl;
+    private final boolean isFromSharedConfiguration;
 
-    SonarQubeBindingClue(@Nullable String sonarProjectKey, String serverUrl) {
+    SonarQubeBindingClue(@Nullable String sonarProjectKey, String serverUrl, boolean isFromSharedConfiguration) {
       this.sonarProjectKey = sonarProjectKey;
       this.serverUrl = serverUrl;
+      this.isFromSharedConfiguration = isFromSharedConfiguration;
     }
 
     @Override
     public String getSonarProjectKey() {
       return sonarProjectKey;
+    }
+
+    @Override
+    public boolean isFromSharedConfiguration() {
+      return isFromSharedConfiguration;
     }
 
     public String getServerUrl() {
@@ -290,15 +306,22 @@ public class BindingClueProvider {
 
     private final String sonarProjectKey;
     private final String organization;
+    private final boolean isFromSharedConfiguration;
 
-    SonarCloudBindingClue(@Nullable String sonarProjectKey, @Nullable String organization) {
+    SonarCloudBindingClue(@Nullable String sonarProjectKey, @Nullable String organization, boolean isFromSharedConfiguration) {
       this.sonarProjectKey = sonarProjectKey;
       this.organization = organization;
+      this.isFromSharedConfiguration = isFromSharedConfiguration;
     }
 
     @Override
     public String getSonarProjectKey() {
       return sonarProjectKey;
+    }
+
+    @Override
+    public boolean isFromSharedConfiguration() {
+      return isFromSharedConfiguration;
     }
 
     public String getOrganization() {
