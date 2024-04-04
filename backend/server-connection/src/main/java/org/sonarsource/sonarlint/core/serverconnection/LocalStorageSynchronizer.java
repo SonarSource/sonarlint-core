@@ -55,8 +55,8 @@ public class LocalStorageSynchronizer {
     // INFO: In order to download `sonar-text` alongside `sonar-text-enterprise` on SQ 10.4+ we have to change the
     //       plug-in synchronizer to work correctly the moment the connection is established and the plug-ins are
     //       downloaded for the first time and also everytime the plug-ins are refreshed (e.g. after IDE restart).
-    var supportsCustomSecrets = !serverApi.isSonarCloud()
-      && version.compareToIgnoreQualifier(CUSTOM_SECRETS_MIN_SQ_VERSION) >= 0;
+    var supportsCustomSecrets = serverApi.isSonarCloud()
+      || version.compareToIgnoreQualifier(CUSTOM_SECRETS_MIN_SQ_VERSION) >= 0;
     pluginsSynchronizer.synchronize(serverApi, supportsCustomSecrets, cancelMonitor);
   }
 
