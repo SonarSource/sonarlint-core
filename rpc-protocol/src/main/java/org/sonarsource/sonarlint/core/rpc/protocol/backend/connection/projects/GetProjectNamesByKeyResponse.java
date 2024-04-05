@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Telemetry
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,22 +17,19 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.telemetry;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects;
 
-public class TelemetryServerConstantAttributes {
-  private final String platform;
-  private final String architecture;
+import java.util.Map;
 
-  public TelemetryServerConstantAttributes(String platform, String architecture) {
-    this.platform = platform;
-    this.architecture = architecture;
+public class GetProjectNamesByKeyResponse {
+
+  private final Map<String, String> projectNamesByKey;
+
+  public GetProjectNamesByKeyResponse(Map<String, String> projectNamesByKey) {
+    this.projectNamesByKey = projectNamesByKey;
   }
 
-  public String getPlatform() {
-    return platform;
-  }
-
-  public String getArchitecture() {
-    return architecture;
+  public Map<String, String> getProjectNamesByKey() {
+    return projectNamesByKey;
   }
 }

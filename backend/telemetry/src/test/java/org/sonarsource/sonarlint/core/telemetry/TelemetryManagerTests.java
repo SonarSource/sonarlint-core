@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
@@ -86,7 +87,7 @@ class TelemetryManagerTests {
   }
 
   @Test
-  void uploadLazily_should_trigger_upload_once_per_day() {
+  void uploadAndClearTelemetry_should_trigger_upload_once_per_day() {
     var telemetryPayload = getTelemetryLiveAttributesDto();
 
     storageManager.tryUpdateAtomically(d -> d.setUsedAnalysis("java", 1000));
@@ -95,7 +96,7 @@ class TelemetryManagerTests {
     assertThat(data.analyzers()).isNotEmpty();
     assertThat(data.lastUploadTime()).isNull();
 
-    telemetryManager.uploadLazily(telemetryPayload);
+    telemetryManager.uploadAndClearTelemetry(telemetryPayload);
 
     var reloaded = storageManager.tryRead();
 
@@ -105,7 +106,7 @@ class TelemetryManagerTests {
     var lastUploadTime = reloaded.lastUploadTime();
     assertThat(lastUploadTime).isNotNull();
 
-    telemetryManager.uploadLazily(telemetryPayload);
+    telemetryManager.uploadAndClearTelemetry(telemetryPayload);
 
     reloaded = storageManager.tryRead();
 
@@ -115,11 +116,12 @@ class TelemetryManagerTests {
   }
 
   @Test
-  void uploadLazily_should_trigger_upload_if_day_changed_and_hours_elapsed() {
+  void uploadAndClearTelemetry_should_trigger_upload_if_day_changed_and_hours_elapsed() {
     var telemetryPayload = getTelemetryLiveAttributesDto();
 
     createAndSaveSampleData(storageManager);
-    telemetryManager.uploadLazily(telemetryPayload);
+    storageManager.tryUpdateAtomically(telemetryLocalStorage -> telemetryLocalStorage.setEnabled(true));
+    telemetryManager.uploadAndClearTelemetry(telemetryPayload);
 
     var data = storageManager.tryRead();
 
@@ -128,14 +130,26 @@ class TelemetryManagerTests {
       .minusHours(TelemetryManager.MIN_HOURS_BETWEEN_UPLOAD);
     storageManager.tryUpdateAtomically(d -> d.setLastUploadTime(lastUploadTime));
 
-    telemetryManager.uploadLazily(telemetryPayload);
+    telemetryManager.uploadAndClearTelemetry(telemetryPayload);
 
     verify(client, times(2)).upload(any(TelemetryLocalStorage.class), eq(telemetryPayload));
     verifyNoMoreInteractions(client);
   }
 
   @Test
-  void updateTelemetry_should_not_trigger_upload_if_telemetry_disabled_by_user() {
+  void uploadAndClearTelemetry_should_not_trigger_upload_if_telemetry_disabled_by_user() {
+    createAndSaveSampleData(storageManager);
+    TelemetryLiveAttributes telemetryLiveAttributesDto = getTelemetryLiveAttributesDto();
+
+    telemetryManager.uploadAndClearTelemetry(telemetryLiveAttributesDto);
+
+    assertThat(storageManager.isEnabled()).isFalse();
+    verify(client, never()).upload(any(TelemetryLocalStorage.class), eq(telemetryLiveAttributesDto));
+    verifyNoMoreInteractions(client);
+  }
+
+  @Test
+  void updateTelemetry_should_not_trigger_update_if_telemetry_disabled_by_user() {
     createAndSaveSampleData(storageManager);
 
     telemetryManager.updateTelemetry(telemetryLocalStorage -> telemetryLocalStorage.setNumUseDays(10));
@@ -159,7 +173,7 @@ class TelemetryManagerTests {
 
     var reloaded = storageManager.tryRead();
     assertThat(reloaded.enabled()).isTrue();
-    assertThat(reloaded.installTime()).isEqualTo(data.installTime());
+    assertThat(reloaded.installTime()).isEqualTo(data.installTime().truncatedTo(ChronoUnit.MILLIS));
     assertThat(reloaded.lastUseDate()).isEqualTo(data.lastUseDate());
     assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays());
   }
@@ -187,7 +201,7 @@ class TelemetryManagerTests {
   }
 
   @Test
-  void uploadLazily_should_clear_accumulated_data() {
+  void uploadAndClearTelemetry_should_clear_accumulated_data() {
     var telemetryPayload = getTelemetryLiveAttributesDto();
 
     createAndSaveSampleData(storageManager);
@@ -206,7 +220,7 @@ class TelemetryManagerTests {
       data.getHelpAndFeedbackLinkClickedCounter().put(SUGGEST_FEATURE, new TelemetryHelpAndFeedbackCounter(DEFAULT_HELP_AND_FEEDBACK_COUNT));
     });
 
-    telemetryManager.uploadLazily(telemetryPayload);
+    telemetryManager.uploadAndClearTelemetry(telemetryPayload);
 
     var reloaded = storageManager.tryRead();
     assertThat(reloaded.analyzers()).isEmpty();
@@ -244,7 +258,7 @@ class TelemetryManagerTests {
   }
 
   private static TelemetryLiveAttributes getTelemetryLiveAttributesDto() {
-    var serverAttributes = new TelemetryServerLiveAttributes(true, true, false, Collections.emptyList(), Collections.emptyList(), "3.1.7");
+    var serverAttributes = new TelemetryServerAttributes(true, true, false, Collections.emptyList(), Collections.emptyList(), "3.1.7");
     var clientAttributes = new TelemetryClientLiveAttributesResponse(emptyMap());
     return new TelemetryLiveAttributes(serverAttributes, clientAttributes);
   }

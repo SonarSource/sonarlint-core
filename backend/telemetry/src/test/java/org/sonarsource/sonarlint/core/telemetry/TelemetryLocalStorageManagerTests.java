@@ -19,24 +19,38 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
+import com.google.gson.GsonBuilder;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
+import org.apache.commons.io.FileUtils;
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class TelemetryLocalStorageManagerTests {
@@ -111,8 +125,7 @@ class TelemetryLocalStorageManagerTests {
     });
 
     var data2 = storage.tryRead();
-    // Truncate because nano precision is lost during JSON serialization
-    assertThat(data2.installTime()).isEqualTo(tenDaysAgo.truncatedTo(ChronoUnit.MILLIS));
+    assertThat(data2.installTime()).isEqualTo(tenDaysAgo);
     assertThat(data2.lastUseDate()).isEqualTo(today);
     assertThat(data2.numUseDays()).isEqualTo(11);
   }
@@ -134,16 +147,18 @@ class TelemetryLocalStorageManagerTests {
   }
 
   @Test
-  void should_not_crash_when_cannot_read_storage(@TempDir Path temp) throws IOException {
+  void should_not_crash_when_cannot_read_storage(@TempDir Path temp) {
     InternalDebug.setEnabled(false);
-    new TelemetryLocalStorageManager(temp).tryRead();
+    assertThatCode(() -> new TelemetryLocalStorageManager(temp).tryRead())
+      .doesNotThrowAnyException();
+
   }
 
   @Test
-  void should_not_crash_when_cannot_write_storage(@TempDir Path temp) throws IOException {
+  void should_not_crash_when_cannot_write_storage(@TempDir Path temp) {
     InternalDebug.setEnabled(false);
-    new TelemetryLocalStorageManager(temp).tryUpdateAtomically(d -> {
-    });
+    assertThatCode(() -> new TelemetryLocalStorageManager(temp).tryUpdateAtomically(d -> {}))
+      .doesNotThrowAnyException();
   }
 
   @Test
@@ -218,5 +233,84 @@ class TelemetryLocalStorageManagerTests {
     var data = storage.tryRead();
     assertThat(data.issueStatusChangedCount()).isEqualTo(2);
     assertThat(data.issueStatusChangedRuleKeys()).containsExactlyInAnyOrder("ruleKey1", "ruleKey2");
+  }
+
+  @Test
+  void tryUpdateAtomically_should_not_crash_if_too_many_read_write_requests() {
+    var storageManager = new TelemetryLocalStorageManager(filePath);
+
+    Runnable read = storageManager::lastUploadTime;
+    Runnable write = () -> storageManager.tryUpdateAtomically(TelemetryLocalStorage::incrementShowIssueRequestCount);
+    List<Void> ignored = Stream.of(
+        IntStream.range(0, 100).mapToObj(operand -> CompletableFuture.runAsync(write)),
+        IntStream.range(0, 100).mapToObj(value -> CompletableFuture.runAsync(read)),
+        IntStream.range(0, 100).mapToObj(operand -> CompletableFuture.runAsync(write)),
+        IntStream.range(0, 100).mapToObj(value -> CompletableFuture.runAsync(read))
+      ).flatMap(Function.identity())
+      .map(CompletableFuture::join)
+      .collect(Collectors.toList());
+
+    assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isEqualTo(200);
+  }
+
+  @Test
+  void tryRead_should_be_aware_of_file_deletion() {
+    var storageManager = new TelemetryLocalStorageManager(filePath);
+
+    assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isZero();
+
+    storageManager.tryUpdateAtomically(TelemetryLocalStorage::incrementShowIssueRequestCount);
+    assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isEqualTo(1);
+
+    filePath.toFile().delete();
+
+    assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isZero();
+  }
+
+
+  /**
+   * Disabled on Windows because it doesn't always give the file modification time correctly
+   */
+  @Test
+  @DisabledOnOs(OS.WINDOWS)
+  void tryRead_should_be_aware_of_file_modification() throws IOException {
+    var storageManager = new TelemetryLocalStorageManager(filePath);
+
+    assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isZero();
+
+    storageManager.tryUpdateAtomically(TelemetryLocalStorage::incrementShowIssueRequestCount);
+    assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isEqualTo(1);
+
+    TelemetryLocalStorage newStorage = new TelemetryLocalStorage();
+    newStorage.incrementShowIssueRequestCount();
+    newStorage.incrementShowIssueRequestCount();
+
+    writeToLocalStorageFile(newStorage);
+
+    await().atMost(5, SECONDS).untilAsserted(() -> assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isEqualTo(2));
+  }
+
+  private void writeToLocalStorageFile(TelemetryLocalStorage newStorage) throws IOException {
+    var newJson = new GsonBuilder()
+      .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeAdapter().nullSafe())
+      .registerTypeAdapter(LocalDate.class, new LocalDateAdapter().nullSafe())
+      .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter().nullSafe())
+      .create().toJson(newStorage);
+    var encoded = Base64.getEncoder().encode(newJson.getBytes(StandardCharsets.UTF_8));
+    writeToLocalStorageFile(encoded);
+  }
+
+  private void writeToLocalStorageFile(byte[] encoded) throws IOException {
+    FileUtils.writeByteArrayToFile(filePath.toFile(), encoded);
+  }
+
+  @Test
+  void tryRead_returns_default_local_storage_if_file_is_empty() throws IOException {
+    writeToLocalStorageFile(new byte[0]);
+    assertThat(filePath.toFile()).isEmpty();
+
+    var storageManager = new TelemetryLocalStorageManager(filePath);
+    assertThat(storageManager.isEnabled()).isTrue();
+    assertThat(storageManager.tryRead().numUseDays()).isZero();
   }
 }

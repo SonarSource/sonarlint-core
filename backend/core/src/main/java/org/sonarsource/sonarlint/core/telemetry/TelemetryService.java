@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import com.google.common.util.concurrent.MoreExecutors;
-import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -35,7 +34,6 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.LocalOnlyIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.event.ServerIssueStatusChangedEvent;
-import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.GetStatusResponse;
@@ -51,35 +49,23 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 public class TelemetryService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final long TELEMETRY_UPLOAD_DELAY = TimeUnit.HOURS.toMinutes(6);
+  private static final long TELEMETRY_UPLOAD_DELAY = TimeUnit.HOURS.toMinutes(TelemetryManager.MIN_HOURS_BETWEEN_UPLOAD + 1L);
 
   private final ScheduledExecutorService scheduledExecutor;
   private final TelemetryManager telemetryManager;
   private final TelemetryServerAttributesProvider telemetryServerAttributesProvider;
   private final SonarLintRpcClient client;
-  private final Path userHome;
   private final boolean isTelemetryFeatureEnabled;
 
-  public TelemetryService(InitializeParams initializeParams, SonarLintRpcClient sonarlintClient, HttpClientProvider httpClientProvider,
-    TelemetryServerAttributesProvider telemetryServerAttributesProvider, @Named("userHome") Path userHome) {
-    this.userHome = userHome;
+  public TelemetryService(InitializeParams initializeParams, SonarLintRpcClient sonarlintClient,
+    TelemetryServerAttributesProvider telemetryServerAttributesProvider, TelemetryManager telemetryManager) {
     this.isTelemetryFeatureEnabled = initializeParams.getFeatureFlags().isEnableTelemetry();
     this.client = sonarlintClient;
     this.telemetryServerAttributesProvider = telemetryServerAttributesProvider;
-    var telemetryInitParams = initializeParams.getTelemetryConstantAttributes();
-    var storagePath = getStoragePath(telemetryInitParams.getProductKey());
-    var telemetryServerConstantAttributes = telemetryServerAttributesProvider.getTelemetryServerConstantAttributes();
-    var telemetryClient = new TelemetryHttpClient(telemetryInitParams.getProductName(), telemetryInitParams.getProductVersion(),
-      telemetryInitParams.getIdeVersion(), telemetryServerConstantAttributes.getPlatform(), telemetryServerConstantAttributes.getArchitecture(),
-      httpClientProvider.getHttpClient(), telemetryInitParams.getAdditionalAttributes());
-
-    this.telemetryManager = new TelemetryManager(new TelemetryLocalStorageManager(storagePath), telemetryClient);
+    this.telemetryManager = telemetryManager;
     this.scheduledExecutor = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "SonarLint Telemetry"));
-    initTelemetryAndScheduleUpload(initializeParams);
-  }
 
-  private Path getStoragePath(String productKey) {
-    return userHome.resolve("telemetry").resolve(productKey).resolve("usage");
+    initTelemetryAndScheduleUpload(initializeParams);
   }
 
   private void initTelemetryAndScheduleUpload(InitializeParams initializeParams) {
@@ -95,7 +81,7 @@ public class TelemetryService {
   private void upload() {
     var telemetryLiveAttributes = getTelemetryLiveAttributes();
     if (Objects.nonNull(telemetryLiveAttributes)) {
-      telemetryManager.uploadLazily(telemetryLiveAttributes);
+      telemetryManager.uploadAndClearTelemetry(telemetryLiveAttributes);
     }
   }
 

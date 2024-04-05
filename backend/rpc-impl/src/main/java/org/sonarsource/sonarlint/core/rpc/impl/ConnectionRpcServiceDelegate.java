@@ -40,6 +40,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.F
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.FuzzySearchProjectsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetProjectNamesByKeyParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetProjectNamesByKeyResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionResponse;
 
@@ -102,5 +104,11 @@ class ConnectionRpcServiceDelegate extends AbstractRpcServiceDelegate implements
   public CompletableFuture<FuzzySearchProjectsResponse> fuzzySearchProjects(FuzzySearchProjectsParams params) {
     return requestAsync(cancelMonitor -> new FuzzySearchProjectsResponse(getBean(SonarProjectsCache.class)
       .fuzzySearchProjects(params.getConnectionId(), params.getSearchText(), cancelMonitor)));
+  }
+
+  @Override
+  public CompletableFuture<GetProjectNamesByKeyResponse> getProjectNamesByKey(GetProjectNamesByKeyParams params) {
+    return requestAsync(cancelMonitor -> new GetProjectNamesByKeyResponse(getBean(ConnectionService.class)
+      .getProjectNamesByKey(params.getTransientConnection(), params.getProjectKeys(), cancelMonitor)));
   }
 }

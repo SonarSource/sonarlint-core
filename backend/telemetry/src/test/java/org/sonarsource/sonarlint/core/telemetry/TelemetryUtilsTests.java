@@ -30,17 +30,17 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
-import static org.sonarsource.sonarlint.core.telemetry.TelemetryUtils.dayChanged;
+import static org.sonarsource.sonarlint.core.telemetry.TelemetryUtils.isGracePeriodElapsedAndDayChanged;
 
 class TelemetryUtilsTests {
   @Test
   void dayChanged_should_return_true_for_null() {
-    assertThat(dayChanged(null)).isTrue();
+    assertThat(isGracePeriodElapsedAndDayChanged(null)).isTrue();
   }
 
   @Test
   void dayChanged_should_return_true_if_older() {
-    assertThat(dayChanged(LocalDate.now().minusDays(1))).isTrue();
+    assertThat(isGracePeriodElapsedAndDayChanged(LocalDate.now().minusDays(1))).isTrue();
   }
 
   @Test
@@ -66,17 +66,17 @@ class TelemetryUtilsTests {
 
   @Test
   void dayChanged_should_return_false_if_same() {
-    assertThat(dayChanged(LocalDate.now())).isFalse();
+    assertThat(isGracePeriodElapsedAndDayChanged(LocalDate.now())).isFalse();
   }
 
   @Test
   void dayChanged_with_hours_should_return_true_for_null() {
-    assertThat(dayChanged(null, 1)).isTrue();
+    assertThat(TelemetryUtils.isGracePeriodElapsedAndDayChanged(null, 1)).isTrue();
   }
 
   @Test
   void dayChanged_with_hours_should_return_false_if_day_same() {
-    assertThat(dayChanged(LocalDateTime.now(), 100)).isFalse();
+    assertThat(TelemetryUtils.isGracePeriodElapsedAndDayChanged(LocalDateTime.now(), 100)).isFalse();
   }
 
   @Test
@@ -109,13 +109,13 @@ class TelemetryUtilsTests {
   void dayChanged_with_hours_should_return_false_if_different_day_but_within_hours() {
     var date = LocalDateTime.now().minusDays(1);
     var hours = date.until(LocalDateTime.now(), ChronoUnit.HOURS);
-    assertThat(dayChanged(date, hours + 1)).isFalse();
+    assertThat(TelemetryUtils.isGracePeriodElapsedAndDayChanged(date, hours + 1)).isFalse();
   }
 
   @Test
   void dayChanged_with_hours_should_return_true_if_different_day_and_beyond_hours() {
     var date = LocalDateTime.now().minusDays(1);
     var hours = date.until(LocalDateTime.now(), ChronoUnit.HOURS);
-    assertThat(dayChanged(date, hours)).isTrue();
+    assertThat(TelemetryUtils.isGracePeriodElapsedAndDayChanged(date, hours)).isTrue();
   }
 }

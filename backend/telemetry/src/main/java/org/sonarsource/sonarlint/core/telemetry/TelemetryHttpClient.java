@@ -25,9 +25,14 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import javax.annotation.Nullable;
+import javax.inject.Named;
+import javax.inject.Singleton;
+import org.apache.commons.lang3.SystemUtils;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.http.HttpClient;
+import org.sonarsource.sonarlint.core.http.HttpClientProvider;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
 import org.sonarsource.sonarlint.core.telemetry.payload.HotspotPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.IssuePayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.ShowHotspotPayload;
@@ -39,9 +44,9 @@ import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryRulesPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.cayc.CleanAsYouCodePayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.cayc.NewCodeFocusPayload;
 
+@Named
+@Singleton
 public class TelemetryHttpClient {
-
-  public static final String TELEMETRY_ENDPOINT = "https://telemetry.sonarsource.com/sonarlint";
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
@@ -54,21 +59,16 @@ public class TelemetryHttpClient {
   private final String endpoint;
   private final Map<String, Object> additionalAttributes;
 
-  public TelemetryHttpClient(String product, String version, String ideVersion, @Nullable String platform, @Nullable String architecture,
-    HttpClient client, Map<String, Object> additionalAttributes) {
-    this(product, version, ideVersion, platform, architecture, client, TELEMETRY_ENDPOINT, additionalAttributes);
-  }
-
-  TelemetryHttpClient(String product, String version, String ideVersion, @Nullable String platform, @Nullable String architecture,
-    HttpClient client, String endpoint, Map<String, Object> additionalAttributes) {
-    this.product = product;
-    this.version = version;
-    this.ideVersion = ideVersion;
-    this.platform = platform;
-    this.architecture = architecture;
-    this.client = client;
-    this.endpoint = System.getProperty("sonarlint.internal.telemetry.endpoint", endpoint);
-    this.additionalAttributes = additionalAttributes;
+  public TelemetryHttpClient(InitializeParams initializeParams, HttpClientProvider httpClientProvider, String telemetryEndpoint) {
+    TelemetryClientConstantAttributesDto attributes = initializeParams.getTelemetryConstantAttributes();
+    this.product = attributes.getProductName();
+    this.version = attributes.getProductVersion();
+    this.ideVersion = attributes.getIdeVersion();
+    this.platform = SystemUtils.OS_NAME;
+    this.architecture = SystemUtils.OS_ARCH;
+    this.client = httpClientProvider.getHttpClient();
+    this.endpoint = telemetryEndpoint;
+    this.additionalAttributes = attributes.getAdditionalAttributes();
   }
 
   void upload(TelemetryLocalStorage data, TelemetryLiveAttributes telemetryLiveAttributes) {
@@ -102,7 +102,6 @@ public class TelemetryHttpClient {
     var taintVulnerabilitiesPayload = new TaintVulnerabilitiesPayload(data.taintVulnerabilitiesInvestigatedLocallyCount(),
       data.taintVulnerabilitiesInvestigatedRemotelyCount());
     var issuePayload = new IssuePayload(data.issueStatusChangedRuleKeys(), data.issueStatusChangedCount());
-    var os = System.getProperty("os.name");
     var jre = System.getProperty("java.version");
     var telemetryRulesPayload = new TelemetryRulesPayload(telemetryLiveAttrs.getNonDefaultEnabledRules(),
       telemetryLiveAttrs.getDefaultDisabledRules(), data.getRaisedIssuesRules(), data.getQuickFixesApplied());
@@ -111,7 +110,7 @@ public class TelemetryHttpClient {
     var mergedAdditionalAttributes = new HashMap<>(telemetryLiveAttrs.getAdditionalAttributes());
     mergedAdditionalAttributes.putAll(additionalAttributes);
     return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version, ideVersion, platform, architecture,
-      telemetryLiveAttrs.usesConnectedMode(), telemetryLiveAttrs.usesSonarCloud(), systemTime, data.installTime(), os, jre,
+      telemetryLiveAttrs.usesConnectedMode(), telemetryLiveAttrs.usesSonarCloud(), systemTime, data.installTime(), platform, jre,
       telemetryLiveAttrs.getNodeVersion(), analyzers, notifications, showHotspotPayload,
       showIssuePayload, taintVulnerabilitiesPayload, telemetryRulesPayload,
       hotspotPayload, issuePayload, helpAndFeedbackPayload, cleanAsYouCodePayload, mergedAdditionalAttributes);

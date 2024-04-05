@@ -98,6 +98,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
+import static org.sonarsource.sonarlint.core.telemetry.TelemetrySpringConfig.PROPERTY_TELEMETRY_ENDPOINT;
 
 public class SonarLintBackendFixture {
 
@@ -395,7 +396,7 @@ public class SonarLintBackendFixture {
 
     public SonarLintBackendBuilder withTelemetryEnabled(String endpointUrl) {
       this.telemetryEnabled = true;
-      System.setProperty("sonarlint.internal.telemetry.endpoint", endpointUrl);
+      System.setProperty(PROPERTY_TELEMETRY_ENDPOINT, endpointUrl);
       return this;
     }
 

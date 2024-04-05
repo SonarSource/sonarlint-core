@@ -31,6 +31,7 @@ import javax.annotation.PreDestroy;
 import javax.net.ssl.SSLContext;
 import nl.altindag.ssl.SSLFactory;
 import nl.altindag.ssl.model.TrustManagerParameters;
+import org.apache.commons.lang3.SystemUtils;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
 import org.apache.hc.client5.http.config.ConnectionConfig;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -91,8 +92,11 @@ public class HttpClientProvider {
 
   private static SSLContext configureSsl(SslConfig sslConfig, @Nullable Predicate<TrustManagerParameters> trustManagerParametersPredicate) {
     var sslFactoryBuilder = SSLFactory.builder()
-      .withDefaultTrustMaterial()
-      .withSystemTrustMaterial();
+      .withDefaultTrustMaterial();
+    // SLCORE-686; SLCORE-669
+    if (isNotWindows()) {
+      sslFactoryBuilder.withSystemTrustMaterial();
+    }
     var keyStore = sslConfig.getKeyStore();
     if (keyStore != null && Files.exists(keyStore.getPath())) {
       sslFactoryBuilder.withIdentityMaterial(keyStore.getPath(), keyStore.getKeyStorePassword().toCharArray(), keyStore.getKeyStoreType());
@@ -103,6 +107,10 @@ public class HttpClientProvider {
         trustManagerParametersPredicate);
     }
     return sslFactoryBuilder.build().getSslContext();
+  }
+
+  private static boolean isNotWindows() {
+    return !SystemUtils.IS_OS_WINDOWS;
   }
 
   private static ConnectionConfig buildConnectionConfig(@Nullable Timeout connectTimeout, @Nullable Timeout socketTimeout) {

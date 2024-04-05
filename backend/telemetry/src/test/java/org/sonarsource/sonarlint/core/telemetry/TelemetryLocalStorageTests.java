@@ -29,7 +29,6 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorage.isOlder;
-import static org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorage.validateAndMigrate;
 
 class TelemetryLocalStorageTests {
   @Test
@@ -130,10 +129,12 @@ class TelemetryLocalStorageTests {
     var data = new TelemetryLocalStorage();
     var now = OffsetDateTime.now();
 
-    assertThat(validateAndMigrate(data).installTime()).is(within3SecOfNow);
+    data.validateAndMigrate();
+    assertThat(data.installTime()).is(within3SecOfNow);
 
     data.setInstallTime(now.plusDays(1));
-    assertThat(validateAndMigrate(data).installTime()).is(within3SecOfNow);
+    data.validateAndMigrate();
+    assertThat(data.installTime()).is(within3SecOfNow);
   }
 
   private final Condition<OffsetDateTime> within3SecOfNow = new Condition<>(p -> {
@@ -152,14 +153,16 @@ class TelemetryLocalStorageTests {
     var today = LocalDate.now();
 
     data.setLastUseDate(today.plusDays(1));
-    assertThat(validateAndMigrate(data).lastUseDate()).isEqualTo(today);
+    data.validateAndMigrate();
+    assertThat(data.lastUseDate()).isEqualTo(today);
   }
 
   @Test
   void should_migrate_installDate() {
     var data = new TelemetryLocalStorage();
     data.setInstallDate(LocalDate.now().minusDays(5));
-    assertThat(TelemetryLocalStorage.validateAndMigrate(data).installTime()).is(about5DaysAgo);
+    data.validateAndMigrate();
+    assertThat(data.installTime()).is(about5DaysAgo);
   }
 
   @Test
@@ -169,7 +172,8 @@ class TelemetryLocalStorageTests {
 
     data.setInstallTime(now);
     data.setLastUseDate(now.minusDays(1).toLocalDate());
-    assertThat(validateAndMigrate(data).lastUseDate()).isEqualTo(LocalDate.now());
+    data.validateAndMigrate();
+    assertThat(data.lastUseDate()).isEqualTo(LocalDate.now());
   }
 
   @Test
@@ -177,9 +181,9 @@ class TelemetryLocalStorageTests {
     var data = new TelemetryLocalStorage();
     data.setNumUseDays(3);
 
-    var valid = validateAndMigrate(data);
-    assertThat(valid.lastUseDate()).isNull();
-    assertThat(valid.numUseDays()).isZero();
+    data.validateAndMigrate();
+    assertThat(data.lastUseDate()).isNull();
+    assertThat(data.numUseDays()).isZero();
   }
 
   @Test
@@ -193,9 +197,9 @@ class TelemetryLocalStorageTests {
     var numUseDays = installTime.toLocalDate().until(lastUseDate, ChronoUnit.DAYS) + 1;
     data.setNumUseDays(numUseDays * 2);
 
-    var valid = validateAndMigrate(data);
-    assertThat(valid.numUseDays()).isEqualTo(numUseDays);
-    assertThat(valid.installTime()).isEqualTo(installTime);
-    assertThat(valid.lastUseDate()).isEqualTo(lastUseDate);
+    data.validateAndMigrate();
+    assertThat(data.numUseDays()).isEqualTo(numUseDays);
+    assertThat(data.installTime()).isEqualTo(installTime);
+    assertThat(data.lastUseDate()).isEqualTo(lastUseDate);
   }
 }
