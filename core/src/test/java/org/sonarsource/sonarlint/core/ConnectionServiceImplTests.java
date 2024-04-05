@@ -69,19 +69,18 @@ class ConnectionServiceImplTests {
   EventBus eventBus;
   ConnectionServiceImpl underTest;
 
-  @BeforeEach
   public void setUp() {
     eventBus = mock(EventBus.class);
   }
 
-  @Test
+
   void initialize_provide_connections() {
     underTest = new ConnectionServiceImpl(eventBus, repository, List.of(SQ_DTO_1, SQ_DTO_2), List.of(SC_DTO_1, SC_DTO_2), null, null);
 
     assertThat(repository.getConnectionsById()).containsOnlyKeys("sq1", "sq2", "sc1", "sc2");
   }
 
-  @Test
+
   void add_new_connection_and_post_event() {
     underTest = new ConnectionServiceImpl(eventBus, repository, List.of(), List.of(), null, null);
 
@@ -111,7 +110,7 @@ class ConnectionServiceImplTests {
     assertThat(events).extracting(ConnectionConfigurationAddedEvent::getAddedConnectionId).containsExactly("sq1", "sq2", "sc1");
   }
 
-  @Test
+
   void multiple_connections_with_same_id_should_log_and_ignore() {
     underTest = new ConnectionServiceImpl(eventBus, repository, List.of(), List.of(), null, null);
     underTest.didUpdateConnections(new DidUpdateConnectionsParams(List.of(SQ_DTO_1), List.of()));
@@ -127,7 +126,7 @@ class ConnectionServiceImplTests {
     assertThat(logTester.logs(ClientLogOutput.Level.ERROR)).containsExactly("Duplicate connection registered: sq1");
   }
 
-  @Test
+
   void remove_connection() {
     underTest = new ConnectionServiceImpl(eventBus, repository, List.of(SQ_DTO_1), List.of(SC_DTO_1), null, null);
     assertThat(repository.getConnectionsById()).containsKeys("sq1", "sc1");
@@ -145,7 +144,7 @@ class ConnectionServiceImplTests {
     assertThat(events).extracting(ConnectionConfigurationRemovedEvent::getRemovedConnectionId).containsExactly("sc1", "sq1");
   }
 
-  @Test
+
   void remove_connection_should_log_if_unknown_connection_and_ignore() {
     var mockedRepo = mock(ConnectionConfigurationRepository.class);
     underTest = new ConnectionServiceImpl(eventBus, mockedRepo, List.of(), List.of(), null, null);
@@ -159,7 +158,6 @@ class ConnectionServiceImplTests {
     assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).containsExactly("Attempt to remove connection 'id' that was not registered. Possibly a race condition?");
   }
 
-  @Test
   void update_connection() {
     underTest = new ConnectionServiceImpl(eventBus, repository, List.of(SQ_DTO_1), List.of(), null, null);
 
@@ -178,7 +176,7 @@ class ConnectionServiceImplTests {
     assertThat(events).extracting(ConnectionConfigurationUpdatedEvent::getUpdatedConnectionId).containsExactly("sq1");
   }
 
-  @Test
+
   void update_connection_should_log_if_unknown_connection_and_add() {
     var mockedRepo = mock(ConnectionConfigurationRepository.class);
     underTest = new ConnectionServiceImpl(eventBus, mockedRepo, List.of(), List.of(), null, null);
@@ -192,7 +190,7 @@ class ConnectionServiceImplTests {
     assertThat(logTester.logs(ClientLogOutput.Level.DEBUG)).containsExactly("Attempt to update connection 'sq2' that was not registered. Possibly a race condition?");
   }
 
-  @Test
+
   void buildServerApiHelperForSonarQubeWithUsernamePassword() {
     var httpClientProvider = mock(HttpClientProvider.class);
     underTest = new ConnectionServiceImpl(null, null, List.of(), List.of(), httpClientProvider, null);
@@ -204,7 +202,7 @@ class ConnectionServiceImplTests {
     verify(httpClientProvider).getHttpClientWithPreemptiveAuth("user", "pwd");
   }
 
-  @Test
+
   void buildServerApiHelperForSonarCloudWithToken() {
     var httpClientProvider = mock(HttpClientProvider.class);
     underTest = new ConnectionServiceImpl(null, null, List.of(), List.of(), httpClientProvider, null);

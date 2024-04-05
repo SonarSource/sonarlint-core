@@ -32,7 +32,7 @@ import java.util.stream.Stream;
 public enum Language {
 
   ABAP("abap", "abap", "ABAP", new String[] {".abap", ".ab4", ".flow", ".asprog"}, "sonar.abap.file.suffixes"),
-  APEX("apex", "sonarapex", "Apex", new String[] {".cls", ".trigger"}, "sonar.apex.file.suffixes"),
+  APEX("apex", "sonarapex", "Apex", new String[] {".trigger"}, "sonar.apex.file.suffixes"),
   C("c", "cpp", "C", new String[] {".c", ".h"}, "sonar.c.file.suffixes"),
   CPP("cpp", "cpp", "C++", new String[] {".cc", ".cpp", ".cxx", ".c++", ".hh", ".hpp", ".hxx", ".h++", ".ipp"}, "sonar.cpp.file.suffixes"),
   CS("cs", "csharp", "C#", new String[] {".cs"}, "sonar.cs.file.suffixes"),
@@ -64,7 +64,7 @@ public enum Language {
   CLOUDFORMATION("cloudformation", "iac", "CloudFormation", new String[0], "sonar.cloudformation.file.suffixes"),
   DOCKER("docker", "iac", "Docker", new String[0], "sonar.docker.file.suffixes"),
   KUBERNETES("kubernetes", "iac", "Kubernetes", new String[0], "sonar.kubernetes.file.suffixes"),
-  TERRAFORM("terraform", "iac", "Terraform", new String[] {".tf"}, "sonar.terraform.file.suffixes")
+  TERRAFORM("terraform", "iac", "Terraform", new String[] {".tf"}, "sonar.terraform.file.suffixes"),
   OBJECTSCRIPT("objectscript", "objectscript", "Objectscript", new String[] {".cls", ".int", ".mac"}, "sonar.objectscript.file.suffixes");
   private String languageKey;
   private String pluginKey;

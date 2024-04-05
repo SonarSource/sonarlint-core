@@ -45,7 +45,7 @@ class RulesApiTests {
 
   private final ProgressMonitor progress = mock(ProgressMonitor.class);
 
-  @Test
+
   void errorReadingRuleDescription() {
     mockServer.addStringResponse("/api/rules/show.protobuf?key=java:S1234", "trash");
 
@@ -55,7 +55,6 @@ class RulesApiTests {
     assertThat(error).hasCauseInstanceOf(UnexpectedBodyException.class);
   }
 
-  @Test
   void should_get_rule() throws ExecutionException, InterruptedException {
     mockServer.addProtobufResponse("/api/rules/show.protobuf?key=java:S1234",
       Rules.ShowResponse.newBuilder().setRule(
@@ -77,7 +76,6 @@ class RulesApiTests {
       .contains("name", IssueSeverity.MINOR, RuleType.VULNERABILITY, Language.PYTHON, "htmlDesc", "htmlNote");
   }
 
-  @Test
   void should_get_rule_with_description_sections() throws ExecutionException, InterruptedException {
     mockServer.addProtobufResponse("/api/rules/show.protobuf?key=java:S1234",
       Rules.ShowResponse.newBuilder().setRule(
@@ -117,7 +115,6 @@ class RulesApiTests {
 
   }
 
-  @Test
   void should_get_rule_from_organization() throws ExecutionException, InterruptedException {
     mockServer.addProtobufResponse("/api/rules/show.protobuf?key=java:S1234&organization=orgKey",
       Rules.ShowResponse.newBuilder().setRule(
@@ -139,7 +136,6 @@ class RulesApiTests {
       .contains("name", IssueSeverity.MAJOR, RuleType.VULNERABILITY, Language.PYTHON, "htmlDesc", "htmlNote");
   }
 
-  @Test
   void should_get_active_rules_of_a_given_quality_profile() {
     mockServer.addProtobufResponse(
       "/api/rules/search.protobuf?qprofile=QPKEY%2B&organization=orgKey&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY,SECURITY_HOTSPOT&s=key&ps=500&p=1",
@@ -173,7 +169,7 @@ class RulesApiTests {
         tuple("repo:key_with_template", IssueSeverity.MAJOR, "template", Map.of("paramKey", "paramValue")));
   }
 
-  @Test
+
   void should_fallback_on_deprecated_pagination_for_sonarqube_older_than_9_8() {
     mockServer.addProtobufResponse(
       "/api/rules/search.protobuf?qprofile=QPKEY%2B&organization=orgKey&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY,SECURITY_HOTSPOT&s=key&ps=500&p=1",

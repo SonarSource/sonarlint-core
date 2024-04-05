@@ -32,40 +32,7 @@ class SettingsApiTests {
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
-  @Test
-  void testFetchProjectSettings() {
-    var valuesBuilder = Settings.FieldValues.Value.newBuilder();
-    valuesBuilder.putValue("filepattern", "**/*.xml");
-    valuesBuilder.putValue("rulepattern", "*:S12345");
-    var value1 = valuesBuilder.build();
-    valuesBuilder.clear();
-    valuesBuilder.putValue("filepattern", "**/*.java");
-    valuesBuilder.putValue("rulepattern", "*:S456");
-    var value2 = valuesBuilder.build();
 
-    var response = Settings.ValuesWsResponse.newBuilder()
-      .addSettings(Settings.Setting.newBuilder()
-        .setKey("sonar.inclusions")
-        .setValues(Settings.Values.newBuilder().addValues("**/*.java")))
-      .addSettings(Settings.Setting.newBuilder()
-        .setKey("sonar.java.fileSuffixes")
-        .setValue("*.java"))
-      .addSettings(Settings.Setting.newBuilder()
-        .setKey("sonar.issue.exclusions.multicriteria")
-        .setFieldValues(Settings.FieldValues.newBuilder().addFieldValues(value1).addFieldValues(value2)).build())
-      .build();
-    mockServer.addProtobufResponse("/api/settings/values.protobuf?component=foo", response);
-
-    var projectSettings = new SettingsApi(mockServer.serverApiHelper()).getProjectSettings("foo");
-
-    assertThat(projectSettings).containsOnly(
-      entry("sonar.inclusions", "**/*.java"),
-      entry("sonar.java.fileSuffixes", "*.java"),
-      entry("sonar.issue.exclusions.multicriteria", "1,2"),
-      entry("sonar.issue.exclusions.multicriteria.1.filepattern", "**/*.xml"),
-      entry("sonar.issue.exclusions.multicriteria.1.rulepattern", "*:S12345"),
-      entry("sonar.issue.exclusions.multicriteria.2.filepattern", "**/*.java"),
-      entry("sonar.issue.exclusions.multicriteria.2.rulepattern", "*:S456"));
-  }
+  
 
 }

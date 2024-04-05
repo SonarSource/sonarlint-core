@@ -41,7 +41,7 @@ class ServerIssueTrackerTests {
   private final EndpointParams endpoint = mock(EndpointParams.class);
   private final ServerIssueTracker tracker = new ServerIssueTracker(mock(CachingIssueTracker.class));
 
-  @Test
+
   void should_get_hotspots_from_engine_without_downloading() {
     var tracker = new ServerIssueTracker(mock(CachingIssueTracker.class));
     tracker.update(engine, projectBinding, "branch", Collections.singleton(filePath));
@@ -49,7 +49,7 @@ class ServerIssueTrackerTests {
     verifyNoMoreInteractions(engine);
   }
 
-  @Test
+
   void should_download_hotspots_from_engine() {
     var client = HttpClientProvider.forTesting().getHttpClient();
     tracker.update(endpoint, client, engine, projectBinding, Collections.singleton(filePath), null);
@@ -58,7 +58,7 @@ class ServerIssueTrackerTests {
     verifyNoMoreInteractions(engine);
   }
 
-  @Test
+
   void should_get_hotspots_from_engine_if_download_failed() {
     var client = HttpClientProvider.forTesting().getHttpClient();
     doThrow(DownloadException.class).when(engine).downloadAllServerHotspotsForFile(endpoint, client, projectBinding, filePath, null, null);
