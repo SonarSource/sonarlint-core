@@ -1,0 +1,17 @@
+name: sonar-release
+# This workflow is triggered when publishing a new GitHub release
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  release:
+    permissions:
+      id-token: write
+      contents: write
+    uses: SonarSource/gh-action_release/.github/workflows/main.yaml@v5
+    with:
+      publishToBinaries: false
+      mavenCentralSync: true
+      slackChannel: team-sonarlint-java

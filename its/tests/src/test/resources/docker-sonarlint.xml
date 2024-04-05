@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<profile>
+  <name>SonarLint IT Docker</name>
+  <language>docker</language>
+  <rules>
+    <rule>
+      <repositoryKey>docker</repositoryKey>
+      <key>S6476</key>
+      <priority>MAJOR</priority>
+    </rule>
+  </rules>
+</profile>

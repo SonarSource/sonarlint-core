@@ -1,6 +1,6 @@
 /*
  * Example Plugin with global extension
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@
  */
 package org.sonarsource.plugins.example;
 
+import java.time.Clock;
 import java.util.Arrays;
 import java.util.stream.Stream;
 import org.sonar.api.batch.fs.InputFile;
@@ -35,10 +36,10 @@ public class GlobalSensor implements Sensor {
 
   private static final Logger LOGGER = Loggers.get(GlobalSensor.class);
 
-  private GlobalExtension globalExtension;
+  private final Clock clock;
 
-  public GlobalSensor(GlobalExtension globalExtension) {
-    this.globalExtension = globalExtension;
+  public GlobalSensor(Clock clock) {
+    this.clock = clock;
   }
 
   @Override
@@ -49,6 +50,7 @@ public class GlobalSensor implements Sensor {
 
   @Override
   public void execute(final SensorContext context) {
+    long timeBefore = clock.millis();
     RuleKey globalRuleKey = RuleKey.of(GlobalRulesDefinition.KEY, GlobalRulesDefinition.RULE_KEY);
     ActiveRule activeGlobalRule = context.activeRules().find(globalRuleKey);
     if (activeGlobalRule != null) {
@@ -62,9 +64,11 @@ public class GlobalSensor implements Sensor {
       NewIssue newIssue = context.newIssue();
       newIssue
         .forRule(globalRuleKey)
-        .at(newIssue.newLocation().on(f).message("Issue number " + globalExtension.getAndInc()))
+        .at(newIssue.newLocation().on(f).message("Issue number " + GlobalExtension.getInstance().getAndInc()))
         .save();
     }
+    long timeAfter = clock.millis();
+    LOGGER.info(String.format("Executed Global Sensor in %d ms", timeAfter - timeBefore));
   }
 
 }

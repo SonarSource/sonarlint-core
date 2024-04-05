@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,128 +19,176 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import org.sonar.api.utils.log.Loggers;
-import org.sonarsource.sonarlint.core.client.api.common.LogOutput;
+import org.sonarsource.sonarlint.core.analysis.AnalysisEngine;
+import org.sonarsource.sonarlint.core.analysis.api.ActiveRule;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
+import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.client.api.common.PluginDetails;
-import org.sonarsource.sonarlint.core.client.api.common.ProgressMonitor;
-import org.sonarsource.sonarlint.core.client.api.common.analysis.AnalysisResults;
+import org.sonarsource.sonarlint.core.client.api.common.analysis.DefaultClientIssue;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.IssueListener;
 import org.sonarsource.sonarlint.core.client.api.exceptions.SonarLintWrappedException;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneAnalysisConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneGlobalConfiguration;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneRuleDetails;
 import org.sonarsource.sonarlint.core.client.api.standalone.StandaloneSonarLintEngine;
-import org.sonarsource.sonarlint.core.container.standalone.StandaloneGlobalContainer;
-import org.sonarsource.sonarlint.core.util.ProgressWrapper;
+import org.sonarsource.sonarlint.core.commons.RuleKey;
+import org.sonarsource.sonarlint.core.commons.log.ClientLogOutput;
+import org.sonarsource.sonarlint.core.commons.progress.ClientProgressMonitor;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoadResult;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
+import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader.Configuration;
+import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toSet;
 
-public final class StandaloneSonarLintEngineImpl implements StandaloneSonarLintEngine {
-
-  private final StandaloneGlobalConfiguration globalConfig;
-  private StandaloneGlobalContainer globalContainer;
-  private final ReadWriteLock rwl = new ReentrantReadWriteLock();
-  private LogOutput logOutput;
+public final class StandaloneSonarLintEngineImpl extends AbstractSonarLintEngine implements StandaloneSonarLintEngine {
+  private final Collection<PluginDetails> pluginDetails;
+  private final Map<String, SonarLintRuleDefinition> allRulesDefinitionsByKey;
+  private final AnalysisEngine analysisEngine;
 
   public StandaloneSonarLintEngineImpl(StandaloneGlobalConfiguration globalConfig) {
-    this.globalConfig = globalConfig;
-    this.logOutput = globalConfig.getLogOutput();
-    start();
-  }
-
-  public StandaloneGlobalContainer getGlobalContainer() {
-    return globalContainer;
-  }
-
-  public void start() {
+    super(globalConfig.getLogOutput());
     setLogging(null);
-    rwl.writeLock().lock();
-    this.globalContainer = StandaloneGlobalContainer.create(globalConfig);
-    try {
-      globalContainer.startComponents();
-    } catch (RuntimeException e) {
-      throw SonarLintWrappedException.wrap(e);
-    } finally {
-      rwl.writeLock().unlock();
-    }
+
+    var loadingResult = loadPlugins(globalConfig);
+    pluginDetails = loadingResult.getPluginCheckResultByKeys().values().stream()
+      .map(c -> new PluginDetails(c.getPlugin().getKey(), c.getPlugin().getName(), c.getPlugin().getVersion().toString(), c.getSkipReason().orElse(null)))
+      .collect(Collectors.toList());
+
+    allRulesDefinitionsByKey = loadPluginMetadata(loadingResult.getLoadedPlugins(), globalConfig.getEnabledLanguages(), false, false);
+
+    var analysisGlobalConfig = AnalysisEngineConfiguration.builder()
+      .setClientPid(globalConfig.getClientPid())
+      .setExtraProperties(globalConfig.extraProperties())
+      .setNodeJs(globalConfig.getNodeJsPath())
+      .setWorkDir(globalConfig.getWorkDir())
+      .setModulesProvider(globalConfig.getModulesProvider())
+      .build();
+    this.analysisEngine = new AnalysisEngine(analysisGlobalConfig, loadingResult.getLoadedPlugins(), logOutput);
+  }
+
+  @Override
+  public AnalysisEngine getAnalysisEngine() {
+    return analysisEngine;
+  }
+
+  private static PluginsLoadResult loadPlugins(StandaloneGlobalConfiguration globalConfig) {
+    var config = new Configuration(globalConfig.getPluginPaths(), globalConfig.getEnabledLanguages(), Optional.ofNullable(globalConfig.getNodeJsVersion()));
+    return new PluginsLoader().load(config);
   }
 
   @Override
   public Optional<StandaloneRuleDetails> getRuleDetails(String ruleKey) {
-    return Optional.ofNullable(globalContainer.getRuleDetails(ruleKey));
+    return Optional.ofNullable(allRulesDefinitionsByKey.get(ruleKey)).map(StandaloneRuleDetails::new);
   }
 
   @Override
   public Collection<StandaloneRuleDetails> getAllRuleDetails() {
-    return globalContainer.getAllRuleDetails();
+    return allRulesDefinitionsByKey.values().stream().map(StandaloneRuleDetails::new).collect(Collectors.toList());
   }
 
   @Override
-  public AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener, @Nullable LogOutput logOutput, @Nullable ProgressMonitor monitor) {
+  public AnalysisResults analyze(StandaloneAnalysisConfiguration configuration, IssueListener issueListener, @Nullable ClientLogOutput logOutput,
+    @Nullable ClientProgressMonitor monitor) {
     requireNonNull(configuration);
     requireNonNull(issueListener);
     setLogging(logOutput);
-    rwl.readLock().lock();
-    try {
-      return globalContainer.analyze(configuration, issueListener, new ProgressWrapper(monitor));
-    } catch (RuntimeException e) {
-      throw SonarLintWrappedException.wrap(e);
-    } finally {
-      rwl.readLock().unlock();
-    }
+
+    var analysisConfig = AnalysisConfiguration.builder()
+      .addInputFiles(configuration.inputFiles())
+      .putAllExtraProperties(configuration.extraProperties())
+      .addActiveRules(identifyActiveRules(configuration))
+      .setBaseDir(configuration.baseDir())
+      .build();
+
+    var analyzeCommand = new AnalyzeCommand(configuration.moduleKey(), analysisConfig,
+      i -> issueListener.handle(new DefaultClientIssue(i, allRulesDefinitionsByKey.get(i.getRuleKey()))),
+      logOutput);
+    return postAnalysisCommandAndGetResult(analyzeCommand, monitor);
   }
 
-  private void setLogging(@Nullable LogOutput logOutput) {
-    if (logOutput != null) {
-      Loggers.setTarget(logOutput);
-    } else {
-      Loggers.setTarget(this.logOutput);
-    }
+  private Collection<ActiveRule> identifyActiveRules(StandaloneAnalysisConfiguration configuration) {
+    Set<String> excludedRules = configuration.excludedRules().stream().map(RuleKey::toString).collect(toSet());
+    Set<String> includedRules = configuration.includedRules().stream().map(RuleKey::toString)
+      .filter(r -> !excludedRules.contains(r))
+      .collect(toSet());
+
+    Collection<SonarLintRuleDefinition> filteredActiveRules = new ArrayList<>();
+
+    filteredActiveRules.addAll(allRulesDefinitionsByKey.values().stream()
+      .filter(SonarLintRuleDefinition::isActiveByDefault)
+      .filter(isExcludedByConfiguration(excludedRules))
+      .collect(Collectors.toList()));
+    filteredActiveRules.addAll(allRulesDefinitionsByKey.values().stream()
+      .filter(r -> !r.isActiveByDefault())
+      .filter(isIncludedByConfiguration(includedRules))
+      .collect(Collectors.toList()));
+
+    return filteredActiveRules.stream().map(rd -> {
+      var activeRule = new ActiveRule(rd.getKey(), rd.getLanguage().getLanguageKey());
+      Map<String, String> effectiveParams = new HashMap<>(rd.getDefaultParams());
+      Optional.ofNullable(configuration.ruleParameters().get(RuleKey.parse(rd.getKey()))).ifPresent(effectiveParams::putAll);
+      activeRule.setParams(effectiveParams);
+      return activeRule;
+    }).collect(Collectors.toList());
+  }
+
+  private static Predicate<? super SonarLintRuleDefinition> isExcludedByConfiguration(Set<String> excludedRules) {
+    return r -> {
+      if (excludedRules.contains(r.getKey())) {
+        return false;
+      }
+      for (String deprecatedKey : r.getDeprecatedKeys()) {
+        if (excludedRules.contains(deprecatedKey)) {
+          LOG.warn("Rule '{}' was excluded using its deprecated key '{}'. Please fix your configuration.", r.getKey(), deprecatedKey);
+          return false;
+        }
+      }
+      return true;
+    };
+  }
+
+  private static Predicate<? super SonarLintRuleDefinition> isIncludedByConfiguration(Set<String> includedRules) {
+    return r -> {
+      if (includedRules.contains(r.getKey())) {
+        return true;
+      }
+      for (String deprecatedKey : r.getDeprecatedKeys()) {
+        if (includedRules.contains(deprecatedKey)) {
+          LOG.warn("Rule '{}' was included using its deprecated key '{}'. Please fix your configuration.", r.getKey(), deprecatedKey);
+          return true;
+        }
+      }
+      return false;
+    };
   }
 
   @Override
   public void stop() {
     setLogging(null);
-    rwl.writeLock().lock();
     try {
-      if (globalContainer == null) {
-        return;
-      }
-      globalContainer.stopComponents(false);
-    } catch (RuntimeException e) {
+      allRulesDefinitionsByKey.clear();
+      analysisEngine.stop();
+    } catch (Exception e) {
       throw SonarLintWrappedException.wrap(e);
-    } finally {
-      this.globalContainer = null;
-      rwl.writeLock().unlock();
     }
   }
 
   @Override
   public Collection<PluginDetails> getPluginDetails() {
-    setLogging(null);
-    rwl.readLock().lock();
-    try {
-      return globalContainer.getPluginDetails();
-    } finally {
-      rwl.readLock().unlock();
-    }
-  }
-
-  @Override
-  public Map<String, String> getAllLanguagesNameByKey() {
-    setLogging(null);
-    rwl.readLock().lock();
-    try {
-      return globalContainer.getAllLanguagesNameByKey();
-    } finally {
-      rwl.readLock().unlock();
-    }
+    return pluginDetails;
   }
 
 }

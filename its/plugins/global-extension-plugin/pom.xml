@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-its</artifactId>
-    <version>4.13.0.19712-lite</version>
+    <version>9.4.0.76070-lite</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   
@@ -19,7 +19,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <sonar.apiVersion>7.0</sonar.apiVersion>
-    <jdk.min.version>1.8</jdk.min.version>
+    <jdk.min.version>11</jdk.min.version>
   </properties>
 
   <dependencies>
@@ -30,24 +30,15 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>1.7.36</version>
+    </dependency>
+    <dependency>
       <!-- packaged with the plugin -->
       <groupId>commons-lang</groupId>
       <artifactId>commons-lang</artifactId>
       <version>2.6</version>
-    </dependency>
-
-
-    <!-- unit tests -->
-    <dependency>
-      <groupId>org.sonarsource.sonarqube</groupId>
-      <artifactId>sonar-testing-harness</artifactId>
-      <version>${sonar.apiVersion}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -61,9 +52,10 @@
         <configuration>
           <pluginClass>org.sonarsource.plugins.example.GlobalExtensionPlugin</pluginClass>
           <!-- Need to be one part of the sensor whitelist -->
-          <pluginKey>xoo</pluginKey>
+          <pluginKey>cobol</pluginKey>
+          <skipDependenciesPackaging>true</skipDependenciesPackaging>
           <sonarLintSupported>true</sonarLintSupported>
-          <sonarQubeMinVersion>6.7</sonarQubeMinVersion>
+          <pluginApiMinVersion>7.9</pluginApiMinVersion>
         </configuration>
       </plugin>
       <plugin>

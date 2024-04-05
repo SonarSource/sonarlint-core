@@ -1,5 +1,5 @@
 // SonarLint, open source software quality management tool.
-// Copyright (C) 2015-2017 SonarSource
+// Copyright (C) 2015-2023 SonarSource
 // mailto:contact AT sonarsource DOT com
 //
 // SonarLint is free software; you can redistribute it and/or
@@ -26,127 +26,20 @@ package sonarlint;
 option java_package = "org.sonarsource.sonarlint.core.proto";
 option optimize_for = SPEED;
 
-message StorageStatus {
-  string storage_version = 1;
-  string sonarlint_core_version = 2;
-  string client_user_agent = 3;
-  int64 update_timestamp = 4;
-}
-
-message ServerInfos {
-  string id = 1;
-  string version = 2;
-  string status = 3;
-}
-
-message PluginReferences {
-  repeated PluginReference reference = 1;
-  
-  message PluginReference {
-    string key = 1;
-    string hash = 2;
-    string filename = 3;
-  }
-}
-
-message GlobalProperties {
-  map<string, string> properties = 1;
-}
-
-message Rules {
-  map<string,Rule> rules_by_key = 1;
-    
-  message Rule {
-    string repo = 1;
-    string key = 2;
-    string name = 3;
-    string severity = 4;
-    string lang = 5;
-    string internal_key = 6;
-    string html_desc = 7;
-    bool is_template = 8;
-    string template_key = 9;
-    string html_note = 10;
-    string type = 11;
-  }
-}
-
-message QProfiles {
-  map<string,QProfile> qprofilesByKey = 1;
-  map<string, string> defaultQProfilesByLanguage = 2;
-
-  message QProfile {
-    string key = 1;
-    string name = 2;
-    string language = 3;
-    string language_name = 4;
-    int64 active_rule_count = 5;
-    string rules_updated_at = 6;
-    string user_updated_at = 7;
-  }
-}
-
-message ActiveRules {
-  map<string,ActiveRule> active_rules_by_key = 1;
-  
-  message ActiveRule {
-    string repo = 1;
-    string key = 2;
-    string severity = 3;
-    map<string,string> params = 4;
-  }
-}
-
-message ServerIssue {
-  string path = 1;
-  string module_key = 2;
-  string rule_repository = 3;
-  string rule_key = 4;
-  int32 line = 5;
-  string msg = 6;
-  string severity = 7;
-  bool manual_severity = 8;
-  string resolution = 9;
-  string status = 10;
-  string checksum = 11;
-  string assignee_login = 12;
-  int64 creation_date = 13;
-  string type = 14;
-  string key = 15;
-}
-message ProjectList {
-  map<string,Project> projects_by_key = 1;
-  
-  message Project {
-    string key = 1;
-    string name = 2;
-  }
-}
-
-message ProjectConfiguration {
-  map<string, string> qprofile_per_language = 1;
-  map<string, string> properties = 2;
-  map<string, string> module_path_by_key = 3;
-}
-
-message ProjectComponents {
-  repeated string component = 1;
-}
-
 message Issues {
   repeated Issue issue = 1;
 
   message Issue {
     // used for matching
-    string serverIssueKey = 1;
-    string ruleKey = 2;
+    string server_issue_key = 1;
+    string rule_key = 2;
     int32 line = 3;
     string message = 4;
-    int32 checksum = 5;
+    string line_hash = 5;
 
     // values carried forward
-    string assignee = 6;
-    int64 creationDate = 7;
+    reserved 6; // removed assignee
+    int64 creation_date = 7;
     bool resolved = 8;
   }
 }

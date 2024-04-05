@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,8 +20,6 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -53,7 +51,7 @@ class StringStoreIndex implements StoreIndex<String> {
     if (!indexFilePath.toFile().exists()) {
       return Collections.emptyMap();
     }
-    try (InputStream stream = Files.newInputStream(indexFilePath)) {
+    try (var stream = Files.newInputStream(indexFilePath)) {
       return Sonarlint.StorageIndex.parseFrom(stream).getMappedPathByKeyMap();
     } catch (IOException e) {
       throw new IllegalStateException("Failed to read local issue store index", e);
@@ -62,8 +60,8 @@ class StringStoreIndex implements StoreIndex<String> {
 
   @Override
   public void save(String storageKey, Path path) {
-    String relativeMappedPath = storeBasePath.relativize(path).toString();
-    Sonarlint.StorageIndex.Builder builder = Sonarlint.StorageIndex.newBuilder();
+    var relativeMappedPath = storeBasePath.relativize(path).toString();
+    var builder = Sonarlint.StorageIndex.newBuilder();
     builder.putAllMappedPathByKey(load());
     builder.putMappedPathByKey(storageKey, relativeMappedPath);
     save(builder.build());
@@ -71,14 +69,14 @@ class StringStoreIndex implements StoreIndex<String> {
 
   @Override
   public void delete(String storageKey) {
-    Sonarlint.StorageIndex.Builder builder = Sonarlint.StorageIndex.newBuilder();
+    var builder = Sonarlint.StorageIndex.newBuilder();
     builder.putAllMappedPathByKey(load());
     builder.removeMappedPathByKey(storageKey);
     save(builder.build());
   }
 
   private void save(Sonarlint.StorageIndex index) {
-    try (OutputStream stream = Files.newOutputStream(indexFilePath)) {
+    try (var stream = Files.newOutputStream(indexFilePath)) {
       index.writeTo(stream);
     } catch (IOException e) {
       throw new IllegalStateException("Failed to write local issue store index", e);

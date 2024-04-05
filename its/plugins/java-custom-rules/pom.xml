@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  
+  <parent>
+    <groupId>org.sonarsource.sonarlint.core</groupId>
+    <artifactId>sonarlint-core-its</artifactId>
+    <version>9.4.0.76070-lite</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+
+  <groupId>com.sonarsource.it.java</groupId>
+  <artifactId>java-custom-rules-plugin</artifactId>
+  <packaging>sonar-plugin</packaging>
+
+  <name>Java Custom Rules Plugin</name>
+  <description>Java Custom Rules</description>
+
+  <properties>
+    <sonarjava.version>5.13.1.18282</sonarjava.version>
+    <analyzer.commons.version>1.14.1.690</analyzer.commons.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.sonarsource.sonarqube</groupId>
+      <artifactId>sonar-plugin-api</artifactId>
+      <version>7.9</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.sonarsource.java</groupId>
+      <artifactId>sonar-java-plugin</artifactId>
+      <type>sonar-plugin</type>
+      <version>${sonarjava.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.sonarsource.analyzer-commons</groupId>
+      <artifactId>sonar-analyzer-commons</artifactId>
+      <version>${analyzer.commons.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.13.2</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>${project.artifactId}</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.sonarsource.sonar-packaging-maven-plugin</groupId>
+        <artifactId>sonar-packaging-maven-plugin</artifactId>
+        <version>1.20.0.405</version>
+        <extensions>true</extensions>
+        <configuration>
+          <pluginClass>org.sonar.samples.java.MyJavaRulesPlugin</pluginClass>
+          <pluginApiMinVersion>7.9</pluginApiMinVersion>
+          <pluginKey>custom</pluginKey>
+          <sonarLintSupported>true</sonarLintSupported>
+          <requirePlugins>java:${sonarjava.version}</requirePlugins>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.8</source>
+          <target>1.8</target>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

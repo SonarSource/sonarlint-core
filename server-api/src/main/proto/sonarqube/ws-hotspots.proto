@@ -1,0 +1,109 @@
+// SonarLint, open source software quality management tool.
+// Copyright (C) 2015-2023 SonarSource
+// mailto:contact AT sonarsource DOT com
+//
+// SonarLint is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 3 of the License, or (at your option) any later version.
+//
+// SonarLint is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software Foundation,
+// Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+syntax = "proto2";
+
+package sonarqube.ws.hotspots;
+
+import "sonarqube/ws-commons.proto";
+
+option java_package = "org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws";
+option java_outer_classname = "Hotspots";
+option optimize_for = SPEED;
+
+// Response of GET api/hotspots/search
+message SearchWsResponse {
+    optional sonarqube.ws.commons.Paging paging = 1;
+    repeated Hotspot hotspots = 2;
+    repeated Component components = 3;
+
+    message Hotspot {
+        optional string key = 1;
+        optional string component = 2;
+        optional string project = 3;
+        optional string securityCategory = 4;
+        optional string vulnerabilityProbability = 5;
+        optional string status = 6;
+        optional string resolution = 7;
+        optional int32 line = 8;
+        optional string message = 9;
+        optional string assignee = 10;
+        optional string author = 11;
+        optional string creationDate = 12;
+        optional string updateDate = 13;
+        optional sonarqube.ws.commons.TextRange textRange = 14;
+        repeated sonarqube.ws.commons.Flow flows = 15;
+        optional string ruleKey = 16;
+    }
+}
+
+// Response of GET api/hotspots/show
+message ShowWsResponse {
+  optional string key = 1;
+  optional Component component = 2;
+  optional Component project = 3;
+  optional Rule rule = 4;
+  optional string status = 5;
+  optional string resolution = 6;
+  optional string message = 8;
+  optional string author = 10;
+  optional sonarqube.ws.commons.TextRange textRange = 13;
+  optional bool canChangeStatus = 17;
+}
+
+message Component {
+  optional string key = 2;
+  optional string path = 6;
+}
+
+message Rule {
+  optional string key = 1;
+  optional string name = 2;
+  optional string securityCategory = 3;
+  optional string vulnerabilityProbability = 4;
+  optional string riskDescription = 5 [deprecated=true];
+  optional string vulnerabilityDescription = 6 [deprecated=true];
+  optional string fixRecommendations = 7 [deprecated=true];
+}
+
+// Response of GET api/hotspots/pull
+message HotspotPullQueryTimestamp {
+  required int64 queryTimestamp = 1;
+}
+
+message HotspotLite {
+  optional string key = 1;
+  optional string filePath = 2;
+  optional string vulnerabilityProbability = 3;
+  optional string status = 4;
+  optional string resolution = 5;
+  optional string message = 6;
+  optional int64 creationDate = 7;
+  optional TextRange textRange = 8;
+  optional string ruleKey = 9;
+  optional bool closed = 10;
+  optional string assignee = 11;
+}
+
+message TextRange {
+  optional int32 startLine = 1;
+  optional int32 startLineOffset = 2;
+  optional int32 endLine = 3;
+  optional int32 endLineOffset = 4;
+  optional string hash = 5;
+}

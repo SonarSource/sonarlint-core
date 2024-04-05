@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,56 +20,55 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.sonarlint.core.client.api.connected.ConnectedSonarLintEngine;
-import org.sonarsource.sonarlint.core.client.api.connected.ProjectBinding;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerConfiguration;
-import org.sonarsource.sonarlint.core.client.api.connected.ServerIssue;
-import org.sonarsource.sonarlint.core.client.api.exceptions.DownloadException;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.http.HttpClient;
+import org.sonarsource.sonarlint.core.issuetracking.CachingIssueTracker;
+import org.sonarsource.sonarlint.core.issuetracking.Trackable;
+import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
+import org.sonarsource.sonarlint.core.serverconnection.DownloadException;
+import org.sonarsource.sonarlint.core.serverconnection.ProjectBinding;
 
 public class ServerIssueTracker {
 
-  private static final Logger LOGGER = Loggers.get(ServerIssueTracker.class);
+  private static final SonarLintLogger LOGGER = SonarLintLogger.get();
+  private final CachingIssueTracker hotspotTracker;
 
-  private final CachingIssueTracker issueTracker;
-
-  public ServerIssueTracker(CachingIssueTracker issueTracker) {
-    this.issueTracker = issueTracker;
+  public ServerIssueTracker(CachingIssueTracker hotspotTracker) {
+    this.hotspotTracker = hotspotTracker;
   }
 
-  public void update(ServerConfiguration serverConfiguration, ConnectedSonarLintEngine engine, ProjectBinding projectBinding, Collection<String> fileKeys) {
-    update(fileKeys, fileKey -> fetchServerIssues(serverConfiguration, engine, projectBinding, fileKey));
+  public void update(EndpointParams endpoint, HttpClient client, ConnectedSonarLintEngine engine, ProjectBinding projectBinding, Collection<String> fileKeys, String branchName) {
+    update(fileKeys, fileKey -> fetchServerHotspots(endpoint, client, engine, projectBinding, fileKey, branchName));
   }
 
-  public void update(ConnectedSonarLintEngine engine, ProjectBinding projectBinding, Collection<String> fileKeys) {
-    update(fileKeys, fileKey -> engine.getServerIssues(projectBinding, fileKey));
+  public void update(ConnectedSonarLintEngine engine, ProjectBinding projectBinding, String branchName, Collection<String> fileKeys) {
+    update(fileKeys, fileKey -> engine.getServerHotspots(projectBinding, branchName, fileKey));
   }
 
-  private void update(Collection<String> fileKeys, Function<String, List<ServerIssue>> issueGetter) {
+  private void update(Collection<String> fileKeys, Function<String, Collection<ServerHotspot>> hotspotsGetter) {
     try {
       for (String fileKey : fileKeys) {
-        List<ServerIssue> serverIssues = issueGetter.apply(fileKey);
-        Collection<Trackable> serverIssuesTrackable = serverIssues.stream().map(ServerIssueTrackable::new).collect(Collectors.toList());
-        issueTracker.matchAndTrackAsBase(fileKey, serverIssuesTrackable);
+        var serverHotspots = hotspotsGetter.apply(fileKey);
+        Collection<Trackable> serverHotspotsTrackable = serverHotspots.stream().map(ServerHotspotTrackable::new).collect(Collectors.toList());
+        hotspotTracker.matchAndTrackAsBase(fileKey, serverHotspotsTrackable);
       }
     } catch (Exception e) {
-      String message = "error while fetching and matching server issues";
-      LOGGER.error(message, e);
+      LOGGER.error("error while fetching and matching server issues", e);
     }
   }
 
-  private static List<ServerIssue> fetchServerIssues(ServerConfiguration serverConfiguration, ConnectedSonarLintEngine engine,
-    ProjectBinding projectBinding, String ideFilePath) {
+  private static Collection<ServerHotspot> fetchServerHotspots(EndpointParams endpoint, HttpClient client, ConnectedSonarLintEngine engine,
+    ProjectBinding projectBinding, String ideFilePath, String branchName) {
     try {
-      LOGGER.debug("fetchServerIssues projectKey=" + projectBinding.projectKey() + ", ideFilePath=" + ideFilePath);
-      return engine.downloadServerIssues(serverConfiguration, projectBinding, ideFilePath);
+      LOGGER.debug("fetchServerHotspots projectKey=" + projectBinding.projectKey() + ", ideFilePath=" + ideFilePath + ", branchName=" + branchName);
+      engine.downloadAllServerHotspotsForFile(endpoint, client, projectBinding, ideFilePath, branchName, null);
     } catch (DownloadException e) {
-      LOGGER.debug("Failed to download server issues", e);
-      return engine.getServerIssues(projectBinding, ideFilePath);
+      LOGGER.debug("Failed to download server hotspots", e);
     }
+    return engine.getServerHotspots(projectBinding, branchName, ideFilePath);
   }
 }

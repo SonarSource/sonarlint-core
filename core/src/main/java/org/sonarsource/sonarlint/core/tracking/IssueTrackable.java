@@ -1,6 +1,6 @@
 /*
  * SonarLint Core - Implementation
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,35 +19,47 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.client.api.common.analysis.Issue;
+import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
+import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.issuetracking.Trackable;
 
 import static org.sonarsource.sonarlint.core.tracking.DigestUtils.digest;
 
-public class IssueTrackable implements Trackable {
+public class IssueTrackable implements Trackable<Issue> {
 
   private final Issue issue;
-  private final TextRange textRange;
-  private final Integer textRangeHash;
-  private final Integer lineHash;
+  private final TextRangeWithHash textRange;
+  private final String lineHash;
 
   public IssueTrackable(Issue issue) {
-    this(issue, null, null, null);
+    this(issue, null, null);
   }
 
-  public IssueTrackable(Issue issue, @Nullable TextRange textRange, @Nullable String textRangeContent, @Nullable String lineContent) {
+  public IssueTrackable(Issue issue, @Nullable String textRangeContent,
+    @Nullable String lineContent) {
     this.issue = issue;
-    this.textRange = textRange;
-    this.textRangeHash = hashOrNull(textRangeContent);
+    var fromAnalysis = issue.getTextRange();
+    this.textRange = fromAnalysis != null ? convertToTrackingTextRange(fromAnalysis, hashOrNull(textRangeContent)) : null;
     this.lineHash = hashOrNull(lineContent);
   }
 
-  private static Integer hashOrNull(@Nullable String content) {
-    return content != null ? digest(content).hashCode() : null;
+  private static TextRangeWithHash convertToTrackingTextRange(org.sonarsource.sonarlint.core.commons.TextRange fromAnalysis, @Nullable String hash) {
+    return new TextRangeWithHash(fromAnalysis.getStartLine(), fromAnalysis.getStartLineOffset(), fromAnalysis.getEndLine(),
+      fromAnalysis.getEndLineOffset(), hash != null ? hash : "");
+  }
+
+  @CheckForNull
+  private static String hashOrNull(@Nullable String content) {
+    return content != null ? digest(content) : null;
   }
 
   @Override
-  public Issue getIssue() {
+  public Issue getClientObject() {
     return issue;
   }
 
@@ -57,17 +69,12 @@ public class IssueTrackable implements Trackable {
   }
 
   @Override
-  public String getRuleName() {
-    return issue.getRuleName();
+  public IssueSeverity getSeverity() {
+    return issue.getSeverity();
   }
 
   @Override
-  public String getSeverity() {
-    return issue.getSeverity();
-  }
-  
-  @Override
-  public String getType() {
+  public RuleType getType() {
     return issue.getType();
   }
 
@@ -82,18 +89,13 @@ public class IssueTrackable implements Trackable {
   }
 
   @Override
-  public Integer getLineHash() {
+  public String getLineHash() {
     return lineHash;
   }
 
   @Override
-  public TextRange getTextRange() {
+  public TextRangeWithHash getTextRange() {
     return textRange;
-  }
-
-  @Override
-  public Integer getTextRangeHash() {
-    return textRangeHash;
   }
 
   @Override
@@ -112,7 +114,7 @@ public class IssueTrackable implements Trackable {
   }
 
   @Override
-  public String getAssignee() {
-    return "";
+  public HotspotReviewStatus getReviewStatus() {
+    return null;
   }
 }

@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<profile>
-  <name>SonarLint IT Java Empty</name>
-  <language>java</language>
-  <rules>
-  </rules>
-</profile>

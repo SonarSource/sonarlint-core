@@ -1,6 +1,6 @@
 /*
- * SonarLint slf4j log adaptor
- * Copyright (C) 2016-2020 SonarSource SA
+ * SonarLint Core - SLF4J log adaptor
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or

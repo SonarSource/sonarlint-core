@@ -1,6 +1,6 @@
 /*
  * Example Plugin with global extension
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,10 +19,9 @@
  */
 package org.sonarsource.plugins.example;
 
+import org.slf4j.LoggerFactory;
 import org.sonar.api.Startable;
 import org.sonar.api.config.Configuration;
-import org.sonar.api.utils.log.Logger;
-import org.sonar.api.utils.log.Loggers;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 
 import static org.sonarsource.api.sonarlint.SonarLintSide.MULTIPLE_ANALYSES;
@@ -30,24 +29,31 @@ import static org.sonarsource.api.sonarlint.SonarLintSide.MULTIPLE_ANALYSES;
 @SonarLintSide(lifespan = MULTIPLE_ANALYSES)
 public class GlobalExtension implements Startable {
 
-  private static final Logger LOG = Loggers.get(GlobalExtension.class);
+  public static GlobalExtension getInstance() {
+    return instance;
+  }
+
+  private static final org.sonar.api.utils.log.Logger SONAR_API_LOG = org.sonar.api.utils.log.Loggers.get(GlobalExtension.class);
+  private static final org.slf4j.Logger SLF4J_LOG = LoggerFactory.getLogger(GlobalExtension.class);
+  private static GlobalExtension instance;
 
   private int counter;
 
   private final Configuration config;
 
   public GlobalExtension(Configuration config) {
+    instance = this;
     this.config = config;
   }
 
   @Override
   public void start() {
-    LOG.info("Start Global Extension " + config.get("sonar.global.label").orElse("MISSING"));
+    SONAR_API_LOG.info("Start Global Extension " + config.get("sonar.global.label").orElse("MISSING"));
   }
 
   @Override
   public void stop() {
-    LOG.info("Stop Global Extension");
+    SLF4J_LOG.info("Stop Global Extension");
   }
 
   public int getAndInc() {

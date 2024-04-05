@@ -1,6 +1,6 @@
 /*
  * Example Plugin for SonarQube
- * Copyright (C) 2016-2020 SonarSource SA
+ * Copyright (C) 2016-2023 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -31,6 +31,12 @@ public final class FooLintRulesDefinition implements RulesDefinition {
   protected static final String KEY = "foolint";
   protected static final String NAME = "FooLint";
 
+  private final RulesDefinitionXmlLoader xmlLoader;
+
+  public FooLintRulesDefinition(RulesDefinitionXmlLoader xmlLoader) {
+    this.xmlLoader = xmlLoader;
+  }
+
   protected String rulesDefinitionFilePath() {
     return PATH_TO_RULES_XML;
   }
@@ -41,8 +47,7 @@ public final class FooLintRulesDefinition implements RulesDefinition {
 
     InputStream rulesXml = this.getClass().getResourceAsStream(rulesDefinitionFilePath());
     if (rulesXml != null) {
-      RulesDefinitionXmlLoader rulesLoader = new RulesDefinitionXmlLoader();
-      rulesLoader.load(repository, rulesXml, StandardCharsets.UTF_8.name());
+      xmlLoader.load(repository, rulesXml, StandardCharsets.UTF_8.name());
     }
 
     repository.done();

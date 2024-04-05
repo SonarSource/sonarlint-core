@@ -1,0 +1,38 @@
+// SonarLint, open source software quality management tool.
+// Copyright (C) 2015-2023 SonarSource
+// mailto:contact AT sonarsource DOT com
+//
+// SonarLint is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 3 of the License, or (at your option) any later version.
+//
+// SonarLint is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software Foundation,
+// Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+syntax = "proto2";
+
+package sonarqube.ws.projectbranch;
+
+option java_package = "org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws";
+option java_outer_classname = "ProjectBranches";
+option optimize_for = SPEED;
+
+import "sonarqube/ws-commons.proto";
+
+// WS api/project_branches/list
+message ListWsResponse {
+  repeated Branch branches = 1;
+}
+
+message Branch {
+  optional string name = 1;
+  optional bool isMain = 2;
+  optional sonarqube.ws.commons.BranchType type = 3;
+}
