@@ -183,7 +183,8 @@ public class BindingClueProvider {
       }
       return new BindingProperties(projectKey != null ? projectKey.getAsString() : null,
         organization != null ? organization.getAsString() : null,
-        serverUrl != null ? serverUrl.getAsString() : null);
+        serverUrl != null ? serverUrl.getAsString() : null,
+        true);
     } catch (JsonSyntaxException e) {
       return null;
     }
@@ -203,7 +204,7 @@ public class BindingClueProvider {
         return null;
       }
       return new BindingProperties(getAndTrim(properties, "sonar.projectKey"), getAndTrim(properties, "sonar.organization"),
-        getAndTrim(properties, "sonar.host.url"));
+        getAndTrim(properties, "sonar.host.url"), false);
     }
   }
 
@@ -216,31 +217,33 @@ public class BindingClueProvider {
     private final String projectKey;
     private final String organization;
     private final String serverUrl;
+    private final boolean isFromSharedConfiguration;
 
-    private BindingProperties(@Nullable String projectKey, @Nullable String organization, @Nullable String serverUrl) {
+    private BindingProperties(@Nullable String projectKey, @Nullable String organization, @Nullable String serverUrl, boolean isFromSharedConfiguration) {
       this.projectKey = projectKey;
       this.organization = organization;
       this.serverUrl = serverUrl;
+      this.isFromSharedConfiguration = isFromSharedConfiguration;
     }
   }
 
   @CheckForNull
   private BindingClue computeBindingClue(String filename, BindingProperties scannerProps) {
     if (AUTOSCAN_CONFIG_FILENAME.equals(filename)) {
-      return new SonarCloudBindingClue(scannerProps.projectKey, scannerProps.organization);
+      return new SonarCloudBindingClue(scannerProps.projectKey, scannerProps.organization, scannerProps.isFromSharedConfiguration);
     }
     if (scannerProps.organization != null) {
-      return new SonarCloudBindingClue(scannerProps.projectKey, scannerProps.organization);
+      return new SonarCloudBindingClue(scannerProps.projectKey, scannerProps.organization, scannerProps.isFromSharedConfiguration);
     }
     if (scannerProps.serverUrl != null) {
       if (removeEnd(scannerProps.serverUrl, "/").equals(sonarCloudUri.toString())) {
-        return new SonarCloudBindingClue(scannerProps.projectKey, null);
+        return new SonarCloudBindingClue(scannerProps.projectKey, null, scannerProps.isFromSharedConfiguration);
       } else {
-        return new SonarQubeBindingClue(scannerProps.projectKey, scannerProps.serverUrl);
+        return new SonarQubeBindingClue(scannerProps.projectKey, scannerProps.serverUrl, scannerProps.isFromSharedConfiguration);
       }
     }
     if (scannerProps.projectKey != null) {
-      return new UnknownBindingClue(scannerProps.projectKey);
+      return new UnknownBindingClue(scannerProps.projectKey, scannerProps.isFromSharedConfiguration);
     }
     return null;
   }
@@ -250,18 +253,27 @@ public class BindingClueProvider {
     @CheckForNull
     String getSonarProjectKey();
 
+    boolean isFromSharedConfiguration();
+
   }
 
   public static class UnknownBindingClue implements BindingClue {
     private final String sonarProjectKey;
+    private final boolean isFromSharedConfiguration;
 
-    UnknownBindingClue(String sonarProjectKey) {
+    UnknownBindingClue(String sonarProjectKey, boolean isFromSharedConfiguration) {
       this.sonarProjectKey = sonarProjectKey;
+      this.isFromSharedConfiguration = isFromSharedConfiguration;
     }
 
     @Override
     public String getSonarProjectKey() {
       return sonarProjectKey;
+    }
+
+    @Override
+    public boolean isFromSharedConfiguration() {
+      return isFromSharedConfiguration;
     }
   }
 
@@ -269,15 +281,22 @@ public class BindingClueProvider {
 
     private final String sonarProjectKey;
     private final String serverUrl;
+    private final boolean isFromSharedConfiguration;
 
-    SonarQubeBindingClue(@Nullable String sonarProjectKey, String serverUrl) {
+    SonarQubeBindingClue(@Nullable String sonarProjectKey, String serverUrl, boolean isFromSharedConfiguration) {
       this.sonarProjectKey = sonarProjectKey;
       this.serverUrl = serverUrl;
+      this.isFromSharedConfiguration = isFromSharedConfiguration;
     }
 
     @Override
     public String getSonarProjectKey() {
       return sonarProjectKey;
+    }
+
+    @Override
+    public boolean isFromSharedConfiguration() {
+      return isFromSharedConfiguration;
     }
 
     public String getServerUrl() {
@@ -290,15 +309,22 @@ public class BindingClueProvider {
 
     private final String sonarProjectKey;
     private final String organization;
+    private final boolean isFromSharedConfiguration;
 
-    SonarCloudBindingClue(@Nullable String sonarProjectKey, @Nullable String organization) {
+    SonarCloudBindingClue(@Nullable String sonarProjectKey, @Nullable String organization, boolean isFromSharedConfiguration) {
       this.sonarProjectKey = sonarProjectKey;
       this.organization = organization;
+      this.isFromSharedConfiguration = isFromSharedConfiguration;
     }
 
     @Override
     public String getSonarProjectKey() {
       return sonarProjectKey;
+    }
+
+    @Override
+    public boolean isFromSharedConfiguration() {
+      return isFromSharedConfiguration;
     }
 
     public String getOrganization() {
