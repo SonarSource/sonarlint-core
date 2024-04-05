@@ -126,8 +126,8 @@ class BindingSuggestionsMediumTests {
     var bindingSuggestions = suggestionCaptor.getValue();
     assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
-      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
-      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME));
+      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName, BindingSuggestionDto::isFromSharedConfiguration)
+      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, false));
   }
 
   @Test
@@ -158,8 +158,8 @@ class BindingSuggestionsMediumTests {
     var bindingSuggestions = suggestionCaptor.getValue();
     assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
-      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
-      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME));
+      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName, BindingSuggestionDto::isFromSharedConfiguration)
+      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, false));
   }
 
   @Test
@@ -196,8 +196,8 @@ class BindingSuggestionsMediumTests {
     var bindingSuggestions = suggestionCaptor.getValue();
     assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
-      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
-      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME));
+      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName, BindingSuggestionDto::isFromSharedConfiguration)
+      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, false));
   }
 
   @Test
@@ -240,8 +240,8 @@ class BindingSuggestionsMediumTests {
     var bindingSuggestions = suggestionCaptor.getAllValues().get(1);
     assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
-      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
-      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME));
+      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName, BindingSuggestionDto::isFromSharedConfiguration)
+      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, false));
   }
 
   @Test
@@ -273,8 +273,54 @@ class BindingSuggestionsMediumTests {
     var bindingSuggestions = bindingParamsCompletableFuture.get().getSuggestions();
     assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
-      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName)
-      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME));
+      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName, BindingSuggestionDto::isFromSharedConfiguration)
+      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, false));
+  }
+
+  @Test
+  void test_uses_binding_clues_from_shared_configuration_when_updating_fs(@TempDir Path tmp) throws IOException {
+    var fakeClient = newFakeClient()
+      .build();
+
+    backend = newBackend()
+      .withSonarQubeConnection(MYSONAR, sonarqubeMock.baseUrl())
+      .withSonarQubeConnection("another")
+      .build(fakeClient);
+
+    sonarqubeMock.stubFor(get("/api/components/show.protobuf?component=org.sonarsource.sonarlint%3Asonarlint-core-parent")
+      .willReturn(aResponse().withResponseBody(protobufBody(Components.ShowWsResponse.newBuilder()
+        .setComponent(Components.Component.newBuilder()
+          .setKey(SLCORE_PROJECT_KEY)
+          .setName(SLCORE_PROJECT_NAME)
+          .build())
+        .build()))));
+
+    backend.getConfigurationService()
+      .didAddConfigurationScopes(
+        new DidAddConfigurationScopesParams(List.of(
+          new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "sonarlint-core",
+            new BindingConfigurationDto(null, null, false)))));
+
+    // Without binding clue, there is no matching connection/project, so the list of suggestion is empty
+    verify(fakeClient, timeout(5000)).suggestBinding(argThat(suggestion -> suggestion.get(CONFIG_SCOPE_ID).isEmpty()));
+
+    // Now add a binding clue to the FS
+    var sonarlintDir = tmp.resolve(".sonarlint/");
+    Files.createDirectory(sonarlintDir);
+    var clue = tmp.resolve(".sonarlint/connectedMode.json");
+    Files.writeString(clue, "{\"projectKey\": \"" + SLCORE_PROJECT_KEY + "\",\"sonarQubeUri\": \"" + sonarqubeMock.baseUrl() + "\"}", StandardCharsets.UTF_8);
+
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(),
+      List.of(new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null))));
+
+    ArgumentCaptor<Map<String, List<BindingSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(fakeClient, timeout(5000).times(2)).suggestBinding(suggestionCaptor.capture());
+
+    var bindingSuggestions = suggestionCaptor.getAllValues().get(1);
+    assertThat(bindingSuggestions).containsOnlyKeys(CONFIG_SCOPE_ID);
+    assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID))
+      .extracting(BindingSuggestionDto::getConnectionId, BindingSuggestionDto::getSonarProjectKey, BindingSuggestionDto::getSonarProjectName, BindingSuggestionDto::isFromSharedConfiguration)
+      .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, true));
   }
 
 }
