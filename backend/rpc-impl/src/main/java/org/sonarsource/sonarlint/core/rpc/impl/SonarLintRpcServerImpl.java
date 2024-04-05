@@ -30,6 +30,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import jetbrains.exodus.core.execution.JobProcessor;
 import jetbrains.exodus.core.execution.ThreadJobProcessorPool;
@@ -76,7 +78,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   private final SonarLintRpcClient client;
   private final AtomicBoolean initializeCalled = new AtomicBoolean(false);
   private final AtomicBoolean initialized = new AtomicBoolean(false);
-  private final Future<Void> launcherFuture;
+  private final Future<Void> clientListener;
   private final ExecutorServiceShutdownWatchable<ExecutorService> requestsExecutor;
   private final ExecutorService requestAndNotificationsSequentialExecutor;
   private final RpcClientLogOutput logOutput;
@@ -110,7 +112,8 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     rpcAppender.start();
     rootLogger.addAppender(rpcAppender);
 
-    this.launcherFuture = launcher.startListening();
+
+    this.clientListener = launcher.startListening();
 
     LOG.info("SonarLint backend started, instance={}", this);
   }
@@ -127,8 +130,8 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     return null;
   }
 
-  public Future<Void> getLauncherFuture() {
-    return launcherFuture;
+  public Future<Void> getClientListener() {
+    return clientListener;
   }
 
   @Override
@@ -234,8 +237,8 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     CompletableFuture<Void> future = CompletableFutures.computeAsync(executor, cancelChecker -> {
       SonarLintLogger.setTarget(logOutput);
       var wasInitialized = initialized.getAndSet(false);
-      MoreExecutors.shutdownAndAwaitTermination(requestsExecutor, 1, java.util.concurrent.TimeUnit.SECONDS);
-      MoreExecutors.shutdownAndAwaitTermination(requestAndNotificationsSequentialExecutor, 1, java.util.concurrent.TimeUnit.SECONDS);
+      MoreExecutors.shutdownAndAwaitTermination(requestsExecutor, 1, TimeUnit.SECONDS);
+      MoreExecutors.shutdownAndAwaitTermination(requestAndNotificationsSequentialExecutor, 1, TimeUnit.SECONDS);
       if (wasInitialized) {
         try {
           springApplicationContextInitializer.close();
@@ -244,11 +247,17 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
         }
       }
       ThreadJobProcessorPool.getProcessors().forEach(JobProcessor::finish);
-      launcherFuture.cancel(true);
+      stopListeningClient();
       return null;
     });
     executor.shutdown();
     return future;
+  }
+
+  private void stopListeningClient() {
+    ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+    executorService.schedule(() -> clientListener.cancel(true), 500, TimeUnit.MILLISECONDS);
+    executorService.shutdown();
   }
 
   public int getEmbeddedServerPort() {

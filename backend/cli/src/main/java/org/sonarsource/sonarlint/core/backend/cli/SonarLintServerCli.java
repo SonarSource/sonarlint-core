@@ -25,6 +25,7 @@ import java.io.PrintStream;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
+import org.sonarsource.sonarlint.core.rpc.impl.SonarLintRpcServerImpl;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "slcore", mixinStandardHelpOptions = true, description = "The SonarLint Core backend")
@@ -42,13 +43,18 @@ public class SonarLintServerCli implements Callable<Integer> {
     System.setOut(System.err);
 
     try (var rpcLauncher = new BackendJsonRpcLauncher(inputStream, originalStdOut)) {
+      SonarLintRpcServerImpl server = rpcLauncher.getJavaImpl();
       inputStream.onExit().thenRun(() -> {
         System.err.println("Input stream has closed, exiting...");
-        rpcLauncher.getJavaImpl().shutdown();
+        server.shutdown();
       });
-      rpcLauncher.getLauncherFuture().get();
+      server.getClientListener().get();
     } catch (CancellationException shutdown) {
       System.err.println("Server is shutting down...");
+    } catch (InterruptedException e) {
+      e.printStackTrace(System.err);
+      Thread.currentThread().interrupt();
+      return -1;
     } catch (Exception e) {
       e.printStackTrace(System.err);
       return -1;
