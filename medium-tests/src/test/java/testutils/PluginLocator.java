@@ -48,6 +48,9 @@ public class PluginLocator {
   public static final String SONAR_CFAMILY_PLUGIN_VERSION = "6.18.0.29274";
   private static final String SONAR_CFAMILY_PLUGIN_JAR = "sonar-cfamily-plugin-" + SONAR_CFAMILY_PLUGIN_VERSION + ".jar";
   public static final String SONAR_CFAMILY_PLUGIN_JAR_HASH = "XXX";
+  public static final String SONAR_CS_PLUGIN_VERSION = "1.19.0.86083";
+  public static final String SONAR_CS_PLUGIN_JAR = "sonarlint-omnisharp-plugin-" + SONAR_CS_PLUGIN_VERSION + ".jar";
+  public static final String SONAR_CS_PLUGIN_JAR_HASH = "foo";
 
   public static Path getJavaPluginPath() {
     return getValidPluginPath(SONAR_JAVA_PLUGIN_JAR);
@@ -79,6 +82,10 @@ public class PluginLocator {
 
   public static Path getKotlinPluginPath() {
     return getPluginPath(SONAR_KOTLIN_PLUGIN_JAR);
+  }
+
+  public static Path getCsPluginPath() {
+    return getValidPluginPath(SONAR_CS_PLUGIN_JAR);
   }
 
   private static Path getPluginPath(String file) {
