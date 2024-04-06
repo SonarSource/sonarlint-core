@@ -145,6 +145,12 @@
                   <version>2.20.0.4382</version>
                   <type>jar</type>
                 </artifactItem>
+                <artifactItem>
+                  <groupId>org.sonarsource.sonarlint.omnisharp</groupId>
+                  <artifactId>sonarlint-omnisharp-plugin</artifactId>
+                  <version>1.19.0.86083</version>
+                  <type>jar</type>
+                </artifactItem>
               </artifactItems>
               <outputDirectory>${project.build.directory}/plugins</outputDirectory>
               <overWriteReleases>false</overWriteReleases>

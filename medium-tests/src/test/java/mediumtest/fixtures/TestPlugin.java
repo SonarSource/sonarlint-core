@@ -33,7 +33,8 @@ public enum TestPlugin {
   TEXT(Language.SECRETS, PluginLocator.getTextPluginPath(), PluginLocator.SONAR_TEXT_PLUGIN_VERSION, PluginLocator.SONAR_TEXT_PLUGIN_JAR_HASH),
   XML(Language.XML, PluginLocator.getXmlPluginPath(), PluginLocator.SONAR_XML_PLUGIN_VERSION, PluginLocator.SONAR_XML_PLUGIN_JAR_HASH),
   CFAMILY(Set.of(Language.C, Language.CPP, Language.OBJC), PluginLocator.getCppPluginPath(), PluginLocator.SONAR_CFAMILY_PLUGIN_VERSION, PluginLocator.SONAR_CFAMILY_PLUGIN_JAR_HASH),
-  KOTLIN(Set.of(Language.KOTLIN), PluginLocator.getKotlinPluginPath(), PluginLocator.SONAR_KOTLIN_PLUGIN_JAR, PluginLocator.SONAR_KOTLIN_PLUGIN_JAR_HASH);
+  KOTLIN(Set.of(Language.KOTLIN), PluginLocator.getKotlinPluginPath(), PluginLocator.SONAR_KOTLIN_PLUGIN_JAR, PluginLocator.SONAR_KOTLIN_PLUGIN_JAR_HASH),
+  CS(Language.CS, PluginLocator.getCsPluginPath(), PluginLocator.SONAR_CS_PLUGIN_VERSION, PluginLocator.SONAR_CS_PLUGIN_JAR_HASH);
 
   private final Set<Language> languages;
   private final Path path;
