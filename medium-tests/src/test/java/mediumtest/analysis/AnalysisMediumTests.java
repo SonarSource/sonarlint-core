@@ -27,11 +27,14 @@ import java.util.Map;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
+import org.sonar.api.utils.System2;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingPluginParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
@@ -53,9 +56,16 @@ class AnalysisMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
   private SonarLintTestRpcServer backend;
+  private String javaVersion;
+
+  @BeforeEach
+  public void setUp() {
+    javaVersion = System2.INSTANCE.property("java.specification.version");
+  }
 
   @AfterEach
   void stop() {
+    System2.INSTANCE.setProperty("java.specification.version", javaVersion);
     if (backend != null) {
       backend.shutdown();
     }
@@ -142,6 +152,45 @@ class AnalysisMediumTests {
     var rawIssue = rawIssueCaptor.getValue();
     assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
     assertThat(rawIssue.getRuleKey()).isEqualTo("xml:S3421");
+  }
+
+  @Test
+  void it_should_notify_client_on_plugin_skip(@TempDir Path baseDir) {
+    System2.INSTANCE.setProperty("java.specification.version", "10");
+    var filePath = createFile(baseDir, "Main.java",
+      "public class Main {}");
+    var fileUri = filePath.toUri();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null)))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .build(client);
+
+    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
+
+    assertThat(result.getFailedAnalysisFiles()).isEmpty();
+    verify(client).didSkipLoadingPlugin(CONFIG_SCOPE_ID, Language.JAVA, DidSkipLoadingPluginParams.SkipReason.UNSATISFIED_JRE, "11", "10");
+  }
+
+  @Test
+  void it_should_notify_client_on_secret_detection(@TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "secret.py",
+      "KEY = \"AKIAIGKECZXA7AEIJLMQ\"");
+    var fileUri = filePath.toUri();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null)))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.TEXT)
+      .build(client);
+
+    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
+
+    assertThat(result.getFailedAnalysisFiles()).isEmpty();
+    verify(client).didDetectSecret();
   }
 
   private static Path createFile(Path folderPath, String fileName, String content) {

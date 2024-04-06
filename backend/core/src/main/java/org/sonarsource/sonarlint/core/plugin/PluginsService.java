@@ -40,7 +40,6 @@ import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginRequirementsC
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPlugin;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.event.EventListener;
@@ -58,11 +57,10 @@ public class PluginsService {
   private final Set<Path> embeddedPluginPaths;
   private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
-  private final SonarLintRpcClient client;
   private final boolean enableDataflowBugDetection;
 
   public PluginsService(PluginsRepository pluginsRepository, SkippedPluginsRepository skippedPluginsRepository, LanguageSupportRepository languageSupportRepository,
-    StorageService storageService, InitializeParams params, ConnectionConfigurationRepository connectionConfigurationRepository, SonarLintRpcClient client) {
+    StorageService storageService, InitializeParams params, ConnectionConfigurationRepository connectionConfigurationRepository) {
     this.pluginsRepository = pluginsRepository;
     this.skippedPluginsRepository = skippedPluginsRepository;
     this.languageSupportRepository = languageSupportRepository;
@@ -71,7 +69,6 @@ public class PluginsService {
     this.connectedModeEmbeddedPluginPathsByKey = params.getConnectedModeEmbeddedPluginPathsByKey();
     this.enableDataflowBugDetection = params.getFeatureFlags().isEnableDataflowBugDetection();
     this.connectionConfigurationRepository = connectionConfigurationRepository;
-    this.client = client;
   }
 
   public LoadedPlugins getEmbeddedPlugins() {

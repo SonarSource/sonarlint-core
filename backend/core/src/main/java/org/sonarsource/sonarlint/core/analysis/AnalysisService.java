@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -234,7 +235,7 @@ public class AnalysisService {
     var analysisConfig = getAnalysisConfig(configScopeId);
     var baseDir = fileSystemService.getBaseDir(configScopeId);
     var actualBaseDir = baseDir == null ? findCommonPrefix(filePathsToAnalyze) : baseDir;
-    return org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration.builder()
+    return AnalysisConfiguration.builder()
       .addInputFiles(toInputFiles(configScopeId, filePathsToAnalyze))
       .putAllExtraProperties(analysisConfig.getAnalysisProperties())
       .putAllExtraProperties(extraProperties)
@@ -542,8 +543,9 @@ public class AnalysisService {
       .whenComplete((results, error) -> {
         long endTime = System.currentTimeMillis();
         if (error == null) {
-          var analyzedLanguages = new HashSet<>(results.languagePerFile().values());
-          eventPublisher.publishEvent(new AnalysisFinishedEvent(configurationScopeId, endTime - startTime, analyzedLanguages, results.failedAnalysisFiles().isEmpty(), reportedRuleKeys));
+          var analyzedLanguages = EnumSet.copyOf(results.languagePerFile().values());
+          eventPublisher.publishEvent(new AnalysisFinishedEvent(configurationScopeId, endTime - startTime,
+            analyzedLanguages, results.failedAnalysisFiles().isEmpty(), reportedRuleKeys));
         }
       });
   }
@@ -562,12 +564,12 @@ public class AnalysisService {
       client.didRaiseIssue(new DidRaiseIssueParams(configScopeId, toDto(issue, activeRule)));
       if (ruleKey.contains("secrets") && !alreadyDetectedSecret) {
         alreadyDetectedSecret = true;
-        client.didDetectSecret(new DidDetectSecretParams());
+        client.didDetectSecret(new DidDetectSecretParams(configScopeId));
       }
     }
   }
 
-  private static RawIssueDto toDto(Issue issue, GetRuleDetailsResponse activeRule) {
+  static RawIssueDto toDto(Issue issue, GetRuleDetailsResponse activeRule) {
     var range = issue.getTextRange();
     var textRange = range != null ? adapt(range) : null;
     var impacts = new EnumMap<SoftwareQuality, ImpactSeverity>(SoftwareQuality.class);
@@ -666,7 +668,8 @@ public class AnalysisService {
 
     @Override
     public InputStream inputStream() {
-      return new ByteArrayInputStream(clientFile.getContent().getBytes());
+      var charset = getCharset();
+      return new ByteArrayInputStream(clientFile.getContent().getBytes(charset == null ? Charset.defaultCharset() : charset));
     }
 
     @Override
