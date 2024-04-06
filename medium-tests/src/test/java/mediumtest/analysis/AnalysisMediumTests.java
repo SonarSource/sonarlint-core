@@ -149,6 +149,7 @@ class AnalysisMediumTests {
 
   @Test
   void it_should_notify_client_on_plugin_skip(@TempDir Path baseDir) {
+    var javaVersion = System2.INSTANCE.property("java.specification.version");
     System2.INSTANCE.setProperty("java.specification.version", "10");
     var filePath = createFile(baseDir, "Main.java",
       "public class Main {\n" +
@@ -166,6 +167,9 @@ class AnalysisMediumTests {
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     verify(client).didSkipLoadingPlugin(CONFIG_SCOPE_ID, Language.JAVA, DidSkipLoadingPluginParams.SkipReason.UNSATISFIED_JRE, "11", "10");
+    if (javaVersion != null) {
+      System2.INSTANCE.setProperty("java.specification.version", javaVersion);
+    }
   }
 
   @Test
