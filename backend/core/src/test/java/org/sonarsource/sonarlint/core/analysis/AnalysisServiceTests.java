@@ -26,12 +26,16 @@ import org.junit.jupiter.api.Test;
 import org.sonar.api.batch.sensor.issue.IssueLocation;
 import org.sonarsource.sonarlint.core.analysis.api.ActiveRule;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFileEdit;
 import org.sonarsource.sonarlint.core.analysis.api.Flow;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
+import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
+import org.sonarsource.sonarlint.core.analysis.api.TextEdit;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.DefaultTextPointer;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.DefaultTextRange;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputFile;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
+import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
@@ -45,7 +49,7 @@ import static org.mockito.Mockito.when;
 class AnalysisServiceTests {
 
   @Test
-  void it_should_convert_issue_flaws_to_raw_issue_dto() {
+  void it_should_convert_issue_flaws_and_quick_fixes_to_raw_issue_dto() {
     var issueLocation = mock(IssueLocation.class);
     var inputComponent = mock(SonarLintInputFile.class);
     when(inputComponent.isFile()).thenReturn(true);
@@ -54,12 +58,15 @@ class AnalysisServiceTests {
     when(issueLocation.textRange()).thenReturn(new DefaultTextRange(new DefaultTextPointer(1,2),
       new DefaultTextPointer(3,4)));
     when(issueLocation.inputComponent()).thenReturn(inputComponent);
+    var clientInputFile = mock(ClientInputFile.class);
 
     var issue = new Issue(new ActiveRuleAdapter(new ActiveRule("repo:ruleKey", "languageKey")),
       "primary message", Map.of(),
       new DefaultTextRange(new DefaultTextPointer(1,1), new DefaultTextPointer(1,1)),
-      mock(ClientInputFile.class), List.of(new Flow(List.of(issueLocation))),
-      List.of(), Optional.of(""));
+      clientInputFile, List.of(new Flow(List.of(issueLocation))), List.of(new QuickFix(List.of(
+      new ClientInputFileEdit(clientInputFile, List.of(new TextEdit(
+        new TextRange(5,6,7,8), "Quick fix text")))),
+      "Quick fix message")), Optional.of(""));
     var ruleDetailsResponse = new GetRuleDetailsResponse(IssueSeverity.BLOCKER, RuleType.BUG, CleanCodeAttribute.CLEAR,
       List.of(), VulnerabilityProbability.HIGH);
 
@@ -68,11 +75,24 @@ class AnalysisServiceTests {
     assertThat(rawIssueDto.getRuleKey()).isEqualTo("repo:ruleKey");
     var rawIssueLocationDto = rawIssueDto.getFlows().get(0).getLocations().get(0);
     assertThat(rawIssueLocationDto.getMessage()).isEqualTo("issue location message");
-    var textRange = rawIssueLocationDto.getTextRange();
+    var issueLocationTextRange = rawIssueLocationDto.getTextRange();
+    assertThat(issueLocationTextRange).isNotNull();
+    assertThat(issueLocationTextRange.getStartLine()).isEqualTo(1);
+    assertThat(issueLocationTextRange.getStartLineOffset()).isEqualTo(2);
+    assertThat(issueLocationTextRange.getEndLine()).isEqualTo(3);
+    assertThat(issueLocationTextRange.getEndLineOffset()).isEqualTo(4);
+    var quickFix = rawIssueDto.getQuickFixes().get(0);
+    assertThat(quickFix).isNotNull();
+    var fileEdit = quickFix.fileEdits().get(0);
+    assertThat(fileEdit).isNotNull();
+    var textEdit = fileEdit.textEdits().get(0);
+    assertThat(textEdit).isNotNull();
+    var textRange = textEdit.range();
     assertThat(textRange).isNotNull();
-    assertThat(textRange.getStartLine()).isEqualTo(1);
-    assertThat(textRange.getStartLineOffset()).isEqualTo(2);
-    assertThat(textRange.getEndLine()).isEqualTo(3);
-    assertThat(textRange.getEndLineOffset()).isEqualTo(4);
+    assertThat(textRange.getStartLine()).isEqualTo(5);
+    assertThat(textRange.getStartLineOffset()).isEqualTo(6);
+    assertThat(textRange.getEndLine()).isEqualTo(7);
+    assertThat(textRange.getEndLineOffset()).isEqualTo(8);
   }
+
 }
