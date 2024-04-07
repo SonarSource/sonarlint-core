@@ -569,7 +569,7 @@ public class AnalysisService {
     }
   }
 
-  private static RawIssueDto toDto(Issue issue, GetRuleDetailsResponse activeRule) {
+  static RawIssueDto toDto(Issue issue, GetRuleDetailsResponse activeRule) {
     var range = issue.getTextRange();
     var textRange = range != null ? adapt(range) : null;
     var impacts = new EnumMap<SoftwareQuality, ImpactSeverity>(SoftwareQuality.class);
