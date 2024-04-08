@@ -42,6 +42,7 @@ public enum SonarLanguage {
   HTML("web", "web", new String[]{".html", ".xhtml", ".cshtml", ".vbhtml", ".aspx", ".ascx", ".rhtml", ".erb", ".shtm", ".shtml"}, "sonar.html.file.suffixes"),
   IPYTHON("ipynb", "python", new String[]{".ipynb"}, "sonar.ipython.file.suffixes"),
   JAVA("java", "java", new String[]{".java", ".jav"}, "sonar.java.file.suffixes"),
+  JCL("jcl", "jcl", new String[]{".jcl"}, "sonar.jcl.file.suffixes"),
   JS("js", Constants.JAVASCRIPT_PLUGIN_KEY, new String[]{".js", ".jsx", ".vue"}, "sonar.javascript.file.suffixes"),
   KOTLIN("kotlin", "kotlin", new String[]{".kt", ".kts"}, "sonar.kotlin.file.suffixes"),
   PHP("php", "php", new String[]{"php", "php3", "php4", "php5", "phtml", "inc"}, "sonar.php.file.suffixes"),
