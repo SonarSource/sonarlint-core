@@ -27,7 +27,7 @@ import java.util.Map;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
@@ -56,9 +56,16 @@ class AnalysisMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
   private SonarLintTestRpcServer backend;
+  private String javaVersion;
+
+  @BeforeEach
+  public void setUp() {
+    javaVersion = System2.INSTANCE.property("java.specification.version");
+  }
 
   @AfterEach
   void stop() {
+    System2.INSTANCE.setProperty("java.specification.version", javaVersion);
     if (backend != null) {
       backend.shutdown();
     }
@@ -149,11 +156,9 @@ class AnalysisMediumTests {
 
   @Test
   void it_should_notify_client_on_plugin_skip(@TempDir Path baseDir) {
-    var javaVersion = System2.INSTANCE.property("java.specification.version");
     System2.INSTANCE.setProperty("java.specification.version", "10");
     var filePath = createFile(baseDir, "Main.java",
-      "public class Main {\n" +
-        "}");
+      "public class Main {}");
     var fileUri = filePath.toUri();
     var client = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null)))
@@ -167,9 +172,6 @@ class AnalysisMediumTests {
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     verify(client).didSkipLoadingPlugin(CONFIG_SCOPE_ID, Language.JAVA, DidSkipLoadingPluginParams.SkipReason.UNSATISFIED_JRE, "11", "10");
-    if (javaVersion != null) {
-      System2.INSTANCE.setProperty("java.specification.version", javaVersion);
-    }
   }
 
   @Test
@@ -190,38 +192,6 @@ class AnalysisMediumTests {
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     verify(client).didDetectSecret();
   }
-
-  @Disabled
-  @Test
-  void if_should_analyse_c_sharp(@TempDir Path baseDir, @TempDir Path omnisharpDir) {
-    var filePath = createFile(baseDir, "Main.cs",
-      "namespace ConsoleApp1;\n" +
-        "\n" +
-        "class Main\n" +
-        "{\n" +
-        "\n" +
-        "}");
-    var fileUri = filePath.toUri();
-    var client = newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null)))
-      .build();
-    backend = newBackend()
-      .withUnboundConfigScope(CONFIG_SCOPE_ID)
-      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.CS)
-      .withOmnisharpRequirements(omnisharpDir.resolve("mono"), omnisharpDir.resolve("net6"),
-        omnisharpDir.resolve("net472"))
-      .build(client);
-
-    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
-
-    assertThat(result.getFailedAnalysisFiles()).isEmpty();
-    var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
-    verify(client).didRaiseIssue(eq(CONFIG_SCOPE_ID), rawIssueCaptor.capture());
-    var rawIssue = rawIssueCaptor.getValue();
-    assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
-    assertThat(rawIssue.getRuleKey()).isEqualTo("xml:S3421");
-  }
-
 
   private static Path createFile(Path folderPath, String fileName, String content) {
     var filePath = folderPath.resolve(fileName);
