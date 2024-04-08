@@ -56,9 +56,16 @@ class AnalysisMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
   private SonarLintTestRpcServer backend;
+  private String javaVersion;
+
+  @BeforeEach
+  public void setUp() {
+    javaVersion = System2.INSTANCE.property("java.specification.version");
+  }
 
   @AfterEach
   void stop() {
+    System2.INSTANCE.setProperty("java.specification.version", javaVersion);
     if (backend != null) {
       backend.shutdown();
     }
@@ -149,29 +156,22 @@ class AnalysisMediumTests {
 
   @Test
   void it_should_notify_client_on_plugin_skip(@TempDir Path baseDir) {
-    var javaVersion = System2.INSTANCE.property("java.specification.version");
-    try {
-      System2.INSTANCE.setProperty("java.specification.version", "10");
-      var filePath = createFile(baseDir, "Main.java",
-        "public class Main {}");
-      var fileUri = filePath.toUri();
-      var client = newFakeClient()
-        .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null)))
-        .build();
-      backend = newBackend()
-        .withUnboundConfigScope(CONFIG_SCOPE_ID)
-        .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-        .build(client);
+    System2.INSTANCE.setProperty("java.specification.version", "10");
+    var filePath = createFile(baseDir, "Main.java",
+      "public class Main {}");
+    var fileUri = filePath.toUri();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null)))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .build(client);
 
-      var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
+    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
 
-      assertThat(result.getFailedAnalysisFiles()).isEmpty();
-      verify(client).didSkipLoadingPlugin(CONFIG_SCOPE_ID, Language.JAVA, DidSkipLoadingPluginParams.SkipReason.UNSATISFIED_JRE, "11", "10");
-    } finally {
-      if (javaVersion != null) {
-        System2.INSTANCE.setProperty("java.specification.version", javaVersion);
-      }
-    }
+    assertThat(result.getFailedAnalysisFiles()).isEmpty();
+    verify(client).didSkipLoadingPlugin(CONFIG_SCOPE_ID, Language.JAVA, DidSkipLoadingPluginParams.SkipReason.UNSATISFIED_JRE, "11", "10");
   }
 
   @Test
