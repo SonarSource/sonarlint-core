@@ -65,7 +65,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFla
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSpecificRequirements;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.OmnisharpRequirementsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarCloudAlternativeEnvironmentDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SslConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
@@ -123,7 +122,6 @@ public class SonarLintBackendFixture {
     private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey = new HashMap<>();
     private final Set<Language> enabledLanguages = new HashSet<>();
     private final Set<Language> extraEnabledLanguagesInConnectedMode = new HashSet<>();
-    private OmnisharpRequirementsDto omnisharpRequirements;
     private boolean startEmbeddedServer;
     private boolean manageSmartNotifications;
     private boolean areSecurityHotspotsEnabled;
@@ -403,13 +401,6 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintBackendBuilder withOmnisharpRequirements(Path monoDistributionPath, Path dotNet6DistributionPath,
-      Path dotNet472DistributionPath) {
-      this.omnisharpRequirements = new OmnisharpRequirementsDto(monoDistributionPath,
-        dotNet6DistributionPath, dotNet472DistributionPath);
-      return this;
-    }
-
     public SonarLintTestRpcServer build(SonarLintRpcClientDelegate client) {
       var sonarlintUserHome = tempDirectory("slUserHome");
       var workDir = tempDirectory("work");
@@ -442,7 +433,7 @@ public class SonarLintBackendFixture {
             featureFlags,
             storageRoot, workDir, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
             enabledLanguages, extraEnabledLanguagesInConnectedMode, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
-            standaloneConfigByKey, isFocusOnNewCode, new LanguageSpecificRequirements(clientNodeJsPath, omnisharpRequirements)))
+            standaloneConfigByKey, isFocusOnNewCode, new LanguageSpecificRequirements(clientNodeJsPath, null)))
           .get();
         sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
         return sonarLintBackend;
