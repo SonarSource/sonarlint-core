@@ -277,9 +277,10 @@ public class SynchronizationService {
     var serverConnection = getServerConnection(connectionId, serverApi);
     try {
       LOG.debug("Synchronizing storage of connection '{}'", connectionId);
-      serverConnection.sync(serverApi, cancelMonitor);
-      // TODO rename event and send only if plugins changed
-      applicationEventPublisher.publishEvent(new PluginsSynchronizedEvent(connectionId));
+      var summary = serverConnection.sync(serverApi, cancelMonitor);
+      if (summary.anyPluginSynchronized()) {
+        applicationEventPublisher.publishEvent(new PluginsSynchronizedEvent(connectionId));
+      }
       scopesToSync = scopesToSync.stream()
         .filter(boundScope -> shouldSynchronizeBinding(new Binding(connectionId, boundScope.getSonarProjectKey()))).collect(toList());
       var scopesPerProjectKey = scopesToSync.stream()

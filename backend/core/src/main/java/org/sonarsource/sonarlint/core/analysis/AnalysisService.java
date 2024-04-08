@@ -564,7 +564,7 @@ public class AnalysisService {
       client.didRaiseIssue(new DidRaiseIssueParams(configScopeId, toDto(issue, activeRule)));
       if (ruleKey.contains("secrets") && !alreadyDetectedSecret) {
         alreadyDetectedSecret = true;
-        client.didDetectSecret(new DidDetectSecretParams());
+        client.didDetectSecret(new DidDetectSecretParams(configScopeId));
       }
     }
   }
@@ -668,7 +668,8 @@ public class AnalysisService {
 
     @Override
     public InputStream inputStream() {
-      return new ByteArrayInputStream(clientFile.getContent().getBytes());
+      var charset = getCharset();
+      return new ByteArrayInputStream(clientFile.getContent().getBytes(charset == null ? Charset.defaultCharset() : charset));
     }
 
     @Override
