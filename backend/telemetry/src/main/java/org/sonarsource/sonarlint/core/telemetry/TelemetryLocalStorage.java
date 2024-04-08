@@ -213,40 +213,36 @@ public class TelemetryLocalStorage {
     return first == null || (second != null && first.isBefore(second));
   }
 
-  static TelemetryLocalStorage validateAndMigrate(TelemetryLocalStorage data) {
+  void validateAndMigrate() {
     var today = LocalDate.now();
 
     // migrate deprecated installDate
-    if (data.installDate() != null && (data.installTime() == null || data.installTime().toLocalDate().isAfter(data.installDate()))) {
-      data.setInstallTime(data.installDate.atTime(OffsetTime.now()));
+    if (installDate != null && (installTime == null || installTime.toLocalDate().isAfter(installDate))) {
+      setInstallTime(installDate.atTime(OffsetTime.now()));
     }
 
     // fix install time if necessary
-    if (data.installTime() == null || data.installTime().isAfter(OffsetDateTime.now())) {
-      data.setInstallTime(OffsetDateTime.now());
+    if (installTime == null || installTime.isAfter(OffsetDateTime.now())) {
+      setInstallTime(OffsetDateTime.now());
     }
 
     // calculate use days
-    var lastUseDate = data.lastUseDate();
     if (lastUseDate == null) {
-      data.setNumUseDays(0);
-      data.analyzers.clear();
-      return data;
+      numUseDays = 0;
+      analyzers.clear();
+      return;
     }
 
-    if (lastUseDate.isBefore(data.installTime().toLocalDate())) {
-      data.setLastUseDate(data.installTime().toLocalDate());
+    if (lastUseDate.isBefore(installTime.toLocalDate())) {
+      lastUseDate = installTime.toLocalDate();
     } else if (lastUseDate.isAfter(today)) {
-      data.setLastUseDate(today);
+      lastUseDate = today;
     }
 
-    var maxUseDays = data.installTime().toLocalDate().until(data.lastUseDate(), DAYS) + 1;
-    if (data.numUseDays() > maxUseDays) {
-      data.setNumUseDays(maxUseDays);
-      data.setLastUseDate(data.lastUseDate());
+    var maxUseDays = installTime.toLocalDate().until(lastUseDate, DAYS) + 1;
+    if (numUseDays() > maxUseDays) {
+      numUseDays = maxUseDays;
     }
-
-    return data;
   }
 
   public void incrementDevNotificationsCount(String eventType) {

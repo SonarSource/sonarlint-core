@@ -54,6 +54,7 @@ import org.sonarsource.sonarlint.core.embedded.server.ShowHotspotRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.ShowIssueRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.StatusRequestHandler;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
+import org.sonarsource.sonarlint.core.file.ServerFilePathsProvider;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.fs.FileExclusionService;
 import org.sonarsource.sonarlint.core.hotspot.HotspotService;
@@ -86,10 +87,7 @@ import org.sonarsource.sonarlint.core.sync.HotspotSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.IssueSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationService;
-import org.sonarsource.sonarlint.core.sync.SynchronizationTimestampRepository;
 import org.sonarsource.sonarlint.core.sync.TaintSynchronizationService;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryServerAttributesProvider;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.tracking.IssueMatchingService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
 import org.sonarsource.sonarlint.core.tracking.SecurityHotspotMatchingService;
@@ -152,16 +150,14 @@ import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_S
   SecurityHotspotMatchingService.class,
   UserTokenService.class,
   RequestHandlerBindingAssistant.class,
-  SynchronizationTimestampRepository.class,
   TaintVulnerabilityTrackingService.class,
-  TelemetryService.class,
-  TelemetryServerAttributesProvider.class,
   SonarProjectBranchesSynchronizationService.class,
   TaintSynchronizationService.class,
   IssueSynchronizationService.class,
   HotspotSynchronizationService.class,
   ClientFileSystemService.class,
   PathTranslationService.class,
+  ServerFilePathsProvider.class,
   FileExclusionService.class,
   NodeJsService.class,
   OrganizationsCache.class,

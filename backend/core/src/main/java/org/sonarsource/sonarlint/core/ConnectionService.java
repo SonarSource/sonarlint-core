@@ -48,6 +48,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.Son
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProjectDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.serverconnection.ServerVersionAndStatusChecker;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -102,7 +103,8 @@ public class ConnectionService {
     }
   }
 
-  public void didUpdateConnections(List<SonarQubeConnectionConfigurationDto> sonarQubeConnections, List<SonarCloudConnectionConfigurationDto> sonarCloudConnections) {
+  public void didUpdateConnections(List<SonarQubeConnectionConfigurationDto> sonarQubeConnections,
+    List<SonarCloudConnectionConfigurationDto> sonarCloudConnections) {
     var newConnectionsById = new HashMap<String, AbstractConnectionConfiguration>();
     sonarQubeConnections.forEach(config -> putAndLogIfDuplicateId(newConnectionsById, adapt(config)));
     sonarCloudConnections.forEach(config -> putAndLogIfDuplicateId(newConnectionsById, adapt(config)));
@@ -191,6 +193,17 @@ public class ConnectionService {
     return serverApi.component().getAllProjects(cancelMonitor)
       .stream().map(serverProject -> new SonarProjectDto(serverProject.getKey(), serverProject.getName()))
       .collect(Collectors.toList());
+  }
+
+  public Map<String, String> getProjectNamesByKey(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection,
+    List<String> projectKeys, SonarLintCancelMonitor cancelMonitor) {
+    var serverApi = serverApiProvider.getForTransientConnection(transientConnection);
+    var projectNamesByKey = new HashMap<String, String>();
+    projectKeys.forEach(key -> {
+      var projectName = serverApi.component().getProject(key, cancelMonitor).map(ServerProject::getName).orElse(null);
+      projectNamesByKey.put(key, projectName);
+    });
+    return projectNamesByKey;
   }
 
 }

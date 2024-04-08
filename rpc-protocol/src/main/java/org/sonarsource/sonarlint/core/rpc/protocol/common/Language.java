@@ -35,6 +35,7 @@ public enum Language {
   HTML,
   IPYTHON,
   JAVA,
+  JCL,
   JS,
   JSON,
   JSP,

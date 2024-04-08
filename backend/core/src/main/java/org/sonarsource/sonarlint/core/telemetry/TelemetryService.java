@@ -20,12 +20,12 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import com.google.common.util.concurrent.MoreExecutors;
-import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
@@ -34,13 +34,14 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.LocalOnlyIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.event.ServerIssueStatusChangedEvent;
-import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.GetStatusResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.springframework.context.event.EventListener;
 
+import static java.util.Optional.ofNullable;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 @Named
@@ -48,45 +49,31 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 public class TelemetryService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final long TELEMETRY_UPLOAD_DELAY = TimeUnit.HOURS.toMinutes(6);
+  private static final long TELEMETRY_UPLOAD_DELAY = TimeUnit.HOURS.toMinutes(TelemetryManager.MIN_HOURS_BETWEEN_UPLOAD + 1L);
 
-  private final TelemetryLocalStorageManager telemetryLocalStorageManager;
   private final ScheduledExecutorService scheduledExecutor;
   private final TelemetryManager telemetryManager;
   private final TelemetryServerAttributesProvider telemetryServerAttributesProvider;
   private final SonarLintRpcClient client;
-  private final Path userHome;
-  private final boolean isTelemetryEnabled;
+  private final boolean isTelemetryFeatureEnabled;
 
-  public TelemetryService(InitializeParams initializeParams, SonarLintRpcClient sonarlintClient, HttpClientProvider httpClientProvider,
-    TelemetryServerAttributesProvider telemetryServerAttributesProvider, @Named("userHome") Path userHome) {
-    this.userHome = userHome;
-    this.isTelemetryEnabled = initializeParams.getFeatureFlags().isEnableTelemetry();
+  public TelemetryService(InitializeParams initializeParams, SonarLintRpcClient sonarlintClient,
+    TelemetryServerAttributesProvider telemetryServerAttributesProvider, TelemetryManager telemetryManager) {
+    this.isTelemetryFeatureEnabled = initializeParams.getFeatureFlags().isEnableTelemetry();
     this.client = sonarlintClient;
     this.telemetryServerAttributesProvider = telemetryServerAttributesProvider;
-    var telemetryInitParams = initializeParams.getTelemetryConstantAttributes();
-    var storagePath = getStoragePath(telemetryInitParams.getProductKey());
-    this.telemetryLocalStorageManager = new TelemetryLocalStorageManager(storagePath);
-    var telemetryServerConstantAttributes = telemetryServerAttributesProvider.getTelemetryServerConstantAttributes();
-    var telemetryClient = new TelemetryHttpClient(telemetryInitParams.getProductName(), telemetryInitParams.getProductVersion(),
-      telemetryInitParams.getIdeVersion(), telemetryServerConstantAttributes.getPlatform(), telemetryServerConstantAttributes.getArchitecture(),
-      httpClientProvider.getHttpClient(), telemetryInitParams.getAdditionalAttributes());
-
-    this.telemetryManager = new TelemetryManager(storagePath, telemetryClient);
+    this.telemetryManager = telemetryManager;
     this.scheduledExecutor = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "SonarLint Telemetry"));
+
     initTelemetryAndScheduleUpload(initializeParams);
   }
 
-  private Path getStoragePath(String productKey) {
-    return userHome.resolve("telemetry").resolve(productKey).resolve("usage");
-  }
-
   private void initTelemetryAndScheduleUpload(InitializeParams initializeParams) {
-    if (!isTelemetryEnabled) {
+    if (!isTelemetryFeatureEnabled) {
       LOG.info("Telemetry disabled on server startup");
       return;
     }
-    this.telemetryLocalStorageManager.tryUpdateAtomically(storage -> storage.setInitialNewCodeFocus(initializeParams.isFocusOnNewCode()));
+    updateTelemetry(localStorage -> localStorage.setInitialNewCodeFocus(initializeParams.isFocusOnNewCode()));
     var initialDelay = Integer.parseInt(System.getProperty("sonarlint.internal.telemetry.initialDelay", "1"));
     scheduledExecutor.scheduleWithFixedDelay(this::upload, initialDelay, TELEMETRY_UPLOAD_DELAY, MINUTES);
   }
@@ -94,7 +81,7 @@ public class TelemetryService {
   private void upload() {
     var telemetryLiveAttributes = getTelemetryLiveAttributes();
     if (Objects.nonNull(telemetryLiveAttributes)) {
-      telemetryManager.uploadLazily(telemetryLiveAttributes);
+      telemetryManager.uploadAndClearTelemetry(telemetryLiveAttributes);
     }
   }
 
@@ -103,7 +90,7 @@ public class TelemetryService {
   }
 
   public void enableTelemetry() {
-    if (!isTelemetryEnabled) {
+    if (!isTelemetryFeatureEnabled) {
       LOG.warn("Telemetry was disabled on server startup. Ignoring client request.");
       return;
     }
@@ -139,94 +126,81 @@ public class TelemetryService {
     return null;
   }
 
-  private TelemetryLocalStorageManager getTelemetryLocalStorageManager() {
-    if (telemetryLocalStorageManager == null) {
-      throw new IllegalStateException("Telemetry service has not been initialized");
-    }
-    return telemetryLocalStorageManager;
+  public boolean isEnabled() {
+    return isTelemetryFeatureEnabled && telemetryManager.isTelemetryEnabledByUser();
   }
 
-  public boolean isEnabled() {
-    return isTelemetryEnabled && telemetryLocalStorageManager != null && telemetryLocalStorageManager.tryRead().enabled();
+  private void updateTelemetry(Consumer<TelemetryLocalStorage> updater) {
+    if (isEnabled()) {
+      telemetryManager.updateTelemetry(updater);
+    }
   }
 
   public void hotspotOpenedInBrowser() {
-    if (isEnabled()) {
-      getTelemetryLocalStorageManager().tryUpdateAtomically(TelemetryLocalStorage::incrementOpenHotspotInBrowserCount);
-    }
+    updateTelemetry(TelemetryLocalStorage::incrementOpenHotspotInBrowserCount);
   }
 
   public void showHotspotRequestReceived() {
-    if (isEnabled()) {
-      getTelemetryLocalStorageManager().tryUpdateAtomically(TelemetryLocalStorage::incrementShowHotspotRequestCount);
-    }
+    updateTelemetry(TelemetryLocalStorage::incrementShowHotspotRequestCount);
   }
 
   public void showIssueRequestReceived() {
-    if (isEnabled()) {
-      getTelemetryLocalStorageManager().tryUpdateAtomically(TelemetryLocalStorage::incrementShowIssueRequestCount);
-    }
+    updateTelemetry(TelemetryLocalStorage::incrementShowIssueRequestCount);
   }
 
   public void taintVulnerabilitiesInvestigatedLocally() {
-    if (isEnabled()) {
-      getTelemetryLocalStorageManager().tryUpdateAtomically(TelemetryLocalStorage::incrementTaintVulnerabilitiesInvestigatedLocallyCount);
-    }
+    updateTelemetry(TelemetryLocalStorage::incrementTaintVulnerabilitiesInvestigatedLocallyCount);
   }
 
   public void taintVulnerabilitiesInvestigatedRemotely() {
-    if (isEnabled()) {
-      getTelemetryLocalStorageManager().tryUpdateAtomically(TelemetryLocalStorage::incrementTaintVulnerabilitiesInvestigatedRemotelyCount);
-    }
+    updateTelemetry(TelemetryLocalStorage::incrementTaintVulnerabilitiesInvestigatedRemotelyCount);
   }
 
-  public void helpAndFeedbackLinkClicked(HelpAndFeedbackClickedParams params){
-    if (isEnabled()) {
-      getTelemetryLocalStorageManager().tryUpdateAtomically(telemetryLocalStorage -> telemetryLocalStorage.helpAndFeedbackLinkClicked(params.getItemId()));
-    }
+  public void helpAndFeedbackLinkClicked(HelpAndFeedbackClickedParams params) {
+    updateTelemetry(localStorage -> localStorage.helpAndFeedbackLinkClicked(params.getItemId()));
   }
 
   public void smartNotificationsReceived(String eventType) {
-    if (isEnabled()) {
-      getTelemetryLocalStorageManager().tryUpdateAtomically(s -> s.incrementDevNotificationsCount(eventType));
-    }
+    updateTelemetry(localStorage -> localStorage.incrementDevNotificationsCount(eventType));
   }
 
-  public void analysisDoneOnSingleLanguage(@Nullable org.sonarsource.sonarlint.core.rpc.protocol.common.Language language, int analysisTimeMs) {
-    if (isEnabled()){
-      var coreLanguage = Objects.nonNull(language) ? SonarLanguage.valueOf(language.name()) : null;
-      telemetryManager.analysisDoneOnSingleLanguage(coreLanguage, analysisTimeMs);
-    }
+  public void analysisDoneOnSingleLanguage(@Nullable Language language, int analysisTimeMs) {
+    updateTelemetry(localStorage -> {
+      var languageName = ofNullable(language)
+        .map(Enum::name)
+        .map(SonarLanguage::valueOf)
+        .map(SonarLanguage::getSonarLanguageKey)
+        .orElse("others");
+      localStorage.setUsedAnalysis(languageName, analysisTimeMs);
+    });
   }
 
   public void analysisDoneOnMultipleFiles() {
-    if (isEnabled()) {
-      getTelemetryLocalStorageManager().tryUpdateAtomically(TelemetryLocalStorage::setUsedAnalysis);
-    }
+    updateTelemetry(TelemetryLocalStorage::setUsedAnalysis);
   }
 
   public void smartNotificationsClicked(String eventType) {
-    if (isEnabled()) {
-      getTelemetryLocalStorageManager().tryUpdateAtomically(s -> s.incrementDevNotificationsClicked(eventType));
-    }
+    updateTelemetry(localStorage -> localStorage.incrementDevNotificationsClicked(eventType));
   }
 
   public void addQuickFixAppliedForRule(String ruleKey) {
-    if (isEnabled()) {
-      getTelemetryLocalStorageManager().tryUpdateAtomically(s -> s.addQuickFixAppliedForRule(ruleKey));
-    }
+    updateTelemetry(localStorage -> localStorage.addQuickFixAppliedForRule(ruleKey));
   }
 
   public void addReportedRules(Set<String> ruleKeys) {
-    if (isEnabled()){
-      getTelemetryLocalStorageManager().tryUpdateAtomically(s -> s.addReportedRules(ruleKeys));
-    }
+    updateTelemetry(s -> s.addReportedRules(ruleKeys));
   }
 
   public void hotspotStatusChanged() {
-    if (isEnabled()) {
-      getTelemetryLocalStorageManager().tryUpdateAtomically(TelemetryLocalStorage::incrementHotspotStatusChangedCount);
-    }
+    updateTelemetry(TelemetryLocalStorage::incrementHotspotStatusChangedCount);
+  }
+
+  public void newCodeFocusChanged() {
+    updateTelemetry(TelemetryLocalStorage::incrementNewCodeFocusChange);
+  }
+
+  private void issueStatusChanged(String ruleKey) {
+    updateTelemetry(telemetryLocalStorage -> telemetryLocalStorage.addIssueStatusChanged(ruleKey));
   }
 
   @EventListener
@@ -237,18 +211,6 @@ public class TelemetryService {
   @EventListener
   public void onLocalOnlyIssueStatusChanged(LocalOnlyIssueStatusChangedEvent event) {
     issueStatusChanged(event.getIssue().getRuleKey());
-  }
-
-  private void issueStatusChanged(String ruleKey) {
-    if (isEnabled()) {
-      getTelemetryLocalStorageManager().tryUpdateAtomically(telemetryLocalStorage -> telemetryLocalStorage.addIssueStatusChanged(ruleKey));
-    }
-  }
-
-  public void newCodeFocusChanged() {
-    if (isEnabled()) {
-      getTelemetryLocalStorageManager().tryUpdateAtomically(TelemetryLocalStorage::incrementNewCodeFocusChange);
-    }
   }
 
   @PreDestroy

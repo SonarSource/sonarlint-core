@@ -63,7 +63,7 @@ public interface HttpClient {
 
   CompletableFuture<Response> postAsync(String url, String contentType, String body);
 
-  Response delete(String url, String contentType, String body);
+  CompletableFuture<Response> deleteAsync(String url, String contentType, String body);
 
   interface AsyncRequest {
     void cancel();

@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.rules;
 
+import com.google.common.base.Enums;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,9 +29,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
+import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -40,6 +43,7 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 public class RulesApi {
 
@@ -68,9 +72,13 @@ public class RulesApi {
     serverApiHelper.getOrganizationKey().ifPresent(org -> builder.append("&organization=").append(UrlUtils.urlEncode(org)));
     try (var response = serverApiHelper.get(builder.toString(), cancelMonitor)) {
       var rule = Rules.ShowResponse.parseFrom(response.bodyAsStream()).getRule();
+      var cleanCodeAttribute = Enums.getIfPresent(CleanCodeAttribute.class, rule.getCleanCodeAttribute().name()).orNull();
+      var impacts = rule.getImpacts().getImpactsList().stream().collect(toMap(
+        impact -> SoftwareQuality.valueOf(impact.getSoftwareQuality().name()),
+        impact -> ImpactSeverity.valueOf(impact.getSeverity().name())));
       return Optional.of(new ServerRule(rule.getName(), IssueSeverity.valueOf(rule.getSeverity()), RuleType.valueOf(rule.getType().name()), rule.getLang(), rule.getHtmlDesc(),
         convertDescriptionSections(rule),
-        rule.getHtmlNote(), Set.copyOf(rule.getEducationPrinciples().getEducationPrinciplesList())));
+        rule.getHtmlNote(), Set.copyOf(rule.getEducationPrinciples().getEducationPrinciplesList()), cleanCodeAttribute, impacts));
     } catch (Exception e) {
       LOG.error("Error when fetching rule '" + ruleKey + "'", e);
     }
@@ -100,7 +108,7 @@ public class RulesApi {
       Rules.SearchResponse::parseFrom,
       r -> r.hasPaging() ? r.getPaging().getTotal() : r.getTotal(),
       r -> {
-        ruleTemplatesByRuleKey.putAll(r.getRulesList().stream().collect(Collectors.toMap(Rules.Rule::getKey, Rules.Rule::getTemplateKey)));
+        ruleTemplatesByRuleKey.putAll(r.getRulesList().stream().collect(toMap(Rules.Rule::getKey, Rules.Rule::getTemplateKey)));
         return List.copyOf(r.getActives().getActivesMap().entrySet());
       },
       activeEntry -> {
@@ -110,7 +118,7 @@ public class RulesApi {
         activeRulesByKey.put(ruleKey, new ServerActiveRule(
           ruleKey,
           IssueSeverity.valueOf(ar.getSeverity()),
-          ar.getParamsList().stream().collect(Collectors.toMap(Rules.Active.Param::getKey, Rules.Active.Param::getValue)),
+          ar.getParamsList().stream().collect(toMap(Rules.Active.Param::getKey, Rules.Active.Param::getValue)),
           ruleTemplatesByRuleKey.get(ruleKey)));
 
       },

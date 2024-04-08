@@ -19,42 +19,53 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
-import java.nio.file.Path;
-import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
-
-import static org.sonarsource.sonarlint.core.telemetry.TelemetryUtils.dayChanged;
+import java.time.LocalDateTime;
+import java.util.function.Consumer;
+import javax.inject.Named;
+import javax.inject.Singleton;
 
 /**
  * Manage telemetry data and persistent storage, and stateful telemetry actions.
  * The single central point for clients to manage telemetry.
  */
+@Named
+@Singleton
 public class TelemetryManager {
 
   static final int MIN_HOURS_BETWEEN_UPLOAD = 5;
 
-  private final TelemetryLocalStorageManager storage;
+  private final TelemetryLocalStorageManager storageManager;
   private final TelemetryHttpClient client;
 
-  TelemetryManager(Path path, TelemetryHttpClient client) {
-    this.storage = newTelemetryStorage(path);
+  TelemetryManager(TelemetryLocalStorageManager storageManager, TelemetryHttpClient client) {
+    this.storageManager = storageManager;
     this.client = client;
   }
 
-  TelemetryLocalStorageManager newTelemetryStorage(Path path) {
-    return new TelemetryLocalStorageManager(path);
+  void enable(TelemetryLiveAttributes telemetryLiveAttributes) {
+    storageManager.tryUpdateAtomically(localStorage -> {
+      localStorage.setEnabled(true);
+      if (isGracePeriodElapsedAndDayChanged(localStorage.lastUploadTime())) {
+        uploadAndClearTelemetry(telemetryLiveAttributes, localStorage);
+      }
+    });
   }
 
-  void enable(TelemetryLiveAttributes telemetryLiveAttributes) {
-    storage.tryUpdateAtomically(data -> data.setEnabled(true));
-    uploadLazily(telemetryLiveAttributes);
+  private static boolean isGracePeriodElapsedAndDayChanged(LocalDateTime lastUploadTime) {
+    return TelemetryUtils.isGracePeriodElapsedAndDayChanged(lastUploadTime, MIN_HOURS_BETWEEN_UPLOAD);
+  }
+
+  private void uploadAndClearTelemetry(TelemetryLiveAttributes telemetryLiveAttributes, TelemetryLocalStorage localStorage) {
+    client.upload(localStorage, telemetryLiveAttributes);
+    localStorage.setLastUploadTime();
+    localStorage.clearAfterPing();
   }
 
   /**
    * Disable telemetry (opt-out).
    */
   void disable(TelemetryLiveAttributes telemetryLiveAttributes) {
-    storage.tryUpdateAtomically(data -> {
+    storageManager.tryUpdateAtomically(data -> {
       data.setEnabled(false);
       client.optOut(data, telemetryLiveAttributes);
     });
@@ -62,30 +73,24 @@ public class TelemetryManager {
 
   /**
    * Upload telemetry data, when all conditions are satisfied:
+   * - telemetry is enabled
    * - the day is different from the last upload
    * - the grace period has elapsed since the last upload
    * To be called periodically once a day.
    */
-  void uploadLazily(TelemetryLiveAttributes telemetryLiveAttributes) {
-    var readData = storage.tryRead();
-    if (!dayChanged(readData.lastUploadTime(), MIN_HOURS_BETWEEN_UPLOAD)) {
-      return;
+  void uploadAndClearTelemetry(TelemetryLiveAttributes telemetryLiveAttributes) {
+    if (isTelemetryEnabledByUser() && isGracePeriodElapsedAndDayChanged(storageManager.lastUploadTime())) {
+      storageManager.tryUpdateAtomically(localStorage -> uploadAndClearTelemetry(telemetryLiveAttributes, localStorage));
     }
-
-    storage.tryUpdateAtomically(data -> {
-      client.upload(data, telemetryLiveAttributes);
-      data.setLastUploadTime();
-      data.clearAfterPing();
-    });
   }
 
-  void analysisDoneOnSingleLanguage(@Nullable SonarLanguage language, int analysisTimeMs) {
-    storage.tryUpdateAtomically(data -> {
-      if (language == null) {
-        data.setUsedAnalysis("others", analysisTimeMs);
-      } else {
-        data.setUsedAnalysis(language.getSonarLanguageKey(), analysisTimeMs);
-      }
-    });
+  public void updateTelemetry(Consumer<TelemetryLocalStorage> updater) {
+    if (isTelemetryEnabledByUser()) {
+      storageManager.tryUpdateAtomically(updater);
+    }
+  }
+
+  public boolean isTelemetryEnabledByUser() {
+    return storageManager.isEnabled();
   }
 }

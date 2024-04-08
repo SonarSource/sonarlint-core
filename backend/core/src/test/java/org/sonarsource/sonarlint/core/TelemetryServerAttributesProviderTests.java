@@ -123,14 +123,6 @@ class TelemetryServerAttributesProviderTests {
   }
 
   @Test
-  void it_should_calculate_constant_telemetry_attrs(){
-    var underTest = new TelemetryServerAttributesProvider(mock(ConfigurationRepository.class), mock(ConnectionConfigurationRepository.class),  mock(RulesService.class), mock(RulesRepository.class), mock(NodeJsService.class));
-
-    assertThat(underTest.getTelemetryServerConstantAttributes().getArchitecture()).isEqualTo(SystemUtils.OS_ARCH);
-    assertThat(underTest.getTelemetryServerConstantAttributes().getPlatform()).isEqualTo(SystemUtils.OS_NAME);
-  }
-
-  @Test
   void it_should_test_nodejs_version_telemetry_attr() {
     var nodeJsService = mock(NodeJsService.class);
     var version = "3.1.4.159";

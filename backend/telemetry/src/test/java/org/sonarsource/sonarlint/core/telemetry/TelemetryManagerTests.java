@@ -30,7 +30,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.stubbing.Answer;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 
 import static java.util.Collections.emptyMap;
@@ -39,6 +38,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -53,33 +53,31 @@ class TelemetryManagerTests {
   private static final String SUGGEST_FEATURE = "suggestFeature";
 
   private TelemetryHttpClient client;
-  private Path storagePath;
-  private TelemetryManager manager;
-  private TelemetryLocalStorageManager storage;
+  private TelemetryManager telemetryManager;
+  private TelemetryLocalStorageManager storageManager;
 
   @BeforeEach
   void setUp(@TempDir Path temp) {
     client = mock(TelemetryHttpClient.class);
-    storagePath = temp.resolve("storage");
-    storage = new TelemetryLocalStorageManager(storagePath);
-    manager = new TelemetryManager(storagePath, client);
+    storageManager = new TelemetryLocalStorageManager(temp.resolve("storage"));
+    telemetryManager = new TelemetryManager(storageManager, client);
   }
 
   @Test
   void enable_should_trigger_upload_once_per_day() {
     var telemetryPayload = getTelemetryLiveAttributesDto();
 
-    manager.enable(telemetryPayload);
-    manager.enable(telemetryPayload);
+    telemetryManager.enable(telemetryPayload);
+    telemetryManager.enable(telemetryPayload);
 
     verify(client).upload(any(TelemetryLocalStorage.class), eq(telemetryPayload));
     verifyNoMoreInteractions(client);
   }
 
   @Test
-  void disable_should_trigger_optout(@TempDir Path temp) {
-    var storage = mockTelemetryStorage();
-    var manager = stubbedTelemetryManager(temp, storage);
+  void disable_should_trigger_optout() {
+    var mockStorageManager = mockTelemetryStorage();
+    var manager = new TelemetryManager(mockStorageManager, client);
     var telemetryPayload = getTelemetryLiveAttributesDto();
 
     manager.disable(telemetryPayload);
@@ -89,18 +87,18 @@ class TelemetryManagerTests {
   }
 
   @Test
-  void uploadLazily_should_trigger_upload_once_per_day() {
+  void uploadAndClearTelemetry_should_trigger_upload_once_per_day() {
     var telemetryPayload = getTelemetryLiveAttributesDto();
 
-    storage.tryUpdateAtomically(d -> d.setUsedAnalysis("java", 1000));
+    storageManager.tryUpdateAtomically(d -> d.setUsedAnalysis("java", 1000));
 
-    var data = storage.tryRead();
+    var data = storageManager.tryRead();
     assertThat(data.analyzers()).isNotEmpty();
     assertThat(data.lastUploadTime()).isNull();
 
-    manager.uploadLazily(telemetryPayload);
+    telemetryManager.uploadAndClearTelemetry(telemetryPayload);
 
-    var reloaded = storage.tryRead();
+    var reloaded = storageManager.tryRead();
 
     // should reset performance after upload
     assertThat(reloaded.analyzers()).isEmpty();
@@ -108,9 +106,9 @@ class TelemetryManagerTests {
     var lastUploadTime = reloaded.lastUploadTime();
     assertThat(lastUploadTime).isNotNull();
 
-    manager.uploadLazily(telemetryPayload);
+    telemetryManager.uploadAndClearTelemetry(telemetryPayload);
 
-    reloaded = storage.tryRead();
+    reloaded = storageManager.tryRead();
 
     assertThat(reloaded.lastUploadTime()).isEqualTo(lastUploadTime);
     verify(client).upload(any(TelemetryLocalStorage.class), eq(telemetryPayload));
@@ -118,61 +116,84 @@ class TelemetryManagerTests {
   }
 
   @Test
-  void uploadLazily_should_trigger_upload_if_day_changed_and_hours_elapsed() {
+  void uploadAndClearTelemetry_should_trigger_upload_if_day_changed_and_hours_elapsed() {
     var telemetryPayload = getTelemetryLiveAttributesDto();
 
-    createAndSaveSampleData(storage);
-    manager.uploadLazily(telemetryPayload);
+    createAndSaveSampleData(storageManager);
+    storageManager.tryUpdateAtomically(telemetryLocalStorage -> telemetryLocalStorage.setEnabled(true));
+    telemetryManager.uploadAndClearTelemetry(telemetryPayload);
 
-    var data = storage.tryRead();
+    var data = storageManager.tryRead();
 
     var lastUploadTime = data.lastUploadTime()
       .minusDays(1)
       .minusHours(TelemetryManager.MIN_HOURS_BETWEEN_UPLOAD);
-    storage.tryUpdateAtomically(d -> d.setLastUploadTime(lastUploadTime));
+    storageManager.tryUpdateAtomically(d -> d.setLastUploadTime(lastUploadTime));
 
-    manager.uploadLazily(telemetryPayload);
+    telemetryManager.uploadAndClearTelemetry(telemetryPayload);
 
     verify(client, times(2)).upload(any(TelemetryLocalStorage.class), eq(telemetryPayload));
     verifyNoMoreInteractions(client);
   }
 
   @Test
+  void uploadAndClearTelemetry_should_not_trigger_upload_if_telemetry_disabled_by_user() {
+    createAndSaveSampleData(storageManager);
+    TelemetryLiveAttributes telemetryLiveAttributesDto = getTelemetryLiveAttributesDto();
+
+    telemetryManager.uploadAndClearTelemetry(telemetryLiveAttributesDto);
+
+    assertThat(storageManager.isEnabled()).isFalse();
+    verify(client, never()).upload(any(TelemetryLocalStorage.class), eq(telemetryLiveAttributesDto));
+    verifyNoMoreInteractions(client);
+  }
+
+  @Test
+  void updateTelemetry_should_not_trigger_update_if_telemetry_disabled_by_user() {
+    createAndSaveSampleData(storageManager);
+
+    telemetryManager.updateTelemetry(telemetryLocalStorage -> telemetryLocalStorage.setNumUseDays(10));
+
+    TelemetryLocalStorage localStorage = storageManager.tryRead();
+    assertThat(localStorage.enabled()).isFalse();
+    assertThat(localStorage.numUseDays()).isEqualTo(5);
+  }
+
+  @Test
   void enable_should_not_wipe_out_more_recent_data() {
-    var telemetryPayload = getTelemetryLiveAttributesDto();
+    var telemetryLiveAttributes = getTelemetryLiveAttributesDto();
 
-    createAndSaveSampleData(storage);
+    createAndSaveSampleData(storageManager);
 
-    var data = storage.tryRead();
+    var data = storageManager.tryRead();
     assertThat(data.enabled()).isFalse();
 
     // note: the manager hasn't seen the saved data
-    manager.enable(telemetryPayload);
+    telemetryManager.enable(telemetryLiveAttributes);
 
-    var reloaded = storage.tryRead();
+    var reloaded = storageManager.tryRead();
     assertThat(reloaded.enabled()).isTrue();
     assertThat(reloaded.installTime()).isEqualTo(data.installTime().truncatedTo(ChronoUnit.MILLIS));
     assertThat(reloaded.lastUseDate()).isEqualTo(data.lastUseDate());
     assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays());
-    assertThat(reloaded.lastUploadTime()).isAfter(data.lastUploadTime());
   }
 
   @Test
   void disable_should_not_wipe_out_more_recent_data() {
     var telemetryPayload = getTelemetryLiveAttributesDto();
 
-    createAndSaveSampleData(storage);
-    storage.tryUpdateAtomically(data -> data.setEnabled(true));
+    createAndSaveSampleData(storageManager);
+    storageManager.tryUpdateAtomically(data -> data.setEnabled(true));
 
-    var data = storage.tryRead();
+    var data = storageManager.tryRead();
     assertThat(data.enabled()).isTrue();
 
     // note: the manager hasn't seen the saved data
-    manager.disable(telemetryPayload);
+    telemetryManager.disable(telemetryPayload);
 
-    var reloaded = storage.tryRead();
+    var reloaded = storageManager.tryRead();
     assertThat(reloaded.enabled()).isFalse();
-    assertThat(reloaded.installTime()).isEqualTo(data.installTime().truncatedTo(ChronoUnit.MILLIS));
+    assertThat(reloaded.installTime()).isEqualTo(data.installTime());
     assertThat(reloaded.lastUseDate()).isEqualTo(data.lastUseDate());
     assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays());
     assertThat(reloaded.lastUploadTime()).isEqualTo(data.lastUploadTime());
@@ -180,30 +201,11 @@ class TelemetryManagerTests {
   }
 
   @Test
-  void reporting_analysis_on_language() {
-    createAndSaveSampleData(storage);
-
-    var data = storage.tryRead();
-
-    // note: the manager hasn't seen the saved data
-    manager.analysisDoneOnSingleLanguage(SonarLanguage.JAVA, 1000);
-
-    var reloaded = storage.tryRead();
-    assertThat(reloaded.enabled()).isEqualTo(data.enabled());
-    assertThat(reloaded.installTime()).isEqualTo(data.installTime().truncatedTo(ChronoUnit.MILLIS));
-    assertThat(reloaded.lastUseDate()).isEqualTo(LocalDate.now());
-    assertThat(reloaded.numUseDays()).isEqualTo(data.numUseDays() + 1);
-    assertThat(reloaded.lastUploadTime()).isEqualTo(data.lastUploadTime());
-    assertThat(reloaded.analyzers()).containsKey("java");
-    assertThat(reloaded.notifications().get(FOO_EVENT).getDevNotificationsCount()).isEqualTo(10);
-  }
-
-  @Test
-  void uploadLazily_should_clear_accumulated_data() {
+  void uploadAndClearTelemetry_should_clear_accumulated_data() {
     var telemetryPayload = getTelemetryLiveAttributesDto();
 
-    createAndSaveSampleData(storage);
-    storage.tryUpdateAtomically(data -> {
+    createAndSaveSampleData(storageManager);
+    storageManager.tryUpdateAtomically(data -> {
       data.setEnabled(true);
       data.setUsedAnalysis("java", 1000);
       data.incrementHotspotStatusChangedCount();
@@ -218,9 +220,9 @@ class TelemetryManagerTests {
       data.getHelpAndFeedbackLinkClickedCounter().put(SUGGEST_FEATURE, new TelemetryHelpAndFeedbackCounter(DEFAULT_HELP_AND_FEEDBACK_COUNT));
     });
 
-    manager.uploadLazily(telemetryPayload);
+    telemetryManager.uploadAndClearTelemetry(telemetryPayload);
 
-    var reloaded = storage.tryRead();
+    var reloaded = storageManager.tryRead();
     assertThat(reloaded.analyzers()).isEmpty();
     assertThat(reloaded.showHotspotRequestsCount()).isZero();
     assertThat(reloaded.notifications()).isEmpty();
@@ -255,17 +257,8 @@ class TelemetryManagerTests {
     return storage;
   }
 
-  private TelemetryManager stubbedTelemetryManager(Path path, TelemetryLocalStorageManager storage) {
-    return new TelemetryManager(path, client) {
-      @Override
-      TelemetryLocalStorageManager newTelemetryStorage(Path ignored) {
-        return storage;
-      }
-    };
-  }
-
   private static TelemetryLiveAttributes getTelemetryLiveAttributesDto() {
-    var serverAttributes = new TelemetryServerLiveAttributes(true, true, false, Collections.emptyList(), Collections.emptyList(), "3.1.7");
+    var serverAttributes = new TelemetryServerAttributes(true, true, false, Collections.emptyList(), Collections.emptyList(), "3.1.7");
     var clientAttributes = new TelemetryClientLiveAttributesResponse(emptyMap());
     return new TelemetryLiveAttributes(serverAttributes, clientAttributes);
   }

@@ -997,6 +997,7 @@ public class ServerFixture {
 
     private void registerComponentsApiResponses() {
       registerComponentsSearchApiResponses();
+      registerComponentsShowApiResponses();
       registerComponentsTreeApiResponses();
     }
 
@@ -1012,6 +1013,17 @@ public class ServerFixture {
             .collect(toList()))
           .setPaging(Common.Paging.newBuilder().setTotal(projectsByProjectKey.size()).build())
           .build()))));
+    }
+
+    private void registerComponentsShowApiResponses() {
+      projectsByProjectKey.forEach((projectKey, project) -> {
+        var url = "/api/components/show.protobuf?component=" + projectKey;
+        var projectComponent = projectsByProjectKey.entrySet().stream().filter(e -> e.getKey().equals(projectKey)).map(entry -> Components.Component.newBuilder().setKey(entry.getKey()).setName(entry.getValue().name).build()).findFirst().get();
+        mockServer.stubFor(get(url)
+          .willReturn(aResponse().withResponseBody(protobufBody(Components.ShowWsResponse.newBuilder()
+            .setComponent(projectComponent)
+            .build()))));
+      });
     }
 
     private void registerComponentsTreeApiResponses() {

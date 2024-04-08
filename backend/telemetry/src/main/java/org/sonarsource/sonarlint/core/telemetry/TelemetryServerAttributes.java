@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.telemetry;
 import java.util.List;
 import javax.annotation.Nullable;
 
-public class TelemetryServerLiveAttributes {
+public class TelemetryServerAttributes {
   /**
    * At least one project in the IDE is bound to a SQ server or SC
    */
@@ -55,7 +55,7 @@ public class TelemetryServerLiveAttributes {
   @Nullable
   private final String nodeVersion;
 
-  public TelemetryServerLiveAttributes(boolean usesConnectedMode, boolean usesSonarCloud, boolean devNotificationsDisabled,
+  public TelemetryServerAttributes(boolean usesConnectedMode, boolean usesSonarCloud, boolean devNotificationsDisabled,
     List<String> nonDefaultEnabledRules, List<String> defaultDisabledRules, @Nullable String nodeVersion) {
     this.usesConnectedMode = usesConnectedMode;
     this.usesSonarCloud = usesSonarCloud;

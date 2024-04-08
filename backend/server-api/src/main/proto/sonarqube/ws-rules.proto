@@ -48,13 +48,19 @@ message Rule {
   optional string name = 3;
   optional string htmlDesc = 5 [deprecated=true];
   optional string htmlNote = 6;
-  optional string severity = 10;
+  optional string severity = 10 [deprecated=true];
   optional string templateKey = 14;
   optional string lang = 19;
 
-  optional sonarqube.ws.commons.RuleType type = 37;
+  optional sonarqube.ws.commons.RuleType type = 37 [deprecated=true];
   optional DescriptionSections descriptionSections = 49;
   optional EducationPrinciples educationPrinciples = 50;
+  optional sonarqube.ws.commons.CleanCodeAttribute cleanCodeAttribute = 52;
+  optional Impacts impacts = 54;
+
+  message Impacts {
+    repeated sonarqube.ws.commons.Impact impacts = 1;
+  }
 
   message DescriptionSections {
     repeated DescriptionSection descriptionSections = 1;

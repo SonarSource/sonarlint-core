@@ -34,7 +34,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -84,12 +83,14 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.APEX;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.C;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.COBOL;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JCL;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.SECRETS;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.TSQL;
 
 class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
   public static final String CONNECTION_ID = "orchestrator";
   private static final String PROJECT_KEY_COBOL = "sample-cobol";
+  private static final String PROJECT_KEY_JCL = "sample-jcl";
   private static final String PROJECT_KEY_C = "sample-c";
   private static final String PROJECT_KEY_TSQL = "sample-tsql";
   private static final String PROJECT_KEY_APEX = "sample-apex";
@@ -102,6 +103,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     .activateLicense()
     .restoreProfileAtStartup(FileLocation.ofClasspath("/c-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/cobol-sonarlint.xml"))
+    .restoreProfileAtStartup(FileLocation.ofClasspath("/jcl-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/tsql-sonarlint.xml"))
     .restoreProfileAtStartup(FileLocation.ofClasspath("/apex-sonarlint.xml"))
     .build();
@@ -144,6 +146,10 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/custom-secrets-sonarlint.xml"));
       provisionProject(ORCHESTRATOR, PROJECT_KEY_CUSTOM_SECRETS, "Sample Custom Secrets");
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_CUSTOM_SECRETS, "secrets", "SonarLint IT Custom Secrets");
+    }
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 5)) {
+      provisionProject(ORCHESTRATOR, PROJECT_KEY_JCL, "Sample JCL");
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JCL, "jcl", "SonarLint IT JCL");
     }
 
     if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 4)) {
@@ -254,6 +260,16 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     }
 
     @Test
+    @OnlyOnSonarQube(from = "10.5")
+    void analysisJCL() {
+      start(PROJECT_KEY_JCL);
+
+      var rawIssues = analyzeFile(PROJECT_KEY_JCL, "GAM0VCDB.jcl");
+
+      assertThat(rawIssues).hasSize(6);
+    }
+
+    @Test
     void analysisTsql() {
       start(PROJECT_KEY_TSQL);
 
@@ -337,9 +353,6 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
       List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, projectName,
         new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
     await().atMost(30, SECONDS).untilAsserted(() -> assertThat(analysisReadinessByConfigScopeId).containsEntry(CONFIG_SCOPE_ID, true));
-    // TODO FIX ME and remove this check for a log after https://sonarsource.atlassian.net/browse/SLCORE-396 is fixed
-    await().untilAsserted(() ->
-      assertThat(rpcClientLogs).anyMatch(s -> Objects.equals(s.getMessage(), "Stored project analyzer configuration")));
   }
 
   private List<RawIssue> analyzeFile(String projectDir, String filePath, String... properties) {
@@ -391,7 +404,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
     backend = clientLauncher.getServerProxy();
     try {
-      var languages = Set.of(JAVA, COBOL, C, TSQL, APEX, SECRETS);
+      var languages = Set.of(JAVA, COBOL, C, TSQL, APEX, SECRETS, JCL);
       var featureFlags = new FeatureFlagsDto(true, true, true, false, true, false, false, true, false);
       backend.initialize(
           new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(), null, featureFlags,

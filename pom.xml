@@ -49,6 +49,7 @@
   </modules>
 
   <properties>
+    <maven.compiler.release>11</maven.compiler.release>
     <sonar-plugin-api.version>10.1.0.809</sonar-plugin-api.version>
     <sonar-markdown.version>9.4.0.54424</sonar-markdown.version>
     <sonar-scanner-protocol.version>7.9</sonar-scanner-protocol.version>
@@ -199,7 +200,7 @@
       <dependency>
         <groupId>io.github.hakky54</groupId>
         <artifactId>sslcontext-kickstart</artifactId>
-        <version>8.1.6</version>
+        <version>8.3.4</version>
       </dependency>
       <dependency>
         <groupId>com.github.tomakehurst</groupId>
