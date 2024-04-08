@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.CheckForNull;
-import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
@@ -40,10 +39,6 @@ public class SkippedPluginsRepository {
   @CheckForNull
   public List<SkippedPlugin> getSkippedEmbeddedPlugins() {
     return skippedEmbeddedPlugins;
-  }
-
-  @PreDestroy
-  public void unloadAllPlugins() {
   }
 
   public List<SkippedPlugin> getSkippedPlugins(String configurationScopeId) {

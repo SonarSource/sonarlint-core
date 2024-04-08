@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Server Connection
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,9 +17,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.analysis;
+package org.sonarsource.sonarlint.core.serverconnection;
 
-public class ClientNodeJsPathChanged {
-  ClientNodeJsPathChanged() {
+public class PluginSynchronizationSummary {
+  private final boolean anyPluginSynchronized;
+
+  public PluginSynchronizationSummary(boolean anyPluginSynchronized) {
+    this.anyPluginSynchronized = anyPluginSynchronized;
+  }
+
+  public boolean anyPluginSynchronized() {
+    return anyPluginSynchronized;
   }
 }

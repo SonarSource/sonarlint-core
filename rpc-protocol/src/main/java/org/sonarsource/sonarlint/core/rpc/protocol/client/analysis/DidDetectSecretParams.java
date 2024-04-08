@@ -20,4 +20,13 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.client.analysis;
 
 public class DidDetectSecretParams {
+  private final String configurationScopeId;
+
+  public DidDetectSecretParams(String configurationScopeId) {
+    this.configurationScopeId = configurationScopeId;
+  }
+
+  public String getConfigurationScopeId() {
+    return configurationScopeId;
+  }
 }
