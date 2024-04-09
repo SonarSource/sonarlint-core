@@ -27,9 +27,7 @@ import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.function.Predicate;
-import org.eclipse.lsp4j.jsonrpc.json.adapters.EitherTypeAdapter;
-import org.eclipse.lsp4j.jsonrpc.json.adapters.TypeUtils;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 
 import static java.util.function.Predicate.not;
 
@@ -47,7 +45,6 @@ public abstract class CustomEitherAdapterFactory<L, R> implements TypeAdapterFac
     this.leftChecker = leftChecker;
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public final <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
     if (!TypeUtils.isEither(type.getType())) {

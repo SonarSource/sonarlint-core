@@ -20,8 +20,8 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.rules;
 
 import com.google.gson.annotations.JsonAdapter;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherRuleDescriptionTabContentAdapterFactory;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 
 public class RuleDescriptionTabDto {
   private final String title;
