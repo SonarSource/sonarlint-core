@@ -30,6 +30,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetSharedConnectedModeConfigFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.OpenHotspotInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddQuickFixAppliedForRuleParams;
@@ -50,6 +51,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static java.util.Collections.emptyMap;
+import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -382,6 +384,30 @@ class TelemetryMediumTests {
 
     backend.getTelemetryService().analysisDoneOnMultipleFiles();
     await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"numUseDays\":1"));
+  }
+
+  @Test
+  void it_should_record_addedManualBindings() {
+    setupClientAndBackend();
+
+    backend.getTelemetryService().addedManualBindings();
+    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"manualAddedBindingsCount\":1"));
+  }
+
+  @Test
+  void it_should_record_addedImportedBindings() {
+    setupClientAndBackend();
+
+    backend.getTelemetryService().addedImportedBindings();
+    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"importedAddedBindingsCount\":1"));
+  }
+
+  @Test
+  void it_should_record_addedAutomaticBindings() {
+    setupClientAndBackend();
+
+    backend.getTelemetryService().addedAutomaticBindings();
+    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"autoAddedBindingsCount\":1"));
   }
 
   private void setupClientAndBackend() {

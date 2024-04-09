@@ -89,4 +89,20 @@ class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements 
   public void helpAndFeedbackLinkClicked(HelpAndFeedbackClickedParams params) {
     notify(() -> getBean(TelemetryService.class).helpAndFeedbackLinkClicked(params));
   }
+
+  @Override
+  public void addedManualBindings() {
+    notify(() -> getBean(TelemetryService.class).addedManualBindings());
+  }
+
+  @Override
+  public void addedImportedBindings() {
+    notify(() -> getBean(TelemetryService.class).addedImportedBindings());
+  }
+
+  @Override
+  public void addedAutomaticBindings() {
+    notify(() -> getBean(TelemetryService.class).addedAutomaticBindings());
+  }
+
 }

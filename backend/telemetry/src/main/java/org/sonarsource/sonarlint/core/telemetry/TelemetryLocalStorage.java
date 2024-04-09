@@ -56,6 +56,10 @@ public class TelemetryLocalStorage {
   private final Map<String, TelemetryHelpAndFeedbackCounter> helpAndFeedbackLinkClickedCount;
   private boolean isFocusOnNewCode;
   private int codeFocusChangedCount;
+  private int manualAddedBindingsCount;
+  private int importedAddedBindingsCount;
+  private int autoAddedBindingsCount;
+  private int exportedConnectedModeCount;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -149,8 +153,8 @@ public class TelemetryLocalStorage {
   }
 
   void clearAfterPing() {
-    this.analyzers.clear();
-    this.notificationsCountersByEventType.clear();
+    analyzers.clear();
+    notificationsCountersByEventType.clear();
     showHotspotRequestsCount = 0;
     showIssueRequestsCount = 0;
     openHotspotInBrowserCount = 0;
@@ -161,8 +165,8 @@ public class TelemetryLocalStorage {
     issueStatusChangedCount = 0;
     raisedIssuesRules.clear();
     quickFixesApplied.clear();
-    this.helpAndFeedbackLinkClickedCount.clear();
-    this.codeFocusChangedCount = 0;
+    helpAndFeedbackLinkClickedCount.clear();
+    codeFocusChangedCount = 0;
   }
 
   long numUseDays() {
@@ -336,4 +340,41 @@ public class TelemetryLocalStorage {
     this.isFocusOnNewCode = !this.isFocusOnNewCode;
     codeFocusChangedCount++;
   }
+
+  public void incrementManualAddedBindingsCount() {
+    markSonarLintAsUsedToday();
+    manualAddedBindingsCount++;
+  }
+
+  public int getManualAddedBindingsCount() {
+    return manualAddedBindingsCount;
+  }
+
+  public void incrementImportedAddedBindingsCount() {
+    markSonarLintAsUsedToday();
+    importedAddedBindingsCount++;
+  }
+
+  public int getImportedAddedBindingsCount() {
+    return importedAddedBindingsCount;
+  }
+
+  public void incrementAutoAddedBindingsCount() {
+    markSonarLintAsUsedToday();
+    autoAddedBindingsCount++;
+  }
+
+  public int getAutoAddedBindingsCount() {
+    return autoAddedBindingsCount;
+  }
+
+  public void incrementExportedConnectedModeCount() {
+    markSonarLintAsUsedToday();
+    exportedConnectedModeCount++;
+  }
+
+  public int getExportedConnectedModeCount() {
+    return exportedConnectedModeCount;
+  }
+
 }
