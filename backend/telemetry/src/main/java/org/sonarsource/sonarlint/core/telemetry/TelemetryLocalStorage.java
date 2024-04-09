@@ -167,6 +167,10 @@ public class TelemetryLocalStorage {
     quickFixesApplied.clear();
     helpAndFeedbackLinkClickedCount.clear();
     codeFocusChangedCount = 0;
+    manualAddedBindingsCount = 0;
+    importedAddedBindingsCount = 0;
+    autoAddedBindingsCount = 0;
+    exportedConnectedModeCount = 0;
   }
 
   long numUseDays() {
