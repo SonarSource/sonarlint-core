@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.repository.config;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -111,6 +112,17 @@ public class ConfigurationRepository {
       return Optional.ofNullable(configurationScope.getParentId());
     }
     return Optional.empty();
+  }
+
+  public Set<String> getLeafConfigScopeIds() {
+    var leafConfigScopeIds = new HashSet<>(configScopePerId.keySet());
+    configScopePerId.values().forEach(scope -> {
+      var parentId = scope.getParentId();
+      if (parentId != null) {
+        leafConfigScopeIds.remove(parentId);
+      }
+    });
+    return leafConfigScopeIds;
   }
 
   @CheckForNull

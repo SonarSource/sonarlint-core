@@ -638,53 +638,5 @@ public class AnalysisService {
     return nodeJsService.getAutoDetectedNodeJs();
   }
 
-  private static class BackendInputFile implements ClientInputFile {
-    private final ClientFile clientFile;
 
-    private BackendInputFile(ClientFile clientFile) {
-      this.clientFile = clientFile;
-    }
-
-    @Override
-    public String getPath() {
-      return Paths.get(clientFile.getUri()).toAbsolutePath().toString();
-    }
-
-    @Override
-    public boolean isTest() {
-      return clientFile.isTest();
-    }
-
-    @Nullable
-    @Override
-    public Charset getCharset() {
-      return StandardCharsets.UTF_8;
-    }
-
-    @Override
-    public ClientFile getClientObject() {
-      return clientFile;
-    }
-
-    @Override
-    public InputStream inputStream() {
-      var charset = getCharset();
-      return new ByteArrayInputStream(clientFile.getContent().getBytes(charset == null ? Charset.defaultCharset() : charset));
-    }
-
-    @Override
-    public String contents() {
-      return clientFile.getContent();
-    }
-
-    @Override
-    public String relativePath() {
-      return clientFile.getClientRelativePath().toString();
-    }
-
-    @Override
-    public URI uri() {
-      return clientFile.getUri();
-    }
-  }
 }
