@@ -101,7 +101,7 @@ class TelemetryPayloadTests {
       + "\"issue\":{\"status_changed_rule_keys\":[\"java:S123\"],\"status_changed_count\":1},"
       + "\"help_and_feedback\":{\"count_by_link\":{\"docs\":5,\"faq\":4}},"
       + "\"cayc\":{\"new_code_focus\":{\"enabled\":true,\"changes\":2}},"
-      + "\"shared_connected_mode\":{\"manual_added_bindings_count\":3,\"imported_added_bindings_count\":2,\"auto_added_bindings_count\":1,\"exported_connected_mode_count\":4},"
+      + "\"shared_connected_mode\":{\"manual_bindings_count\":3,\"imported_bindings_count\":2,\"auto_bindings_count\":1,\"exported_connected_mode_count\":4},"
       + "\"aString\":\"stringValue\","
       + "\"aBool\":false,"
       + "\"aNumber\":1.5,"
