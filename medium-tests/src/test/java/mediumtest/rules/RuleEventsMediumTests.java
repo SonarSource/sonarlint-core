@@ -261,8 +261,11 @@ class RuleEventsMediumTests {
   }
 
   private Map<String, Sonarlint.RuleSet> readRuleSets(String connectionId, String projectKey) {
-    return ProtobufFileUtil.readFile(backend.getStorageRoot().resolve(encodeForFs(connectionId)).resolve("projects").resolve(encodeForFs(projectKey)).resolve("analyzer_config.pb"),
-      Sonarlint.AnalyzerConfiguration.parser()).getRuleSetsByLanguageKeyMap();
+    var path = backend.getStorageRoot().resolve(encodeForFs(connectionId)).resolve("projects").resolve(encodeForFs(projectKey)).resolve("analyzer_config.pb");
+    if (path.toFile().exists()) {
+      return ProtobufFileUtil.readFile(path, Sonarlint.AnalyzerConfiguration.parser()).getRuleSetsByLanguageKeyMap();
+    }
+    return Map.of();
   }
 
   private static void mockEvent(ServerFixture.Server server, String projectKey, String eventPayload) {
