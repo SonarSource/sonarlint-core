@@ -24,13 +24,13 @@ import javax.annotation.Nullable;
 
 public class ShareConnectedModePayload {
 
-  @SerializedName("manual_added_bindings_count")
+  @SerializedName("manual_bindings_count")
   public final Integer manualAddedBindingsCount;
 
-  @SerializedName("imported_added_bindings_count")
+  @SerializedName("imported_bindings_count")
   public final Integer importedAddedBindingsCount;
 
-  @SerializedName("auto_added_bindings_count")
+  @SerializedName("auto_bindings_count")
   public final Integer autoAddedBindingsCount;
 
   @SerializedName("exported_connected_mode_count")
