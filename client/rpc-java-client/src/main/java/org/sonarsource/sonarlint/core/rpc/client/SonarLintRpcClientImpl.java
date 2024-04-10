@@ -25,7 +25,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
@@ -89,8 +88,8 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
     this.requestAndNotificationsSequentialExecutor = requestAndNotificationsSequentialExecutor;
   }
 
-  protected <R> CompletableFuture<R> requestAsync(Function<CancelChecker, R> code) {
-    CompletableFuture<CancelChecker> start = new CompletableFuture<>();
+  protected <R> CompletableFuture<R> requestAsync(Function<org.eclipse.lsp4j.jsonrpc.CancelChecker, R> code) {
+    CompletableFuture<org.eclipse.lsp4j.jsonrpc.CancelChecker> start = new CompletableFuture<>();
     // First we schedule the processing of the request on the sequential executor, to maintain ordering of notifications, requests, responses, and cancellations
     var sequentialFuture = start.thenApplyAsync(cancelChecker -> {
       // We can maybe cancel early
@@ -106,8 +105,8 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
     return requestFuture;
   }
 
-  protected CompletableFuture<Void> runAsync(Consumer<CancelChecker> code) {
-    CompletableFuture<CancelChecker> start = new CompletableFuture<>();
+  protected CompletableFuture<Void> runAsync(Consumer<org.eclipse.lsp4j.jsonrpc.CancelChecker> code) {
+    CompletableFuture<org.eclipse.lsp4j.jsonrpc.CancelChecker> start = new CompletableFuture<>();
     // First we schedule the processing of the request on the sequential executor, to maintain ordering of notifications, requests, responses, and cancellations
     var sequentialFuture = start.thenApplyAsync(cancelChecker -> {
       // We can maybe cancel early
@@ -181,12 +180,12 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   @Override
   public CompletableFuture<AssistCreatingConnectionResponse> assistCreatingConnection(AssistCreatingConnectionParams params) {
-    return requestAsync(cancelChecker -> delegate.assistCreatingConnection(params, cancelChecker));
+    return requestAsync(cancelChecker -> delegate.assistCreatingConnection(params, new CancelChecker(cancelChecker)));
   }
 
   @Override
   public CompletableFuture<AssistBindingResponse> assistBinding(AssistBindingParams params) {
-    return requestAsync(cancelChecker -> delegate.assistBinding(params, cancelChecker));
+    return requestAsync(cancelChecker -> delegate.assistBinding(params, new CancelChecker(cancelChecker)));
   }
 
   @Override
@@ -253,7 +252,7 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
     return requestAsync(cancelChecker -> {
       try {
         return new MatchSonarProjectBranchResponse(
-          delegate.matchSonarProjectBranch(params.getConfigurationScopeId(), params.getMainSonarBranchName(), params.getAllSonarBranchesNames(), cancelChecker));
+          delegate.matchSonarProjectBranch(params.getConfigurationScopeId(), params.getMainSonarBranchName(), params.getAllSonarBranchesNames(), new CancelChecker(cancelChecker)));
       } catch (ConfigScopeNotFoundException e) {
         throw configScopeNotFoundError(params.getConfigurationScopeId());
       }
