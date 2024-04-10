@@ -28,6 +28,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 import static java.lang.String.format;
 
@@ -35,8 +36,6 @@ import static java.lang.String.format;
 @Singleton
 public class SharedConnectedModeSettingsProvider {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private final ConfigurationRepository configurationRepository;
-  private final ConnectionConfigurationRepository connectionRepository;
   private static final String SONARCLOUD_CONNECTED_MODE_CONFIG = "{\n" +
     "    \"sonarCloudOrganization\": \"%s\",\n" +
     "    \"projectKey\": \"%s\"\n" +
@@ -46,9 +45,15 @@ public class SharedConnectedModeSettingsProvider {
     "    \"projectKey\": \"%s\"\n" +
     "}";
 
-  public SharedConnectedModeSettingsProvider(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository) {
+  private final ConfigurationRepository configurationRepository;
+  private final ConnectionConfigurationRepository connectionRepository;
+  private final TelemetryService telemetryService;
+
+  public SharedConnectedModeSettingsProvider(ConfigurationRepository configurationRepository,
+    ConnectionConfigurationRepository connectionRepository, TelemetryService telemetryService) {
     this.configurationRepository = configurationRepository;
     this.connectionRepository = connectionRepository;
+    this.telemetryService = telemetryService;
   }
 
   public String getSharedConnectedModeConfigFileContents(String configScopeId) {
@@ -58,6 +63,7 @@ public class SharedConnectedModeSettingsProvider {
       var connectionId = bindingConfiguration.getConnectionId();
 
       var connection =  Objects.requireNonNull(connectionRepository.getConnectionById(Objects.requireNonNull(connectionId)));
+      telemetryService.exportedConnectedMode();
       if (connection.getKind() == ConnectionKind.SONARCLOUD) {
         var organization = ((SonarCloudConnectionConfiguration) connection).getOrganization();
 

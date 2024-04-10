@@ -107,13 +107,18 @@ public class TelemetryPayload {
   @SerializedName("cayc")
   private final CleanAsYouCodePayload cleanAsYouCodePayload;
 
+  @SerializedName("shared_connected_mode")
+  private final ShareConnectedModePayload shareConnectedModePayload;
+
   private final transient Map<String, Object> additionalAttributes;
 
   public TelemetryPayload(long daysSinceInstallation, long daysOfUse, String product, String version, String ideVersion, @Nullable String platform, @Nullable String architecture,
     boolean connectedMode, boolean connectedModeSonarcloud, OffsetDateTime systemTime, OffsetDateTime installTime, String os, String jre, @Nullable String nodejs,
     TelemetryAnalyzerPerformancePayload[] analyses, TelemetryNotificationsPayload notifications, ShowHotspotPayload showHotspotPayload,
     ShowIssuePayload showIssuePayload, TaintVulnerabilitiesPayload taintVulnerabilitiesPayload, TelemetryRulesPayload telemetryRulesPayload, HotspotPayload hotspotPayload,
-    IssuePayload issuePayload, TelemetryHelpAndFeedbackPayload helpAndFeedbackPayload, CleanAsYouCodePayload cleanAsYouCodePayload, Map<String, Object> additionalAttributes) {
+    IssuePayload issuePayload, TelemetryHelpAndFeedbackPayload helpAndFeedbackPayload, CleanAsYouCodePayload cleanAsYouCodePayload,
+    ShareConnectedModePayload shareConnectedModePayload,
+    Map<String, Object> additionalAttributes) {
     this.daysSinceInstallation = daysSinceInstallation;
     this.daysOfUse = daysOfUse;
     this.product = product;
@@ -138,6 +143,7 @@ public class TelemetryPayload {
     this.issuePayload = issuePayload;
     this.helpAndFeedbackPayload = helpAndFeedbackPayload;
     this.cleanAsYouCodePayload = cleanAsYouCodePayload;
+    this.shareConnectedModePayload = shareConnectedModePayload;
     this.additionalAttributes = additionalAttributes;
   }
 
@@ -223,6 +229,10 @@ public class TelemetryPayload {
 
   public HotspotPayload getHotspotPayload() {
     return hotspotPayload;
+  }
+
+  public ShareConnectedModePayload getShareConnectedModePayload() {
+    return shareConnectedModePayload;
   }
 
   public String getIdeVersion() {

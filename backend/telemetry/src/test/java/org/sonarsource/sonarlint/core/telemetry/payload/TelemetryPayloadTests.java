@@ -66,13 +66,15 @@ class TelemetryPayloadTests {
     additionalProps.put("aString", "stringValue");
     additionalProps.put("aBool", false);
     additionalProps.put("aNumber", 1.5);
+    var sharedConnectedModePayload = new ShareConnectedModePayload(3, 2, 1, 4);
     Map<String, Object> additionalPropsSub = new LinkedHashMap<>();
     additionalPropsSub.put("aSubNumber", 2);
     additionalProps.put("sub", additionalPropsSub);
     var cleanAsYouCodePayload = new CleanAsYouCodePayload(new NewCodeFocusPayload(true, 2));
     var m = new TelemetryPayload(4, 15, "SLI", "2.4", "Pycharm 3.2", "platform", "architecture",
       true, true, systemTime, installTime, "Windows 10", "1.8.0", "10.5.2", perf,
-      notifPayload, showHotspotPayload, showIssuePayload, taintVulnerabilitiesPayload, rulesPayload, hotspotPayload, issuePayload, helpAndFeedbackPayload, cleanAsYouCodePayload, additionalProps);
+      notifPayload, showHotspotPayload, showIssuePayload, taintVulnerabilitiesPayload, rulesPayload, hotspotPayload, issuePayload, helpAndFeedbackPayload, cleanAsYouCodePayload,
+      sharedConnectedModePayload, additionalProps);
     var s = m.toJson();
 
     assertThat(s).isEqualTo("{\"days_since_installation\":4,"
@@ -99,6 +101,7 @@ class TelemetryPayloadTests {
       + "\"issue\":{\"status_changed_rule_keys\":[\"java:S123\"],\"status_changed_count\":1},"
       + "\"help_and_feedback\":{\"count_by_link\":{\"docs\":5,\"faq\":4}},"
       + "\"cayc\":{\"new_code_focus\":{\"enabled\":true,\"changes\":2}},"
+      + "\"shared_connected_mode\":{\"manual_bindings_count\":3,\"imported_bindings_count\":2,\"auto_bindings_count\":1,\"exported_connected_mode_count\":4},"
       + "\"aString\":\"stringValue\","
       + "\"aBool\":false,"
       + "\"aNumber\":1.5,"
@@ -134,6 +137,10 @@ class TelemetryPayloadTests {
     assertThat(m.getTelemetryRulesPayload().nonDefaultEnabled).containsExactly("enabledRuleKey1", "enabledRuleKey2");
     assertThat(m.getTelemetryRulesPayload().raisedIssues).containsExactly("reportedRuleKey1", "reportedRuleKey2");
     assertThat(m.getTelemetryRulesPayload().quickFixesApplied).containsExactly("quickFixedRuleKey1", "quickFixedRuleKey2");
+    assertThat(m.getShareConnectedModePayload().manualAddedBindingsCount).isEqualTo(3);
+    assertThat(m.getShareConnectedModePayload().importedAddedBindingsCount).isEqualTo(2);
+    assertThat(m.getShareConnectedModePayload().autoAddedBindingsCount).isEqualTo(1);
+    assertThat(m.getShareConnectedModePayload().exportedConnectedModeCount).isEqualTo(4);
     assertThat(m.getIdeVersion()).isEqualTo("Pycharm 3.2");
     assertThat(m.getPlatform()).isEqualTo("platform");
     assertThat(m.getArchitecture()).isEqualTo("architecture");

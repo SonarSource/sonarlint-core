@@ -203,6 +203,22 @@ public class TelemetryService {
     updateTelemetry(telemetryLocalStorage -> telemetryLocalStorage.addIssueStatusChanged(ruleKey));
   }
 
+  public void addedManualBindings() {
+    updateTelemetry(TelemetryLocalStorage::incrementManualAddedBindingsCount);
+  }
+
+  public void addedImportedBindings() {
+    updateTelemetry(TelemetryLocalStorage::incrementImportedAddedBindingsCount);
+  }
+
+  public void addedAutomaticBindings() {
+    updateTelemetry(TelemetryLocalStorage::incrementAutoAddedBindingsCount);
+  }
+
+  public void exportedConnectedMode() {
+    updateTelemetry(TelemetryLocalStorage::incrementExportedConnectedModeCount);
+  }
+
   @EventListener
   public void onServerIssueStatusChanged(ServerIssueStatusChangedEvent event) {
     issueStatusChanged(event.getFinding().getRuleKey());
