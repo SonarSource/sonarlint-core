@@ -118,6 +118,7 @@ public class ConnectionSuggestionProvider {
     LOG.debug("Computing connection suggestions");
     var connectionSuggestionsByConfigScopeIds = new HashMap<String, List<ConnectionSuggestionDto>>();
     var bindingSuggestionsForConfigScopeIds = new HashSet<String>();
+    
     for (var configScopeId : listOfFilesPerConfigScopeIds) {
       var effectiveBinding = configRepository.getEffectiveBinding(configScopeId);
       if (effectiveBinding.isPresent()) {
@@ -142,13 +143,9 @@ public class ConnectionSuggestionProvider {
         }
       }
     }
-    if (!connectionSuggestionsByConfigScopeIds.isEmpty()) {
-      suggestConnectionToClient(connectionSuggestionsByConfigScopeIds, cancelMonitor);
-    }
-    if (!bindingSuggestionsForConfigScopeIds.isEmpty()) {
-      LOG.debug("Found binding suggestion(s) for %s configuration scope IDs", bindingSuggestionsForConfigScopeIds.size());
-      bindingSuggestionProvider.suggestBindingForGivenScopesAndAllConnections(bindingSuggestionsForConfigScopeIds);
-    }
+
+    suggestConnectionToClientIfAny(connectionSuggestionsByConfigScopeIds, cancelMonitor);
+    computeBindingSuggestionfAny(bindingSuggestionsForConfigScopeIds);
   }
 
   @CheckForNull
@@ -173,16 +170,25 @@ public class ConnectionSuggestionProvider {
     return null;
   }
 
-  private void suggestConnectionToClient(Map<String, List<ConnectionSuggestionDto>> connectionSuggestionsByConfigScopeIds,
+  private void suggestConnectionToClientIfAny(Map<String, List<ConnectionSuggestionDto>> connectionSuggestionsByConfigScopeIds,
     SonarLintCancelMonitor cancelMonitor) {
-    LOG.debug("Found {} connection suggestion(s)", connectionSuggestionsByConfigScopeIds.size());
-    try {
-      bindingSuggestionProvider.disable();
-      var future = client.suggestConnection(new SuggestConnectionParams(connectionSuggestionsByConfigScopeIds));
-      cancelMonitor.onCancel(() -> future.cancel(true));
-      future.join();
-    } finally {
-      bindingSuggestionProvider.enable();
+    if (!connectionSuggestionsByConfigScopeIds.isEmpty()) {
+      LOG.debug("Found {} connection suggestion(s)", connectionSuggestionsByConfigScopeIds.size());
+      try {
+        bindingSuggestionProvider.disable();
+        var future = client.suggestConnection(new SuggestConnectionParams(connectionSuggestionsByConfigScopeIds));
+        cancelMonitor.onCancel(() -> future.cancel(true));
+        future.join();
+      } finally {
+        bindingSuggestionProvider.enable();
+      }
+    }
+  }
+
+  private void computeBindingSuggestionfAny(Set<String> bindingSuggestionsForConfigScopeIds) {
+    if (!bindingSuggestionsForConfigScopeIds.isEmpty()) {
+      LOG.debug("Found binding suggestion(s) for %s configuration scope IDs", bindingSuggestionsForConfigScopeIds.size());
+      bindingSuggestionProvider.suggestBindingForGivenScopesAndAllConnections(bindingSuggestionsForConfigScopeIds);
     }
   }
 
