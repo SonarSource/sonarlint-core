@@ -90,13 +90,12 @@ public class AnalysisEngineCache {
   private AnalysisEngine createEngine(LoadedPlugins plugins) {
     var activeNodeJs = nodeJsService.getActiveNodeJs();
     var nodeJsPath = activeNodeJs == null ? null : activeNodeJs.getPath();
-    var modules = getModules();
     var analysisEngineConfiguration = AnalysisEngineConfiguration.builder()
       .setWorkDir(workDir)
       .setClientPid(pid)
       .setExtraProperties(extraProperties)
       .setNodeJs(nodeJsPath)
-      .setModulesProvider(() -> modules)
+      .setModulesProvider(this::getModules)
       .build();
     return new AnalysisEngine(analysisEngineConfiguration, plugins, SonarLintLogger.getTargetForCopy());
   }
