@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -46,6 +47,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarQubeCo
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SuggestConnectionParams;
 import org.springframework.context.event.EventListener;
 
+import static org.apache.commons.lang.StringUtils.removeEnd;
 import static org.sonarsource.sonarlint.core.BindingClueProvider.ALL_BINDING_CLUE_FILENAMES;
 
 @Named
@@ -94,7 +96,11 @@ public class ConnectionSuggestionProvider {
       .map(ClientFile::getConfigScopeId)
       .collect(Collectors.toSet());
 
-    queueConnectionSuggestion(listConfigScopeIds);
+    if (!listConfigScopeIds.isEmpty()) {
+      queueConnectionSuggestion(listConfigScopeIds);
+    } else {
+      bindingSuggestionProvider.suggestBindingForGivenScopesAndAllConnections(event.getAddedConfigurationScopeIds());
+    }
   }
 
   private void queueConnectionSuggestion(Set<String> listConfigScopeIds) {
@@ -108,6 +114,7 @@ public class ConnectionSuggestionProvider {
   private void suggestConnectionForGivenScopes(Set<String> listOfFilesPerConfigScopeIds, SonarLintCancelMonitor cancelMonitor) {
     LOG.debug("Computing connection suggestions");
     var connectionSuggestionsByConfigScopeIds = new HashMap<String, List<ConnectionSuggestionDto>>();
+    var bindingSuggestionsForConfigScopeIds = new HashSet<String>();
     for (var configScopeId : listOfFilesPerConfigScopeIds) {
       var effectiveBinding = configRepository.getEffectiveBinding(configScopeId);
       if (effectiveBinding.isPresent()) {
@@ -119,17 +126,28 @@ public class ConnectionSuggestionProvider {
       for (var bindingClue : bindingClues) {
         var projectKey = bindingClue.getSonarProjectKey();
         if (projectKey != null) {
-          handleBindingClue(connectionSuggestionsByConfigScopeIds, bindingClue, configScopeId, projectKey);
+          handleBindingClue(connectionSuggestionsByConfigScopeIds, bindingSuggestionsForConfigScopeIds, bindingClue, configScopeId, projectKey);
         }
       }
     }
     if (!connectionSuggestionsByConfigScopeIds.isEmpty()) {
-      LOG.debug("Found {} suggestion(s)", connectionSuggestionsByConfigScopeIds.size());
-      client.suggestConnection(new SuggestConnectionParams(connectionSuggestionsByConfigScopeIds));
+      LOG.debug("Found {} connection suggestion(s)", connectionSuggestionsByConfigScopeIds.size());
+      try {
+        bindingSuggestionProvider.disable();
+        var future = client.suggestConnection(new SuggestConnectionParams(connectionSuggestionsByConfigScopeIds));
+        cancelMonitor.onCancel(() -> future.cancel(true));
+        future.join();
+      } finally {
+        bindingSuggestionProvider.enable();
+      }
+    }
+    if (!bindingSuggestionsForConfigScopeIds.isEmpty()) {
+      LOG.debug("Found binding suggestion(s) for %s configuration scope IDs", bindingSuggestionsForConfigScopeIds.size());
+      bindingSuggestionProvider.suggestBindingForGivenScopesAndAllConnections(bindingSuggestionsForConfigScopeIds);
     }
   }
 
-  private void handleBindingClue(HashMap<String, List<ConnectionSuggestionDto>> connectionSuggestionsByConfigScopeIds,
+  private void handleBindingClue(HashMap<String, List<ConnectionSuggestionDto>> connectionSuggestionsByConfigScopeIds, Set<String> bindingSuggestionsForConfigScopeIds,
                                           BindingClueProvider.BindingClue bindingClue, String configScopeId, String projectKey) {
     if (bindingClue instanceof BindingClueProvider.SonarCloudBindingClue) {
       LOG.debug("Found a SonarCloud binding clue");
@@ -139,8 +157,7 @@ public class ConnectionSuggestionProvider {
         connectionSuggestionsByConfigScopeIds.computeIfAbsent(configScopeId, s -> new ArrayList<>())
           .add(new ConnectionSuggestionDto(new SonarCloudConnectionSuggestionDto(organization, projectKey)));
       } else {
-        LOG.debug("A connection to organization {} already exists, suggesting a binding", organization);
-        bindingSuggestionProvider.suggestBindingForGivenScopesAndAllConnections(Set.of(configScopeId));
+        bindingSuggestionsForConfigScopeIds.add(configScopeId);
       }
     } else if (bindingClue instanceof BindingClueProvider.SonarQubeBindingClue) {
       LOG.debug("Found a SonarQube binding clue");
@@ -148,13 +165,13 @@ public class ConnectionSuggestionProvider {
       var connection = connectionRepository.findByUrl(serverUrl);
       if (connection.isEmpty()) {
         connectionSuggestionsByConfigScopeIds.computeIfAbsent(configScopeId, s -> new ArrayList<>())
-          .add(new ConnectionSuggestionDto(new SonarQubeConnectionSuggestionDto(serverUrl, projectKey)));
+          .add(new ConnectionSuggestionDto(new SonarQubeConnectionSuggestionDto(removeEnd(serverUrl, "/"), projectKey)));
       } else {
-        LOG.debug("A connection to {} already exists, suggesting a binding", serverUrl);
-        bindingSuggestionProvider.suggestBindingForGivenScopesAndAllConnections(Set.of(configScopeId));
+        bindingSuggestionsForConfigScopeIds.add(configScopeId);
       }
     } else {
-      LOG.debug("Found an invalid binding clue");
+      LOG.debug("Found an invalid binding clue for connection suggestion");
+      bindingSuggestionsForConfigScopeIds.add(configScopeId);
     }
   }
 
