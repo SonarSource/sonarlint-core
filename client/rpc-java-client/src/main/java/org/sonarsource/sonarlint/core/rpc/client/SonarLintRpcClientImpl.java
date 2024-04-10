@@ -135,8 +135,8 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   }
 
   @Override
-  public void suggestConnection(SuggestConnectionParams params) {
-    notify(() -> delegate.suggestConnection(params.getSuggestionsByConfigScopeId()));
+  public CompletableFuture<Void> suggestConnection(SuggestConnectionParams params) {
+    return runAsync(cancelChecker -> delegate.suggestConnection(params.getSuggestionsByConfigScopeId(), cancelChecker));
   }
 
   @Override
