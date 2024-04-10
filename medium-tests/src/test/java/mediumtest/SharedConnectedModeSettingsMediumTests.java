@@ -32,6 +32,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetSharedConn
 import static mediumtest.fixtures.ServerFixture.newSonarCloudServer;
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
+import static org.apache.commons.lang.StringUtils.removeEnd;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -95,7 +96,7 @@ class SharedConnectedModeSettingsMediumTests {
     var expectedFileContent = String.format("{\n" +
       "    \"sonarQubeUri\": \"%s\",\n" +
       "    \"projectKey\": \"%s\"\n" +
-      "}", server.baseUrl(), projectKey);
+      "}", removeEnd(server.baseUrl(), "/"), projectKey);
 
     backend = newBackend()
       .withSonarQubeConnection(connectionId, server)

@@ -63,7 +63,7 @@ public class MockSonarLintRpcClientDelegate implements SonarLintRpcClientDelegat
   }
 
   @Override
-  public void suggestConnection(Map<String, List<ConnectionSuggestionDto>> suggestionsByConfigScope) {
+  public void suggestConnection(Map<String, List<ConnectionSuggestionDto>> suggestionsByConfigScope, CancelChecker cancelChecker) {
 
   }
 

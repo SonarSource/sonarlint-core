@@ -106,26 +106,6 @@ class BindingSuggestionProviderTests {
   }
 
   @Test
-  void trigger_suggest_binding_if_config_scope_added() {
-    when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1));
-
-    underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(ImmutableSortedSet.of(CONFIG_SCOPE_ID_1, CONFIG_SCOPE_ID_2)));
-
-    assertThat(logTester.logs(LogOutput.Level.DEBUG))
-      .contains("Binding suggestion computation queued for config scopes '" + CONFIG_SCOPE_ID_1 + "," + CONFIG_SCOPE_ID_2 + "'...");
-  }
-
-  @Test
-  void dont_trigger_suggest_binding_if_config_scope_added_but_no_connections() {
-    when(connectionRepository.getConnectionsById()).thenReturn(Map.of());
-
-    underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(ImmutableSortedSet.of(CONFIG_SCOPE_ID_1, CONFIG_SCOPE_ID_2)));
-
-    assertThat(logTester.logs(LogOutput.Level.DEBUG))
-      .contains("No connections configured, skipping binding suggestions.");
-  }
-
-  @Test
   void trigger_suggest_binding_if_connection_added_and_at_least_one_config_scope() {
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
     when(configRepository.getConfigScopeIds()).thenReturn(Set.of("id1"));
@@ -171,7 +151,7 @@ class BindingSuggestionProviderTests {
     when(configRepository.getConfigurationScope("suggestionsDisabled")).thenReturn(new ConfigurationScope("suggestionsDisabled", null, true, "Suggestion disabled"));
     when(configRepository.getBindingConfiguration("suggestionsDisabled")).thenReturn(new BindingConfiguration(null, null, true));
 
-    underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(ImmutableSortedSet.of("configScopeWithNoBinding", "configScopeWithNoConfig", "configScopeNotBindable", "alreadyBound", "suggestionsDisabled")));
+    underTest.suggestBindingForGivenScopesAndAllConnections(ImmutableSortedSet.of("configScopeWithNoBinding", "configScopeWithNoConfig", "configScopeNotBindable", "alreadyBound", "suggestionsDisabled"));
 
     await().untilAsserted(() -> assertThat(logTester.logs(LogOutput.Level.DEBUG))
       .contains(
@@ -196,7 +176,7 @@ class BindingSuggestionProviderTests {
     when(configRepository.getConfigurationScope("connectionGone")).thenReturn(new ConfigurationScope("connectionGone", null, true, "Already bound"));
     when(configRepository.getBindingConfiguration("connectionGone")).thenReturn(new BindingConfiguration(SQ_2_ID, PROJECT_KEY_1, false));
 
-    underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(ImmutableSortedSet.of("brokenBinding1", "brokenBinding2", "connectionGone")));
+    underTest.suggestBindingForGivenScopesAndAllConnections(ImmutableSortedSet.of("brokenBinding1", "brokenBinding2", "connectionGone"));
 
     await().untilAsserted(() -> assertThat(logTester.logs(LogOutput.Level.DEBUG))
       .contains(
@@ -218,7 +198,7 @@ class BindingSuggestionProviderTests {
 
     when(sonarProjectsCache.getSonarProject(eq(SQ_1_ID), eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class))).thenReturn(Optional.of(SERVER_PROJECT_1));
 
-    underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID_1)));
+    underTest.suggestBindingForGivenScopesAndAllConnections(Set.of(CONFIG_SCOPE_ID_1));
 
     var captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
     verify(client, timeout(1000)).suggestBinding(captor.capture());
@@ -255,7 +235,7 @@ class BindingSuggestionProviderTests {
     searchIndex.index(SERVER_PROJECT_1, "foo bar keyword");
     when(sonarProjectsCache.getTextSearchIndex(eq(SC_1_ID), any(SonarLintCancelMonitor.class))).thenReturn(searchIndex);
 
-    underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID_1)));
+    underTest.suggestBindingForGivenScopesAndAllConnections(Set.of(CONFIG_SCOPE_ID_1));
 
     var captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
     verify(client, timeout(1000)).suggestBinding(captor.capture());
@@ -293,7 +273,7 @@ class BindingSuggestionProviderTests {
     searchIndex.index(SERVER_PROJECT_1, "foo bar keyword");
     when(sonarProjectsCache.getTextSearchIndex(eq(SC_1_ID), any(SonarLintCancelMonitor.class))).thenReturn(searchIndex);
 
-    underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID_1)));
+    underTest.suggestBindingForGivenScopesAndAllConnections(Set.of(CONFIG_SCOPE_ID_1));
 
     var captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
     verify(client, timeout(1000)).suggestBinding(captor.capture());
@@ -395,7 +375,7 @@ class BindingSuggestionProviderTests {
     searchIndex.index(serverProject("key3", "Project 3"), "foo bar more garbage");
     when(sonarProjectsCache.getTextSearchIndex(eq(SC_1_ID), any(SonarLintCancelMonitor.class))).thenReturn(searchIndex);
 
-    underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID_1)));
+    underTest.suggestBindingForGivenScopesAndAllConnections(Set.of(CONFIG_SCOPE_ID_1));
 
     var captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
     verify(client, timeout(1000)).suggestBinding(captor.capture());

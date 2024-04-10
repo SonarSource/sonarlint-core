@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -39,20 +38,17 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.ConnectionSuggestionDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarCloudConnectionSuggestionDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarQubeConnectionSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
@@ -92,7 +88,7 @@ class ConnectionSuggestionMediumTests {
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
 
     ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
+    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture(), any());
 
     var connectionSuggestion = suggestionCaptor.getValue();
     assertThat(connectionSuggestion).containsOnlyKeys(CONFIG_SCOPE_ID);
@@ -120,7 +116,7 @@ class ConnectionSuggestionMediumTests {
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
 
     ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
+    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture(), any());
 
     var connectionSuggestion = suggestionCaptor.getValue();
     assertThat(connectionSuggestion).containsOnlyKeys(CONFIG_SCOPE_ID);
@@ -152,7 +148,7 @@ class ConnectionSuggestionMediumTests {
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
 
     ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
+    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture(), any());
 
     var connectionSuggestion = suggestionCaptor.getValue();
     assertThat(connectionSuggestion).containsOnlyKeys(CONFIG_SCOPE_ID);
@@ -178,7 +174,7 @@ class ConnectionSuggestionMediumTests {
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
 
     ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
+    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture(), any());
 
     var connectionSuggestion = suggestionCaptor.getValue();
     assertThat(connectionSuggestion).containsOnlyKeys(CONFIG_SCOPE_ID);
@@ -204,7 +200,7 @@ class ConnectionSuggestionMediumTests {
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
 
     ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
+    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture(), any());
 
     var connectionSuggestion = suggestionCaptor.getValue();
     assertThat(connectionSuggestion).containsOnlyKeys(CONFIG_SCOPE_ID);
@@ -236,7 +232,7 @@ class ConnectionSuggestionMediumTests {
             new BindingConfigurationDto(null, null, false)))));
 
     ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
+    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture(), any());
 
     var connectionSuggestion = suggestionCaptor.getValue();
     assertThat(connectionSuggestion).containsOnlyKeys(CONFIG_SCOPE_ID);
@@ -271,7 +267,7 @@ class ConnectionSuggestionMediumTests {
             new BindingConfigurationDto(null, null, false)))));
 
     ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
+    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture(), any());
 
     var connectionSuggestion = suggestionCaptor.getValue();
     assertThat(connectionSuggestion).containsOnlyKeys(CONFIG_SCOPE_ID);
@@ -312,7 +308,7 @@ class ConnectionSuggestionMediumTests {
             new BindingConfigurationDto(null, null, false)))));
 
     ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
+    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture(), any());
 
     var connectionSuggestion = suggestionCaptor.getValue();
     assertThat(connectionSuggestion).containsOnlyKeys(CONFIG_SCOPE_ID);
@@ -340,7 +336,7 @@ class ConnectionSuggestionMediumTests {
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
 
     ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
+    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture(), any());
 
     var connectionSuggestion = suggestionCaptor.getValue();
     assertThat(connectionSuggestion).containsOnlyKeys(CONFIG_SCOPE_ID);
@@ -368,7 +364,7 @@ class ConnectionSuggestionMediumTests {
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
 
     ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
+    verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture(), any());
 
     var connectionSuggestion = suggestionCaptor.getValue();
     assertThat(connectionSuggestion).containsOnlyKeys(CONFIG_SCOPE_ID);

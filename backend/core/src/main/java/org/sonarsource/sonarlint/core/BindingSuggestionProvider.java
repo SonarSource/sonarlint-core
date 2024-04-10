@@ -94,12 +94,6 @@ public class BindingSuggestionProvider {
     }
   }
 
-  @EventListener
-  public void configurationScopesAdded(ConfigurationScopesAddedEvent event) {
-    var configScopeIds = event.getAddedConfigurationScopeIds();
-    suggestBindingForGivenScopesAndAllConnections(configScopeIds);
-  }
-
   public void suggestBindingForGivenScopesAndAllConnections(Set<String> configScopeIdsToSuggest) {
     if (!configScopeIdsToSuggest.isEmpty()) {
       var allConnectionIds = connectionRepository.getConnectionsById().keySet();
@@ -122,15 +116,6 @@ public class BindingSuggestionProvider {
       var candidateConnectionIds = Set.of(addedConnectionId);
       queueBindingSuggestionComputation(allConfigScopeIds, candidateConnectionIds);
     }
-  }
-
-  @EventListener
-  public void filesystemUpdated(FileSystemUpdatedEvent event) {
-    var configScopeWithAddedOrUpdatedBindingClue = event.getAddedOrUpdated().stream()
-      .filter(file -> BindingClueProvider.ALL_BINDING_CLUE_FILENAMES.contains(file.getFileName()))
-      .map(ClientFile::getConfigScopeId)
-      .collect(Collectors.toSet());
-    suggestBindingForGivenScopesAndAllConnections(configScopeWithAddedOrUpdatedBindingClue);
   }
 
   public Map<String, List<BindingSuggestionDto>> getBindingSuggestions(String configScopeId, String connectionId, SonarLintCancelMonitor cancelMonitor) {
