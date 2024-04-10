@@ -20,9 +20,7 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.adapter;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import com.google.gson.TypeAdapter;
@@ -36,6 +34,7 @@ import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either3;
 
@@ -89,14 +88,15 @@ public class EitherTypeAdapter<L, R> extends TypeAdapter<Either<L, R>> {
     @Override
     public boolean test(JsonElement element) {
       if (element.isJsonObject()) {
-        JsonObject object = element.getAsJsonObject();
-        JsonElement value = object.get(propertyName);
-        if (expectedValue != null)
+        var object = element.getAsJsonObject();
+        var value = object.get(propertyName);
+        if (expectedValue != null) {
           return value != null && value.isJsonPrimitive() && expectedValue.equals(value.getAsString());
-        else if (expectedType != null)
+        } else if (expectedType != null) {
           return expectedType.isInstance(value);
-        else
+        } else {
           return value != null;
+        }
       }
       return false;
     }
@@ -122,15 +122,18 @@ public class EitherTypeAdapter<L, R> extends TypeAdapter<Either<L, R>> {
 
     @Override
     public boolean test(JsonElement t) {
-      if (elementChecker.test(t))
+      if (elementChecker.test(t)) {
         return true;
+      }
       if (t.isJsonArray()) {
-        JsonArray array = t.getAsJsonArray();
-        if (array.isEmpty())
+        var array = t.getAsJsonArray();
+        if (array.isEmpty()) {
           return resultIfEmpty;
+        }
         for (JsonElement e : array) {
-          if (elementChecker.test(e))
+          if (elementChecker.test(e)) {
             return true;
+          }
         }
       }
       return false;
@@ -148,22 +151,22 @@ public class EitherTypeAdapter<L, R> extends TypeAdapter<Either<L, R>> {
     this(gson, typeToken, null, null);
   }
 
-  public EitherTypeAdapter(Gson gson, TypeToken<? extends Either<L, R>> typeToken, Predicate<JsonElement> leftChecker, Predicate<JsonElement> rightChecker) {
+  public EitherTypeAdapter(Gson gson, TypeToken<? extends Either<L, R>> typeToken, @Nullable Predicate<JsonElement> leftChecker, @Nullable Predicate<JsonElement> rightChecker) {
     this(gson, typeToken, leftChecker, rightChecker, null, null);
   }
 
-  public EitherTypeAdapter(Gson gson, TypeToken<? extends Either<L, R>> typeToken, Predicate<JsonElement> leftChecker, Predicate<JsonElement> rightChecker,
-    TypeAdapter<L> leftAdapter, TypeAdapter<R> rightAdapter) {
+  public EitherTypeAdapter(Gson gson, TypeToken<? extends Either<L, R>> typeToken, @Nullable Predicate<JsonElement> leftChecker, @Nullable Predicate<JsonElement> rightChecker,
+    @Nullable TypeAdapter<L> leftAdapter, @Nullable TypeAdapter<R> rightAdapter) {
     this.typeToken = typeToken;
     Type[] elementTypes = TypeUtils.getElementTypes(typeToken, Either.class);
-    this.left = new EitherTypeArgument<L>(gson, elementTypes[0], leftAdapter);
-    this.right = new EitherTypeArgument<R>(gson, elementTypes[1], rightAdapter);
+    this.left = new EitherTypeArgument<>(gson, elementTypes[0], leftAdapter);
+    this.right = new EitherTypeArgument<>(gson, elementTypes[1], rightAdapter);
     this.leftChecker = leftChecker;
     this.rightChecker = rightChecker;
   }
 
   @Override
-  public void write(JsonWriter out, Either<L, R> value) throws IOException {
+  public void write(JsonWriter out, @Nullable Either<L, R> value) throws IOException {
     if (value == null) {
       out.nullValue();
     } else if (value.isLeft()) {
@@ -189,12 +192,12 @@ public class EitherTypeAdapter<L, R> extends TypeAdapter<Either<L, R>> {
     if (matchesLeft && matchesRight) {
       if (leftChecker != null || rightChecker != null) {
         JsonElement element = JsonParser.parseReader(in);
-        if (leftChecker != null && leftChecker.test(element))
-          // Parse the left alternative from the JSON element tree
+        if (leftChecker != null && leftChecker.test(element)) {
           return createLeft(left.read(element));
-        if (rightChecker != null && rightChecker.test(element))
-          // Parse the right alternative from the JSON element tree
+        }
+        if (rightChecker != null && rightChecker.test(element)) {
           return createRight(right.read(element));
+        }
       }
       throw new JsonParseException("Ambiguous Either type: token " + nextToken + " matches both alternatives.");
     } else if (matchesLeft) {
@@ -206,25 +209,27 @@ public class EitherTypeAdapter<L, R> extends TypeAdapter<Either<L, R>> {
     } else if (leftChecker != null || rightChecker != null) {
       // If result is not the list but directly the only item in the list
       JsonElement element = JsonParser.parseReader(in);
-      if (leftChecker != null && leftChecker.test(element))
-        // Parse the left alternative from the JSON element tree
+      if (leftChecker != null && leftChecker.test(element)) {
         return createLeft(left.read(element));
-      if (rightChecker != null && rightChecker.test(element))
-        // Parse the right alternative from the JSON element tree
+      }
+      if (rightChecker != null && rightChecker.test(element)) {
         return createRight(right.read(element));
+      }
     }
     throw new JsonParseException("Unexpected token " + nextToken + ": expected " + left + " | " + right + " tokens.");
   }
 
   protected Either<L, R> createLeft(L obj) {
-    if (Either3.class.isAssignableFrom(typeToken.getRawType()))
+    if (Either3.class.isAssignableFrom(typeToken.getRawType())) {
       return (Either<L, R>) Either3.forLeft3(obj);
+    }
     return Either.forLeft(obj);
   }
 
   protected Either<L, R> createRight(R obj) {
-    if (Either3.class.isAssignableFrom(typeToken.getRawType()))
+    if (Either3.class.isAssignableFrom(typeToken.getRawType())) {
       return (Either<L, R>) Either3.forRight3((Either<?, ?>) obj);
+    }
     return Either.forRight(obj);
   }
 
@@ -239,10 +244,10 @@ public class EitherTypeAdapter<L, R> extends TypeAdapter<Either<L, R>> {
     }
 
     @SuppressWarnings("unchecked")
-    public EitherTypeArgument(Gson gson, Type type, TypeAdapter<T> adapter) {
+    public EitherTypeArgument(Gson gson, Type type, @Nullable TypeAdapter<T> adapter) {
       this.typeToken = (TypeToken<T>) TypeToken.get(type);
-      this.adapter = (adapter != null) ? adapter :
-        ((type == Object.class) ? (TypeAdapter<T>) new JsonElementTypeAdapter(gson) : gson.getAdapter(this.typeToken));
+      var typeAdapter = (type == Object.class) ? (TypeAdapter<T>) new JsonElementTypeAdapter(gson) : gson.getAdapter(this.typeToken);
+      this.adapter = (adapter != null) ? adapter : typeAdapter;
       this.expectedTokens = new HashSet<>();
       for (Type expectedType : TypeUtils.getExpectedTypes(type)) {
         Class<?> rawType = TypeToken.get(expectedType).getRawType();
@@ -279,13 +284,13 @@ public class EitherTypeAdapter<L, R> extends TypeAdapter<Either<L, R>> {
       return this.adapter.read(in);
     }
 
-    public T read(JsonElement element) throws IOException {
+    public T read(JsonElement element) {
       return this.adapter.fromJsonTree(element);
     }
 
     @Override
     public String toString() {
-      StringBuilder builder = new StringBuilder();
+      var builder = new StringBuilder();
       for (JsonToken expectedToken : expectedTokens) {
         if (builder.length() != 0) {
           builder.append(" | ");

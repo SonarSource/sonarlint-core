@@ -54,10 +54,12 @@ public class Either<L, R> {
   }
 
   public Object get() {
-    if (left != null)
+    if (left != null) {
       return left;
-    if (right != null)
+    }
+    if (right != null) {
       return right;
+    }
     return null;
   }
 
@@ -94,10 +96,12 @@ public class Either<L, R> {
 
   @Override
   public int hashCode() {
-    if (this.left != null)
+    if (this.left != null) {
       return this.left.hashCode();
-    if (this.right != null)
+    }
+    if (this.right != null) {
       return this.right.hashCode();
+    }
     return 0;
   }
 

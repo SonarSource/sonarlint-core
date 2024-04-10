@@ -27,6 +27,7 @@ import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
+import javax.annotation.Nullable;
 
 /*
  * A class to use in place of {@link org.eclipse.lsp4j.jsonrpc.json.adapters.JsonElementTypeAdapter} to stop depending on lsp4j types in API
@@ -64,7 +65,7 @@ public class JsonElementTypeAdapter extends TypeAdapter<Object> {
   }
 
   @Override
-  public void write(JsonWriter out, Object value) throws IOException {
+  public void write(JsonWriter out, @Nullable Object value) throws IOException {
     if (value == null) {
       out.nullValue();
     } else if (value instanceof JsonElement) {

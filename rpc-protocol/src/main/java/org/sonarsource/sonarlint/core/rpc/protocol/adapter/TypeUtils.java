@@ -51,11 +51,11 @@ public final class TypeUtils {
   private static Type[] getElementTypes(Type type, Class<?> rawType, Class<?> targetType) {
     if (targetType.equals(rawType) && type instanceof ParameterizedType) {
       Type mappedType;
-      if (type instanceof ParameterizedTypeImpl)
+      if (type instanceof ParameterizedTypeImpl) {
         mappedType = type;
-      else
-        // Transform wildcards in the actual type arguments
+      } else {
         mappedType = getMappedType(type, Collections.emptyMap());
+      }
       return ((ParameterizedType) mappedType).getActualTypeArguments();
     }
     // Map the parameters of the raw type to the actual type arguments
@@ -63,10 +63,10 @@ public final class TypeUtils {
     if (targetType.isInterface()) {
       // Look for superinterfaces that extend the target interface
       Class<?>[] interfaces = rawType.getInterfaces();
-      for (int i = 0; i < interfaces.length; i++) {
+      for (var i = 0; i < interfaces.length; i++) {
         if (Collection.class.isAssignableFrom(interfaces[i])) {
-          Type genericInterface = rawType.getGenericInterfaces()[i];
-          Type mappedInterface = getMappedType(genericInterface, varMapping);
+          var genericInterface = rawType.getGenericInterfaces()[i];
+          var mappedInterface = getMappedType(genericInterface, varMapping);
           return getElementTypes(mappedInterface, interfaces[i], targetType);
         }
       }
@@ -75,13 +75,13 @@ public final class TypeUtils {
       // Visit the superclass if it extends the target class / implements the target interface
       Class<?> rawSupertype = rawType.getSuperclass();
       if (targetType.isAssignableFrom(rawSupertype)) {
-        Type genericSuperclass = rawType.getGenericSuperclass();
-        Type mappedSuperclass = getMappedType(genericSuperclass, varMapping);
+        var genericSuperclass = rawType.getGenericSuperclass();
+        var mappedSuperclass = getMappedType(genericSuperclass, varMapping);
         return getElementTypes(mappedSuperclass, rawSupertype, targetType);
       }
     }
     // No luck, return an array of Object types
-    Type[] result = new Type[targetType.getTypeParameters().length];
+    var result = new Type[targetType.getTypeParameters().length];
     Arrays.fill(result, Object.class);
     return result;
   }
@@ -91,12 +91,13 @@ public final class TypeUtils {
       TypeVariable<Class<T>>[] vars = rawType.getTypeParameters();
       Type[] args = ((ParameterizedType) type).getActualTypeArguments();
       Map<String, Type> newVarMapping = new HashMap<>(capacity(vars.length));
-      for (int i = 0; i < vars.length; i++) {
+      for (var i = 0; i < vars.length; i++) {
         Type actualType = Object.class;
         if (i < args.length) {
           actualType = args[i];
-          if (actualType instanceof WildcardType)
+          if (actualType instanceof WildcardType) {
             actualType = ((WildcardType) actualType).getUpperBounds()[0];
+          }
         }
         newVarMapping.put(vars[i].getName(), actualType);
       }
@@ -106,26 +107,28 @@ public final class TypeUtils {
   }
 
   private static int capacity(int expectedSize) {
-    if (expectedSize < 3)
+    if (expectedSize < 3) {
       return expectedSize + 1;
-    else
+    } else {
       return expectedSize + expectedSize / 3;
+    }
   }
 
   private static Type getMappedType(Type type, Map<String, Type> varMapping) {
     if (type instanceof TypeVariable) {
       String name = ((TypeVariable<?>) type).getName();
-      if (varMapping.containsKey(name))
+      if (varMapping.containsKey(name)) {
         return varMapping.get(name);
+      }
     }
     if (type instanceof WildcardType) {
       return getMappedType(((WildcardType) type).getUpperBounds()[0], varMapping);
     }
     if (type instanceof ParameterizedType) {
       ParameterizedType pt = (ParameterizedType) type;
-      Type[] origArgs = pt.getActualTypeArguments();
-      Type[] mappedArgs = new Type[origArgs.length];
-      for (int i = 0; i < origArgs.length; i++) {
+      var origArgs = pt.getActualTypeArguments();
+      var mappedArgs = new Type[origArgs.length];
+      for (var i = 0; i < origArgs.length; i++) {
         mappedArgs[i] = getMappedType(origArgs[i], varMapping);
       }
       return new ParameterizedTypeImpl(pt, mappedArgs);
@@ -166,27 +169,29 @@ public final class TypeUtils {
 
     @Override
     public String toString() {
-      StringBuilder result = new StringBuilder();
+      var result = new StringBuilder();
       if (ownerType != null) {
         result.append(toString(ownerType));
         result.append('$');
       }
       result.append(toString(rawType));
       result.append('<');
-      for (int i = 0; i < actualTypeArguments.length; i++) {
-        if (i > 0)
+      for (var i = 0; i < actualTypeArguments.length; i++) {
+        if (i > 0) {
           result.append(", ");
+        }
         result.append(toString(actualTypeArguments[i]));
       }
       result.append('>');
       return result.toString();
     }
 
-    private String toString(Type type) {
-      if (type instanceof Class<?>)
+    private static String toString(Type type) {
+      if (type instanceof Class<?>) {
         return ((Class<?>) type).getName();
-      else
+      } else {
         return String.valueOf(type);
+      }
     }
 
   }
