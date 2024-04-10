@@ -37,6 +37,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.function.Predicate;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either3;
 
 /*
  * A class to use in place of {@link org.eclipse.lsp4j.jsonrpc.json.adapters.EitherTypeAdapter} to stop depending on lsp4j types in API
@@ -53,9 +54,8 @@ public class EitherTypeAdapter<L, R> extends TypeAdapter<Either<L, R>> {
       if (!TypeUtils.isEither(typeToken.getType())) {
         return null;
       }
-      return new org.eclipse.lsp4j.jsonrpc.json.adapters.EitherTypeAdapter(gson, typeToken);
+      return new EitherTypeAdapter(gson, typeToken);
     }
-
   }
 
   /**
@@ -217,14 +217,14 @@ public class EitherTypeAdapter<L, R> extends TypeAdapter<Either<L, R>> {
   }
 
   protected Either<L, R> createLeft(L obj) {
-    if (Either.class.isAssignableFrom(typeToken.getRawType()))
-      return Either.forLeft(obj);
+    if (Either3.class.isAssignableFrom(typeToken.getRawType()))
+      return (Either<L, R>) Either3.forLeft3(obj);
     return Either.forLeft(obj);
   }
 
   protected Either<L, R> createRight(R obj) {
-    if (Either.class.isAssignableFrom(typeToken.getRawType()))
-      return (Either<L, R>) Either.forRight((Either<?, ?>) obj);
+    if (Either3.class.isAssignableFrom(typeToken.getRawType()))
+      return (Either<L, R>) Either3.forRight3((Either<?, ?>) obj);
     return Either.forRight(obj);
   }
 

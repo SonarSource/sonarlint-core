@@ -45,7 +45,7 @@ public class JsonElementTypeAdapter extends TypeAdapter<Object> {
     @SuppressWarnings("unchecked")
     @Override
     public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-      return (TypeAdapter<T>) new org.eclipse.lsp4j.jsonrpc.json.adapters.JsonElementTypeAdapter(gson);
+      return (TypeAdapter<T>) new JsonElementTypeAdapter(gson);
     }
 
   }
