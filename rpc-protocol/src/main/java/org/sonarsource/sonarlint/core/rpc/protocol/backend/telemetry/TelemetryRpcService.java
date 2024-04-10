@@ -64,4 +64,14 @@ public interface TelemetryRpcService {
 
   @JsonNotification
   void helpAndFeedbackLinkClicked(HelpAndFeedbackClickedParams params);
+
+  @JsonNotification
+  void addedManualBindings();
+
+  @JsonNotification
+  void addedImportedBindings();
+
+  @JsonNotification
+  void addedAutomaticBindings();
+
 }

@@ -22,6 +22,7 @@ package mediumtest;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
@@ -32,9 +33,10 @@ import static mediumtest.fixtures.ServerFixture.newSonarCloudServer;
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 class SharedConnectedModeSettingsMediumTests {
-  private SonarLintRpcServer backend;
+  private SonarLintTestRpcServer backend;
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
@@ -70,12 +72,16 @@ class SharedConnectedModeSettingsMediumTests {
       .withSonarCloudUrl(server.baseUrl())
       .withSonarCloudConnection(connectionId, organizationKey)
       .withBoundConfigScope(configScopeId, connectionId, projectKey)
+      .withTelemetryEnabled()
       .build();
 
     var result = getFileContents(configScopeId);
 
     assertThat(result).succeedsWithin(1, TimeUnit.SECONDS);
     assertThat(result.get().getJsonFileContent()).isEqualTo(expectedFileContent);
+    assertThat(backend.telemetryFilePath())
+      .content().asBase64Decoded().asString()
+      .contains("\"exportedConnectedModeCount\":1");
   }
 
   @Test
@@ -94,12 +100,16 @@ class SharedConnectedModeSettingsMediumTests {
     backend = newBackend()
       .withSonarQubeConnection(connectionId, server)
       .withBoundConfigScope(configScopeId, connectionId, projectKey)
+      .withTelemetryEnabled()
       .build();
 
     var result = getFileContents(configScopeId);
 
     assertThat(result).succeedsWithin(1, TimeUnit.SECONDS);
     assertThat(result.get().getJsonFileContent()).isEqualTo(expectedFileContent);
+    assertThat(backend.telemetryFilePath())
+      .content().asBase64Decoded().asString()
+      .contains("\"exportedConnectedModeCount\":1");
   }
 
   private CompletableFuture<GetSharedConnectedModeConfigFileResponse> getFileContents(String configScopeId) {
@@ -107,4 +117,5 @@ class SharedConnectedModeSettingsMediumTests {
       .getSharedConnectedModeConfigFileContents(
         new GetSharedConnectedModeConfigFileParams(configScopeId));
   }
+
 }
