@@ -23,14 +23,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import javax.annotation.CheckForNull;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -126,20 +129,21 @@ public class ConnectionSuggestionProvider {
       for (var bindingClue : bindingClues) {
         var projectKey = bindingClue.getSonarProjectKey();
         if (projectKey != null) {
-          handleBindingClue(connectionSuggestionsByConfigScopeIds, bindingSuggestionsForConfigScopeIds, bindingClue, configScopeId, projectKey);
+          var result = handleBindingClue(bindingClue);
+          if (result == null) {
+            bindingSuggestionsForConfigScopeIds.add(configScopeId);
+          } else if (result.isLeft()) {
+            connectionSuggestionsByConfigScopeIds.computeIfAbsent(configScopeId, s -> new ArrayList<>())
+              .add(new ConnectionSuggestionDto(new SonarQubeConnectionSuggestionDto(result.getLeft(), projectKey)));
+          } else {
+            connectionSuggestionsByConfigScopeIds.computeIfAbsent(configScopeId, s -> new ArrayList<>())
+              .add(new ConnectionSuggestionDto(new SonarCloudConnectionSuggestionDto(result.getRight(), projectKey)));
+          }
         }
       }
     }
     if (!connectionSuggestionsByConfigScopeIds.isEmpty()) {
-      LOG.debug("Found {} connection suggestion(s)", connectionSuggestionsByConfigScopeIds.size());
-      try {
-        bindingSuggestionProvider.disable();
-        var future = client.suggestConnection(new SuggestConnectionParams(connectionSuggestionsByConfigScopeIds));
-        cancelMonitor.onCancel(() -> future.cancel(true));
-        future.join();
-      } finally {
-        bindingSuggestionProvider.enable();
-      }
+      suggestConnectionToClient(connectionSuggestionsByConfigScopeIds, cancelMonitor);
     }
     if (!bindingSuggestionsForConfigScopeIds.isEmpty()) {
       LOG.debug("Found binding suggestion(s) for %s configuration scope IDs", bindingSuggestionsForConfigScopeIds.size());
@@ -147,31 +151,38 @@ public class ConnectionSuggestionProvider {
     }
   }
 
-  private void handleBindingClue(HashMap<String, List<ConnectionSuggestionDto>> connectionSuggestionsByConfigScopeIds, Set<String> bindingSuggestionsForConfigScopeIds,
-                                          BindingClueProvider.BindingClue bindingClue, String configScopeId, String projectKey) {
+  @CheckForNull
+  private Either<String, String> handleBindingClue(BindingClueProvider.BindingClue bindingClue) {
     if (bindingClue instanceof BindingClueProvider.SonarCloudBindingClue) {
       LOG.debug("Found a SonarCloud binding clue");
       var organization = ((BindingClueProvider.SonarCloudBindingClue) bindingClue).getOrganization();
       var connection = connectionRepository.findByOrganization(organization);
       if (connection.isEmpty()) {
-        connectionSuggestionsByConfigScopeIds.computeIfAbsent(configScopeId, s -> new ArrayList<>())
-          .add(new ConnectionSuggestionDto(new SonarCloudConnectionSuggestionDto(organization, projectKey)));
-      } else {
-        bindingSuggestionsForConfigScopeIds.add(configScopeId);
+        return Either.forRight(organization);
       }
     } else if (bindingClue instanceof BindingClueProvider.SonarQubeBindingClue) {
       LOG.debug("Found a SonarQube binding clue");
       var serverUrl = ((BindingClueProvider.SonarQubeBindingClue) bindingClue).getServerUrl();
       var connection = connectionRepository.findByUrl(serverUrl);
       if (connection.isEmpty()) {
-        connectionSuggestionsByConfigScopeIds.computeIfAbsent(configScopeId, s -> new ArrayList<>())
-          .add(new ConnectionSuggestionDto(new SonarQubeConnectionSuggestionDto(removeEnd(serverUrl, "/"), projectKey)));
-      } else {
-        bindingSuggestionsForConfigScopeIds.add(configScopeId);
+        return Either.forLeft(removeEnd(serverUrl, "/"));
       }
     } else {
       LOG.debug("Found an invalid binding clue for connection suggestion");
-      bindingSuggestionsForConfigScopeIds.add(configScopeId);
+    }
+    return null;
+  }
+
+  private void suggestConnectionToClient(Map<String, List<ConnectionSuggestionDto>> connectionSuggestionsByConfigScopeIds,
+    SonarLintCancelMonitor cancelMonitor) {
+    LOG.debug("Found {} connection suggestion(s)", connectionSuggestionsByConfigScopeIds.size());
+    try {
+      bindingSuggestionProvider.disable();
+      var future = client.suggestConnection(new SuggestConnectionParams(connectionSuggestionsByConfigScopeIds));
+      cancelMonitor.onCancel(() -> future.cancel(true));
+      future.join();
+    } finally {
+      bindingSuggestionProvider.enable();
     }
   }
 
