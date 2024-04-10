@@ -35,6 +35,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
 import org.sonarsource.sonarlint.core.telemetry.payload.HotspotPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.IssuePayload;
+import org.sonarsource.sonarlint.core.telemetry.payload.ShareConnectedModePayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.ShowHotspotPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.ShowIssuePayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.TaintVulnerabilitiesPayload;
@@ -107,13 +108,23 @@ public class TelemetryHttpClient {
       telemetryLiveAttrs.getDefaultDisabledRules(), data.getRaisedIssuesRules(), data.getQuickFixesApplied());
     var helpAndFeedbackPayload = new TelemetryHelpAndFeedbackPayload(data.getHelpAndFeedbackLinkClickedCounter());
     var cleanAsYouCodePayload = new CleanAsYouCodePayload(new NewCodeFocusPayload(data.isFocusOnNewCode(), data.getCodeFocusChangedCount()));
+
+    ShareConnectedModePayload shareConnectedModePayload;
+    if (telemetryLiveAttrs.usesConnectedMode()) {
+      shareConnectedModePayload = new ShareConnectedModePayload(data.getManualAddedBindingsCount(), data.getImportedAddedBindingsCount(),
+        data.getAutoAddedBindingsCount(), data.getExportedConnectedModeCount());
+    } else {
+      shareConnectedModePayload = new ShareConnectedModePayload(null, null, null, null);
+    }
+
     var mergedAdditionalAttributes = new HashMap<>(telemetryLiveAttrs.getAdditionalAttributes());
     mergedAdditionalAttributes.putAll(additionalAttributes);
+
     return new TelemetryPayload(daysSinceInstallation, data.numUseDays(), product, version, ideVersion, platform, architecture,
       telemetryLiveAttrs.usesConnectedMode(), telemetryLiveAttrs.usesSonarCloud(), systemTime, data.installTime(), platform, jre,
       telemetryLiveAttrs.getNodeVersion(), analyzers, notifications, showHotspotPayload,
       showIssuePayload, taintVulnerabilitiesPayload, telemetryRulesPayload,
-      hotspotPayload, issuePayload, helpAndFeedbackPayload, cleanAsYouCodePayload, mergedAdditionalAttributes);
+      hotspotPayload, issuePayload, helpAndFeedbackPayload, cleanAsYouCodePayload, shareConnectedModePayload, mergedAdditionalAttributes);
   }
 
   private void sendPost(TelemetryPayload payload) {
@@ -149,6 +160,6 @@ public class TelemetryHttpClient {
 
   @VisibleForTesting
   boolean isTelemetryLogEnabled(){
-    return  Boolean.parseBoolean(System.getenv("SONARLINT_TELEMETRY_LOG"));
+    return Boolean.parseBoolean(System.getenv("SONARLINT_TELEMETRY_LOG"));
   }
 }
