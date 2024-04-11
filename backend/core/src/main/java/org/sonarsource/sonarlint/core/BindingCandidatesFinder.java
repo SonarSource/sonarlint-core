@@ -78,10 +78,11 @@ public class BindingCandidatesFinder {
       .filter(c -> projectKey.equals(c.getBindingClue().getSonarProjectKey()))
       .collect(toList());
 
-    var isFromSharedConfiguration = cluesWithMatchingProjectKey.stream()
-      .anyMatch(c -> Boolean.TRUE == c.getBindingClue().isFromSharedConfiguration());
 
     if (!cluesWithMatchingProjectKey.isEmpty()) {
+      var isFromSharedConfiguration = cluesWithMatchingProjectKey.stream()
+        .anyMatch(c -> Boolean.TRUE == c.getBindingClue().isFromSharedConfiguration());
+      
       return Optional.of(new ConfigurationScopeSharedContext(scope, isFromSharedConfiguration));
     }
     var configScopeName = scope.getName();
