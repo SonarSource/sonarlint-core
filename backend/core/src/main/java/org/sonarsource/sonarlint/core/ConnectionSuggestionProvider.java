@@ -24,12 +24,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import javax.annotation.CheckForNull;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -130,18 +130,14 @@ public class ConnectionSuggestionProvider {
       for (var bindingClue : bindingClues) {
         var projectKey = bindingClue.getSonarProjectKey();
         if (projectKey != null) {
-          var result = handleBindingClue(bindingClue);
-          if (result == null) {
-            bindingSuggestionsForConfigScopeIds.add(configScopeId);
-          } else if (result.isLeft()) {
-            connectionSuggestionsByConfigScopeIds.computeIfAbsent(configScopeId, s -> new ArrayList<>())
-              .add(new ConnectionSuggestionDto(new SonarQubeConnectionSuggestionDto(result.getLeft(), projectKey), 
-                bindingClue.isFromSharedConfiguration()));
-          } else {
-            connectionSuggestionsByConfigScopeIds.computeIfAbsent(configScopeId, s -> new ArrayList<>())
-              .add(new ConnectionSuggestionDto(new SonarCloudConnectionSuggestionDto(result.getRight(), projectKey),
-                bindingClue.isFromSharedConfiguration()));
-          }
+          handleBindingClue(bindingClue).ifPresentOrElse(clue -> clue.map(
+            serverUrl -> connectionSuggestionsByConfigScopeIds.computeIfAbsent(configScopeId, s -> new ArrayList<>())
+              .add(new ConnectionSuggestionDto(new SonarQubeConnectionSuggestionDto(serverUrl, projectKey),
+                bindingClue.isFromSharedConfiguration())),
+            organization -> connectionSuggestionsByConfigScopeIds.computeIfAbsent(configScopeId, s -> new ArrayList<>())
+              .add(new ConnectionSuggestionDto(new SonarCloudConnectionSuggestionDto(organization, projectKey),
+                bindingClue.isFromSharedConfiguration()))
+          ), () -> bindingSuggestionsForConfigScopeIds.add(configScopeId));
         }
       }
     }
@@ -150,26 +146,25 @@ public class ConnectionSuggestionProvider {
     computeBindingSuggestionfAny(bindingSuggestionsForConfigScopeIds);
   }
 
-  @CheckForNull
-  private Either<String, String> handleBindingClue(BindingClueProvider.BindingClue bindingClue) {
+  private Optional<Either<String, String>> handleBindingClue(BindingClueProvider.BindingClue bindingClue) {
     if (bindingClue instanceof BindingClueProvider.SonarCloudBindingClue) {
       LOG.debug("Found a SonarCloud binding clue");
       var organization = ((BindingClueProvider.SonarCloudBindingClue) bindingClue).getOrganization();
       var connection = connectionRepository.findByOrganization(organization);
       if (connection.isEmpty()) {
-        return Either.forRight(organization);
+        return Optional.of(Either.forRight(organization));
       }
     } else if (bindingClue instanceof BindingClueProvider.SonarQubeBindingClue) {
       LOG.debug("Found a SonarQube binding clue");
       var serverUrl = ((BindingClueProvider.SonarQubeBindingClue) bindingClue).getServerUrl();
       var connection = connectionRepository.findByUrl(serverUrl);
       if (connection.isEmpty()) {
-        return Either.forLeft(removeEnd(serverUrl, "/"));
+        return Optional.of(Either.forLeft(removeEnd(serverUrl, "/")));
       }
     } else {
       LOG.debug("Found an invalid binding clue for connection suggestion");
     }
-    return null;
+    return Optional.empty();
   }
 
   private void suggestConnectionToClientIfAny(Map<String, List<ConnectionSuggestionDto>> connectionSuggestionsByConfigScopeIds,
