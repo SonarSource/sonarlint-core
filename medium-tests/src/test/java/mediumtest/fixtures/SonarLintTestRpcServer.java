@@ -61,7 +61,7 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
 
   public SonarLintTestRpcServer(BackendJsonRpcLauncher serverLauncher, ClientJsonRpcLauncher clientLauncher) {
     this.serverUsingRpc = clientLauncher.getServerProxy();
-    this.serverUsingJava = serverLauncher.getJavaImpl();
+    this.serverUsingJava = serverLauncher.getServer();
     this.serverLauncher = serverLauncher;
     this.clientLauncher = clientLauncher;
   }

@@ -140,7 +140,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
   @AfterAll
   static void stopBackend() throws ExecutionException, InterruptedException {
-    serverLauncher.getJavaImpl().shutdown().get();
+    serverLauncher.getServer().shutdown().get();
   }
 
   @Test
