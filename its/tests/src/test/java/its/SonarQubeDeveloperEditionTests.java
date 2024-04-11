@@ -1033,7 +1033,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     private int requestOpenHotspotWithParams(String projectKey, String hotspotKey) {
       var request = HttpRequest.newBuilder()
         .GET()
-        .uri(URI.create("http://localhost:" + serverLauncher.getJavaImpl().getEmbeddedServerPort() + "/sonarlint/api/hotspots/show?server=" + URLEncoder.encode(ORCHESTRATOR.getServer().getUrl(), StandardCharsets.UTF_8) + "&project="
+        .uri(URI.create("http://localhost:" + serverLauncher.getServer().getEmbeddedServerPort() + "/sonarlint/api/hotspots/show?server=" + URLEncoder.encode(ORCHESTRATOR.getServer().getUrl(), StandardCharsets.UTF_8) + "&project="
           + projectKey + "&hotspot=" + hotspotKey))
         .build();
       HttpResponse<String> response;

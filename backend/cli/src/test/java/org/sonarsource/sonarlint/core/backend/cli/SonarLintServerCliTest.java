@@ -22,13 +22,11 @@ package org.sonarsource.sonarlint.core.backend.cli;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedConstruction;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.impl.SonarLintRpcServerImpl;
 
@@ -49,10 +47,10 @@ class SonarLintServerCliTest {
 
   @Test
   void log_when_client_is_closed() throws IOException {
-    ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+    var outContent = new ByteArrayOutputStream();
     System.setErr(new PrintStream(outContent));
 
-    InputStream inputStream = spy(new ByteArrayInputStream(new byte[0]));
+    var inputStream = spy(new ByteArrayInputStream(new byte[0]));
     when(inputStream.available()).thenReturn(1);
     var exitCode = new SonarLintServerCli().run(inputStream, new PrintStream(new ByteArrayOutputStream()));
 
@@ -64,12 +62,12 @@ class SonarLintServerCliTest {
 
   @Test
   void log_when_connection_canceled() {
-    ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+    var outContent = new ByteArrayOutputStream();
     System.setErr(new PrintStream(outContent));
 
-    SonarLintRpcServerImpl mockServer = mock(SonarLintRpcServerImpl.class);
+    var mockServer = mock(SonarLintRpcServerImpl.class);
     doThrow(CancellationException.class).when(mockServer).getClientListener();
-    try (MockedConstruction<BackendJsonRpcLauncher> ignored = mockConstructionWithAnswer(BackendJsonRpcLauncher.class, invocationOnMock -> mockServer)) {
+    try (var ignored = mockConstructionWithAnswer(BackendJsonRpcLauncher.class, invocationOnMock -> mockServer)) {
       var exitCode = new SonarLintServerCli().run(new ByteArrayInputStream(new byte[0]), new PrintStream(new ByteArrayOutputStream()));
 
       assertThat(outContent.toString()).isEqualToIgnoringNewLines("Server is shutting down...");
@@ -79,14 +77,14 @@ class SonarLintServerCliTest {
 
   @Test
   void log_interrupted_exception() throws ExecutionException, InterruptedException {
-    ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+    var outContent = new ByteArrayOutputStream();
     System.setErr(new PrintStream(outContent));
 
-    SonarLintRpcServerImpl mockServer = mock(SonarLintRpcServerImpl.class);
-    Future<Void> mockFuture = mock(Future.class);
+    var mockServer = mock(SonarLintRpcServerImpl.class);
+    var mockFuture = mock(Future.class);
     when(mockServer.getClientListener()).thenReturn(mockFuture);
     doThrow(new InterruptedException("interrupted exc")).when(mockFuture).get();
-    try (MockedConstruction<BackendJsonRpcLauncher> ignored = mockConstructionWithAnswer(BackendJsonRpcLauncher.class, invocationOnMock -> mockServer)) {
+    try (var ignored = mockConstructionWithAnswer(BackendJsonRpcLauncher.class, invocationOnMock -> mockServer)) {
       var exitCode = new SonarLintServerCli().run(new ByteArrayInputStream(new byte[0]), new PrintStream(new ByteArrayOutputStream()));
 
       assertThat(outContent.toString()).contains("java.lang.InterruptedException: interrupted exc");
@@ -96,12 +94,12 @@ class SonarLintServerCliTest {
 
   @Test
   void log_other_exceptions() {
-    ByteArrayOutputStream outContent = new ByteArrayOutputStream();
+    var outContent = new ByteArrayOutputStream();
     System.setErr(new PrintStream(outContent));
 
-    SonarLintRpcServerImpl mockServer = mock(SonarLintRpcServerImpl.class);
+    var mockServer = mock(SonarLintRpcServerImpl.class);
     doThrow(new RuntimeException("an exc")).when(mockServer).getClientListener();
-    try (MockedConstruction<BackendJsonRpcLauncher> ignored = mockConstructionWithAnswer(BackendJsonRpcLauncher.class, invocationOnMock -> mockServer)) {
+    try (var ignored = mockConstructionWithAnswer(BackendJsonRpcLauncher.class, invocationOnMock -> mockServer)) {
       var exitCode = new SonarLintServerCli().run(new ByteArrayInputStream(new byte[0]), new PrintStream(new ByteArrayOutputStream()));
 
       assertThat(outContent.toString()).contains("java.lang.RuntimeException: an exc");

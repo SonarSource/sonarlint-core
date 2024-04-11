@@ -22,49 +22,26 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 import java.io.Closeable;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 public class BackendJsonRpcLauncher implements Closeable {
 
   private final SonarLintRpcServerImpl server;
-  private final ExecutorService messageReaderExecutor;
-  private final ExecutorService messageWriterExecutor;
 
   public BackendJsonRpcLauncher(InputStream in, OutputStream out) {
-    messageReaderExecutor = Executors.newCachedThreadPool(r -> {
-      var t = new Thread(r);
-      t.setName("Server message reader");
-      return t;
-    });
-    messageWriterExecutor = Executors.newCachedThreadPool(r -> {
-      var t = new Thread(r);
-      t.setName("Server message writer");
-      return t;
-    });
-
-    server = new SonarLintRpcServerImpl(in, out, messageReaderExecutor, messageWriterExecutor);
+    server = new SonarLintRpcServerImpl(in, out);
   }
 
-  public SonarLintRpcServerImpl getJavaImpl() {
+  public SonarLintRpcServerImpl getServer() {
     return server;
   }
 
+  /**
+   * @deprecated All related codes moved to org.sonarsource.sonarlint.core.rpc.impl.SonarLintRpcServerImpl#shutdown()
+   * Calling server shutdown method is enough.
+   */
   @Override
+  @Deprecated(since = "10.4", forRemoval = true)
   public void close() {
-    messageReaderExecutor.shutdownNow();
-    messageWriterExecutor.shutdownNow();
-    try {
-      if (!messageReaderExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
-        throw new IllegalStateException("Unable to terminate the server message reader in a timely manner");
-      }
-      if (!messageWriterExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
-        throw new IllegalStateException("Unable to terminate the server message writer in a timely manner");
-      }
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new IllegalStateException("Interrupted!", e);
-    }
+    // This method is used by the language server. It will be removed once the usage has been removed
   }
 }

@@ -30,7 +30,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import jetbrains.exodus.core.execution.JobProcessor;
@@ -82,9 +81,21 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   private final ExecutorServiceShutdownWatchable<ExecutorService> requestsExecutor;
   private final ExecutorService requestAndNotificationsSequentialExecutor;
   private final RpcClientLogOutput logOutput;
+  private final ExecutorService messageReaderExecutor;
+  private final ExecutorService messageWriterExecutor;
   private SpringApplicationContextInitializer springApplicationContextInitializer;
 
-  public SonarLintRpcServerImpl(InputStream in, OutputStream out, ExecutorService messageReaderExecutor, ExecutorService messageWriterExecutor) {
+  public SonarLintRpcServerImpl(InputStream in, OutputStream out) {
+    this.messageReaderExecutor = Executors.newCachedThreadPool(r -> {
+      var t = new Thread(r);
+      t.setName("Server message reader");
+      return t;
+    });
+    this.messageWriterExecutor = Executors.newCachedThreadPool(r -> {
+      var t = new Thread(r);
+      t.setName("Server message writer");
+      return t;
+    });
     this.requestAndNotificationsSequentialExecutor = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint Server RPC sequential executor"));
     this.requestsExecutor = new ExecutorServiceShutdownWatchable<>(Executors.newCachedThreadPool(r -> new Thread(r, "SonarLint Server RPC request executor")));
     var launcher = new SonarLintLauncherBuilder<SonarLintRpcClient>()
@@ -111,7 +122,6 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     var rpcAppender = new SonarLintRpcClientLogbackAppender(client);
     rpcAppender.start();
     rootLogger.addAppender(rpcAppender);
-
 
     this.clientListener = launcher.startListening();
 
@@ -247,17 +257,31 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
         }
       }
       ThreadJobProcessorPool.getProcessors().forEach(JobProcessor::finish);
-      stopListeningClient();
+      shutdownReaderAndWriter();
       return null;
     });
     executor.shutdown();
     return future;
   }
 
-  private void stopListeningClient() {
-    ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
-    executorService.schedule(() -> clientListener.cancel(true), 500, TimeUnit.MILLISECONDS);
-    executorService.shutdown();
+  public void shutdownReaderAndWriter() {
+    messageReaderExecutor.shutdownNow();
+
+    //shutdown writer and disconnect from client asynchronously to make sure the client gets the response
+    var scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
+    scheduledExecutorService.schedule(() -> {
+      messageWriterExecutor.shutdownNow();
+      disconnectFromClient();
+    }, 1, TimeUnit.SECONDS);
+    scheduledExecutorService.shutdown();
+  }
+
+  private void disconnectFromClient() {
+    clientListener.cancel(true);
+  }
+
+  public boolean isReaderShutdown() {
+    return messageReaderExecutor.isShutdown();
   }
 
   public int getEmbeddedServerPort() {

@@ -23,7 +23,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
@@ -35,7 +34,7 @@ class SonarLintRpcServerImplTests {
   void it_should_fail_to_use_services_if_the_backend_is_not_initialized() {
     var in = new ByteArrayInputStream(new byte[0]);
     var out = new ByteArrayOutputStream();
-    var backend = new SonarLintRpcServerImpl(in, out, Executors.newSingleThreadExecutor(), Executors.newSingleThreadExecutor());
+    var backend = new SonarLintRpcServerImpl(in, out);
 
     assertThat(backend.getTelemetryService().getStatus())
       .failsWithin(1, TimeUnit.MINUTES)
@@ -48,7 +47,7 @@ class SonarLintRpcServerImplTests {
   void it_should_silently_shutdown_the_backend_if_it_was_not_initialized() {
     var in = new ByteArrayInputStream(new byte[0]);
     var out = new ByteArrayOutputStream();
-    var backend = new SonarLintRpcServerImpl(in, out, Executors.newSingleThreadExecutor(), Executors.newSingleThreadExecutor());
+    var backend = new SonarLintRpcServerImpl(in, out);
 
     var future = backend.shutdown();
 
