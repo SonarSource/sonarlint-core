@@ -80,9 +80,7 @@ public class BindingCandidatesFinder {
 
 
     if (!cluesWithMatchingProjectKey.isEmpty()) {
-      var isFromSharedConfiguration = cluesWithMatchingProjectKey.stream()
-        .anyMatch(c -> Boolean.TRUE == c.getBindingClue().isFromSharedConfiguration());
-      
+      var isFromSharedConfiguration = cluesWithMatchingProjectKey.stream().anyMatch(c -> c.getBindingClue().isFromSharedConfiguration());
       return Optional.of(new ConfigurationScopeSharedContext(scope, isFromSharedConfiguration));
     }
     var configScopeName = scope.getName();
