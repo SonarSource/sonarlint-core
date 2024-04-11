@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,34 +17,26 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.client.binding;
+package org.sonarsource.sonarlint.core;
 
-public class AssistBindingParams {
-  private final String connectionId;
-  private final String projectKey;
-  private final String configScopeId;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
+
+public class ConfigurationScopeSharedContext {
+
+  private final ConfigurationScope configurationScope;
   private final boolean isFromSharedConfiguration;
 
-  public AssistBindingParams(String connectionId, String projectKey, String configScopeId, boolean isFromSharedConfiguration) {
-    this.connectionId = connectionId;
-    this.projectKey = projectKey;
-    this.configScopeId = configScopeId;
+  ConfigurationScopeSharedContext(ConfigurationScope configurationScope, boolean isFromSharedConfiguration) {
+    this.configurationScope = configurationScope;
     this.isFromSharedConfiguration = isFromSharedConfiguration;
   }
 
-  public String getConnectionId() {
-    return connectionId;
-  }
-
-  public String getProjectKey() {
-    return projectKey;
-  }
-
-  public String getConfigScopeId() {
-    return configScopeId;
+  public ConfigurationScope getConfigurationScope() {
+    return configurationScope;
   }
 
   public boolean isFromSharedConfiguration() {
     return isFromSharedConfiguration;
   }
+
 }

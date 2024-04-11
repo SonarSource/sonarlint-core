@@ -199,7 +199,9 @@ public class RequestHandlerBindingAssistant {
       client.noBindingSuggestionFound(new NoBindingSuggestionFoundParams(projectKey));
       return new NewBinding(connectionId, null);
     }
-    var future = client.assistBinding(new AssistBindingParams(connectionId, projectKey, configScopeCandidates.iterator().next()));
+    var bindableConfig = configScopeCandidates.iterator().next();
+    var future = client.assistBinding(new AssistBindingParams(connectionId, projectKey, bindableConfig.getConfigurationScope().getId(),
+      bindableConfig.isFromSharedConfiguration()));
     cancelMonitor.onCancel(() -> future.cancel(true));
     var response = future.join();
     return new NewBinding(connectionId, response.getConfigurationScopeId());
