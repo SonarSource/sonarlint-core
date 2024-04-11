@@ -135,10 +135,12 @@ public class ConnectionSuggestionProvider {
             bindingSuggestionsForConfigScopeIds.add(configScopeId);
           } else if (result.isLeft()) {
             connectionSuggestionsByConfigScopeIds.computeIfAbsent(configScopeId, s -> new ArrayList<>())
-              .add(new ConnectionSuggestionDto(new SonarQubeConnectionSuggestionDto(result.getLeft(), projectKey)));
+              .add(new ConnectionSuggestionDto(new SonarQubeConnectionSuggestionDto(result.getLeft(), projectKey), 
+                bindingClue.isFromSharedConfiguration()));
           } else {
             connectionSuggestionsByConfigScopeIds.computeIfAbsent(configScopeId, s -> new ArrayList<>())
-              .add(new ConnectionSuggestionDto(new SonarCloudConnectionSuggestionDto(result.getRight(), projectKey)));
+              .add(new ConnectionSuggestionDto(new SonarCloudConnectionSuggestionDto(result.getRight(), projectKey),
+                bindingClue.isFromSharedConfiguration()));
           }
         }
       }
