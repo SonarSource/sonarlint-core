@@ -27,21 +27,28 @@ public class ConnectionSuggestionDto {
 
   @JsonAdapter(EitherSonarQubeSonarCloudConnectionAdapterFactory.class)
   private final Either<SonarQubeConnectionSuggestionDto, SonarCloudConnectionSuggestionDto> connectionSuggestion;
+  private final boolean isFromSharedConfiguration;
 
-  public ConnectionSuggestionDto(Either<SonarQubeConnectionSuggestionDto, SonarCloudConnectionSuggestionDto> connectionSuggestion) {
+  public ConnectionSuggestionDto(Either<SonarQubeConnectionSuggestionDto, SonarCloudConnectionSuggestionDto> connectionSuggestion,
+    boolean isFromSharedConfiguration) {
     this.connectionSuggestion = connectionSuggestion;
+    this.isFromSharedConfiguration = isFromSharedConfiguration;
   }
 
-  public ConnectionSuggestionDto(SonarQubeConnectionSuggestionDto connection) {
-    this(Either.forLeft(connection));
+  public ConnectionSuggestionDto(SonarQubeConnectionSuggestionDto connection, boolean isFromSharedConfiguration) {
+    this(Either.forLeft(connection), isFromSharedConfiguration);
   }
 
-  public ConnectionSuggestionDto(SonarCloudConnectionSuggestionDto connection) {
-    this(Either.forRight(connection));
+  public ConnectionSuggestionDto(SonarCloudConnectionSuggestionDto connection, boolean isFromSharedConfiguration) {
+    this(Either.forRight(connection), isFromSharedConfiguration);
   }
 
   public Either<SonarQubeConnectionSuggestionDto, SonarCloudConnectionSuggestionDto> getConnectionSuggestion() {
     return connectionSuggestion;
+  }
+
+  public boolean isFromSharedConfiguration() {
+    return isFromSharedConfiguration;
   }
 
 }

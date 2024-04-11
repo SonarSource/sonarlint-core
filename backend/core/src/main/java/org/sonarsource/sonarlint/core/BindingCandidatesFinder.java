@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core;
 
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
@@ -50,19 +51,16 @@ public class BindingCandidatesFinder {
     this.sonarProjectsCache = sonarProjectsCache;
   }
 
-  public Set<String> findConfigScopesToBind(String connectionId, String projectKey, SonarLintCancelMonitor cancelMonitor) {
+  public Set<ConfigurationScopeSharedContext> findConfigScopesToBind(String connectionId, String projectKey, SonarLintCancelMonitor cancelMonitor) {
     var configScopeCandidates = configRepository.getAllBindbableUnboundScopes();
     if (configScopeCandidates.isEmpty()) {
       return Set.of();
     }
 
-    var goodConfigScopeCandidates = new HashSet<ConfigurationScope>();
+    var goodConfigScopeCandidates = new HashSet<ConfigurationScopeSharedContext>();
 
     for (var scope : configScopeCandidates) {
-      cancelMonitor.checkCanceled();
-      if (checkIfScopeIsGoodCandidateForBinding(scope, connectionId, projectKey, cancelMonitor)) {
-        goodConfigScopeCandidates.add(scope);
-      }
+      checkIfScopeIsGoodCandidateForBinding(scope, connectionId, projectKey, cancelMonitor).ifPresent(goodConfigScopeCandidates::add);
     }
 
     // if both a parent and a child configuration scope are candidates, preference should be given to the higher scope in the hierarchy
@@ -70,28 +68,35 @@ public class BindingCandidatesFinder {
     return filterOutLeafCandidates(goodConfigScopeCandidates);
   }
 
-  private static Set<String> filterOutLeafCandidates(Set<ConfigurationScope> candidates) {
-    var candidateIds = candidates.stream().map(ConfigurationScope::getId).collect(Collectors.toSet());
-    return candidates.stream().filter(scope -> {
-      var parentId = scope.getParentId();
-      return parentId == null || !candidateIds.contains(parentId);
-    }).map(ConfigurationScope::getId).collect(Collectors.toSet());
-  }
+  private Optional<ConfigurationScopeSharedContext> checkIfScopeIsGoodCandidateForBinding(
+    ConfigurationScope scope, String connectionId, String projectKey, SonarLintCancelMonitor cancelMonitor) {
+    cancelMonitor.checkCanceled();
 
-  private boolean checkIfScopeIsGoodCandidateForBinding(ConfigurationScope scope, String connectionId, String projectKey, SonarLintCancelMonitor cancelMonitor) {
     var cluesAndConnections = bindingClueProvider.collectBindingCluesWithConnections(scope.getId(), Set.of(connectionId), cancelMonitor);
 
     var cluesWithMatchingProjectKey = cluesAndConnections.stream()
       .filter(c -> projectKey.equals(c.getBindingClue().getSonarProjectKey()))
       .collect(toList());
+
+
     if (!cluesWithMatchingProjectKey.isEmpty()) {
-      return true;
+      var isFromSharedConfiguration = cluesWithMatchingProjectKey.stream().anyMatch(c -> c.getBindingClue().isFromSharedConfiguration());
+      return Optional.of(new ConfigurationScopeSharedContext(scope, isFromSharedConfiguration));
     }
     var configScopeName = scope.getName();
-    if (isNotBlank(configScopeName)) {
-      return isConfigScopeNameCloseEnoughToSonarProject(configScopeName, connectionId, projectKey, cancelMonitor);
+    if (isNotBlank(configScopeName) && isConfigScopeNameCloseEnoughToSonarProject(configScopeName, connectionId, projectKey, cancelMonitor)) {
+      return Optional.of(new ConfigurationScopeSharedContext(scope, false));
     }
-    return false;
+    return Optional.empty();
+  }
+
+  private static Set<ConfigurationScopeSharedContext> filterOutLeafCandidates(Set<ConfigurationScopeSharedContext> candidates) {
+    var candidateIds = candidates.stream().map(ConfigurationScopeSharedContext::getConfigurationScope).map(ConfigurationScope::getId).collect(Collectors.toSet());
+    return candidates.stream().filter(bindableConfig -> {
+      var scope = bindableConfig.getConfigurationScope();
+      var parentId = scope.getParentId();
+      return parentId == null || !candidateIds.contains(parentId);
+    }).collect(Collectors.toSet());
   }
 
   private boolean isConfigScopeNameCloseEnoughToSonarProject(String configScopeName, String connectionId, String projectKey, SonarLintCancelMonitor cancelMonitor) {
