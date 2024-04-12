@@ -33,6 +33,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -126,7 +127,8 @@ public class BindingSuggestionProvider {
 
   @EventListener
   public void filesystemUpdated(FileSystemUpdatedEvent event) {
-    var configScopeWithAddedOrUpdatedBindingClue = event.getAddedOrUpdated().stream()
+    var configScopeWithAddedOrUpdatedBindingClue =
+      Stream.concat(event.getAdded().stream(), event.getUpdated().stream())
       .filter(file -> BindingClueProvider.ALL_BINDING_CLUE_FILENAMES.contains(file.getFileName()))
       .map(ClientFile::getConfigScopeId)
       .collect(Collectors.toSet());

@@ -24,18 +24,26 @@ import java.util.List;
 public class FileSystemUpdatedEvent {
 
   private final List<ClientFile> removed;
-  private final List<ClientFile> addedOrUpdated;
+  private final List<ClientFile> added;
 
-  public FileSystemUpdatedEvent(List<ClientFile> removed, List<ClientFile> addedOrUpdated) {
+  private final List<ClientFile> updated;
+
+  public FileSystemUpdatedEvent(List<ClientFile> removed, List<ClientFile> added, List<ClientFile> updated) {
     this.removed = removed;
-    this.addedOrUpdated = addedOrUpdated;
+    this.added = added;
+    this.updated = updated;
   }
 
   public List<ClientFile> getRemoved() {
     return removed;
   }
 
-  public List<ClientFile> getAddedOrUpdated() {
-    return addedOrUpdated;
+  public List<ClientFile> getAdded() {
+    return added;
   }
+
+  public List<ClientFile> getUpdated() {
+    return updated;
+  }
+
 }

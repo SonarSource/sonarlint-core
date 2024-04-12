@@ -33,6 +33,9 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.sonar.api.utils.System2;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingPluginParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
@@ -196,7 +199,7 @@ class AnalysisMediumTests {
   }
 
   @Test
-  void it_should_report_issues_for_multifile_analysis_taking_data_from_module_filesystem(@TempDir Path baseDir) throws InterruptedException {
+  void it_should_report_issues_for_multi_file_analysis_taking_data_from_module_filesystem(@TempDir Path baseDir) {
     var fileIssue = createFile(baseDir, "fileIssue.py",
       "from fileFuncDef import foo\n" +
         "foo(1,2,3)\n"
@@ -227,7 +230,48 @@ class AnalysisMediumTests {
   }
 
   @Test
-  void it_should_report_issues_for_multi_file_analysis_only_for_leaf_config_scopes(@TempDir Path baseDir) throws InterruptedException {
+  void it_should_report_multi_file_issues_for_files_added_after_initialization(@TempDir Path baseDir) {
+    var fileIssue = createFile(baseDir, "fileIssue.py",
+      "from fileFuncDef import foo\n" +
+        "foo(1,2,3)\n"
+    );
+    var fileFuncDef = createFile(baseDir, "fileFuncDef.py",
+      "def foo(a):\n" +
+        "    print(a)\n");
+    var fileIssueUri = fileIssue.toUri();
+    var fileFuncDefUri = fileFuncDef.toUri();
+    var client = newFakeClient()
+      .build();
+    backend = newBackend()
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
+      .build(client);
+
+    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID,
+      List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
+
+    assertThat(result.getFailedAnalysisFiles()).isEmpty();
+    var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
+    verify(client, times(0)).didRaiseIssue(eq(CONFIG_SCOPE_ID), rawIssueCaptor.capture());
+
+    backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
+      new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, false, CONFIG_SCOPE_ID, null))));
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(), List.of(new ClientFileDto(fileIssueUri, baseDir.relativize(fileIssue), CONFIG_SCOPE_ID, false, null, fileIssue, null),
+        new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef), CONFIG_SCOPE_ID, false, null, fileFuncDef, null))
+      ));
+
+    result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID,
+      List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
+
+    assertThat(result.getFailedAnalysisFiles()).isEmpty();
+    rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
+    verify(client, timeout(2000)).didRaiseIssue(eq(CONFIG_SCOPE_ID), rawIssueCaptor.capture());
+    var rawIssue = rawIssueCaptor.getValue();
+    assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
+    assertThat(rawIssue.getRuleKey()).isEqualTo("python:S930");
+  }
+
+  @Test
+  void it_should_report_issues_for_multi_file_analysis_only_for_leaf_config_scopes(@TempDir Path baseDir) {
     var file1Issue = createFile(baseDir, "file1Issue.py",
       "from file1FuncDef import foo\n" +
         "foo(1,2,3)\n"

@@ -144,4 +144,14 @@ public class AnalysisEngineCache {
     connectedEnginesByConnectionId.clear();
   }
 
+  public void registerModuleIfLeafConfigScope(String scopeId) {
+    var leafConfigScopeIds = configurationRepository.getLeafConfigScopeIds();
+    if (leafConfigScopeIds.contains(scopeId)) {
+      var analysisEngine = getOrCreateAnalysisEngine(scopeId);
+      var backendModuleFileSystem = new BackendModuleFileSystem(clientFileSystemService, scopeId);
+      var clientModuleInfo = new ClientModuleInfo(scopeId, backendModuleFileSystem);
+      analysisEngine.getModuleRegistry().registerModule(clientModuleInfo);
+    }
+  }
+
 }
