@@ -20,18 +20,18 @@
 package org.sonarsource.sonarlint.core.rpc.client;
 
 import java.util.concurrent.CancellationException;
+
 /*
  * A class to use in place of {@link org.eclipse.lsp4j.jsonrpc.CancelChecker} to stop depending on lsp4j types in API
  * and services.
  * See SLCORE-663 for details.
  */
+public class SonarLintCancelChecker implements org.eclipse.lsp4j.jsonrpc.CancelChecker {
 
-public class CancelChecker implements org.eclipse.lsp4j.jsonrpc.CancelChecker {
+  private final org.eclipse.lsp4j.jsonrpc.CancelChecker lsp4JCancelChecker;
 
-  private final org.eclipse.lsp4j.jsonrpc.CancelChecker cancelChecker;
-
-  public CancelChecker(org.eclipse.lsp4j.jsonrpc.CancelChecker cancelChecker) {
-    this.cancelChecker = cancelChecker;
+  public SonarLintCancelChecker(org.eclipse.lsp4j.jsonrpc.CancelChecker cancelChecker) {
+    this.lsp4JCancelChecker = cancelChecker;
   }
 
   /**
@@ -40,7 +40,7 @@ public class CancelChecker implements org.eclipse.lsp4j.jsonrpc.CancelChecker {
    */
   @Override
   public void checkCanceled() {
-    cancelChecker.checkCanceled();
+    lsp4JCancelChecker.checkCanceled();
   }
 
   /**
@@ -48,7 +48,7 @@ public class CancelChecker implements org.eclipse.lsp4j.jsonrpc.CancelChecker {
    */
   @Override
   public boolean isCanceled() {
-    return cancelChecker.isCanceled();
+    return lsp4JCancelChecker.isCanceled();
   }
 
 }

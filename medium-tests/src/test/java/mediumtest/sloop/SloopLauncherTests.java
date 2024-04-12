@@ -37,7 +37,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.rpc.client.CancelChecker;
+import org.sonarsource.sonarlint.core.rpc.client.SonarLintCancelChecker;
 import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.Sloop;
 import org.sonarsource.sonarlint.core.rpc.client.SloopLauncher;
@@ -217,12 +217,12 @@ class SloopLauncherTests {
     }
 
     @Override
-    public AssistCreatingConnectionResponse assistCreatingConnection(AssistCreatingConnectionParams params, CancelChecker cancelChecker) throws CancellationException {
+    public AssistCreatingConnectionResponse assistCreatingConnection(AssistCreatingConnectionParams params, SonarLintCancelChecker cancelChecker) throws CancellationException {
       throw new CancellationException();
     }
 
     @Override
-    public AssistBindingResponse assistBinding(AssistBindingParams params, CancelChecker cancelChecker) throws CancellationException {
+    public AssistBindingResponse assistBinding(AssistBindingParams params, SonarLintCancelChecker cancelChecker) throws CancellationException {
       throw new CancellationException();
     }
 
@@ -267,7 +267,7 @@ class SloopLauncherTests {
     }
 
     @Override
-    public String matchSonarProjectBranch(String configurationScopeId, String mainBranchName, Set<String> allBranchesNames, CancelChecker cancelChecker) {
+    public String matchSonarProjectBranch(String configurationScopeId, String mainBranchName, Set<String> allBranchesNames, SonarLintCancelChecker cancelChecker) {
       return null;
     }
 

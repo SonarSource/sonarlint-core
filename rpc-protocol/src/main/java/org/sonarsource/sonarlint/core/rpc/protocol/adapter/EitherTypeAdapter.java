@@ -190,16 +190,7 @@ public class EitherTypeAdapter<L, R> extends TypeAdapter<Either<L, R>> {
     boolean matchesLeft = left.isAssignable(nextToken);
     boolean matchesRight = right.isAssignable(nextToken);
     if (matchesLeft && matchesRight) {
-      if (leftChecker != null || rightChecker != null) {
-        JsonElement element = JsonParser.parseReader(in);
-        if (leftChecker != null && leftChecker.test(element)) {
-          return createLeft(left.read(element));
-        }
-        if (rightChecker != null && rightChecker.test(element)) {
-          return createRight(right.read(element));
-        }
-      }
-      throw new JsonParseException("Ambiguous Either type: token " + nextToken + " matches both alternatives.");
+      return handleUnclearMatch(nextToken, in);
     } else if (matchesLeft) {
       // Parse the left alternative from the JSON stream
       return createLeft(left.read(in));
@@ -217,6 +208,19 @@ public class EitherTypeAdapter<L, R> extends TypeAdapter<Either<L, R>> {
       }
     }
     throw new JsonParseException("Unexpected token " + nextToken + ": expected " + left + " | " + right + " tokens.");
+  }
+
+  private Either<L, R> handleUnclearMatch(JsonToken nextToken, JsonReader in) {
+    if (leftChecker != null || rightChecker != null) {
+      JsonElement element = JsonParser.parseReader(in);
+      if (leftChecker != null && leftChecker.test(element)) {
+        return createLeft(left.read(element));
+      }
+      if (rightChecker != null && rightChecker.test(element)) {
+        return createRight(right.read(element));
+      }
+    }
+    throw new JsonParseException("Ambiguous Either type: token " + nextToken + " matches both alternatives.");
   }
 
   protected Either<L, R> createLeft(L obj) {

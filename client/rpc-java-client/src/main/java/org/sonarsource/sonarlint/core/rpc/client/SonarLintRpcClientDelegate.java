@@ -99,14 +99,14 @@ public interface SonarLintRpcClientDelegate {
    * @return the response to this connection creation assist request, that contains the new connection. The client can cancel the request if the user stops the creation process.
    * @throws java.util.concurrent.CancellationException if the client cancels the process
    */
-  AssistCreatingConnectionResponse assistCreatingConnection(AssistCreatingConnectionParams params, CancelChecker cancelChecker) throws CancellationException;
+  AssistCreatingConnectionResponse assistCreatingConnection(AssistCreatingConnectionParams params, SonarLintCancelChecker cancelChecker) throws CancellationException;
 
   /**
    * Can be triggered by the backend when trying to handle a feature that needs a bound project, e.g. open hotspot.
    * @return the response to this binding assist request, that contains the bound project. The client can cancel the request if the user stops the binding process.
    * @throws java.util.concurrent.CancellationException if the client cancels the process
    */
-  AssistBindingResponse assistBinding(AssistBindingParams params, CancelChecker cancelChecker) throws CancellationException;
+  AssistBindingResponse assistBinding(AssistBindingParams params, SonarLintCancelChecker cancelChecker) throws CancellationException;
 
   /**
    * Requests the client to start showing progress to users.
@@ -144,7 +144,8 @@ public interface SonarLintRpcClientDelegate {
    * @return null if the client is unable to match the branch
    */
   @CheckForNull
-  String matchSonarProjectBranch(String configurationScopeId, String mainBranchName, Set<String> allBranchesNames, CancelChecker cancelChecker) throws ConfigScopeNotFoundException;
+  String matchSonarProjectBranch(String configurationScopeId, String mainBranchName, Set<String> allBranchesNames,
+    SonarLintCancelChecker cancelChecker) throws ConfigScopeNotFoundException;
 
   void didChangeMatchedSonarProjectBranch(String configScopeId, String newMatchedBranchName);
 

@@ -180,12 +180,12 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   @Override
   public CompletableFuture<AssistCreatingConnectionResponse> assistCreatingConnection(AssistCreatingConnectionParams params) {
-    return requestAsync(cancelChecker -> delegate.assistCreatingConnection(params, new CancelChecker(cancelChecker)));
+    return requestAsync(cancelChecker -> delegate.assistCreatingConnection(params, new SonarLintCancelChecker(cancelChecker)));
   }
 
   @Override
   public CompletableFuture<AssistBindingResponse> assistBinding(AssistBindingParams params) {
-    return requestAsync(cancelChecker -> delegate.assistBinding(params, new CancelChecker(cancelChecker)));
+    return requestAsync(cancelChecker -> delegate.assistBinding(params, new SonarLintCancelChecker(cancelChecker)));
   }
 
   @Override
@@ -252,7 +252,8 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
     return requestAsync(cancelChecker -> {
       try {
         return new MatchSonarProjectBranchResponse(
-          delegate.matchSonarProjectBranch(params.getConfigurationScopeId(), params.getMainSonarBranchName(), params.getAllSonarBranchesNames(), new CancelChecker(cancelChecker)));
+          delegate.matchSonarProjectBranch(params.getConfigurationScopeId(), params.getMainSonarBranchName(),
+            params.getAllSonarBranchesNames(), new SonarLintCancelChecker(cancelChecker)));
       } catch (ConfigScopeNotFoundException e) {
         throw configScopeNotFoundError(params.getConfigurationScopeId());
       }

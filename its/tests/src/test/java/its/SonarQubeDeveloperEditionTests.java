@@ -77,7 +77,7 @@ import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.client.legacy.analysis.EngineConfiguration;
 import org.sonarsource.sonarlint.core.client.legacy.analysis.RawIssue;
 import org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine;
-import org.sonarsource.sonarlint.core.rpc.client.CancelChecker;
+import org.sonarsource.sonarlint.core.rpc.client.SonarLintCancelChecker;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
@@ -1528,7 +1528,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       }
 
       @Override
-      public String matchSonarProjectBranch(String configurationScopeId, String mainBranchName, Set<String> allBranchesNames, CancelChecker cancelChecker)
+      public String matchSonarProjectBranch(String configurationScopeId, String mainBranchName, Set<String> allBranchesNames, SonarLintCancelChecker cancelChecker)
         throws ConfigScopeNotFoundException {
         allBranchNamesForProject.addAll(allBranchesNames);
         return matchedBranchNameForProject == null ? super.matchSonarProjectBranch(configurationScopeId, mainBranchName, allBranchesNames, cancelChecker)
