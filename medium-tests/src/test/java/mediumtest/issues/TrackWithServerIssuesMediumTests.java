@@ -107,7 +107,7 @@ class TrackWithServerIssuesMediumTests {
       .satisfies(result -> assertThat(result.getIssuesByIdeRelativePath())
         .hasEntrySatisfying(Path.of("file/path"), issues -> {
           assertThat(issues).hasSize(1).allSatisfy(issue -> assertThat(issue.isRight()).isTrue());
-          assertThat(issues).usingRecursiveComparison().ignoringFields("right.id")
+          assertThat(issues).usingRecursiveComparison().ignoringFields("lsp4jEither.right.id")
             .isEqualTo(List.of(Either.forRight(new LocalOnlyIssueDto(null, null))));
         }));
   }
@@ -128,7 +128,7 @@ class TrackWithServerIssuesMediumTests {
       .satisfies(result -> assertThat(result.getIssuesByIdeRelativePath())
         .hasEntrySatisfying(Path.of("file/path"), issues -> {
           assertThat(issues).hasSize(1).allSatisfy(issue -> assertThat(issue.isRight()).isTrue());
-          assertThat(issues).usingRecursiveComparison().ignoringFields("right.id")
+          assertThat(issues).usingRecursiveComparison().ignoringFields("lsp4jEither.right.id")
             .isEqualTo(List.of(Either.forRight(new LocalOnlyIssueDto(null, null))));
         }));
   }
@@ -157,7 +157,7 @@ class TrackWithServerIssuesMediumTests {
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(20))
       .satisfies(result -> assertThat(result.getIssuesByIdeRelativePath())
-        .hasEntrySatisfying(Path.of("file/path"), issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("left.id")
+        .hasEntrySatisfying(Path.of("file/path"), issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("lsp4jEither.left.id")
           .isEqualTo(
             List.of((Either.forLeft(
               new ServerMatchedIssueDto(null, "issueKey", 1000L, false, null, BUG, true)))))));
@@ -184,7 +184,7 @@ class TrackWithServerIssuesMediumTests {
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(20))
       .satisfies(result -> assertThat(result.getIssuesByIdeRelativePath())
-        .hasEntrySatisfying(Path.of("file/path"), issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("left.id")
+        .hasEntrySatisfying(Path.of("file/path"), issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("lsp4jEither.left.id")
           .isEqualTo(
             List.of(Either.forLeft(new ServerMatchedIssueDto(null, "issueKey", 123456789L, false, null, BUG, true))))));
   }
@@ -218,7 +218,7 @@ class TrackWithServerIssuesMediumTests {
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(20))
       .satisfies(result -> assertThat(result.getIssuesByIdeRelativePath())
-        .hasEntrySatisfying(Path.of(ideFilePath), issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("left.id")
+        .hasEntrySatisfying(Path.of(ideFilePath), issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("lsp4jEither.left.id")
           .isEqualTo(
             List.of(Either.forLeft(new ServerMatchedIssueDto(null, issueKey, 123456789L, false, null, BUG, true))))));
   }

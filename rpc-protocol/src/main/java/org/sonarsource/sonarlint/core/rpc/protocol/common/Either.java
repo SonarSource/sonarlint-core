@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.common;
 
+import java.util.Objects;
 import java.util.function.Function;
 
 /*
@@ -28,87 +29,65 @@ import java.util.function.Function;
  */
 public class Either<L, R> {
 
+  private final org.eclipse.lsp4j.jsonrpc.messages.Either<L, R> lsp4jEither;
+
+  public Either(org.eclipse.lsp4j.jsonrpc.messages.Either<L, R> lsp4jEither) {
+    this.lsp4jEither = lsp4jEither;
+  }
+
+  public Either(L left, R right) {
+    this.lsp4jEither = left == null ? org.eclipse.lsp4j.jsonrpc.messages.Either.forLeft(left) : org.eclipse.lsp4j.jsonrpc.messages.Either.forRight(right);
+  }
+
   public static <L, R> Either<L, R> forLeft(L left) {
-    return new Either<>(left, null);
+    return new Either<>(org.eclipse.lsp4j.jsonrpc.messages.Either.forLeft(left));
   }
 
   public static <L, R> Either<L, R> forRight(R right) {
-    return new Either<>(null, right);
-  }
-
-  private final L left;
-  private final R right;
-
-  protected Either(L left, R right) {
-    super();
-    this.left = left;
-    this.right = right;
-  }
-
-  public L getLeft() {
-    return left;
-  }
-
-  public R getRight() {
-    return right;
-  }
-
-  public Object get() {
-    if (left != null) {
-      return left;
-    }
-    if (right != null) {
-      return right;
-    }
-    return null;
+    return new Either<>(org.eclipse.lsp4j.jsonrpc.messages.Either.forRight(right));
   }
 
   public boolean isLeft() {
-    return left != null;
+    return lsp4jEither.isLeft();
   }
 
   public boolean isRight() {
-    return right != null;
+    return lsp4jEither.isRight();
+  }
+
+  public L getLeft() {
+    return lsp4jEither.getLeft();
+  }
+
+  public R getRight() {
+    return lsp4jEither.getRight();
   }
 
   public <T> T map(
     Function<? super L, ? extends T> mapLeft,
     Function<? super R, ? extends T> mapRight) {
-    if (isLeft()) {
-      return mapLeft.apply(getLeft());
-    }
-    if (isRight()) {
-      return mapRight.apply(getRight());
-    }
-    return null;
+    return lsp4jEither.map(mapLeft, mapRight);
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (obj instanceof Either<?, ?>) {
-      Either<?, ?> other = (Either<?, ?>) obj;
-      return (this.left == other.left && this.right == other.right)
-        || (this.left != null && other.left != null && this.left.equals(other.left))
-        || (this.right != null && other.right != null && this.right.equals(other.right));
-    }
-    return false;
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    Either<?, ?> either = (Either<?, ?>) o;
+    return Objects.equals(lsp4jEither, either.lsp4jEither);
   }
 
   @Override
   public int hashCode() {
-    if (this.left != null) {
-      return this.left.hashCode();
-    }
-    if (this.right != null) {
-      return this.right.hashCode();
-    }
-    return 0;
+    return Objects.hash(lsp4jEither);
   }
 
+  @Override
   public String toString() {
-    StringBuilder builder = new StringBuilder("Either [").append(System.lineSeparator());
-    builder.append("  left = ").append(left).append(System.lineSeparator());
-    builder.append("  right = ").append(right).append(System.lineSeparator());
-    return builder.append("]").toString();
+    return lsp4jEither.toString();
+  }
+
+  public Object get() {
+    return lsp4jEither.get();
   }
 }
