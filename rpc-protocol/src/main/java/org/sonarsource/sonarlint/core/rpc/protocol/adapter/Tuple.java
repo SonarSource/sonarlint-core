@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.adapter;
 
+import javax.annotation.Nullable;
+
 /*
  * A class to use in place of {@link org.eclipse.lsp4j.jsonrpc.messages.Tuple} to stop depending on lsp4j types in API
  * and services.
@@ -38,7 +40,7 @@ public interface Tuple {
     private final F first;
     private final S second;
 
-    public Two(F first, S second) {
+    public Two(@Nullable F first, @Nullable S second) {
       this.first = first;
       this.second = second;
     }
@@ -71,13 +73,10 @@ public interface Tuple {
         return false;
       }
       if (this.second == null) {
-        if (other.second != null) {
-          return false;
-        }
-      } else if (!this.second.equals(other.second)) {
-        return false;
+        return other.second == null;
+      } else {
+        return this.second.equals(other.second);
       }
-      return true;
     }
 
     @Override

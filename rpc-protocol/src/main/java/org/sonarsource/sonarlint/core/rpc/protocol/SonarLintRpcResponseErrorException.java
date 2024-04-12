@@ -20,25 +20,25 @@
 package org.sonarsource.sonarlint.core.rpc.protocol;
 
 /*
- * A class to use in place of {@link org.eclipse.lsp4j.jsonrpc.messages.ResponseError.ResponseErrorException} to stop depending on lsp4j
- * types in API and services.
+ * A class to use in place of {@link org.eclipse.lsp4j.jsonrpc.ResponseErrorException} to stop depending on lsp4j types in API and services.
  * See SLCORE-663 for details.
  */
 public class SonarLintRpcResponseErrorException extends RuntimeException {
 
-  private static final long serialVersionUID = -5970739895395246885L;
-  private final SonarLintRpcResponseError responseError;
+  private final int code;
+  private final String message;
 
-  public SonarLintRpcResponseErrorException(SonarLintRpcResponseError responseError) {
-    this.responseError = responseError;
+  public SonarLintRpcResponseErrorException(int code, String message) {
+    this.code = code;
+    this.message = message;
+  }
+
+  public int getCode() {
+    return this.code;
   }
 
   @Override
   public String getMessage() {
-    return responseError.getMessage();
-  }
-
-  public SonarLintRpcResponseError getResponseError() {
-    return responseError;
+    return this.message;
   }
 }
