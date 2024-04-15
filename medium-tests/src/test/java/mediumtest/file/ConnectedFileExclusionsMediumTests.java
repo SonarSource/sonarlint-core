@@ -30,6 +30,7 @@ import java.util.concurrent.TimeoutException;
 import mediumtest.fixtures.ServerFixture;
 import mediumtest.fixtures.SonarLintBackendFixture;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
@@ -61,9 +62,21 @@ class ConnectedFileExclusionsMediumTests {
 
   private SonarLintRpcServer backend;
   private ServerFixture.Server server;
+  private String previousSyncPeriod;
+
+  @BeforeEach
+  void prepare() {
+    previousSyncPeriod = System.getProperty("sonarlint.internal.synchronization.scope.period");
+    System.setProperty("sonarlint.internal.synchronization.scope.period", "1");
+  }
 
   @AfterEach
   void stop() throws ExecutionException, InterruptedException, TimeoutException {
+    if (previousSyncPeriod != null) {
+      System.setProperty("sonarlint.internal.synchronization.scope.period", previousSyncPeriod);
+    } else {
+      System.clearProperty("sonarlint.internal.synchronization.scope.period");
+    }
     backend.shutdown().get(5, TimeUnit.SECONDS);
     if (server != null) {
       server.shutdown();

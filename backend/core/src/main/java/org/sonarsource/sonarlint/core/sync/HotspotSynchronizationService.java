@@ -25,14 +25,12 @@ import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
-import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
-import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
@@ -41,40 +39,21 @@ import org.sonarsource.sonarlint.core.serverconnection.ServerHotspotUpdater;
 import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 
-import static java.util.stream.Collectors.groupingBy;
-
 @Named
 @Singleton
 public class HotspotSynchronizationService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-
-  private final ConfigurationRepository configurationRepository;
-  private final SonarProjectBranchTrackingService branchTrackingService;
   private final StorageService storageService;
   private final LanguageSupportRepository languageSupportRepository;
   private final ServerApiProvider serverApiProvider;
 
-  public HotspotSynchronizationService(ConfigurationRepository configurationRepository, SonarProjectBranchTrackingService branchTrackingService,
-    StorageService storageService, LanguageSupportRepository languageSupportRepository,
-    ServerApiProvider serverApiProvider) {
-    this.configurationRepository = configurationRepository;
-    this.branchTrackingService = branchTrackingService;
+  public HotspotSynchronizationService(StorageService storageService, LanguageSupportRepository languageSupportRepository, ServerApiProvider serverApiProvider) {
     this.storageService = storageService;
     this.languageSupportRepository = languageSupportRepository;
     this.serverApiProvider = serverApiProvider;
   }
 
-  public void syncServerHotspotsForProject(String connectionId, String projectKey, SonarLintCancelMonitor cancelMonitor) {
-    serverApiProvider.getServerApi(connectionId).ifPresent(serverApi -> {
-      var allScopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, projectKey);
-      var allScopesByOptBranch = allScopes.stream()
-        .collect(groupingBy(b -> branchTrackingService.awaitEffectiveSonarProjectBranch(b.getConfigScopeId())));
-      allScopesByOptBranch
-        .forEach((branchNameOpt, scopes) -> branchNameOpt.ifPresent(branchName -> syncServerHotspotsForProject(serverApi, connectionId, projectKey, branchName, cancelMonitor)));
-    });
-  }
-
-  private void syncServerHotspotsForProject(ServerApi serverApi, String connectionId, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
+  public void syncServerHotspotsForProject(ServerApi serverApi, String connectionId, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
     var storage = storageService.getStorageFacade().connection(connectionId);
     var serverVersion = getSonarServerVersion(serverApi, storage, cancelMonitor);
     var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(SonarLanguage::shouldSyncInConnectedMode)

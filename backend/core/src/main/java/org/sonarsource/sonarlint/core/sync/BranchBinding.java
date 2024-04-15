@@ -19,28 +19,36 @@
  */
 package org.sonarsource.sonarlint.core.sync;
 
-import java.time.Instant;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Predicate;
+import java.util.Objects;
+import org.sonarsource.sonarlint.core.commons.Binding;
 
-public class SynchronizationTimestampRepository<T> {
-  private final Map<T, Instant> lastSynchronizationTimestampPerSource = new ConcurrentHashMap<>();
+public class BranchBinding {
+  private final Binding binding;
+  private final String branchName;
 
-  public Optional<Instant> getLastSynchronizationDate(T source) {
-    return Optional.ofNullable(lastSynchronizationTimestampPerSource.get(source));
+  public BranchBinding(Binding binding, String branchName) {
+    this.binding = binding;
+    this.branchName = branchName;
   }
 
-  public void setLastSynchronizationTimestampToNow(T source) {
-    lastSynchronizationTimestampPerSource.put(source, Instant.now());
+  public Binding getBinding() {
+    return binding;
   }
 
-  public void clearLastSynchronizationTimestamp(T source) {
-    lastSynchronizationTimestampPerSource.remove(source);
+  public String getBranchName() {
+    return branchName;
   }
 
-  public void clearLastSynchronizationTimestampIf(Predicate<T> predicate) {
-    lastSynchronizationTimestampPerSource.keySet().removeIf(predicate);
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    BranchBinding that = (BranchBinding) o;
+    return Objects.equals(binding, that.binding) && Objects.equals(branchName, that.branchName);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(binding, branchName);
   }
 }
