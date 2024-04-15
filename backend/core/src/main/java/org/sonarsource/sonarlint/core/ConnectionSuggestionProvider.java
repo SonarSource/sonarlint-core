@@ -142,7 +142,7 @@ public class ConnectionSuggestionProvider {
       }
     }
 
-    suggestConnectionToClientIfAny(connectionSuggestionsByConfigScopeIds, cancelMonitor);
+    suggestConnectionToClientIfAny(connectionSuggestionsByConfigScopeIds);
     computeBindingSuggestionfAny(bindingSuggestionsForConfigScopeIds);
   }
 
@@ -167,18 +167,10 @@ public class ConnectionSuggestionProvider {
     return Optional.empty();
   }
 
-  private void suggestConnectionToClientIfAny(Map<String, List<ConnectionSuggestionDto>> connectionSuggestionsByConfigScopeIds,
-    SonarLintCancelMonitor cancelMonitor) {
+  private void suggestConnectionToClientIfAny(Map<String, List<ConnectionSuggestionDto>> connectionSuggestionsByConfigScopeIds) {
     if (!connectionSuggestionsByConfigScopeIds.isEmpty()) {
       LOG.debug("Found {} connection suggestion(s)", connectionSuggestionsByConfigScopeIds.size());
-      try {
-        bindingSuggestionProvider.disable();
-        var future = client.suggestConnection(new SuggestConnectionParams(connectionSuggestionsByConfigScopeIds));
-        cancelMonitor.onCancel(() -> future.cancel(true));
-        future.join();
-      } finally {
-        bindingSuggestionProvider.enable();
-      }
+      client.suggestConnection(new SuggestConnectionParams(connectionSuggestionsByConfigScopeIds));
     }
   }
 

@@ -76,7 +76,7 @@ public interface SonarLintRpcClient {
    * Suggest to create a connection and a binding to the client
    */
   @JsonNotification
-  CompletableFuture<Void> suggestConnection(SuggestConnectionParams params);
+  void suggestConnection(SuggestConnectionParams params);
 
   @JsonNotification
   void openUrlInBrowser(OpenUrlInBrowserParams params);
