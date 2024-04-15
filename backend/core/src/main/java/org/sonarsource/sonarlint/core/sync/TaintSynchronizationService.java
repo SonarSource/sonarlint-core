@@ -77,7 +77,7 @@ public class TaintSynchronizationService {
     });
   }
 
-  private void synchronizeTaintVulnerabilities(ServerApi serverApi, String connectionId, String projectKey, String branch, SonarLintCancelMonitor cancelMonitor) {
+  public void synchronizeTaintVulnerabilities(ServerApi serverApi, String connectionId, String projectKey, String branch, SonarLintCancelMonitor cancelMonitor) {
     if (languageSupportRepository.areTaintVulnerabilitiesSupported()) {
       var summary = updateServerTaintIssuesForProject(connectionId, serverApi, projectKey, branch, cancelMonitor);
       if (summary.hasAnythingChanged()) {
