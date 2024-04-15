@@ -73,18 +73,6 @@ public class EitherTypeAdapter<L, R> extends TypeAdapter<Either<L, R>> {
       this.expectedType = null;
     }
 
-    public PropertyChecker(String propertyName, String expectedValue) {
-      this.propertyName = propertyName;
-      this.expectedValue = expectedValue;
-      this.expectedType = null;
-    }
-
-    public PropertyChecker(String propertyName, Class<? extends JsonElement> expectedType) {
-      this.propertyName = propertyName;
-      this.expectedType = expectedType;
-      this.expectedValue = null;
-    }
-
     @Override
     public boolean test(JsonElement element) {
       if (element.isJsonObject()) {
@@ -96,44 +84,6 @@ public class EitherTypeAdapter<L, R> extends TypeAdapter<Either<L, R>> {
           return expectedType.isInstance(value);
         } else {
           return value != null;
-        }
-      }
-      return false;
-    }
-
-  }
-
-  /**
-   * A predicate for the case that a type alternative is a list.
-   */
-  public static class ListChecker implements Predicate<JsonElement> {
-
-    private final Predicate<JsonElement> elementChecker;
-    private final boolean resultIfEmpty;
-
-    public ListChecker(Predicate<JsonElement> elementChecker) {
-      this(elementChecker, false);
-    }
-
-    public ListChecker(Predicate<JsonElement> elementChecker, boolean resultIfEmpty) {
-      this.elementChecker = elementChecker;
-      this.resultIfEmpty = resultIfEmpty;
-    }
-
-    @Override
-    public boolean test(JsonElement t) {
-      if (elementChecker.test(t)) {
-        return true;
-      }
-      if (t.isJsonArray()) {
-        var array = t.getAsJsonArray();
-        if (array.isEmpty()) {
-          return resultIfEmpty;
-        }
-        for (JsonElement e : array) {
-          if (elementChecker.test(e)) {
-            return true;
-          }
         }
       }
       return false;
@@ -242,10 +192,6 @@ public class EitherTypeAdapter<L, R> extends TypeAdapter<Either<L, R>> {
     protected final TypeToken<T> typeToken;
     protected final TypeAdapter<T> adapter;
     protected final Collection<JsonToken> expectedTokens;
-
-    public EitherTypeArgument(Gson gson, Type type) {
-      this(gson, type, null);
-    }
 
     @SuppressWarnings("unchecked")
     public EitherTypeArgument(Gson gson, Type type, @Nullable TypeAdapter<T> adapter) {

@@ -237,18 +237,4 @@ public final class TypeUtils {
     }
     return false;
   }
-
-  /**
-   * Test whether the given type is a two-tuple (pair).
-   */
-  public static boolean isTwoTuple(Type type) {
-    if (type instanceof ParameterizedType) {
-      return isTwoTuple(((ParameterizedType) type).getRawType());
-    }
-    if (type instanceof Class) {
-      return Tuple.Two.class.isAssignableFrom((Class<?>) type);
-    }
-    return false;
-  }
-
 }
