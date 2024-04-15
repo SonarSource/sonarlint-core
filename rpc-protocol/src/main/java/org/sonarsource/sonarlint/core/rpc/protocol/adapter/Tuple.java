@@ -73,10 +73,13 @@ public interface Tuple {
         return false;
       }
       if (this.second == null) {
-        return other.second == null;
-      } else {
-        return this.second.equals(other.second);
+        if (other.second != null) {
+          return false;
+        }
+      } else if (!this.second.equals(other.second)) {
+        return false;
       }
+      return true;
     }
 
     @Override
