@@ -55,16 +55,31 @@
     <finalName>${project.artifactId}</finalName>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>shade</id>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.sonarsource.sonar-packaging-maven-plugin</groupId>
         <artifactId>sonar-packaging-maven-plugin</artifactId>
-        <version>1.20.0.405</version>
+        <version>1.23.0.740</version>
         <extensions>true</extensions>
         <configuration>
           <pluginClass>org.sonar.samples.java.MyJavaRulesPlugin</pluginClass>
           <pluginApiMinVersion>7.9</pluginApiMinVersion>
           <pluginKey>custom</pluginKey>
           <sonarLintSupported>true</sonarLintSupported>
+          <skipDependenciesPackaging>true</skipDependenciesPackaging>
           <requirePlugins>java:${sonarjava.version}</requirePlugins>
+          <requiredForLanguages>java</requiredForLanguages>
         </configuration>
       </plugin>
 
