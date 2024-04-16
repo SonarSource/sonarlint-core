@@ -137,7 +137,7 @@ mend_scan_task:
     <<: *CONTAINER_DEFINITION
   env:
     WS_APIKEY: VAULT[development/kv/data/mend data.apikey]
-    JDK_VERSION: "11"
+    JDK_VERSION: "17"
   <<: *MAVEN_CACHE_DEFINITION
   whitesource_script:
     - source cirrus-env QA
@@ -228,7 +228,7 @@ promote_task:
     cpu: 1
     memory: 1G
   env:
-      JDK_VERSION: "11"
+      JDK_VERSION: "17"
       ARTIFACTORY_PROMOTE_ACCESS_TOKEN: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-promoter access_token]
       GITHUB_TOKEN: VAULT[development/github/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-promotion token]
       # artifacts which will have downloadable links in burgr
