@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects;
 
 import com.google.gson.annotations.JsonAdapter;
 import java.util.List;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherTransientConnectionAdapterFactory;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;

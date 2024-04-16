@@ -28,7 +28,7 @@ import java.util.UUID;
 import java.util.concurrent.CancellationException;
 import javax.annotation.CheckForNull;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;

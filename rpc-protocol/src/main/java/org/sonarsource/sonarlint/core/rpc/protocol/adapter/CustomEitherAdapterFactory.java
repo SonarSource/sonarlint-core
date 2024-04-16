@@ -27,11 +27,10 @@ import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.function.Predicate;
-import org.eclipse.lsp4j.jsonrpc.json.adapters.EitherTypeAdapter;
-import org.eclipse.lsp4j.jsonrpc.json.adapters.TypeUtils;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.Either;
 
 import static java.util.function.Predicate.not;
+import static org.sonarsource.sonarlint.core.rpc.protocol.Lsp4jUtils.isEither;
 
 public abstract class CustomEitherAdapterFactory<L, R> implements TypeAdapterFactory {
 
@@ -40,7 +39,8 @@ public abstract class CustomEitherAdapterFactory<L, R> implements TypeAdapterFac
   private final Class<R> rightClass;
   private final Predicate<JsonElement> leftChecker;
 
-  protected CustomEitherAdapterFactory(TypeToken<Either<L, R>> elementType, Class<L> leftClass, Class<R> rightClass, Predicate<JsonElement> leftChecker) {
+  protected CustomEitherAdapterFactory(TypeToken<Either<L, R>> elementType, Class<L> leftClass,
+    Class<R> rightClass, Predicate<JsonElement> leftChecker) {
     this.elementType = elementType;
     this.leftClass = leftClass;
     this.rightClass = rightClass;
@@ -50,7 +50,7 @@ public abstract class CustomEitherAdapterFactory<L, R> implements TypeAdapterFac
   @SuppressWarnings("unchecked")
   @Override
   public final <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
-    if (!TypeUtils.isEither(type.getType())) {
+    if (!isEither(type.getType())) {
       return null;
     }
     Type[] typeParameters = ((ParameterizedType) type.getType()).getActualTypeArguments();

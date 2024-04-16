@@ -17,21 +17,27 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.adapter;
+package org.sonarsource.sonarlint.core.rpc.protocol;
 
-import com.google.gson.reflect.TypeToken;
-import org.eclipse.lsp4j.jsonrpc.json.adapters.EitherTypeAdapter;
-import org.sonarsource.sonarlint.core.rpc.protocol.Either;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlyIssueDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ServerMatchedIssueDto;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 
-public class EitherServerOrLocalIssueAdapterFactory extends CustomEitherAdapterFactory<ServerMatchedIssueDto, LocalOnlyIssueDto> {
+public class Lsp4jUtils {
 
-  private static final TypeToken<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>> ELEMENT_TYPE = new TypeToken<>() {
-  };
-
-  public EitherServerOrLocalIssueAdapterFactory() {
-    super(ELEMENT_TYPE, ServerMatchedIssueDto.class, LocalOnlyIssueDto.class, new EitherTypeAdapter.PropertyChecker("serverKey"));
+  private Lsp4jUtils() {
+    // Utils class
   }
 
+  /**
+   * Test whether the given type is Either.
+   */
+  public static boolean isEither(Type type) {
+    if (type instanceof ParameterizedType) {
+      return isEither(((ParameterizedType) type).getRawType());
+    }
+    if (type instanceof Class) {
+      return Either.class.isAssignableFrom((Class<?>) type);
+    }
+    return false;
+  }
 }

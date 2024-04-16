@@ -29,12 +29,12 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import mediumtest.fixtures.ServerFixture;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.rpc.protocol.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
@@ -96,7 +96,7 @@ class MatchWithServerHotspotsMediumTests {
       .satisfies(result -> assertThat(result.getSecurityHotspotsByIdeRelativePath())
         .hasEntrySatisfying(Path.of("file/path"), hotspots -> {
           assertThat(hotspots).hasSize(1).allSatisfy(hotspot -> assertThat(hotspot.isRight()).isTrue());
-          assertThat(hotspots).usingRecursiveComparison().ignoringFields("right.id")
+          assertThat(hotspots).usingRecursiveComparison().ignoringFields("lsp4jEither.right.id")
             .isEqualTo(List.of(Either.forRight(new LocalOnlySecurityHotspotDto(null))));
         }));
   }
@@ -117,7 +117,7 @@ class MatchWithServerHotspotsMediumTests {
       .satisfies(result -> assertThat(result.getSecurityHotspotsByIdeRelativePath())
         .hasEntrySatisfying(Path.of("file/path"), hotspots -> {
           assertThat(hotspots).hasSize(1).allSatisfy(hotspot -> assertThat(hotspot.isRight()).isTrue());
-          assertThat(hotspots).usingRecursiveComparison().ignoringFields("right.id")
+          assertThat(hotspots).usingRecursiveComparison().ignoringFields("lsp4jEither.right.id")
             .isEqualTo(List.of(Either.forRight(new LocalOnlySecurityHotspotDto(null))));
         }));
   }
@@ -142,7 +142,7 @@ class MatchWithServerHotspotsMediumTests {
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getSecurityHotspotsByIdeRelativePath())
-        .hasEntrySatisfying(Path.of("file/path"), hotspots -> assertThat(hotspots).usingRecursiveComparison().ignoringFields("left.id")
+        .hasEntrySatisfying(Path.of("file/path"), hotspots -> assertThat(hotspots).usingRecursiveComparison().ignoringFields("lsp4jEither.left.id")
           .isEqualTo(List.of(Either.forLeft(
             new ServerMatchedSecurityHotspotDto(null, "hotspotKey", 1000L, HotspotStatus.SAFE, true))))));
   }
@@ -170,7 +170,7 @@ class MatchWithServerHotspotsMediumTests {
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
       .satisfies(result -> assertThat(result.getSecurityHotspotsByIdeRelativePath())
-        .hasEntrySatisfying(Path.of("file/path"), hotspots -> assertThat(hotspots).usingRecursiveComparison().ignoringFields("left.id")
+        .hasEntrySatisfying(Path.of("file/path"), hotspots -> assertThat(hotspots).usingRecursiveComparison().ignoringFields("lsp4jEither.left.id")
           .isEqualTo(List.of(Either.forLeft(
             new ServerMatchedSecurityHotspotDto(null, "hotspotKey", 123456000L, HotspotStatus.TO_REVIEW, true))))));
   }
