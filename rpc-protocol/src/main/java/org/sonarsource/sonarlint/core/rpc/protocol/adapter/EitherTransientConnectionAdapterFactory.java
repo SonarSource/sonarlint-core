@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.rpc.protocol.adapter;
 
 import com.google.gson.reflect.TypeToken;
 import org.eclipse.lsp4j.jsonrpc.json.adapters.EitherTypeAdapter;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
 
@@ -33,5 +33,4 @@ public class EitherTransientConnectionAdapterFactory extends CustomEitherAdapter
   public EitherTransientConnectionAdapterFactory() {
     super(ELEMENT_TYPE, TransientSonarQubeConnectionDto.class, TransientSonarCloudConnectionDto.class, new EitherTypeAdapter.PropertyChecker("serverUrl"));
   }
-
 }

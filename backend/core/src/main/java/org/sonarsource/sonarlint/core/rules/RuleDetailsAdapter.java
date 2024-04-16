@@ -29,10 +29,10 @@ import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.rpc.protocol.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleParamDto;
@@ -239,7 +239,7 @@ public class RuleDetailsAdapter {
     return IssueSeverity.valueOf(s.name());
   }
 
-  public static org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType adapt(org.sonarsource.sonarlint.core.commons.RuleType t) {
+  public static org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType adapt(RuleType t) {
     return org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.valueOf(t.name());
   }
 
