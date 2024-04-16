@@ -26,7 +26,7 @@ import java.util.concurrent.CancellationException;
  * and services.
  * See SLCORE-663 for details.
  */
-public class SonarLintCancelChecker implements org.eclipse.lsp4j.jsonrpc.CancelChecker {
+public class SonarLintCancelChecker {
 
   private final org.eclipse.lsp4j.jsonrpc.CancelChecker lsp4JCancelChecker;
 
@@ -38,7 +38,6 @@ public class SonarLintCancelChecker implements org.eclipse.lsp4j.jsonrpc.CancelC
    * Throw a {@link CancellationException} if the currently processed request
    * has been canceled.
    */
-  @Override
   public void checkCanceled() {
     lsp4JCancelChecker.checkCanceled();
   }
@@ -46,7 +45,6 @@ public class SonarLintCancelChecker implements org.eclipse.lsp4j.jsonrpc.CancelC
   /**
    * Check for cancellation without throwing an exception.
    */
-  @Override
   public boolean isCanceled() {
     return lsp4JCancelChecker.isCanceled();
   }

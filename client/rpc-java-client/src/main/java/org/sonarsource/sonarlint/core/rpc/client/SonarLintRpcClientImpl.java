@@ -25,6 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.CompletableFutures;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
@@ -88,8 +89,8 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
     this.requestAndNotificationsSequentialExecutor = requestAndNotificationsSequentialExecutor;
   }
 
-  protected <R> CompletableFuture<R> requestAsync(Function<org.eclipse.lsp4j.jsonrpc.CancelChecker, R> code) {
-    CompletableFuture<org.eclipse.lsp4j.jsonrpc.CancelChecker> start = new CompletableFuture<>();
+  protected <R> CompletableFuture<R> requestAsync(Function<CancelChecker, R> code) {
+    CompletableFuture<CancelChecker> start = new CompletableFuture<>();
     // First we schedule the processing of the request on the sequential executor, to maintain ordering of notifications, requests, responses, and cancellations
     var sequentialFuture = start.thenApplyAsync(cancelChecker -> {
       // We can maybe cancel early
@@ -105,8 +106,8 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
     return requestFuture;
   }
 
-  protected CompletableFuture<Void> runAsync(Consumer<org.eclipse.lsp4j.jsonrpc.CancelChecker> code) {
-    CompletableFuture<org.eclipse.lsp4j.jsonrpc.CancelChecker> start = new CompletableFuture<>();
+  protected CompletableFuture<Void> runAsync(Consumer<CancelChecker> code) {
+    CompletableFuture<CancelChecker> start = new CompletableFuture<>();
     // First we schedule the processing of the request on the sequential executor, to maintain ordering of notifications, requests, responses, and cancellations
     var sequentialFuture = start.thenApplyAsync(cancelChecker -> {
       // We can maybe cancel early
