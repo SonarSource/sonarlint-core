@@ -185,7 +185,6 @@ public class SynchronizationService {
         subProgress += subProgressGap;
       }
     });
-  }
 
   private void synchronizeProjectWithProgress(ServerApi serverApi, String connectionId, String sonarProjectKey, Collection<BoundScope> boundScopes, ProgressNotifier notifier,
     SonarLintCancelMonitor cancelMonitor, Set<String> synchronizedConfigScopeIds, float subProgress) {

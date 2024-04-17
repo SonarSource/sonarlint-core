@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.plugin;
 
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 
@@ -53,6 +54,7 @@ public class DidSkipLoadingPluginParams {
     return minVersion;
   }
 
+  @CheckForNull
   public String getCurrentVersion() {
     return currentVersion;
   }
