@@ -186,6 +186,7 @@ public class BindingClueProvider {
         serverUrl != null ? serverUrl.getAsString() : null,
         true);
     } catch (JsonSyntaxException e) {
+      LOG.warn("Unable to parse candidate connected mode configuration file", e);
       return null;
     }
   }
