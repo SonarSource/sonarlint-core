@@ -28,7 +28,6 @@
     <module>backend/cli</module>
     <module>backend/commons</module>
     <module>backend/core</module>
-    <module>backend/embedded</module>
     <module>backend/http</module>
     <module>backend/plugin-api</module>
     <module>backend/plugin-commons</module>
@@ -38,7 +37,6 @@
     <module>backend/server-connection</module>
     <module>backend/slf4j-sonar-log</module>
     <module>backend/telemetry</module>
-    <module>client/embedded</module>
     <module>client/java-client-legacy</module>
     <module>client/java-client-utils</module>
     <module>client/rpc-java-client</module>
