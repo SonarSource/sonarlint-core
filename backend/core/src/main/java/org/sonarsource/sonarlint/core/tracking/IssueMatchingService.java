@@ -51,7 +51,7 @@ import org.sonarsource.sonarlint.core.issue.matching.IssueMatcher;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.rpc.protocol.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LineWithHashDto;

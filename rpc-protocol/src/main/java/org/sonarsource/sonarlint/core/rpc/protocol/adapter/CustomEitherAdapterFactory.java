@@ -27,7 +27,7 @@ import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.function.Predicate;
-import org.sonarsource.sonarlint.core.rpc.protocol.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 
 import static java.util.function.Predicate.not;
 import static org.sonarsource.sonarlint.core.rpc.protocol.Lsp4jUtils.isEither;
