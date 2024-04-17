@@ -127,8 +127,17 @@ public class ClientFile {
   }
 
   public boolean isSonarlintConfigurationFile() {
+    // Considering .sonarlint/*.json for compatibility with settings exported from Visual Studio
+    return isInDotSonarLintFolder() && hasJsonExtension();
+  }
+
+  private boolean isInDotSonarLintFolder() {
     var sonarlintPath = getClientRelativePath().getParent();
-    return "json".equals(FileNameUtils.getExtension(getClientRelativePath())) && sonarlintPath != null && SONARLINT_FOLDER_NAME.equals(sonarlintPath.getFileName().toString());
+    return sonarlintPath != null && SONARLINT_FOLDER_NAME.equals(sonarlintPath.getFileName().toString());
+  }
+
+  private boolean hasJsonExtension() {
+    return "json".equals(FileNameUtils.getExtension(getClientRelativePath()));
   }
 
   public boolean isTest() {

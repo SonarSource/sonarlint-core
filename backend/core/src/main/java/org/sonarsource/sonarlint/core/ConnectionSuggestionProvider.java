@@ -143,7 +143,7 @@ public class ConnectionSuggestionProvider {
     }
 
     suggestConnectionToClientIfAny(connectionSuggestionsByConfigScopeIds);
-    computeBindingSuggestionfAny(bindingSuggestionsForConfigScopeIds);
+    computeBindingSuggestionIfAny(bindingSuggestionsForConfigScopeIds);
   }
 
   private Optional<Either<String, String>> handleBindingClue(BindingClueProvider.BindingClue bindingClue) {
@@ -169,12 +169,13 @@ public class ConnectionSuggestionProvider {
 
   private void suggestConnectionToClientIfAny(Map<String, List<ConnectionSuggestionDto>> connectionSuggestionsByConfigScopeIds) {
     if (!connectionSuggestionsByConfigScopeIds.isEmpty()) {
-      LOG.debug("Found {} connection suggestion(s)", connectionSuggestionsByConfigScopeIds.size());
+      var foundSuggestionsCount = connectionSuggestionsByConfigScopeIds.size();
+      LOG.debug("Found {} connection {}", foundSuggestionsCount, SonarLintLogger.singlePlural(foundSuggestionsCount, "suggestion"));
       client.suggestConnection(new SuggestConnectionParams(connectionSuggestionsByConfigScopeIds));
     }
   }
 
-  private void computeBindingSuggestionfAny(Set<String> bindingSuggestionsForConfigScopeIds) {
+  private void computeBindingSuggestionIfAny(Set<String> bindingSuggestionsForConfigScopeIds) {
     if (!bindingSuggestionsForConfigScopeIds.isEmpty()) {
       LOG.debug("Found binding suggestion(s) for %s configuration scope IDs", bindingSuggestionsForConfigScopeIds.size());
       bindingSuggestionProvider.suggestBindingForGivenScopesAndAllConnections(bindingSuggestionsForConfigScopeIds);
