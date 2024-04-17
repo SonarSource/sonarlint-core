@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
 import javax.annotation.CheckForNull;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
@@ -53,6 +53,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgress
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
@@ -174,7 +175,8 @@ public interface SonarLintRpcClientDelegate {
   default void didRaiseIssue(String configurationScopeId, RawIssueDto rawIssue) {
   }
 
-  default void didSkipLoadingPlugin(String configurationScopeId, Language language, DidSkipLoadingPluginParams.SkipReason reason, String minVersion, String currentVersion) {
+  default void didSkipLoadingPlugin(String configurationScopeId, Language language, DidSkipLoadingPluginParams.SkipReason reason, String minVersion,
+    @Nullable String currentVersion) {
   }
 
   default void didDetectSecret() {
