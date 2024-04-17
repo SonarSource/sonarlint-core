@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.rpc.protocol;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 
 public class Lsp4jUtils {
 

@@ -17,21 +17,29 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.adapter;
+package org.sonarsource.sonarlint.core.rpc.protocol.common;
 
-import com.google.gson.reflect.TypeToken;
-import org.eclipse.lsp4j.jsonrpc.json.adapters.EitherTypeAdapter;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
+import org.junit.jupiter.api.Test;
 
-public class EitherCredentialsAdapterFactory extends CustomEitherAdapterFactory<TokenDto, UsernamePasswordDto> {
+import static org.assertj.core.api.Assertions.assertThat;
 
-  private static final TypeToken<Either<TokenDto, UsernamePasswordDto>> ELEMENT_TYPE = new TypeToken<>() {
-  };
+class EitherTests {
 
-  public EitherCredentialsAdapterFactory() {
-    super(ELEMENT_TYPE, TokenDto.class, UsernamePasswordDto.class, new EitherTypeAdapter.PropertyChecker("token"));
+  @Test
+  void testToString() {
+    Either<String, Object> left = Either.forLeft("left");
+    assertThat(left).hasToString(left.getLsp4jEither().toString());
+    Either<String, Object> right = Either.forLeft("right");
+    assertThat(right).hasToString(right.getLsp4jEither().toString());
+  }
+
+  @Test
+  void testEquals() {
+    Either<String, Object> left = Either.forLeft("left");
+    assertThat(left).isEqualTo(left)
+      .isEqualTo(Either.forLeft("left"))
+      .isNotEqualTo(Either.forLeft("left_2"))
+      .isNotEqualTo(null);
   }
 
 }

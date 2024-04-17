@@ -47,13 +47,13 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import mediumtest.fixtures.storage.ConfigurationScopeStorageFixture;
 import mediumtest.fixtures.storage.StorageFixture;
-import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
+import org.sonarsource.sonarlint.core.rpc.client.SonarLintCancelChecker;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
-import org.sonarsource.sonarlint.core.rpc.protocol.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
@@ -583,12 +583,12 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public AssistCreatingConnectionResponse assistCreatingConnection(AssistCreatingConnectionParams params, CancelChecker cancelChecker) {
+    public AssistCreatingConnectionResponse assistCreatingConnection(AssistCreatingConnectionParams params, SonarLintCancelChecker cancelChecker) {
       throw new CancellationException("Not stubbed in medium tests");
     }
 
     @Override
-    public AssistBindingResponse assistBinding(AssistBindingParams params, CancelChecker cancelChecker) {
+    public AssistBindingResponse assistBinding(AssistBindingParams params, SonarLintCancelChecker cancelChecker) {
       throw new CancellationException("Not stubbed in medium tests");
     }
 
@@ -654,7 +654,7 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public String matchSonarProjectBranch(String configurationScopeId, String mainBranchName, Set<String> allBranchesNames, CancelChecker cancelChecker) {
+    public String matchSonarProjectBranch(String configurationScopeId, String mainBranchName, Set<String> allBranchesNames, SonarLintCancelChecker cancelChecker) {
       if (matchedBranchPerScopeId.containsKey(configurationScopeId)) {
         return matchedBranchPerScopeId.get(configurationScopeId);
       }

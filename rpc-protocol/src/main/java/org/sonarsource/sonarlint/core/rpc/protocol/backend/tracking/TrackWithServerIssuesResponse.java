@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import org.sonarsource.sonarlint.core.rpc.protocol.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 
 public class TrackWithServerIssuesResponse {
 
