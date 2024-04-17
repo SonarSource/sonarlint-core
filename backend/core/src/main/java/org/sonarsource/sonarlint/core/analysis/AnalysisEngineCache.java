@@ -129,7 +129,7 @@ public class AnalysisEngineCache {
   }
 
   private synchronized void stopEngineGracefully(String event) {
-    var engine = connectedEnginesByConnectionId.get(event);
+    var engine = connectedEnginesByConnectionId.remove(event);
     if (engine != null) {
       engine.finishGracefully();
     }

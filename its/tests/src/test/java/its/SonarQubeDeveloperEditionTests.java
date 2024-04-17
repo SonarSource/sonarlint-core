@@ -77,7 +77,6 @@ import org.sonarqube.ws.client.settings.ResetRequest;
 import org.sonarqube.ws.client.settings.SetRequest;
 import org.sonarqube.ws.client.users.CreateRequest;
 import org.sonarsource.sonarlint.core.client.legacy.analysis.EngineConfiguration;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.RawIssue;
 import org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
@@ -85,6 +84,7 @@ import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.DidVcsRepositoryChangeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.GetMatchedSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
@@ -96,6 +96,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.Tra
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProjectDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
@@ -108,10 +109,12 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.MatchWithSer
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
@@ -132,6 +135,7 @@ import static org.awaitility.Awaitility.waitAtMost;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -271,6 +275,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     void stop() {
       adminWsClient.settings().reset(new ResetRequest().setKeys(singletonList("sonar.java.file.suffixes")));
       engine.stop();
+      ((MockSonarLintRpcClientDelegate) client).getRaisedIssues().clear();
     }
 
     // TODO should be moved to a separate class, not related to analysis
@@ -456,7 +461,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var rawIssues = analyzeFile(configScopeId, "sample-dbd", "src/hello.py");
 
       assertThat(rawIssues)
-        .extracting(RawIssue::getRuleKey, RawIssue::getMessage)
+        .extracting(RawIssueDto::getRuleKey, RawIssueDto::getPrimaryMessage)
         .containsOnly(tuple("pythonbugs:S6466", "Fix this access on a collection that may trigger an 'IndexError'."));
     }
 
@@ -698,7 +703,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         var rawIssues = analyzeFile(configScopeId, "sample-java", "src/main/java/foo/Foo.java");
 
         assertThat(rawIssues)
-          .extracting(RawIssue::getRuleKey)
+          .extracting(RawIssueDto::getRuleKey)
           .containsOnly("java:S2325");
       });
     }
@@ -1122,7 +1127,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
         assertThat(rawIssues)
-          .extracting(RawIssue::getRuleKey, RawIssue::getType)
+          .extracting(RawIssueDto::getRuleKey, RawIssueDto::getType)
           .containsExactly(tuple(javaRuleKey(ORCHESTRATOR, "S4792"), RuleType.SECURITY_HOTSPOT));
       } else {
         // no hotspot detection when connected to SQ < 9.7
@@ -1489,11 +1494,19 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
   }
 
-  private List<RawIssue> analyzeFile(String configScopeId, String projectDir, String filePath, String... properties) {
-    var issueListener = new SaveIssueListener();
-    engine.analyze(createAnalysisConfiguration(projectDir, filePath, properties),
-      issueListener, null, null, configScopeId);
-    return issueListener.issues;
+  private List<RawIssueDto> analyzeFile(String configScopeId, String baseDir, String filePathStr, String... properties) {
+    var filePath = Path.of("projects").resolve(baseDir).resolve(filePathStr);
+    var fileUri = filePath.toUri();
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(),
+      List.of(new ClientFileDto(fileUri, Path.of(filePathStr), configScopeId, false, null, filePath.toAbsolutePath(), null))));
+
+    var analyzeResponse = backend.getAnalysisService().analyzeFiles(
+      new AnalyzeFilesParams(configScopeId, List.of(fileUri), toMap(properties), System.currentTimeMillis())
+    ).join();
+
+    assertThat(analyzeResponse.getFailedAnalysisFiles()).isEmpty();
+    var raisedIssues = ((MockSonarLintRpcClientDelegate) client).getRaisedIssues(configScopeId);
+    return raisedIssues != null ? raisedIssues : List.of();
   }
 
   private static SonarLintRpcClientDelegate newDummySonarLintClient() {

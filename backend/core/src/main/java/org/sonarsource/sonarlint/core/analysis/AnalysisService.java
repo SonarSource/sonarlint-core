@@ -107,6 +107,7 @@ import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
+import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.groupingBy;
@@ -489,7 +490,7 @@ public class AnalysisService {
     filesByScopeId.forEach((scopeId, files) -> {
       var engine = engineCache.getOrCreateAnalysisEngine(scopeId);
       files.forEach(file -> engine.post(new NotifyModuleEventCommand(scopeId,
-        ClientModuleFileEvent.of(new BackendInputFile(file), type)), new ProgressMonitor(null)));
+        ClientModuleFileEvent.of(new BackendInputFile(file), type)), new ProgressMonitor(null)).join());
     });
   }
 
@@ -560,7 +561,9 @@ public class AnalysisService {
       .whenComplete((results, error) -> {
         long endTime = System.currentTimeMillis();
         if (error == null) {
-          var analyzedLanguages = EnumSet.copyOf(results.languagePerFile().values());
+          var languages = results.languagePerFile().values()
+            .stream().filter(Objects::nonNull).collect(toList());
+          Set<SonarLanguage> analyzedLanguages = languages.isEmpty() ? Set.of() : EnumSet.copyOf(languages);
           eventPublisher.publishEvent(new AnalysisFinishedEvent(configurationScopeId, endTime - startTime,
             analyzedLanguages, results.failedAnalysisFiles().isEmpty(), reportedRuleKeys));
         }

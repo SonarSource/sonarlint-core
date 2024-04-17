@@ -27,6 +27,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.analysis.AnalysisService;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
+import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
@@ -109,7 +110,8 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
     return requestAsync(cancelChecker -> {
       var analysisResults = getBean(AnalysisService.class)
         .analyze(cancelChecker, params.getConfigurationScopeId(), params.getFilesToAnalyze(), params.getExtraProperties(), params.getStartTime()).join();
-      return new AnalyzeFilesResponse(analysisResults.failedAnalysisFiles().stream().map(ClientInputFile::getClientObject).map(URI.class::cast).collect(Collectors.toSet()));
+      return new AnalyzeFilesResponse(analysisResults.failedAnalysisFiles().stream().map(ClientInputFile::getClientObject)
+        .map(clientObj -> ((ClientFile) clientObj).getUri()).collect(Collectors.toSet()));
     }, configurationScopeId);
   }
 }

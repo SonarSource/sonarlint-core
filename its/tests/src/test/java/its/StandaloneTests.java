@@ -19,8 +19,6 @@
  */
 package its;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Maps;
 import its.utils.TestClientInputFile;
 import java.io.File;
 import java.io.IOException;
@@ -213,35 +211,6 @@ class StandaloneTests {
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
     return prepareInputFile(relativePath, content, isTest, StandardCharsets.UTF_8);
-  }
-
-  private List<RawIssue> analyzeFile(String projectDir, String filePath, String... properties) {
-    var issueListener = new AbstractConnectedTests.SaveIssueListener();
-    engine.analyze(createAnalysisConfiguration(projectDir, filePath, properties),
-      issueListener, null, null, CONFIG_SCOPE_ID);
-    return issueListener.issues;
-  }
-
-  private static AnalysisConfiguration createAnalysisConfiguration(String projectDir, String filePath, String... properties) {
-    final var baseDir = Paths.get("projects/" + projectDir).toAbsolutePath();
-    final var path = baseDir.resolve(filePath);
-    return AnalysisConfiguration.builder()
-      .setBaseDir(new File("projects/" + projectDir).toPath().toAbsolutePath())
-      .addInputFile(new TestClientInputFile(baseDir, path, false, StandardCharsets.UTF_8))
-      .putAllExtraProperties(toMap(properties))
-      .build();
-  }
-
-  static Map<String, String> toMap(String[] keyValues) {
-    Preconditions.checkArgument(keyValues.length % 2 == 0, "Must be an even number of key/values");
-    Map<String, String> map = Maps.newHashMap();
-    var index = 0;
-    while (index < keyValues.length) {
-      var key = keyValues[index++];
-      var value = keyValues[index++];
-      map.put(key, value);
-    }
-    return map;
   }
 
   private static SonarLintRpcClientDelegate newDummySonarLintClient() {
