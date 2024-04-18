@@ -60,12 +60,17 @@ public class GlobalSensor implements Sensor {
     } else {
       LOGGER.error("Rule is not active");
     }
-    for (InputFile f : context.fileSystem().inputFiles(context.fileSystem().predicates().all())) {
-      NewIssue newIssue = context.newIssue();
-      newIssue
-        .forRule(globalRuleKey)
-        .at(newIssue.newLocation().on(f).message("Issue number " + GlobalExtension.getInstance().getAndInc()))
-        .save();
+    var inputFiles = context.fileSystem().inputFiles(context.fileSystem().predicates().all());
+    if (!inputFiles.iterator().hasNext()) {
+      LOGGER.error("File system is empty");
+    } else {
+      for (InputFile f : inputFiles) {
+        NewIssue newIssue = context.newIssue();
+        newIssue
+          .forRule(globalRuleKey)
+          .at(newIssue.newLocation().on(f).message("Issue number " + GlobalExtension.getInstance().getAndInc()))
+          .save();
+      }
     }
     long timeAfter = clock.millis();
     LOGGER.info(String.format("Executed Global Sensor in %d ms", timeAfter - timeBefore));
