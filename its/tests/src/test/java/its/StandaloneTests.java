@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -181,7 +182,7 @@ class StandaloneTests {
       List.of(new ClientFileDto(fileUri, Path.of(filePathStr), configScopeId, false, null, filePath.toAbsolutePath(), null))));
 
     var analyzeResponse = backend.getAnalysisService().analyzeFiles(
-      new AnalyzeFilesParams(configScopeId, List.of(fileUri), toMap(properties), System.currentTimeMillis())
+      new AnalyzeFilesParams(configScopeId, UUID.randomUUID(), List.of(fileUri), toMap(properties), System.currentTimeMillis())
     ).join();
 
     assertThat(analyzeResponse.getFailedAnalysisFiles()).isEmpty();

@@ -172,7 +172,7 @@ public interface SonarLintRpcClientDelegate {
 
   void didChangeAnalysisReadiness(Set<String> configurationScopeIds, boolean areReadyForAnalysis);
 
-  default void didRaiseIssue(String configurationScopeId, RawIssueDto rawIssue) {
+  default void didRaiseIssue(String configurationScopeId, UUID analysisId, RawIssueDto rawIssue) {
   }
 
   default void didSkipLoadingPlugin(String configurationScopeId, Language language, DidSkipLoadingPluginParams.SkipReason reason, String minVersion,

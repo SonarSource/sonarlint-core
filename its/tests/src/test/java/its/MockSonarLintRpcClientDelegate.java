@@ -72,7 +72,7 @@ public class MockSonarLintRpcClientDelegate implements SonarLintRpcClientDelegat
   }
 
   @Override
-  public void didRaiseIssue(String configurationScopeId, RawIssueDto rawIssue) {
+  public void didRaiseIssue(String configurationScopeId, UUID analysisId, RawIssueDto rawIssue) {
     raisedIssues.computeIfAbsent(configurationScopeId, k -> new ArrayList<>()).add(rawIssue);
   }
 
