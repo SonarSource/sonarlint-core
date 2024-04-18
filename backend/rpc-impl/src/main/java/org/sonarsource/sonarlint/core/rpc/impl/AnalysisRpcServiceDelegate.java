@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.rpc.impl;
 
-import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
@@ -109,9 +108,9 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
     var configurationScopeId = params.getConfigurationScopeId();
     return requestAsync(cancelChecker -> {
       var analysisResults = getBean(AnalysisService.class)
-        .analyze(cancelChecker, params.getConfigurationScopeId(), params.getFilesToAnalyze(), params.getExtraProperties(), params.getStartTime()).join();
-      return new AnalyzeFilesResponse(analysisResults.failedAnalysisFiles().stream().map(ClientInputFile::getClientObject)
-        .map(clientObj -> ((ClientFile) clientObj).getUri()).collect(Collectors.toSet()));
+        .analyze(cancelChecker, params.getConfigurationScopeId(), params.getAnalysisId(), params.getFilesToAnalyze(), params.getExtraProperties(), params.getStartTime()).join();
+      return new AnalyzeFilesResponse(
+        analysisResults.failedAnalysisFiles().stream().map(ClientInputFile::getClientObject).map(clientObj -> ((ClientFile) clientObj).getUri()).collect(Collectors.toSet()));
     }, configurationScopeId);
   }
 }

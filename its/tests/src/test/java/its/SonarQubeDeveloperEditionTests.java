@@ -1444,7 +1444,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       List.of(new ClientFileDto(fileUri, Path.of(filePathStr), configScopeId, false, null, filePath.toAbsolutePath(), null))));
 
     var analyzeResponse = backend.getAnalysisService().analyzeFiles(
-      new AnalyzeFilesParams(configScopeId, List.of(fileUri), toMap(properties), System.currentTimeMillis())
+      new AnalyzeFilesParams(configScopeId, UUID.randomUUID(), List.of(fileUri), toMap(properties), System.currentTimeMillis())
     ).join();
 
     assertThat(analyzeResponse.getFailedAnalysisFiles()).isEmpty();

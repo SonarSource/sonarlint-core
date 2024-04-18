@@ -35,6 +35,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
@@ -354,7 +355,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
       List.of(new ClientFileDto(fileUri, Path.of(filePathStr), CONFIG_SCOPE_ID, false, null, filePath.toAbsolutePath(), null))));
 
     var analyzeResponse = backend.getAnalysisService().analyzeFiles(
-      new AnalyzeFilesParams(CONFIG_SCOPE_ID, List.of(fileUri), toMap(properties), System.currentTimeMillis())
+      new AnalyzeFilesParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), toMap(properties), System.currentTimeMillis())
     ).join();
 
     assertThat(analyzeResponse.getFailedAnalysisFiles()).isEmpty();

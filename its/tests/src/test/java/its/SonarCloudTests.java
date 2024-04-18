@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -698,7 +699,7 @@ class SonarCloudTests extends AbstractConnectedTests {
       List.of(new ClientFileDto(filePath.toUri(), Path.of(fileName), configScopeId, false, null, filePath, null))));
 
     var analyzeResponse = backend.getAnalysisService().analyzeFiles(
-      new AnalyzeFilesParams(configScopeId, List.of(filePath.toUri()), toMap(properties), System.currentTimeMillis())
+      new AnalyzeFilesParams(configScopeId, UUID.randomUUID(), List.of(filePath.toUri()), toMap(properties), System.currentTimeMillis())
     ).join();
 
     assertThat(analyzeResponse.getFailedAnalysisFiles()).isEmpty();

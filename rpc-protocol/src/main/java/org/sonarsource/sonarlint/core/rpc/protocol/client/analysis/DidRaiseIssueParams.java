@@ -19,17 +19,26 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.analysis;
 
+import java.util.UUID;
+
 public class DidRaiseIssueParams {
   private final String configurationScopeId;
+  // the ID that was provided when the analysis was triggered
+  private final UUID analysisId;
   private final RawIssueDto rawIssue;
 
-  public DidRaiseIssueParams(String configurationScopeId, RawIssueDto rawIssue) {
+  public DidRaiseIssueParams(String configurationScopeId, UUID analysisId, RawIssueDto rawIssue) {
     this.configurationScopeId = configurationScopeId;
+    this.analysisId = analysisId;
     this.rawIssue = rawIssue;
   }
 
   public String getConfigurationScopeId() {
     return configurationScopeId;
+  }
+
+  public UUID getAnalysisId() {
+    return analysisId;
   }
 
   public RawIssueDto getRawIssue() {

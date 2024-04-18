@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
@@ -83,12 +84,13 @@ class AnalysisMediumTests {
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .build(client);
+    var analysisId = UUID.randomUUID();
 
     var result = backend.getAnalysisService()
-      .analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, List.of(tempDir.resolve("File.java").toUri()), Map.of(), System.currentTimeMillis())).join();
+      .analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId, List.of(tempDir.resolve("File.java").toUri()), Map.of(), System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
-    verify(client, never()).didRaiseIssue(eq(CONFIG_SCOPE_ID), any());
+    verify(client, never()).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), any());
   }
 
   @Test
@@ -109,12 +111,13 @@ class AnalysisMediumTests {
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .build(client);
+    var analysisId = UUID.randomUUID();
 
-    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
+    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
-    verify(client).didRaiseIssue(eq(CONFIG_SCOPE_ID), rawIssueCaptor.capture());
+    verify(client).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
     var rawIssue = rawIssueCaptor.getValue();
     assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.MINOR);
     assertThat(rawIssue.getType()).isEqualTo(RuleType.CODE_SMELL);
@@ -145,16 +148,18 @@ class AnalysisMediumTests {
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null)))
       .build();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "BLOCKER"))))
+      .withSonarQubeConnection("connectionId",
+        storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "BLOCKER"))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
       .build(client);
+    var analysisId = UUID.randomUUID();
 
-    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
+    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
-    verify(client).didRaiseIssue(eq(CONFIG_SCOPE_ID), rawIssueCaptor.capture());
+    verify(client).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
     var rawIssue = rawIssueCaptor.getValue();
     assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
     assertThat(rawIssue.getRuleKey()).isEqualTo("xml:S3421");
@@ -173,8 +178,9 @@ class AnalysisMediumTests {
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .build(client);
+    var analysisId = UUID.randomUUID();
 
-    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
+    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     verify(client).didSkipLoadingPlugin(CONFIG_SCOPE_ID, Language.JAVA, DidSkipLoadingPluginParams.SkipReason.UNSATISFIED_JRE, "11", "10");
@@ -192,8 +198,9 @@ class AnalysisMediumTests {
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.TEXT)
       .build(client);
+    var analysisId = UUID.randomUUID();
 
-    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
+    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     verify(client).didDetectSecret();
@@ -203,8 +210,7 @@ class AnalysisMediumTests {
   void it_should_report_issues_for_multi_file_analysis_taking_data_from_module_filesystem(@TempDir Path baseDir) {
     var fileIssue = createFile(baseDir, "fileIssue.py",
       "from fileFuncDef import foo\n" +
-        "foo(1,2,3)\n"
-    );
+        "foo(1,2,3)\n");
     var fileFuncDef = createFile(baseDir, "fileFuncDef.py",
       "def foo(a):\n" +
         "    print(a)\n");
@@ -218,13 +224,14 @@ class AnalysisMediumTests {
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .build(client);
+    var analysisId = UUID.randomUUID();
 
-    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID,
+    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId,
       List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
-    verify(client, timeout(2000)).didRaiseIssue(eq(CONFIG_SCOPE_ID), rawIssueCaptor.capture());
+    verify(client, timeout(2000)).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
     var rawIssue = rawIssueCaptor.getValue();
     assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
     assertThat(rawIssue.getRuleKey()).isEqualTo("python:S930");
@@ -234,8 +241,7 @@ class AnalysisMediumTests {
   void it_should_report_multi_file_issues_for_files_added_after_initialization(@TempDir Path baseDir) {
     var fileIssue = createFile(baseDir, "fileIssue.py",
       "from fileFuncDef import foo\n" +
-        "foo(1,2,3)\n"
-    );
+        "foo(1,2,3)\n");
     var fileFuncDef = createFile(baseDir, "fileFuncDef.py",
       "def foo(a):\n" +
         "    print(a)\n");
@@ -246,26 +252,27 @@ class AnalysisMediumTests {
     backend = newBackend()
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .build(client);
+    var analysisId = UUID.randomUUID();
 
-    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID,
+    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId,
       List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
-    verify(client, times(0)).didRaiseIssue(eq(CONFIG_SCOPE_ID), rawIssueCaptor.capture());
+    verify(client, times(0)).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
 
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
       new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, false, CONFIG_SCOPE_ID, null))));
-    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(), List.of(new ClientFileDto(fileIssueUri, baseDir.relativize(fileIssue), CONFIG_SCOPE_ID, false, null, fileIssue, null),
-        new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef), CONFIG_SCOPE_ID, false, null, fileFuncDef, null))
-      ));
+    backend.getFileService().didUpdateFileSystem(
+      new DidUpdateFileSystemParams(List.of(), List.of(new ClientFileDto(fileIssueUri, baseDir.relativize(fileIssue), CONFIG_SCOPE_ID, false, null, fileIssue, null),
+        new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef), CONFIG_SCOPE_ID, false, null, fileFuncDef, null))));
 
-    result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID,
+    result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId,
       List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
-    verify(client, timeout(2000)).didRaiseIssue(eq(CONFIG_SCOPE_ID), rawIssueCaptor.capture());
+    verify(client, timeout(2000)).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
     var rawIssue = rawIssueCaptor.getValue();
     assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
     assertThat(rawIssue.getRuleKey()).isEqualTo("python:S930");
@@ -275,15 +282,13 @@ class AnalysisMediumTests {
   void it_should_report_issues_for_multi_file_analysis_only_for_leaf_config_scopes(@TempDir Path baseDir) {
     var file1Issue = createFile(baseDir, "file1Issue.py",
       "from file1FuncDef import foo\n" +
-        "foo(1,2,3)\n"
-    );
+        "foo(1,2,3)\n");
     var file1FuncDef = createFile(baseDir, "file1FuncDef.py",
       "def foo(a):\n" +
         "    print(a)\n");
     var file2Issue = createFile(baseDir, "file2Issue.py",
       "from file2FuncDef import foo\n" +
-        "foo(1,2,3)\n"
-    );
+        "foo(1,2,3)\n");
     var file2FuncDef = createFile(baseDir, "file2FuncDef.py",
       "def foo(a):\n" +
         "    print(a)\n");
@@ -304,31 +309,30 @@ class AnalysisMediumTests {
       .withUnboundConfigScope(leafConfigScope, leafConfigScope, parentConfigScope)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .build(client);
+    var analysisId = UUID.randomUUID();
 
-
-    var leafConfigScopeResult = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(leafConfigScope,
+    var leafConfigScopeResult = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(leafConfigScope, analysisId,
       List.of(file2IssueUri), Map.of(), System.currentTimeMillis())).join();
 
     assertThat(leafConfigScopeResult.getFailedAnalysisFiles()).isEmpty();
     var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
-    verify(client).didRaiseIssue(eq(leafConfigScope), rawIssueCaptor.capture());
+    verify(client).didRaiseIssue(eq(leafConfigScope), eq(analysisId), rawIssueCaptor.capture());
     var rawIssue = rawIssueCaptor.getValue();
     assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
     assertThat(rawIssue.getRuleKey()).isEqualTo("python:S930");
 
     var parentConfigScopeResult = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(parentConfigScope,
-      List.of(file1IssueUri), Map.of(), System.currentTimeMillis())).join();
+      analysisId, List.of(file1IssueUri), Map.of(), System.currentTimeMillis())).join();
 
     assertThat(parentConfigScopeResult.getFailedAnalysisFiles()).isEmpty();
-    verify(client, times(0)).didRaiseIssue(eq(parentConfigScope), rawIssueCaptor.capture());
+    verify(client, times(0)).didRaiseIssue(eq(parentConfigScope), eq(analysisId), rawIssueCaptor.capture());
   }
 
   @Test
   void it_should_update_module_file_system_on_file_events_creating_file(@TempDir Path baseDir) {
     var fileIssue = createFile(baseDir, "fileIssue.py",
       "from fileFuncDef import foo\n" +
-        "foo(1,2,3)\n"
-    );
+        "foo(1,2,3)\n");
     var fileIssueUri = fileIssue.toUri();
     var client = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileIssueUri, baseDir.relativize(fileIssue),
@@ -338,13 +342,14 @@ class AnalysisMediumTests {
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .build(client);
+    var analysisId = UUID.randomUUID();
 
-    var parentConfigScopeResult = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID,
+    var parentConfigScopeResult = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId,
       List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
 
     assertThat(parentConfigScopeResult.getFailedAnalysisFiles()).isEmpty();
     var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
-    verify(client, times(0)).didRaiseIssue(eq(CONFIG_SCOPE_ID), rawIssueCaptor.capture());
+    verify(client, times(0)).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
 
     var fileFuncDef = createFile(baseDir, "fileFuncDef.py",
       "def foo(a):\n" +
@@ -354,11 +359,11 @@ class AnalysisMediumTests {
       List.of(new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef), CONFIG_SCOPE_ID, false, null, fileFuncDef, null))));
 
     parentConfigScopeResult = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID,
-      List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
+      analysisId, List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
 
     assertThat(parentConfigScopeResult.getFailedAnalysisFiles()).isEmpty();
     rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
-    verify(client).didRaiseIssue(eq(CONFIG_SCOPE_ID), rawIssueCaptor.capture());
+    verify(client).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
     var rawIssue = rawIssueCaptor.getValue();
     assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
     assertThat(rawIssue.getRuleKey()).isEqualTo("python:S930");
@@ -369,8 +374,7 @@ class AnalysisMediumTests {
   void it_should_update_module_file_system_on_file_events_deleting_file(@TempDir Path baseDir) {
     var fileIssue = createFile(baseDir, "fileIssue.py",
       "from fileFuncDef import foo\n" +
-        "foo(1,2,3)\n"
-    );
+        "foo(1,2,3)\n");
     var fileFuncDef = createFile(baseDir, "fileFuncDef.py",
       "def foo(a):\n" +
         "    print(a)\n");
@@ -386,14 +390,14 @@ class AnalysisMediumTests {
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .build(client);
+    var analysisId = UUID.randomUUID();
 
-
-    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID,
+    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId,
       List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
-    verify(client).didRaiseIssue(eq(CONFIG_SCOPE_ID), rawIssueCaptor.capture());
+    verify(client).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
     var rawIssue = rawIssueCaptor.getValue();
     assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
     assertThat(rawIssue.getRuleKey()).isEqualTo("python:S930");
@@ -401,12 +405,12 @@ class AnalysisMediumTests {
     removeFile(baseDir, "fileFuncDef.py");
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(fileFuncDefUri), List.of()));
 
-    result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID,
+    result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId,
       List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
-    verify(client, times(0)).didRaiseIssue(eq(CONFIG_SCOPE_ID), rawIssueCaptor.capture());
+    verify(client, times(0)).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
   }
 
   @Disabled
@@ -414,8 +418,7 @@ class AnalysisMediumTests {
   void it_should_update_module_file_system_on_file_events_editing_file(@TempDir Path baseDir) {
     var fileIssue = createFile(baseDir, "fileIssue.py",
       "from fileFuncDef import foo\n" +
-        "foo(1,2,3)\n"
-    );
+        "foo(1,2,3)\n");
     var fileFuncDef = createFile(baseDir, "fileFuncDef.py",
       "def foo(a):\n" +
         "    print(a)\n");
@@ -423,7 +426,7 @@ class AnalysisMediumTests {
     var fileFuncDefUri = fileFuncDef.toUri();
     var client = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileIssueUri, baseDir.relativize(fileIssue),
-          CONFIG_SCOPE_ID, false, null, fileIssue, null),
+        CONFIG_SCOPE_ID, false, null, fileIssue, null),
         new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef),
           CONFIG_SCOPE_ID, false, null, fileFuncDef, null)))
       .build();
@@ -431,14 +434,14 @@ class AnalysisMediumTests {
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .build(client);
+    var analysisId = UUID.randomUUID();
 
-
-    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID,
+    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId,
       List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
-    verify(client).didRaiseIssue(eq(CONFIG_SCOPE_ID), rawIssueCaptor.capture());
+    verify(client).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
     var rawIssue = rawIssueCaptor.getValue();
     assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
     assertThat(rawIssue.getRuleKey()).isEqualTo("python:S930");
@@ -448,12 +451,12 @@ class AnalysisMediumTests {
       List.of(new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef),
         CONFIG_SCOPE_ID, false, null, fileFuncDef, ""))));
 
-    result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID,
+    result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId,
       List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
-    verify(client, times(0)).didRaiseIssue(eq(CONFIG_SCOPE_ID), rawIssueCaptor.capture());
+    verify(client, times(0)).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
   }
 
   private static Path createFile(Path folderPath, String fileName, String content) {
