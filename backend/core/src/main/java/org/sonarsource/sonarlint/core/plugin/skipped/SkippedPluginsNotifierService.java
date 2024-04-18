@@ -52,17 +52,17 @@ public class SkippedPluginsNotifierService {
 
   @EventListener
   public void onAnalysisFinished(AnalysisFinishedEvent event) {
-    var analyzedLanguages = event.getAnalyzedLanguages();
+    var detectedLanguages = event.getDetectedLanguages();
     var configurationScopeId = event.getConfigurationScopeId();
     var skippedPlugins = getSkippedPluginsToNotify(configurationScopeId);
     if (skippedPlugins.isEmpty()) {
       return;
     }
-    notifyClientOfSkippedPlugins(configurationScopeId, analyzedLanguages, skippedPlugins);
+    notifyClientOfSkippedPlugins(configurationScopeId, detectedLanguages, skippedPlugins);
   }
 
-  private void notifyClientOfSkippedPlugins(String configurationScopeId, Set<SonarLanguage> analyzedLanguages, List<SkippedPlugin> skippedPlugins) {
-    analyzedLanguages.stream().filter(Objects::nonNull)
+  private void notifyClientOfSkippedPlugins(String configurationScopeId, Set<SonarLanguage> detectedLanguages, List<SkippedPlugin> skippedPlugins) {
+    detectedLanguages.stream().filter(Objects::nonNull)
       .forEach(sonarLanguage -> skippedPlugins.stream().filter(p -> p.getKey().equals(sonarLanguage.getPluginKey()))
         .findFirst()
         .ifPresent(skippedPlugin -> {

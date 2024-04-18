@@ -19,23 +19,29 @@
  */
 package org.sonarsource.sonarlint.core.analysis;
 
+import java.net.URI;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 
 public class AnalysisFinishedEvent {
   private final String configurationScopeId;
   private final long analysisDuration;
-  private final Set<SonarLanguage> analyzedLanguages;
+  private final Map<URI, SonarLanguage> languagePerFile;
   private final boolean succeededForAllFiles;
   private final Set<String> reportedRuleKeys;
+  private final Set<SonarLanguage> detectedLanguages;
 
-  public AnalysisFinishedEvent(String configurationScopeId, long analysisDuration, Set<SonarLanguage> analyzedLanguages, boolean succeededForAllFiles,
+  public AnalysisFinishedEvent(String configurationScopeId, long analysisDuration, Map<URI, SonarLanguage> languagePerFile, boolean succeededForAllFiles,
     Set<String> reportedRuleKeys) {
     this.configurationScopeId = configurationScopeId;
     this.analysisDuration = analysisDuration;
-    this.analyzedLanguages = analyzedLanguages;
+    this.languagePerFile = languagePerFile;
     this.succeededForAllFiles = succeededForAllFiles;
     this.reportedRuleKeys = reportedRuleKeys;
+    this.detectedLanguages = languagePerFile.values().stream().filter(Objects::nonNull).collect(Collectors.toSet());
   }
 
   public String getConfigurationScopeId() {
@@ -46,8 +52,8 @@ public class AnalysisFinishedEvent {
     return analysisDuration;
   }
 
-  public Set<SonarLanguage> getAnalyzedLanguages() {
-    return analyzedLanguages;
+  public Map<URI, SonarLanguage> getLanguagePerFile() {
+    return languagePerFile;
   }
 
   public boolean succeededForAllFiles() {
@@ -56,5 +62,9 @@ public class AnalysisFinishedEvent {
 
   public Set<String> getReportedRuleKeys() {
     return reportedRuleKeys;
+  }
+
+  public Set<SonarLanguage> getDetectedLanguages() {
+    return detectedLanguages;
   }
 }

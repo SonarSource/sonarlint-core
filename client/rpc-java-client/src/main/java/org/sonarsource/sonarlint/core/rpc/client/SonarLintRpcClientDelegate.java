@@ -181,4 +181,7 @@ public interface SonarLintRpcClientDelegate {
 
   default void didDetectSecret() {
   }
+
+  default void promoteExtraEnabledLanguagesInConnectedMode(String configurationScopeId, Set<Language> languagesToPromote) {
+  }
 }

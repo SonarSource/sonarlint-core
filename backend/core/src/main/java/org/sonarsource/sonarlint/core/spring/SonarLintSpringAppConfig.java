@@ -77,6 +77,7 @@ import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsNotifierService;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
+import org.sonarsource.sonarlint.core.promotion.PromotionService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
@@ -171,7 +172,8 @@ import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_S
   OrganizationsCache.class,
   BindingCandidatesFinder.class,
   SharedConnectedModeSettingsProvider.class,
-  AnalysisEngineCache.class
+  AnalysisEngineCache.class,
+  PromotionService.class
 })
 public class SonarLintSpringAppConfig {
 

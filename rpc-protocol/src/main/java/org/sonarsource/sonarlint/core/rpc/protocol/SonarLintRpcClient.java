@@ -61,6 +61,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessagePar
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.promotion.PromoteExtraEnabledLanguagesInConnectedModeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
@@ -253,5 +254,15 @@ public interface SonarLintRpcClient {
    */
   @JsonNotification
   default void didDetectSecret(DidDetectSecretParams params) {
+  }
+
+  /**
+   * Called after an analysis in standalone mode when languages supported only in connected mode were detected.
+   * Clients are expected to display a visual notification to users.
+   * A promotion might be sent after each analysis, even for languages that were already promoted.
+   * Clients can decide to persist that they already notified the user, and can skip showing the notification.
+   */
+  @JsonNotification
+  default void promoteExtraEnabledLanguagesInConnectedMode(PromoteExtraEnabledLanguagesInConnectedModeParams params) {
   }
 }
