@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -561,11 +560,10 @@ public class AnalysisService {
       .whenComplete((results, error) -> {
         long endTime = System.currentTimeMillis();
         if (error == null) {
-          var languages = results.languagePerFile().values()
-            .stream().filter(Objects::nonNull).collect(toList());
-          Set<SonarLanguage> analyzedLanguages = languages.isEmpty() ? Set.of() : EnumSet.copyOf(languages);
+          var languagePerFile = results.languagePerFile().entrySet().stream().collect(HashMap<URI, SonarLanguage>::new,
+            (map, entry) -> map.put(entry.getKey().uri(), entry.getValue()), HashMap::putAll);
           eventPublisher.publishEvent(new AnalysisFinishedEvent(configurationScopeId, endTime - startTime,
-            analyzedLanguages, results.failedAnalysisFiles().isEmpty(), reportedRuleKeys));
+            languagePerFile, results.failedAnalysisFiles().isEmpty(), reportedRuleKeys));
         }
       });
   }
