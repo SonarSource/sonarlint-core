@@ -27,8 +27,6 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -47,9 +45,7 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -138,7 +134,7 @@ class ServerFilePathsProviderTest {
   }
 
   @Test
-  void fetch_from_file_when_cache_timeout() throws IOException, InterruptedException {
+  void fetch_from_file_when_cache_timeout() throws IOException {
     underTest.getServerPaths(new Binding(CONNECTION_A, PROJECT_KEY), cancelMonitor);
 
     File file = Objects.requireNonNull(cacheDirectory.toFile().listFiles())[0];
@@ -157,7 +153,7 @@ class ServerFilePathsProviderTest {
   }
 
   @Test
-  void write_to_two_cache_files_for_different_request() throws IOException {
+  void write_to_two_cache_files_for_different_request() {
     underTest.getServerPaths(new Binding(CONNECTION_A, PROJECT_KEY), cancelMonitor);
     underTest.getServerPaths(new Binding(CONNECTION_B, PROJECT_KEY), cancelMonitor);
 
