@@ -134,7 +134,7 @@ class ServerFilePathsProviderTest {
   }
 
   @Test
-  void fetch_from_file_when_cache_timeout() throws IOException, InterruptedException {
+  void fetch_from_file_when_cache_timeout() throws IOException {
     underTest.getServerPaths(new Binding(CONNECTION_A, PROJECT_KEY), cancelMonitor);
 
     File file = Objects.requireNonNull(cacheDirectory.toFile().listFiles())[0];
@@ -153,7 +153,7 @@ class ServerFilePathsProviderTest {
   }
 
   @Test
-  void write_to_two_cache_files_for_different_request() throws IOException {
+  void write_to_two_cache_files_for_different_request() {
     underTest.getServerPaths(new Binding(CONNECTION_A, PROJECT_KEY), cancelMonitor);
     underTest.getServerPaths(new Binding(CONNECTION_B, PROJECT_KEY), cancelMonitor);
 
