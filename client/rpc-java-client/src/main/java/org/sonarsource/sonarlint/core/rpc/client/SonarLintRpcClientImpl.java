@@ -68,6 +68,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupp
 import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingPluginParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.promotion.PromoteExtraEnabledLanguagesInConnectedModeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
@@ -334,5 +335,10 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   @Override
   public void didDetectSecret(DidDetectSecretParams params) {
     notify(delegate::didDetectSecret);
+  }
+
+  @Override
+  public void promoteExtraEnabledLanguagesInConnectedMode(PromoteExtraEnabledLanguagesInConnectedModeParams params) {
+    notify(() -> delegate.promoteExtraEnabledLanguagesInConnectedMode(params.getConfigurationScopeId(), params.getLanguagesToPromote()));
   }
 }

@@ -232,9 +232,9 @@ public class TelemetryService {
 
   @EventListener
   public void onAnalysisFinished(AnalysisFinishedEvent event) {
-    var analyzedLanguages = event.getAnalyzedLanguages();
-    if (analyzedLanguages.size() == 1 && event.succeededForAllFiles()) {
-      var fileLanguage = analyzedLanguages.iterator().next();
+    var languagePerFile = event.getLanguagePerFile();
+    if (languagePerFile.size() == 1 && event.succeededForAllFiles()) {
+      var fileLanguage = languagePerFile.entrySet().iterator().next().getValue();
       analysisDoneOnSingleLanguage(fileLanguage == null ? null : Language.valueOf(fileLanguage.name()), (int) event.getAnalysisDuration());
     } else {
       analysisDoneOnMultipleFiles();
