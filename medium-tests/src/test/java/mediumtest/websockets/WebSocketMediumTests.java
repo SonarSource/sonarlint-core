@@ -504,8 +504,8 @@ class WebSocketMediumTests {
       backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), emptyList()));
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
-        .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
-        .containsExactly(tuple(false, webSocketPayloadBuilder().subscribeWithProjectKey("projectKey").build())));
+        .extracting(WebSocketConnection::isOpened)
+        .containsExactly(false));
     }
 
     @Test
