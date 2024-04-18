@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,6 +71,7 @@ class SloopLauncherTests {
     var mockProcessBuilder = mock(ProcessBuilder.class);
     when(mockPbFactory.apply(any())).thenReturn(mockProcessBuilder);
     mockProcess = mock(Process.class);
+    when(mockProcess.onExit()).thenReturn(new CompletableFuture<>());
     doReturn(mockProcess).when(mockProcessBuilder).start();
 
     when(mockProcess.getInputStream()).thenReturn(new ByteArrayInputStream(new byte[0]));
