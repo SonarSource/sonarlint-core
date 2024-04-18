@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
@@ -65,8 +66,8 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
-import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
+import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.fs.FileExclusionService;
 import org.sonarsource.sonarlint.core.fs.FileSystemUpdatedEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
@@ -542,7 +543,7 @@ public class AnalysisService {
     return isReady;
   }
 
-  public CompletableFuture<AnalysisResults> analyze(SonarLintCancelMonitor cancelMonitor, String configurationScopeId, List<URI> filePathsToAnalyze,
+  public CompletableFuture<AnalysisResults> analyze(SonarLintCancelMonitor cancelMonitor, String configurationScopeId, UUID analysisId, List<URI> filePathsToAnalyze,
     Map<String, String> extraProperties, long startTime) {
     var analysisEngine = engineCache.getOrCreateAnalysisEngine(configurationScopeId);
     var analysisConfig = getAnalysisConfigForEngine(configurationScopeId, filePathsToAnalyze, extraProperties);
@@ -555,7 +556,7 @@ public class AnalysisService {
     cancelMonitor.checkCanceled();
     var reportedRuleKeys = new HashSet<String>();
     var analyzeCommand = new AnalyzeCommand(configurationScopeId, analysisConfig,
-      issue -> streamIssue(configurationScopeId, issue, ruleDetailsCache, reportedRuleKeys), SonarLintLogger.getTargetForCopy());
+      issue -> streamIssue(configurationScopeId, analysisId, issue, ruleDetailsCache, reportedRuleKeys), SonarLintLogger.getTargetForCopy());
     return analysisEngine.post(analyzeCommand, ProgressMonitor.wrapping(cancelMonitor))
       .whenComplete((results, error) -> {
         long endTime = System.currentTimeMillis();
@@ -569,7 +570,8 @@ public class AnalysisService {
       });
   }
 
-  private void streamIssue(String configScopeId, Issue issue, ConcurrentHashMap<String, GetRuleDetailsResponse> ruleDetailsCache, HashSet<String> reportedRuleKeys) {
+  private void streamIssue(String configScopeId, UUID analysisId, Issue issue, ConcurrentHashMap<String, GetRuleDetailsResponse> ruleDetailsCache,
+    HashSet<String> reportedRuleKeys) {
     var ruleKey = issue.getRuleKey();
     var activeRule = ruleDetailsCache.computeIfAbsent(ruleKey, k -> {
       try {
@@ -580,7 +582,7 @@ public class AnalysisService {
     });
     if (activeRule != null) {
       reportedRuleKeys.add(ruleKey);
-      client.didRaiseIssue(new DidRaiseIssueParams(configScopeId, toDto(issue, activeRule)));
+      client.didRaiseIssue(new DidRaiseIssueParams(configScopeId, analysisId, toDto(issue, activeRule)));
       if (ruleKey.contains("secrets") && !alreadyDetectedSecret) {
         alreadyDetectedSecret = true;
         client.didDetectSecret(new DidDetectSecretParams(configScopeId));
