@@ -62,7 +62,8 @@ public class MockSonarLintRpcClientDelegate implements SonarLintRpcClientDelegat
   private final Map<String, List<RawIssueDto>> raisedIssues = new HashMap<>();
 
   public List<RawIssueDto> getRaisedIssues(String configurationScopeId) {
-    return raisedIssues.get(configurationScopeId);
+    var issues = raisedIssues.get(configurationScopeId);
+    return issues != null ? issues : List.of();
   }
 
   public Map<String, List<RawIssueDto>> getRaisedIssues() {
@@ -205,4 +206,9 @@ public class MockSonarLintRpcClientDelegate implements SonarLintRpcClientDelegat
   public void didChangeAnalysisReadiness(Set<String> configurationScopeIds, boolean areReadyForAnalysis) {
 
   }
+
+  public void clear() {
+    raisedIssues.clear();
+  }
+
 }

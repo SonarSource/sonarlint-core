@@ -76,8 +76,6 @@ import org.sonarqube.ws.client.issues.SearchRequest;
 import org.sonarqube.ws.client.settings.ResetRequest;
 import org.sonarqube.ws.client.settings.SetRequest;
 import org.sonarqube.ws.client.users.CreateRequest;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.EngineConfiguration;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
@@ -135,7 +133,6 @@ import static org.awaitility.Awaitility.waitAtMost;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -197,7 +194,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   private static final List<String> didSynchronizeConfigurationScopes = new CopyOnWriteArrayList<>();
   private static final Map<String, Boolean> analysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
 
-  private static SonarLintAnalysisEngine engine;
 
   @BeforeAll
   static void start() throws IOException {
@@ -249,23 +245,11 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   @Nested
   class AnalysisTests {
 
-    private List<String> logs;
 
     @BeforeEach
     void start() {
       Map<String, String> globalProps = new HashMap<>();
       globalProps.put("sonar.global.label", "It works");
-      logs = new CopyOnWriteArrayList<>();
-
-      var globalConfig = EngineConfiguration.builder()
-        .setSonarLintUserHome(sonarUserHome)
-        .setLogOutput((msg, level) -> {
-          logs.add(msg);
-          System.out.println(msg);
-        })
-        .setExtraProperties(globalProps)
-        .build();
-      engine = new SonarLintAnalysisEngine(globalConfig, backend, CONNECTION_ID);
 
       // This profile is altered in a test
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint.xml"));
@@ -274,8 +258,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     @AfterEach
     void stop() {
       adminWsClient.settings().reset(new ResetRequest().setKeys(singletonList("sonar.java.file.suffixes")));
-      engine.stop();
-      ((MockSonarLintRpcClientDelegate) client).getRaisedIssues().clear();
+      ((MockSonarLintRpcClientDelegate) client).clear();
     }
 
     // TODO should be moved to a separate class, not related to analysis
@@ -493,18 +476,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       openBoundConfigurationScope(configScopeId, projectKey, true);
       waitForAnalysisToBeReady(configScopeId);
 
-      assertThat(logs).contains("Start Global Extension It works");
-
       var rawIssues = analyzeFile(configScopeId, "sample-global-extension", "src/foo.glob", "sonar.cobol.file.suffixes", "glob");
-      assertThat(rawIssues).extracting("ruleKey", "message").containsOnly(
+      assertThat(rawIssues).extracting("ruleKey", "primaryMessage").containsOnly(
         tuple("global:inc", "Issue number 0"));
 
       rawIssues = analyzeFile(configScopeId, "sample-global-extension", "src/foo.glob", "sonar.cobol.file.suffixes", "glob");
-      assertThat(rawIssues).extracting("ruleKey", "message").containsOnly(
+      assertThat(rawIssues).extracting("ruleKey", "primaryMessage").containsOnly(
         tuple("global:inc", "Issue number 1"));
-
-      engine.stop();
-      assertThat(logs).contains("Stop Global Extension");
     }
 
     @Test
@@ -669,21 +647,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
   @Nested
   class ServerSentEvents {
-
-    @BeforeEach
-    void start() {
-      var globalConfig = EngineConfiguration.builder()
-        .setSonarLintUserHome(sonarUserHome)
-        .setLogOutput((msg, level) -> System.out.println(msg))
-        .build();
-      engine = new SonarLintAnalysisEngine(globalConfig, backend, CONNECTION_ID);
-
-    }
-
-    @AfterEach
-    void stop() {
-      engine.stop();
-    }
 
     @Test
     @OnlyOnSonarQube(from = "9.4")
@@ -858,23 +821,15 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       provisionProject(ORCHESTRATOR, PROJECT_KEY_JAVA_TAINT, "Java With Taint Vulnerabilities");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/java-sonarlint-with-taint.xml"));
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JAVA_TAINT, "java", "SonarLint Taint Java");
-
-      engine = new SonarLintAnalysisEngine(EngineConfiguration.builder()
-        .setSonarLintUserHome(sonarUserHome)
-        .setLogOutput((msg, level) -> System.out.println(msg))
-        .setExtraProperties(new HashMap<>())
-        .build(), backend, CONNECTION_ID);
     }
 
     @AfterEach
     void stop() {
-      engine.stop();
       backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(CONFIG_SCOPE_ID));
       var request = new PostRequest("api/projects/bulk_delete");
       request.setParam("projects", PROJECT_KEY_JAVA_TAINT);
       try (var response = adminWsClient.wsConnector().call(request)) {
       }
-
     }
 
     @Test
@@ -1042,23 +997,11 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     void start() {
       var globalProps = new HashMap<String, String>();
       globalProps.put("sonar.global.label", "It works");
-
-      var globalConfigBuilder = EngineConfiguration.builder()
-        .setSonarLintUserHome(sonarUserHome)
-        .setLogOutput((msg, level) -> System.out.println(msg))
-        .setExtraProperties(globalProps);
-      var globalConfig = globalConfigBuilder.build();
-      engine = new SonarLintAnalysisEngine(globalConfig, backend, CONNECTION_ID);
     }
 
     @AfterEach
     void stop() {
       adminWsClient.settings().reset(new ResetRequest().setKeys(singletonList("sonar.java.file.suffixes")));
-      try {
-        engine.stop();
-      } catch (Exception e) {
-        // Ignore
-      }
     }
 
     @Test
@@ -1506,6 +1449,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     assertThat(analyzeResponse.getFailedAnalysisFiles()).isEmpty();
     var raisedIssues = ((MockSonarLintRpcClientDelegate) client).getRaisedIssues(configScopeId);
+    ((MockSonarLintRpcClientDelegate) client).getRaisedIssues().clear();
     return raisedIssues != null ? raisedIssues : List.of();
   }
 

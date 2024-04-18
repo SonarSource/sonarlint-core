@@ -53,8 +53,6 @@ import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.permissions.RemoveGroupRequest;
 import org.sonarqube.ws.client.settings.SetRequest;
 import org.sonarqube.ws.client.users.CreateRequest;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.EngineConfiguration;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
@@ -126,7 +124,6 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     backend.shutdown().get();
   }
 
-  private static SonarLintAnalysisEngine engine;
   private static String singlePointOfExitRuleKey;
 
   @BeforeAll
@@ -168,11 +165,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     analysisReadinessByConfigScopeId.forEach((scopeId, readiness) -> backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(scopeId)));
     analysisReadinessByConfigScopeId.clear();
     rpcClientLogs.clear();
-    try {
-      engine.stop();
-    } catch (Exception e) {
-      // Ignore
-    }
+    ((MockSonarLintRpcClientDelegate) client).clear();
   }
 
   @Nested
@@ -187,11 +180,6 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
     void start(String projectKey) {
       bindProject("project-" + projectKey, projectKey);
-
-      engine = new SonarLintAnalysisEngine(EngineConfiguration.builder()
-        .setSonarLintUserHome(sonarUserHome)
-        .setLogOutput((msg, level) -> System.out.println(msg))
-        .build(), backend, "orchestrator");
     }
 
     @AfterEach
@@ -318,11 +306,6 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     void setup() throws IOException {
       startBackend(Map.of("cpp", PluginLocator.getCppPluginPath()));
       bindProject("project-" + PROJECT_KEY_C, PROJECT_KEY_C);
-
-      engine = new SonarLintAnalysisEngine(EngineConfiguration.builder()
-        .setSonarLintUserHome(sonarUserHome)
-        .setLogOutput((msg, level) -> System.out.println(msg))
-        .build(), backend, "orchestrator");
     }
 
     /**
