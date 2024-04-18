@@ -108,6 +108,7 @@ public class SloopLauncher {
     // use process.getOutputStream() as the standard input of a subprocess that can be written to
     var clientToServerOutputStream = process.getOutputStream();
     var clientLauncher = new ClientJsonRpcLauncher(serverToClientInputStream, clientToServerOutputStream, rpcClient);
+    process.onExit().thenAccept(p -> clientLauncher.close());
 
     var serverProxy = clientLauncher.getServerProxy();
     return new Sloop(serverProxy, process);
