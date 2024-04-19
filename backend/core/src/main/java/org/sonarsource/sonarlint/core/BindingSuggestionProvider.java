@@ -128,7 +128,7 @@ public class BindingSuggestionProvider {
   @EventListener
   public void filesystemUpdated(FileSystemUpdatedEvent event) {
     var configScopeWithAddedOrUpdatedBindingClue =
-      Stream.concat(event.getAdded().stream(), event.getUpdated().stream())
+      event.getAddedOrUpdated().stream()
       .filter(file -> BindingClueProvider.ALL_BINDING_CLUE_FILENAMES.contains(file.getFileName()))
       .map(ClientFile::getConfigScopeId)
       .collect(Collectors.toSet());

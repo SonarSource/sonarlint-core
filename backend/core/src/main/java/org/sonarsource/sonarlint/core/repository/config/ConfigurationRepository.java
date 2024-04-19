@@ -125,6 +125,10 @@ public class ConfigurationRepository {
     return leafConfigScopeIds;
   }
 
+  public boolean isLeafConfigScope(String configScopeId) {
+    return getLeafConfigScopeIds().contains(configScopeId);
+  }
+
   @CheckForNull
   public ConfigurationScope getConfigurationScope(String configScopeId) {
     return configScopePerId.get(configScopeId);

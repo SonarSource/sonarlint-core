@@ -102,9 +102,9 @@ public class AnalysisEngineCache {
 
   private List<ClientModuleInfo> getModules() {
     var leafConfigScopeIds = configurationRepository.getLeafConfigScopeIds();
-    return leafConfigScopeIds.stream().map(scope -> {
-      var backendModuleFileSystem = new BackendModuleFileSystem(clientFileSystemService, scope);
-      return new ClientModuleInfo(scope, backendModuleFileSystem);
+    return leafConfigScopeIds.stream().map(scopeId -> {
+      var backendModuleFileSystem = new BackendModuleFileSystem(clientFileSystemService, scopeId);
+      return new ClientModuleInfo(scopeId, backendModuleFileSystem);
     }).collect(Collectors.toList());
   }
 
@@ -145,8 +145,7 @@ public class AnalysisEngineCache {
   }
 
   public void registerModuleIfLeafConfigScope(String scopeId) {
-    var leafConfigScopeIds = configurationRepository.getLeafConfigScopeIds();
-    if (leafConfigScopeIds.contains(scopeId)) {
+    if (configurationRepository.isLeafConfigScope(scopeId)) {
       var analysisEngine = getOrCreateAnalysisEngine(scopeId);
       var backendModuleFileSystem = new BackendModuleFileSystem(clientFileSystemService, scopeId);
       var clientModuleInfo = new ClientModuleInfo(scopeId, backendModuleFileSystem);

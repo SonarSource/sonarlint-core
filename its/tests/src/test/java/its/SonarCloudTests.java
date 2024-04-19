@@ -691,8 +691,8 @@ class SonarCloudTests extends AbstractConnectedTests {
     };
   }
 
-  private static List<RawIssueDto> analyze(String projectKeyPhp, String fileName, String configScopeId, String ... properties) {
-    final var baseDir = Paths.get("projects/" + projectKeyPhp).toAbsolutePath();
+  private static List<RawIssueDto> analyze(String projectKey, String fileName, String configScopeId, String ... properties) {
+    final var baseDir = Paths.get("projects/" + projectKey).toAbsolutePath();
     final var filePath = baseDir.resolve(fileName);
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(),
       List.of(new ClientFileDto(filePath.toUri(), Path.of(fileName), configScopeId, false, null, filePath, null))));

@@ -20,12 +20,13 @@
 package org.sonarsource.sonarlint.core.fs;
 
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class FileSystemUpdatedEvent {
 
   private final List<ClientFile> removed;
   private final List<ClientFile> added;
-
   private final List<ClientFile> updated;
 
   public FileSystemUpdatedEvent(List<ClientFile> removed, List<ClientFile> added, List<ClientFile> updated) {
@@ -44,6 +45,11 @@ public class FileSystemUpdatedEvent {
 
   public List<ClientFile> getUpdated() {
     return updated;
+  }
+
+  public List<ClientFile> getAddedOrUpdated() {
+    return Stream.concat(getAdded().stream(), getUpdated().stream())
+      .collect(Collectors.toList());
   }
 
 }
