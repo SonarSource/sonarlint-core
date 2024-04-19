@@ -117,7 +117,7 @@ public class PluginsService {
       return false;
     }
     // when storage is not present, assume that secrets are not supported by server
-    return connection.getKind() == ConnectionKind.SONARCLOUD || storageService.connection(connectionId).serverInfo().read()
+    return connection.getKind() != ConnectionKind.SONARCLOUD && storageService.connection(connectionId).serverInfo().read()
       .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(CUSTOM_SECRETS_MIN_SQ_VERSION) >= 0)
       .orElse(false);
   }
