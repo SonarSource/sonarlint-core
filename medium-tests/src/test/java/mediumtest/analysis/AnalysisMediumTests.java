@@ -28,11 +28,15 @@ import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.sonar.api.utils.System2;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingPluginParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
@@ -50,6 +54,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 class AnalysisMediumTests {
@@ -193,6 +199,263 @@ class AnalysisMediumTests {
     verify(client).didDetectSecret();
   }
 
+  @Test
+  void it_should_report_issues_for_multi_file_analysis_taking_data_from_module_filesystem(@TempDir Path baseDir) {
+    var fileIssue = createFile(baseDir, "fileIssue.py",
+      "from fileFuncDef import foo\n" +
+        "foo(1,2,3)\n"
+    );
+    var fileFuncDef = createFile(baseDir, "fileFuncDef.py",
+      "def foo(a):\n" +
+        "    print(a)\n");
+    var fileIssueUri = fileIssue.toUri();
+    var fileFuncDefUri = fileFuncDef.toUri();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileIssueUri, baseDir.relativize(fileIssue), CONFIG_SCOPE_ID, false, null, fileIssue, null),
+        new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef), CONFIG_SCOPE_ID, false, null, fileFuncDef, null)))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
+      .build(client);
+
+    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID,
+      List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
+
+    assertThat(result.getFailedAnalysisFiles()).isEmpty();
+    var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
+    verify(client, timeout(2000)).didRaiseIssue(eq(CONFIG_SCOPE_ID), rawIssueCaptor.capture());
+    var rawIssue = rawIssueCaptor.getValue();
+    assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
+    assertThat(rawIssue.getRuleKey()).isEqualTo("python:S930");
+  }
+
+  @Test
+  void it_should_report_multi_file_issues_for_files_added_after_initialization(@TempDir Path baseDir) {
+    var fileIssue = createFile(baseDir, "fileIssue.py",
+      "from fileFuncDef import foo\n" +
+        "foo(1,2,3)\n"
+    );
+    var fileFuncDef = createFile(baseDir, "fileFuncDef.py",
+      "def foo(a):\n" +
+        "    print(a)\n");
+    var fileIssueUri = fileIssue.toUri();
+    var fileFuncDefUri = fileFuncDef.toUri();
+    var client = newFakeClient()
+      .build();
+    backend = newBackend()
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
+      .build(client);
+
+    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID,
+      List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
+
+    assertThat(result.getFailedAnalysisFiles()).isEmpty();
+    var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
+    verify(client, times(0)).didRaiseIssue(eq(CONFIG_SCOPE_ID), rawIssueCaptor.capture());
+
+    backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
+      new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, false, CONFIG_SCOPE_ID, null))));
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(), List.of(new ClientFileDto(fileIssueUri, baseDir.relativize(fileIssue), CONFIG_SCOPE_ID, false, null, fileIssue, null),
+        new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef), CONFIG_SCOPE_ID, false, null, fileFuncDef, null))
+      ));
+
+    result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID,
+      List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
+
+    assertThat(result.getFailedAnalysisFiles()).isEmpty();
+    rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
+    verify(client, timeout(2000)).didRaiseIssue(eq(CONFIG_SCOPE_ID), rawIssueCaptor.capture());
+    var rawIssue = rawIssueCaptor.getValue();
+    assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
+    assertThat(rawIssue.getRuleKey()).isEqualTo("python:S930");
+  }
+
+  @Test
+  void it_should_report_issues_for_multi_file_analysis_only_for_leaf_config_scopes(@TempDir Path baseDir) {
+    var file1Issue = createFile(baseDir, "file1Issue.py",
+      "from file1FuncDef import foo\n" +
+        "foo(1,2,3)\n"
+    );
+    var file1FuncDef = createFile(baseDir, "file1FuncDef.py",
+      "def foo(a):\n" +
+        "    print(a)\n");
+    var file2Issue = createFile(baseDir, "file2Issue.py",
+      "from file2FuncDef import foo\n" +
+        "foo(1,2,3)\n"
+    );
+    var file2FuncDef = createFile(baseDir, "file2FuncDef.py",
+      "def foo(a):\n" +
+        "    print(a)\n");
+    var file1IssueUri = file1Issue.toUri();
+    var file1FuncDefUri = file1FuncDef.toUri();
+    var file2IssueUri = file2Issue.toUri();
+    var file2FuncDefUri = file2FuncDef.toUri();
+    var parentConfigScope = "parentConfigScope";
+    var leafConfigScope = "leafConfigScope";
+    var client = newFakeClient()
+      .withInitialFs(parentConfigScope, baseDir, List.of(new ClientFileDto(file1IssueUri, baseDir.relativize(file1Issue), parentConfigScope, false, null, file1Issue, null),
+        new ClientFileDto(file1FuncDefUri, baseDir.relativize(file1FuncDef), parentConfigScope, false, null, file1FuncDef, null)))
+      .withInitialFs(leafConfigScope, baseDir, List.of(new ClientFileDto(file2IssueUri, baseDir.relativize(file2Issue), leafConfigScope, false, null, file2Issue, null),
+        new ClientFileDto(file2FuncDefUri, baseDir.relativize(file2FuncDef), leafConfigScope, false, null, file2FuncDef, null)))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(parentConfigScope)
+      .withUnboundConfigScope(leafConfigScope, leafConfigScope, parentConfigScope)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
+      .build(client);
+
+
+    var leafConfigScopeResult = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(leafConfigScope,
+      List.of(file2IssueUri), Map.of(), System.currentTimeMillis())).join();
+
+    assertThat(leafConfigScopeResult.getFailedAnalysisFiles()).isEmpty();
+    var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
+    verify(client).didRaiseIssue(eq(leafConfigScope), rawIssueCaptor.capture());
+    var rawIssue = rawIssueCaptor.getValue();
+    assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
+    assertThat(rawIssue.getRuleKey()).isEqualTo("python:S930");
+
+    var parentConfigScopeResult = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(parentConfigScope,
+      List.of(file1IssueUri), Map.of(), System.currentTimeMillis())).join();
+
+    assertThat(parentConfigScopeResult.getFailedAnalysisFiles()).isEmpty();
+    verify(client, times(0)).didRaiseIssue(eq(parentConfigScope), rawIssueCaptor.capture());
+  }
+
+  @Test
+  void it_should_update_module_file_system_on_file_events_creating_file(@TempDir Path baseDir) {
+    var fileIssue = createFile(baseDir, "fileIssue.py",
+      "from fileFuncDef import foo\n" +
+        "foo(1,2,3)\n"
+    );
+    var fileIssueUri = fileIssue.toUri();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileIssueUri, baseDir.relativize(fileIssue),
+        CONFIG_SCOPE_ID, false, null, fileIssue, null)))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
+      .build(client);
+
+    var parentConfigScopeResult = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID,
+      List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
+
+    assertThat(parentConfigScopeResult.getFailedAnalysisFiles()).isEmpty();
+    var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
+    verify(client, times(0)).didRaiseIssue(eq(CONFIG_SCOPE_ID), rawIssueCaptor.capture());
+
+    var fileFuncDef = createFile(baseDir, "fileFuncDef.py",
+      "def foo(a):\n" +
+        "    print(a)\n");
+    var fileFuncDefUri = fileFuncDef.toUri();
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(),
+      List.of(new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef), CONFIG_SCOPE_ID, false, null, fileFuncDef, null))));
+
+    parentConfigScopeResult = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID,
+      List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
+
+    assertThat(parentConfigScopeResult.getFailedAnalysisFiles()).isEmpty();
+    rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
+    verify(client).didRaiseIssue(eq(CONFIG_SCOPE_ID), rawIssueCaptor.capture());
+    var rawIssue = rawIssueCaptor.getValue();
+    assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
+    assertThat(rawIssue.getRuleKey()).isEqualTo("python:S930");
+  }
+
+  @Disabled
+  @Test
+  void it_should_update_module_file_system_on_file_events_deleting_file(@TempDir Path baseDir) {
+    var fileIssue = createFile(baseDir, "fileIssue.py",
+      "from fileFuncDef import foo\n" +
+        "foo(1,2,3)\n"
+    );
+    var fileFuncDef = createFile(baseDir, "fileFuncDef.py",
+      "def foo(a):\n" +
+        "    print(a)\n");
+    var fileIssueUri = fileIssue.toUri();
+    var fileFuncDefUri = fileFuncDef.toUri();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileIssueUri, baseDir.relativize(fileIssue),
+        CONFIG_SCOPE_ID, false, null, fileIssue, null),
+        new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef),
+          CONFIG_SCOPE_ID, false, null, fileFuncDef, null)))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
+      .build(client);
+
+
+    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID,
+      List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
+
+    assertThat(result.getFailedAnalysisFiles()).isEmpty();
+    var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
+    verify(client).didRaiseIssue(eq(CONFIG_SCOPE_ID), rawIssueCaptor.capture());
+    var rawIssue = rawIssueCaptor.getValue();
+    assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
+    assertThat(rawIssue.getRuleKey()).isEqualTo("python:S930");
+
+    removeFile(baseDir, "fileFuncDef.py");
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(fileFuncDefUri), List.of()));
+
+    result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID,
+      List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
+
+    assertThat(result.getFailedAnalysisFiles()).isEmpty();
+    rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
+    verify(client, times(0)).didRaiseIssue(eq(CONFIG_SCOPE_ID), rawIssueCaptor.capture());
+  }
+
+  @Disabled
+  @Test
+  void it_should_update_module_file_system_on_file_events_editing_file(@TempDir Path baseDir) {
+    var fileIssue = createFile(baseDir, "fileIssue.py",
+      "from fileFuncDef import foo\n" +
+        "foo(1,2,3)\n"
+    );
+    var fileFuncDef = createFile(baseDir, "fileFuncDef.py",
+      "def foo(a):\n" +
+        "    print(a)\n");
+    var fileIssueUri = fileIssue.toUri();
+    var fileFuncDefUri = fileFuncDef.toUri();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileIssueUri, baseDir.relativize(fileIssue),
+          CONFIG_SCOPE_ID, false, null, fileIssue, null),
+        new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef),
+          CONFIG_SCOPE_ID, false, null, fileFuncDef, null)))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
+      .build(client);
+
+
+    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID,
+      List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
+
+    assertThat(result.getFailedAnalysisFiles()).isEmpty();
+    var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
+    verify(client).didRaiseIssue(eq(CONFIG_SCOPE_ID), rawIssueCaptor.capture());
+    var rawIssue = rawIssueCaptor.getValue();
+    assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
+    assertThat(rawIssue.getRuleKey()).isEqualTo("python:S930");
+
+    editFile(baseDir, "fileFuncDef.py", "");
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(),
+      List.of(new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef),
+        CONFIG_SCOPE_ID, false, null, fileFuncDef, ""))));
+
+    result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID,
+      List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
+
+    assertThat(result.getFailedAnalysisFiles()).isEmpty();
+    rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
+    verify(client, times(0)).didRaiseIssue(eq(CONFIG_SCOPE_ID), rawIssueCaptor.capture());
+  }
+
   private static Path createFile(Path folderPath, String fileName, String content) {
     var filePath = folderPath.resolve(fileName);
     try {
@@ -201,5 +464,23 @@ class AnalysisMediumTests {
       throw new RuntimeException(e);
     }
     return filePath;
+  }
+
+  private static void editFile(Path folderPath, String fileName, String content) {
+    var filePath = folderPath.resolve(fileName);
+    try {
+      Files.writeString(filePath, content);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static void removeFile(Path folderPath, String fileName) {
+    var filePath = folderPath.resolve(fileName);
+    try {
+      Files.deleteIfExists(filePath);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

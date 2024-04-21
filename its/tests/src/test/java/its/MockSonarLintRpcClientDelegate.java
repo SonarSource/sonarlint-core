@@ -21,6 +21,8 @@ package its;
 
 import java.net.URI;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,6 +35,7 @@ import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
@@ -56,6 +59,22 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
 public class MockSonarLintRpcClientDelegate implements SonarLintRpcClientDelegate {
+
+  private final Map<String, List<RawIssueDto>> raisedIssues = new HashMap<>();
+
+  public List<RawIssueDto> getRaisedIssues(String configurationScopeId) {
+    var issues = raisedIssues.get(configurationScopeId);
+    return issues != null ? issues : List.of();
+  }
+
+  public Map<String, List<RawIssueDto>> getRaisedIssues() {
+    return raisedIssues;
+  }
+
+  @Override
+  public void didRaiseIssue(String configurationScopeId, RawIssueDto rawIssue) {
+    raisedIssues.computeIfAbsent(configurationScopeId, k -> new ArrayList<>()).add(rawIssue);
+  }
 
   @Override
   public void suggestBinding(Map<String, List<BindingSuggestionDto>> suggestionsByConfigScope) {
@@ -193,4 +212,9 @@ public class MockSonarLintRpcClientDelegate implements SonarLintRpcClientDelegat
   public void didChangeAnalysisReadiness(Set<String> configurationScopeIds, boolean areReadyForAnalysis) {
 
   }
+
+  public void clear() {
+    raisedIssues.clear();
+  }
+
 }
