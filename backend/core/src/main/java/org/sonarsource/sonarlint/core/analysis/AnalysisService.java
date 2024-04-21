@@ -19,11 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.analysis;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
 import java.net.URI;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -47,12 +43,13 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
+import org.sonarsource.sonarlint.core.analysis.command.NotifyModuleEventCommand;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.MultivalueProperty;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
@@ -68,9 +65,10 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
-import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
+import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.FileExclusionService;
+import org.sonarsource.sonarlint.core.fs.FileSystemUpdatedEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.nodejs.InstalledNodeJs;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
@@ -105,11 +103,13 @@ import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.AnalyzerConfigurationSynchronized;
 import org.sonarsource.sonarlint.core.sync.ConfigurationScopesSynchronizedEvent;
 import org.sonarsource.sonarlint.core.sync.PluginsSynchronizedEvent;
+import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Predicate.not;
+import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
@@ -449,6 +449,7 @@ public class AnalysisService {
 
   @EventListener
   public void onConfigurationScopeAdded(ConfigurationScopesAddedEvent event) {
+    event.getAddedConfigurationScopeIds().forEach(engineCache::registerModuleIfLeafConfigScope);
     checkIfReadyForAnalysis(event.getAddedConfigurationScopeIds());
   }
 
@@ -474,6 +475,22 @@ public class AnalysisService {
   @EventListener
   public void onAnalyzerConfigurationSynchronized(ConfigurationScopesSynchronizedEvent event) {
     checkIfReadyForAnalysis(event.getConfigScopeIds());
+  }
+
+  @EventListener
+  public void onFileSystemUpdated(FileSystemUpdatedEvent event) {
+    sendModuleEvents(event.getAdded(), ModuleFileEvent.Type.CREATED);
+    sendModuleEvents(event.getUpdated(), ModuleFileEvent.Type.MODIFIED);
+    sendModuleEvents(event.getRemoved(), ModuleFileEvent.Type.DELETED);
+  }
+
+  private void sendModuleEvents(List<ClientFile> filesToProcess, ModuleFileEvent.Type type) {
+    var filesByScopeId = filesToProcess.stream().collect(groupingBy(ClientFile::getConfigScopeId));
+    filesByScopeId.forEach((scopeId, files) -> {
+      var engine = engineCache.getOrCreateAnalysisEngine(scopeId);
+      files.forEach(file -> engine.post(new NotifyModuleEventCommand(scopeId,
+        ClientModuleFileEvent.of(new BackendInputFile(file), type)), new ProgressMonitor(null)).join());
+    });
   }
 
   private void checkIfReadyForAnalysis(Set<String> configurationScopeIds) {
@@ -543,7 +560,9 @@ public class AnalysisService {
       .whenComplete((results, error) -> {
         long endTime = System.currentTimeMillis();
         if (error == null) {
-          var analyzedLanguages = EnumSet.copyOf(results.languagePerFile().values());
+          var languages = results.languagePerFile().values()
+            .stream().filter(Objects::nonNull).collect(toList());
+          Set<SonarLanguage> analyzedLanguages = languages.isEmpty() ? Set.of() : EnumSet.copyOf(languages);
           eventPublisher.publishEvent(new AnalysisFinishedEvent(configurationScopeId, endTime - startTime,
             analyzedLanguages, results.failedAnalysisFiles().isEmpty(), reportedRuleKeys));
         }
@@ -638,53 +657,4 @@ public class AnalysisService {
     return nodeJsService.getAutoDetectedNodeJs();
   }
 
-  private static class BackendInputFile implements ClientInputFile {
-    private final ClientFile clientFile;
-
-    private BackendInputFile(ClientFile clientFile) {
-      this.clientFile = clientFile;
-    }
-
-    @Override
-    public String getPath() {
-      return Paths.get(clientFile.getUri()).toAbsolutePath().toString();
-    }
-
-    @Override
-    public boolean isTest() {
-      return clientFile.isTest();
-    }
-
-    @Nullable
-    @Override
-    public Charset getCharset() {
-      return StandardCharsets.UTF_8;
-    }
-
-    @Override
-    public ClientFile getClientObject() {
-      return clientFile;
-    }
-
-    @Override
-    public InputStream inputStream() {
-      var charset = getCharset();
-      return new ByteArrayInputStream(clientFile.getContent().getBytes(charset == null ? Charset.defaultCharset() : charset));
-    }
-
-    @Override
-    public String contents() {
-      return clientFile.getContent();
-    }
-
-    @Override
-    public String relativePath() {
-      return clientFile.getClientRelativePath().toString();
-    }
-
-    @Override
-    public URI uri() {
-      return clientFile.getUri();
-    }
-  }
 }

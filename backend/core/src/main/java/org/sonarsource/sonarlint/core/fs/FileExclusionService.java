@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.sonar.api.CoreProperties;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonarsource.sonarlint.core.ServerFileExclusions;
@@ -139,7 +140,8 @@ public class FileExclusionService {
     event.getRemoved().forEach(f -> serverExclusionByUriCache.clear(f.getUri()));
     // We could try to be more efficient by looking at changed files, and deciding if we need to invalidate or not based on changed
     // attributes (relative path, isTest). But it's probably not worth the effort.
-    event.getAddedOrUpdated().forEach(f -> serverExclusionByUriCache.refreshAsync(f.getUri()));
+    Stream.concat(event.getAdded().stream(), event.getUpdated().stream())
+      .forEach(f -> serverExclusionByUriCache.refreshAsync(f.getUri()));
   }
 
   @EventListener

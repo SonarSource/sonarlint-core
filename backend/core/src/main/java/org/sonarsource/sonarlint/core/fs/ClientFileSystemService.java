@@ -126,15 +126,20 @@ public class ClientFileSystemService {
         removed.add(clientFile);
       }
     });
-    var addedOrUpdated = new ArrayList<ClientFile>();
+    var added = new ArrayList<ClientFile>();
+    var updated = new ArrayList<ClientFile>();
     params.getAddedOrChangedFiles().forEach(clientFileDto -> {
       var clientFile = fromDto(clientFileDto);
-      filesByUri.put(clientFileDto.getUri(), clientFile);
+      var previousFile = filesByUri.put(clientFileDto.getUri(), clientFile);
+      if (previousFile != null) {
+        updated.add(clientFile);
+      } else{
+        added.add(clientFile);
+      }
       var byScope = filesByConfigScopeIdCache.get(clientFileDto.getConfigScopeId());
       byScope.put(clientFileDto.getUri(), clientFile);
-      addedOrUpdated.add(clientFile);
     });
-    eventPublisher.publishEvent(new FileSystemUpdatedEvent(removed, addedOrUpdated));
+    eventPublisher.publishEvent(new FileSystemUpdatedEvent(removed, added, updated));
   }
 
   @EventListener

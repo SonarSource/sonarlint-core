@@ -20,14 +20,17 @@
 package org.sonarsource.sonarlint.core.analysis;
 
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
+import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -39,6 +42,7 @@ import org.springframework.context.event.EventListener;
 public class AnalysisEngineCache {
   private final Path workDir;
   private final long pid;
+  private final ClientFileSystemService clientFileSystemService;
   private final ConfigurationRepository configurationRepository;
   private final PluginsService pluginsService;
   private final NodeJsService nodeJsService;
@@ -46,12 +50,14 @@ public class AnalysisEngineCache {
   private AnalysisEngine standaloneEngine;
   private final Map<String, AnalysisEngine> connectedEnginesByConnectionId = new ConcurrentHashMap<>();
 
-  public AnalysisEngineCache(ConfigurationRepository configurationRepository, NodeJsService nodeJsService, InitializeParams initializeParams, PluginsService pluginsService) {
+  public AnalysisEngineCache(ConfigurationRepository configurationRepository, NodeJsService nodeJsService, InitializeParams initializeParams,
+    PluginsService pluginsService, ClientFileSystemService clientFileSystemService) {
     this.configurationRepository = configurationRepository;
     this.pluginsService = pluginsService;
     this.nodeJsService = nodeJsService;
     this.workDir = initializeParams.getWorkDir();
     this.pid = initializeParams.getClientConstantInfo().getPid();
+    this.clientFileSystemService = clientFileSystemService;
     var shouldSupportCsharp = initializeParams.getEnabledLanguagesInStandaloneMode().contains(Language.CS);
     var languageSpecificRequirements = initializeParams.getLanguageSpecificRequirements();
     if (shouldSupportCsharp && languageSpecificRequirements != null) {
@@ -89,10 +95,17 @@ public class AnalysisEngineCache {
       .setClientPid(pid)
       .setExtraProperties(extraProperties)
       .setNodeJs(nodeJsPath)
-      // TODO support modules
-      .setModulesProvider(Collections::emptyList)
+      .setModulesProvider(this::getModules)
       .build();
     return new AnalysisEngine(analysisEngineConfiguration, plugins, SonarLintLogger.getTargetForCopy());
+  }
+
+  private List<ClientModuleInfo> getModules() {
+    var leafConfigScopeIds = configurationRepository.getLeafConfigScopeIds();
+    return leafConfigScopeIds.stream().map(scopeId -> {
+      var backendModuleFileSystem = new BackendModuleFileSystem(clientFileSystemService, scopeId);
+      return new ClientModuleInfo(scopeId, backendModuleFileSystem);
+    }).collect(Collectors.toList());
   }
 
   @EventListener
@@ -116,7 +129,7 @@ public class AnalysisEngineCache {
   }
 
   private synchronized void stopEngineGracefully(String event) {
-    var engine = connectedEnginesByConnectionId.get(event);
+    var engine = connectedEnginesByConnectionId.remove(event);
     if (engine != null) {
       engine.finishGracefully();
     }
@@ -129,6 +142,15 @@ public class AnalysisEngineCache {
     }
     connectedEnginesByConnectionId.forEach((connectionId, engine) -> engine.finishGracefully());
     connectedEnginesByConnectionId.clear();
+  }
+
+  public void registerModuleIfLeafConfigScope(String scopeId) {
+    if (configurationRepository.isLeafConfigScope(scopeId)) {
+      var analysisEngine = getOrCreateAnalysisEngine(scopeId);
+      var backendModuleFileSystem = new BackendModuleFileSystem(clientFileSystemService, scopeId);
+      var clientModuleInfo = new ClientModuleInfo(scopeId, backendModuleFileSystem);
+      analysisEngine.getModuleRegistry().registerModule(clientModuleInfo);
+    }
   }
 
 }

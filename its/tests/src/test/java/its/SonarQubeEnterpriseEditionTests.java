@@ -52,24 +52,25 @@ import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.permissions.RemoveGroupRequest;
 import org.sonarqube.ws.client.settings.SetRequest;
 import org.sonarqube.ws.client.users.CreateRequest;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.EngineConfiguration;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.RawIssue;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
@@ -114,6 +115,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
   private static Path sonarUserHome;
 
   private static SonarLintRpcServer backend;
+  private static SonarLintRpcClientDelegate client;
 
   private static final Map<String, Boolean> analysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
 
@@ -122,7 +124,6 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     backend.shutdown().get();
   }
 
-  private static SonarLintAnalysisEngine engine;
   private static String singlePointOfExitRuleKey;
 
   @BeforeAll
@@ -164,11 +165,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     analysisReadinessByConfigScopeId.forEach((scopeId, readiness) -> backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(scopeId)));
     analysisReadinessByConfigScopeId.clear();
     rpcClientLogs.clear();
-    try {
-      engine.stop();
-    } catch (Exception e) {
-      // Ignore
-    }
+    ((MockSonarLintRpcClientDelegate) client).clear();
   }
 
   @Nested
@@ -183,11 +180,11 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
     void start(String projectKey) {
       bindProject("project-" + projectKey, projectKey);
+    }
 
-      engine = new SonarLintAnalysisEngine(EngineConfiguration.builder()
-        .setSonarLintUserHome(sonarUserHome)
-        .setLogOutput((msg, level) -> System.out.println(msg))
-        .build(), backend, "orchestrator");
+    @AfterEach
+    void stop() {
+      ((MockSonarLintRpcClientDelegate) client).getRaisedIssues().clear();
     }
 
     @Test
@@ -216,7 +213,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
       var rawIssues = analyzeFile(PROJECT_KEY_C, "src/file.c", "sonar.cfamily.build-wrapper-output", buildWrapperOutput.getAbsolutePath());
 
       assertThat(rawIssues)
-        .extracting(RawIssue::getRuleKey)
+        .extracting(RawIssueDto::getRuleKey)
         .containsOnly("c:S3805", singlePointOfExitRuleKey);
     }
 
@@ -246,7 +243,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
       var rawIssues = analyzeFile(PROJECT_KEY_C, "src/file.c", "sonar.cfamily.build-wrapper-content", buildWrapperContent);
 
       assertThat(rawIssues)
-        .extracting(RawIssue::getRuleKey)
+        .extracting(RawIssueDto::getRuleKey)
         .containsOnly("c:S3805", singlePointOfExitRuleKey);
     }
 
@@ -295,7 +292,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
       var rawIssues = analyzeFile(PROJECT_KEY_CUSTOM_SECRETS, "src/file.md");
 
       assertThat(rawIssues)
-        .extracting(RawIssue::getRuleKey, RawIssue::getMessage)
+        .extracting(RawIssueDto::getRuleKey, RawIssueDto::getPrimaryMessage)
         .containsOnly(tuple("secrets:custom_secret_rule", "User-specified secrets should not be disclosed."));
     }
   }
@@ -309,11 +306,6 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     void setup() throws IOException {
       startBackend(Map.of("cpp", PluginLocator.getCppPluginPath()));
       bindProject("project-" + PROJECT_KEY_C, PROJECT_KEY_C);
-
-      engine = new SonarLintAnalysisEngine(EngineConfiguration.builder()
-        .setSonarLintUserHome(sonarUserHome)
-        .setLogOutput((msg, level) -> System.out.println(msg))
-        .build(), backend, "orchestrator");
     }
 
     /**
@@ -343,7 +335,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
       var rawIssues = analyzeFile(PROJECT_KEY_C, "src/file.c", "sonar.cfamily.build-wrapper-content", buildWrapperContent);
 
       assertThat(rawIssues)
-        .extracting(RawIssue::getRuleKey)
+        .extracting(RawIssueDto::getRuleKey)
         .containsOnly("c:S3805", "c:S1005");
     }
   }
@@ -355,11 +347,19 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     await().atMost(30, SECONDS).untilAsserted(() -> assertThat(analysisReadinessByConfigScopeId).containsEntry(CONFIG_SCOPE_ID, true));
   }
 
-  private List<RawIssue> analyzeFile(String projectDir, String filePath, String... properties) {
-    var issueListener = new SaveIssueListener();
-    engine.analyze(createAnalysisConfiguration(projectDir, filePath, properties),
-      issueListener, null, null, CONFIG_SCOPE_ID);
-    return issueListener.issues;
+  private List<RawIssueDto> analyzeFile(String projectDir, String filePathStr, String... properties) {
+    var filePath = Path.of("projects").resolve(projectDir).resolve(filePathStr);
+    var fileUri = filePath.toUri();
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(),
+      List.of(new ClientFileDto(fileUri, Path.of(filePathStr), CONFIG_SCOPE_ID, false, null, filePath.toAbsolutePath(), null))));
+
+    var analyzeResponse = backend.getAnalysisService().analyzeFiles(
+      new AnalyzeFilesParams(CONFIG_SCOPE_ID, List.of(fileUri), toMap(properties), System.currentTimeMillis())
+    ).join();
+
+    assertThat(analyzeResponse.getFailedAnalysisFiles()).isEmpty();
+    var raisedIssues = ((MockSonarLintRpcClientDelegate) client).getRaisedIssues(CONFIG_SCOPE_ID);
+    return raisedIssues != null ? raisedIssues : List.of();
   }
 
   private static void removeGroupPermission(String groupName, String permission) {
@@ -400,7 +400,8 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     var serverToClientInputStream = new PipedInputStream(serverToClientOutputStream);
 
     new BackendJsonRpcLauncher(clientToServerInputStream, serverToClientOutputStream);
-    var clientLauncher = new ClientJsonRpcLauncher(serverToClientInputStream, clientToServerOutputStream, newDummySonarLintClient());
+    client = newDummySonarLintClient();
+    var clientLauncher = new ClientJsonRpcLauncher(serverToClientInputStream, clientToServerOutputStream, client);
 
     backend = clientLauncher.getServerProxy();
     try {
