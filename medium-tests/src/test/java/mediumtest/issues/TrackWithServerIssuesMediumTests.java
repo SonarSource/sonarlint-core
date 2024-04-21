@@ -197,7 +197,7 @@ class TrackWithServerIssuesMediumTests {
     var issueKey = "issueKey";
     server = newSonarQubeServer().withProject("projectKey", project -> project.withFile(serverFilePath)).start();
     var client = newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, List.of(new ClientFileDto(URI.create("file://foo"), Paths.get(ideFilePath), CONFIG_SCOPE_ID, null, null, null, null)))
+      .withInitialFs(CONFIG_SCOPE_ID, List.of(new ClientFileDto(URI.create("file://foo"), Paths.get(ideFilePath), CONFIG_SCOPE_ID, null, null, null, null, null)))
       .build();
     var serverIssue = aServerIssue(issueKey)
       .withFilePath(serverFilePath)

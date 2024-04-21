@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import javax.annotation.Nullable;
 import org.apache.commons.compress.utils.FileNameUtils;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 
 public class ClientFile {
 
@@ -59,6 +60,8 @@ public class ClientFile {
    */
   @Nullable
   private Path fsPath;
+  @Nullable
+  private final SonarLanguage detectedLanguage;
 
   /**
    * Tell if the file content is flushed on disk?
@@ -72,13 +75,15 @@ public class ClientFile {
   @Nullable
   private String clientProvidedContent;
 
-  public ClientFile(URI uri, String configScopeId, Path relativePath, @Nullable Boolean isTest, @Nullable Charset charset, @Nullable Path fsPath) {
+  public ClientFile(URI uri, String configScopeId, Path relativePath, @Nullable Boolean isTest, @Nullable Charset charset, @Nullable Path fsPath,
+    @Nullable SonarLanguage detectedLanguage) {
     this.uri = uri;
     this.configScopeId = configScopeId;
     this.relativePath = relativePath;
     this.isTest = isTest;
     this.charset = charset;
     this.fsPath = fsPath;
+    this.detectedLanguage = detectedLanguage;
   }
 
   public Path getClientRelativePath() {
@@ -142,6 +147,11 @@ public class ClientFile {
 
   public boolean isTest() {
     return Boolean.TRUE == isTest;
+  }
+
+  @Nullable
+  public SonarLanguage getDetectedLanguage() {
+    return detectedLanguage;
   }
 
   @Override

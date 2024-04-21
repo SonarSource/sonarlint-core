@@ -36,8 +36,11 @@ public class ClientFileDto {
   private final Path fsPath;
   @Nullable
   private final String content;
+  @Nullable
+  private final Language detectedLanguage;
 
-  public ClientFileDto(URI uri, Path relativePath, String configScopeId, @Nullable Boolean isTest, @Nullable String charset, @Nullable Path fsPath, @Nullable String content) {
+  public ClientFileDto(URI uri, Path relativePath, String configScopeId, @Nullable Boolean isTest, @Nullable String charset, @Nullable Path fsPath, @Nullable String content,
+    @Nullable Language detectedLanguage) {
     this.uri = uri;
     this.ideRelativePath = relativePath;
     this.configScopeId = configScopeId;
@@ -45,6 +48,7 @@ public class ClientFileDto {
     this.charset = charset;
     this.fsPath = fsPath;
     this.content = content;
+    this.detectedLanguage = detectedLanguage;
   }
 
   public URI getUri() {
@@ -75,5 +79,10 @@ public class ClientFileDto {
   @Nullable
   public String getContent() {
     return content;
+  }
+
+  @Nullable
+  public Language getDetectedLanguage() {
+    return detectedLanguage;
   }
 }
