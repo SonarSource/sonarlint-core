@@ -51,6 +51,7 @@ import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionCredentialsChangedEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
+import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
 import org.sonarsource.sonarlint.core.progress.ProgressNotifier;
 import org.sonarsource.sonarlint.core.progress.TaskManager;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -93,6 +94,7 @@ public class SynchronizationService {
   private final HotspotSynchronizationService hotspotSynchronizationService;
   private final SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService;
   private final SonarProjectBranchTrackingService sonarProjectBranchTrackingService;
+  private final PluginsRepository pluginsRepository;
   private final ApplicationEventPublisher applicationEventPublisher;
   private final ExecutorServiceShutdownWatchable<ScheduledExecutorService> scheduledSynchronizer = new ExecutorServiceShutdownWatchable<>(
     Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "SonarLint Local Storage Synchronizer")));
@@ -102,7 +104,7 @@ public class SynchronizationService {
     ServerApiProvider serverApiProvider, StorageService storageService, InitializeParams params, TaintSynchronizationService taintSynchronizationService,
     IssueSynchronizationService issueSynchronizationService, HotspotSynchronizationService hotspotSynchronizationService,
     SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService, SonarProjectBranchTrackingService sonarProjectBranchTrackingService,
-    ApplicationEventPublisher applicationEventPublisher) {
+    PluginsRepository pluginsRepository, ApplicationEventPublisher applicationEventPublisher) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
@@ -117,6 +119,7 @@ public class SynchronizationService {
     this.hotspotSynchronizationService = hotspotSynchronizationService;
     this.sonarProjectBranchesSynchronizationService = sonarProjectBranchesSynchronizationService;
     this.sonarProjectBranchTrackingService = sonarProjectBranchTrackingService;
+    this.pluginsRepository = pluginsRepository;
     this.applicationEventPublisher = applicationEventPublisher;
   }
 
@@ -301,6 +304,8 @@ public class SynchronizationService {
       LOG.debug("Synchronizing storage of connection '{}'", connectionId);
       var summary = serverConnection.sync(serverApi, cancelMonitor);
       if (summary.anyPluginSynchronized()) {
+        // TODO re-review this solution before merging
+        pluginsRepository.unload(connectionId);
         applicationEventPublisher.publishEvent(new PluginsSynchronizedEvent(connectionId));
       }
       scopesToSync = scopesToSync.stream()
