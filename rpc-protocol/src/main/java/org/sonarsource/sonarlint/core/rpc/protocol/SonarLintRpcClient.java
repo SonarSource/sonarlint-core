@@ -249,8 +249,8 @@ public interface SonarLintRpcClient {
   /**
    * Called during an analysis when a secret is detected in user code.
    * Clients are expected to display a visual notification to users.
-   * This method is called only once per session.
-   * Clients can decide to persist that they already notified the user, and can skip showing the notification for next sessions.
+   * This method might be called after each analysis.
+   * Clients can decide to persist that they already notified the user, and can skip showing the notification.
    */
   @JsonNotification
   default void didDetectSecret(DidDetectSecretParams params) {

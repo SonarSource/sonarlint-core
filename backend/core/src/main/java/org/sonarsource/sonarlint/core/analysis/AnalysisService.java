@@ -139,7 +139,6 @@ public class AnalysisService {
   private final ApplicationEventPublisher eventPublisher;
   private final boolean isDataflowBugDetectionEnabled;
   private final Map<String, Boolean> analysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
-  private boolean alreadyDetectedSecret;
 
   public AnalysisService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
     StorageService storageService, PluginsService pluginsService, RulesService rulesService, RulesRepository rulesRepository,
@@ -581,8 +580,7 @@ public class AnalysisService {
     if (activeRule != null) {
       reportedRuleKeys.add(ruleKey);
       client.didRaiseIssue(new DidRaiseIssueParams(configScopeId, analysisId, toDto(issue, activeRule)));
-      if (ruleKey.contains("secrets") && !alreadyDetectedSecret) {
-        alreadyDetectedSecret = true;
+      if (ruleKey.contains("secrets")) {
         client.didDetectSecret(new DidDetectSecretParams(configScopeId));
       }
     }
