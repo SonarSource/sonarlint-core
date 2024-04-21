@@ -123,7 +123,7 @@ class PathTranslationServiceTests {
 
   private void mockClientFilePaths(String... paths) {
     doReturn(Arrays.stream(paths)
-      .map(path -> new ClientFile(null, null, Paths.get(path), null, null, null))
+      .map(path -> new ClientFile(null, null, Paths.get(path), null, null, null, null))
       .collect(Collectors.toList()))
       .when(clientFs)
       .getFiles(CONFIG_SCOPE);

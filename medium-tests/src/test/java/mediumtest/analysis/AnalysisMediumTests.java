@@ -105,7 +105,7 @@ class AnalysisMediumTests {
         + "</project>");
     var fileUri = filePath.toUri();
     var client = newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null)))
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
       .build();
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
@@ -145,7 +145,7 @@ class AnalysisMediumTests {
         + "</project>");
     var fileUri = filePath.toUri();
     var client = newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null)))
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
       .build();
     backend = newBackend()
       .withSonarQubeConnection("connectionId",
@@ -172,7 +172,7 @@ class AnalysisMediumTests {
       "public class Main {}");
     var fileUri = filePath.toUri();
     var client = newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null)))
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
       .build();
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
@@ -192,7 +192,7 @@ class AnalysisMediumTests {
       "KEY = \"AKIAIGKECZXA7AEIJLMQ\"");
     var fileUri = filePath.toUri();
     var client = newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null)))
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
       .build();
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
@@ -217,8 +217,8 @@ class AnalysisMediumTests {
     var fileIssueUri = fileIssue.toUri();
     var fileFuncDefUri = fileFuncDef.toUri();
     var client = newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileIssueUri, baseDir.relativize(fileIssue), CONFIG_SCOPE_ID, false, null, fileIssue, null),
-        new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef), CONFIG_SCOPE_ID, false, null, fileFuncDef, null)))
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileIssueUri, baseDir.relativize(fileIssue), CONFIG_SCOPE_ID, false, null, fileIssue, null, null),
+        new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef), CONFIG_SCOPE_ID, false, null, fileFuncDef, null, null)))
       .build();
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
@@ -264,8 +264,8 @@ class AnalysisMediumTests {
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
       new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, false, CONFIG_SCOPE_ID, null))));
     backend.getFileService().didUpdateFileSystem(
-      new DidUpdateFileSystemParams(List.of(), List.of(new ClientFileDto(fileIssueUri, baseDir.relativize(fileIssue), CONFIG_SCOPE_ID, false, null, fileIssue, null),
-        new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef), CONFIG_SCOPE_ID, false, null, fileFuncDef, null))));
+      new DidUpdateFileSystemParams(List.of(), List.of(new ClientFileDto(fileIssueUri, baseDir.relativize(fileIssue), CONFIG_SCOPE_ID, false, null, fileIssue, null, null),
+        new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef), CONFIG_SCOPE_ID, false, null, fileFuncDef, null, null))));
 
     result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId,
       List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
@@ -299,10 +299,10 @@ class AnalysisMediumTests {
     var parentConfigScope = "parentConfigScope";
     var leafConfigScope = "leafConfigScope";
     var client = newFakeClient()
-      .withInitialFs(parentConfigScope, baseDir, List.of(new ClientFileDto(file1IssueUri, baseDir.relativize(file1Issue), parentConfigScope, false, null, file1Issue, null),
-        new ClientFileDto(file1FuncDefUri, baseDir.relativize(file1FuncDef), parentConfigScope, false, null, file1FuncDef, null)))
-      .withInitialFs(leafConfigScope, baseDir, List.of(new ClientFileDto(file2IssueUri, baseDir.relativize(file2Issue), leafConfigScope, false, null, file2Issue, null),
-        new ClientFileDto(file2FuncDefUri, baseDir.relativize(file2FuncDef), leafConfigScope, false, null, file2FuncDef, null)))
+      .withInitialFs(parentConfigScope, baseDir, List.of(new ClientFileDto(file1IssueUri, baseDir.relativize(file1Issue), parentConfigScope, false, null, file1Issue, null, null),
+        new ClientFileDto(file1FuncDefUri, baseDir.relativize(file1FuncDef), parentConfigScope, false, null, file1FuncDef, null, null)))
+      .withInitialFs(leafConfigScope, baseDir, List.of(new ClientFileDto(file2IssueUri, baseDir.relativize(file2Issue), leafConfigScope, false, null, file2Issue, null, null),
+        new ClientFileDto(file2FuncDefUri, baseDir.relativize(file2FuncDef), leafConfigScope, false, null, file2FuncDef, null, null)))
       .build();
     backend = newBackend()
       .withUnboundConfigScope(parentConfigScope)
@@ -336,7 +336,7 @@ class AnalysisMediumTests {
     var fileIssueUri = fileIssue.toUri();
     var client = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileIssueUri, baseDir.relativize(fileIssue),
-        CONFIG_SCOPE_ID, false, null, fileIssue, null)))
+        CONFIG_SCOPE_ID, false, null, fileIssue, null, null)))
       .build();
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
@@ -356,7 +356,7 @@ class AnalysisMediumTests {
         "    print(a)\n");
     var fileFuncDefUri = fileFuncDef.toUri();
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(),
-      List.of(new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef), CONFIG_SCOPE_ID, false, null, fileFuncDef, null))));
+      List.of(new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef), CONFIG_SCOPE_ID, false, null, fileFuncDef, null, null))));
 
     parentConfigScopeResult = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID,
       analysisId, List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
@@ -382,9 +382,9 @@ class AnalysisMediumTests {
     var fileFuncDefUri = fileFuncDef.toUri();
     var client = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileIssueUri, baseDir.relativize(fileIssue),
-        CONFIG_SCOPE_ID, false, null, fileIssue, null),
+        CONFIG_SCOPE_ID, false, null, fileIssue, null, null),
         new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef),
-          CONFIG_SCOPE_ID, false, null, fileFuncDef, null)))
+          CONFIG_SCOPE_ID, false, null, fileFuncDef, null, null)))
       .build();
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
@@ -426,9 +426,9 @@ class AnalysisMediumTests {
     var fileFuncDefUri = fileFuncDef.toUri();
     var client = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileIssueUri, baseDir.relativize(fileIssue),
-        CONFIG_SCOPE_ID, false, null, fileIssue, null),
+        CONFIG_SCOPE_ID, false, null, fileIssue, null, null),
         new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef),
-          CONFIG_SCOPE_ID, false, null, fileFuncDef, null)))
+          CONFIG_SCOPE_ID, false, null, fileFuncDef, null, null)))
       .build();
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
@@ -449,7 +449,7 @@ class AnalysisMediumTests {
     editFile(baseDir, "fileFuncDef.py", "");
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(),
       List.of(new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef),
-        CONFIG_SCOPE_ID, false, null, fileFuncDef, ""))));
+        CONFIG_SCOPE_ID, false, null, fileFuncDef, "", null))));
 
     result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId,
       List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
