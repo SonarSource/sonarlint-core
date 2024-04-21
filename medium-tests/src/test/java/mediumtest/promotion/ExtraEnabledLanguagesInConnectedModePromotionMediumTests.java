@@ -57,7 +57,7 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
     var abapFile = tempDir.resolve("file.abap");
     Files.createFile(abapFile);
     var fakeClient = newFakeClient()
-      .withInitialFs("configScopeId", tempDir, List.of(new ClientFileDto(abapFile.toUri(), tempDir.relativize(abapFile), "configScopeId", false, null, abapFile, null)))
+      .withInitialFs("configScopeId", tempDir, List.of(new ClientFileDto(abapFile.toUri(), tempDir.relativize(abapFile), "configScopeId", false, null, abapFile, null, null)))
       .build();
     backend = newBackend()
       .withExtraEnabledLanguagesInConnectedMode(Language.ABAP)
@@ -76,7 +76,7 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
     var abapFile = tempDir.resolve("file.abap");
     Files.createFile(abapFile);
     var fakeClient = newFakeClient()
-      .withInitialFs("configScopeId", tempDir, List.of(new ClientFileDto(abapFile.toUri(), tempDir.relativize(abapFile), "configScopeId", false, null, abapFile, null)))
+      .withInitialFs("configScopeId", tempDir, List.of(new ClientFileDto(abapFile.toUri(), tempDir.relativize(abapFile), "configScopeId", false, null, abapFile, null, null)))
       .build();
     backend = newBackend()
       .withExtraEnabledLanguagesInConnectedMode(Language.ABAP)
@@ -96,7 +96,7 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
     var abapFile = tempDir.resolve("file.abap");
     Files.createFile(abapFile);
     var fakeClient = newFakeClient()
-      .withInitialFs("configScopeId", tempDir, List.of(new ClientFileDto(abapFile.toUri(), tempDir.relativize(abapFile), "configScopeId", false, null, abapFile, null)))
+      .withInitialFs("configScopeId", tempDir, List.of(new ClientFileDto(abapFile.toUri(), tempDir.relativize(abapFile), "configScopeId", false, null, abapFile, null, null)))
       .build();
     backend = newBackend()
       .withEnabledLanguageInStandaloneMode(Language.ABAP)

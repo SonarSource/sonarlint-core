@@ -32,6 +32,7 @@ import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
@@ -70,11 +71,14 @@ public class ClientFileSystemService {
 
   private static ClientFile fromDto(ClientFileDto clientFileDto) {
     var charset = charsetFromDto(clientFileDto.getCharset());
+    var forcedLanguage = clientFileDto.getDetectedLanguage();
+    var forcedSonarLanguage = forcedLanguage == null ? null : SonarLanguage.valueOf(forcedLanguage.name());
     var file = new ClientFile(clientFileDto.getUri(), clientFileDto.getConfigScopeId(),
       clientFileDto.getIdeRelativePath(),
       clientFileDto.isTest(),
       charset,
-      clientFileDto.getFsPath());
+      clientFileDto.getFsPath(),
+      forcedSonarLanguage);
     if (clientFileDto.getContent() != null) {
       file.setDirty(clientFileDto.getContent());
     }
