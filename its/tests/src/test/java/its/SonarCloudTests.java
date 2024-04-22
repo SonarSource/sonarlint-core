@@ -422,7 +422,8 @@ class SonarCloudTests extends AbstractConnectedTests {
     openBoundConfigurationScope(configScopeId, projectKeyRuby);
     waitForAnalysisToBeReady(configScopeId);
 
-    analyze(projectKeyRuby, "src/hello.rb", configScopeId);
+    var issues = analyze(projectKeyRuby, "src/hello.rb", configScopeId);
+    assertThat(issues).hasSize(1);
   }
 
   @Test
@@ -436,7 +437,8 @@ class SonarCloudTests extends AbstractConnectedTests {
     openBoundConfigurationScope(configScopeId, projectKeyKotlin);
     waitForAnalysisToBeReady(configScopeId);
 
-    analyze(projectKeyKotlin, "src/hello.kt", configScopeId);
+    var issues = analyze(projectKeyKotlin, "src/hello.kt", configScopeId);
+    assertThat(issues).hasSize(1);
   }
 
   @Test
@@ -450,7 +452,8 @@ class SonarCloudTests extends AbstractConnectedTests {
     openBoundConfigurationScope(configScopeId, projectKeyScala);
     waitForAnalysisToBeReady(configScopeId);
 
-    analyze(projectKeyScala, "src/Hello.scala", configScopeId);
+    var issues = analyze(projectKeyScala, "src/Hello.scala", configScopeId);
+    assertThat(issues).hasSize(1);
   }
 
   @Test
@@ -464,7 +467,8 @@ class SonarCloudTests extends AbstractConnectedTests {
     openBoundConfigurationScope(configScopeId, projectKeyXml);
     waitForAnalysisToBeReady(configScopeId);
 
-    analyze(projectKeyXml, "src/foo.xml", configScopeId);
+    var issues = analyze(projectKeyXml, "src/foo.xml", configScopeId);
+    assertThat(issues).hasSize(1);
   }
 
   @Test
