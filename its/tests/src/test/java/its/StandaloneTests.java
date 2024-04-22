@@ -28,6 +28,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -65,6 +66,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import static its.AbstractConnectedTests.toMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.awaitility.Awaitility.await;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.COBOL;
 
 class StandaloneTests {
@@ -186,6 +188,8 @@ class StandaloneTests {
     ).join();
 
     assertThat(analyzeResponse.getFailedAnalysisFiles()).isEmpty();
+    // it could happen that the notification is not yet received while the analysis request is finished.
+    await().atMost(Duration.ofMillis(200)).untilAsserted(() -> assertThat(((MockSonarLintRpcClientDelegate) client).getRaisedIssues(configScopeId)).isNotEmpty());
     var raisedIssues = ((MockSonarLintRpcClientDelegate) client).getRaisedIssues(configScopeId);
     ((MockSonarLintRpcClientDelegate) client).getRaisedIssues().clear();
     return raisedIssues != null ? raisedIssues : List.of();
