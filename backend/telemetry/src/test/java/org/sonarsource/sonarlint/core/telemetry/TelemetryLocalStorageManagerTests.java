@@ -241,7 +241,7 @@ class TelemetryLocalStorageManagerTests {
 
     Runnable read = storageManager::lastUploadTime;
     Runnable write = () -> storageManager.tryUpdateAtomically(TelemetryLocalStorage::incrementShowIssueRequestCount);
-    List<Void> ignored = Stream.of(
+    Stream.of(
         IntStream.range(0, 100).mapToObj(operand -> CompletableFuture.runAsync(write)),
         IntStream.range(0, 100).mapToObj(value -> CompletableFuture.runAsync(read)),
         IntStream.range(0, 100).mapToObj(operand -> CompletableFuture.runAsync(write)),
