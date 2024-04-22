@@ -2,14 +2,23 @@
 
 ## Breaking changes
 
+* Replace the last constructor parameter of `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams`.
+  * Clients should provide an instance of `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSpecificRequirements`.
+  * The previous Node.js path parameter is now part of this new `LanguageSpecificRequirements`, together with configuration related to Omnisharp.
+  * For clients not executing analysis via the backend, or not supporting C#, a `null` value can be passes as the 2nd parameter of the `LanguageSpecificRequirements` constructor
+
+* Introduce a new parameter in the constructor of `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto`.
+  * Clients should provide the PID of the host process.
+  * For clients not executing analysis via the backend, this parameter is not used, so a dummy value can be provided.
+
 * Introduce a new parameter in the constructor of `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto`: `enableTelemetry`.
   * This flag lets clients completely disable the telemetry, which can be useful when using Sloop in the context of tests.
   * The flag replaces the `sonarlint.telemetry.disabled` system property.
   * For clients that want to keep the same behavior, they can read the system property on the client side and pass it to the `FeatureFlagsDto` constructor.
 
 * Stop leaking LSP4J types in API (SLCORE-663) and wrap them in SonarLint classes instead
-    * `org.eclipse.lsp4j.jsonrpc.messages.Either` replaced by `org.sonarsource.sonarlint.core.rpc.protocol.common.Either`
-    * `org.eclipse.lsp4j.jsonrpc.CancelChecker` replaced by `org.sonarsource.sonarlint.core.rpc.client.SonarLintCancelChecker`
+  * `org.eclipse.lsp4j.jsonrpc.messages.Either` replaced by `org.sonarsource.sonarlint.core.rpc.protocol.common.Either`
+  * `org.eclipse.lsp4j.jsonrpc.CancelChecker` replaced by `org.sonarsource.sonarlint.core.rpc.client.SonarLintCancelChecker`
 
 * Add new client method `org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate#suggestConnection`.
   * This method is used when binding settings are found for an unknown connection.
