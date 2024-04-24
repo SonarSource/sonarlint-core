@@ -61,6 +61,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordA
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.info.GetClientLiveInfoResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.PublishIssuesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
@@ -325,6 +326,11 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   @Override
   public void didRaiseIssue(DidRaiseIssueParams params) {
     notify(() -> delegate.didRaiseIssue(params.getConfigurationScopeId(), params.getAnalysisId(), params.getRawIssue()));
+  }
+
+  @Override
+  public void publishIssues(PublishIssuesParams params) {
+    notify(() -> delegate.publishIssues(params.getIssuesByFileUri(), params.isIntermediatePublication(), params.getAnalysisId()));
   }
 
   @Override
