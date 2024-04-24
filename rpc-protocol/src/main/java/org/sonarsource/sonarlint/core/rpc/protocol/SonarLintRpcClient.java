@@ -24,6 +24,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidDetectSecretParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.PublishIssuesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingPluginParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -233,6 +234,16 @@ public interface SonarLintRpcClient {
    */
   @JsonNotification
   default void didRaiseIssue(DidRaiseIssueParams params) {
+  }
+
+  /**
+   * Called when some issues should be published to the users.
+   * The parameters contain a Map of issues by file URI. This list also includes Security Hotspots.
+   * Clients are expected to update the issues list in the UI.
+   * This method might be called in the context of issue streaming, so it might be called frequently.
+   */
+  @JsonNotification
+  default void publishIssues(PublishIssuesParams params) {
   }
 
   /**
