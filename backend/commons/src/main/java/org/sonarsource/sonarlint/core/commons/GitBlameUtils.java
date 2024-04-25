@@ -45,25 +45,25 @@ public class GitBlameUtils {
     for (Map.Entry<Path, List<LinesRange>> linesRangesByPathEntry : linesRangesByPath.entrySet()) {
       var filePath = linesRangesByPathEntry.getKey().toString();
       var blameForFile = fileBlameByPath.get(filePath);
-      var dateByLinesRange = getLatestChangeDateForLineRanges(linesRangesByPathEntry, blameForFile);
+      var dateByLinesRange = getLatestChangeDateForLinesRanges(linesRangesByPathEntry, blameForFile);
       results.put(linesRangesByPathEntry.getKey(), dateByLinesRange);
     }
     return results;
   }
 
-  private static HashMap<LinesRange, Date> getLatestChangeDateForLineRanges(Map.Entry<Path, List<LinesRange>> linesRangeForPath,
+  private static HashMap<LinesRange, Date> getLatestChangeDateForLinesRanges(Map.Entry<Path, List<LinesRange>> linesRangeForPath,
     BlameResult.FileBlame blameForFile) {
     var dateByLinesRange = new HashMap<LinesRange, Date>();
 
     for (LinesRange linesRange : linesRangeForPath.getValue()) {
-      var latestDate = getLatestDateInLinesRange(blameForFile, linesRange);
+      var latestDate = getLatestChangeDateFirLinesRange(blameForFile, linesRange);
       dateByLinesRange.put(linesRange, latestDate);
     }
 
     return dateByLinesRange;
   }
 
-  private static Date getLatestDateInLinesRange(BlameResult.FileBlame blameForFile, LinesRange linesRange) {
+  private static Date getLatestChangeDateFirLinesRange(BlameResult.FileBlame blameForFile, LinesRange linesRange) {
     var latestDate = blameForFile.getCommitDates()[linesRange.getStartLine()];
 
     for (var i = linesRange.getStartLine() + 1; i <= linesRange.getEndLine() && i < blameForFile.lines(); i++) {
