@@ -67,8 +67,9 @@ class AnalysisServiceTests {
       new ClientInputFileEdit(clientInputFile, List.of(new TextEdit(
         new TextRange(5,6,7,8), "Quick fix text")))),
       "Quick fix message")), Optional.of(""));
-    var ruleDetailsResponse = new GetRuleDetailsResponse(IssueSeverity.BLOCKER, RuleType.BUG, CleanCodeAttribute.CLEAR,
-      List.of(), VulnerabilityProbability.HIGH);
+    var ruleDetailsResponse = new RuleDetailsForAnalysis(org.sonarsource.sonarlint.core.commons.IssueSeverity.BLOCKER,
+      org.sonarsource.sonarlint.core.commons.RuleType.BUG, org.sonarsource.sonarlint.core.commons.CleanCodeAttribute.CLEAR,
+      Map.of(), org.sonarsource.sonarlint.core.commons.VulnerabilityProbability.HIGH);
 
     var rawIssueDto = AnalysisService.toDto(issue, ruleDetailsResponse);
 

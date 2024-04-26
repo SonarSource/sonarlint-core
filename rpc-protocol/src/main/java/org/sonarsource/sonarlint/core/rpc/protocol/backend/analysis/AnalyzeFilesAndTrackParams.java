@@ -24,25 +24,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * @deprecated
- * Use {@link AnalyzeFilesAndTrackParams} to trigger an analysis with tracking on the core side.
- */
-@Deprecated(since = "10.2")
-public class AnalyzeFilesParams {
+public class AnalyzeFilesAndTrackParams {
   private final String configurationScopeId;
   // this is a random id provided by the client that will be used to correlate the raw issues notified back to the client
   private final UUID analysisId;
   private final List<URI> filesToAnalyze;
   private final Map<String, String> extraProperties;
+  private final boolean shouldFetchServerIssues;
   // this is determined by the client as other operations could occur before reaching the backend
   private final long startTime;
 
-  public AnalyzeFilesParams(String configurationScopeId, UUID analysisId, List<URI> filesToAnalyze, Map<String, String> extraProperties, long startTime) {
+  public AnalyzeFilesAndTrackParams(String configurationScopeId, UUID analysisId, List<URI> filesToAnalyze, Map<String, String> extraProperties,
+    boolean shouldFetchServerIssues, long startTime) {
     this.configurationScopeId = configurationScopeId;
     this.analysisId = analysisId;
     this.filesToAnalyze = filesToAnalyze;
     this.extraProperties = extraProperties;
+    this.shouldFetchServerIssues = shouldFetchServerIssues;
     this.startTime = startTime;
   }
 
@@ -64,5 +62,9 @@ public class AnalyzeFilesParams {
 
   public long getStartTime() {
     return startTime;
+  }
+
+  public boolean isShouldFetchServerIssues() {
+    return shouldFetchServerIssues;
   }
 }
