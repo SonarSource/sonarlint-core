@@ -37,6 +37,7 @@ import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.appendFi
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createFile;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRepository;
+import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.modifyFile;
 
 class SonarLintBlameResultTest {
 
@@ -81,6 +82,34 @@ class SonarLintBlameResultTest {
     assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(2, 3))).isPresent().contains(c2);
     assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileB"), new LinesRange(1, 2))).isPresent().contains(c3);
     assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileC"), new LinesRange(1, 2))).isEmpty();
+  }
+
+  @Test
+  void it_should_handle_all_line_range_modified() throws IOException, GitAPIException {
+    createFile(gitDirPath, "fileA", "line1", "line2", "line3");
+    var c1 = commit(git, "fileA");
+
+    var results = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA")));
+    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(0, 2))).isPresent().contains(c1);
+
+    modifyFile(gitDirPath.resolve("fileA"), "new line1", "new line2", "new line3");
+
+    results = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA")));
+    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(0, 2))).isEmpty();
+  }
+
+  @Test
+  void it_should_handle_end_of_line_range_modified() throws IOException, GitAPIException {
+    createFile(gitDirPath, "fileA", "line1", "line2");
+    var c1 = commit(git, "fileA");
+
+    var results = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA")));
+    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(0, 2))).isPresent().contains(c1);
+
+    appendFile(gitDirPath.resolve("fileA"), "new line3", "new line4");
+
+    results = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA")));
+    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(0, 2))).isEmpty();
   }
 
   @Test

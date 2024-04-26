@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.commons;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import org.sonar.scm.git.blame.BlameResult;
 
 public class SonarLintBlameResult {
@@ -43,10 +44,17 @@ public class SonarLintBlameResult {
 
     for (var i = linesRange.getStartLine() + 1; i <= linesRange.getEndLine() && i < blameForFile.lines(); i++) {
       var dateForLine = blameForFile.getCommitDates()[i];
+      if (isLineRangeModified(dateForLine, latestDate)) {
+        return Optional.empty();
+      }
       latestDate = latestDate.after(dateForLine) ? latestDate : dateForLine;
     }
 
-    return Optional.of(latestDate);
+    return Optional.ofNullable(latestDate);
+  }
+
+  private static boolean isLineRangeModified(@Nullable Date dateForLine, @Nullable Date latestDate) {
+    return dateForLine == null || latestDate == null;
   }
 
   public BlameResult getBlameResult() {

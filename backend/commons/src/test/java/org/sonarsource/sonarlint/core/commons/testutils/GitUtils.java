@@ -63,4 +63,9 @@ public class GitUtils {
     var content = String.join(System.lineSeparator(), lines) + System.lineSeparator();
     Files.write(file, content.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND);
   }
+  public static void modifyFile(Path file, String... lines) throws IOException {
+    var content = String.join(System.lineSeparator(), lines) + System.lineSeparator();
+    Files.write(file, content.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+  }
+
 }
