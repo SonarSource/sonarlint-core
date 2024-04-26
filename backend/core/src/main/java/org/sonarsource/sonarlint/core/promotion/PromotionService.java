@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.promotion;
 
-import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.inject.Named;
@@ -50,7 +50,10 @@ public class PromotionService {
   public void onAnalysisFinished(AnalysisFinishedEvent event) {
     var configurationScopeId = event.getConfigurationScopeId();
     if (isStandalone(configurationScopeId)) {
-      promoteExtraEnabledLanguagesInConnectedMode(configurationScopeId, event.getDetectedLanguages());
+      var languagesToPromote = getLanguagesToPromote(event.getDetectedLanguages());
+      if (!languagesToPromote.isEmpty()) {
+        client.promoteExtraEnabledLanguagesInConnectedMode(new PromoteExtraEnabledLanguagesInConnectedModeParams(configurationScopeId, languagesToPromote));
+      }
     }
   }
 
@@ -58,11 +61,9 @@ public class PromotionService {
     return configurationRepository.getEffectiveBinding(configurationScopeId).isEmpty();
   }
 
-  private void promoteExtraEnabledLanguagesInConnectedMode(String configurationScopeId, Set<SonarLanguage> detectedLanguages) {
-    var languagesToPromote = EnumSet.copyOf(detectedLanguages.stream().map(sonarLanguage -> Language.valueOf(sonarLanguage.name())).collect(Collectors.toSet()));
+  private Set<Language> getLanguagesToPromote(Set<SonarLanguage> detectedLanguages) {
+    var languagesToPromote = detectedLanguages.stream().map(sonarLanguage -> Language.valueOf(sonarLanguage.name())).collect(Collectors.toCollection(HashSet::new));
     languagesToPromote.retainAll(extraEnabledLanguagesInConnectedMode);
-    if (!languagesToPromote.isEmpty()) {
-      client.promoteExtraEnabledLanguagesInConnectedMode(new PromoteExtraEnabledLanguagesInConnectedModeParams(configurationScopeId, languagesToPromote));
-    }
+    return languagesToPromote;
   }
 }

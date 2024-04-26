@@ -34,12 +34,17 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.after;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
@@ -92,7 +97,7 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
   }
 
   @Test
-  void it_should_not_notify_clients_when_no_extra_detected_languages(@TempDir Path tempDir) throws IOException {
+  void it_should_not_notify_clients_when_detected_language_is_not_an_extra_language(@TempDir Path tempDir) throws IOException {
     var abapFile = tempDir.resolve("file.abap");
     Files.createFile(abapFile);
     var fakeClient = newFakeClient()
@@ -108,5 +113,24 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
     backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams("configScopeId", UUID.randomUUID(), List.of(abapFile.toUri()), Map.of(), 0)).join();
 
     verify(fakeClient, after(200).never()).promoteExtraEnabledLanguagesInConnectedMode("configScopeId", Set.of(Language.ABAP));
+  }
+
+  @Test
+  void it_should_not_notify_clients_when_no_language_was_detected_during_analysis(@TempDir Path tempDir) throws IOException {
+    var randomFile = tempDir.resolve("file.abc");
+    Files.createFile(randomFile);
+    var fakeClient = newFakeClient()
+      .withInitialFs("configScopeId", tempDir, List.of(new ClientFileDto(randomFile.toUri(), tempDir.relativize(randomFile), "configScopeId", false, null, randomFile, null, null)))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope("configScopeId")
+      .withEmbeddedServer()
+      .withTelemetryEnabled()
+      .build(fakeClient);
+
+    backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams("configScopeId", UUID.randomUUID(), List.of(randomFile.toUri()), Map.of(), 0)).join();
+
+    verify(fakeClient, after(200).never()).promoteExtraEnabledLanguagesInConnectedMode(eq("configScopeId"), anySet());
+    verify(fakeClient, never()).log(argThat(logParams -> logParams.getLevel().equals(LogLevel.ERROR)));
   }
 }
