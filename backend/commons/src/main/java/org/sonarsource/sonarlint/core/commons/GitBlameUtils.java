@@ -20,16 +20,11 @@
 package org.sonarsource.sonarlint.core.commons;
 
 import java.nio.file.Path;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.RawTextComparator;
 import org.eclipse.jgit.lib.Repository;
-import org.sonar.scm.git.blame.BlameResult;
 import org.sonar.scm.git.blame.RepositoryBlameCommand;
 
 public class GitBlameUtils {
@@ -38,50 +33,15 @@ public class GitBlameUtils {
     // Utility class
   }
 
-  static Map<Path, Map<LinesRange, Date>> getLatestChangeDateForFilesLines(Repository repo, Map<Path, List<LinesRange>> linesRangesByPath) {
-    var results = new HashMap<Path, Map<LinesRange, Date>>();
-    var blameResult = blameWithFilesGitCommand(repo, linesRangesByPath.keySet());
-    var fileBlameByPath = blameResult.getFileBlameByPath();
-    for (Map.Entry<Path, List<LinesRange>> linesRangesByPathEntry : linesRangesByPath.entrySet()) {
-      var filePath = linesRangesByPathEntry.getKey().toString();
-      var blameForFile = fileBlameByPath.get(filePath);
-      var dateByLinesRange = getLatestChangeDateForLinesRanges(linesRangesByPathEntry, blameForFile);
-      results.put(linesRangesByPathEntry.getKey(), dateByLinesRange);
-    }
-    return results;
-  }
-
-  private static HashMap<LinesRange, Date> getLatestChangeDateForLinesRanges(Map.Entry<Path, List<LinesRange>> linesRangeForPath,
-    BlameResult.FileBlame blameForFile) {
-    var dateByLinesRange = new HashMap<LinesRange, Date>();
-
-    for (LinesRange linesRange : linesRangeForPath.getValue()) {
-      var latestDate = getLatestChangeDateFirLinesRange(blameForFile, linesRange);
-      dateByLinesRange.put(linesRange, latestDate);
-    }
-
-    return dateByLinesRange;
-  }
-
-  private static Date getLatestChangeDateFirLinesRange(BlameResult.FileBlame blameForFile, LinesRange linesRange) {
-    var latestDate = blameForFile.getCommitDates()[linesRange.getStartLine()];
-
-    for (var i = linesRange.getStartLine() + 1; i <= linesRange.getEndLine() && i < blameForFile.lines(); i++) {
-      var dateForLine = blameForFile.getCommitDates()[i];
-      latestDate = latestDate.after(dateForLine) ? latestDate : dateForLine;
-    }
-
-    return latestDate;
-  }
-
-  static BlameResult blameWithFilesGitCommand(Repository repo, Set<Path> gitRelativePath) {
+  public static SonarLintBlameResult blameWithFilesGitCommand(Repository repo, Set<Path> gitRelativePath) {
     var pathStrings = gitRelativePath.stream().map(Path::toString).collect(Collectors.toSet());
     RepositoryBlameCommand blameCommand = new RepositoryBlameCommand(repo)
       .setTextComparator(RawTextComparator.WS_IGNORE_ALL)
       .setMultithreading(true)
       .setFilePaths(pathStrings);
     try {
-      return blameCommand.call();
+      var blameResult = blameCommand.call();
+      return new SonarLintBlameResult(blameResult);
     } catch (GitAPIException e) {
       throw new IllegalStateException("Failed to blame repository files", e);
     }
