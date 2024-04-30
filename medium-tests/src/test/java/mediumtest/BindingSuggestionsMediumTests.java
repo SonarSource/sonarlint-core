@@ -149,8 +149,7 @@ class BindingSuggestionsMediumTests {
     backend.getConfigurationService()
       .didAddConfigurationScopes(
         new DidAddConfigurationScopesParams(List.of(
-          new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "sonarlint-core",
-            new BindingConfigurationDto(null, null, false)))));
+          ConfigurationScopeDto.builder().setId(CONFIG_SCOPE_ID).setParentId(null).setBindable(true).setName("sonarlint-core").setBinding(new BindingConfigurationDto(null, null, false)).build())));
 
     ArgumentCaptor<Map<String, List<BindingSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
     verify(fakeClient, timeout(5000)).suggestBinding(suggestionCaptor.capture());
@@ -187,8 +186,7 @@ class BindingSuggestionsMediumTests {
     backend.getConfigurationService()
       .didAddConfigurationScopes(
         new DidAddConfigurationScopesParams(List.of(
-          new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "sonarlint-core",
-            new BindingConfigurationDto(null, null, false)))));
+          ConfigurationScopeDto.builder().setId(CONFIG_SCOPE_ID).setParentId(null).setBindable(true).setName("sonarlint-core").setBinding(new BindingConfigurationDto(null, null, false)).build())));
 
     ArgumentCaptor<Map<String, List<BindingSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
     verify(fakeClient, timeout(5000)).suggestBinding(suggestionCaptor.capture());
@@ -221,8 +219,7 @@ class BindingSuggestionsMediumTests {
     backend.getConfigurationService()
       .didAddConfigurationScopes(
         new DidAddConfigurationScopesParams(List.of(
-          new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "sonarlint-core",
-            new BindingConfigurationDto(null, null, false)))));
+          ConfigurationScopeDto.builder().setId(CONFIG_SCOPE_ID).setParentId(null).setBindable(true).setName("sonarlint-core").setBinding(new BindingConfigurationDto(null, null, false)).build())));
 
     // Without binding clue, there is no matching connection/project, so the list of suggestion is empty
     verify(fakeClient, timeout(5000)).suggestBinding(argThat(suggestion -> suggestion.get(CONFIG_SCOPE_ID).isEmpty()));
@@ -263,8 +260,7 @@ class BindingSuggestionsMediumTests {
     backend.getConfigurationService()
       .didAddConfigurationScopes(
         new DidAddConfigurationScopesParams(List.of(
-          new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "sonarlint-core",
-            new BindingConfigurationDto(null, null, false)))));
+          ConfigurationScopeDto.builder().setId(CONFIG_SCOPE_ID).setParentId(null).setBindable(true).setName("sonarlint-core").setBinding(new BindingConfigurationDto(null, null, false)).build())));
 
     // Ignore the automatic binding suggestions
     verify(fakeClient, timeout(5000)).suggestBinding(any());
@@ -298,8 +294,7 @@ class BindingSuggestionsMediumTests {
     backend.getConfigurationService()
       .didAddConfigurationScopes(
         new DidAddConfigurationScopesParams(List.of(
-          new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "sonarlint-core",
-            new BindingConfigurationDto(null, null, false)))));
+          ConfigurationScopeDto.builder().setId(CONFIG_SCOPE_ID).setParentId(null).setBindable(true).setName("sonarlint-core").setBinding(new BindingConfigurationDto(null, null, false)).build())));
 
     // Without binding clue, there is no matching connection/project, so the list of suggestion is empty
     verify(fakeClient, timeout(5000)).suggestBinding(argThat(suggestion -> suggestion.get(CONFIG_SCOPE_ID).isEmpty()));

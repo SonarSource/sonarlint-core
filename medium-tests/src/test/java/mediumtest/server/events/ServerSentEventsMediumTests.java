@@ -265,7 +265,7 @@ class ServerSentEventsMediumTests {
 
     private void addConfigurationScope(String configScope, String connectionId, String projectKey) {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
-        List.of(new ConfigurationScopeDto(configScope, null, true, "name", new BindingConfigurationDto(connectionId, projectKey, true)))));
+        List.of(ConfigurationScopeDto.builder().setId(configScope).setParentId(null).setBindable(true).setName("name").setBinding(new BindingConfigurationDto(connectionId, projectKey, true)).build())));
     }
   }
 

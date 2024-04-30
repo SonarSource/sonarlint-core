@@ -71,13 +71,13 @@ import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.GetMatchedSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
@@ -554,12 +554,12 @@ class SonarCloudTests extends AbstractConnectedTests {
   private static void openBoundConfigurationScope(String configScopeId, String projectKey) {
     openedConfigurationScopeIds.add(configScopeId);
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
-      List.of(new ConfigurationScopeDto(configScopeId, null, true, "My " + configScopeId, new BindingConfigurationDto(CONNECTION_ID, projectKey(projectKey), true)))));
+      List.of(ConfigurationScopeDto.builder().setId(configScopeId).setParentId(null).setBindable(true).setName("My " + configScopeId).setBinding(new BindingConfigurationDto(CONNECTION_ID, projectKey(projectKey), true)).build())));
   }
 
   private static void openUnboundConfigurationScope(String configScopeId) {
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
-      List.of(new ConfigurationScopeDto(configScopeId, null, true, "My " + configScopeId, new BindingConfigurationDto(null, null, true)))));
+      List.of(ConfigurationScopeDto.builder().setId(configScopeId).setParentId(null).setBindable(true).setName("My " + configScopeId).setBinding(new BindingConfigurationDto(null, null, true)).build())));
   }
 
   @Nested

@@ -31,8 +31,13 @@ public class ConfigurationScope {
    * The name of this configuration scope. Used for auto-binding.
    */
   private final String name;
-  private final boolean setFocusOnNewCode;
+  private boolean setFocusOnNewCode;
 
+  /**
+   * @deprecated use {@link #builder()} instead
+   * it is going to be private
+   */
+  @Deprecated(since="10.3")
   public ConfigurationScope(String id, @Nullable String parentId, boolean bindable, String name, boolean setFocusOnNewCode) {
     this.id = id;
     this.parentId = parentId;
@@ -58,7 +63,56 @@ public class ConfigurationScope {
     return name;
   }
 
+  public void setSetFocusOnNewCode(boolean setFocusOnNewCode) {
+    this.setFocusOnNewCode = setFocusOnNewCode;
+  }
+
   public boolean isSetFocusOnNewCode() {
     return setFocusOnNewCode;
+  }
+
+  public static ConfigurationScopeBuilder builder() {
+    return new ConfigurationScopeBuilder();
+  }
+
+  public static class ConfigurationScopeBuilder {
+    private String id;
+    private String parentId;
+    private boolean bindable;
+    private String name;
+    private boolean setFocusOnNewCode;
+
+    private ConfigurationScopeBuilder() {
+      // restricted initialization
+    }
+
+    public ConfigurationScopeBuilder setId(String id) {
+      this.id = id;
+      return this;
+    }
+
+    public ConfigurationScopeBuilder setParentId(@Nullable String parentId) {
+      this.parentId = parentId;
+      return this;
+    }
+
+    public ConfigurationScopeBuilder setBindable(boolean bindable) {
+      this.bindable = bindable;
+      return this;
+    }
+
+    public ConfigurationScopeBuilder setName(String name) {
+      this.name = name;
+      return this;
+    }
+
+    public ConfigurationScopeBuilder setSetFocusOnNewCode(boolean setFocusOnNewCode) {
+      this.setFocusOnNewCode = setFocusOnNewCode;
+      return this;
+    }
+
+    public ConfigurationScope build() {
+      return new ConfigurationScope(id, parentId, bindable, name, setFocusOnNewCode);
+    }
   }
 }

@@ -275,7 +275,7 @@ public class SonarLintBackendFixture {
         storageBuilder.accept(builder);
         configurationScopeStorages.add(builder);
       }
-      configurationScopes.add(new ConfigurationScopeDto(configurationScopeId, parentScopeId, true, name, bindingConfiguration));
+      configurationScopes.add(ConfigurationScopeDto.builder().setId(configurationScopeId).setParentId(parentScopeId).setBindable(true).setName(name).setBinding(bindingConfiguration).build());
       return this;
     }
 

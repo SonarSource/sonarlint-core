@@ -35,11 +35,15 @@ public class ConfigurationScopeDto {
   private final BindingConfigurationDto binding;
   private final boolean setFocusOnNewCode;
 
+  /**
+   * @deprecated use {@link #builder()} instead
+   */
+  @Deprecated(since="10.3", forRemoval=true)
   public ConfigurationScopeDto(String id, @Nullable String parentId, boolean bindable, String name, @Nullable BindingConfigurationDto binding) {
     this(id, parentId, bindable, name, binding, false);
   }
 
-  public ConfigurationScopeDto(String id, @Nullable String parentId, boolean bindable, String name, @Nullable BindingConfigurationDto binding, boolean setFocusOnNewCode) {
+  private ConfigurationScopeDto(String id, @Nullable String parentId, boolean bindable, String name, @Nullable BindingConfigurationDto binding, boolean setFocusOnNewCode) {
     this.id = id;
     this.parentId = parentId;
     this.bindable = bindable;
@@ -72,5 +76,56 @@ public class ConfigurationScopeDto {
 
   public boolean isSetFocusOnNewCode() {
     return setFocusOnNewCode;
+  }
+
+  public static ConfigurationScopeDtoBuilder builder() {
+    return new ConfigurationScopeDtoBuilder();
+  }
+
+  public static class ConfigurationScopeDtoBuilder {
+    private String id;
+    private String parentId;
+    private boolean bindable;
+    private String name;
+    private BindingConfigurationDto binding;
+    private boolean setFocusOnNewCode = false;
+
+    private ConfigurationScopeDtoBuilder() {
+      // restricted initialization
+    }
+
+    public ConfigurationScopeDtoBuilder setId(String id) {
+      this.id = id;
+      return this;
+    }
+
+    public ConfigurationScopeDtoBuilder setParentId(String parentId) {
+      this.parentId = parentId;
+      return this;
+    }
+
+    public ConfigurationScopeDtoBuilder setBindable(boolean bindable) {
+      this.bindable = bindable;
+      return this;
+    }
+
+    public ConfigurationScopeDtoBuilder setName(String name) {
+      this.name = name;
+      return this;
+    }
+
+    public ConfigurationScopeDtoBuilder setBinding(BindingConfigurationDto binding) {
+      this.binding = binding;
+      return this;
+    }
+
+    public ConfigurationScopeDtoBuilder setSetFocusOnNewCode(boolean setFocusOnNewCode) {
+      this.setFocusOnNewCode = setFocusOnNewCode;
+      return this;
+    }
+
+    public ConfigurationScopeDto build() {
+      return new ConfigurationScopeDto(id, parentId, bindable, name, binding, setFocusOnNewCode);
+    }
   }
 }

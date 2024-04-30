@@ -232,8 +232,7 @@ class ConnectionSuggestionMediumTests {
     backend.getConfigurationService()
       .didAddConfigurationScopes(
         new DidAddConfigurationScopesParams(List.of(
-          new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "sonarlint-core",
-            new BindingConfigurationDto(null, null, false)))));
+          ConfigurationScopeDto.builder().setId(CONFIG_SCOPE_ID).setParentId(null).setBindable(true).setName("sonarlint-core").setBinding(new BindingConfigurationDto(null, null, false)).build())));
 
     ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
     verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
@@ -268,8 +267,7 @@ class ConnectionSuggestionMediumTests {
     backend.getConfigurationService()
       .didAddConfigurationScopes(
         new DidAddConfigurationScopesParams(List.of(
-          new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "sonarlint-core",
-            new BindingConfigurationDto(null, null, false)))));
+          ConfigurationScopeDto.builder().setId(CONFIG_SCOPE_ID).setParentId(null).setBindable(true).setName("sonarlint-core").setBinding(new BindingConfigurationDto(null, null, false)).build())));
 
     ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
     verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
@@ -310,8 +308,7 @@ class ConnectionSuggestionMediumTests {
     backend.getConfigurationService()
       .didAddConfigurationScopes(
         new DidAddConfigurationScopesParams(List.of(
-          new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "sonarlint-core",
-            new BindingConfigurationDto(null, null, false)))));
+          ConfigurationScopeDto.builder().setId(CONFIG_SCOPE_ID).setParentId(null).setBindable(true).setName("sonarlint-core").setBinding(new BindingConfigurationDto(null, null, false)).build())));
 
     ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
     verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());

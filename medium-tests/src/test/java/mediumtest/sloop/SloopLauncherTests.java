@@ -42,10 +42,10 @@ import org.sonarsource.sonarlint.core.rpc.client.Sloop;
 import org.sonarsource.sonarlint.core.rpc.client.SloopLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintCancelChecker;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
@@ -134,7 +134,7 @@ class SloopLauncherTests {
     assertThat(result.getRulesByKey()).hasSize(219);
 
     server.getConfigurationService()
-      .didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto("myConfigScope", null, true, "My Config Scope", null))));
+      .didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(ConfigurationScopeDto.builder().setId("myConfigScope").setParentId(null).setBindable(true).setName("My Config Scope").setBinding(null).build())));
 
     var result2 = server.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("myConfigScope", "php:S100", null)).join();
     assertThat(result2.details().getName()).isEqualTo("Method and function names should comply with a naming convention");

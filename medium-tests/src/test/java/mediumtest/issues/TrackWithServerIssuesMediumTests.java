@@ -36,10 +36,10 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LineWithHashDto;
@@ -147,7 +147,7 @@ class TrackWithServerIssuesMediumTests {
       .withBoundConfigScope(configScopeId, connectionId, projectKey)
       .build(client);
     backend.getConfigurationService().didAddConfigurationScopes(
-      new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto(configScopeId, null, true, "name", new BindingConfigurationDto(connectionId, projectKey, true)))));
+      new DidAddConfigurationScopesParams(List.of(ConfigurationScopeDto.builder().setId(configScopeId).setParentId(null).setBindable(true).setName("name").setBinding(new BindingConfigurationDto(connectionId, projectKey, true)).build())));
 
 
     var response = trackWithServerIssues(new TrackWithServerIssuesParams(configScopeId,

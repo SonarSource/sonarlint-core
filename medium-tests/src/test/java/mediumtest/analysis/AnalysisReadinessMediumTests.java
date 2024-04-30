@@ -50,7 +50,7 @@ class AnalysisReadinessMediumTests {
     backend = newBackend()
       .build(client);
 
-    backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "name", null))));
+    backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(ConfigurationScopeDto.builder().setId(CONFIG_SCOPE_ID).setParentId(null).setBindable(true).setName("name").setBinding(null).build())));
 
     verify(client, timeout(500)).didChangeAnalysisReadiness(Set.of(CONFIG_SCOPE_ID), true);
   }

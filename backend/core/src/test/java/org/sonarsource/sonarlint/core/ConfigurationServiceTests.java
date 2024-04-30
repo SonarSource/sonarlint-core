@@ -44,9 +44,9 @@ class ConfigurationServiceTests {
 
   public static final BindingConfigurationDto BINDING_DTO_1 = new BindingConfigurationDto("connection1", "projectKey1", false);
   public static final BindingConfigurationDto BINDING_DTO_2 = new BindingConfigurationDto("connection1", "projectKey2", true);
-  public static final ConfigurationScopeDto CONFIG_DTO_1 = new ConfigurationScopeDto("id1", null, true, "Scope 1", BINDING_DTO_1);
-  public static final ConfigurationScopeDto CONFIG_DTO_1_DUP = new ConfigurationScopeDto("id1", null, false, "Scope 1 dup", BINDING_DTO_2);
-  public static final ConfigurationScopeDto CONFIG_DTO_2 = new ConfigurationScopeDto("id2", null, true, "Scope 2", BINDING_DTO_2, true);
+  public static final ConfigurationScopeDto CONFIG_DTO_1 = ConfigurationScopeDto.builder().setId("id1").setParentId(null).setBindable(true).setName("Scope 1").setBinding(BINDING_DTO_1).build();
+  public static final ConfigurationScopeDto CONFIG_DTO_1_DUP = ConfigurationScopeDto.builder().setId("id1").setParentId(null).setBindable(false).setName("Scope 1 dup").setBinding(BINDING_DTO_2).build();
+  public static final ConfigurationScopeDto CONFIG_DTO_2 = ConfigurationScopeDto.builder().setId("id2").setParentId(null).setBindable(true).setName("Scope 2").setBinding(BINDING_DTO_2).setSetFocusOnNewCode(true).build();
   private final ConfigurationRepository repository = new ConfigurationRepository();
 
   private ApplicationEventPublisher eventPublisher;

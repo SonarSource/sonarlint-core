@@ -42,7 +42,7 @@ class ConfigurationRepositoryTest {
 
   @Test
   void it_should_not_find_any_binding_on_an_unbound_scope() {
-    configurationRepository.addOrReplace(new ConfigurationScope("id", null, true, "name", false), new BindingConfiguration(null, null, true));
+    configurationRepository.addOrReplace(ConfigurationScope.builder().setId("id").setParentId(null).setBindable(true).setName("name").setSetFocusOnNewCode(false).build(), new BindingConfiguration(null, null, true));
 
     var binding = configurationRepository.getEffectiveBinding("id");
 
@@ -51,7 +51,7 @@ class ConfigurationRepositoryTest {
 
   @Test
   void it_should_consider_the_binding_configured_on_a_scope_as_effective() {
-    configurationRepository.addOrReplace(new ConfigurationScope("id", null, true, "name", false), new BindingConfiguration("connectionId", "projectKey", true));
+    configurationRepository.addOrReplace(ConfigurationScope.builder().setId("id").setParentId(null).setBindable(true).setName("name").setSetFocusOnNewCode(false).build(), new BindingConfiguration("connectionId", "projectKey", true));
 
     var binding = configurationRepository.getEffectiveBinding("id");
 
@@ -64,8 +64,8 @@ class ConfigurationRepositoryTest {
 
   @Test
   void it_should_get_the_effective_binding_from_parent_if_child_is_unbound() {
-    configurationRepository.addOrReplace(new ConfigurationScope("parentId", null, true, "name", false), new BindingConfiguration("connectionId", "projectKey", true));
-    configurationRepository.addOrReplace(new ConfigurationScope("id", "parentId", true, "name", false), new BindingConfiguration(null, null, true));
+    configurationRepository.addOrReplace(ConfigurationScope.builder().setId("parentId").setParentId(null).setBindable(true).setName("name").setSetFocusOnNewCode(false).build(), new BindingConfiguration("connectionId", "projectKey", true));
+    configurationRepository.addOrReplace(ConfigurationScope.builder().setId("id").setParentId("parentId").setBindable(true).setName("name").setSetFocusOnNewCode(false).build(), new BindingConfiguration(null, null, true));
 
     var binding = configurationRepository.getEffectiveBinding("id");
 

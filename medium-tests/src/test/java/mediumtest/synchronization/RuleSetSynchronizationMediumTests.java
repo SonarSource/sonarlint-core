@@ -95,7 +95,7 @@ class RuleSetSynchronizationMediumTests {
 
   private void addConfigurationScope(String configScopeId, String connectionId, String projectKey) {
     backend.getConfigurationService().didAddConfigurationScopes(
-      new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto(configScopeId, null, true, "name", new BindingConfigurationDto(connectionId, projectKey, true)))));
+      new DidAddConfigurationScopesParams(List.of(ConfigurationScopeDto.builder().setId(configScopeId).setParentId(null).setBindable(true).setName("name").setBinding(new BindingConfigurationDto(connectionId, projectKey, true)).build())));
   }
 
   private Path getAnalyzerConfigFile(String connectionId, String projectKey) {

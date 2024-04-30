@@ -67,8 +67,7 @@ class RulesInConnectedModeMediumTests {
       .build();
 
     backend.getConfigurationService().didAddConfigurationScopes(
-      new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "My project",
-        new BindingConfigurationDto(CONNECTION_ID, JAVA_MODULE_KEY, true)))));
+      new DidAddConfigurationScopesParams(List.of(ConfigurationScopeDto.builder().setId(CONFIG_SCOPE_ID).setParentId(null).setBindable(true).setName("My project").setBinding(new BindingConfigurationDto(CONNECTION_ID, JAVA_MODULE_KEY, true)).build())));
 
     var activeRules = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).get().getActiveRules();
     assertThat(activeRules).extracting(ActiveRuleDto::getRuleKey, ActiveRuleDto::getLanguageKey, ActiveRuleDto::getParams, ActiveRuleDto::getTemplateRuleKey)
@@ -95,8 +94,7 @@ class RulesInConnectedModeMediumTests {
       .build();
 
     backend.getConfigurationService().didAddConfigurationScopes(
-      new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "My project",
-        new BindingConfigurationDto(CONNECTION_ID, JAVA_MODULE_KEY, true)))));
+      new DidAddConfigurationScopesParams(List.of(ConfigurationScopeDto.builder().setId(CONFIG_SCOPE_ID).setParentId(null).setBindable(true).setName("My project").setBinding(new BindingConfigurationDto(CONNECTION_ID, JAVA_MODULE_KEY, true)).build())));
 
     var activeRules = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).get().getActiveRules();
     assertThat(activeRules).extracting(ActiveRuleDto::getRuleKey, ActiveRuleDto::getLanguageKey).contains(

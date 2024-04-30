@@ -246,8 +246,7 @@ class SmartNotificationsMediumTests {
     backend.getConfigurationService()
       .didAddConfigurationScopes(
         new DidAddConfigurationScopesParams(List.of(
-          new ConfigurationScopeDto("scopeId", null, true, "sonarlint-core",
-            new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY, false)))));
+          ConfigurationScopeDto.builder().setId("scopeId").setParentId(null).setBindable(true).setName("sonarlint-core").setBinding(new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY, false)).build())));
 
     await().atMost(3, SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
 

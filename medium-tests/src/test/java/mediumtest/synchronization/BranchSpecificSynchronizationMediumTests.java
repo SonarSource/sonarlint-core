@@ -104,8 +104,8 @@ class BranchSpecificSynchronizationMediumTests {
 
     backend.getConfigurationService().didAddConfigurationScopes(
       new DidAddConfigurationScopesParams(List.of(
-        new ConfigurationScopeDto("parentScope", null, true, "Parent", new BindingConfigurationDto("connectionId", "projectKey", true)),
-        new ConfigurationScopeDto("childScope", "parentScope", true, "Child", new BindingConfigurationDto(null, null, true)))));
+        ConfigurationScopeDto.builder().setId("parentScope").setParentId(null).setBindable(true).setName("Parent").setBinding(new BindingConfigurationDto("connectionId", "projectKey", true)).build(),
+        ConfigurationScopeDto.builder().setId("childScope").setParentId("parentScope").setBindable(true).setName("Child").setBinding(new BindingConfigurationDto(null, null, true)).build())));
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
       assertThat(client.getLogs()).extracting(LogParams::getMessage, LogParams::getConfigScopeId).contains(
@@ -195,7 +195,7 @@ class BranchSpecificSynchronizationMediumTests {
     reset(fakeClient);
 
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
-      new ConfigurationScopeDto("configScope2", null, true, "Child1", new BindingConfigurationDto("connectionId", "projectKey", true))
+      ConfigurationScopeDto.builder().setId("configScope2").setParentId(null).setBindable(true).setName("Child1").setBinding(new BindingConfigurationDto("connectionId", "projectKey", true)).build()
       )));
 
     verify(fakeClient, after(2000).times(0)).didSynchronizeConfigurationScopes(any());

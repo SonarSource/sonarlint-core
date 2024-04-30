@@ -83,8 +83,8 @@ class VersionSoonUnsupportedHelperTests {
   @Test
   void should_trigger_notification_when_new_binding_to_previous_lts_detected_on_config_scope_event() {
     var bindingConfiguration = new BindingConfiguration(SQ_CONNECTION_ID, "", true);
-    configRepository.addOrReplace(new ConfigurationScope(CONFIG_SCOPE_ID, null, false, "", false), bindingConfiguration);
-    configRepository.addOrReplace(new ConfigurationScope(CONFIG_SCOPE_ID_2, null, false, "", false), bindingConfiguration);
+    configRepository.addOrReplace(ConfigurationScope.builder().setId(CONFIG_SCOPE_ID).setParentId(null).setBindable(false).setName("").setSetFocusOnNewCode(false).build(), bindingConfiguration);
+    configRepository.addOrReplace(ConfigurationScope.builder().setId(CONFIG_SCOPE_ID_2).setParentId(null).setBindable(false).setName("").setSetFocusOnNewCode(false).build(), bindingConfiguration);
     connectionRepository.addOrReplace(SQ_CONNECTION);
     var serverApi = mock(ServerApi.class);
     when(serverApiProvider.getServerApi(SQ_CONNECTION_ID)).thenReturn(Optional.of(serverApi));
@@ -102,8 +102,8 @@ class VersionSoonUnsupportedHelperTests {
   void should_trigger_multiple_notification_when_new_bindings_to_previous_lts_detected_on_config_scope_event() {
     var bindingConfiguration = new BindingConfiguration(SQ_CONNECTION_ID, "", true);
     var bindingConfiguration2 = new BindingConfiguration(SQ_CONNECTION_ID_2, "", true);
-    configRepository.addOrReplace(new ConfigurationScope(CONFIG_SCOPE_ID, null, false, "", false), bindingConfiguration);
-    configRepository.addOrReplace(new ConfigurationScope(CONFIG_SCOPE_ID_2, null, false, "", false), bindingConfiguration2);
+    configRepository.addOrReplace(ConfigurationScope.builder().setId(CONFIG_SCOPE_ID).setParentId(null).setBindable(false).setName("").setSetFocusOnNewCode(false).build(), bindingConfiguration);
+    configRepository.addOrReplace(ConfigurationScope.builder().setId(CONFIG_SCOPE_ID_2).setParentId(null).setBindable(false).setName("").setSetFocusOnNewCode(false).build(), bindingConfiguration2);
     connectionRepository.addOrReplace(SQ_CONNECTION);
     connectionRepository.addOrReplace(SQ_CONNECTION_2);
     var serverApi = mock(ServerApi.class);

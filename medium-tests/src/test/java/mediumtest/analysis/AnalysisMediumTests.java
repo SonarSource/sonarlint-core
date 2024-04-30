@@ -262,7 +262,7 @@ class AnalysisMediumTests {
     verify(client, times(0)).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
 
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
-      new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, false, CONFIG_SCOPE_ID, null))));
+      ConfigurationScopeDto.builder().setId(CONFIG_SCOPE_ID).setParentId(null).setBindable(false).setName(CONFIG_SCOPE_ID).setBinding(null).build())));
     backend.getFileService().didUpdateFileSystem(
       new DidUpdateFileSystemParams(List.of(), List.of(new ClientFileDto(fileIssueUri, baseDir.relativize(fileIssue), CONFIG_SCOPE_ID, false, null, fileIssue, null, null),
         new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef), CONFIG_SCOPE_ID, false, null, fileFuncDef, null, null))));

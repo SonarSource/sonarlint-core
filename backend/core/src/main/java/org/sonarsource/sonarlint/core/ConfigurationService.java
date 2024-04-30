@@ -81,7 +81,13 @@ public class ConfigurationService {
   }
 
   private static ConfigurationScope adapt(ConfigurationScopeDto dto) {
-    return new ConfigurationScope(dto.getId(), dto.getParentId(), dto.isBindable(), dto.getName(), dto.isSetFocusOnNewCode());
+    return ConfigurationScope.builder()
+      .setId(dto.getId())
+      .setParentId(dto.getParentId())
+      .setBindable(dto.isBindable())
+      .setName(dto.getName())
+      .setSetFocusOnNewCode(dto.isSetFocusOnNewCode())
+      .build();
   }
 
   public void didRemoveConfigurationScope(String removedId) {

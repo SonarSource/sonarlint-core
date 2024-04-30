@@ -64,7 +64,7 @@ class SonarProjectBranchTrackingServiceTests {
 
   @BeforeEach
   void prepare() {
-    when(configurationRepository.getConfigurationScope(CONFIG_SCOPE_ID)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID, null, true, "Test config scope", false));
+    when(configurationRepository.getConfigurationScope(CONFIG_SCOPE_ID)).thenReturn(ConfigurationScope.builder().setId(CONFIG_SCOPE_ID).setParentId(null).setBindable(true).setName("Test config scope").setSetFocusOnNewCode(false).build());
     var binding = new Binding(CONNECTION_ID, PROJECT_KEY);
     when(configurationRepository.getEffectiveBinding(CONFIG_SCOPE_ID)).thenReturn(Optional.of(binding));
     var sonarProjectStorage = mock(SonarProjectStorage.class);
