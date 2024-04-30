@@ -31,12 +31,14 @@ public class ConfigurationScope {
    * The name of this configuration scope. Used for auto-binding.
    */
   private final String name;
+  private final boolean setFocusOnNewCode;
 
-  public ConfigurationScope(String id, @Nullable String parentId, boolean bindable, String name) {
+  public ConfigurationScope(String id, @Nullable String parentId, boolean bindable, String name, boolean setFocusOnNewCode) {
     this.id = id;
     this.parentId = parentId;
     this.bindable = bindable;
     this.name = name;
+    this.setFocusOnNewCode = setFocusOnNewCode;
   }
 
   public String getId() {
@@ -54,5 +56,9 @@ public class ConfigurationScope {
 
   public String getName() {
     return name;
+  }
+
+  public boolean isSetFocusOnNewCode() {
+    return setFocusOnNewCode;
   }
 }

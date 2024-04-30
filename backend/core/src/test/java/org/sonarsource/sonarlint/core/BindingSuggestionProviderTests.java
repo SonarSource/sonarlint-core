@@ -32,7 +32,6 @@ import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
-import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -138,17 +137,17 @@ class BindingSuggestionProviderTests {
     when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1));
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
 
-    when(configRepository.getConfigurationScope("configScopeWithNoBinding")).thenReturn(new ConfigurationScope("configScopeWithNoBinding", null, true, "Binding gone!"));
+    when(configRepository.getConfigurationScope("configScopeWithNoBinding")).thenReturn(new ConfigurationScope("configScopeWithNoBinding", null, true, "Binding gone!", false));
 
     when(configRepository.getBindingConfiguration("configScopeWithNoConfig")).thenReturn(new BindingConfiguration(null, null, false));
 
-    when(configRepository.getConfigurationScope("configScopeNotBindable")).thenReturn(new ConfigurationScope("configScopeNotBindable", null, false, "Not bindable"));
+    when(configRepository.getConfigurationScope("configScopeNotBindable")).thenReturn(new ConfigurationScope("configScopeNotBindable", null, false, "Not bindable", false));
     when(configRepository.getBindingConfiguration("configScopeNotBindable")).thenReturn(new BindingConfiguration(null, null, false));
 
-    when(configRepository.getConfigurationScope("alreadyBound")).thenReturn(new ConfigurationScope("alreadyBound", null, true, "Already bound"));
+    when(configRepository.getConfigurationScope("alreadyBound")).thenReturn(new ConfigurationScope("alreadyBound", null, true, "Already bound", false));
     when(configRepository.getBindingConfiguration("alreadyBound")).thenReturn(new BindingConfiguration(SQ_1_ID, PROJECT_KEY_1, false));
 
-    when(configRepository.getConfigurationScope("suggestionsDisabled")).thenReturn(new ConfigurationScope("suggestionsDisabled", null, true, "Suggestion disabled"));
+    when(configRepository.getConfigurationScope("suggestionsDisabled")).thenReturn(new ConfigurationScope("suggestionsDisabled", null, true, "Suggestion disabled", false));
     when(configRepository.getBindingConfiguration("suggestionsDisabled")).thenReturn(new BindingConfiguration(null, null, true));
 
     underTest.suggestBindingForGivenScopesAndAllConnections(ImmutableSortedSet.of("configScopeWithNoBinding", "configScopeWithNoConfig", "configScopeNotBindable", "alreadyBound", "suggestionsDisabled"));
@@ -167,13 +166,13 @@ class BindingSuggestionProviderTests {
     when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1));
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
 
-    when(configRepository.getConfigurationScope("brokenBinding1")).thenReturn(new ConfigurationScope("brokenBinding1", null, true, "Already bound"));
+    when(configRepository.getConfigurationScope("brokenBinding1")).thenReturn(new ConfigurationScope("brokenBinding1", null, true, "Already bound", false));
     when(configRepository.getBindingConfiguration("brokenBinding1")).thenReturn(new BindingConfiguration(null, PROJECT_KEY_1, false));
 
-    when(configRepository.getConfigurationScope("brokenBinding2")).thenReturn(new ConfigurationScope("brokenBinding2", null, true, "Already bound"));
+    when(configRepository.getConfigurationScope("brokenBinding2")).thenReturn(new ConfigurationScope("brokenBinding2", null, true, "Already bound", false));
     when(configRepository.getBindingConfiguration("brokenBinding2")).thenReturn(new BindingConfiguration(SQ_1_ID, null, false));
 
-    when(configRepository.getConfigurationScope("connectionGone")).thenReturn(new ConfigurationScope("connectionGone", null, true, "Already bound"));
+    when(configRepository.getConfigurationScope("connectionGone")).thenReturn(new ConfigurationScope("connectionGone", null, true, "Already bound", false));
     when(configRepository.getBindingConfiguration("connectionGone")).thenReturn(new BindingConfiguration(SQ_2_ID, PROJECT_KEY_1, false));
 
     underTest.suggestBindingForGivenScopesAndAllConnections(ImmutableSortedSet.of("brokenBinding1", "brokenBinding2", "connectionGone"));
@@ -190,7 +189,7 @@ class BindingSuggestionProviderTests {
     when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1));
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
 
-    when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "Config scope"));
+    when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "Config scope", false));
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
 
     when(bindingClueProvider.collectBindingCluesWithConnections(eq(CONFIG_SCOPE_ID_1), eq(Set.of(SQ_1_ID)), any(SonarLintCancelMonitor.class)))
@@ -223,7 +222,7 @@ class BindingSuggestionProviderTests {
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
     when(connectionRepository.getConnectionById(SC_1_ID)).thenReturn(SC_1);
 
-    when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "KEYWORD"));
+    when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "KEYWORD", false));
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
 
     when(bindingClueProvider.collectBindingCluesWithConnections(eq(CONFIG_SCOPE_ID_1), eq(Set.of(SQ_1_ID)), any(SonarLintCancelMonitor.class)))
@@ -261,7 +260,7 @@ class BindingSuggestionProviderTests {
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
     when(connectionRepository.getConnectionById(SC_1_ID)).thenReturn(SC_1);
 
-    when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "KEYWORD"));
+    when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "KEYWORD", false));
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
 
     when(bindingClueProvider.collectBindingCluesWithConnections(eq(CONFIG_SCOPE_ID_1), eq(Set.of(SQ_1_ID)), any(SonarLintCancelMonitor.class)))
@@ -297,7 +296,7 @@ class BindingSuggestionProviderTests {
   void get_suggested_binding() {
     var cancelMonitor = new SonarLintCancelMonitor();
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
-    when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "foo-bar"));
+    when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "foo-bar", false));
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
     when(bindingClueProvider.collectBindingCluesWithConnections(CONFIG_SCOPE_ID_1, Set.of(SQ_1_ID), cancelMonitor))
       .thenReturn(List.of(
@@ -321,7 +320,7 @@ class BindingSuggestionProviderTests {
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
     when(connectionRepository.getConnectionById(SC_1_ID)).thenReturn(SC_1);
 
-    when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "foo-bar"));
+    when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "foo-bar", false));
     when(configRepository.getConfigScopeIds()).thenReturn(Set.of(CONFIG_SCOPE_ID_1));
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
 
@@ -358,7 +357,7 @@ class BindingSuggestionProviderTests {
     when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1));
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
 
-    when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "foo-bar"));
+    when(configRepository.getConfigurationScope(CONFIG_SCOPE_ID_1)).thenReturn(new ConfigurationScope(CONFIG_SCOPE_ID_1, null, true, "foo-bar", false));
     when(configRepository.getBindingConfiguration(CONFIG_SCOPE_ID_1)).thenReturn(new BindingConfiguration(null, null, false));
 
     when(bindingClueProvider.collectBindingCluesWithConnections(eq(CONFIG_SCOPE_ID_1), eq(Set.of(SQ_1_ID)), any(SonarLintCancelMonitor.class)))

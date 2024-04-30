@@ -81,7 +81,7 @@ public class ConfigurationService {
   }
 
   private static ConfigurationScope adapt(ConfigurationScopeDto dto) {
-    return new ConfigurationScope(dto.getId(), dto.getParentId(), dto.isBindable(), dto.getName());
+    return new ConfigurationScope(dto.getId(), dto.getParentId(), dto.isBindable(), dto.getName(), dto.isSetFocusOnNewCode());
   }
 
   public void didRemoveConfigurationScope(String removedId) {

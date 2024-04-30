@@ -33,13 +33,19 @@ public class ConfigurationScopeDto {
    */
   private final String name;
   private final BindingConfigurationDto binding;
+  private final boolean setFocusOnNewCode;
 
   public ConfigurationScopeDto(String id, @Nullable String parentId, boolean bindable, String name, @Nullable BindingConfigurationDto binding) {
+    this(id, parentId, bindable, name, binding, false);
+  }
+
+  public ConfigurationScopeDto(String id, @Nullable String parentId, boolean bindable, String name, @Nullable BindingConfigurationDto binding, boolean setFocusOnNewCode) {
     this.id = id;
     this.parentId = parentId;
     this.bindable = bindable;
     this.name = name;
     this.binding = binding;
+    this.setFocusOnNewCode = setFocusOnNewCode;
   }
 
   public String getId() {
@@ -62,5 +68,9 @@ public class ConfigurationScopeDto {
   @CheckForNull
   public BindingConfigurationDto getBinding() {
     return binding;
+  }
+
+  public boolean isSetFocusOnNewCode() {
+    return setFocusOnNewCode;
   }
 }

@@ -46,7 +46,7 @@ class ConfigurationServiceTests {
   public static final BindingConfigurationDto BINDING_DTO_2 = new BindingConfigurationDto("connection1", "projectKey2", true);
   public static final ConfigurationScopeDto CONFIG_DTO_1 = new ConfigurationScopeDto("id1", null, true, "Scope 1", BINDING_DTO_1);
   public static final ConfigurationScopeDto CONFIG_DTO_1_DUP = new ConfigurationScopeDto("id1", null, false, "Scope 1 dup", BINDING_DTO_2);
-  public static final ConfigurationScopeDto CONFIG_DTO_2 = new ConfigurationScopeDto("id2", null, true, "Scope 2", BINDING_DTO_2);
+  public static final ConfigurationScopeDto CONFIG_DTO_2 = new ConfigurationScopeDto("id2", null, true, "Scope 2", BINDING_DTO_2, true);
   private final ConfigurationRepository repository = new ConfigurationRepository();
 
   private ApplicationEventPublisher eventPublisher;
@@ -89,6 +89,8 @@ class ConfigurationServiceTests {
     assertThat(repository.getConfigScopeIds()).containsOnly("id1", "id2");
     assertThat(repository.getBindingConfiguration("id1")).usingRecursiveComparison().isEqualTo(BINDING_DTO_1);
     assertThat(repository.getBindingConfiguration("id2")).usingRecursiveComparison().isEqualTo(BINDING_DTO_2);
+    assertThat(repository.getConfigurationScope("id1").isSetFocusOnNewCode()).isFalse();
+    assertThat(repository.getConfigurationScope("id2").isSetFocusOnNewCode()).isTrue();
 
     ArgumentCaptor<ConfigurationScopesAddedEvent> captor = ArgumentCaptor.forClass(ConfigurationScopesAddedEvent.class);
     verify(eventPublisher).publishEvent(captor.capture());
