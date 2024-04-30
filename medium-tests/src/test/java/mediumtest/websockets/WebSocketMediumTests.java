@@ -140,7 +140,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       bind("configScope", "connectionId", "newProjectKey");
 
@@ -160,7 +160,7 @@ class WebSocketMediumTests {
         .withBoundConfigScope("configScope1", "connectionId", "projectKey1")
         .withBoundConfigScope("configScope2", "connectionId", "projectKey2")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey2", "projectKey1");
 
       bind("configScope1", "connectionId", "projectKey2");
 
@@ -217,7 +217,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       unbind("configScope");
 
@@ -338,7 +338,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams("configScope"));
 
@@ -362,7 +362,7 @@ class WebSocketMediumTests {
         .withBoundConfigScope("configScope1", "connectionId1", "projectKey")
         .withBoundConfigScope("configScope2", "connectionId2", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams("configScope1"));
 
@@ -380,7 +380,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
       backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(emptyList(),
         List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", true))));
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).extracting(WebSocketConnection::isOpened).containsExactly(false));
@@ -402,7 +402,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
       client.setToken("connectionId", "secondToken");
 
       backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams("connectionId"));
@@ -499,7 +499,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), emptyList()));
 
@@ -520,7 +520,7 @@ class WebSocketMediumTests {
         .withBoundConfigScope("configScope1", "connectionId1", "projectKey1")
         .withBoundConfigScope("configScope2", "connectionId2", "projectKey2")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey2", "projectKey1");
 
       backend.getConnectionService()
         .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId2", "orgKey2", false))));
@@ -575,7 +575,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       backend.getConnectionService()
         .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", true))));
@@ -597,7 +597,7 @@ class WebSocketMediumTests {
         .withBoundConfigScope("configScope1", "connectionId1", "projectKey1")
         .withBoundConfigScope("configScope2", "connectionId2", "projectKey2")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty() && webSocketServer.getConnections().get(0).getReceivedMessages().size() == 4);
+      awaitUntilFirstWebSocketSubscribedTo("projectKey2", "projectKey1");
 
       backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(emptyList(),
         List.of(new SonarCloudConnectionConfigurationDto("connectionId1", "orgKey1", false), new SonarCloudConnectionConfigurationDto(
@@ -640,7 +640,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       webSocketServer.getConnections().get(0).sendMessage(
         "{\"event\": \"QualityGateChanged\", \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": \"projectKey\", \"date\": " +
@@ -663,7 +663,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       webSocketServer.getConnections().get(0).sendMessage(
         "{\"event\": \"MyNewIssues\", \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": \"projectKey\", \"date\": " +
@@ -686,7 +686,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       webSocketServer.getConnections().get(0).sendMessage("{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": 0}}");
 
@@ -702,7 +702,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       webSocketServer.getConnections().get(0).sendMessage(payload);
 
@@ -748,7 +748,7 @@ class WebSocketMediumTests {
           .withProject("projectKey", project -> project.withMainBranch("master", branch -> branch.withIssue(serverIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
@@ -783,7 +783,7 @@ class WebSocketMediumTests {
           .withProject("projectKey", project -> project.withMainBranch("master", branch -> branch.withIssue(serverIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
@@ -818,7 +818,7 @@ class WebSocketMediumTests {
           .withProject("projectKey", project -> project.withMainBranch("master", branch -> branch.withIssue(serverIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
@@ -852,7 +852,7 @@ class WebSocketMediumTests {
           .withProject("projectKey", project -> project.withMainBranch("master", branch -> branch.withIssue(serverIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
@@ -886,7 +886,7 @@ class WebSocketMediumTests {
           .withProject("projectKey", project -> project.withMainBranch("master", branch -> branch.withIssue(serverIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
@@ -921,7 +921,7 @@ class WebSocketMediumTests {
           .withProject("projectKey"))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
 
@@ -991,7 +991,7 @@ class WebSocketMediumTests {
           .withProject("projectKey"))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
 
@@ -1066,7 +1066,7 @@ class WebSocketMediumTests {
           .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withTaintIssue(serverTaintIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey")).isTrue());
@@ -1095,7 +1095,7 @@ class WebSocketMediumTests {
           .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withTaintIssue(serverTaintIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey")).isTrue());
@@ -1127,7 +1127,7 @@ class WebSocketMediumTests {
           .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withHotspot(serverHotspot))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey").getStatus().isResolved()).isFalse());
@@ -1161,7 +1161,7 @@ class WebSocketMediumTests {
           .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withHotspot(serverHotspot))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey").getStatus().isResolved()).isFalse());
@@ -1196,7 +1196,7 @@ class WebSocketMediumTests {
           .withProject("projectKey"))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey")).isNull());
@@ -1238,7 +1238,7 @@ class WebSocketMediumTests {
           .withProject("projectKey"))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey")).isNull());
@@ -1285,7 +1285,7 @@ class WebSocketMediumTests {
           .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withHotspot(serverHotspot))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey")).isNotNull());
@@ -1315,7 +1315,7 @@ class WebSocketMediumTests {
           .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withHotspot(serverHotspot))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey")).isNotNull());
@@ -1345,7 +1345,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       webSocketServer.getConnections().get(0).sendMessage("{\"event\": \"UnknownEvent\", \"data\": {\"message\": \"msg\"}}");
 
@@ -1377,7 +1377,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       webSocketServer.getConnections().get(0).sendMessage(
         "{\"event\": \"QualityGateChanged\", \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": \"projectKey\", \"date\": " +
@@ -1405,7 +1405,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> webSocketServer.getConnections().size() == 1 && webSocketServer.getConnections().get(0).getReceivedMessages().size() == 2);
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       webSocketServer.getConnections().get(0).close();
 
@@ -1424,7 +1424,7 @@ class WebSocketMediumTests {
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .withBoundConfigScope("configScope2", "connectionId", "projectKey")
         .build(client);
-      await().atMost(Duration.ofSeconds(2)).until(() -> webSocketServer.getConnections().size() == 1 && webSocketServer.getConnections().get(0).getReceivedMessages().size() == 2);
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       webSocketServer.getConnections().get(0).close();
 
@@ -1461,21 +1461,19 @@ class WebSocketMediumTests {
       return this;
     }
 
-    public WebSocketPayloadBuilder subscribeToProjectFilterWithProjectKey(String projectKey) {
+    public void subscribeToProjectFilterWithProjectKey(String projectKey) {
       payload.add("{\"action\":\"subscribe\"," +
         "\"events\":[\"IssueChanged\",\"QualityGateChanged\",\"SecurityHotspotChanged\",\"SecurityHotspotClosed\"," +
         "\"SecurityHotspotRaised\",\"TaintVulnerabilityClosed\",\"TaintVulnerabilityRaised\"]," +
         "\"filterType\":\"PROJECT\"," +
         "\"project\":\"" + projectKey + "\"}");
-      return this;
     }
 
-    public WebSocketPayloadBuilder subscribeToProjectUserFilterWithProjectKey(String projectKey) {
+    public void subscribeToProjectUserFilterWithProjectKey(String projectKey) {
       payload.add("{\"action\":\"subscribe\"," +
         "\"events\":[\"MyNewIssues\"]," +
         "\"filterType\":\"PROJECT_USER\"," +
         "\"project\":\"" + projectKey + "\"}");
-      return this;
     }
 
     public WebSocketPayloadBuilder unsubscribeWithProjectKey(String... projectKey) {
@@ -1486,27 +1484,34 @@ class WebSocketMediumTests {
       return this;
     }
 
-    public WebSocketPayloadBuilder unsubscribeToProjectFilterWithProjectKey(String projectKey) {
+    public void unsubscribeToProjectFilterWithProjectKey(String projectKey) {
       payload.add("{\"action\":\"unsubscribe\"," +
         "\"events\":[\"IssueChanged\",\"QualityGateChanged\",\"SecurityHotspotChanged\",\"SecurityHotspotClosed\"," +
         "\"SecurityHotspotRaised\",\"TaintVulnerabilityClosed\",\"TaintVulnerabilityRaised\"]," +
         "\"filterType\":\"PROJECT\"," +
         "\"project\":\"" + projectKey + "\"}");
-      return this;
     }
 
-    public WebSocketPayloadBuilder unsubscribeToProjectUserFilterWithProjectKey(String projectKey) {
+    public void unsubscribeToProjectUserFilterWithProjectKey(String projectKey) {
       payload.add("{\"action\":\"unsubscribe\"," +
         "\"events\":[\"MyNewIssues\"]," +
         "\"filterType\":\"PROJECT_USER\"," +
         "\"project\":\"" + projectKey + "\"}");
-      return this;
     }
 
     public List<String> build() {
       return payload;
     }
 
+  }
+
+  private void awaitUntilFirstWebSocketSubscribedTo(String... projectKey) {
+    await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
+      assertThat(webSocketServer.getConnections()).hasSize(1)
+        .first()
+        .extracting(WebSocketConnection::getReceivedMessages)
+        .isEqualTo(webSocketPayloadBuilder().subscribeWithProjectKey(projectKey).build());
+    });
   }
 
 }
