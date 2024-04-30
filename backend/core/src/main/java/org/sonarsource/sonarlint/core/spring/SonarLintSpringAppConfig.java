@@ -44,8 +44,8 @@ import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.TokenGeneratorHelper;
 import org.sonarsource.sonarlint.core.VersionSoonUnsupportedHelper;
-import org.sonarsource.sonarlint.core.analysis.AnalysisService;
 import org.sonarsource.sonarlint.core.analysis.AnalysisEngineCache;
+import org.sonarsource.sonarlint.core.analysis.AnalysisService;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
@@ -95,6 +95,7 @@ import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationSe
 import org.sonarsource.sonarlint.core.sync.SynchronizationService;
 import org.sonarsource.sonarlint.core.sync.TaintSynchronizationService;
 import org.sonarsource.sonarlint.core.tracking.IssueMatchingService;
+import org.sonarsource.sonarlint.core.tracking.KnownIssuesStorageService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
 import org.sonarsource.sonarlint.core.tracking.SecurityHotspotMatchingService;
 import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
@@ -173,7 +174,8 @@ import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_S
   BindingCandidatesFinder.class,
   SharedConnectedModeSettingsProvider.class,
   AnalysisEngineCache.class,
-  PromotionService.class
+  PromotionService.class,
+  KnownIssuesStorageService.class
 })
 public class SonarLintSpringAppConfig {
 
