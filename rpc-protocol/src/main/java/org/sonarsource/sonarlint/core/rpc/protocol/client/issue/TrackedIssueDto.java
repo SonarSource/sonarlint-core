@@ -19,17 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.issue;
 
+import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 
 public class TrackedIssueDto {
@@ -41,8 +40,8 @@ public class TrackedIssueDto {
   private final IssueSeverity severity;
   private final RuleType type;
   private final CleanCodeAttribute cleanCodeAttribute;
-  private final Map<SoftwareQuality, ImpactSeverity> impacts;
-  private final long introductionDate;
+  private final List<ImpactDto> impacts;
+  private final Instant introductionDate;
   private final boolean isOnNewCode;
   private final boolean resolved;
   @Nullable
@@ -55,7 +54,7 @@ public class TrackedIssueDto {
   private final VulnerabilityProbability vulnerabilityProbability;
 
   public TrackedIssueDto(UUID id, @Nullable String serverKey, String ruleKey, String primaryMessage, IssueSeverity severity, RuleType type, CleanCodeAttribute cleanCodeAttribute,
-    Map<SoftwareQuality, ImpactSeverity> impacts, long introductionDate, boolean isOnNewCode, boolean resolved, @Nullable TextRangeDto textRange, List<IssueFlowDto> flows,
+    List<ImpactDto> impacts, Instant introductionDate, boolean isOnNewCode, boolean resolved, @Nullable TextRangeDto textRange, List<IssueFlowDto> flows,
     List<QuickFixDto> quickFixes, @Nullable String ruleDescriptionContextKey, @Nullable VulnerabilityProbability vulnerabilityProbability) {
     this.id = id;
     this.serverKey = serverKey;
@@ -104,11 +103,11 @@ public class TrackedIssueDto {
     return cleanCodeAttribute;
   }
 
-  public Map<SoftwareQuality, ImpactSeverity> getImpacts() {
+  public List<ImpactDto> getImpacts() {
     return impacts;
   }
 
-  public long getIntroductionDate() {
+  public Instant getIntroductionDate() {
     return introductionDate;
   }
 

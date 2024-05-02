@@ -24,7 +24,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidDetectSecretParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.PublishIssuesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseIssuesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingPluginParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -228,10 +228,13 @@ public interface SonarLintRpcClient {
   void didChangeAnalysisReadiness(DidChangeAnalysisReadinessParams params);
 
   /**
+   * @deprecated Implement {@link #raiseIssues} instead.
+   * <br/>
    * Called as soon as one of the analyzer discovered an issue.
    * A "raw" issue is an issue as it is raised by the analyzer, without any effort to match it to a previously raised issue (this happens at a later stage).
    * This is to let clients track the issue with previous local issues, and potentially show them to users via streaming
    */
+  @Deprecated(since = "10.2")
   @JsonNotification
   default void didRaiseIssue(DidRaiseIssueParams params) {
   }
@@ -243,7 +246,7 @@ public interface SonarLintRpcClient {
    * This method might be called in the context of issue streaming, so it might be called frequently.
    */
   @JsonNotification
-  default void publishIssues(PublishIssuesParams params) {
+  default void raiseIssues(RaiseIssuesParams params) {
   }
 
   /**

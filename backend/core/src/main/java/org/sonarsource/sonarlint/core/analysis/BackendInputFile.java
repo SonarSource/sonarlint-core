@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import org.jetbrains.annotations.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
@@ -39,7 +40,7 @@ public class BackendInputFile implements ClientInputFile {
 
   @Override
   public String getPath() {
-    return Paths.get(clientFile.getUri()).toAbsolutePath().toString();
+    return Path.of(clientFile.getUri()).toAbsolutePath().toString();
   }
 
   @Override

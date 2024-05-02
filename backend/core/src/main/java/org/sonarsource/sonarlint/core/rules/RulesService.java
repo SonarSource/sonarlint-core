@@ -38,6 +38,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.analysis.RuleDetailsForAnalysis;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
@@ -48,7 +49,6 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetStandaloneRuleDescriptionResponse;
@@ -71,6 +71,7 @@ import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationService;
 import org.springframework.context.event.EventListener;
 
+import static org.sonarsource.sonarlint.core.commons.CleanCodeAttribute.CONVENTIONAL;
 import static org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter.adapt;
 import static org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter.toDto;
 import static org.sonarsource.sonarlint.core.serverconnection.ServerConnection.SECRET_ANALYSIS_MIN_SQ_VERSION;
@@ -348,27 +349,23 @@ public class RulesService {
     }
   }
 
-  public GetRuleDetailsResponse getRuleDetailsForAnalysis(String configScopeId, String ruleKey) throws RuleNotFoundException {
+  public RuleDetailsForAnalysis getRuleDetailsForAnalysis(String configScopeId, String ruleKey) throws RuleNotFoundException {
     var effectiveBinding = configurationRepository.getEffectiveBinding(configScopeId);
     return effectiveBinding.isEmpty() ? getRuleDetailsForStandaloneAnalysis(ruleKey) : getRuleDetailsForConnectedAnalysis(effectiveBinding.get(), ruleKey);
   }
 
-  private GetRuleDetailsResponse getRuleDetailsForStandaloneAnalysis(String ruleKey) throws RuleNotFoundException {
+  private RuleDetailsForAnalysis getRuleDetailsForStandaloneAnalysis(String ruleKey) throws RuleNotFoundException {
     var embeddedRule = rulesRepository.getEmbeddedRule(ruleKey);
     if (embeddedRule.isEmpty()) {
       throw new RuleNotFoundException(COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules", ruleKey);
     }
     var ruleDefinition = embeddedRule.get();
-    return new GetRuleDetailsResponse(
-      RuleDetailsAdapter.adapt(ruleDefinition.getDefaultSeverity()),
-      RuleDetailsAdapter.adapt(ruleDefinition.getType()),
-      ruleDefinition.getCleanCodeAttribute().map(RuleDetailsAdapter::adapt).orElse(org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute.CONVENTIONAL),
-      ruleDefinition.getDefaultImpacts().entrySet().stream().map(entry -> new ImpactDto(RuleDetailsAdapter.adapt(entry.getKey()), RuleDetailsAdapter.adapt(entry.getValue())))
-        .collect(Collectors.toList()),
-      ruleDefinition.getVulnerabilityProbability().map(RuleDetailsAdapter::adapt).orElse(null));
+    return new RuleDetailsForAnalysis(ruleDefinition.getDefaultSeverity(), ruleDefinition.getType(),
+      ruleDefinition.getCleanCodeAttribute().orElse(CONVENTIONAL), ruleDefinition.getDefaultImpacts(),
+      ruleDefinition.getVulnerabilityProbability().orElse(null));
   }
 
-  public GetRuleDetailsResponse getRuleDetailsForConnectedAnalysis(Binding binding, String ruleKey) throws RuleNotFoundException {
+  public RuleDetailsForAnalysis getRuleDetailsForConnectedAnalysis(Binding binding, String ruleKey) throws RuleNotFoundException {
     if (ruleKey.startsWith("secrets:") && !supportsSecretAnalysis(binding.getConnectionId())) {
       // before 9.9, SQ did not have the secrets plugin, so we pick the rules from the embedded one
       return getRuleDetailsForStandaloneAnalysis(ruleKey);
@@ -387,13 +384,9 @@ public class RulesService {
       throw new RuleNotFoundException(COULD_NOT_FIND_RULE + actualRuleKey + "' in embedded rules", actualRuleKey);
     }
     var ruleDefinition = ruleDefinitionOpt.get();
-    return new GetRuleDetailsResponse(
-      RuleDetailsAdapter.adapt(activeRule.getSeverity()),
-      RuleDetailsAdapter.adapt(ruleDefinition.getType()),
-      ruleDefinition.getCleanCodeAttribute().map(RuleDetailsAdapter::adapt).orElse(org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute.CONVENTIONAL),
-      ruleDefinition.getDefaultImpacts().entrySet().stream().map(entry -> new ImpactDto(RuleDetailsAdapter.adapt(entry.getKey()), RuleDetailsAdapter.adapt(entry.getValue())))
-        .collect(Collectors.toList()),
-      ruleDefinition.getVulnerabilityProbability().map(RuleDetailsAdapter::adapt).orElse(null));
+    return new RuleDetailsForAnalysis(activeRule.getSeverity(), ruleDefinition.getType(),
+      ruleDefinition.getCleanCodeAttribute().orElse(CONVENTIONAL), ruleDefinition.getDefaultImpacts(),
+      ruleDefinition.getVulnerabilityProbability().orElse(null));
   }
 
   private boolean supportsSecretAnalysis(String connectionId) {
