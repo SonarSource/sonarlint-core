@@ -20,28 +20,43 @@
 package org.sonarsource.sonarlint.core.analysis;
 
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
+
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 
 public class AnalysisFinishedEvent {
+  private final UUID analysisId;
   private final String configurationScopeId;
   private final long analysisDuration;
   private final Map<URI, SonarLanguage> languagePerFile;
   private final boolean succeededForAllFiles;
+  private final List<RawIssue> issues;
   private final Set<String> reportedRuleKeys;
   private final Set<SonarLanguage> detectedLanguages;
+  private final boolean trackingEnabled;
+  private final boolean shouldFetchServerIssues;
 
-  public AnalysisFinishedEvent(String configurationScopeId, long analysisDuration, Map<URI, SonarLanguage> languagePerFile, boolean succeededForAllFiles,
-    Set<String> reportedRuleKeys) {
+  public AnalysisFinishedEvent(UUID analysisId, String configurationScopeId, long analysisDuration, Map<URI, SonarLanguage> languagePerFile, boolean succeededForAllFiles,
+    List<RawIssue> issues, boolean enableTracking, boolean shouldFetchServerIssues) {
+    this.analysisId = analysisId;
     this.configurationScopeId = configurationScopeId;
     this.analysisDuration = analysisDuration;
     this.languagePerFile = languagePerFile;
     this.succeededForAllFiles = succeededForAllFiles;
-    this.reportedRuleKeys = reportedRuleKeys;
+    this.issues = issues;
+    this.reportedRuleKeys = issues.stream().map(RawIssue::getRuleKey).collect(Collectors.toSet());
     this.detectedLanguages = languagePerFile.values().stream().filter(Objects::nonNull).collect(Collectors.toSet());
+    this.trackingEnabled = enableTracking;
+    this.shouldFetchServerIssues = shouldFetchServerIssues;
+  }
+
+  public UUID getAnalysisId() {
+    return analysisId;
   }
 
   public String getConfigurationScopeId() {
@@ -66,5 +81,17 @@ public class AnalysisFinishedEvent {
 
   public Set<SonarLanguage> getDetectedLanguages() {
     return detectedLanguages;
+  }
+
+  public List<RawIssue> getIssues() {
+    return issues;
+  }
+
+  public boolean isTrackingEnabled() {
+    return trackingEnabled;
+  }
+
+  public boolean isShouldFetchServerIssues() {
+    return shouldFetchServerIssues;
   }
 }

@@ -176,7 +176,7 @@ public interface SonarLintRpcClientDelegate {
   default void didRaiseIssue(String configurationScopeId, UUID analysisId, RawIssueDto rawIssue) {
   }
 
-  default void publishIssues(Map<URI, List<TrackedIssueDto>> issuesByFileUri, boolean isIntermediatePublication, @Nullable UUID analysisId) {
+  default void publishIssues(String configurationScopeId, Map<URI, List<TrackedIssueDto>> issuesByFileUri, boolean isIntermediatePublication, @Nullable UUID analysisId) {
   }
 
   default void didSkipLoadingPlugin(String configurationScopeId, Language language, DidSkipLoadingPluginParams.SkipReason reason, String minVersion,
