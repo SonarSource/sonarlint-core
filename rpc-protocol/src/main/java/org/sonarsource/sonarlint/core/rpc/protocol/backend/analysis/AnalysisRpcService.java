@@ -65,8 +65,22 @@ public interface AnalysisRpcService {
   CompletableFuture<GetAutoDetectedNodeJsResponse> getAutoDetectedNodeJs();
 
   /**
+   * @deprecated
    * Analyze the provided files.
+   * <br/>
+   * Use {@link #analyzeFilesAndTrack} instead.
+   * It will require implementing {@link org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#raiseIssues}
+   * on the client side to get tracked issues.
    */
+  @Deprecated(since = "10.2")
   @JsonRequest
   CompletableFuture<AnalyzeFilesResponse> analyzeFiles(AnalyzeFilesParams params);
+
+  /**
+   * Analyze and track issues in the provided files.
+   * Issues will be reported to the client via
+   * {@link org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#raiseIssues}
+   */
+  @JsonRequest
+  CompletableFuture<AnalyzeFilesResponse> analyzeFilesAndTrack(AnalyzeFilesAndTrackParams params);
 }
