@@ -55,14 +55,17 @@ public class TelemetryServerAttributes {
   @Nullable
   private final String nodeVersion;
 
+  private final boolean isSetFocusOnNewCode;
+
   public TelemetryServerAttributes(boolean usesConnectedMode, boolean usesSonarCloud, boolean devNotificationsDisabled,
-    List<String> nonDefaultEnabledRules, List<String> defaultDisabledRules, @Nullable String nodeVersion) {
+    List<String> nonDefaultEnabledRules, List<String> defaultDisabledRules, @Nullable String nodeVersion, boolean isSetFocusOnNewCode) {
     this.usesConnectedMode = usesConnectedMode;
     this.usesSonarCloud = usesSonarCloud;
     this.devNotificationsDisabled = devNotificationsDisabled;
     this.nonDefaultEnabledRules = nonDefaultEnabledRules;
     this.defaultDisabledRules = defaultDisabledRules;
     this.nodeVersion = nodeVersion;
+    this.isSetFocusOnNewCode = isSetFocusOnNewCode;
   }
 
   public boolean usesConnectedMode() {
@@ -88,5 +91,9 @@ public class TelemetryServerAttributes {
   @Nullable
   public String getNodeVersion() {
     return nodeVersion;
+  }
+
+  public boolean isSetFocusOnNewCode() {
+    return isSetFocusOnNewCode;
   }
 }

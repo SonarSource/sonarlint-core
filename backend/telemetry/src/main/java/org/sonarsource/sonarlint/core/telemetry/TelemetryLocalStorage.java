@@ -341,7 +341,6 @@ public class TelemetryLocalStorage {
 
   public void incrementNewCodeFocusChange() {
     markSonarLintAsUsedToday();
-    this.isFocusOnNewCode = !this.isFocusOnNewCode;
     codeFocusChangedCount++;
   }
 

@@ -63,4 +63,8 @@ public class TelemetryLiveAttributes {
   public Map<String, Object> getAdditionalAttributes() {
     return clientAttributes.getAdditionalAttributes();
   }
+
+  public boolean isSetFocusOnNewCode() {
+    return serverAttributes.isSetFocusOnNewCode();
+  }
 }

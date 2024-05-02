@@ -107,7 +107,7 @@ public class TelemetryHttpClient {
     var telemetryRulesPayload = new TelemetryRulesPayload(telemetryLiveAttrs.getNonDefaultEnabledRules(),
       telemetryLiveAttrs.getDefaultDisabledRules(), data.getRaisedIssuesRules(), data.getQuickFixesApplied());
     var helpAndFeedbackPayload = new TelemetryHelpAndFeedbackPayload(data.getHelpAndFeedbackLinkClickedCounter());
-    var cleanAsYouCodePayload = new CleanAsYouCodePayload(new NewCodeFocusPayload(data.isFocusOnNewCode(), data.getCodeFocusChangedCount()));
+    var cleanAsYouCodePayload = new CleanAsYouCodePayload(new NewCodeFocusPayload(telemetryLiveAttrs.isSetFocusOnNewCode(), data.getCodeFocusChangedCount()));
 
     ShareConnectedModePayload shareConnectedModePayload;
     if (telemetryLiveAttrs.usesConnectedMode()) {

@@ -29,6 +29,7 @@ import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
@@ -63,6 +64,9 @@ public class TelemetryServerAttributesProvider {
 
     var devNotificationsDisabled = allBindings.stream().anyMatch(this::hasDisableNotifications);
 
+    var isSetFocusOnNewCode = configurationRepository.getAllConfigurationScopes().stream()
+      .anyMatch(ConfigurationScope::isSetFocusOnNewCode);
+
     List<String> nonDefaultEnabledRules = new ArrayList<>();
     List<String> defaultDisabledRules = new ArrayList<>();
 
@@ -83,7 +87,7 @@ public class TelemetryServerAttributesProvider {
     var nodeJsVersion = getNodeJsVersion();
 
     return new TelemetryServerAttributes(usesConnectedMode, usesSonarCloud, devNotificationsDisabled, nonDefaultEnabledRules,
-      defaultDisabledRules, nodeJsVersion);
+      defaultDisabledRules, nodeJsVersion, isSetFocusOnNewCode);
   }
 
   @CheckForNull
