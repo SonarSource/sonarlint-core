@@ -19,25 +19,20 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode;
 
-import java.util.concurrent.CompletableFuture;
-import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
-import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
-import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
+public class DidFocusChangeParams {
+  String configScopeId;
+  boolean setFocusOnNewCode;
 
-@JsonSegment("newCode")
-public interface NewCodeRpcService {
+  public DidFocusChangeParams(String configScopeId, boolean setFocusOnNewCode) {
+    this.configScopeId = configScopeId;
+    this.setFocusOnNewCode = setFocusOnNewCode;
+  }
 
-  @JsonRequest
-  CompletableFuture<GetNewCodeDefinitionResponse> getNewCodeDefinition(GetNewCodeDefinitionParams params);
+  public String getConfigScopeId() {
+    return configScopeId;
+  }
 
-  /**
-   * Clients are expected to call this method when the "focus on new code" setting is modified by the user. The implementation will update the telemetry accordingly.
-   * @deprecated Use  {@link #didFocusChange} instead
-   */
-  @Deprecated(since = "10.3", forRemoval = true)
-  @JsonNotification
-  void didToggleFocus();
-
-  @JsonNotification
-  void didFocusChange(DidFocusChangeParams params);
+  public boolean isSetFocusOnNewCode() {
+    return setFocusOnNewCode;
+  }
 }

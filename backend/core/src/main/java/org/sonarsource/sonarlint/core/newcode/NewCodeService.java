@@ -58,6 +58,13 @@ public class NewCodeService {
   }
 
   public void didToggleFocus() {
+    configurationRepository.getAllConfigurationScopes()
+      .forEach(configurationScope -> configurationScope.setSetFocusOnNewCode(!configurationScope.isSetFocusOnNewCode()));
     telemetryService.newCodeFocusChanged();
+  }
+
+  public void didFocusChange(String configScopeId, boolean setFocusOnNewCode) {
+    Optional.ofNullable(configurationRepository.getConfigurationScope(configScopeId))
+      .ifPresent(configurationScope -> configurationScope.setSetFocusOnNewCode(setFocusOnNewCode));
   }
 }

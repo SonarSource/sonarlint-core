@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.newcode.NewCodeService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.DidFocusChangeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.GetNewCodeDefinitionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.GetNewCodeDefinitionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.NewCodeRpcService;
@@ -39,5 +40,10 @@ public class NewCodeRpcServiceDelegate extends AbstractRpcServiceDelegate implem
   @Override
   public void didToggleFocus() {
     notify(() -> getBean(NewCodeService.class).didToggleFocus());
+  }
+
+  @Override
+  public void didFocusChange(DidFocusChangeParams params) {
+    notify(() -> getBean(NewCodeService.class).didFocusChange(params.getConfigScopeId(), params.isSetFocusOnNewCode()));
   }
 }

@@ -194,4 +194,7 @@ public class ConfigurationRepository {
       .collect(groupingBy(BoundScope::getConnectionId, groupingBy(BoundScope::getSonarProjectKey, Collectors.toCollection(ArrayList::new))));
   }
 
+  public Collection<ConfigurationScope> getAllConfigurationScopes() {
+    return configScopePerId.values();
+  }
 }
