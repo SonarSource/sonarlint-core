@@ -1,0 +1,7 @@
+# Manifest entries to configure the OSGi attributes for the normal / sources JAR archive
+Bundle-ManifestVersion: 2
+Bundle-Version: ${parsedVersion.osgiVersion}
+
+# BND configuration to tweak generation of Manifest entries for the normal / sources JAR archive
+-removeheaders: Bnd-LastModified,Bundle-Developers,Bundle-DocURL,Bundle-SCM,Include-Resource,Private-Package
+-noimportjava: true

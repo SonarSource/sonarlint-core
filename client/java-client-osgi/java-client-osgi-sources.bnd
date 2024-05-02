@@ -1,0 +1,10 @@
+# Include BND settings used for normal / sources JAR archives
+-include: shared.bnd
+
+# Manifest entries to configure the OSGi attributes for the sources JAR archive
+Bundle-Name: ${project.name} Source
+Bundle-Description: ${project.name} Source
+Bundle-SymbolicName: ${project.groupId}.${project.artifactId}.source
+Eclipse-SourceBundle: ${project.groupId}.${project.artifactId};version="${parsedVersion.osgiVersion}";roots:="."
+Export-Package: !*
+Import-Package: !*
