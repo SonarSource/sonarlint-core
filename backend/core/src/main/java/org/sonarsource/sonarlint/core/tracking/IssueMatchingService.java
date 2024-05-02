@@ -60,7 +60,7 @@ import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.PublishIssuesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseIssuesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
@@ -164,7 +164,7 @@ public class IssueMatchingService {
 
   @EventListener
   public void trackAnalysedIssues(AnalysisFinishedEvent event) {
-    if (event.isEnableTracking()) {
+    if (event.isTrackingEnabled()) {
       processEvent(event);
     }
   }
@@ -206,7 +206,7 @@ public class IssueMatchingService {
         }));
       trackedIssuesPerFile.putAll(updatedIssues);
 
-      client.publishIssues(new PublishIssuesParams(configurationScopeId, updatedIssues.entrySet().stream().collect(toMap(e -> e.getKey().toUri(),
+      client.raiseIssues(new RaiseIssuesParams(configurationScopeId, updatedIssues.entrySet().stream().collect(toMap(e -> e.getKey().toUri(),
         e -> e.getValue().stream().map(DtoMapper::toTrackedIssueDto).collect(Collectors.toList()))),
         false, event.getAnalysisId()));
       return;
@@ -248,7 +248,7 @@ public class IssueMatchingService {
       trackedIssuesPerFile.put(e.getKey(), matches);
       return Map.entry(ideRelativePath, matches);
     }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    client.publishIssues(new PublishIssuesParams(configurationScopeId, newIssues.entrySet().stream().collect(toMap(e -> e.getKey().toUri(),
+    client.raiseIssues(new RaiseIssuesParams(configurationScopeId, newIssues.entrySet().stream().collect(toMap(e -> e.getKey().toUri(),
       e -> e.getValue().stream().map(DtoMapper::toTrackedIssueDto).collect(Collectors.toList()))), false, event.getAnalysisId()));
   }
 

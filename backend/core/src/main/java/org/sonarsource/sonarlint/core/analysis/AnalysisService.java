@@ -569,7 +569,7 @@ public class AnalysisService {
   }
 
   private void streamIssue(String configScopeId, UUID analysisId, Issue issue, ConcurrentHashMap<String, RuleDetailsForAnalysis> ruleDetailsCache,
-    List<RawIssue> raisedIssues) {
+    List<RawIssue> rawIssues) {
     var ruleKey = issue.getRuleKey();
     var activeRule = ruleDetailsCache.computeIfAbsent(ruleKey, k -> {
       try {
@@ -579,7 +579,7 @@ public class AnalysisService {
       }
     });
     if (activeRule != null) {
-      raisedIssues.add(new RawIssue(issue, activeRule));
+      rawIssues.add(new RawIssue(issue, activeRule));
       client.didRaiseIssue(new DidRaiseIssueParams(configScopeId, analysisId, toDto(issue, activeRule)));
       if (ruleKey.contains("secrets")) {
         client.didDetectSecret(new DidDetectSecretParams(configScopeId));

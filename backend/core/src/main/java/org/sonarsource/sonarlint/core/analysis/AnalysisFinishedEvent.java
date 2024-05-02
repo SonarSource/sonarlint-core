@@ -38,7 +38,7 @@ public class AnalysisFinishedEvent {
   private final List<RawIssue> issues;
   private final Set<String> reportedRuleKeys;
   private final Set<SonarLanguage> detectedLanguages;
-  private final boolean enableTracking;
+  private final boolean trackingEnabled;
   private final boolean shouldFetchServerIssues;
 
   public AnalysisFinishedEvent(UUID analysisId, String configurationScopeId, long analysisDuration, Map<URI, SonarLanguage> languagePerFile, boolean succeededForAllFiles,
@@ -51,7 +51,7 @@ public class AnalysisFinishedEvent {
     this.issues = issues;
     this.reportedRuleKeys = issues.stream().map(RawIssue::getRuleKey).collect(Collectors.toSet());
     this.detectedLanguages = languagePerFile.values().stream().filter(Objects::nonNull).collect(Collectors.toSet());
-    this.enableTracking = enableTracking;
+    this.trackingEnabled = enableTracking;
     this.shouldFetchServerIssues = shouldFetchServerIssues;
   }
 
@@ -87,8 +87,8 @@ public class AnalysisFinishedEvent {
     return issues;
   }
 
-  public boolean isEnableTracking() {
-    return enableTracking;
+  public boolean isTrackingEnabled() {
+    return trackingEnabled;
   }
 
   public boolean isShouldFetchServerIssues() {
