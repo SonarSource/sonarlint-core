@@ -23,7 +23,6 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseIssuesParams;
 
 @JsonSegment("analysis")
 public interface AnalysisRpcService {
