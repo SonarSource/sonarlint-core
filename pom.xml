@@ -24,6 +24,7 @@
   </issueManagement>
 
   <modules>
+    <module>buildSrc/maven-shade-ext-bnd-transformer</module>
     <module>backend/analysis-engine</module>
     <module>backend/cli</module>
     <module>backend/commons</module>
@@ -39,6 +40,7 @@
     <module>backend/telemetry</module>
     <module>client/java-client-legacy</module>
     <module>client/java-client-utils</module>
+    <module>client/java-client-osgi</module>
     <module>client/rpc-java-client</module>
     <module>medium-tests</module>
     <module>report-aggregate</module>
@@ -65,6 +67,12 @@
     <slf4j.version>1.7.36</slf4j.version>
     <logback.version>1.2.13</logback.version>
     <version.surefire.plugin>3.1.2</version.surefire.plugin>
+
+    <!-- Not only used as a plug-in but also as a dependency for 'maven-shade-ext-bnd-transformer' -->
+    <version.shade.plugin>3.4.1</version.shade.plugin>
+
+    <!-- Exclude Maven Shade plug-in dependency as the test is done via the Maven build itself ... -->
+    <sonar.coverage.exclusions>buildSrc/maven-shade-ext-bnd-transformer/**</sonar.coverage.exclusions>
   </properties>
 
   <dependencyManagement>
@@ -227,11 +235,6 @@
     <pluginManagement>
       <plugins>
         <plugin>
-          <groupId>org.apache.felix</groupId>
-          <artifactId>maven-bundle-plugin</artifactId>
-          <version>5.1.8</version>
-        </plugin>
-        <plugin>
           <groupId>biz.aQute.bnd</groupId>
           <artifactId>bnd-maven-plugin</artifactId>
           <version>6.4.0</version>
@@ -273,7 +276,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.4.1</version>
+          <version>${version.shade.plugin}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>

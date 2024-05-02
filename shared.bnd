@@ -1,3 +1,0 @@
-Bundle-SymbolicName: ${project.groupId}.${project.artifactId}
--removeheaders: Bnd-LastModified,Bundle-Developers,Bundle-DocURL,Bundle-SCM,Include-Resource,Private-Package
--noimportjava: true
