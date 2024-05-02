@@ -24,16 +24,25 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFileEdit;
+import org.sonarsource.sonarlint.core.analysis.api.Flow;
+import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
+import org.sonarsource.sonarlint.core.analysis.api.TextEdit;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.FileEditDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.TextEditDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueFlowDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueLocationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.QuickFixDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleParamDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
@@ -51,7 +60,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
 
-import static org.sonarsource.sonarlint.core.commons.CleanCodeAttribute.defaultCleanCodeAttribute;
+import static org.sonarsource.sonarlint.core.tracking.TextRangeUtils.toTextRangeDto;
 
 public class RuleDetailsAdapter {
   public static final String INTRODUCTION_SECTION_KEY = "introduction";
@@ -80,15 +89,6 @@ public class RuleDetailsAdapter {
       transformDescriptions(ruleDetails, contextKey),
       transform(ruleDetails.getParams()),
       adapt(ruleDetails.getLanguage()),
-      adapt(ruleDetails.getVulnerabilityProbability()));
-  }
-
-  public static GetRuleDetailsResponse transform(RuleDetails ruleDetails) {
-    return new GetRuleDetailsResponse(
-      adapt(ruleDetails.getDefaultSeverity()),
-      adapt(ruleDetails.getType()),
-      RuleDetailsAdapter.adapt(ruleDetails.getCleanCodeAttribute().orElse(defaultCleanCodeAttribute())),
-      toDto(ruleDetails.getDefaultImpacts()),
       adapt(ruleDetails.getVulnerabilityProbability()));
   }
 
@@ -260,4 +260,26 @@ public class RuleDetailsAdapter {
     return ImpactSeverity.valueOf(is.name());
   }
 
+  public static IssueFlowDto adapt(Flow f) {
+    return new IssueFlowDto(f.locations().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()));
+  }
+
+  public static IssueLocationDto adapt(org.sonarsource.sonarlint.core.analysis.api.IssueLocation l) {
+    var inputFile = l.getInputFile();
+    var fileUri = inputFile != null ? inputFile.uri() : null;
+    return new IssueLocationDto(toTextRangeDto(l.getTextRange()), l.getMessage(), fileUri);
+  }
+
+  public static QuickFixDto adapt(QuickFix qf) {
+    List<FileEditDto> fileEditDto = qf.inputFileEdits().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList());
+    return new QuickFixDto(fileEditDto, qf.message());
+  }
+
+  private static FileEditDto adapt(ClientInputFileEdit edit) {
+    return new FileEditDto(edit.target().uri(), edit.textEdits().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()));
+  }
+
+  private static TextEditDto adapt(TextEdit textEdit) {
+    return new TextEditDto(Objects.requireNonNull(toTextRangeDto(textEdit.range())), textEdit.newText());
+  }
 }

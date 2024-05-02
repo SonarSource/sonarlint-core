@@ -26,7 +26,8 @@ import java.util.UUID;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
-public class PublishIssuesParams {
+public class RaiseIssuesParams {
+  private final String configurationScopeId;
   private final Map<URI, List<TrackedIssueDto>> issuesByFileUri;
   // true if the publication is made for streaming purposes, false if it's the final publication for a given analysis
   private final boolean isIntermediatePublication;
@@ -34,10 +35,15 @@ public class PublishIssuesParams {
   // the ID that was provided when the analysis was triggered, or null if this publication is not a consequence of an analysis
   private final UUID analysisId;
 
-  public PublishIssuesParams(Map<URI, List<TrackedIssueDto>> issuesByFileUri, boolean isIntermediatePublication, @Nullable UUID analysisId) {
+  public RaiseIssuesParams(String configurationScopeId, Map<URI, List<TrackedIssueDto>> issuesByFileUri, boolean isIntermediatePublication, @Nullable UUID analysisId) {
+    this.configurationScopeId = configurationScopeId;
     this.issuesByFileUri = issuesByFileUri;
     this.isIntermediatePublication = isIntermediatePublication;
     this.analysisId = analysisId;
+  }
+
+  public String getConfigurationScopeId() {
+    return configurationScopeId;
   }
 
   public Map<URI, List<TrackedIssueDto>> getIssuesByFileUri() {

@@ -29,6 +29,7 @@ import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeClientNodeJsPathParams;
@@ -44,6 +45,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetSupported
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.NodeJsDetailsDto;
 import org.sonarsource.sonarlint.core.rules.RuleNotFoundException;
 import org.sonarsource.sonarlint.core.rules.RulesService;
+
+import static org.sonarsource.sonarlint.core.DtoMapper.toRuleDetailsResponse;
 
 class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements AnalysisRpcService {
 
@@ -81,7 +84,7 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
     return requestAsync(
       cancelChecker -> {
         try {
-          return getBean(RulesService.class).getRuleDetailsForAnalysis(params.getConfigScopeId(), params.getRuleKey());
+          return toRuleDetailsResponse(getBean(RulesService.class).getRuleDetailsForAnalysis(params.getConfigScopeId(), params.getRuleKey()));
         } catch (RuleNotFoundException e) {
           var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, e.getMessage(), e.getRuleKey());
           throw new ResponseErrorException(error);
@@ -108,7 +111,20 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
     var configurationScopeId = params.getConfigurationScopeId();
     return requestAsync(cancelChecker -> {
       var analysisResults = getBean(AnalysisService.class)
-        .analyze(cancelChecker, params.getConfigurationScopeId(), params.getAnalysisId(), params.getFilesToAnalyze(), params.getExtraProperties(), params.getStartTime()).join();
+        .analyze(cancelChecker, params.getConfigurationScopeId(), params.getAnalysisId(), params.getFilesToAnalyze(),
+          params.getExtraProperties(), params.getStartTime(), false, false).join();
+      return new AnalyzeFilesResponse(analysisResults.failedAnalysisFiles().stream().map(ClientInputFile::getClientObject).map(clientObj -> ((ClientFile) clientObj).getUri())
+        .collect(Collectors.toSet()));
+    }, configurationScopeId);
+  }
+
+  @Override
+  public CompletableFuture<AnalyzeFilesResponse> analyzeFilesAndTrack(AnalyzeFilesAndTrackParams params) {
+    var configurationScopeId = params.getConfigurationScopeId();
+    return requestAsync(cancelChecker -> {
+      var analysisResults = getBean(AnalysisService.class)
+        .analyze(cancelChecker, params.getConfigurationScopeId(), params.getAnalysisId(), params.getFilesToAnalyze(), params.getExtraProperties(), params.getStartTime(),
+          true, params.isShouldFetchServerIssues()).join();
       return new AnalyzeFilesResponse(
         analysisResults.failedAnalysisFiles().stream().map(ClientInputFile::getClientObject).map(clientObj -> ((ClientFile) clientObj).getUri()).collect(Collectors.toSet()));
     }, configurationScopeId);
