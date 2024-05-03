@@ -131,9 +131,12 @@ public class SonarCloudWebSocket {
     var payload = new WebSocketEventSubscribePayload(messageType, eventsKey, filter, projectKey);
 
     var jsonString = gson.toJson(payload);
-    this.wsFuture.thenAccept(ws -> {
+    this.wsFuture.thenCompose(ws -> {
       LOG.debug("sent '" + messageType + "' for project '" + projectKey + "'");
-      ws.sendText(jsonString, true);
+      return ws.sendText(jsonString, true);
+    }).exceptionally(error -> {
+      LOG.error("Error when sending WebSocket message", error);
+      return null;
     });
   }
 
