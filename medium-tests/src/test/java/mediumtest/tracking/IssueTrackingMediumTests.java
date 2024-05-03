@@ -170,7 +170,7 @@ class IssueTrackingMediumTests {
 
 
   @Test
-  void it_should_track_line_level_server_issue(@TempDir Path baseDir) {
+  void it_should_track_line_level_server_issue_on_different_line(@TempDir Path baseDir) {
     var filePath = createFile(baseDir, "Foo.java",
       "// FIXME foo bar\n" +
         "public class Foo {\n" +
@@ -210,7 +210,7 @@ class IssueTrackingMediumTests {
       .setRuleKey("S1134")
       .setChecksum("395d7a96efa8afd1b66ab6b680d0e637")
       .setMsg(message)
-      .setLine(1)
+      .setLine(2)
       .setCreationDate(123456789L)
       .setPath("Foo.java")
       .setType("BUG")
