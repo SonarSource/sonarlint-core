@@ -1,26 +1,29 @@
 # 10.2
 
 ## Breaking changes
-* None
+
+None
+
 ## New features
+
 ### Analysis and tracking
 
-* Add `analyzeFilesAndTrack` method to `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService` to allow client to submit files for analysis and expect to get a notification with tracked issues.
-  * should be called by the client instead of the deprecated `analyzeFiles` method.
-  * accepts `AnalyzeFilesAndTrackParams` instead of deprecated `AnalyzeFilesParams`. The difference is that the new `AnalyzeFilesAndTrackParams` expects to get one more flag - `shouldFetchServerIssues`.
-  * `shouldFetchServerIssues` flag should be `true` for didOpen file and `false` for all other cases
+* Add the `analyzeFilesAndTrack` method to `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService`.
+  * It allows clients to submit files for analysis, let the backend deal with issue tracking, and will lead to a later notification via `raiseIssues` (see below).
+  * Usages of `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFiles` should be replaced by this new method.
+  * It accepts a `AnalyzeFilesAndTrackParams` object instead of the deprecated `AnalyzeFilesParams`. The extra flag `shouldFetchServerIssues` should be set to `true` when the analysis is triggered in response to a file open event.
+  * When using this method, implementation of the `didRaiseIssue` method of `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient` is no longer required. The new `raiseIssues` method should be implemented instead (see below).
 
 * Add `raiseIssues` method to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient` to report tracked issues.
-  * will be called by core after tracking is done.
-  * returns `org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseIssuesParams` that contains new data class `TrackedIssueDto`.
-  * `TrackedIssueDto` contains data from matching/tracking with previously analyzed issues. For connected mode - also has data from matched server issues and anticipated issues.
-* Implementation of the `didRaiseIssue` method of `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient` is no longer required. Instead new method `raiseIssues` should be implemented.
-  * Note that the new method `raiseIssues` reports a collection of issues and works like issue publishing. Every call contains the full list of known issues. So it should be published as a whole instead of previously published issues.
+  * Will be called by the backend when issues should be raised to the user. The UI should be updated accordingly.
+  * The `org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseIssuesParams` class contains a list of issues to raise by file URI.
+  * Each raised issue went through issue tracking, and has potentially been matched with a previously known issue and/or a server issue in connected mode.
+  * This new method reports a collection of issues replacing the ones previously raised. Every call contains the full list of known issues.
 
 ## Deprecation
-* `analyzeFiles` method of `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService` shouldn't be called. `analyzeFilesAndTrack` should be called instead.
-* `trackWithServerIssues` method of `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.IssueTrackingRpcService` shouldn't be called if the client migrated to a new analysis API. Tracking will be performed by the core internally.
 
+* `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFiles` is deprecated, should be replaced by `analyzeFilesAndTrack`.
+* `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.IssueTrackingRpcService` is deprecated, the functionality is now handled by `analyzeFilesAndTrack`.
 
 # 10.1
 

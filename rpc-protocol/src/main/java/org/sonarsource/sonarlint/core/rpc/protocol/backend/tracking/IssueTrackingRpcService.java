@@ -23,18 +23,16 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 
+/**
+ * @deprecated Use {@link AnalysisRpcService#analyzeFilesAndTrack(AnalyzeFilesAndTrackParams)} instead.
+ */
 @JsonSegment("issueTracking")
+@Deprecated(since = "10.2")
 public interface IssueTrackingRpcService {
-
   /**
-   * Warning: this method will eventually become internal to the backend. It is exposed as an intermediate step during migration.
    * @deprecated
-   * This method shouldn't be called if analysis is being triggered by
-   * {@link AnalysisRpcService#analyzeFilesAndTrack}.
-   * Tracking will be triggered by the backend and tracked issues will be published by
-   * {@link SonarLintRpcClient#raiseIssues}.
    * <p>This method accepts a list of raw issues grouped by the ide relative file path in which they were detected.
    * This method returns a list of tracked issues grouped by the ide relative file path in which they were detected.
    * It is guaranteed that the size and order of the tracked issues list in the response will be the same as the locally tracked issues list in the parameters.
