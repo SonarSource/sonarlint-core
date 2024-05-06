@@ -279,6 +279,12 @@ public class ServerFixture {
           return this;
         }
 
+        public ServerProjectBranchBuilder withIssue(String issueKey, String ruleKey, String message, String author, String filePath,
+          String hash, Constants.Severity severity, RuleType ruleType, String status, String resolution, Instant creationDate, TextRange textRange) {
+          this.issues.add(new ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, creationDate, textRange, ruleType, hash, severity));
+          return this;
+        }
+
         public ServerProjectBranchBuilder withSourceFile(String componentKey, UnaryOperator<ServerSourceFileBuilder> sourceFileBuilder) {
           var builder = new ServerSourceFileBuilder();
           this.sourceFileByComponentKey.put(componentKey, sourceFileBuilder.apply(builder));
@@ -333,6 +339,18 @@ public class ServerFixture {
           private final Instant introductionDate;
           private final TextRange textRange;
           private final RuleType ruleType;
+          private String hash;
+          private Constants.Severity severity;
+          private boolean manualSeverity = false;
+
+
+          private ServerIssue(String issueKey, String ruleKey, String message, String author, String filePath, String status,
+            String resolution, Instant introductionDate, TextRange textRange, RuleType ruleType, String hash, Constants.Severity severity) {
+            this(issueKey, ruleKey, message, author, filePath, status, resolution, introductionDate, textRange, ruleType);
+            this.hash = hash;
+            this.severity = severity;
+            this.manualSeverity = true;
+          }
 
           private ServerIssue(String issueKey, String ruleKey, String message, String author, String filePath, String status,
             String resolution, Instant introductionDate, TextRange textRange, RuleType ruleType) {
@@ -346,6 +364,8 @@ public class ServerFixture {
             this.introductionDate = introductionDate;
             this.textRange = textRange;
             this.ruleType = ruleType;
+            this.hash = "hash";
+            this.severity = Constants.Severity.BLOCKER;
           }
 
           public String getFilePath() {
@@ -862,14 +882,14 @@ public class ServerFixture {
               .setKey(issue.issueKey)
               .setRuleRepository(ruleKey.repository())
               .setRuleKey(ruleKey.rule())
-              .setChecksum("hash")
+              .setChecksum(issue.hash)
               .setMsg(issue.message)
               .setLine(issue.textRange.getStartLine())
-              .setCreationDate(123456789L)
+              .setCreationDate(issue.introductionDate.toEpochMilli())
               .setPath(issue.filePath)
-              .setType("BUG")
-              .setManualSeverity(false)
-              .setSeverity(Constants.Severity.BLOCKER)
+              .setType(issue.ruleType.name())
+              .setManualSeverity(issue.manualSeverity)
+              .setSeverity(issue.severity)
               .build();
             allBranchIssues.add(serverIssue);
             return serverIssue;
