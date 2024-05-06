@@ -169,6 +169,64 @@ class IssueTrackingMediumTests {
     assertThat(textRange3.getEndLineOffset()).isEqualTo(21);
   }
 
+  @Test
+  void it_should_track_line_level_server_issue_on_same_line(@TempDir Path baseDir) {
+    var ideFilePath = "Foo.java";
+    var filePath = createFile(baseDir, ideFilePath,
+      "// FIXME foo bar\n" +
+        "public class Foo {\n" +
+        "}");
+    var projectKey = "projectKey";
+    var connectionId = "connectionId";
+    var branchName = "main";
+    var ruleKey = "java:S1134";
+    var message = "Take the required action to fix the issue indicated by this comment.";
+
+    var fileUri = filePath.toUri();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
+      .build();
+    var server = newSonarQubeServer("9.5")
+      .withProject(projectKey)
+      .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
+        .withActiveRule(ruleKey, activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
+      .start();
+    backend = newBackend()
+      .withSonarQubeConnection(connectionId, server,
+        storage -> storage.withPlugin(TestPlugin.JAVA).withProject(projectKey,
+          project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
+            .withMainBranch(branchName)))
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .build(client);
+
+    backend.getConfigurationService()
+      .didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
+        new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, CONFIG_SCOPE_ID,
+          new BindingConfigurationDto(connectionId, projectKey, true)))));
+
+    var url = "/batch/issues?key=" + UrlUtils.urlEncode(projectKey + ":" + ideFilePath) + "&branch=" + branchName;
+    var response = ScannerInput.ServerIssue.newBuilder()
+      .setKey("uuid")
+      .setRuleRepository("java")
+      .setRuleKey("S1134")
+      .setChecksum("395d7a96efa8afd1b66ab6b680d0e637")
+      .setMsg(message)
+      .setLine(1)
+      .setCreationDate(123456789L)
+      .setPath(ideFilePath)
+      .setType("BUG")
+      .setManualSeverity(true)
+      .setSeverity(Constants.Severity.BLOCKER)
+      .build();
+    server.getMockServer().stubFor(get(url).willReturn(aResponse().withStatus(200).withResponseBody(protobufBodyDelimited(response))));
+
+    var firstPublishedIssue = analyzeFileAndGetIssue(fileUri, client);
+
+    assertThat(firstPublishedIssue)
+      .extracting("ruleKey", "primaryMessage", "severity", "type", "serverKey", "introductionDate",
+        "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
+      .containsExactly(ruleKey, message, IssueSeverity.BLOCKER, RuleType.BUG, "uuid", Instant.ofEpochMilli(123456789L), 1, 0, 1, 16);
+  }
 
   @Test
   void it_should_track_line_level_server_issue_on_different_line(@TempDir Path baseDir) {

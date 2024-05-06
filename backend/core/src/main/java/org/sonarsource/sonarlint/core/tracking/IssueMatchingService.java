@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import com.google.common.util.concurrent.MoreExecutors;
+import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -68,6 +69,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlyIss
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ServerMatchedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseIssuesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
@@ -181,10 +183,6 @@ public class IssueMatchingService {
     var translationOpt = pathTranslationService.getOrComputePathTranslation(configurationScopeId);
     Map<Path, List<RawIssue>> rawIssuesByIdeRelativePath = issues.stream().filter(it -> Objects.nonNull(it.getIdeRelativePath()))
       .collect(Collectors.groupingBy(RawIssue::getIdeRelativePath, mapping(Function.identity(), toList())));
-    var packageAndFolderLevelIssues = issues.stream().filter(it -> Objects.isNull(it.getIdeRelativePath())).collect(toList());
-    if (!packageAndFolderLevelIssues.isEmpty()) {
-      rawIssuesByIdeRelativePath.put(null, packageAndFolderLevelIssues);
-    }
     Map<Path, List<TrackedIssue>> newIssues;
     var knownIssuesStore = knownIssuesStorageService.get();
     if (effectiveBindingOpt.isEmpty() || activeBranchOpt.isEmpty() || translationOpt.isEmpty()) {
@@ -211,10 +209,7 @@ public class IssueMatchingService {
             .collect(toList());
         }));
       updatedIssues.forEach((clientRelativePath, trackedIssues) -> storeTrackedIssues(knownIssuesStore, configurationScopeId, clientRelativePath, trackedIssues));
-      var issuesToRaise = updatedIssues.values().stream().flatMap(Collection::stream)
-        .filter(issue -> Objects.nonNull(issue.getFileUri()))
-        .collect(groupingBy(TrackedIssue::getFileUri, Collectors.mapping(DtoMapper::toRaisedIssueDto, Collectors.toList())));
-
+      var issuesToRaise = getIssuesToRaise(updatedIssues);
       client.raiseIssues(new RaiseIssuesParams(configurationScopeId, issuesToRaise, false, event.getAnalysisId()));
       return;
     }
@@ -254,11 +249,13 @@ public class IssueMatchingService {
       storeTrackedIssues(knownIssuesStore, configurationScopeId, ideRelativePath, matches);
       return Map.entry(ideRelativePath, matches);
     }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    var issuesToRaise = newIssues.values().stream().flatMap(Collection::stream)
-      .filter(issue -> Objects.nonNull(issue.getFileUri()))
-      .collect(groupingBy(TrackedIssue::getFileUri, Collectors.mapping(DtoMapper::toRaisedIssueDto, Collectors.toList())));
-
+    var issuesToRaise = getIssuesToRaise(newIssues);
     client.raiseIssues(new RaiseIssuesParams(configurationScopeId, issuesToRaise, false, event.getAnalysisId()));
+  }
+
+  private static Map<URI, List<RaisedIssueDto>> getIssuesToRaise(Map<Path, List<TrackedIssue>> updatedIssues) {
+    return updatedIssues.values().stream().flatMap(Collection::stream)
+      .collect(groupingBy(TrackedIssue::getFileUri, Collectors.mapping(DtoMapper::toRaisedIssueDto, Collectors.toList())));
   }
 
   public void storeTrackedIssues(XodusKnownIssuesStore knownIssuesStore, String configurationScopeId, Path clientRelativePath, List<TrackedIssue> newKnownIssues) {
