@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.analysis.RuleDetailsForAnalysis;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.TrackedIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
 import org.sonarsource.sonarlint.core.tracking.TrackedIssue;
 
@@ -44,8 +44,8 @@ public class DtoMapper {
         .collect(Collectors.toList()), RuleDetailsAdapter.adapt(ruleDetails.getVulnerabilityProbability()));
   }
 
-  public static TrackedIssueDto toTrackedIssueDto(TrackedIssue issue) {
-    return new TrackedIssueDto(issue.getId(), issue.getServerKey(), issue.getRuleKey(), issue.getMessage(),
+  public static RaisedIssueDto toRaisedIssueDto(TrackedIssue issue) {
+    return new RaisedIssueDto(issue.getId(), issue.getServerKey(), issue.getRuleKey(), issue.getMessage(),
       RuleDetailsAdapter.adapt(issue.getSeverity()),
       RuleDetailsAdapter.adapt(issue.getType()),
       RuleDetailsAdapter.adapt(issue.getCleanCodeAttribute()), RuleDetailsAdapter.toDto(issue.getImpacts()),

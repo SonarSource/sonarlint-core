@@ -42,7 +42,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.Bindin
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.TrackedIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
@@ -80,7 +80,8 @@ class IssueTrackingMediumTests {
 
   @Test
   void it_should_track_issue_secondary_locations(@TempDir Path baseDir) {
-    var filePath = createFile(baseDir, "Foo.java",
+    var ideFilePath = "Foo.java";
+    var filePath = createFile(baseDir, ideFilePath,
       "package devoxx;\n" +
         "\n" +
         "public class Foo {\n" +
@@ -118,7 +119,7 @@ class IssueTrackingMediumTests {
         new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, CONFIG_SCOPE_ID,
           new BindingConfigurationDto(connectionId, projectKey, true)))));
 
-    var url = "/batch/issues?key=" + UrlUtils.urlEncode(projectKey + ":" + filePath) + "&branch=" + branchName;
+    var url = "/batch/issues?key=" + UrlUtils.urlEncode(projectKey + ":" + ideFilePath) + "&branch=" + branchName;
     var response = ScannerInput.ServerIssue.newBuilder()
       .setKey("uuid")
       .setRuleRepository("java")
@@ -127,7 +128,7 @@ class IssueTrackingMediumTests {
       .setMsg(message)
       .setLine(5)
       .setCreationDate(123456789L)
-      .setPath("Foo.java")
+      .setPath(ideFilePath)
       .setType("BUG")
       .setManualSeverity(true)
       .setSeverity(Constants.Severity.BLOCKER)
@@ -171,7 +172,8 @@ class IssueTrackingMediumTests {
 
   @Test
   void it_should_track_line_level_server_issue_on_different_line(@TempDir Path baseDir) {
-    var filePath = createFile(baseDir, "Foo.java",
+    var ideFilePath = "Foo.java";
+    var filePath = createFile(baseDir, ideFilePath,
       "// FIXME foo bar\n" +
         "public class Foo {\n" +
         "}");
@@ -203,7 +205,7 @@ class IssueTrackingMediumTests {
         new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, CONFIG_SCOPE_ID,
           new BindingConfigurationDto(connectionId, projectKey, true)))));
 
-    var url = "/batch/issues?key=" + UrlUtils.urlEncode(projectKey + ":" + filePath) + "&branch=" + branchName;
+    var url = "/batch/issues?key=" + UrlUtils.urlEncode(projectKey + ":" + ideFilePath) + "&branch=" + branchName;
     var response = ScannerInput.ServerIssue.newBuilder()
       .setKey("uuid")
       .setRuleRepository("java")
@@ -212,7 +214,7 @@ class IssueTrackingMediumTests {
       .setMsg(message)
       .setLine(2)
       .setCreationDate(123456789L)
-      .setPath("Foo.java")
+      .setPath(ideFilePath)
       .setType("BUG")
       .setManualSeverity(true)
       .setSeverity(Constants.Severity.BLOCKER)
@@ -246,7 +248,7 @@ class IssueTrackingMediumTests {
     var newPublishedIssue = analyzeFileAndGetIssue(fileUri, client);
 
     assertThat(newPublishedIssue)
-      .extracting(TrackedIssueDto::getId, TrackedIssueDto::getIntroductionDate)
+      .extracting(RaisedIssueDto::getId, RaisedIssueDto::getIntroductionDate)
       .containsExactly(firstPublishedIssue.getId(), firstPublishedIssue.getIntroductionDate());
   }
 
@@ -312,7 +314,7 @@ class IssueTrackingMediumTests {
     var publishedIssue = analyzeFileAndGetIssue(fileUri, client);
 
     assertThat(publishedIssue)
-      .extracting(TrackedIssueDto::getIntroductionDate, as(INSTANT))
+      .extracting(RaisedIssueDto::getIntroductionDate, as(INSTANT))
       .isAfter(Instant.ofEpochMilli(startTime));
   }
 
@@ -333,7 +335,7 @@ class IssueTrackingMediumTests {
     var newPublishedIssue = analyzeFileAndGetIssue(fileUri, client);
 
     assertThat(newPublishedIssue)
-      .extracting(TrackedIssueDto::getId, TrackedIssueDto::getIntroductionDate)
+      .extracting(RaisedIssueDto::getId, RaisedIssueDto::getIntroductionDate)
       .containsExactly(firstPublishedIssue.getId(), firstPublishedIssue.getIntroductionDate());
   }
 
@@ -355,7 +357,7 @@ class IssueTrackingMediumTests {
     var publishedIssue = analyzeFileAndGetIssue(fileUri, client);
 
     assertThat(publishedIssue)
-      .extracting(TrackedIssueDto::getIntroductionDate, as(INSTANT))
+      .extracting(RaisedIssueDto::getIntroductionDate, as(INSTANT))
       .isAfter(Instant.ofEpochMilli(startTime));
   }
 
@@ -378,7 +380,7 @@ class IssueTrackingMediumTests {
     var newPublishedIssue = analyzeFileAndGetIssue(fileUri, client);
 
     assertThat(newPublishedIssue)
-      .extracting(TrackedIssueDto::getId, TrackedIssueDto::getIntroductionDate)
+      .extracting(RaisedIssueDto::getId, RaisedIssueDto::getIntroductionDate)
       .containsExactly(firstPublishedIssue.getId(), firstPublishedIssue.getIntroductionDate());
   }
 
@@ -399,7 +401,7 @@ class IssueTrackingMediumTests {
             .withMainBranch("main", branch -> branch.withIssue(
               aServerIssue("key")
                 .withMessage("Replace \"pom.version\" with \"project.version\".")
-                .withFilePath(filePath.toString())
+                .withFilePath("pom.xml")
                 .withRuleKey("xml:S3421")
                 .withTextRange(new TextRangeWithHash(1, 2, 3, 4, "5507902b11374f7b2a6951d70635435d"))
                 .withIntroductionDate(serverIssueIntroductionDate)))))
@@ -410,7 +412,7 @@ class IssueTrackingMediumTests {
     var publishedIssue = analyzeFileAndGetIssue(fileUri, client);
 
     assertThat(publishedIssue)
-      .extracting(TrackedIssueDto::getServerKey, TrackedIssueDto::getIntroductionDate)
+      .extracting(RaisedIssueDto::getServerKey, RaisedIssueDto::getIntroductionDate)
       .containsExactly("key", serverIssueIntroductionDate);
   }
 
@@ -434,7 +436,7 @@ class IssueTrackingMediumTests {
             .withMainBranch("main", branch -> branch.withIssue(
               aServerIssue("key")
                 .withMessage("Replace \"pom.version\" with \"project.version\".")
-                .withFilePath(filePath.toString())
+                .withFilePath("pom.xml")
                 .withRuleKey("xml:S3421")
                 .withTextRange(new TextRangeWithHash(1, 2, 3, 4, "5507902b11374f7b2a6951d70635435d"))
                 .withIntroductionDate(serverIssueIntroductionDate)))))
@@ -463,11 +465,11 @@ class IssueTrackingMediumTests {
     var newPublishedIssue = analyzeFileAndGetIssue(fileUri, client);
 
     assertThat(newPublishedIssue)
-      .extracting(TrackedIssueDto::getId, TrackedIssueDto::getServerKey, TrackedIssueDto::getIntroductionDate)
+      .extracting(RaisedIssueDto::getId, RaisedIssueDto::getServerKey, RaisedIssueDto::getIntroductionDate)
       .containsExactly(firstPublishedIssue.getId(), "key", serverIssueIntroductionDate);
   }
 
-  private List<TrackedIssueDto> analyzeFileAndGetAllIssues(URI fileUri, SonarLintRpcClientDelegate client) {
+  private List<RaisedIssueDto> analyzeFileAndGetAllIssues(URI fileUri, SonarLintRpcClientDelegate client) {
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
         new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true, System.currentTimeMillis()))
@@ -478,7 +480,7 @@ class IssueTrackingMediumTests {
     return publishedIssuesByFile.get(fileUri);
   }
 
-  private TrackedIssueDto analyzeFileAndGetIssue(URI fileUri, SonarLintRpcClientDelegate client) {
+  private RaisedIssueDto analyzeFileAndGetIssue(URI fileUri, SonarLintRpcClientDelegate client) {
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
         new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true, System.currentTimeMillis()))
@@ -502,9 +504,9 @@ class IssueTrackingMediumTests {
         + "</project>");
   }
 
-  private Map<URI, List<TrackedIssueDto>> getPublishedIssues(SonarLintRpcClientDelegate client, UUID analysisId) {
-    ArgumentCaptor<Map<URI, List<TrackedIssueDto>>> trackedIssuesCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(client).publishIssues(eq(CONFIG_SCOPE_ID), trackedIssuesCaptor.capture(), eq(false), eq(analysisId));
+  private Map<URI, List<RaisedIssueDto>> getPublishedIssues(SonarLintRpcClientDelegate client, UUID analysisId) {
+    ArgumentCaptor<Map<URI, List<RaisedIssueDto>>> trackedIssuesCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(client).raiseIssues(eq(CONFIG_SCOPE_ID), trackedIssuesCaptor.capture(), eq(false), eq(analysisId));
     return trackedIssuesCaptor.getValue();
   }
 
