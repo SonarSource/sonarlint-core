@@ -398,9 +398,10 @@ class IssueTrackingMediumTests {
           project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MINOR"))
             .withMainBranch("main", branch -> branch.withIssue(
               aServerIssue("key")
+                .withMessage("Replace \"pom.version\" with \"project.version\".")
                 .withFilePath(filePath.toString())
                 .withRuleKey("xml:S3421")
-                .withTextRange(new TextRangeWithHash(1, 2, 3, 4, ""))
+                .withTextRange(new TextRangeWithHash(1, 2, 3, 4, "5507902b11374f7b2a6951d70635435d"))
                 .withIntroductionDate(serverIssueIntroductionDate)))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
@@ -432,9 +433,10 @@ class IssueTrackingMediumTests {
           project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MINOR"))
             .withMainBranch("main", branch -> branch.withIssue(
               aServerIssue("key")
+                .withMessage("Replace \"pom.version\" with \"project.version\".")
                 .withFilePath(filePath.toString())
                 .withRuleKey("xml:S3421")
-                .withTextRange(new TextRangeWithHash(1, 2, 3, 4, ""))
+                .withTextRange(new TextRangeWithHash(1, 2, 3, 4, "5507902b11374f7b2a6951d70635435d"))
                 .withIntroductionDate(serverIssueIntroductionDate)))))
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
