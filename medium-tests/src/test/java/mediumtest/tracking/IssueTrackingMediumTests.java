@@ -221,7 +221,9 @@ class IssueTrackingMediumTests {
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
       .build();
     var server = newSonarQubeServer("9.5")
-      .withProject(projectKey)
+      .withProject("projectKey", project -> project.withBranch("main", branch -> branch
+        .withIssue("uuid", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER, org.sonarsource.sonarlint.core.commons.RuleType.BUG,
+          "OPEN", null, Instant.ofEpochMilli(123456789L), new TextRange(2,0,2,16))))
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
         .withActiveRule(ruleKey, activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
       .start();
@@ -237,23 +239,6 @@ class IssueTrackingMediumTests {
       .didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
         new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, CONFIG_SCOPE_ID,
           new BindingConfigurationDto(connectionId, projectKey, true)))));
-
-    var url = "/batch/issues?key=" + UrlUtils.urlEncode(projectKey + ":" + ideFilePath) + "&branch=" + branchName;
-    var response = ScannerInput.ServerIssue.newBuilder()
-      .setKey("uuid")
-      .setRuleRepository("java")
-      .setRuleKey("S1134")
-      .setChecksum("395d7a96efa8afd1b66ab6b680d0e637")
-      .setMsg(message)
-      .setLine(2)
-      .setCreationDate(123456789L)
-      .setPath(ideFilePath)
-      .setType("BUG")
-      .setManualSeverity(true)
-      .setSeverity(Constants.Severity.BLOCKER)
-      .build();
-    server.getMockServer().stubFor(get(url).willReturn(aResponse().withStatus(200).withResponseBody(protobufBodyDelimited(response))));
-
     var firstPublishedIssue = analyzeFileAndGetIssue(fileUri, client);
 
     assertThat(firstPublishedIssue)
