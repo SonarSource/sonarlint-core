@@ -20,9 +20,11 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import com.google.common.util.concurrent.MoreExecutors;
+import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +69,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlyIss
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ServerMatchedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseIssuesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
@@ -74,6 +77,7 @@ import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.IssueSynchronizationService;
 import org.springframework.context.event.EventListener;
 
+import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -177,12 +181,8 @@ public class IssueMatchingService {
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     var activeBranchOpt = branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId);
     var translationOpt = pathTranslationService.getOrComputePathTranslation(configurationScopeId);
-    Map<Path, List<RawIssue>> rawIssuesByIdeRelativePath = issues.stream().filter(it -> Objects.nonNull(it.getFilePath()))
-      .collect(Collectors.groupingBy(RawIssue::getFilePath, mapping(Function.identity(), toList())));
-    var packageAndFolderLevelIssues = issues.stream().filter(it -> Objects.isNull(it.getFilePath())).collect(toList());
-    if (!packageAndFolderLevelIssues.isEmpty()) {
-      rawIssuesByIdeRelativePath.put(null, packageAndFolderLevelIssues);
-    }
+    Map<Path, List<RawIssue>> rawIssuesByIdeRelativePath = issues.stream().filter(it -> Objects.nonNull(it.getIdeRelativePath()))
+      .collect(Collectors.groupingBy(RawIssue::getIdeRelativePath, mapping(Function.identity(), toList())));
     Map<Path, List<TrackedIssue>> newIssues;
     var knownIssuesStore = knownIssuesStorageService.get();
     if (effectiveBindingOpt.isEmpty() || activeBranchOpt.isEmpty() || translationOpt.isEmpty()) {
@@ -193,7 +193,7 @@ public class IssueMatchingService {
             getTextRangeWithHash(issue.getTextRange(), issue.getClientInputFile()),
             getLineWithHash(issue.getTextRange(), issue.getClientInputFile()), null,
             issue.getImpacts(), issue.getFlows(), issue.getQuickFixes(), issue.getVulnerabilityProbability(),
-            issue.getRuleDescriptionContextKey(), issue.getCleanCodeAttribute()))
+            issue.getRuleDescriptionContextKey(), issue.getCleanCodeAttribute(), issue.getFileUri()))
           .collect(toList())))
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
       Map<Path, List<TrackedIssue>> updatedIssues = newIssues.entrySet().stream()
@@ -209,10 +209,8 @@ public class IssueMatchingService {
             .collect(toList());
         }));
       updatedIssues.forEach((clientRelativePath, trackedIssues) -> storeTrackedIssues(knownIssuesStore, configurationScopeId, clientRelativePath, trackedIssues));
-
-      client.raiseIssues(new RaiseIssuesParams(configurationScopeId, updatedIssues.entrySet().stream().collect(toMap(e -> e.getKey().toUri(),
-        e -> e.getValue().stream().map(DtoMapper::toTrackedIssueDto).collect(Collectors.toList()))),
-        false, event.getAnalysisId()));
+      var issuesToRaise = getIssuesToRaise(updatedIssues);
+      client.raiseIssues(new RaiseIssuesParams(configurationScopeId, issuesToRaise, false, event.getAnalysisId()));
       return;
     }
 
@@ -251,8 +249,13 @@ public class IssueMatchingService {
       storeTrackedIssues(knownIssuesStore, configurationScopeId, ideRelativePath, matches);
       return Map.entry(ideRelativePath, matches);
     }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    client.raiseIssues(new RaiseIssuesParams(configurationScopeId, newIssues.entrySet().stream().collect(toMap(e -> e.getKey().toUri(),
-      e -> e.getValue().stream().map(DtoMapper::toTrackedIssueDto).collect(Collectors.toList()))), false, event.getAnalysisId()));
+    var issuesToRaise = getIssuesToRaise(newIssues);
+    client.raiseIssues(new RaiseIssuesParams(configurationScopeId, issuesToRaise, false, event.getAnalysisId()));
+  }
+
+  private static Map<URI, List<RaisedIssueDto>> getIssuesToRaise(Map<Path, List<TrackedIssue>> updatedIssues) {
+    return updatedIssues.values().stream().flatMap(Collection::stream)
+      .collect(groupingBy(TrackedIssue::getFileUri, Collectors.mapping(DtoMapper::toRaisedIssueDto, Collectors.toList())));
   }
 
   public void storeTrackedIssues(XodusKnownIssuesStore knownIssuesStore, String configurationScopeId, Path clientRelativePath, List<TrackedIssue> newKnownIssues) {
@@ -315,7 +318,7 @@ public class IssueMatchingService {
       newCodeDefinition.isOnNewCode(serverIssue.getCreationDate().toEpochMilli()), trackedIssue.getTextRangeWithHash(),
       trackedIssue.getLineWithHash(), serverIssue.getKey(), trackedIssue.getImpacts(), trackedIssue.getFlows(),
       trackedIssue.getQuickFixes(), trackedIssue.getVulnerabilityProbability(), trackedIssue.getRuleDescriptionContextKey(),
-      trackedIssue.getCleanCodeAttribute());
+      trackedIssue.getCleanCodeAttribute(), trackedIssue.getFileUri());
   }
 
   private static TrackedIssue updateTrackedIssueWithRawIssueData(KnownIssue knownIssue, RawIssue rawIssue, NewCodeDefinition newCodeDefinition) {
@@ -325,7 +328,7 @@ public class IssueMatchingService {
       TextRangeUtils.getTextRangeWithHash(rawIssue.getTextRange(), rawIssue.getClientInputFile()),
       TextRangeUtils.getLineWithHash(rawIssue.getTextRange(), rawIssue.getClientInputFile()), knownIssue.getServerKey(),
       rawIssue.getImpacts(), rawIssue.getFlows(), rawIssue.getQuickFixes(), rawIssue.getVulnerabilityProbability(),
-      rawIssue.getRuleDescriptionContextKey(), rawIssue.getCleanCodeAttribute());
+      rawIssue.getRuleDescriptionContextKey(), rawIssue.getCleanCodeAttribute(), rawIssue.getFileUri());
   }
 
   private static TrackedIssue updateTrackedIssueWithPreviousTrackingData(KnownIssue oldIssue, TrackedIssue newIssue) {
@@ -334,7 +337,7 @@ public class IssueMatchingService {
       newIssue.isOnNewCode(), newIssue.getTextRangeWithHash(),
       newIssue.getLineWithHash(), newIssue.getServerKey(), newIssue.getImpacts(), newIssue.getFlows(),
       newIssue.getQuickFixes(), newIssue.getVulnerabilityProbability(), newIssue.getRuleDescriptionContextKey(),
-      newIssue.getCleanCodeAttribute());
+      newIssue.getCleanCodeAttribute(), newIssue.getFileUri());
   }
 
   private static TrackedIssue updateTrackedIssueWithLocalOnlyIssueData(TrackedIssue trackedIssue, LocalOnlyIssue localOnlyIssue) {
@@ -343,7 +346,7 @@ public class IssueMatchingService {
       trackedIssue.isOnNewCode(), trackedIssue.getTextRangeWithHash(),
       trackedIssue.getLineWithHash(), trackedIssue.getServerKey(), trackedIssue.getImpacts(), trackedIssue.getFlows(),
       trackedIssue.getQuickFixes(), trackedIssue.getVulnerabilityProbability(), trackedIssue.getRuleDescriptionContextKey(),
-      trackedIssue.getCleanCodeAttribute());
+      trackedIssue.getCleanCodeAttribute(), trackedIssue.getFileUri());
   }
 
   private List<Either<ServerIssue<?>, LocalOnlyIssue>> matchIssues(Path serverRelativePath, List<ServerIssue<?>> serverIssues,

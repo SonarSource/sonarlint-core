@@ -28,14 +28,14 @@ import javax.annotation.Nullable;
 
 public class RaiseIssuesParams {
   private final String configurationScopeId;
-  private final Map<URI, List<TrackedIssueDto>> issuesByFileUri;
+  private final Map<URI, List<RaisedIssueDto>> issuesByFileUri;
   // true if the publication is made for streaming purposes, false if it's the final publication for a given analysis
   private final boolean isIntermediatePublication;
   @Nullable
   // the ID that was provided when the analysis was triggered, or null if this publication is not a consequence of an analysis
   private final UUID analysisId;
 
-  public RaiseIssuesParams(String configurationScopeId, Map<URI, List<TrackedIssueDto>> issuesByFileUri, boolean isIntermediatePublication, @Nullable UUID analysisId) {
+  public RaiseIssuesParams(String configurationScopeId, Map<URI, List<RaisedIssueDto>> issuesByFileUri, boolean isIntermediatePublication, @Nullable UUID analysisId) {
     this.configurationScopeId = configurationScopeId;
     this.issuesByFileUri = issuesByFileUri;
     this.isIntermediatePublication = isIntermediatePublication;
@@ -46,7 +46,7 @@ public class RaiseIssuesParams {
     return configurationScopeId;
   }
 
-  public Map<URI, List<TrackedIssueDto>> getIssuesByFileUri() {
+  public Map<URI, List<RaisedIssueDto>> getIssuesByFileUri() {
     return issuesByFileUri;
   }
 

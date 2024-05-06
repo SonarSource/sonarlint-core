@@ -44,7 +44,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordA
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.ProxyDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.X509CertificateDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueDetailsDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.TrackedIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
@@ -176,7 +176,7 @@ public interface SonarLintRpcClientDelegate {
   default void didRaiseIssue(String configurationScopeId, UUID analysisId, RawIssueDto rawIssue) {
   }
 
-  default void publishIssues(String configurationScopeId, Map<URI, List<TrackedIssueDto>> issuesByFileUri, boolean isIntermediatePublication, @Nullable UUID analysisId) {
+  default void raiseIssues(String configurationScopeId, Map<URI, List<RaisedIssueDto>> issuesByFileUri, boolean isIntermediatePublication, @Nullable UUID analysisId) {
   }
 
   default void didSkipLoadingPlugin(String configurationScopeId, Language language, DidSkipLoadingPluginParams.SkipReason reason, String minVersion,

@@ -39,6 +39,7 @@ public class ServerIssueFixtures {
     private String ruleKey = "ruleKey";
 
     private String filePath = "file/path";
+    private String message = "message";
 
     public ServerIssueBuilder(String key) {
       super(key);
@@ -59,8 +60,13 @@ public class ServerIssueFixtures {
       return this;
     }
 
+    public ServerIssueBuilder withMessage(String message) {
+      this.message = message;
+      return this;
+    }
+
     public ServerIssue build() {
-      return new ServerIssue(key, resolved, ruleKey, "message", Path.of(filePath).toString(), introductionDate, issueSeverity, ruleType, textRangeWithHash);
+      return new ServerIssue(key, resolved, ruleKey, message, Path.of(filePath).toString(), introductionDate, issueSeverity, ruleType, textRangeWithHash);
     }
   }
 
