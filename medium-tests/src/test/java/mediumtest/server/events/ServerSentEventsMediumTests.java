@@ -228,10 +228,11 @@ class ServerSentEventsMediumTests {
       await().atMost(Duration.ofSeconds(2))
         .untilAsserted(() -> assertThat(requestedPaths()).containsExactly("/api/push/sonarlint_events?projectKeys=projectKey&languages=java,js"));
 
-      assertThat(client.getLogMessages())
-        .contains(
-          "Cannot connect to server event-stream (400), retrying in 60s",
-          "Received event-stream data while not connected: {\"errors\":[{\"msg\":\"Some error from server\"}]}");
+      await().atMost(Duration.ofSeconds(1))
+        .untilAsserted(() -> assertThat(client.getLogMessages())
+          .contains(
+            "Cannot connect to server event-stream (400), retrying in 60s",
+            "Received event-stream data while not connected: {\"errors\":[{\"msg\":\"Some error from server\"}]}"));
     }
 
     @Test
