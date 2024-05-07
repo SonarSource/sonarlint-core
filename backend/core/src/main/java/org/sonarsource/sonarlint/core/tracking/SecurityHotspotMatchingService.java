@@ -246,12 +246,12 @@ public class SecurityHotspotMatchingService {
 
   private static TrackedIssue updateRawHotspotWithServerData(RawIssue rawHotspot, ServerHotspot serverHotspot, NewCodeDefinition newCodeDefinition) {
     return new TrackedIssue(UUID.randomUUID(), rawHotspot.getMessage(), serverHotspot.getCreationDate(),
-      serverHotspot.getStatus().isResolved(), rawHotspot.getSeverity(), RuleType.SECURITY_HOTSPOT, serverHotspot.getRuleKey(),
+      serverHotspot.getStatus().isResolved(), rawHotspot.getSeverity(), RuleType.SECURITY_HOTSPOT, rawHotspot.getRuleKey(),
       newCodeDefinition.isOnNewCode(serverHotspot.getCreationDate().toEpochMilli()),
       TextRangeUtils.getTextRangeWithHash(rawHotspot.getTextRange(), rawHotspot.getClientInputFile()),
       TextRangeUtils.getLineWithHash(rawHotspot.getTextRange(), rawHotspot.getClientInputFile()),
       serverHotspot.getKey(), rawHotspot.getImpacts(), rawHotspot.getFlows(), rawHotspot.getQuickFixes(),
-      rawHotspot.getVulnerabilityProbability(), rawHotspot.getRuleDescriptionContextKey(),
+      serverHotspot.getVulnerabilityProbability(), rawHotspot.getRuleDescriptionContextKey(),
       rawHotspot.getCleanCodeAttribute(), rawHotspot.getFileUri());
   }
 

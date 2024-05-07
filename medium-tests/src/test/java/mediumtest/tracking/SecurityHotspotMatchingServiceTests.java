@@ -34,7 +34,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
-import org.sonar.scanner.protocol.Constants;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
@@ -46,7 +45,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddCo
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
 
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
@@ -56,7 +54,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
-public class SecurityHotspotMatchingServiceTests {
+class SecurityHotspotMatchingServiceTests {
 
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
   private SonarLintTestRpcServer backend;
@@ -87,20 +85,20 @@ public class SecurityHotspotMatchingServiceTests {
     var connectionId = "connectionId";
     var branchName = "main";
     var ruleKey = "java:S2068";
-    var message = "Define a constant instead of duplicating this literal \"action1\" 3 times.";
+    var message = "'password' detected in this expression, review this potentially hard-coded password.";
 
     var fileUri = filePath.toUri();
     var client = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
       .build();
-    var server = newSonarQubeServer()
+    var server = newSonarQubeServer("10.0")
       .withProject(projectKey, project -> project.withBranch(branchName, branch -> branch
         .withHotspot("uuid", hotspot -> hotspot.withAuthor("author")
-          .withCreationDate(Instant.ofEpochMilli(123456789L))
+          .withCreationDate(Instant.ofEpochSecond(123456789L))
           .withFilePath(ideFilePath)
           .withMessage(message)
           .withRuleKey(ruleKey)
-          .withTextRange(new TextRange(1,2,3,4))
+          .withTextRange(new TextRange(6,11,6,12))
           .withStatus(HotspotReviewStatus.TO_REVIEW)
           .withVulnerabilityProbability(VulnerabilityProbability.HIGH)
         )))
@@ -112,7 +110,8 @@ public class SecurityHotspotMatchingServiceTests {
         storage -> storage.withPlugin(TestPlugin.JAVA).withProject(projectKey,
           project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
             .withMainBranch(branchName)))
-      .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+      .withSecurityHotspotsEnabled()
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .build(client);
 
     backend.getConfigurationService()
@@ -127,7 +126,7 @@ public class SecurityHotspotMatchingServiceTests {
     assertThat(firstPublishedIssue)
       .extracting("ruleKey", "primaryMessage", "severity", "type", "serverKey", "introductionDate",
         "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
-      .containsExactly(ruleKey, message, IssueSeverity.BLOCKER, RuleType.BUG, "uuid", Instant.ofEpochMilli(123456789L), 5, 12, 5, 21);
+      .containsExactly(ruleKey, message, IssueSeverity.MINOR, RuleType.SECURITY_HOTSPOT, "uuid", Instant.ofEpochSecond(123456789L), 6, 11, 6, 19);
   }
 
 
