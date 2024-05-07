@@ -25,6 +25,8 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 import org.sonar.scm.git.blame.BlameResult;
 
+import static java.util.Objects.isNull;
+
 public class SonarLintBlameResult {
 
   private final BlameResult blameResult;
@@ -36,25 +38,23 @@ public class SonarLintBlameResult {
   public Optional<Date> getLatestChangeDateForLinesRangeInFile(Path filePath, LinesRange linesRange) {
     var fileBlameByPath = blameResult.getFileBlameByPath();
     var blameForFile = fileBlameByPath.get(filePath.toString());
-    if (blameForFile == null || linesRange.getStartLine() >= blameForFile.lines()) {
+    if (blameForFile == null || linesRange.getStartLine() > blameForFile.lines()) {
       return Optional.empty();
     }
 
-    var latestDate = blameForFile.getCommitDates()[linesRange.getStartLine()];
-
-    for (var i = linesRange.getStartLine() + 1; i <= linesRange.getEndLine() && i < blameForFile.lines(); i++) {
-      var dateForLine = blameForFile.getCommitDates()[i];
-      if (isLineRangeModified(dateForLine, latestDate)) {
+    Date latestDate = null;
+    for (var i = linesRange.getStartLine(); i <= linesRange.getEndLine() && i <= blameForFile.lines(); i++) {
+      var dateForLine = blameForFile.getCommitDates()[i - 1];
+      if (isLineModified(dateForLine)) {
         return Optional.empty();
       }
-      latestDate = latestDate.after(dateForLine) ? latestDate : dateForLine;
+      latestDate = isNull(latestDate) || latestDate.before(dateForLine) ? dateForLine : latestDate;
     }
-
     return Optional.ofNullable(latestDate);
   }
 
-  private static boolean isLineRangeModified(@Nullable Date dateForLine, @Nullable Date latestDate) {
-    return dateForLine == null || latestDate == null;
+  private static boolean isLineModified(@Nullable Date dateForLine) {
+    return dateForLine == null;
   }
 
   public BlameResult getBlameResult() {

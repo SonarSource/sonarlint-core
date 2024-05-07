@@ -77,9 +77,9 @@ class SonarLintBlameResultTest {
 
     var results = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA"), Path.of("fileB")));
 
-    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(0, 2))).isPresent().contains(c1);
-    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(2, 2))).isPresent().contains(c1);
-    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(2, 3))).isPresent().contains(c2);
+    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(1, 2))).isPresent().contains(c1);
+    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(2, 3))).isPresent().contains(c1);
+    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(3, 4))).isPresent().contains(c2);
     assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileB"), new LinesRange(1, 2))).isPresent().contains(c3);
     assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileC"), new LinesRange(1, 2))).isEmpty();
   }
@@ -90,12 +90,12 @@ class SonarLintBlameResultTest {
     var c1 = commit(git, "fileA");
 
     var results = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA")));
-    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(0, 2))).isPresent().contains(c1);
+    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(1, 3))).isPresent().contains(c1);
 
     modifyFile(gitDirPath.resolve("fileA"), "new line1", "new line2", "new line3");
 
     results = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA")));
-    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(0, 2))).isEmpty();
+    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(1, 3))).isEmpty();
   }
 
   @Test
@@ -104,12 +104,12 @@ class SonarLintBlameResultTest {
     var c1 = commit(git, "fileA");
 
     var results = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA")));
-    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(0, 2))).isPresent().contains(c1);
+    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(1, 2))).isPresent().contains(c1);
 
     appendFile(gitDirPath.resolve("fileA"), "new line3", "new line4");
 
     results = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA")));
-    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(0, 2))).isEmpty();
+    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(1, 3))).isEmpty();
   }
 
   @Test
@@ -119,7 +119,7 @@ class SonarLintBlameResultTest {
 
     var results = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA"), Path.of("fileB")));
 
-    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(0, Integer.MAX_VALUE))).isPresent().contains(c1);
+    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(1, Integer.MAX_VALUE))).isPresent().contains(c1);
     assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(Integer.MAX_VALUE, Integer.MAX_VALUE))).isEmpty();
   }
 

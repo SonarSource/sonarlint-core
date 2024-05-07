@@ -19,17 +19,20 @@
  */
 package org.sonarsource.sonarlint.core.commons;
 
-import java.util.Objects;
-
 public class LinesRange {
   private final int startLine;
   private final int endLine;
 
+  /**
+   * @param startLine The numbering starts from 0. I.e. the first line of a file would be `1`
+   * @param endLine   The numbering starts from 0. I.e. the last line of a file with 10 lines would be `10`
+   */
   public LinesRange(int startLine, int endLine) {
     if (endLine < startLine) {
       throw new IllegalArgumentException("Range is not valid. Start line must be smaller or equal to end line.");
-    } else if (startLine < 0) {
-      throw new IllegalArgumentException("Range is not valid. Start line cannot be a negative number");
+    } else if (startLine < 1) {
+      throw new IllegalArgumentException("Range is not valid. Start line must be larger than 0. The numbering starts from 1 (i.e. the " +
+        "second line of a file should be `2`)");
     }
     this.startLine = startLine;
     this.endLine = endLine;
@@ -41,18 +44,5 @@ public class LinesRange {
 
   public int getEndLine() {
     return endLine;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    var that = (LinesRange) o;
-    return startLine == that.startLine && endLine == that.endLine;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(startLine, endLine);
   }
 }

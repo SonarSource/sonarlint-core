@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.commons;
 
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class LinesRangeTest {
@@ -29,22 +29,8 @@ class LinesRangeTest {
   @Test
   void it_should_test_illegal_arguments() {
     assertThrows(IllegalArgumentException.class, () -> new LinesRange(-1, 1));
+    assertThrows(IllegalArgumentException.class, () -> new LinesRange(0, 1));
     assertThrows(IllegalArgumentException.class, () -> new LinesRange(10, 1));
-  }
-
-  @Test
-  void testEquals() {
-    var range = new LinesRange(0, 42);
-    assertThat(range).isEqualTo(range)
-      .isEqualTo(new LinesRange(0, 42))
-      .isNotEqualTo(new LinesRange(1, 42))
-      .isNotEqualTo(new LinesRange(0, 41))
-      .isNotEqualTo(null)
-      .isNotEqualTo(new StringBuffer());
-  }
-
-  @Test
-  void testHashCode() {
-    assertThat(new LinesRange(0, 42)).hasSameHashCodeAs(new LinesRange(0, 42).hashCode());
+    assertDoesNotThrow(() -> new LinesRange(1, 1));
   }
 }
