@@ -24,7 +24,6 @@ import java.io.FileInputStream;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
-import org.apache.maven.plugin.logging.SystemStreamLog;
 import org.apache.maven.plugins.shade.relocation.Relocator;
 import org.apache.maven.plugins.shade.resource.ManifestResourceTransformer;
 import org.apache.maven.plugins.shade.resource.ReproducibleResourceTransformer;
@@ -44,7 +43,6 @@ import java.util.jar.JarOutputStream;
 public class ManifestBndTransformer implements ReproducibleResourceTransformer {
   private static final String MANIFEST_ATTRIBUTE_BUNDLE_NAME = "Bundle-Name";
   private static final String MANIFEST_ATTRIBUTE_BUNDLE_SYMBOLICNAME = "Bundle-SymbolicName";
-  private static final SystemStreamLog LOGGER = new SystemStreamLog();
 
   // Configuration of the transformer in the pom.xml
   private String normalJarManifestPath;
@@ -146,13 +144,13 @@ public class ManifestBndTransformer implements ReproducibleResourceTransformer {
 
   /** Log info to console */
   private static void info(String message) {
-    LOGGER.info("[maven-shade-ext-bnd-transformer : ManifestBndTransformer] " + message);
+    System.err.println("[maven-shade-ext-bnd-transformer : ManifestBndTransformer] " + message);
   }
 
 
   /** Log error to console */
   private static void error(String message) {
-    LOGGER.error("[maven-shade-ext-bnd-transformer : ManifestBndTransformer] " + message);
+    System.err.println("[maven-shade-ext-bnd-transformer : ManifestBndTransformer] " + message);
   }
 
 

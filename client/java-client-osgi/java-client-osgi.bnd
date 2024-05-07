@@ -18,6 +18,7 @@ Import-Package: javax.annotation.*;resolution:=optional,\
   org.eclipse.jgit.*;resolution:=optional,
 
 # BND configuration to include specific dependencies inside the normal JAR archive
+# INFO: The `java-client-osgi-sources.jar` won't include sources of this dependencies - this is a limitation of BND!
 -includeresource: lib/guava.jar=guava-*.jar;lib:=true,\
   lib/sonarlint-commons.jar=sonarlint-commons-*.jar;lib:=true,\
   lib/sonarlint-analysis-engine.jar=sonarlint-analysis-engine-*.jar;lib:=true,\

@@ -1,0 +1,119 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.sonarsource.sonarlint.core</groupId>
+    <artifactId>sonarlint-core-parent</artifactId>
+    <version>10.2-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>sonarlint-java-client-dependencies</artifactId>
+  <name>SonarLint Core - Java Client dependencies</name>
+  <description>Dependencies used by the Java Clients, shaded and relocated together</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>${gson.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.lsp4j</groupId>
+      <artifactId>org.eclipse.lsp4j.jsonrpc</artifactId>
+      <version>${lsp4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.protobuf</groupId>
+      <artifactId>protobuf-java</artifactId>
+      <version>${protobuf.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>empty-javadoc-jar</id>
+            <phase>package</phase>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+            <configuration>
+              <classifier>javadoc</classifier>
+              <classesDirectory>${basedir}/javadoc</classesDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>shade</id>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <createDependencyReducedPom>true</createDependencyReducedPom>
+          <minimizeJar>false</minimizeJar>
+          <createSourcesJar>true</createSourcesJar>
+
+          <!-- The dependencies we actually want to be shaded, without transitive ones! -->
+          <artifactSet>
+            <includes>
+              <include>com.google.code.gson:gson</include>
+              <include>org.eclipse.lsp4j:org.eclipse.lsp4j.jsonrpc</include>
+              <include>com.google.protobuf:protobuf-java</include>
+            </includes>
+          </artifactSet>
+
+          <!-- The dependencies we want to relocate to not conflict with already existing bundles -->
+          <relocations>
+            <relocation>
+              <pattern />
+              <shadedPattern>org.sonarsource.sonarlint.shaded.</shadedPattern>
+              <includes>
+                <include>com.google.gson.**</include>
+                <include>org.eclipse.lsp4j.**</include>
+              </includes>
+            </relocation>
+          </relocations>
+
+          <!-- We don't want to have this files from all the dependencies shaded / relocated -->
+          <filters>
+            <filter>
+              <artifact>*:*</artifact>
+              <excludes>
+                <exclude>module-info.class</exclude>
+                <exclude>META-INF/*.SF</exclude>
+                <exclude>META-INF/*.DSA</exclude>
+                <exclude>META-INF/*.RSA</exclude>
+                <exclude>META-INF/LICENSE*</exclude>
+                <exclude>META-INF/NOTICE*</exclude>
+                <exclude>LICENSE*</exclude>
+                <exclude>NOTICE*</exclude>
+                <exclude>*.proto</exclude>
+              </excludes>
+            </filter>
+
+            <!-- Shade protobuf so we don't have to ship an additional bundle -->
+            <filter>
+              <artifact>com.google.protobuf:protobuf-java</artifact>
+              <includes>
+                <include>**</include>
+              </includes>
+            </filter>
+          </filters>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
