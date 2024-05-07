@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import org.sonarsource.sonarlint.core.analysis.api.Flow;
@@ -55,12 +56,13 @@ public class TrackedIssue {
   private final VulnerabilityProbability vulnerabilityProbability;
   private final String ruleDescriptionContextKey;
   private final CleanCodeAttribute cleanCodeAttribute;
+  private final URI fileUri;
 
   public TrackedIssue(UUID id, String message, Instant introductionDate, boolean resolved, IssueSeverity overriddenSeverity,
     RuleType type, String ruleKey, boolean isOnNewCode, @Nullable TextRangeWithHash textRangeWithHash,
     @Nullable LineWithHash lineWithHash, @Nullable String serverKey, Map<SoftwareQuality, ImpactSeverity> impacts,
     List<Flow> flows, List<QuickFix> quickFixes, VulnerabilityProbability vulnerabilityProbability,
-    @Nullable String ruleDescriptionContextKey, CleanCodeAttribute cleanCodeAttribute) {
+    @Nullable String ruleDescriptionContextKey, CleanCodeAttribute cleanCodeAttribute, @Nullable URI fileUri) {
     this.id = id;
     this.message = message;
     this.ruleKey = ruleKey;
@@ -78,6 +80,7 @@ public class TrackedIssue {
     this.vulnerabilityProbability = vulnerabilityProbability;
     this.ruleDescriptionContextKey = ruleDescriptionContextKey;
     this.cleanCodeAttribute = cleanCodeAttribute;
+    this.fileUri = fileUri;
   }
 
   public UUID getId() {
@@ -150,5 +153,10 @@ public class TrackedIssue {
   @CheckForNull
   public LineWithHash getLineWithHash() {
     return lineWithHash;
+  }
+
+  @CheckForNull
+  public URI getFileUri() {
+    return fileUri;
   }
 }

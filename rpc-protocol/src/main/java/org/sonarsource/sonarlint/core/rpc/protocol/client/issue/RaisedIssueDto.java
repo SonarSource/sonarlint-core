@@ -31,7 +31,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 
-public class TrackedIssueDto {
+public class RaisedIssueDto {
   private final UUID id;
   @Nullable
   private final String serverKey;
@@ -53,7 +53,7 @@ public class TrackedIssueDto {
   @Nullable
   private final VulnerabilityProbability vulnerabilityProbability;
 
-  public TrackedIssueDto(UUID id, @Nullable String serverKey, String ruleKey, String primaryMessage, IssueSeverity severity, RuleType type, CleanCodeAttribute cleanCodeAttribute,
+  public RaisedIssueDto(UUID id, @Nullable String serverKey, String ruleKey, String primaryMessage, IssueSeverity severity, RuleType type, CleanCodeAttribute cleanCodeAttribute,
     List<ImpactDto> impacts, Instant introductionDate, boolean isOnNewCode, boolean resolved, @Nullable TextRangeDto textRange, List<IssueFlowDto> flows,
     List<QuickFixDto> quickFixes, @Nullable String ruleDescriptionContextKey, @Nullable VulnerabilityProbability vulnerabilityProbability) {
     this.id = id;
