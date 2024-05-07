@@ -182,12 +182,16 @@ public class IssueMatchingService {
   }
 
   private void processEvent(AnalysisFinishedEvent event) {
-    String configurationScopeId = event.getConfigurationScopeId();
-    var issues = event.getIssues();
+    var configurationScopeId = event.getConfigurationScopeId();
+    var allIssues = event.getIssues();
+    var nonHotspotIssues = allIssues.stream().filter(issue -> !issue.getRuleType().equals(org.sonarsource.sonarlint.core.commons.RuleType.SECURITY_HOTSPOT)).collect(toList());
+    if (nonHotspotIssues.isEmpty()) {
+      return;
+    }
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     var activeBranchOpt = branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId);
     var translationOpt = pathTranslationService.getOrComputePathTranslation(configurationScopeId);
-    Map<Path, List<RawIssue>> rawIssuesByIdeRelativePath = issues.stream().filter(it -> Objects.nonNull(it.getIdeRelativePath()))
+    var rawIssuesByIdeRelativePath = nonHotspotIssues.stream().filter(it -> Objects.nonNull(it.getIdeRelativePath()))
       .collect(Collectors.groupingBy(RawIssue::getIdeRelativePath, mapping(Function.identity(), toList())));
     Map<Path, List<TrackedIssue>> newIssues;
     var knownIssuesStore = knownIssuesStorageService.get();
@@ -202,7 +206,7 @@ public class IssueMatchingService {
             issue.getRuleDescriptionContextKey(), issue.getCleanCodeAttribute(), issue.getFileUri()))
           .collect(toList())))
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-      Map<Path, List<TrackedIssue>> updatedIssues = newIssues.entrySet().stream()
+      var updatedIssues = newIssues.entrySet().stream()
         .collect(toMap(Map.Entry::getKey, e -> {
           var previouslyKnownIssues = knownIssuesStore.loadForFile(configurationScopeId, e.getKey());
           if (previouslyKnownIssues == null || previouslyKnownIssues.isEmpty()) {
@@ -331,12 +335,12 @@ public class IssueMatchingService {
     }
   }
 
-  private static Map<URI, List<RaisedIssueDto>> getIssuesToRaise(Map<Path, List<TrackedIssue>> updatedIssues) {
+  public static Map<URI, List<RaisedIssueDto>> getIssuesToRaise(Map<Path, List<TrackedIssue>> updatedIssues) {
     return updatedIssues.values().stream().flatMap(Collection::stream)
       .collect(groupingBy(TrackedIssue::getFileUri, Collectors.mapping(DtoMapper::toRaisedIssueDto, Collectors.toList())));
   }
 
-  public void storeTrackedIssues(XodusKnownIssuesStore knownIssuesStore, String configurationScopeId, Path clientRelativePath, List<TrackedIssue> newKnownIssues) {
+  private static void storeTrackedIssues(XodusKnownIssuesStore knownIssuesStore, String configurationScopeId, Path clientRelativePath, List<TrackedIssue> newKnownIssues) {
     knownIssuesStore.storeKnownIssues(configurationScopeId, clientRelativePath,
       newKnownIssues.stream().map(i -> new KnownIssue(i.getId(), i.getServerKey(), i.getTextRangeWithHash(), i.getLineWithHash(), i.getRuleKey(), i.getMessage(),
         i.getIntroductionDate())).collect(Collectors.toList()));
