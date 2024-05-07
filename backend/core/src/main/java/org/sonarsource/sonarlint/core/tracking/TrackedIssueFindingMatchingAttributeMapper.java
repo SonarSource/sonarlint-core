@@ -50,9 +50,8 @@ public class TrackedIssueFindingMatchingAttributeMapper implements MatchingAttri
 
   @Override
   public Optional<String> getLineHash(TrackedIssue issue) {
-    var textRange = issue.getTextRangeWithHash();
     var lineWithHash = issue.getLineWithHash();
-    if (textRange == null && lineWithHash != null) {
+    if (lineWithHash != null) {
       return Optional.of(lineWithHash.getHash());
     }
     return Optional.empty();

@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.analysis;
 
+import java.net.URI;
 import java.nio.file.Path;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.Flow;
@@ -85,9 +86,15 @@ public class RawIssue {
   }
 
   @CheckForNull
-  public Path getFilePath() {
+  public Path getIdeRelativePath() {
     var inputFile = issue.getInputFile();
-    return inputFile != null ? Path.of(inputFile.uri()) : null;
+    return inputFile != null ? Path.of(inputFile.relativePath()) : null;
+  }
+
+  @CheckForNull
+  public URI getFileUri() {
+    var inputFile = issue.getInputFile();
+    return inputFile != null ? inputFile.uri() : null;
   }
 
   @CheckForNull

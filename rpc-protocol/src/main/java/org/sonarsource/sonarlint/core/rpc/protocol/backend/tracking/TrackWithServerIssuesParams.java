@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
+@Deprecated(since = "10.2")
 public class TrackWithServerIssuesParams {
   private final String configurationScopeId;
   private final Map<Path, List<ClientTrackedFindingDto>> clientTrackedIssuesByIdeRelativePath;
