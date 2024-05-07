@@ -38,6 +38,7 @@
     <module>backend/server-connection</module>
     <module>backend/slf4j-sonar-log</module>
     <module>backend/telemetry</module>
+    <module>client/java-client-dependencies</module>
     <module>client/java-client-legacy</module>
     <module>client/java-client-utils</module>
     <module>client/java-client-osgi</module>
