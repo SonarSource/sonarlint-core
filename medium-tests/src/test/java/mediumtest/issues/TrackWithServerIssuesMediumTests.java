@@ -165,9 +165,10 @@ class TrackWithServerIssuesMediumTests {
 
   @Test
   void it_should_track_with_a_server_only_issue_when_fetching_from_legacy_server_requested() {
+    var introductionDate = Instant.now();
     server = newSonarQubeServer("9.5").withProject("projectKey",
         project -> project.withBranch("main",
-          branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, Instant.now(), new TextRange(1, 2, 3, 4))))
+          branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, introductionDate, new TextRange(1, 2, 3, 4))))
       .start();
     var client = newFakeClient().build();
     backend = newBackend()
@@ -186,7 +187,7 @@ class TrackWithServerIssuesMediumTests {
       .satisfies(result -> assertThat(result.getIssuesByIdeRelativePath())
         .hasEntrySatisfying(Path.of("file/path"), issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("lsp4jEither.left.id")
           .isEqualTo(
-            List.of(Either.forLeft(new ServerMatchedIssueDto(null, "issueKey", 123456789L, false, null, BUG, true))))));
+            List.of(Either.forLeft(new ServerMatchedIssueDto(null, "issueKey", introductionDate.toEpochMilli(), false, null, BUG, true))))));
   }
 
   @Test

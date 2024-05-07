@@ -330,7 +330,7 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   @Override
   public void raiseIssues(RaiseIssuesParams params) {
-    notify(() -> delegate.publishIssues(params.getConfigurationScopeId(), params.getIssuesByFileUri(), params.isIntermediatePublication(), params.getAnalysisId()));
+    notify(() -> delegate.raiseIssues(params.getConfigurationScopeId(), params.getIssuesByFileUri(), params.isIntermediatePublication(), params.getAnalysisId()));
   }
 
   @Override
