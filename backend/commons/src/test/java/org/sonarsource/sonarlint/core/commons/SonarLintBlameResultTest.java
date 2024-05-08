@@ -66,12 +66,12 @@ class SonarLintBlameResultTest {
     var c1 = commit(git, "fileA");
 
     // Wait for one second to achieve different commit time
-    TimeUnit.SECONDS.sleep(1);
+    TimeUnit.MILLISECONDS.sleep(10);
     appendFile(gitDirPath.resolve("fileA"), "new line 4");
     var c2 = commit(git, "fileA");
 
     // Wait for one second to achieve different commit time
-    TimeUnit.SECONDS.sleep(1);
+    TimeUnit.MILLISECONDS.sleep(10);
     createFile(gitDirPath, "fileB", "line1", "line2", "line3");
     var c3 = commit(git, "fileB");
 
