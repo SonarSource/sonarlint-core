@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
@@ -74,6 +75,96 @@ class IssueTrackingMediumTests {
     if (backend != null) {
       backend.shutdown();
     }
+  }
+
+  @Test
+  void it_should_raise_tracked_and_untracked_issues_in_standalone_mode(@TempDir Path baseDir) {
+    var ideFilePath = "Foo.java";
+    var filePath = createFile(baseDir, ideFilePath,
+      "package sonar;\n" +
+      "// FIXME foo bar\n" +
+        "public interface Foo {\n" +
+        "}");
+    var projectKey = "projectKey";
+    var connectionId = "connectionId";
+    var branchName = "main";
+    var ruleKey = "java:S1134";
+
+    var fileUri = filePath.toUri();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
+      .build();
+    backend = newBackend()
+      .withSonarQubeConnection(connectionId, storage -> storage.withPlugin(TestPlugin.JAVA).withProject(projectKey,
+          project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
+            .withMainBranch(branchName)))
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .build(client);
+
+    var firstAnalysisPublishedIssues = analyzeFileAndGetAllIssuesOfRule(fileUri, client, ruleKey);
+
+    assertThat(firstAnalysisPublishedIssues).hasSize(1);
+    changeFileContent(baseDir, ideFilePath,
+      "package sonar;\n" +
+        "// FIXME foo bar\n" +
+        "public interface Foo {\n" +
+        "// FIXME bar baz\n" +
+        "}");
+    var secondAnalysisPublishedIssues = analyzeFileAndGetAllIssuesOfRule(fileUri, client, ruleKey);
+    assertThat(secondAnalysisPublishedIssues).hasSize(2);
+  }
+
+
+  @Test
+  void it_should_raise_tracked_and_untracked_issues_after_match_with_server_issues(@TempDir Path baseDir) {
+    var ideFilePath = "Foo.java";
+    var filePath = createFile(baseDir, ideFilePath,
+      "// FIXME foo bar\n" +
+        "public class Foo {\n" +
+        "}");
+    var projectKey = "projectKey";
+    var connectionId = "connectionId";
+    var branchName = "main";
+    var ruleKey = "java:S1134";
+    var message = "Take the required action to fix the issue indicated by this comment.";
+
+    var fileUri = filePath.toUri();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
+      .build();
+    var server = newSonarQubeServer("9.5")
+      .withProject("projectKey", project -> project.withBranch("main", branch -> branch
+        .withIssue("uuid", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER, org.sonarsource.sonarlint.core.commons.RuleType.BUG,
+          "OPEN", null, Instant.ofEpochMilli(123456789L), new TextRange(2,0,2,16))))
+      .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
+        .withActiveRule(ruleKey, activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
+      .start();
+    backend = newBackend()
+      .withSonarQubeConnection(connectionId, server,
+        storage -> storage.withPlugin(TestPlugin.JAVA).withProject(projectKey,
+          project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
+            .withMainBranch(branchName)))
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .build(client);
+
+    backend.getConfigurationService()
+      .didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
+        new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, CONFIG_SCOPE_ID,
+          new BindingConfigurationDto(connectionId, projectKey, true)))));
+
+
+    var firstAnalysisPublishedIssues = analyzeFileAndGetAllIssues(fileUri, client);
+
+    assertThat(firstAnalysisPublishedIssues).hasSize(1);
+    changeFileContent(baseDir, ideFilePath,
+      "package sonar;\n" +
+        "// FIXME foo bar\n" +
+        "public interface Foo {\n" +
+        "// FIXME bar baz\n" +
+        "}");
+    var secondAnalysisPublishedIssues = analyzeFileAndGetAllIssues(fileUri, client);
+    assertThat(secondAnalysisPublishedIssues).hasSize(2);
   }
 
   @Test
@@ -484,6 +575,18 @@ class IssueTrackingMediumTests {
       .containsExactly(firstPublishedIssue.getId(), "key", serverIssueIntroductionDate);
   }
 
+  private List<RaisedIssueDto> analyzeFileAndGetAllIssuesOfRule(URI fileUri, SonarLintRpcClientDelegate client, String ruleKey) {
+    var analysisId = UUID.randomUUID();
+    var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
+        new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true, System.currentTimeMillis()))
+      .join();
+    var publishedIssuesByFile = getPublishedIssues(client, analysisId);
+    assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
+    assertThat(publishedIssuesByFile).containsOnlyKeys(fileUri);
+    var raisedIssues = publishedIssuesByFile.get(fileUri);
+    return raisedIssues.stream().filter(ri -> ri.getRuleKey().equals(ruleKey)).collect(Collectors.toList());
+  }
+
   private List<RaisedIssueDto> analyzeFileAndGetAllIssues(URI fileUri, SonarLintRpcClientDelegate client) {
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
@@ -534,4 +637,15 @@ class IssueTrackingMediumTests {
     }
     return filePath;
   }
+
+  private static void changeFileContent(Path folderPath, String fileName, String content) {
+    var filePath = folderPath.resolve(fileName);
+    try {
+      Files.writeString(filePath, content);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+
 }
