@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -281,8 +280,7 @@ public class IssueMatchingService {
 
     Optional<SonarLintBlameResult> sonarLintBlameResultOpt;
     if(!fileToBeBlamedIssuesMap.isEmpty()) {
-      var baseDir = findBaseDir(fileToBeBlamedIssuesMap.values().iterator().next());
-      sonarLintBlameResultOpt = getSonarLintBlameResult(baseDir, fileToBeBlamedIssuesMap.keySet());
+      sonarLintBlameResultOpt = getSonarLintBlameResult(fileToBeBlamedIssuesMap);
     } else {
       sonarLintBlameResultOpt = Optional.empty();
     }
@@ -297,8 +295,14 @@ public class IssueMatchingService {
     }).collect(toList())));
   }
 
-  private static Path findBaseDir(List<TrackedIssue> issues) {
-    return findCommonPrefix(issues.stream().map(TrackedIssue::getFileUri).map(URI::getPath).map(Path::of).collect(toList()));
+  private static Path findBaseDir(Map.Entry<Path, List<TrackedIssue>> issueEntry) {
+    var issue = issueEntry.getValue().get(0);
+    var path = Path.of(issue.getFileUri());
+    var relativeDepth = issueEntry.getKey().getNameCount();
+    for (var i = 0; i < relativeDepth; i++) {
+      path = path.getParent();
+    }
+    return path;
   }
 
   private static TrackedIssue copyIssueWithAdditionalValues(TrackedIssue trackedIssue, Instant introductionDate, boolean isOnNewCode) {
@@ -316,23 +320,12 @@ public class IssueMatchingService {
         .orElse(Instant.now());
   }
 
-  private static Path findCommonPrefix(Collection<Path> paths) {
-    Path currentPrefixCandidate = paths.iterator().next().getParent();
-    while (currentPrefixCandidate.getNameCount() > 0 && !isPrefixForAll(currentPrefixCandidate, paths)) {
-      currentPrefixCandidate = currentPrefixCandidate.getParent();
-    }
-    return currentPrefixCandidate;
-  }
-
-  private static boolean isPrefixForAll(Path prefixCandidate, Collection<Path> paths) {
-    return paths.stream().allMatch(p -> p.startsWith(prefixCandidate));
-  }
-
-  private static Optional<SonarLintBlameResult> getSonarLintBlameResult(Path baseDir, Set<Path> files) {
+  private static Optional<SonarLintBlameResult> getSonarLintBlameResult(Map<Path, List<TrackedIssue>> issueMap) {
     try {
-      return Optional.of(GitBlameUtils.blameWithFilesGitCommand(baseDir, files));
+      var baseDir = findBaseDir(issueMap.entrySet().iterator().next());
+      return Optional.of(GitBlameUtils.blameWithFilesGitCommand(baseDir, issueMap.keySet()));
     } catch (Exception e) {
-      LOG.debug("Change dates of found issues couldn't fetch from git. Introduction dates for new issues are setting as current time");
+      LOG.debug("Change dates of found issues couldn't fetch from git. Introduction dates for new issues are setting as current time", e);
       return Optional.empty();
     }
   }

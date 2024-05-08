@@ -27,10 +27,8 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -84,6 +82,7 @@ public class ProjectStorageFixture {
     private final List<BranchBuilder> branches = new ArrayList<>();
     private final Map<String, String> projectSettings = new HashMap<>();
     private ZonedDateTime lastSmartNotificationPoll;
+    private Sonarlint.NewCodeDefinition newCodeDefinition;
 
     public ProjectStorageBuilder(String projectKey) {
       this.projectKey = projectKey;
@@ -93,6 +92,11 @@ public class ProjectStorageFixture {
       var ruleSetBuilder = new RuleSetBuilder(languageKey);
       consumer.accept(ruleSetBuilder);
       ruleSets.add(ruleSetBuilder);
+      return this;
+    }
+
+    public ProjectStorageBuilder withNewCodeDefinition(Sonarlint.NewCodeDefinition newCodeDefinition) {
+      this.newCodeDefinition = newCodeDefinition;
       return this;
     }
 
@@ -139,8 +143,15 @@ public class ProjectStorageFixture {
       createSmartNotificationPoll(projectFolder);
       createServerBranches(projectFolder);
       createFindings(projectFolder);
+      createNewCodeDefinition(projectFolder);
 
       return new ProjectStorage(projectFolder);
+    }
+
+    private void createNewCodeDefinition(Path projectFolder) {
+      if(newCodeDefinition != null) {
+        ProtobufFileUtil.writeToFile(newCodeDefinition, projectFolder.resolve("new_code_definition.pb"));
+      }
     }
 
     private void createSmartNotificationPoll(Path projectFolder) {
@@ -316,12 +327,6 @@ public class ProjectStorageFixture {
       } catch (Exception e) {
         throw new IllegalStateException("Unable to backup server issue database", e);
       }
-    }
-
-    private <T> Set<T> concat(Set<T> set, Set<T> otherSet) {
-      var concatSet = new HashSet<T>(set);
-      concatSet.addAll(otherSet);
-      return concatSet;
     }
 
     public static class RuleSetBuilder {
