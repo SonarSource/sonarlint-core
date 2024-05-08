@@ -21,8 +21,11 @@ package org.sonarsource.sonarlint.core.commons;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.util.FileUtils;
@@ -58,7 +61,7 @@ class SonarLintBlameResultTest {
   }
 
   @Test
-  void it_should_return_correct_latest_changed_date_for_file_line_ranges() throws IOException, GitAPIException, InterruptedException {
+  void it_should_return_correct_latest_changed_date_for_file_lines() throws IOException, GitAPIException, InterruptedException {
     createFile(gitDirPath, "fileA", "line1", "line2", "line3");
     var c1 = commit(git, "fileA");
 
@@ -77,50 +80,50 @@ class SonarLintBlameResultTest {
 
     var results = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA"), Path.of("fileB")));
 
-    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(1, 2))).isPresent().contains(c1);
-    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(2, 3))).isPresent().contains(c1);
-    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(3, 4))).isPresent().contains(c2);
-    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileB"), new LinesRange(1, 2))).isPresent().contains(c3);
-    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileC"), new LinesRange(1, 2))).isEmpty();
+    assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(1, 2))).isPresent().contains(c1);
+    assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(2, 3))).isPresent().contains(c1);
+    assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(3, 4))).isPresent().contains(c2);
+    assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileB"), List.of(1, 2))).isPresent().contains(c3);
+    assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileC"), List.of(1, 2))).isEmpty();
   }
 
   @Test
-  void it_should_handle_all_line_range_modified() throws IOException, GitAPIException {
+  void it_should_handle_all_line_modified() throws IOException, GitAPIException {
     createFile(gitDirPath, "fileA", "line1", "line2", "line3");
     var c1 = commit(git, "fileA");
 
     var results = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA")));
-    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(1, 3))).isPresent().contains(c1);
+    assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(1, 2, 3))).isPresent().contains(c1);
 
     modifyFile(gitDirPath.resolve("fileA"), "new line1", "new line2", "new line3");
 
     results = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA")));
-    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(1, 3))).isEmpty();
+    assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(1, 2, 3))).isEmpty();
   }
 
   @Test
-  void it_should_handle_end_of_line_range_modified() throws IOException, GitAPIException {
+  void it_should_handle_end_of_line_modified() throws IOException, GitAPIException {
     createFile(gitDirPath, "fileA", "line1", "line2");
     var c1 = commit(git, "fileA");
 
     var results = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA")));
-    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(1, 2))).isPresent().contains(c1);
+    assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(1, 2))).isPresent().contains(c1);
 
     appendFile(gitDirPath.resolve("fileA"), "new line3", "new line4");
 
     results = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA")));
-    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(1, 3))).isEmpty();
+    assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(1, 2, 3))).isEmpty();
   }
 
   @Test
-  void it_should_handle_dodgy_range_input() throws IOException, GitAPIException {
+  void it_should_handle_dodgy_input() throws IOException, GitAPIException {
     createFile(gitDirPath, "fileA", "line1", "line2", "line3");
     var c1 = commit(git, "fileA");
 
     var results = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA"), Path.of("fileB")));
 
-    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(1, Integer.MAX_VALUE))).isPresent().contains(c1);
-    assertThat(results.getLatestChangeDateForLinesRangeInFile(Path.of("fileA"), new LinesRange(Integer.MAX_VALUE, Integer.MAX_VALUE))).isEmpty();
+    assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), IntStream.rangeClosed(1, 100).boxed().collect(Collectors.toList()))).isPresent().contains(c1);
+    assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), IntStream.rangeClosed(100, 1000).boxed().collect(Collectors.toList()))).isEmpty();
   }
 
 }

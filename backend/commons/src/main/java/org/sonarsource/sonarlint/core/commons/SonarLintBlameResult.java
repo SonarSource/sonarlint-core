@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.commons;
 
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Optional;
 import javax.annotation.Nullable;
@@ -35,16 +36,19 @@ public class SonarLintBlameResult {
     this.blameResult = blameResult;
   }
 
-  public Optional<Date> getLatestChangeDateForLinesRangeInFile(Path filePath, LinesRange linesRange) {
+  public Optional<Date> getLatestChangeDateForLinesInFile(Path filePath, Collection<Integer> lineNumbers) {
     var fileBlameByPath = blameResult.getFileBlameByPath();
     var blameForFile = fileBlameByPath.get(filePath.toString());
-    if (blameForFile == null || linesRange.getStartLine() > blameForFile.lines()) {
+    if (blameForFile == null) {
       return Optional.empty();
     }
 
     Date latestDate = null;
-    for (var i = linesRange.getStartLine(); i <= linesRange.getEndLine() && i <= blameForFile.lines(); i++) {
-      var dateForLine = blameForFile.getCommitDates()[i - 1];
+    for (var lineNumber : lineNumbers) {
+      if (lineNumber < 1 || lineNumber > blameForFile.lines()) {
+        continue;
+      }
+      var dateForLine = blameForFile.getCommitDates()[lineNumber - 1];
       if (isLineModified(dateForLine)) {
         return Optional.empty();
       }
