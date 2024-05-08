@@ -22,13 +22,18 @@ package org.sonarsource.sonarlint.core.tracking;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.net.URI;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -48,10 +53,12 @@ import org.sonarsource.sonarlint.core.analysis.AnalysisFinishedEvent;
 import org.sonarsource.sonarlint.core.analysis.RawIssue;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.Binding;
+import org.sonarsource.sonarlint.core.commons.GitBlameUtils;
 import org.sonarsource.sonarlint.core.commons.KnownIssue;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
+import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -91,6 +98,7 @@ import static org.sonarsource.sonarlint.core.tracking.TextRangeUtils.getTextRang
 public class IssueMatchingService {
   private static final int FETCH_ALL_ISSUES_THRESHOLD = 10;
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private static final Duration STANDALONE_NEW_CODE_PERIOD = Duration.of(30, ChronoUnit.DAYS);
   private final ConfigurationRepository configurationRepository;
   private final StorageService storageService;
   private final SonarProjectBranchTrackingService branchTrackingService;
@@ -188,7 +196,7 @@ public class IssueMatchingService {
     if (effectiveBindingOpt.isEmpty() || activeBranchOpt.isEmpty() || translationOpt.isEmpty()) {
       newIssues = rawIssuesByIdeRelativePath.entrySet().stream()
         .map(e -> Map.entry(e.getKey(), e.getValue().stream()
-          .map(issue -> new TrackedIssue(UUID.randomUUID(), issue.getMessage(), Instant.now(), false,
+          .map(issue -> new TrackedIssue(UUID.randomUUID(), issue.getMessage(), null, false,
             issue.getSeverity(), issue.getRuleType(), issue.getRuleKey(), true,
             getTextRangeWithHash(issue.getTextRange(), issue.getClientInputFile()),
             getLineWithHash(issue.getTextRange(), issue.getClientInputFile()), null,
@@ -211,6 +219,9 @@ public class IssueMatchingService {
           matchedAndUnmatchedIssues.addAll(unmatchedIssues);
           return matchedAndUnmatchedIssues;
         }));
+
+      updatedIssues = setIntroductionDateAndNewCode(updatedIssues, true);
+
       updatedIssues.forEach((clientRelativePath, trackedIssues) -> storeTrackedIssues(knownIssuesStore, configurationScopeId, clientRelativePath, trackedIssues));
       var issuesToRaise = getIssuesToRaise(updatedIssues);
       client.raiseIssues(new RaiseIssuesParams(configurationScopeId, issuesToRaise, false, event.getAnalysisId()));
@@ -249,11 +260,82 @@ public class IssueMatchingService {
           .map(it -> toTrackedIssue(it, newCodeDefinition.isOnNewCode(Instant.now().toEpochMilli()))).collect(Collectors.toList());
       }
       var matches = newMatchIssues(serverRelativePath, serverIssues, localOnlyIssues, allTrackedIssues, newCodeDefinition);
-      storeTrackedIssues(knownIssuesStore, configurationScopeId, ideRelativePath, matches);
       return Map.entry(ideRelativePath, matches);
     }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+    newIssues = setIntroductionDateAndNewCode(newIssues, false);
+
+    newIssues.forEach((clientRelativePath, trackedIssues) -> storeTrackedIssues(knownIssuesStore, configurationScopeId, clientRelativePath, trackedIssues));
     var issuesToRaise = getIssuesToRaise(newIssues);
     client.raiseIssues(new RaiseIssuesParams(configurationScopeId, issuesToRaise, false, event.getAnalysisId()));
+  }
+
+  private static Map<Path, List<TrackedIssue>> setIntroductionDateAndNewCode(Map<Path, List<TrackedIssue>> issueMap, boolean isStandalone) {
+    var thresholdDate = Instant.now().minus(STANDALONE_NEW_CODE_PERIOD);
+
+    var fileToBeBlamedIssuesMap = issueMap.entrySet().stream()
+      .collect(toMap(Map.Entry::getKey, e -> e.getValue().stream()
+        .filter(liveFinding -> Objects.isNull(liveFinding.getIntroductionDate()))
+        .collect(toList())));
+
+    fileToBeBlamedIssuesMap.entrySet().removeIf(entry -> entry.getValue().isEmpty());
+
+    Optional<SonarLintBlameResult> sonarLintBlameResultOpt;
+    if(!fileToBeBlamedIssuesMap.isEmpty()) {
+      var baseDir = findBaseDir(fileToBeBlamedIssuesMap.values().iterator().next());
+      sonarLintBlameResultOpt = getSonarLintBlameResult(baseDir, fileToBeBlamedIssuesMap.keySet());
+    } else {
+      sonarLintBlameResultOpt = Optional.empty();
+    }
+
+    return issueMap.entrySet().stream().collect(toMap(Map.Entry::getKey, e -> e.getValue().stream().map(trackedIssue -> {
+      var introductionDate = Optional.ofNullable(trackedIssue.getIntroductionDate())
+        .orElse(sonarLintBlameResultOpt
+          .map(sonarLintBlameResult -> determineIntroductionDate(e.getKey(), trackedIssue, sonarLintBlameResult))
+          .orElse(Instant.now()));
+      var isOnNewCode = isStandalone ? introductionDate.isAfter(thresholdDate) : trackedIssue.isOnNewCode();
+      return copyIssueWithAdditionalValues(trackedIssue, introductionDate, isOnNewCode);
+    }).collect(toList())));
+  }
+
+  private static Path findBaseDir(List<TrackedIssue> issues) {
+    return findCommonPrefix(issues.stream().map(TrackedIssue::getFileUri).map(URI::getPath).map(Path::of).collect(toList()));
+  }
+
+  private static TrackedIssue copyIssueWithAdditionalValues(TrackedIssue trackedIssue, Instant introductionDate, boolean isOnNewCode) {
+    return new TrackedIssue(trackedIssue.getId(), trackedIssue.getMessage(), introductionDate,
+      trackedIssue.isResolved(), trackedIssue.getSeverity(), trackedIssue.getType(), trackedIssue.getRuleKey(),
+      isOnNewCode, trackedIssue.getTextRangeWithHash(),
+      trackedIssue.getLineWithHash(), trackedIssue.getServerKey(), trackedIssue.getImpacts(), trackedIssue.getFlows(),
+      trackedIssue.getQuickFixes(), trackedIssue.getVulnerabilityProbability(), trackedIssue.getRuleDescriptionContextKey(),
+      trackedIssue.getCleanCodeAttribute(), trackedIssue.getFileUri());
+  }
+
+  private static Instant determineIntroductionDate(Path path, TrackedIssue trackedIssue, SonarLintBlameResult sonarLintBlameResult) {
+    return sonarLintBlameResult.getLatestChangeDateForLinesInFile(path, trackedIssue.getLineNumbers())
+        .map(Date::toInstant)
+        .orElse(Instant.now());
+  }
+
+  private static Path findCommonPrefix(Collection<Path> paths) {
+    Path currentPrefixCandidate = paths.iterator().next().getParent();
+    while (currentPrefixCandidate.getNameCount() > 0 && !isPrefixForAll(currentPrefixCandidate, paths)) {
+      currentPrefixCandidate = currentPrefixCandidate.getParent();
+    }
+    return currentPrefixCandidate;
+  }
+
+  private static boolean isPrefixForAll(Path prefixCandidate, Collection<Path> paths) {
+    return paths.stream().allMatch(p -> p.startsWith(prefixCandidate));
+  }
+
+  private static Optional<SonarLintBlameResult> getSonarLintBlameResult(Path baseDir, Set<Path> files) {
+    try {
+      return Optional.of(GitBlameUtils.blameWithFilesGitCommand(baseDir, files));
+    } catch (Exception e) {
+      LOG.debug("Change dates of found issues couldn't fetch from git. Introduction dates for new issues are setting as current time");
+      return Optional.empty();
+    }
   }
 
   private static Map<URI, List<RaisedIssueDto>> getIssuesToRaise(Map<Path, List<TrackedIssue>> updatedIssues) {
