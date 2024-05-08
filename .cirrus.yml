@@ -225,8 +225,8 @@ promote_task:
   <<: *ONLY_IF_EXCEPT_NIGHTLY
   eks_container:
     <<: *CONTAINER_DEFINITION
-    cpu: 1
-    memory: 1G
+    cpu: 2
+    memory: 4G
   env:
       JDK_VERSION: "11"
       ARTIFACTORY_PROMOTE_ACCESS_TOKEN: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-promoter access_token]
