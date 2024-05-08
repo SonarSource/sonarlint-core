@@ -204,9 +204,12 @@ public class IssueMatchingService {
           }
           var localIssueMatcher = new IssueMatcher<>(new KnownIssueMatchingAttributesMapper(), new TrackedIssueFindingMatchingAttributeMapper());
           var localMatchingResult = localIssueMatcher.match(previouslyKnownIssues, e.getValue());
-          return localMatchingResult.getMatchedLefts().entrySet().stream()
-            .map(matchedEntry -> updateTrackedIssueWithPreviousTrackingData(matchedEntry.getKey(), matchedEntry.getValue()))
-            .collect(toList());
+          var matchedAndUnmatchedIssues = localMatchingResult.getMatchedLefts().entrySet().stream()
+            .map(matchedEntry -> updateTrackedIssueWithPreviousTrackingData(matchedEntry.getKey(), matchedEntry.getValue())).collect(Collectors.toCollection(ArrayList::new));
+          List<TrackedIssue> unmatchedIssues =
+            StreamSupport.stream(localMatchingResult.getUnmatchedRights().spliterator(), false).collect(Collectors.toList());
+          matchedAndUnmatchedIssues.addAll(unmatchedIssues);
+          return matchedAndUnmatchedIssues;
         }));
       updatedIssues.forEach((clientRelativePath, trackedIssues) -> storeTrackedIssues(knownIssuesStore, configurationScopeId, clientRelativePath, trackedIssues));
       var issuesToRaise = getIssuesToRaise(updatedIssues);
