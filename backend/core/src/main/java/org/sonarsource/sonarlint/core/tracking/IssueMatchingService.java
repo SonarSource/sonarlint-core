@@ -89,7 +89,6 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
-import static org.sonarsource.sonarlint.core.tracking.IssueMapper.toTrackedIssue;
 import static org.sonarsource.sonarlint.core.tracking.TextRangeUtils.getLineWithHash;
 import static org.sonarsource.sonarlint.core.tracking.TextRangeUtils.getTextRangeWithHash;
 
@@ -250,14 +249,14 @@ public class IssueMatchingService {
         var localIssueMatcher = new IssueMatcher<>(new KnownIssueMatchingAttributesMapper(), new RawIssueFindingMatchingAttributeMapper());
         var localMatchingResult = localIssueMatcher.match(previouslyKnownIssues, rawIssues);
         var newTrackedIssues = StreamSupport.stream(localMatchingResult.getUnmatchedRights().spliterator(), false)
-          .map(it -> toTrackedIssue(it, newCodeDefinition.isOnNewCode(Instant.now().toEpochMilli()))).collect(toSet());
+          .map(IssueMapper::toTrackedIssue).collect(toSet());
         var updatedMatchedIssues = localMatchingResult.getMatchedLefts().entrySet().stream()
-          .map(entry -> updateTrackedIssueWithRawIssueData(entry.getKey(), entry.getValue(), newCodeDefinition)).collect(toList());
+          .map(entry -> updateTrackedIssueWithRawIssueData(entry.getKey(), entry.getValue())).collect(toList());
         allTrackedIssues = new ArrayList<>(newTrackedIssues);
         allTrackedIssues.addAll(updatedMatchedIssues);
       } else {
         allTrackedIssues = rawIssues.stream()
-          .map(it -> toTrackedIssue(it, newCodeDefinition.isOnNewCode(Instant.now().toEpochMilli()))).collect(Collectors.toList());
+          .map(IssueMapper::toTrackedIssue).collect(Collectors.toList());
       }
       var matches = newMatchIssues(serverRelativePath, serverIssues, localOnlyIssues, allTrackedIssues, newCodeDefinition);
       return Map.entry(ideRelativePath, matches);
@@ -406,10 +405,10 @@ public class IssueMatchingService {
       trackedIssue.getCleanCodeAttribute(), trackedIssue.getFileUri());
   }
 
-  private static TrackedIssue updateTrackedIssueWithRawIssueData(KnownIssue knownIssue, RawIssue rawIssue, NewCodeDefinition newCodeDefinition) {
+  private static TrackedIssue updateTrackedIssueWithRawIssueData(KnownIssue knownIssue, RawIssue rawIssue) {
     return new TrackedIssue(knownIssue.getId(), knownIssue.getMessage(), knownIssue.getIntroductionDate(),
       false, rawIssue.getSeverity(), rawIssue.getRuleType(), knownIssue.getRuleKey(),
-      newCodeDefinition.isOnNewCode(knownIssue.getIntroductionDate().toEpochMilli()),
+      true,
       TextRangeUtils.getTextRangeWithHash(rawIssue.getTextRange(), rawIssue.getClientInputFile()),
       TextRangeUtils.getLineWithHash(rawIssue.getTextRange(), rawIssue.getClientInputFile()), knownIssue.getServerKey(),
       rawIssue.getImpacts(), rawIssue.getFlows(), rawIssue.getQuickFixes(), rawIssue.getVulnerabilityProbability(),
@@ -428,7 +427,7 @@ public class IssueMatchingService {
   private static TrackedIssue updateTrackedIssueWithLocalOnlyIssueData(TrackedIssue trackedIssue, LocalOnlyIssue localOnlyIssue) {
     return new TrackedIssue(trackedIssue.getId(), trackedIssue.getMessage(), trackedIssue.getIntroductionDate(),
       localOnlyIssue.getResolution() != null, trackedIssue.getSeverity(), trackedIssue.getType(), trackedIssue.getRuleKey(),
-      trackedIssue.isOnNewCode(), trackedIssue.getTextRangeWithHash(),
+      true, trackedIssue.getTextRangeWithHash(),
       trackedIssue.getLineWithHash(), trackedIssue.getServerKey(), trackedIssue.getImpacts(), trackedIssue.getFlows(),
       trackedIssue.getQuickFixes(), trackedIssue.getVulnerabilityProbability(), trackedIssue.getRuleDescriptionContextKey(),
       trackedIssue.getCleanCodeAttribute(), trackedIssue.getFileUri());
