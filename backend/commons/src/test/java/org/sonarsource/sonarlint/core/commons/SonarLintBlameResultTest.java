@@ -36,6 +36,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.jgit.util.FileUtils.RECURSIVE;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.appendFile;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createFile;
@@ -122,8 +123,21 @@ class SonarLintBlameResultTest {
 
     var results = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA"), Path.of("fileB")));
 
-    assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), IntStream.rangeClosed(1, 100).boxed().collect(Collectors.toList()))).isPresent().contains(c1);
-    assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), IntStream.rangeClosed(100, 1000).boxed().collect(Collectors.toList()))).isEmpty();
+    assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"),
+      IntStream.rangeClosed(1, 100).boxed().collect(Collectors.toList()))).isPresent().contains(c1);
+    assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"),
+      IntStream.rangeClosed(100, 1000).boxed().collect(Collectors.toList()))).isEmpty();
+  }
+
+  @Test
+  void it_should_raise_exception_if_wrong_line_numbering_provided() throws IOException, GitAPIException {
+    createFile(gitDirPath, "fileA", "line1", "line2", "line3");
+    commit(git, "fileA");
+
+    var fileA = Path.of("fileA");
+    var results = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(fileA));
+    var invalidLineNumbers = List.of(0, 1, 2);
+    assertThrows(IllegalArgumentException.class, () -> results.getLatestChangeDateForLinesInFile(fileA, invalidLineNumbers));
   }
 
 }

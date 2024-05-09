@@ -36,7 +36,13 @@ public class SonarLintBlameResult {
     this.blameResult = blameResult;
   }
 
+  /**
+   * @param filePath A path relative to the Git repository root
+   * @param lineNumbers Line numbers for which to check the latest change date. Numbering starts from `1`!
+   * @return The latest changed date or an empty optional if the date couldn't be determined or any of the lines is modified
+   */
   public Optional<Date> getLatestChangeDateForLinesInFile(Path filePath, Collection<Integer> lineNumbers) {
+    validateLineNumbersArgument(lineNumbers);
     var fileBlameByPath = blameResult.getFileBlameByPath();
     var blameForFile = fileBlameByPath.get(filePath.toString());
     if (blameForFile == null) {
@@ -45,7 +51,7 @@ public class SonarLintBlameResult {
 
     Date latestDate = null;
     for (var lineNumber : lineNumbers) {
-      if (lineNumber < 1 || lineNumber > blameForFile.lines()) {
+      if (lineNumber > blameForFile.lines()) {
         continue;
       }
       var dateForLine = blameForFile.getCommitDates()[lineNumber - 1];
@@ -55,6 +61,13 @@ public class SonarLintBlameResult {
       latestDate = isNull(latestDate) || latestDate.before(dateForLine) ? dateForLine : latestDate;
     }
     return Optional.ofNullable(latestDate);
+  }
+
+  private static void validateLineNumbersArgument(Collection<Integer> lineNumbers) {
+    if (lineNumbers.stream().anyMatch(i -> i < 1)) {
+      throw new IllegalArgumentException("Line numbers must be greater than 0. The numbering starts from 1 (i.e. the " +
+        "first line of a file should be `1`)");
+    }
   }
 
   private static boolean isLineModified(@Nullable Date dateForLine) {
