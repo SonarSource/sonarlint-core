@@ -235,16 +235,6 @@ class SecurityHotspotMatchingServiceTests {
     return publishedHotspots.get(0);
   }
 
-  private List<RaisedHotspotDto> analyzeFileAndGetAllHotspots(URI fileUri, SonarLintRpcClientDelegate client) {
-    var analysisId = UUID.randomUUID();
-    var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
-        new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true, System.currentTimeMillis()))
-      .join();
-    var publishedHotspotsByFile = getPublishedHotspots(client, analysisId);
-    assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
-    return publishedHotspotsByFile.get(fileUri);
-  }
-
   private Map<URI, List<RaisedHotspotDto>> getPublishedHotspots(SonarLintRpcClientDelegate client, UUID analysisId) {
     ArgumentCaptor<Map<URI, List<RaisedHotspotDto>>> trackedIssuesCaptor = ArgumentCaptor.forClass(Map.class);
     verify(client).raiseHotspots(eq(CONFIG_SCOPE_ID), trackedIssuesCaptor.capture(), eq(false), eq(analysisId));
