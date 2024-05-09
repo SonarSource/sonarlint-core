@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.analysis.RuleDetailsForAnalysis;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
 import org.sonarsource.sonarlint.core.tracking.TrackedIssue;
@@ -53,7 +54,20 @@ public class DtoMapper {
       toTextRangeDto(issue.getTextRangeWithHash()),
       issue.getFlows().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()),
       issue.getQuickFixes().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()),
+      issue.getRuleDescriptionContextKey());
+  }
+
+  public static RaisedHotspotDto toRaisedHotspotDto(TrackedIssue issue) {
+    return new RaisedHotspotDto(issue.getId(), issue.getServerKey(), issue.getRuleKey(), issue.getMessage(),
+      RuleDetailsAdapter.adapt(issue.getSeverity()),
+      RuleDetailsAdapter.adapt(issue.getType()),
+      RuleDetailsAdapter.adapt(issue.getCleanCodeAttribute()), RuleDetailsAdapter.toDto(issue.getImpacts()),
+      issue.getIntroductionDate(), issue.isOnNewCode(), issue.isResolved(),
+      toTextRangeDto(issue.getTextRangeWithHash()),
+      issue.getFlows().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()),
+      issue.getQuickFixes().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()),
       issue.getRuleDescriptionContextKey(), RuleDetailsAdapter.adapt(issue.getVulnerabilityProbability()));
   }
+
 
 }

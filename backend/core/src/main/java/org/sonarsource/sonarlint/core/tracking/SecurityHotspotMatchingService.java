@@ -53,7 +53,7 @@ import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.issue.matching.IssueMatcher;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaiseHotspotsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
@@ -74,7 +74,6 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.sonarsource.sonarlint.core.tracking.IssueMapper.toTrackedIssue;
-import static org.sonarsource.sonarlint.core.tracking.IssueMatchingService.getIssuesToRaise;
 import static org.sonarsource.sonarlint.core.tracking.TextRangeUtils.getLineWithHash;
 import static org.sonarsource.sonarlint.core.tracking.TextRangeUtils.getTextRangeWithHash;
 
@@ -112,17 +111,17 @@ public class SecurityHotspotMatchingService {
 
   private void processEvent(AnalysisFinishedEvent event) {
     String configurationScopeId = event.getConfigurationScopeId();
-    var allIssues = event.getIssues();
-    var securityHotspots = allIssues.stream().filter(issue -> issue.getRuleType().equals(org.sonarsource.sonarlint.core.commons.RuleType.SECURITY_HOTSPOT)).collect(toList());
-    if (securityHotspots.isEmpty()) {
-      return;
-    }
-    Map<Path, List<RawIssue>> rawHotspotsByIdeRelativePath = securityHotspots.stream().filter(it -> Objects.nonNull(it.getIdeRelativePath()))
+    var hotspots = event.getHotspots();
+    Map<Path, List<RawIssue>> rawHotspotsByIdeRelativePath = hotspots.stream().filter(it -> Objects.nonNull(it.getIdeRelativePath()))
       .collect(Collectors.groupingBy(RawIssue::getIdeRelativePath, mapping(Function.identity(), toList())));
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
+    if (effectiveBindingOpt.isEmpty()) {
+      return;
+    }
     var activeBranchOpt = branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId);
     var translationOpt = pathTranslationService.getOrComputePathTranslation(configurationScopeId);
     Map<Path, List<TrackedIssue>> newHotspots;
+    // TODO to test it client should add a binding and trigger the analysis without waiting for analysis readiness
     if (effectiveBindingOpt.isEmpty() || activeBranchOpt.isEmpty() || translationOpt.isEmpty()) {
       newHotspots = rawHotspotsByIdeRelativePath.entrySet().stream()
         .map(e -> Map.entry(e.getKey(), e.getValue().stream()
@@ -145,20 +144,21 @@ public class SecurityHotspotMatchingService {
         e -> e.getValue().stream().map(IssueMatchingService::toClientTrackedIssue).collect(toList())));
       refreshServerSecurityHotspots(new SonarLintCancelMonitor(), binding, activeBranch, hotspotsByPath, translationOpt.get());
     }
-    var newCodeDefinition = storageService.binding(binding).newCodeDefinition().read().orElse(NewCodeDefinition.withAlwaysNew());;
+    var newCodeDefinition = storageService.binding(binding).newCodeDefinition().read().orElse(NewCodeDefinition.withAlwaysNew());
+    // TODO perform matching against known hotspots, store them to the known issues store
     Map<Path, List<TrackedIssue>> trackedHotspots = rawHotspotsByIdeRelativePath.entrySet().stream().map(e -> {
       var serverRelativePath = e.getKey();
       var serverHotspots = storageService.binding(binding).findings().loadHotspots(activeBranch, serverRelativePath);
       var matches = newMatchSecurityHotspots(serverHotspots, e.getValue(), newCodeDefinition);
       return Map.entry(serverRelativePath, matches);
     }).collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
-    var hotspotsToRaise = getIssuesToRaise(trackedHotspots);
+    var hotspotsToRaise = getHotspotsToRaise(trackedHotspots);
     client.raiseHotspots(new RaiseHotspotsParams(configurationScopeId, hotspotsToRaise, false, event.getAnalysisId()));
   }
 
-  private static Map<URI, List<RaisedIssueDto>> getHotspotsToRaise(Map<Path, List<TrackedIssue>> hotspots) {
+  private static Map<URI, List<RaisedHotspotDto>> getHotspotsToRaise(Map<Path, List<TrackedIssue>> hotspots) {
     return hotspots.values().stream().flatMap(Collection::stream)
-      .collect(groupingBy(TrackedIssue::getFileUri, Collectors.mapping(DtoMapper::toRaisedIssueDto, Collectors.toList())));
+      .collect(groupingBy(TrackedIssue::getFileUri, Collectors.mapping(DtoMapper::toRaisedHotspotDto, Collectors.toList())));
   }
 
   public Map<Path, List<Either<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>>> matchWithServerSecurityHotspots(String configurationScopeId,

@@ -41,7 +41,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFiles
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
@@ -51,6 +51,7 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 class SecurityHotspotMatchingServiceTests {
@@ -65,12 +66,11 @@ class SecurityHotspotMatchingServiceTests {
     }
   }
 
-
   @Test
   void it_should_track_server_hotspot(@TempDir Path baseDir) {
     var ideFilePath = "Foo.java";
     var filePath = createFile(baseDir, ideFilePath,
-      "package devoxx;\n" +
+      "package sonar;\n" +
         "\n" +
         "public class Foo {\n" +
         "  public void run() {\n" +
@@ -112,13 +112,10 @@ class SecurityHotspotMatchingServiceTests {
       .withSecurityHotspotsEnabled()
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .build(client);
-
     backend.getConfigurationService()
       .didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
         new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, CONFIG_SCOPE_ID,
           new BindingConfigurationDto(connectionId, projectKey, true)))));
-
-
 
     var firstPublishedIssue = analyzeFileAndGetHotspot(fileUri, client);
 
@@ -128,8 +125,44 @@ class SecurityHotspotMatchingServiceTests {
       .containsExactly(ruleKey, message, IssueSeverity.MINOR, RuleType.SECURITY_HOTSPOT, "uuid", Instant.ofEpochSecond(123456789L), 6, 11, 6, 19);
   }
 
+  @Test
+  void it_should_not_track_server_hotspots_in_standalone_mode(@TempDir Path baseDir) {
+    var ideFilePath = "Foo.java";
+    var filePath = createFile(baseDir, ideFilePath,
+      "package sonar;\n" +
+        "\n" +
+        "public class Foo {\n" +
+        "  public void run() {\n" +
+        "    String username = \"steve\";\n" +
+        "    String password = \"blue\";\n" +
+        "    Connection conn = DriverManager.getConnection(\"jdbc:mysql://localhost/test?\" +\n" +
+        "      \"user=\" + username + \"&password=\" + password); // Sensitive\n" +
+        "  }\n" +
+        "}");
+    var projectKey = "projectKey";
+    var connectionId = "connectionId";
+    var branchName = "main";
+    var ruleKey = "java:S2068";
 
-  private RaisedIssueDto analyzeFileAndGetHotspot(URI fileUri, SonarLintRpcClientDelegate client) {
+    var fileUri = filePath.toUri();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
+      .build();
+    backend = newBackend()
+      .withSonarQubeConnection(connectionId,
+        storage -> storage.withPlugin(TestPlugin.JAVA).withProject(projectKey,
+          project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
+            .withMainBranch(branchName)))
+      .withSecurityHotspotsEnabled()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .build(client);
+
+    analyzeFileAndAssertNoHotspotsRaised(fileUri, client);
+  }
+
+
+  private RaisedHotspotDto analyzeFileAndGetHotspot(URI fileUri, SonarLintRpcClientDelegate client) {
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
         new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true, System.currentTimeMillis()))
@@ -142,11 +175,34 @@ class SecurityHotspotMatchingServiceTests {
     return publishedHotspots.get(0);
   }
 
-  private Map<URI, List<RaisedIssueDto>> getPublishedHotspots(SonarLintRpcClientDelegate client, UUID analysisId) {
-    ArgumentCaptor<Map<URI, List<RaisedIssueDto>>> trackedIssuesCaptor = ArgumentCaptor.forClass(Map.class);
+
+
+  private List<RaisedHotspotDto> analyzeFileAndGetAllHotspots(URI fileUri, SonarLintRpcClientDelegate client) {
+    var analysisId = UUID.randomUUID();
+    var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
+        new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true, System.currentTimeMillis()))
+      .join();
+    var publishedHotspotsByFile = getPublishedHotspots(client, analysisId);
+    assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
+    return publishedHotspotsByFile.get(fileUri);
+  }
+
+  private Map<URI, List<RaisedHotspotDto>> getPublishedHotspots(SonarLintRpcClientDelegate client, UUID analysisId) {
+    ArgumentCaptor<Map<URI, List<RaisedHotspotDto>>> trackedIssuesCaptor = ArgumentCaptor.forClass(Map.class);
     verify(client).raiseHotspots(eq(CONFIG_SCOPE_ID), trackedIssuesCaptor.capture(), eq(false), eq(analysisId));
     return trackedIssuesCaptor.getValue();
   }
+
+  private void analyzeFileAndAssertNoHotspotsRaised(URI fileUri, SonarLintRpcClientDelegate client) {
+    var analysisId = UUID.randomUUID();
+    var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
+        new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true, System.currentTimeMillis()))
+      .join();
+    ArgumentCaptor<Map<URI, List<RaisedHotspotDto>>> trackedIssuesCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(client, times(0)).raiseHotspots(eq(CONFIG_SCOPE_ID), trackedIssuesCaptor.capture(), eq(false), eq(analysisId));
+    assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
+  }
+
 
   private static Path createFile(Path folderPath, String fileName, String content) {
     var filePath = folderPath.resolve(fileName);

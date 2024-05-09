@@ -242,7 +242,7 @@ public interface SonarLintRpcClient {
 
   /**
    * Called when some issues should be published to the users.
-   * The parameters contain a Map of issues by file URI. This list also includes Security Hotspots.
+   * The parameters contain a Map of issues by file URI. This list doesn't include Security Hotspots.
    * Clients are expected to update the issues list in the UI.
    * This method might be called in the context of issue streaming, so it might be called frequently.
    */
@@ -250,11 +250,10 @@ public interface SonarLintRpcClient {
   default void raiseIssues(RaiseIssuesParams params) {
   }
 
-  // TODO update javadoc
   /**
-   * Called when some issues should be published to the users.
-   * The parameters contain a Map of issues by file URI. This list also includes Security Hotspots.
-   * Clients are expected to update the issues list in the UI.
+   * Called when Security Hotspots should be published to the users.
+   * The parameters contain a Map of Security Hotspots by file URI.
+   * Clients are expected to update the Security Hotspots list in the UI.
    * This method might be called in the context of issue streaming, so it might be called frequently.
    */
   @JsonNotification
