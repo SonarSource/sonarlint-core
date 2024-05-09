@@ -51,9 +51,9 @@ public abstract class RaisedFindingDto {
   @Nullable
   private final String ruleDescriptionContextKey;
 
-  protected RaisedFindingDto(UUID id, @Nullable String serverKey, String ruleKey, String primaryMessage, IssueSeverity severity, RuleType type, CleanCodeAttribute cleanCodeAttribute,
-    List<ImpactDto> impacts, Instant introductionDate, boolean isOnNewCode, boolean resolved, @Nullable TextRangeDto textRange, List<IssueFlowDto> flows,
-    List<QuickFixDto> quickFixes, @Nullable String ruleDescriptionContextKey) {
+  protected RaisedFindingDto(UUID id, @Nullable String serverKey, String ruleKey, String primaryMessage, IssueSeverity severity, RuleType type,
+    CleanCodeAttribute cleanCodeAttribute, List<ImpactDto> impacts, Instant introductionDate, boolean isOnNewCode, boolean resolved, @Nullable TextRangeDto textRange,
+    List<IssueFlowDto> flows, List<QuickFixDto> quickFixes, @Nullable String ruleDescriptionContextKey) {
     this.id = id;
     this.serverKey = serverKey;
     this.ruleKey = ruleKey;

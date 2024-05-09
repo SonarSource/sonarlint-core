@@ -126,6 +126,66 @@ class SecurityHotspotMatchingServiceTests {
   }
 
   @Test
+  void it_should_track_known_server_hotspots(@TempDir Path baseDir) {
+    var ideFilePath = "Foo.java";
+    var filePath = createFile(baseDir, ideFilePath,
+      "package sonar;\n" +
+        "\n" +
+        "public class Foo {\n" +
+        "  public void run() {\n" +
+        "    String username = \"steve\";\n" +
+        "    String password = \"blue\";\n" +
+        "    Connection conn = DriverManager.getConnection(\"jdbc:mysql://localhost/test?\" +\n" +
+        "      \"user=\" + username + \"&password=\" + password); // Sensitive\n" +
+        "  }\n" +
+        "}");
+    var projectKey = "projectKey";
+    var connectionId = "connectionId";
+    var branchName = "main";
+    var ruleKey = "java:S2068";
+    var message = "'password' detected in this expression, review this potentially hard-coded password.";
+
+    var fileUri = filePath.toUri();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
+      .build();
+    var server = newSonarQubeServer("10.0")
+      .withProject(projectKey, project -> project.withBranch(branchName, branch -> branch
+        .withHotspot("uuid", hotspot -> hotspot.withAuthor("author")
+          .withCreationDate(Instant.ofEpochSecond(123456789L))
+          .withFilePath(ideFilePath)
+          .withMessage(message)
+          .withRuleKey(ruleKey)
+          .withTextRange(new TextRange(6,11,6,12))
+          .withStatus(HotspotReviewStatus.TO_REVIEW)
+          .withVulnerabilityProbability(VulnerabilityProbability.HIGH)
+        )))
+      .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
+        .withActiveRule(ruleKey, activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
+      .start();
+    backend = newBackend()
+      .withSonarQubeConnection(connectionId, server,
+        storage -> storage.withPlugin(TestPlugin.JAVA).withProject(projectKey,
+          project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
+            .withMainBranch(branchName)))
+      .withSecurityHotspotsEnabled()
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .build(client);
+    backend.getConfigurationService()
+      .didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
+        new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, CONFIG_SCOPE_ID,
+          new BindingConfigurationDto(connectionId, projectKey, true)))));
+
+    var firstPublishedIssue = analyzeFileAndGetHotspot(fileUri, client);
+    var secondPublishedIssue = analyzeFileAndGetHotspot(fileUri, client);
+
+    assertThat(secondPublishedIssue)
+      .extracting("id", "ruleKey", "primaryMessage", "severity", "type", "serverKey", "introductionDate",
+        "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
+      .containsExactly(firstPublishedIssue.getId(), ruleKey, message, IssueSeverity.MINOR, RuleType.SECURITY_HOTSPOT, "uuid", Instant.ofEpochSecond(123456789L), 6, 11, 6, 19);
+  }
+
+  @Test
   void it_should_not_track_server_hotspots_in_standalone_mode(@TempDir Path baseDir) {
     var ideFilePath = "Foo.java";
     var filePath = createFile(baseDir, ideFilePath,
@@ -174,8 +234,6 @@ class SecurityHotspotMatchingServiceTests {
     assertThat(publishedHotspots).hasSize(1);
     return publishedHotspots.get(0);
   }
-
-
 
   private List<RaisedHotspotDto> analyzeFileAndGetAllHotspots(URI fileUri, SonarLintRpcClientDelegate client) {
     var analysisId = UUID.randomUUID();

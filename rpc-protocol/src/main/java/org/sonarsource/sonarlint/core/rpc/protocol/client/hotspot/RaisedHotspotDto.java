@@ -38,10 +38,11 @@ public class RaisedHotspotDto extends RaisedFindingDto {
 
   private final VulnerabilityProbability vulnerabilityProbability;
 
-  public RaisedHotspotDto(UUID id, @Nullable String serverKey, String ruleKey, String primaryMessage, IssueSeverity severity, RuleType type, CleanCodeAttribute cleanCodeAttribute,
-    List<ImpactDto> impacts, Instant introductionDate, boolean isOnNewCode, boolean resolved, @Nullable TextRangeDto textRange, List<IssueFlowDto> flows,
-    List<QuickFixDto> quickFixes, @Nullable String ruleDescriptionContextKey, @Nullable VulnerabilityProbability vulnerabilityProbability) {
-    super(id, serverKey, ruleKey, primaryMessage, severity, type, cleanCodeAttribute, impacts, introductionDate, isOnNewCode, resolved, textRange, flows,quickFixes, ruleDescriptionContextKey);
+  public RaisedHotspotDto(UUID id, @Nullable String serverKey, String ruleKey, String primaryMessage, IssueSeverity severity, RuleType type,
+    CleanCodeAttribute cleanCodeAttribute, List<ImpactDto> impacts, Instant introductionDate, boolean isOnNewCode, boolean resolved, @Nullable TextRangeDto textRange,
+    List<IssueFlowDto> flows, List<QuickFixDto> quickFixes, @Nullable String ruleDescriptionContextKey, @Nullable VulnerabilityProbability vulnerabilityProbability) {
+    super(id, serverKey, ruleKey, primaryMessage, severity, type, cleanCodeAttribute, impacts, introductionDate,
+      isOnNewCode, resolved, textRange, flows,quickFixes, ruleDescriptionContextKey);
     this.vulnerabilityProbability = vulnerabilityProbability;
   }
 

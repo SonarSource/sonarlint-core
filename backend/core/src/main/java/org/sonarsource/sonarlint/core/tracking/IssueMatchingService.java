@@ -194,16 +194,7 @@ public class IssueMatchingService {
     Map<Path, List<TrackedIssue>> newIssues;
     var knownIssuesStore = knownIssuesStorageService.get();
     if (effectiveBindingOpt.isEmpty() || activeBranchOpt.isEmpty() || translationOpt.isEmpty()) {
-      newIssues = rawIssuesByIdeRelativePath.entrySet().stream()
-        .map(e -> Map.entry(e.getKey(), e.getValue().stream()
-          .map(issue -> new TrackedIssue(UUID.randomUUID(), issue.getMessage(), null, false,
-            issue.getSeverity(), issue.getRuleType(), issue.getRuleKey(), true,
-            getTextRangeWithHash(issue.getTextRange(), issue.getClientInputFile()),
-            getLineWithHash(issue.getTextRange(), issue.getClientInputFile()), null,
-            issue.getImpacts(), issue.getFlows(), issue.getQuickFixes(), issue.getVulnerabilityProbability(),
-            issue.getRuleDescriptionContextKey(), issue.getCleanCodeAttribute(), issue.getFileUri()))
-          .collect(toList())))
-        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+      newIssues = getNewTrackedIssues(rawIssuesByIdeRelativePath);
       var updatedIssues = newIssues.entrySet().stream()
         .collect(toMap(Map.Entry::getKey, e -> {
           var previouslyKnownIssues = knownIssuesStore.loadForFile(configurationScopeId, e.getKey());
@@ -243,20 +234,7 @@ public class IssueMatchingService {
       var localOnlyIssues = localOnlyIssueStorageService.get().loadForFile(configurationScopeId, serverRelativePath);
       var rawIssues = e.getValue();
       var previouslyKnownIssues = knownIssuesStore.loadForFile(configurationScopeId, e.getKey());
-      List<TrackedIssue> allTrackedIssues;
-      if (previouslyKnownIssues != null && !previouslyKnownIssues.isEmpty()) {
-        var localIssueMatcher = new IssueMatcher<>(new KnownIssueMatchingAttributesMapper(), new RawIssueFindingMatchingAttributeMapper());
-        var localMatchingResult = localIssueMatcher.match(previouslyKnownIssues, rawIssues);
-        var newTrackedIssues = StreamSupport.stream(localMatchingResult.getUnmatchedRights().spliterator(), false)
-          .map(IssueMapper::toTrackedIssue).collect(toSet());
-        var updatedMatchedIssues = localMatchingResult.getMatchedLefts().entrySet().stream()
-          .map(entry -> updateTrackedIssueWithRawIssueData(entry.getKey(), entry.getValue())).collect(toList());
-        allTrackedIssues = new ArrayList<>(newTrackedIssues);
-        allTrackedIssues.addAll(updatedMatchedIssues);
-      } else {
-        allTrackedIssues = rawIssues.stream()
-          .map(IssueMapper::toTrackedIssue).collect(Collectors.toList());
-      }
+      List<TrackedIssue> allTrackedIssues = matchAndTrack(newCodeDefinition, rawIssues, previouslyKnownIssues);
       var matches = newMatchIssues(serverRelativePath, serverIssues, localOnlyIssues, allTrackedIssues, newCodeDefinition);
       return Map.entry(ideRelativePath, matches);
     }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -331,12 +309,28 @@ public class IssueMatchingService {
     }
   }
 
+  @NotNull
+  static Map<Path, List<TrackedIssue>> getNewTrackedIssues(Map<Path, List<RawIssue>> rawIssuesByIdeRelativePath) {
+    Map<Path, List<TrackedIssue>> newIssues;
+    newIssues = rawIssuesByIdeRelativePath.entrySet().stream()
+      .map(e -> Map.entry(e.getKey(), e.getValue().stream()
+        .map(issue -> new TrackedIssue(UUID.randomUUID(), issue.getMessage(), Instant.now(), false,
+          issue.getSeverity(), issue.getRuleType(), issue.getRuleKey(), true,
+          getTextRangeWithHash(issue.getTextRange(), issue.getClientInputFile()),
+          getLineWithHash(issue.getTextRange(), issue.getClientInputFile()), null,
+          issue.getImpacts(), issue.getFlows(), issue.getQuickFixes(), issue.getVulnerabilityProbability(),
+          issue.getRuleDescriptionContextKey(), issue.getCleanCodeAttribute(), issue.getFileUri()))
+        .collect(toList())))
+      .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    return newIssues;
+  }
+
   public static Map<URI, List<RaisedIssueDto>> getIssuesToRaise(Map<Path, List<TrackedIssue>> updatedIssues) {
     return updatedIssues.values().stream().flatMap(Collection::stream)
       .collect(groupingBy(TrackedIssue::getFileUri, Collectors.mapping(DtoMapper::toRaisedIssueDto, Collectors.toList())));
   }
 
-  private static void storeTrackedIssues(XodusKnownIssuesStore knownIssuesStore, String configurationScopeId, Path clientRelativePath, List<TrackedIssue> newKnownIssues) {
+  static void storeTrackedIssues(XodusKnownIssuesStore knownIssuesStore, String configurationScopeId, Path clientRelativePath, List<TrackedIssue> newKnownIssues) {
     knownIssuesStore.storeKnownIssues(configurationScopeId, clientRelativePath,
       newKnownIssues.stream().map(i -> new KnownIssue(i.getId(), i.getServerKey(), i.getTextRangeWithHash(), i.getLineWithHash(), i.getRuleKey(), i.getMessage(),
         i.getIntroductionDate())).collect(Collectors.toList()));
@@ -399,7 +393,7 @@ public class IssueMatchingService {
       trackedIssue.getCleanCodeAttribute(), trackedIssue.getFileUri());
   }
 
-  private static TrackedIssue updateTrackedIssueWithRawIssueData(KnownIssue knownIssue, RawIssue rawIssue) {
+  static TrackedIssue updateTrackedIssueWithRawIssueData(KnownIssue knownIssue, RawIssue rawIssue, NewCodeDefinition newCodeDefinition) {
     return new TrackedIssue(knownIssue.getId(), knownIssue.getMessage(), knownIssue.getIntroductionDate(),
       false, rawIssue.getSeverity(), rawIssue.getRuleType(), knownIssue.getRuleKey(),
       true,
@@ -409,7 +403,7 @@ public class IssueMatchingService {
       rawIssue.getRuleDescriptionContextKey(), rawIssue.getCleanCodeAttribute(), rawIssue.getFileUri());
   }
 
-  private static TrackedIssue updateTrackedIssueWithPreviousTrackingData(KnownIssue oldIssue, TrackedIssue newIssue) {
+  public static TrackedIssue updateTrackedIssueWithPreviousTrackingData(KnownIssue oldIssue, TrackedIssue newIssue) {
     return new TrackedIssue(oldIssue.getId(), newIssue.getMessage(), oldIssue.getIntroductionDate(),
       newIssue.isResolved(), newIssue.getSeverity(), newIssue.getType(), newIssue.getRuleKey(),
       newIssue.isOnNewCode(), newIssue.getTextRangeWithHash(),
@@ -445,6 +439,24 @@ public class IssueMatchingService {
     var localOnlyIssuesMatched = matches.stream().filter(Either::isRight).map(Either::getRight).collect(Collectors.toList());
     localOnlyIssueRepository.save(serverRelativePath, localOnlyIssuesMatched);
     return matches;
+  }
+
+  public static List<TrackedIssue> matchAndTrack(NewCodeDefinition newCodeDefinition, List<RawIssue> rawHotspots, @Nullable List<KnownIssue> previouslyKnownHotspots) {
+    List<TrackedIssue> allTrackedHotspot;
+    if (previouslyKnownHotspots != null && !previouslyKnownHotspots.isEmpty()) {
+      var localIssueMatcher = new IssueMatcher<>(new KnownIssueMatchingAttributesMapper(), new RawIssueFindingMatchingAttributeMapper());
+      var localMatchingResult = localIssueMatcher.match(previouslyKnownHotspots, rawHotspots);
+      var newTrackedIssues = StreamSupport.stream(localMatchingResult.getUnmatchedRights().spliterator(), false)
+        .map(IssueMapper::toTrackedIssue).collect(toSet());
+      var updatedMatchedIssues = localMatchingResult.getMatchedLefts().entrySet().stream()
+        .map(entry -> updateTrackedIssueWithRawIssueData(entry.getKey(), entry.getValue(), newCodeDefinition)).collect(toList());
+      allTrackedHotspot = new ArrayList<>(newTrackedIssues);
+      allTrackedHotspot.addAll(updatedMatchedIssues);
+    } else {
+      allTrackedHotspot = rawHotspots.stream()
+        .map(IssueMapper::toTrackedIssue).collect(Collectors.toList());
+    }
+    return allTrackedHotspot;
   }
 
   @NotNull
