@@ -41,7 +41,7 @@ public class GitBlameUtils {
     return blameWithFilesGitCommand(repo, gitRelativePath);
   }
 
-  static Repository buildRepository(Path basedir) {
+  private static Repository buildRepository(Path basedir) {
     try {
       var repo = getVerifiedRepositoryBuilder(basedir).build();
       try (ObjectReader objReader = repo.getObjectDatabase().newReader()) {
@@ -54,7 +54,7 @@ public class GitBlameUtils {
     }
   }
 
-  static RepositoryBuilder getVerifiedRepositoryBuilder(Path basedir) {
+  private static RepositoryBuilder getVerifiedRepositoryBuilder(Path basedir) {
     RepositoryBuilder builder = new RepositoryBuilder()
       .findGitDir(basedir.toFile())
       .setMustExist(true);
@@ -65,7 +65,7 @@ public class GitBlameUtils {
     return builder;
   }
 
-  public static SonarLintBlameResult blameWithFilesGitCommand(Repository repo, Set<Path> gitRelativePath) {
+  static SonarLintBlameResult blameWithFilesGitCommand(Repository repo, Set<Path> gitRelativePath) {
     var pathStrings = gitRelativePath.stream().map(Path::toString).collect(Collectors.toSet());
     RepositoryBlameCommand blameCommand = new RepositoryBlameCommand(repo)
       .setTextComparator(RawTextComparator.WS_IGNORE_ALL)

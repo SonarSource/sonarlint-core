@@ -270,20 +270,8 @@ public class IssueMatchingService {
 
   private static Map<Path, List<TrackedIssue>> setIntroductionDateAndNewCode(Map<Path, List<TrackedIssue>> issueMap, boolean isStandalone) {
     var thresholdDate = Instant.now().minus(STANDALONE_NEW_CODE_PERIOD);
-
-    var fileToBeBlamedIssuesMap = issueMap.entrySet().stream()
-      .collect(toMap(Map.Entry::getKey, e -> e.getValue().stream()
-        .filter(liveFinding -> Objects.isNull(liveFinding.getIntroductionDate()))
-        .collect(toList())));
-
-    fileToBeBlamedIssuesMap.entrySet().removeIf(entry -> entry.getValue().isEmpty());
-
-    Optional<SonarLintBlameResult> sonarLintBlameResultOpt;
-    if(!fileToBeBlamedIssuesMap.isEmpty()) {
-      sonarLintBlameResultOpt = getSonarLintBlameResult(fileToBeBlamedIssuesMap);
-    } else {
-      sonarLintBlameResultOpt = Optional.empty();
-    }
+    var issuesByFileToBlame = getIssuesByFileToBlame(issueMap);
+    var sonarLintBlameResultOpt = getSonarLintBlameResult(issuesByFileToBlame);
 
     return issueMap.entrySet().stream().collect(toMap(Map.Entry::getKey, e -> e.getValue().stream().map(trackedIssue -> {
       var introductionDate = Optional.ofNullable(trackedIssue.getIntroductionDate())
@@ -293,6 +281,16 @@ public class IssueMatchingService {
       var isOnNewCode = isStandalone ? introductionDate.isAfter(thresholdDate) : trackedIssue.isOnNewCode();
       return copyIssueWithAdditionalValues(trackedIssue, introductionDate, isOnNewCode);
     }).collect(toList())));
+  }
+
+  private static Map<Path, List<TrackedIssue>> getIssuesByFileToBlame(Map<Path, List<TrackedIssue>> issueMap) {
+    var fileToBeBlamedIssuesMap = issueMap.entrySet().stream()
+      .collect(toMap(Map.Entry::getKey, e -> e.getValue().stream()
+        .filter(liveFinding -> Objects.isNull(liveFinding.getIntroductionDate()))
+        .collect(toList())));
+
+    fileToBeBlamedIssuesMap.entrySet().removeIf(entry -> entry.getValue().isEmpty());
+    return fileToBeBlamedIssuesMap;
   }
 
   private static Path findBaseDir(Map.Entry<Path, List<TrackedIssue>> issueEntry) {
@@ -321,6 +319,9 @@ public class IssueMatchingService {
   }
 
   private static Optional<SonarLintBlameResult> getSonarLintBlameResult(Map<Path, List<TrackedIssue>> issueMap) {
+    if (issueMap.isEmpty()) {
+      return Optional.empty();
+    }
     try {
       var baseDir = findBaseDir(issueMap.entrySet().iterator().next());
       return Optional.of(GitBlameUtils.blameWithFilesGitCommand(baseDir, issueMap.keySet()));
