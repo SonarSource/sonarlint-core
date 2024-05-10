@@ -22,13 +22,17 @@ package org.sonarsource.sonarlint.core.tracking;
 import com.google.common.util.concurrent.MoreExecutors;
 import java.net.URI;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -48,10 +52,12 @@ import org.sonarsource.sonarlint.core.analysis.AnalysisFinishedEvent;
 import org.sonarsource.sonarlint.core.analysis.RawIssue;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.Binding;
+import org.sonarsource.sonarlint.core.commons.GitBlameUtils;
 import org.sonarsource.sonarlint.core.commons.KnownIssue;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
+import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -82,7 +88,6 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
-import static org.sonarsource.sonarlint.core.tracking.IssueMapper.toTrackedIssue;
 import static org.sonarsource.sonarlint.core.tracking.TextRangeUtils.getLineWithHash;
 import static org.sonarsource.sonarlint.core.tracking.TextRangeUtils.getTextRangeWithHash;
 
@@ -91,6 +96,7 @@ import static org.sonarsource.sonarlint.core.tracking.TextRangeUtils.getTextRang
 public class IssueMatchingService {
   private static final int FETCH_ALL_ISSUES_THRESHOLD = 10;
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private static final Duration STANDALONE_NEW_CODE_PERIOD = Duration.of(30, ChronoUnit.DAYS);
   private final ConfigurationRepository configurationRepository;
   private final StorageService storageService;
   private final SonarProjectBranchTrackingService branchTrackingService;
@@ -188,7 +194,7 @@ public class IssueMatchingService {
     if (effectiveBindingOpt.isEmpty() || activeBranchOpt.isEmpty() || translationOpt.isEmpty()) {
       newIssues = rawIssuesByIdeRelativePath.entrySet().stream()
         .map(e -> Map.entry(e.getKey(), e.getValue().stream()
-          .map(issue -> new TrackedIssue(UUID.randomUUID(), issue.getMessage(), Instant.now(), false,
+          .map(issue -> new TrackedIssue(UUID.randomUUID(), issue.getMessage(), null, false,
             issue.getSeverity(), issue.getRuleType(), issue.getRuleKey(), true,
             getTextRangeWithHash(issue.getTextRange(), issue.getClientInputFile()),
             getLineWithHash(issue.getTextRange(), issue.getClientInputFile()), null,
@@ -211,6 +217,9 @@ public class IssueMatchingService {
           matchedAndUnmatchedIssues.addAll(unmatchedIssues);
           return matchedAndUnmatchedIssues;
         }));
+
+      updatedIssues = setIntroductionDateAndNewCode(updatedIssues, true);
+
       updatedIssues.forEach((clientRelativePath, trackedIssues) -> storeTrackedIssues(knownIssuesStore, configurationScopeId, clientRelativePath, trackedIssues));
       var issuesToRaise = getIssuesToRaise(updatedIssues);
       client.raiseIssues(new RaiseIssuesParams(configurationScopeId, issuesToRaise, false, event.getAnalysisId()));
@@ -239,21 +248,87 @@ public class IssueMatchingService {
         var localIssueMatcher = new IssueMatcher<>(new KnownIssueMatchingAttributesMapper(), new RawIssueFindingMatchingAttributeMapper());
         var localMatchingResult = localIssueMatcher.match(previouslyKnownIssues, rawIssues);
         var newTrackedIssues = StreamSupport.stream(localMatchingResult.getUnmatchedRights().spliterator(), false)
-          .map(it -> toTrackedIssue(it, newCodeDefinition.isOnNewCode(Instant.now().toEpochMilli()))).collect(toSet());
+          .map(IssueMapper::toTrackedIssue).collect(toSet());
         var updatedMatchedIssues = localMatchingResult.getMatchedLefts().entrySet().stream()
-          .map(entry -> updateTrackedIssueWithRawIssueData(entry.getKey(), entry.getValue(), newCodeDefinition)).collect(toList());
+          .map(entry -> updateTrackedIssueWithRawIssueData(entry.getKey(), entry.getValue())).collect(toList());
         allTrackedIssues = new ArrayList<>(newTrackedIssues);
         allTrackedIssues.addAll(updatedMatchedIssues);
       } else {
         allTrackedIssues = rawIssues.stream()
-          .map(it -> toTrackedIssue(it, newCodeDefinition.isOnNewCode(Instant.now().toEpochMilli()))).collect(Collectors.toList());
+          .map(IssueMapper::toTrackedIssue).collect(Collectors.toList());
       }
       var matches = newMatchIssues(serverRelativePath, serverIssues, localOnlyIssues, allTrackedIssues, newCodeDefinition);
-      storeTrackedIssues(knownIssuesStore, configurationScopeId, ideRelativePath, matches);
       return Map.entry(ideRelativePath, matches);
     }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+    newIssues = setIntroductionDateAndNewCode(newIssues, false);
+
+    newIssues.forEach((clientRelativePath, trackedIssues) -> storeTrackedIssues(knownIssuesStore, configurationScopeId, clientRelativePath, trackedIssues));
     var issuesToRaise = getIssuesToRaise(newIssues);
     client.raiseIssues(new RaiseIssuesParams(configurationScopeId, issuesToRaise, false, event.getAnalysisId()));
+  }
+
+  private static Map<Path, List<TrackedIssue>> setIntroductionDateAndNewCode(Map<Path, List<TrackedIssue>> issueMap, boolean isStandalone) {
+    var thresholdDate = Instant.now().minus(STANDALONE_NEW_CODE_PERIOD);
+    var issuesByFileToBlame = getIssuesByFileToBlame(issueMap);
+    var sonarLintBlameResultOpt = getSonarLintBlameResult(issuesByFileToBlame);
+
+    return issueMap.entrySet().stream().collect(toMap(Map.Entry::getKey, e -> e.getValue().stream().map(trackedIssue -> {
+      var introductionDate = Optional.ofNullable(trackedIssue.getIntroductionDate())
+        .orElse(sonarLintBlameResultOpt
+          .map(sonarLintBlameResult -> determineIntroductionDate(e.getKey(), trackedIssue, sonarLintBlameResult))
+          .orElse(Instant.now()));
+      var isOnNewCode = isStandalone ? introductionDate.isAfter(thresholdDate) : trackedIssue.isOnNewCode();
+      return copyIssueWithAdditionalValues(trackedIssue, introductionDate, isOnNewCode);
+    }).collect(toList())));
+  }
+
+  private static Map<Path, List<TrackedIssue>> getIssuesByFileToBlame(Map<Path, List<TrackedIssue>> issueMap) {
+    var fileToBeBlamedIssuesMap = issueMap.entrySet().stream()
+      .collect(toMap(Map.Entry::getKey, e -> e.getValue().stream()
+        .filter(liveFinding -> Objects.isNull(liveFinding.getIntroductionDate()))
+        .collect(toList())));
+
+    fileToBeBlamedIssuesMap.entrySet().removeIf(entry -> entry.getValue().isEmpty());
+    return fileToBeBlamedIssuesMap;
+  }
+
+  private static Path findBaseDir(Map.Entry<Path, List<TrackedIssue>> issueEntry) {
+    var issue = issueEntry.getValue().get(0);
+    var path = Path.of(issue.getFileUri());
+    var relativeDepth = issueEntry.getKey().getNameCount();
+    for (var i = 0; i < relativeDepth; i++) {
+      path = path.getParent();
+    }
+    return path;
+  }
+
+  private static TrackedIssue copyIssueWithAdditionalValues(TrackedIssue trackedIssue, Instant introductionDate, boolean isOnNewCode) {
+    return new TrackedIssue(trackedIssue.getId(), trackedIssue.getMessage(), introductionDate,
+      trackedIssue.isResolved(), trackedIssue.getSeverity(), trackedIssue.getType(), trackedIssue.getRuleKey(),
+      isOnNewCode, trackedIssue.getTextRangeWithHash(),
+      trackedIssue.getLineWithHash(), trackedIssue.getServerKey(), trackedIssue.getImpacts(), trackedIssue.getFlows(),
+      trackedIssue.getQuickFixes(), trackedIssue.getVulnerabilityProbability(), trackedIssue.getRuleDescriptionContextKey(),
+      trackedIssue.getCleanCodeAttribute(), trackedIssue.getFileUri());
+  }
+
+  private static Instant determineIntroductionDate(Path path, TrackedIssue trackedIssue, SonarLintBlameResult sonarLintBlameResult) {
+    return sonarLintBlameResult.getLatestChangeDateForLinesInFile(path, trackedIssue.getLineNumbers())
+        .map(Date::toInstant)
+        .orElse(Instant.now());
+  }
+
+  private static Optional<SonarLintBlameResult> getSonarLintBlameResult(Map<Path, List<TrackedIssue>> issueMap) {
+    if (issueMap.isEmpty()) {
+      return Optional.empty();
+    }
+    try {
+      var baseDir = findBaseDir(issueMap.entrySet().iterator().next());
+      return Optional.of(GitBlameUtils.blameWithFilesGitCommand(baseDir, issueMap.keySet()));
+    } catch (Exception e) {
+      LOG.debug("Change dates of found issues couldn't fetch from git. Introduction dates for new issues are setting as current time", e);
+      return Optional.empty();
+    }
   }
 
   private static Map<URI, List<RaisedIssueDto>> getIssuesToRaise(Map<Path, List<TrackedIssue>> updatedIssues) {
@@ -324,10 +399,10 @@ public class IssueMatchingService {
       trackedIssue.getCleanCodeAttribute(), trackedIssue.getFileUri());
   }
 
-  private static TrackedIssue updateTrackedIssueWithRawIssueData(KnownIssue knownIssue, RawIssue rawIssue, NewCodeDefinition newCodeDefinition) {
+  private static TrackedIssue updateTrackedIssueWithRawIssueData(KnownIssue knownIssue, RawIssue rawIssue) {
     return new TrackedIssue(knownIssue.getId(), knownIssue.getMessage(), knownIssue.getIntroductionDate(),
       false, rawIssue.getSeverity(), rawIssue.getRuleType(), knownIssue.getRuleKey(),
-      newCodeDefinition.isOnNewCode(knownIssue.getIntroductionDate().toEpochMilli()),
+      true,
       TextRangeUtils.getTextRangeWithHash(rawIssue.getTextRange(), rawIssue.getClientInputFile()),
       TextRangeUtils.getLineWithHash(rawIssue.getTextRange(), rawIssue.getClientInputFile()), knownIssue.getServerKey(),
       rawIssue.getImpacts(), rawIssue.getFlows(), rawIssue.getQuickFixes(), rawIssue.getVulnerabilityProbability(),
@@ -346,7 +421,7 @@ public class IssueMatchingService {
   private static TrackedIssue updateTrackedIssueWithLocalOnlyIssueData(TrackedIssue trackedIssue, LocalOnlyIssue localOnlyIssue) {
     return new TrackedIssue(trackedIssue.getId(), trackedIssue.getMessage(), trackedIssue.getIntroductionDate(),
       localOnlyIssue.getResolution() != null, trackedIssue.getSeverity(), trackedIssue.getType(), trackedIssue.getRuleKey(),
-      trackedIssue.isOnNewCode(), trackedIssue.getTextRangeWithHash(),
+      true, trackedIssue.getTextRangeWithHash(),
       trackedIssue.getLineWithHash(), trackedIssue.getServerKey(), trackedIssue.getImpacts(), trackedIssue.getFlows(),
       trackedIssue.getQuickFixes(), trackedIssue.getVulnerabilityProbability(), trackedIssue.getRuleDescriptionContextKey(),
       trackedIssue.getCleanCodeAttribute(), trackedIssue.getFileUri());
