@@ -34,6 +34,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -42,6 +44,7 @@ import org.sonarsource.sonarlint.core.analysis.AnalysisFinishedEvent;
 import org.sonarsource.sonarlint.core.analysis.RawIssue;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.Binding;
+import org.sonarsource.sonarlint.core.commons.KnownFinding;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -73,7 +76,8 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.sonarsource.sonarlint.core.tracking.IssueMatchingService.matchAndTrack;
-import static org.sonarsource.sonarlint.core.tracking.IssueMatchingService.storeTrackedIssues;
+import static org.sonarsource.sonarlint.core.tracking.IssueMatchingService.setIntroductionDateAndNewCode;
+import static org.sonarsource.sonarlint.core.tracking.IssueMatchingService.updateTrackedIssueWithPreviousTrackingData;
 
 @Named
 @Singleton
@@ -86,19 +90,19 @@ public class SecurityHotspotMatchingService {
   private final SonarProjectBranchTrackingService branchTrackingService;
   private final HotspotSynchronizationService hotspotSynchronizationService;
   private final PathTranslationService pathTranslationService;
-  private final KnownIssuesStorageService knownIssuesStorageService;
+  private final KnownFindingsStorageService knownFindingsStorageService;
   private final ExecutorService executorService;
 
   public SecurityHotspotMatchingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, StorageService storageService,
     SonarProjectBranchTrackingService branchTrackingService, HotspotSynchronizationService hotspotSynchronizationService,
-    PathTranslationService pathTranslationService, KnownIssuesStorageService knownIssuesStorageService) {
+    PathTranslationService pathTranslationService, KnownFindingsStorageService knownFindingsStorageService) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.storageService = storageService;
     this.branchTrackingService = branchTrackingService;
     this.hotspotSynchronizationService = hotspotSynchronizationService;
     this.pathTranslationService = pathTranslationService;
-    this.knownIssuesStorageService = knownIssuesStorageService;
+    this.knownFindingsStorageService = knownFindingsStorageService;
     this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-server-tracking-hotspot-updater"));
   }
 
@@ -116,13 +120,31 @@ public class SecurityHotspotMatchingService {
       .collect(Collectors.groupingBy(RawIssue::getIdeRelativePath, mapping(Function.identity(), toList())));
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     if (effectiveBindingOpt.isEmpty()) {
+      // security hotspots are not supported in standalone mode
       return;
     }
     var activeBranchOpt = branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId);
     var translationOpt = pathTranslationService.getOrComputePathTranslation(configurationScopeId);
+    var knownFindingsStore = knownFindingsStorageService.get();
     Map<Path, List<TrackedIssue>> newHotspots;
     if (activeBranchOpt.isEmpty() || translationOpt.isEmpty()) {
       newHotspots = IssueMatchingService.getNewTrackedIssues(rawHotspotsByIdeRelativePath);
+      var updatedHotspots = newHotspots.entrySet().stream()
+        .collect(toMap(Map.Entry::getKey, e -> {
+          var previouslyKnownIssues = knownFindingsStore.loadSecurityHotspotsForFile(configurationScopeId, e.getKey());
+          if (previouslyKnownIssues == null || previouslyKnownIssues.isEmpty()) {
+            return e.getValue();
+          }
+          var localIssueMatcher = new IssueMatcher<>(new KnownIssueMatchingAttributesMapper(), new TrackedIssueFindingMatchingAttributeMapper());
+          var localMatchingResult = localIssueMatcher.match(previouslyKnownIssues, e.getValue());
+          var matchedIssues = localMatchingResult.getMatchedLefts().entrySet().stream()
+            .map(matchedEntry -> updateTrackedIssueWithPreviousTrackingData(matchedEntry.getKey(), matchedEntry.getValue()));
+          var unmatchedIssues = StreamSupport.stream(localMatchingResult.getUnmatchedRights().spliterator(), false);
+          return Stream.concat(matchedIssues, unmatchedIssues).collect(toList());
+        }));
+
+      updatedHotspots = setIntroductionDateAndNewCode(updatedHotspots, true);
+      updatedHotspots.forEach((clientRelativePath, trackedIssues) -> storeTrackedSecurityHotspots(knownFindingsStore, configurationScopeId, clientRelativePath, trackedIssues));
       var hotspotsToRaise = getHotspotsToRaise(newHotspots);
       client.raiseHotspots(new RaiseHotspotsParams(configurationScopeId, hotspotsToRaise, false, event.getAnalysisId()));
       return;
@@ -135,21 +157,28 @@ public class SecurityHotspotMatchingService {
       refreshServerSecurityHotspots(new SonarLintCancelMonitor(), binding, activeBranch, hotspotsByPath, translationOpt.get());
     }
     var newCodeDefinition = storageService.binding(binding).newCodeDefinition().read().orElse(NewCodeDefinition.withAlwaysNew());
-    var knownIssuesStore = knownIssuesStorageService.get();
     Map<Path, List<TrackedIssue>> trackedHotspots = rawHotspotsByIdeRelativePath.entrySet().stream().map(e -> {
-      var serverRelativePath = e.getKey();
-      var serverHotspots = storageService.binding(binding).findings().loadHotspots(activeBranch, serverRelativePath);
+      var clientRelativePath = e.getKey();
+      var serverHotspots = storageService.binding(binding).findings().loadHotspots(activeBranch, clientRelativePath);
       var rawHotspots = e.getValue();
       List<TrackedIssue> allTrackedHotspot;
-      var previouslyKnownHotspots = knownIssuesStore.loadForFile(configurationScopeId, e.getKey());
-      allTrackedHotspot = matchAndTrack(newCodeDefinition, rawHotspots, previouslyKnownHotspots);
+      var previouslyKnownHotspots = knownFindingsStore.loadSecurityHotspotsForFile(configurationScopeId, e.getKey());
+      allTrackedHotspot = matchAndTrack(rawHotspots, previouslyKnownHotspots);
       var matches = newMatchSecurityHotspots(serverHotspots, allTrackedHotspot, newCodeDefinition);
-      storeTrackedIssues(knownIssuesStore, configurationScopeId, serverRelativePath, matches);
-      return Map.entry(serverRelativePath, matches);
+      return Map.entry(clientRelativePath, matches);
     }).collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
 
+    trackedHotspots = setIntroductionDateAndNewCode(trackedHotspots, false);
+    trackedHotspots.forEach((clientRelativePath, fileHotspots) -> storeTrackedSecurityHotspots(knownFindingsStore, configurationScopeId, clientRelativePath, fileHotspots));
     var hotspotsToRaise = getHotspotsToRaise(trackedHotspots);
     client.raiseHotspots(new RaiseHotspotsParams(configurationScopeId, hotspotsToRaise, false, event.getAnalysisId()));
+  }
+
+  private static void storeTrackedSecurityHotspots(XodusKnownFindingsStore knownIssuesStore, String configurationScopeId, Path clientRelativePath,
+    List<TrackedIssue> newKnownSecurityHotspots) {
+    knownIssuesStore.storeKnownSecurityHotspots(configurationScopeId, clientRelativePath,
+      newKnownSecurityHotspots.stream().map(i -> new KnownFinding(i.getId(), i.getServerKey(), i.getTextRangeWithHash(), i.getLineWithHash(), i.getRuleKey(), i.getMessage(),
+        i.getIntroductionDate())).collect(Collectors.toList()));
   }
 
   private static Map<URI, List<RaisedHotspotDto>> getHotspotsToRaise(Map<Path, List<TrackedIssue>> hotspots) {
@@ -206,8 +235,8 @@ public class SecurityHotspotMatchingService {
       fetchTasks.add(CompletableFuture.runAsync(() -> hotspotSynchronizationService.fetchProjectHotspots(binding, activeBranch, cancelMonitor), executorService));
     } else {
       fetchTasks.addAll(serverFileRelativePaths.stream()
-        .map(serverFileRelativePath ->
-          CompletableFuture.runAsync(() -> hotspotSynchronizationService.fetchFileHotspots(binding, activeBranch, serverFileRelativePath, cancelMonitor), executorService))
+        .map(serverFileRelativePath -> CompletableFuture
+          .runAsync(() -> hotspotSynchronizationService.fetchFileHotspots(binding, activeBranch, serverFileRelativePath, cancelMonitor), executorService))
         .collect(Collectors.toList()));
     }
     CompletableFuture.allOf(fetchTasks.toArray(new CompletableFuture[0])).join();

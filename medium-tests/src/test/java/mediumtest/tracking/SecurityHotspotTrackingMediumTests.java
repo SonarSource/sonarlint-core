@@ -51,10 +51,11 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-class SecurityHotspotMatchingServiceTests {
+class SecurityHotspotTrackingMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
   private SonarLintTestRpcServer backend;
@@ -237,7 +238,7 @@ class SecurityHotspotMatchingServiceTests {
 
   private Map<URI, List<RaisedHotspotDto>> getPublishedHotspots(SonarLintRpcClientDelegate client, UUID analysisId) {
     ArgumentCaptor<Map<URI, List<RaisedHotspotDto>>> trackedIssuesCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(client).raiseHotspots(eq(CONFIG_SCOPE_ID), trackedIssuesCaptor.capture(), eq(false), eq(analysisId));
+    verify(client, timeout(300)).raiseHotspots(eq(CONFIG_SCOPE_ID), trackedIssuesCaptor.capture(), eq(false), eq(analysisId));
     return trackedIssuesCaptor.getValue();
   }
 

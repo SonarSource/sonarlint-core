@@ -25,7 +25,7 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 
-public class KnownIssue {
+public class KnownFinding {
   private final UUID id;
   private final String serverKey;
   private final TextRangeWithHash textRangeWithHash;
@@ -34,7 +34,7 @@ public class KnownIssue {
   private final String message;
   private final Instant introductionDate;
 
-  public KnownIssue(UUID id, @Nullable String serverKey, @Nullable TextRangeWithHash textRangeWithHash, @Nullable LineWithHash lineWithHash, String ruleKey, String message,
+  public KnownFinding(UUID id, @Nullable String serverKey, @Nullable TextRangeWithHash textRangeWithHash, @Nullable LineWithHash lineWithHash, String ruleKey, String message,
     Instant introductionDate) {
     this.id = id;
     this.serverKey = serverKey;

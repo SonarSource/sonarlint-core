@@ -24,21 +24,21 @@ import java.nio.file.Path;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 
-public class KnownIssuesStorageService {
+public class KnownFindingsStorageService {
 
   private final Path projectsStorageBaseDir;
   private final Path workDir;
-  private XodusKnownIssuesStore trackedIssuesStore;
+  private XodusKnownFindingsStore trackedIssuesStore;
 
-  public KnownIssuesStorageService(@Named("storageRoot") Path storageRoot, @Named("userHome") Path workDir) {
+  public KnownFindingsStorageService(@Named("storageRoot") Path storageRoot, @Named("userHome") Path workDir) {
     projectsStorageBaseDir = storageRoot;
     this.workDir = workDir;
   }
 
-  public XodusKnownIssuesStore get() {
+  public XodusKnownFindingsStore get() {
     if (trackedIssuesStore == null) {
       try {
-        trackedIssuesStore = new XodusKnownIssuesStore(projectsStorageBaseDir, workDir);
+        trackedIssuesStore = new XodusKnownFindingsStore(projectsStorageBaseDir, workDir);
         return trackedIssuesStore;
       } catch (IOException e) {
         throw new IllegalStateException("Unable to create tracked issues database", e);
