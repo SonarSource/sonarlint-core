@@ -4,9 +4,9 @@
 - [ ] When changing an API:
     - [ ] Explain in the JavaDoc the purpose of the new API
     - [ ] Document the change in [API_CHANGES.md](https://github.com/SonarSource/sonarlint-core/blob/master/API_CHANGES.md)
-    - [ ] If the change brakes the current API, explicitly communicate those to the impacted consumers prior to merging (eg. IDE squad)
+    - [ ] If the change breaks the current API, explicitly communicate those to the impacted consumers prior to merging (eg. IDE squad)
 - [ ] Make sure the tests adhere to the convention:
-    - [ ] All test method names should use `snake_case`, for example: `test_validate_input`. It can also start with the `methodName`
+    - [ ] All test method names should use `snake_case`, for example: `test_validate_input`.
 - [ ] Make sure checks are green: build passes, Quality Gate is green
 
 # For external contributors:
