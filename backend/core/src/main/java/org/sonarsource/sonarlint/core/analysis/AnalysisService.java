@@ -553,8 +553,9 @@ public class AnalysisService {
 
     cancelMonitor.checkCanceled();
     var raisedIssues = new ArrayList<RawIssue>();
+    eventPublisher.publishEvent(new AnalysisStartedEvent(configurationScopeId, analysisId, analysisConfig.inputFiles(), enableTracking));
     var analyzeCommand = new AnalyzeCommand(configurationScopeId, analysisConfig,
-      issue -> streamIssue(configurationScopeId, analysisId, issue, ruleDetailsCache, raisedIssues), SonarLintLogger.getTargetForCopy());
+      issue -> streamIssue(configurationScopeId, analysisId, issue, ruleDetailsCache, raisedIssues, enableTracking), SonarLintLogger.getTargetForCopy());
     return analysisEngine.post(analyzeCommand, ProgressMonitor.wrapping(cancelMonitor))
       .whenComplete((results, error) -> {
         long endTime = System.currentTimeMillis();
@@ -573,8 +574,8 @@ public class AnalysisService {
   private static void logSummary(ArrayList<RawIssue> rawIssues, long analysisDuration) {
     // ignore project-level issues for now
     var fileRawIssues = rawIssues.stream().filter(issue -> issue.getTextRange() != null).collect(toList());
-    var issuesCount = fileRawIssues.stream().filter(issue -> issue.getRuleType() != RuleType.SECURITY_HOTSPOT).count();
-    var hotspotsCount = fileRawIssues.stream().filter(issue -> issue.getRuleType() == RuleType.SECURITY_HOTSPOT).count();
+    var issuesCount = fileRawIssues.stream().filter(not(RawIssue::isSecurityHotspot)).count();
+    var hotspotsCount = fileRawIssues.stream().filter(RawIssue::isSecurityHotspot).count();
     LOG.info("Analysis detected {} and {} in {}ms", pluralize(issuesCount, "issue"), pluralize(hotspotsCount, "Security Hotspot"), analysisDuration);
   }
 
@@ -583,8 +584,8 @@ public class AnalysisService {
     return count + " " + pluralizedWord;
   }
 
-  private void streamIssue(String configScopeId, UUID analysisId, Issue issue, ConcurrentHashMap<String, RuleDetailsForAnalysis> ruleDetailsCache,
-    List<RawIssue> rawIssues) {
+  private void streamIssue(String configScopeId, UUID analysisId, Issue issue, ConcurrentHashMap<String, RuleDetailsForAnalysis> ruleDetailsCache, List<RawIssue> rawIssues,
+    boolean enableTracking) {
     var ruleKey = issue.getRuleKey();
     var activeRule = ruleDetailsCache.computeIfAbsent(ruleKey, k -> {
       try {
@@ -594,10 +595,14 @@ public class AnalysisService {
       }
     });
     if (activeRule != null) {
-      rawIssues.add(new RawIssue(issue, activeRule));
+      var rawIssue = new RawIssue(issue, activeRule);
+      rawIssues.add(rawIssue);
       client.didRaiseIssue(new DidRaiseIssueParams(configScopeId, analysisId, toDto(issue, activeRule)));
       if (ruleKey.contains("secrets")) {
         client.didDetectSecret(new DidDetectSecretParams(configScopeId));
+      }
+      if (enableTracking) {
+        eventPublisher.publishEvent(new RawIssueDetectedEvent(configScopeId, analysisId, rawIssue));
       }
     }
   }

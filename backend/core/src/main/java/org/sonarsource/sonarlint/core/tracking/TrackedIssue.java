@@ -20,14 +20,12 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import java.net.URI;
-import java.util.Collection;
-import java.util.HashSet;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.IntStream;
+import java.util.UUID;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.Flow;
 import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
@@ -35,11 +33,6 @@ import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.RuleType;
-
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
-import java.time.Instant;
-import java.util.UUID;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
@@ -56,7 +49,6 @@ public class TrackedIssue {
   private final boolean resolved;
   private final IssueSeverity severity;
   private final RuleType type;
-  private final boolean isOnNewCode;
   private final Map<SoftwareQuality, ImpactSeverity> impacts;
   private final List<Flow> flows;
   private final List<QuickFix> quickFixes;
@@ -66,11 +58,10 @@ public class TrackedIssue {
   private final CleanCodeAttribute cleanCodeAttribute;
   private final URI fileUri;
 
-  public TrackedIssue(UUID id, String message, @Nullable Instant introductionDate, boolean resolved, IssueSeverity overriddenSeverity,
-    RuleType type, String ruleKey, boolean isOnNewCode, @Nullable TextRangeWithHash textRangeWithHash,
-    @Nullable LineWithHash lineWithHash, @Nullable String serverKey, Map<SoftwareQuality, ImpactSeverity> impacts,
-    List<Flow> flows, List<QuickFix> quickFixes, VulnerabilityProbability vulnerabilityProbability, @Nullable HotspotStatus hotspotStatus,
-    @Nullable String ruleDescriptionContextKey, CleanCodeAttribute cleanCodeAttribute, @Nullable URI fileUri) {
+  public TrackedIssue(UUID id, String message, @Nullable Instant introductionDate, boolean resolved, IssueSeverity overriddenSeverity, RuleType type, String ruleKey,
+    @Nullable TextRangeWithHash textRangeWithHash, @Nullable LineWithHash lineWithHash, @Nullable String serverKey, Map<SoftwareQuality, ImpactSeverity> impacts, List<Flow> flows,
+    List<QuickFix> quickFixes, VulnerabilityProbability vulnerabilityProbability, @Nullable HotspotStatus hotspotStatus, @Nullable String ruleDescriptionContextKey,
+    CleanCodeAttribute cleanCodeAttribute, @Nullable URI fileUri) {
     this.id = id;
     this.message = message;
     this.ruleKey = ruleKey;
@@ -81,7 +72,6 @@ public class TrackedIssue {
     this.resolved = resolved;
     this.severity = overriddenSeverity;
     this.type = type;
-    this.isOnNewCode = isOnNewCode;
     this.impacts = impacts;
     this.flows = flows;
     this.quickFixes = quickFixes;
@@ -101,7 +91,6 @@ public class TrackedIssue {
     return serverKey;
   }
 
-  @CheckForNull
   public Instant getIntroductionDate() {
     return introductionDate;
   }
@@ -118,8 +107,8 @@ public class TrackedIssue {
     return type;
   }
 
-  public boolean isOnNewCode() {
-    return isOnNewCode;
+  public boolean isSecurityHotspot() {
+    return getType() == RuleType.SECURITY_HOTSPOT;
   }
 
   public String getRuleKey() {
@@ -173,21 +162,5 @@ public class TrackedIssue {
   @CheckForNull
   public HotspotStatus getHotspotStatus() {
     return hotspotStatus;
-  }
-
-  public Collection<Integer> getLineNumbers() {
-    Set<Integer> lineNumbers = new HashSet<>();
-    Optional.ofNullable(textRangeWithHash)
-      .map(textRange -> IntStream.rangeClosed(textRange.getStartLine(), textRange.getEndLine()))
-      .ifPresent(intStream -> intStream.forEach(lineNumbers::add));
-
-    getFlows()
-      .forEach(flow -> flow.locations().stream()
-        .filter(issueLocation -> Objects.nonNull(issueLocation.getStartLine()))
-        .filter(issueLocation -> Objects.nonNull(issueLocation.getEndLine()))
-        .map(issueLocation -> IntStream.rangeClosed(issueLocation.getStartLine(), issueLocation.getEndLine()))
-        .forEach(intStream -> intStream.forEach(lineNumbers::add)));
-
-    return lineNumbers;
   }
 }

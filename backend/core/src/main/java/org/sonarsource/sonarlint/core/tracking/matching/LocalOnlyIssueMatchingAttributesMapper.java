@@ -17,43 +17,42 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.tracking;
+package org.sonarsource.sonarlint.core.tracking.matching;
 
 import java.util.Optional;
-import org.sonarsource.sonarlint.core.commons.KnownFinding;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
+import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
-import org.sonarsource.sonarlint.core.issue.matching.MatchingAttributesMapper;
 
-public class KnownIssueMatchingAttributesMapper implements MatchingAttributesMapper<KnownFinding> {
+public class LocalOnlyIssueMatchingAttributesMapper implements MatchingAttributesMapper<LocalOnlyIssue> {
 
   @Override
-  public String getRuleKey(KnownFinding issue) {
+  public String getRuleKey(LocalOnlyIssue issue) {
     return issue.getRuleKey();
   }
 
   @Override
-  public Optional<Integer> getLine(KnownFinding issue) {
+  public Optional<Integer> getLine(LocalOnlyIssue issue) {
     return Optional.ofNullable(issue.getLineWithHash()).map(LineWithHash::getNumber);
   }
 
   @Override
-  public Optional<String> getTextRangeHash(KnownFinding issue) {
+  public Optional<String> getTextRangeHash(LocalOnlyIssue issue) {
     return Optional.ofNullable(issue.getTextRangeWithHash()).map(TextRangeWithHash::getHash);
   }
 
   @Override
-  public Optional<String> getLineHash(KnownFinding issue) {
+  public Optional<String> getLineHash(LocalOnlyIssue issue) {
     return Optional.ofNullable(issue.getLineWithHash()).map(LineWithHash::getHash);
   }
 
   @Override
-  public String getMessage(KnownFinding issue) {
+  public String getMessage(LocalOnlyIssue issue) {
     return issue.getMessage();
   }
 
   @Override
-  public Optional<String> getServerIssueKey(KnownFinding issue) {
+  public Optional<String> getServerIssueKey(LocalOnlyIssue issue) {
     return Optional.empty();
   }
 }

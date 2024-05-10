@@ -53,7 +53,7 @@ class NewCodeServiceTests {
   void getNewCodeDefinition_noBinding() {
     var ncd = underTest.getNewCodeDefinition("scope");
     assertThat(ncd).extracting(GetNewCodeDefinitionResponse::getDescription, GetNewCodeDefinitionResponse::isSupported)
-      .containsExactly("No new code definition found", false);
+      .containsExactly("From last 30 days", true);
   }
 
   @Test

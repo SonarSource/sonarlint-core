@@ -19,25 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
+import java.nio.file.Path;
 import java.time.Instant;
-import java.util.UUID;
-import org.sonarsource.sonarlint.core.analysis.RawIssue;
+import java.util.Collection;
 
-import static org.sonarsource.sonarlint.core.tracking.TextRangeUtils.getLineWithHash;
-import static org.sonarsource.sonarlint.core.tracking.TextRangeUtils.getTextRangeWithHash;
-
-public class IssueMapper {
-
-  private IssueMapper() {
-    // utils
-  }
-
-  public static TrackedIssue toTrackedIssue(RawIssue issue, Instant introductionDate) {
-    return new TrackedIssue(UUID.randomUUID(), issue.getMessage(), introductionDate, false, issue.getSeverity(),
-      issue.getRuleType(), issue.getRuleKey(), getTextRangeWithHash(issue.getTextRange(),
-      issue.getClientInputFile()), getLineWithHash(issue.getTextRange(),
-      issue.getClientInputFile()), null, issue.getImpacts(), issue.getFlows(), issue.getQuickFixes(),
-      issue.getVulnerabilityProbability(), null,  issue.getRuleDescriptionContextKey(), issue.getCleanCodeAttribute(), issue.getFileUri());
-  }
-
+public interface IntroductionDateProvider {
+  Instant determineIntroductionDate(Path filePath, Collection<Integer> lineNumber);
 }

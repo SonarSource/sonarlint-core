@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.KnownFinding;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.tracking.matching.KnownIssueMatchingAttributesMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;

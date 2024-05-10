@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.issue.matching;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.tracking.matching.IssueMatcher;
+import org.sonarsource.sonarlint.core.tracking.matching.MatchingAttributesMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

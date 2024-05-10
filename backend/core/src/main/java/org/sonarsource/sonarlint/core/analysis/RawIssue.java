@@ -21,6 +21,12 @@ package org.sonarsource.sonarlint.core.analysis;
 
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.IntStream;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.Flow;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
@@ -54,6 +60,10 @@ public class RawIssue {
 
   public RuleType getRuleType() {
     return activeRule.getType();
+  }
+
+  public boolean isSecurityHotspot() {
+    return getRuleType() == RuleType.SECURITY_HOTSPOT;
   }
 
   public CleanCodeAttribute getCleanCodeAttribute() {
@@ -97,6 +107,10 @@ public class RawIssue {
     return inputFile != null ? inputFile.uri() : null;
   }
 
+  public boolean isInFile() {
+    return issue.getInputFile() != null;
+  }
+
   @CheckForNull
   public ClientInputFile getClientInputFile() {
     return issue.getInputFile();
@@ -117,5 +131,21 @@ public class RawIssue {
 
   public RuleDetailsForAnalysis getActiveRule() {
     return activeRule;
+  }
+
+  public Collection<Integer> getLineNumbers() {
+    Set<Integer> lineNumbers = new HashSet<>();
+    Optional.ofNullable(getTextRange())
+      .map(textRange -> IntStream.rangeClosed(textRange.getStartLine(), textRange.getEndLine()))
+      .ifPresent(intStream -> intStream.forEach(lineNumbers::add));
+
+    getFlows()
+      .forEach(flow -> flow.locations().stream()
+        .filter(issueLocation -> Objects.nonNull(issueLocation.getStartLine()))
+        .filter(issueLocation -> Objects.nonNull(issueLocation.getEndLine()))
+        .map(issueLocation -> IntStream.rangeClosed(issueLocation.getStartLine(), issueLocation.getEndLine()))
+        .forEach(intStream -> intStream.forEach(lineNumbers::add)));
+
+    return lineNumbers;
   }
 }

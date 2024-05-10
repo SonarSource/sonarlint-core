@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Medium Tests
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,22 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.issue.matching;
+package testutils.plugins.src;
 
-import java.util.Optional;
+import org.sonar.api.Plugin;
 
-public interface MatchingAttributesMapper<G> {
-
-
-  String getRuleKey(G issue);
-
-  Optional<Integer> getLine(G issue);
-
-  Optional<String> getTextRangeHash(G issue);
-
-  Optional<String> getLineHash(G issue);
-
-  String getMessage(G issue);
-
-  Optional<String> getServerIssueKey(G issue);
+public class DefaultPlugin implements Plugin {
+  @Override
+  public void define(Context context) {
+    context.addExtension(DefaultRulesDefinition.class);
+    context.addExtension(DefaultSensor.class);
+  }
 }

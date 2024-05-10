@@ -26,10 +26,9 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
-import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 
+import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toList;
 
 public class AnalysisFinishedEvent {
@@ -87,18 +86,18 @@ public class AnalysisFinishedEvent {
   }
 
   public List<RawIssue> getIssues() {
-    return issues.stream().filter(issue -> !issue.getRuleType().equals(RuleType.SECURITY_HOTSPOT)).collect(toList());
+    return issues.stream().filter(not(RawIssue::isSecurityHotspot)).collect(toList());
   }
 
   public List<RawIssue> getHotspots() {
-    return issues.stream().filter(issue -> issue.getRuleType().equals(RuleType.SECURITY_HOTSPOT)).collect(toList());
+    return issues.stream().filter(RawIssue::isSecurityHotspot).collect(toList());
   }
 
   public boolean isTrackingEnabled() {
     return trackingEnabled;
   }
 
-  public boolean isShouldFetchServerIssues() {
+  public boolean shouldFetchServerIssues() {
     return shouldFetchServerIssues;
   }
 }

@@ -17,50 +17,42 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
-package org.sonarsource.sonarlint.core.tracking;
+package org.sonarsource.sonarlint.core.tracking.matching;
 
 import java.util.Optional;
-import org.sonarsource.sonarlint.core.analysis.RawIssue;
+import org.sonarsource.sonarlint.core.commons.KnownFinding;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
-import org.sonarsource.sonarlint.core.issue.matching.MatchingAttributesMapper;
 
-public class RawIssueFindingMatchingAttributeMapper implements MatchingAttributesMapper<RawIssue> {
+public class KnownIssueMatchingAttributesMapper implements MatchingAttributesMapper<KnownFinding> {
 
   @Override
-  public String getRuleKey(RawIssue issue) {
+  public String getRuleKey(KnownFinding issue) {
     return issue.getRuleKey();
   }
 
   @Override
-  public Optional<Integer> getLine(RawIssue issue) {
-    var textRange = issue.getTextRange();
-    if (textRange == null) {
-      return Optional.empty();
-    }
-    return Optional.of(textRange.getStartLine());
+  public Optional<Integer> getLine(KnownFinding issue) {
+    return Optional.ofNullable(issue.getLineWithHash()).map(LineWithHash::getNumber);
   }
 
   @Override
-  public Optional<String> getTextRangeHash(RawIssue issue) {
-    return Optional.ofNullable(TextRangeUtils.getTextRangeWithHash(issue.getTextRange(), issue.getClientInputFile()))
-      .map(TextRangeWithHash::getHash);
+  public Optional<String> getTextRangeHash(KnownFinding issue) {
+    return Optional.ofNullable(issue.getTextRangeWithHash()).map(TextRangeWithHash::getHash);
   }
 
   @Override
-  public Optional<String> getLineHash(RawIssue issue) {
-    return Optional.ofNullable(TextRangeUtils.getLineWithHash(issue.getTextRange(), issue.getClientInputFile()))
-      .map(LineWithHash::getHash);
+  public Optional<String> getLineHash(KnownFinding issue) {
+    return Optional.ofNullable(issue.getLineWithHash()).map(LineWithHash::getHash);
   }
 
   @Override
-  public String getMessage(RawIssue issue) {
+  public String getMessage(KnownFinding issue) {
     return issue.getMessage();
   }
 
   @Override
-  public Optional<String> getServerIssueKey(RawIssue issue) {
+  public Optional<String> getServerIssueKey(KnownFinding issue) {
     return Optional.empty();
   }
 }
