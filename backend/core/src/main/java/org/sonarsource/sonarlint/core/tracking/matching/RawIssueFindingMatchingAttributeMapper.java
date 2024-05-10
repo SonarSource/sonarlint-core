@@ -17,43 +17,50 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.tracking;
+
+package org.sonarsource.sonarlint.core.tracking.matching;
 
 import java.util.Optional;
+import org.sonarsource.sonarlint.core.analysis.RawIssue;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
-import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
-import org.sonarsource.sonarlint.core.issue.matching.MatchingAttributesMapper;
+import org.sonarsource.sonarlint.core.tracking.TextRangeUtils;
 
-public class LocalOnlyIssueMatchingAttributesMapper implements MatchingAttributesMapper<LocalOnlyIssue> {
+public class RawIssueFindingMatchingAttributeMapper implements MatchingAttributesMapper<RawIssue> {
 
   @Override
-  public String getRuleKey(LocalOnlyIssue issue) {
+  public String getRuleKey(RawIssue issue) {
     return issue.getRuleKey();
   }
 
   @Override
-  public Optional<Integer> getLine(LocalOnlyIssue issue) {
-    return Optional.ofNullable(issue.getLineWithHash()).map(LineWithHash::getNumber);
+  public Optional<Integer> getLine(RawIssue issue) {
+    var textRange = issue.getTextRange();
+    if (textRange == null) {
+      return Optional.empty();
+    }
+    return Optional.of(textRange.getStartLine());
   }
 
   @Override
-  public Optional<String> getTextRangeHash(LocalOnlyIssue issue) {
-    return Optional.ofNullable(issue.getTextRangeWithHash()).map(TextRangeWithHash::getHash);
+  public Optional<String> getTextRangeHash(RawIssue issue) {
+    return Optional.ofNullable(TextRangeUtils.getTextRangeWithHash(issue.getTextRange(), issue.getClientInputFile()))
+      .map(TextRangeWithHash::getHash);
   }
 
   @Override
-  public Optional<String> getLineHash(LocalOnlyIssue issue) {
-    return Optional.ofNullable(issue.getLineWithHash()).map(LineWithHash::getHash);
+  public Optional<String> getLineHash(RawIssue issue) {
+    return Optional.ofNullable(TextRangeUtils.getLineWithHash(issue.getTextRange(), issue.getClientInputFile()))
+      .map(LineWithHash::getHash);
   }
 
   @Override
-  public String getMessage(LocalOnlyIssue issue) {
+  public String getMessage(RawIssue issue) {
     return issue.getMessage();
   }
 
   @Override
-  public Optional<String> getServerIssueKey(LocalOnlyIssue issue) {
+  public Optional<String> getServerIssueKey(RawIssue issue) {
     return Optional.empty();
   }
 }

@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core;
 
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.analysis.RuleDetailsForAnalysis;
+import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
@@ -47,26 +48,26 @@ public class DtoMapper {
         .collect(Collectors.toList()), RuleDetailsAdapter.adapt(ruleDetails.getVulnerabilityProbability()));
   }
 
-  public static RaisedIssueDto toRaisedIssueDto(TrackedIssue issue) {
+  public static RaisedIssueDto toRaisedIssueDto(TrackedIssue issue, NewCodeDefinition newCodeDefinition) {
     return new RaisedIssueDto(issue.getId(), issue.getServerKey(), issue.getRuleKey(), issue.getMessage(),
       RuleDetailsAdapter.adapt(issue.getSeverity()),
       RuleDetailsAdapter.adapt(issue.getType()),
       RuleDetailsAdapter.adapt(issue.getCleanCodeAttribute()), RuleDetailsAdapter.toDto(issue.getImpacts()),
-      requireNonNull(issue.getIntroductionDate()), issue.isOnNewCode(), issue.isResolved(),
+      requireNonNull(issue.getIntroductionDate()), newCodeDefinition.isOnNewCode(issue.getIntroductionDate()), issue.isResolved(),
       toTextRangeDto(issue.getTextRangeWithHash()),
       issue.getFlows().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()),
       issue.getQuickFixes().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()),
       issue.getRuleDescriptionContextKey());
   }
 
-  public static RaisedHotspotDto toRaisedHotspotDto(TrackedIssue issue) {
+  public static RaisedHotspotDto toRaisedHotspotDto(TrackedIssue issue, NewCodeDefinition newCodeDefinition) {
     var status = issue.getHotspotStatus();
     status = status != null ? status : HotspotStatus.TO_REVIEW;
     return new RaisedHotspotDto(issue.getId(), issue.getServerKey(), issue.getRuleKey(), issue.getMessage(),
       RuleDetailsAdapter.adapt(issue.getSeverity()),
       RuleDetailsAdapter.adapt(issue.getType()),
       RuleDetailsAdapter.adapt(issue.getCleanCodeAttribute()), RuleDetailsAdapter.toDto(issue.getImpacts()),
-      requireNonNull(issue.getIntroductionDate()), issue.isOnNewCode(), issue.isResolved(),
+      requireNonNull(issue.getIntroductionDate()), newCodeDefinition.isOnNewCode(issue.getIntroductionDate()), issue.isResolved(),
       toTextRangeDto(issue.getTextRangeWithHash()),
       issue.getFlows().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()),
       issue.getQuickFixes().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()),

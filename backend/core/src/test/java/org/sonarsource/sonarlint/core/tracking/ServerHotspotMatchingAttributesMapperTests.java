@@ -26,6 +26,7 @@ import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
+import org.sonarsource.sonarlint.core.tracking.matching.ServerHotspotMatchingAttributesMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

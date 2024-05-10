@@ -288,7 +288,11 @@ public class SonarLintBackendFixture {
     }
 
     public SonarLintBackendBuilder withStandaloneEmbeddedPlugin(TestPlugin plugin) {
-      this.embeddedPluginPaths.add(plugin.getPath());
+      return withStandaloneEmbeddedPlugin(plugin.getPath());
+    }
+
+    public SonarLintBackendBuilder withStandaloneEmbeddedPlugin(Path pluginPath) {
+      this.embeddedPluginPaths.add(pluginPath);
       return this;
     }
 

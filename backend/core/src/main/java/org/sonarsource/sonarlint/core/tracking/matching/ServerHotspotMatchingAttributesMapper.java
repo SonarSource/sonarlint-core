@@ -17,53 +17,46 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
-package org.sonarsource.sonarlint.core.tracking;
+package org.sonarsource.sonarlint.core.tracking.matching;
 
 import java.util.Optional;
-import org.sonarsource.sonarlint.core.issue.matching.MatchingAttributesMapper;
+import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 
-public class TrackedIssueFindingMatchingAttributeMapper implements MatchingAttributesMapper<TrackedIssue> {
+public class ServerHotspotMatchingAttributesMapper implements MatchingAttributesMapper<ServerHotspot> {
 
   @Override
-  public String getRuleKey(TrackedIssue issue) {
+  public String getRuleKey(ServerHotspot issue) {
     return issue.getRuleKey();
   }
 
   @Override
-  public Optional<Integer> getLine(TrackedIssue issue) {
-    var textRange = issue.getTextRangeWithHash();
-    if (textRange == null) {
-      return Optional.empty();
-    }
-    return Optional.of(textRange.getStartLine());
+  public Optional<Integer> getLine(ServerHotspot issue) {
+    return Optional.of(issue.getTextRange().getStartLine());
   }
 
   @Override
-  public Optional<String> getTextRangeHash(TrackedIssue issue) {
-    var textRange = issue.getTextRangeWithHash();
-    if (textRange == null) {
-      return Optional.empty();
-    }
-    return Optional.of(textRange.getHash());
-  }
-
-  @Override
-  public Optional<String> getLineHash(TrackedIssue issue) {
-    var lineWithHash = issue.getLineWithHash();
-    if (lineWithHash != null) {
-      return Optional.of(lineWithHash.getHash());
+  public Optional<String> getTextRangeHash(ServerHotspot issue) {
+    var textRange = issue.getTextRange();
+    if (textRange instanceof TextRangeWithHash) {
+      return Optional.of(((TextRangeWithHash) textRange).getHash());
     }
     return Optional.empty();
   }
 
   @Override
-  public String getMessage(TrackedIssue issue) {
+  public Optional<String> getLineHash(ServerHotspot issue) {
+    // no line hash for hotspots
+    return Optional.empty();
+  }
+
+  @Override
+  public String getMessage(ServerHotspot issue) {
     return issue.getMessage();
   }
 
   @Override
-  public Optional<String> getServerIssueKey(TrackedIssue issue) {
-    return Optional.ofNullable(issue.getServerKey());
+  public Optional<String> getServerIssueKey(ServerHotspot issue) {
+    return Optional.of(issue.getKey());
   }
 }

@@ -17,13 +17,14 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.issue.matching;
+package org.sonarsource.sonarlint.core.tracking.matching;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.annotation.CheckForNull;
 
 /**
@@ -92,6 +93,10 @@ public class MatchingResult<LEFT, RIGHT> {
   @CheckForNull
   public RIGHT getMatch(LEFT left) {
     return leftToRight.get(left);
+  }
+
+  public Optional<RIGHT> getMatchOpt(LEFT left) {
+    return Optional.ofNullable(getMatch(left));
   }
 
 }
