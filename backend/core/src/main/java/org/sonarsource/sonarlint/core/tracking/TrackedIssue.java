@@ -20,8 +20,14 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import java.net.URI;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.IntStream;
 import org.sonarsource.sonarlint.core.analysis.api.Flow;
 import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
@@ -58,7 +64,7 @@ public class TrackedIssue {
   private final CleanCodeAttribute cleanCodeAttribute;
   private final URI fileUri;
 
-  public TrackedIssue(UUID id, String message, Instant introductionDate, boolean resolved, IssueSeverity overriddenSeverity,
+  public TrackedIssue(UUID id, String message, @Nullable Instant introductionDate, boolean resolved, IssueSeverity overriddenSeverity,
     RuleType type, String ruleKey, boolean isOnNewCode, @Nullable TextRangeWithHash textRangeWithHash,
     @Nullable LineWithHash lineWithHash, @Nullable String serverKey, Map<SoftwareQuality, ImpactSeverity> impacts,
     List<Flow> flows, List<QuickFix> quickFixes, VulnerabilityProbability vulnerabilityProbability,
@@ -92,6 +98,7 @@ public class TrackedIssue {
     return serverKey;
   }
 
+  @CheckForNull
   public Instant getIntroductionDate() {
     return introductionDate;
   }
@@ -158,5 +165,21 @@ public class TrackedIssue {
   @CheckForNull
   public URI getFileUri() {
     return fileUri;
+  }
+
+  public Collection<Integer> getLineNumbers() {
+    Set<Integer> lineNumbers = new HashSet<>();
+    Optional.ofNullable(textRangeWithHash)
+      .map(textRange -> IntStream.rangeClosed(textRange.getStartLine(), textRange.getEndLine()))
+      .ifPresent(intStream -> intStream.forEach(lineNumbers::add));
+
+    getFlows()
+      .forEach(flow -> flow.locations().stream()
+        .filter(issueLocation -> Objects.nonNull(issueLocation.getStartLine()))
+        .filter(issueLocation -> Objects.nonNull(issueLocation.getEndLine()))
+        .map(issueLocation -> IntStream.rangeClosed(issueLocation.getStartLine(), issueLocation.getEndLine()))
+        .forEach(intStream -> intStream.forEach(lineNumbers::add)));
+
+    return lineNumbers;
   }
 }

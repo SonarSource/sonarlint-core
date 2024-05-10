@@ -20,7 +20,6 @@
 
 package org.sonarsource.sonarlint.core.tracking;
 
-import java.time.Instant;
 import java.util.UUID;
 import org.sonarsource.sonarlint.core.analysis.RawIssue;
 
@@ -33,9 +32,9 @@ public class IssueMapper {
     // utils
   }
 
-  public static TrackedIssue toTrackedIssue(RawIssue issue, boolean isOnNewCode) {
-    return new TrackedIssue(UUID.randomUUID(), issue.getMessage(), Instant.now(), false, issue.getSeverity(),
-      issue.getRuleType(), issue.getRuleKey(), isOnNewCode, getTextRangeWithHash(issue.getTextRange(),
+  public static TrackedIssue toTrackedIssue(RawIssue issue) {
+    return new TrackedIssue(UUID.randomUUID(), issue.getMessage(), null, false, issue.getSeverity(),
+      issue.getRuleType(), issue.getRuleKey(), true, getTextRangeWithHash(issue.getTextRange(),
       issue.getClientInputFile()), getLineWithHash(issue.getTextRange(),
       issue.getClientInputFile()), null, issue.getImpacts(), issue.getFlows(), issue.getQuickFixes(),
       issue.getVulnerabilityProbability(),  issue.getRuleDescriptionContextKey(), issue.getCleanCodeAttribute(), issue.getFileUri());

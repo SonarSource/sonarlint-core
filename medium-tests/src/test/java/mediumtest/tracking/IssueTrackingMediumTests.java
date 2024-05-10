@@ -24,12 +24,17 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -49,10 +54,10 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Qualityprofiles;
+import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
-
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
@@ -63,6 +68,8 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.api.InstanceOfAssertFactories.INSTANT;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
+import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRepository;
 import static testutils.TestUtils.protobufBody;
 
 class IssueTrackingMediumTests {
@@ -165,6 +172,90 @@ class IssueTrackingMediumTests {
         "}");
     var secondAnalysisPublishedIssues = analyzeFileAndGetAllIssues(fileUri, client);
     assertThat(secondAnalysisPublishedIssues).hasSize(2);
+  }
+
+  @Test
+  void it_should_use_server_new_code_definition_for_server_issues_and_set_true_for_unmatched_issues(@TempDir Path baseDir) {
+    var ideFilePath = "Foo.java";
+    var filePath = createFile(baseDir, ideFilePath,
+      "// FIXME foo bar\n" +
+      "// FIXME foo bar2\n" +
+        "public class Foo {\n" +
+        "}");
+    var projectKey = "projectKey";
+    var connectionId = "connectionId";
+    var branchName = "main";
+    var ruleKey = "java:S1134";
+    var message = "Take the required action to fix the issue indicated by this comment.";
+
+    var fileUri = filePath.toUri();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
+      .build();
+    var server = newSonarQubeServer("9.5")
+      .withProject("projectKey", project -> project.withBranch("main", branch -> branch
+        .withIssue("uuid1", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER, org.sonarsource.sonarlint.core.commons.RuleType.BUG,
+          "OPEN", null, Instant.now().minus(1, ChronoUnit.DAYS), new TextRange(1,0,1,16))
+        .withIssue("uuid2", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER, org.sonarsource.sonarlint.core.commons.RuleType.BUG,
+          "OPEN", null, Instant.now().plus(1, ChronoUnit.DAYS), new TextRange(2,0,2,16))))
+      .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
+        .withActiveRule(ruleKey, activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
+      .start();
+    backend = newBackend()
+      .withSonarQubeConnection(connectionId, server,
+        storage -> storage.withPlugin(TestPlugin.JAVA).withProject(projectKey,
+          project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
+            .withNewCodeDefinition(Sonarlint.NewCodeDefinition.newBuilder().setMode(Sonarlint.NewCodeDefinitionMode.PREVIOUS_VERSION).setThresholdDate(Instant.now().toEpochMilli()).build())
+            .withMainBranch(branchName)))
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .build(client);
+
+    backend.getConfigurationService()
+      .didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
+        new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, CONFIG_SCOPE_ID,
+          new BindingConfigurationDto(connectionId, projectKey, true)))));
+
+    var issues = analyzeFileAndGetAllIssues(fileUri, client);
+    assertThat(issues).hasSize(2);
+    assertThat(issues.stream().filter(raisedIssueDto -> raisedIssueDto.getServerKey().equals("uuid1")).findFirst().get().isOnNewCode()).isFalse();
+    assertThat(issues.stream().filter(raisedIssueDto -> raisedIssueDto.getServerKey().equals("uuid2")).findFirst().get().isOnNewCode()).isTrue();
+
+    changeFileContent(baseDir, ideFilePath,
+      "package sonar;\n" +
+        "// FIXME foo bar\n" +
+        "// FIXME foo bar2\n" +
+        "public interface Foo {\n" +
+        "// FIXME bar baz\n" +
+        "}");
+    var secondAnalysisPublishedIssues = analyzeFileAndGetAllIssues(fileUri, client);
+    assertThat(secondAnalysisPublishedIssues).hasSize(3);
+    assertThat(secondAnalysisPublishedIssues.stream().filter(raisedIssueDto -> Objects.isNull(raisedIssueDto.getServerKey())).findFirst().get().isOnNewCode()).isTrue();
+  }
+
+  @Test
+  void it_should_use_git_blame_to_set_introduction_date_for_git_repos(@TempDir Path baseDir) throws IOException, GitAPIException {
+    Path gitDirPath = baseDir.resolve("gitDir");
+    Git repository = createRepository(gitDirPath);
+
+    var filePath = createFile(gitDirPath, "Foobar.java",
+      "package sonar;\n" +
+      "public interface Foobar\n" +
+        "{}");
+
+    Date commitDate = commit(repository, filePath.getFileName().toString());
+
+    var fileUri = filePath.toUri();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, gitDirPath.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .build(client);
+
+    var issue = analyzeFileAndGetIssue(fileUri, client);
+
+    assertThat(issue.getIntroductionDate().toEpochMilli()).isEqualTo(commitDate.getTime());
   }
 
   @Test
