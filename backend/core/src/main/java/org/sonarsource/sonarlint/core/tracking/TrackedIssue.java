@@ -69,7 +69,7 @@ public class TrackedIssue {
   public TrackedIssue(UUID id, String message, @Nullable Instant introductionDate, boolean resolved, IssueSeverity overriddenSeverity,
     RuleType type, String ruleKey, boolean isOnNewCode, @Nullable TextRangeWithHash textRangeWithHash,
     @Nullable LineWithHash lineWithHash, @Nullable String serverKey, Map<SoftwareQuality, ImpactSeverity> impacts,
-    List<Flow> flows, List<QuickFix> quickFixes, VulnerabilityProbability vulnerabilityProbability, HotspotStatus hotspotStatus,
+    List<Flow> flows, List<QuickFix> quickFixes, VulnerabilityProbability vulnerabilityProbability, @Nullable HotspotStatus hotspotStatus,
     @Nullable String ruleDescriptionContextKey, CleanCodeAttribute cleanCodeAttribute, @Nullable URI fileUri) {
     this.id = id;
     this.message = message;
