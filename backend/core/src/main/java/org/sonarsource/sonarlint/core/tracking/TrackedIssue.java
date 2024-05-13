@@ -170,6 +170,7 @@ public class TrackedIssue {
     return fileUri;
   }
 
+  @CheckForNull
   public HotspotStatus getHotspotStatus() {
     return hotspotStatus;
   }

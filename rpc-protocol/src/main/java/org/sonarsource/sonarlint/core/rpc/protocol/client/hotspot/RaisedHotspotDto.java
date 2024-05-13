@@ -55,7 +55,6 @@ public class RaisedHotspotDto extends RaisedFindingDto {
     return vulnerabilityProbability;
   }
 
-  @CheckForNull
   public HotspotStatus getStatus() {
     return status;
   }
