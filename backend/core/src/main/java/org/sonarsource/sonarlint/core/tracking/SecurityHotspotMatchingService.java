@@ -20,22 +20,33 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import com.google.common.util.concurrent.MoreExecutors;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.sonarsource.sonarlint.core.DtoMapper;
+import org.sonarsource.sonarlint.core.analysis.AnalysisFinishedEvent;
+import org.sonarsource.sonarlint.core.analysis.RawIssue;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.Binding;
+import org.sonarsource.sonarlint.core.commons.KnownFinding;
+import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
@@ -43,13 +54,15 @@ import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.issue.matching.IssueMatcher;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlySecurityHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ServerMatchedSecurityHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaiseHotspotsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotChangedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotClosedEvent;
@@ -57,6 +70,14 @@ import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotRaisedEvent;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.HotspotSynchronizationService;
 import org.springframework.context.event.EventListener;
+
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+import static org.sonarsource.sonarlint.core.tracking.IssueMatchingService.matchAndTrack;
+import static org.sonarsource.sonarlint.core.tracking.IssueMatchingService.setIntroductionDateAndNewCode;
+import static org.sonarsource.sonarlint.core.tracking.IssueMatchingService.updateTrackedIssueWithPreviousTrackingData;
 
 @Named
 @Singleton
@@ -69,18 +90,100 @@ public class SecurityHotspotMatchingService {
   private final SonarProjectBranchTrackingService branchTrackingService;
   private final HotspotSynchronizationService hotspotSynchronizationService;
   private final PathTranslationService pathTranslationService;
+  private final KnownFindingsStorageService knownFindingsStorageService;
   private final ExecutorService executorService;
 
   public SecurityHotspotMatchingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, StorageService storageService,
     SonarProjectBranchTrackingService branchTrackingService, HotspotSynchronizationService hotspotSynchronizationService,
-    PathTranslationService pathTranslationService) {
+    PathTranslationService pathTranslationService, KnownFindingsStorageService knownFindingsStorageService) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.storageService = storageService;
     this.branchTrackingService = branchTrackingService;
     this.hotspotSynchronizationService = hotspotSynchronizationService;
     this.pathTranslationService = pathTranslationService;
+    this.knownFindingsStorageService = knownFindingsStorageService;
     this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-server-tracking-hotspot-updater"));
+  }
+
+  @EventListener
+  public void trackAnalysedIssues(AnalysisFinishedEvent event) {
+    if (event.isTrackingEnabled()) {
+      processEvent(event);
+    }
+  }
+
+  private void processEvent(AnalysisFinishedEvent event) {
+    String configurationScopeId = event.getConfigurationScopeId();
+    var hotspots = event.getHotspots();
+    Map<Path, List<RawIssue>> rawHotspotsByIdeRelativePath = hotspots.stream().filter(it -> Objects.nonNull(it.getIdeRelativePath()))
+      .collect(Collectors.groupingBy(RawIssue::getIdeRelativePath, mapping(Function.identity(), toList())));
+    var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
+    if (effectiveBindingOpt.isEmpty()) {
+      // security hotspots are not supported in standalone mode
+      return;
+    }
+    var activeBranchOpt = branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId);
+    var translationOpt = pathTranslationService.getOrComputePathTranslation(configurationScopeId);
+    var knownFindingsStore = knownFindingsStorageService.get();
+    Map<Path, List<TrackedIssue>> newHotspots;
+    if (activeBranchOpt.isEmpty() || translationOpt.isEmpty()) {
+      newHotspots = IssueMatchingService.getNewTrackedIssues(rawHotspotsByIdeRelativePath);
+      var updatedHotspots = newHotspots.entrySet().stream()
+        .collect(toMap(Map.Entry::getKey, e -> {
+          var previouslyKnownIssues = knownFindingsStore.loadSecurityHotspotsForFile(configurationScopeId, e.getKey());
+          if (previouslyKnownIssues == null || previouslyKnownIssues.isEmpty()) {
+            return e.getValue();
+          }
+          var localIssueMatcher = new IssueMatcher<>(new KnownIssueMatchingAttributesMapper(), new TrackedIssueFindingMatchingAttributeMapper());
+          var localMatchingResult = localIssueMatcher.match(previouslyKnownIssues, e.getValue());
+          var matchedIssues = localMatchingResult.getMatchedLefts().entrySet().stream()
+            .map(matchedEntry -> updateTrackedIssueWithPreviousTrackingData(matchedEntry.getKey(), matchedEntry.getValue()));
+          var unmatchedIssues = StreamSupport.stream(localMatchingResult.getUnmatchedRights().spliterator(), false);
+          return Stream.concat(matchedIssues, unmatchedIssues).collect(toList());
+        }));
+
+      updatedHotspots = setIntroductionDateAndNewCode(updatedHotspots, true);
+      updatedHotspots.forEach((clientRelativePath, trackedIssues) -> storeTrackedSecurityHotspots(knownFindingsStore, configurationScopeId, clientRelativePath, trackedIssues));
+      var hotspotsToRaise = getHotspotsToRaise(newHotspots);
+      client.raiseHotspots(new RaiseHotspotsParams(configurationScopeId, hotspotsToRaise, false, event.getAnalysisId()));
+      return;
+    }
+    var binding = effectiveBindingOpt.get();
+    var activeBranch = activeBranchOpt.get();
+    if (event.isShouldFetchServerIssues()) {
+      var hotspotsByPath = rawHotspotsByIdeRelativePath.entrySet().stream().collect(toMap(Map.Entry::getKey,
+        e -> e.getValue().stream().map(IssueMatchingService::toClientTrackedIssue).collect(toList())));
+      refreshServerSecurityHotspots(new SonarLintCancelMonitor(), binding, activeBranch, hotspotsByPath, translationOpt.get());
+    }
+    var newCodeDefinition = storageService.binding(binding).newCodeDefinition().read().orElse(NewCodeDefinition.withAlwaysNew());
+    Map<Path, List<TrackedIssue>> trackedHotspots = rawHotspotsByIdeRelativePath.entrySet().stream().map(e -> {
+      var clientRelativePath = e.getKey();
+      var serverHotspots = storageService.binding(binding).findings().loadHotspots(activeBranch, clientRelativePath);
+      var rawHotspots = e.getValue();
+      List<TrackedIssue> allTrackedHotspot;
+      var previouslyKnownHotspots = knownFindingsStore.loadSecurityHotspotsForFile(configurationScopeId, e.getKey());
+      allTrackedHotspot = matchAndTrack(rawHotspots, previouslyKnownHotspots);
+      var matches = newMatchSecurityHotspots(serverHotspots, allTrackedHotspot, newCodeDefinition);
+      return Map.entry(clientRelativePath, matches);
+    }).collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+    trackedHotspots = setIntroductionDateAndNewCode(trackedHotspots, false);
+    trackedHotspots.forEach((clientRelativePath, fileHotspots) -> storeTrackedSecurityHotspots(knownFindingsStore, configurationScopeId, clientRelativePath, fileHotspots));
+    var hotspotsToRaise = getHotspotsToRaise(trackedHotspots);
+    client.raiseHotspots(new RaiseHotspotsParams(configurationScopeId, hotspotsToRaise, false, event.getAnalysisId()));
+  }
+
+  private static void storeTrackedSecurityHotspots(XodusKnownFindingsStore knownIssuesStore, String configurationScopeId, Path clientRelativePath,
+    List<TrackedIssue> newKnownSecurityHotspots) {
+    knownIssuesStore.storeKnownSecurityHotspots(configurationScopeId, clientRelativePath,
+      newKnownSecurityHotspots.stream().map(i -> new KnownFinding(i.getId(), i.getServerKey(), i.getTextRangeWithHash(), i.getLineWithHash(), i.getRuleKey(), i.getMessage(),
+        i.getIntroductionDate())).collect(Collectors.toList()));
+  }
+
+  private static Map<URI, List<RaisedHotspotDto>> getHotspotsToRaise(Map<Path, List<TrackedIssue>> hotspots) {
+    return hotspots.values().stream().flatMap(Collection::stream)
+      .collect(groupingBy(TrackedIssue::getFileUri, Collectors.mapping(DtoMapper::toRaisedHotspotDto, Collectors.toList())));
   }
 
   public Map<Path, List<Either<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>>> matchWithServerSecurityHotspots(String configurationScopeId,
@@ -132,8 +235,8 @@ public class SecurityHotspotMatchingService {
       fetchTasks.add(CompletableFuture.runAsync(() -> hotspotSynchronizationService.fetchProjectHotspots(binding, activeBranch, cancelMonitor), executorService));
     } else {
       fetchTasks.addAll(serverFileRelativePaths.stream()
-        .map(serverFileRelativePath ->
-          CompletableFuture.runAsync(() -> hotspotSynchronizationService.fetchFileHotspots(binding, activeBranch, serverFileRelativePath, cancelMonitor), executorService))
+        .map(serverFileRelativePath -> CompletableFuture
+          .runAsync(() -> hotspotSynchronizationService.fetchFileHotspots(binding, activeBranch, serverFileRelativePath, cancelMonitor), executorService))
         .collect(Collectors.toList()));
     }
     CompletableFuture.allOf(fetchTasks.toArray(new CompletableFuture[0])).join();
@@ -151,6 +254,29 @@ public class SecurityHotspotMatchingService {
         return Either.forRight(new LocalOnlySecurityHotspot(UUID.randomUUID()));
       }
     }).collect(Collectors.toList());
+  }
+
+  private static List<TrackedIssue> newMatchSecurityHotspots(Collection<ServerHotspot> serverHotspots, List<TrackedIssue> rawHotspots, NewCodeDefinition newCodeDefinition) {
+    var matcher = new IssueMatcher<>(new TrackedIssueFindingMatchingAttributeMapper(), new ServerHotspotMatchingAttributesMapper());
+    var matchingResult = matcher.match(rawHotspots, serverHotspots);
+    return rawHotspots.stream().map(trackedHotspot -> {
+      var match = matchingResult.getMatch(trackedHotspot);
+      if (match != null) {
+        return updateRawHotspotWithServerData(trackedHotspot, match, newCodeDefinition);
+      } else {
+        return trackedHotspot;
+      }
+    }).collect(Collectors.toList());
+  }
+
+  private static TrackedIssue updateRawHotspotWithServerData(TrackedIssue trackedHotspot, ServerHotspot serverHotspot, NewCodeDefinition newCodeDefinition) {
+    return new TrackedIssue(trackedHotspot.getId(), trackedHotspot.getMessage(), serverHotspot.getCreationDate(),
+      serverHotspot.getStatus().isResolved(), trackedHotspot.getSeverity(), RuleType.SECURITY_HOTSPOT, trackedHotspot.getRuleKey(),
+      newCodeDefinition.isOnNewCode(serverHotspot.getCreationDate().toEpochMilli()),
+      trackedHotspot.getTextRangeWithHash(), trackedHotspot.getLineWithHash(),
+      serverHotspot.getKey(), trackedHotspot.getImpacts(), trackedHotspot.getFlows(), trackedHotspot.getQuickFixes(),
+      serverHotspot.getVulnerabilityProbability(), trackedHotspot.getRuleDescriptionContextKey(),
+      trackedHotspot.getCleanCodeAttribute(), trackedHotspot.getFileUri());
   }
 
   @EventListener

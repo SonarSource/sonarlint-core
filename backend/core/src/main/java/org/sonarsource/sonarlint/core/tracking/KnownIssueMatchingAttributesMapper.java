@@ -20,40 +20,40 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import java.util.Optional;
+import org.sonarsource.sonarlint.core.commons.KnownFinding;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
-import org.sonarsource.sonarlint.core.commons.KnownIssue;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.issue.matching.MatchingAttributesMapper;
 
-public class KnownIssueMatchingAttributesMapper implements MatchingAttributesMapper<KnownIssue> {
+public class KnownIssueMatchingAttributesMapper implements MatchingAttributesMapper<KnownFinding> {
 
   @Override
-  public String getRuleKey(KnownIssue issue) {
+  public String getRuleKey(KnownFinding issue) {
     return issue.getRuleKey();
   }
 
   @Override
-  public Optional<Integer> getLine(KnownIssue issue) {
+  public Optional<Integer> getLine(KnownFinding issue) {
     return Optional.ofNullable(issue.getLineWithHash()).map(LineWithHash::getNumber);
   }
 
   @Override
-  public Optional<String> getTextRangeHash(KnownIssue issue) {
+  public Optional<String> getTextRangeHash(KnownFinding issue) {
     return Optional.ofNullable(issue.getTextRangeWithHash()).map(TextRangeWithHash::getHash);
   }
 
   @Override
-  public Optional<String> getLineHash(KnownIssue issue) {
+  public Optional<String> getLineHash(KnownFinding issue) {
     return Optional.ofNullable(issue.getLineWithHash()).map(LineWithHash::getHash);
   }
 
   @Override
-  public String getMessage(KnownIssue issue) {
+  public String getMessage(KnownFinding issue) {
     return issue.getMessage();
   }
 
   @Override
-  public Optional<String> getServerIssueKey(KnownIssue issue) {
+  public Optional<String> getServerIssueKey(KnownFinding issue) {
     return Optional.empty();
   }
 }

@@ -95,7 +95,7 @@ import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationSe
 import org.sonarsource.sonarlint.core.sync.SynchronizationService;
 import org.sonarsource.sonarlint.core.sync.TaintSynchronizationService;
 import org.sonarsource.sonarlint.core.tracking.IssueMatchingService;
-import org.sonarsource.sonarlint.core.tracking.KnownIssuesStorageService;
+import org.sonarsource.sonarlint.core.tracking.KnownFindingsStorageService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
 import org.sonarsource.sonarlint.core.tracking.SecurityHotspotMatchingService;
 import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
@@ -175,7 +175,7 @@ import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_S
   SharedConnectedModeSettingsProvider.class,
   AnalysisEngineCache.class,
   PromotionService.class,
-  KnownIssuesStorageService.class
+  KnownFindingsStorageService.class
 })
 public class SonarLintSpringAppConfig {
 
