@@ -41,7 +41,6 @@ import org.springframework.context.event.EventListener;
 
 public class AnalysisEngineCache {
   private final Path workDir;
-  private final long pid;
   private final ClientFileSystemService clientFileSystemService;
   private final ConfigurationRepository configurationRepository;
   private final PluginsService pluginsService;
@@ -56,7 +55,6 @@ public class AnalysisEngineCache {
     this.pluginsService = pluginsService;
     this.nodeJsService = nodeJsService;
     this.workDir = initializeParams.getWorkDir();
-    this.pid = initializeParams.getClientConstantInfo().getPid();
     this.clientFileSystemService = clientFileSystemService;
     var shouldSupportCsharp = initializeParams.getEnabledLanguagesInStandaloneMode().contains(Language.CS);
     var languageSpecificRequirements = initializeParams.getLanguageSpecificRequirements();
@@ -92,7 +90,7 @@ public class AnalysisEngineCache {
     var nodeJsPath = activeNodeJs == null ? null : activeNodeJs.getPath();
     var analysisEngineConfiguration = AnalysisEngineConfiguration.builder()
       .setWorkDir(workDir)
-      .setClientPid(pid)
+      .setClientPid(ProcessHandle.current().pid())
       .setExtraProperties(extraProperties)
       .setNodeJs(nodeJsPath)
       .setModulesProvider(this::getModules)
