@@ -207,7 +207,7 @@ public class IssueMatchingService {
           return Stream.concat(matchedIssues, unmatchedIssues).collect(toList());
         }));
 
-      updatedIssues = setIntroductionDateAndNewCode(updatedIssues, true);
+      updatedIssues = setIntroductionDateAndNewCode(updatedIssues, effectiveBindingOpt.isEmpty());
       updatedIssues.forEach((clientRelativePath, trackedIssues) -> storeTrackedIssues(knownFindingsStore, configurationScopeId, clientRelativePath, trackedIssues));
       var issuesToRaise = getIssuesToRaise(updatedIssues);
       client.raiseIssues(new RaiseIssuesParams(configurationScopeId, issuesToRaise, false, event.getAnalysisId()));

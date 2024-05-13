@@ -28,6 +28,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
 import org.sonarsource.sonarlint.core.tracking.TrackedIssue;
 
+import static java.util.Objects.requireNonNull;
 import static org.sonarsource.sonarlint.core.tracking.TextRangeUtils.toTextRangeDto;
 
 public class DtoMapper {
@@ -50,7 +51,7 @@ public class DtoMapper {
       RuleDetailsAdapter.adapt(issue.getSeverity()),
       RuleDetailsAdapter.adapt(issue.getType()),
       RuleDetailsAdapter.adapt(issue.getCleanCodeAttribute()), RuleDetailsAdapter.toDto(issue.getImpacts()),
-      issue.getIntroductionDate(), issue.isOnNewCode(), issue.isResolved(),
+      requireNonNull(issue.getIntroductionDate()), issue.isOnNewCode(), issue.isResolved(),
       toTextRangeDto(issue.getTextRangeWithHash()),
       issue.getFlows().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()),
       issue.getQuickFixes().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()),
@@ -62,7 +63,7 @@ public class DtoMapper {
       RuleDetailsAdapter.adapt(issue.getSeverity()),
       RuleDetailsAdapter.adapt(issue.getType()),
       RuleDetailsAdapter.adapt(issue.getCleanCodeAttribute()), RuleDetailsAdapter.toDto(issue.getImpacts()),
-      issue.getIntroductionDate(), issue.isOnNewCode(), issue.isResolved(),
+      requireNonNull(issue.getIntroductionDate()), issue.isOnNewCode(), issue.isResolved(),
       toTextRangeDto(issue.getTextRangeWithHash()),
       issue.getFlows().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()),
       issue.getQuickFixes().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()),
