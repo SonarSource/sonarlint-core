@@ -2,7 +2,7 @@
 
 ## Breaking changes
 
-None
+* `org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate#didDetectSecret` had no `configScopeId` parameter, it was added
 
 ## New features
 

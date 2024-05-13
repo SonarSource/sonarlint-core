@@ -346,7 +346,7 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   @Override
   public void didDetectSecret(DidDetectSecretParams params) {
-    notify(delegate::didDetectSecret);
+    notify(() -> delegate.didDetectSecret(params.getConfigurationScopeId()));
   }
 
   @Override
