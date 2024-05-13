@@ -9,16 +9,22 @@ None
 ### Analysis and tracking
 
 * Add the `analyzeFilesAndTrack` method to `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService`.
-  * It allows clients to submit files for analysis, let the backend deal with issue tracking, and will lead to a later notification via `raiseIssues` (see below).
+  * It allows clients to submit files for analysis, let the backend deal with issue tracking, and will lead to a later notification via `raiseIssues` and `raiseHotspots` (see below).
   * Usages of `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFiles` should be replaced by this new method.
   * It accepts a `AnalyzeFilesAndTrackParams` object instead of the deprecated `AnalyzeFilesParams`. The extra flag `shouldFetchServerIssues` should be set to `true` when the analysis is triggered in response to a file open event.
-  * When using this method, implementation of the `didRaiseIssue` method of `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient` is no longer required. The new `raiseIssues` method should be implemented instead (see below).
+  * When using this method, implementation of the `didRaiseIssue` method of `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient` is no longer required. The new `raiseIssues` and `raiseHotspots` methods should be implemented instead (see below).
 
 * Add `raiseIssues` method to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient` to report tracked issues.
   * Will be called by the backend when issues should be raised to the user. The UI should be updated accordingly.
   * The `org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseIssuesParams` class contains a list of issues to raise by file URI.
   * Each raised issue went through issue tracking, and has potentially been matched with a previously known issue and/or a server issue in connected mode.
   * This new method reports a collection of issues replacing the ones previously raised. Every call contains the full list of known issues.
+
+* Add `raiseHotspots` method to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient` to report tracked Security Hotspots.
+  * Will be called by the backend when hotspots should be raised to the user. The UI should be updated accordingly.
+  * The `org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseHotspotsParams` class contains a list of hotspots to raise by file URI.
+  * Each raised hotspot went through hotspot tracking, and has potentially been matched with a previously known hotspot and/or a server hotspot in connected mode.
+  * This new method reports a collection of hotspots replacing the ones previously raised. Every call contains the full list of known hotspots.
 
 ## Deprecation
 
