@@ -33,6 +33,7 @@
 * `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.IssueTrackingRpcService` and the underlying DTOs are deprecated, the functionality is now handled by `analyzeFilesAndTrack`.
 * `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.SecurityHotspotMatchingRpcService` and the underlying DTOs are deprecated, the functionality is now handled by `analyzeFilesAndTrack`.
 * `org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine` is now deprecated. Analysis should happen via `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFilesAndTrack`.
+* The `pid` parameter of the `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto` constructor is not used anymore (the backend PID is used instead). The constructor is now deprecated, and a new constructor without this parameter was introduced and should be used. The `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto.getPid` method is not used anymore and also deprecated.
 
 # 10.1
 
