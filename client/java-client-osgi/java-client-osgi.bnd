@@ -2,20 +2,22 @@
 -include: shared.bnd
 
 # Manifest entries to configure the OSGi attributes for the normal JAR archive
-# -> Packages from 'sonarlint-analysis-engine.jar' / 'sonarlint-common.jar' / 'sonarlint-plugins-commons.jar' must be exported as well!
 Bundle-SymbolicName: ${project.groupId}.${project.artifactId}
 Export-Package: org.sonarsource.sonarlint.core.client.legacy.*;version="${project.version}",\
   org.sonarsource.sonarlint.core.client.utils.*;version="${project.version}",\
   org.sonarsource.sonarlint.core.rpc.client.*;version="${project.version}",\
   org.sonarsource.sonarlint.core.rpc.protocol.*;version="${project.version}",\
-  org.sonarsource.sonarlint.core.analysis.api.*;version="${project.version}",\
-  org.sonarsource.sonarlint.core.commons.api.*;version="${project.version}",\
-  org.sonarsource.sonarlint.core.plugin.commons.api.*;version="${project.version}",\
   org.sonarsource.sonarlint.shaded.com.google.gson.*;version="${gson.version}",\
   org.sonarsource.sonarlint.shaded.org.eclipse.lsp4j.jsonrpc.*;version="${lsp4j.version}",\
   com.google.protobuf;version="${protobuf.version}",
 Import-Package: javax.annotation.*;resolution:=optional,\
   org.eclipse.jgit.*;resolution:=optional,
+
+# BND configuration to export packages from 'sonarlint-analysis-engine.jar' / 'sonarlint-common.jar' / 'sonarlint-plugins-commons.jar'
+# without copying them from the included JAR archive (resource, see instruction below) to the normal JAR archive!
+-exportcontents: org.sonarsource.sonarlint.core.analysis.api.*;version="${project.version}",\
+  org.sonarsource.sonarlint.core.commons.api.*;version="${project.version}",\
+  org.sonarsource.sonarlint.core.plugin.commons.api.*;version="${project.version}",
 
 # BND configuration to include specific dependencies inside the normal JAR archive
 # INFO: The `java-client-osgi-sources.jar` won't include sources of this dependencies - this is a limitation of BND!
