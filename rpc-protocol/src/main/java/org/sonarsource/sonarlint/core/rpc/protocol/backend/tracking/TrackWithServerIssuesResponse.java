@@ -22,8 +22,14 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 
+/**
+ * @deprecated Use {@link AnalysisRpcService#analyzeFilesAndTrack(AnalyzeFilesAndTrackParams)} instead.
+ */
+@Deprecated(since = "10.2")
 public class TrackWithServerIssuesResponse {
 
   private final Map<Path, List<Either<ServerMatchedIssueDto, LocalOnlyIssueDto>>> issuesByIdeRelativePath;

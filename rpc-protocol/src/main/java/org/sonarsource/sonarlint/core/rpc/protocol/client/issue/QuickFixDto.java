@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.client.issue;
 
 import java.util.List;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.FileEditDto;
 
 public class QuickFixDto {
 

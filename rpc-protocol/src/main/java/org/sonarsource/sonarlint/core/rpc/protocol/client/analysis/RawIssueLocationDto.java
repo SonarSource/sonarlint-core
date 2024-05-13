@@ -22,8 +22,14 @@ package org.sonarsource.sonarlint.core.rpc.protocol.client.analysis;
 import java.net.URI;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 
+/**
+ * @deprecated since 10.2, replaced by {@link org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueLocationDto}
+ * See {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFilesAndTrack(AnalyzeFilesAndTrackParams)}
+ */
+@Deprecated(since = "10.2")
 public class RawIssueLocationDto {
   private final TextRangeDto textRange;
   private final String message;

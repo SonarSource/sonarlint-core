@@ -17,33 +17,25 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.client.analysis;
+package org.sonarsource.sonarlint.core.rpc.protocol.client.issue;
 
-import java.util.UUID;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 
+public class TextEditDto {
+  private final TextRangeDto range;
+  private final String newText;
 
-@Deprecated(since = "10.2")
-public class DidRaiseIssueParams {
-  private final String configurationScopeId;
-  // the ID that was provided when the analysis was triggered
-  private final UUID analysisId;
-  private final RawIssueDto rawIssue;
-
-  public DidRaiseIssueParams(String configurationScopeId, UUID analysisId, RawIssueDto rawIssue) {
-    this.configurationScopeId = configurationScopeId;
-    this.analysisId = analysisId;
-    this.rawIssue = rawIssue;
+  public TextEditDto(TextRangeDto range, String newText) {
+    this.range = range;
+    this.newText = newText;
   }
 
-  public String getConfigurationScopeId() {
-    return configurationScopeId;
+  public TextRangeDto range() {
+    return range;
   }
 
-  public UUID getAnalysisId() {
-    return analysisId;
+  public String newText() {
+    return newText;
   }
 
-  public RawIssueDto getRawIssue() {
-    return rawIssue;
-  }
 }

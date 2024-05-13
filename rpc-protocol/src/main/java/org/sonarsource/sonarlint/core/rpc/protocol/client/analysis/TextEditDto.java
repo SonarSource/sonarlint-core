@@ -19,8 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.analysis;
 
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 
+/**
+ * @deprecated since 10.2, replaced by {@link org.sonarsource.sonarlint.core.rpc.protocol.client.issue.TextEditDto}
+ * See {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFilesAndTrack(AnalyzeFilesAndTrackParams)}
+ */
+@Deprecated(since = "10.2")
 public class TextEditDto {
   private final TextRangeDto range;
   private final String newText;

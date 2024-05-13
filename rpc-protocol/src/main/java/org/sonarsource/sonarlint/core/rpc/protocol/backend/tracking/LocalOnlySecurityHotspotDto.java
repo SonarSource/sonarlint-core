@@ -20,7 +20,13 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking;
 
 import java.util.UUID;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 
+/**
+ * @deprecated Use {@link AnalysisRpcService#analyzeFilesAndTrack(AnalyzeFilesAndTrackParams)} instead.
+ */
+@Deprecated(since = "10.2")
 public class LocalOnlySecurityHotspotDto {
   private final UUID id;
 
