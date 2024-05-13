@@ -24,6 +24,8 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaiseHotspotsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseIssuesParams;
 
 @JsonSegment("analysis")
 public interface AnalysisRpcService {
@@ -66,12 +68,8 @@ public interface AnalysisRpcService {
   CompletableFuture<GetAutoDetectedNodeJsResponse> getAutoDetectedNodeJs();
 
   /**
-   * @deprecated
+   * @deprecated use {@link #analyzeFilesAndTrack} instead.
    * Analyze the provided files.
-   * <br/>
-   * Use {@link #analyzeFilesAndTrack} instead.
-   * It will require implementing {@link SonarLintRpcClient#raiseIssues}
-   * on the client side to get tracked issues.
    */
   @Deprecated(since = "10.2")
   @JsonRequest
@@ -80,7 +78,7 @@ public interface AnalysisRpcService {
   /**
    * Analyze and track issues in the provided files.
    * Issues will be reported to the client via
-   * {@link SonarLintRpcClient#raiseIssues}
+   * {@link SonarLintRpcClient#raiseIssues(RaiseIssuesParams)} and {@link SonarLintRpcClient#raiseHotspots(RaiseHotspotsParams)}
    */
   @JsonRequest
   CompletableFuture<AnalyzeFilesResponse> analyzeFilesAndTrack(AnalyzeFilesAndTrackParams params);

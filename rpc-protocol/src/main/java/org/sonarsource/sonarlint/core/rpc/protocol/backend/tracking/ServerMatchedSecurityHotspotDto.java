@@ -20,8 +20,16 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking;
 
 import java.util.UUID;
+import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 
+/**
+ * @deprecated Use {@link AnalysisRpcService#analyzeFilesAndTrack(AnalyzeFilesAndTrackParams)} instead.
+ */
+@JsonSegment("issueTracking")
+@Deprecated(since = "10.2")
 public class ServerMatchedSecurityHotspotDto {
   private final UUID id;
   private final String serverKey;

@@ -22,7 +22,13 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking;
 import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
 import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 
+/**
+ * @deprecated Use {@link AnalysisRpcService#analyzeFilesAndTrack(AnalyzeFilesAndTrackParams)} instead.
+ */
+@Deprecated(since = "10.2")
 @JsonSegment("hotspotMatching")
 public interface SecurityHotspotMatchingRpcService {
   /**

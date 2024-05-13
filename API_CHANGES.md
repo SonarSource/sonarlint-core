@@ -22,8 +22,11 @@ None
 
 ## Deprecation
 
-* `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFiles` is deprecated, should be replaced by `analyzeFilesAndTrack`.
-* `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.IssueTrackingRpcService` is deprecated, the functionality is now handled by `analyzeFilesAndTrack`.
+* `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFiles` and the underlying DTOs are deprecated, should be replaced by `analyzeFilesAndTrack`.
+* As a consequence, `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient.didRaiseIssue` and the underlying DTOs are now deprecated. It should be replaced by `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient.raiseIssues` and `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient.raiseHotspots`.
+* `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.IssueTrackingRpcService` and the underlying DTOs are deprecated, the functionality is now handled by `analyzeFilesAndTrack`.
+* `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.SecurityHotspotMatchingRpcService` and the underlying DTOs are deprecated, the functionality is now handled by `analyzeFilesAndTrack`.
+* `org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine` is now deprecated. Analysis should happen via `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFilesAndTrack`.
 
 # 10.1
 
