@@ -203,7 +203,7 @@ class AnalysisMediumTests {
     var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
-    verify(client).didDetectSecret();
+    verify(client).didDetectSecret(CONFIG_SCOPE_ID);
   }
 
   @Test

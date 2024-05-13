@@ -193,7 +193,7 @@ public interface SonarLintRpcClientDelegate {
     @Nullable String currentVersion) {
   }
 
-  default void didDetectSecret() {
+  default void didDetectSecret(String configurationScopeId) {
   }
 
   default void promoteExtraEnabledLanguagesInConnectedMode(String configurationScopeId, Set<Language> languagesToPromote) {

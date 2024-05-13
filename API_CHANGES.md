@@ -34,6 +34,10 @@ None
 * `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.SecurityHotspotMatchingRpcService` and the underlying DTOs are deprecated, the functionality is now handled by `analyzeFilesAndTrack`.
 * `org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine` is now deprecated. Analysis should happen via `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFilesAndTrack`.
 
+## Fixes
+
+* `org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate#didDetectSecret` had no configScopeId parameter, it was added
+
 # 10.1
 
 ## Breaking changes
