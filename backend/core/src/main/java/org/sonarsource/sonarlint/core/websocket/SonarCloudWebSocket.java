@@ -131,10 +131,15 @@ public class SonarCloudWebSocket {
     var payload = new WebSocketEventSubscribePayload(messageType, eventsKey, filter, projectKey);
 
     var jsonString = gson.toJson(payload);
-    this.wsFuture.thenAccept(ws -> {
-      LOG.debug("sent '" + messageType + "' for project '" + projectKey + "'");
-      ws.sendText(jsonString, true);
-    });
+    try {
+      // wait for the message to be sent to not fail the next one, see SLCORE-787
+      this.wsFuture.thenCompose(ws -> {
+        LOG.debug("sent '" + messageType + "' for project '" + projectKey + "'");
+        return ws.sendText(jsonString, true);
+      }).join();
+    } catch (Exception e) {
+      LOG.error("Error when sending a message in the WebSocket channel", e);
+    }
   }
 
   private void handleRawMessage(String message, Consumer<SonarServerEvent> serverEventConsumer) {
