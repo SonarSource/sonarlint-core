@@ -5,3 +5,5 @@ Bundle-Version: ${parsedVersion.osgiVersion}
 # BND configuration to tweak generation of Manifest entries for the normal / sources JAR archive
 -removeheaders: Bnd-LastModified,Bundle-Developers,Bundle-DocURL,Bundle-SCM,Include-Resource,Private-Package
 -noimportjava: true
+# a new version of apache commons-io library has a new META-INF/versions/9/module-info.class file and that does not conform OSGi
+-fixupmessages "Classes found in the wrong directory"; restrict:=error; is:=warning
