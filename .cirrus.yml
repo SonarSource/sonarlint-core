@@ -30,7 +30,8 @@ only_main_branches: &ONLY_MAIN_BRANCHES
   only_if: $CIRRUS_USER_COLLABORATOR == 'true' && $CIRRUS_TAG == "" && ($CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-.*")
 
 orchestrator_monthly_cache_template: &ORCHESTRATOR_MONTHLY_CACHE_TEMPLATE
-  JDK_VERSION: "11"
+  env:
+    JDK_VERSION: "17"
   set_orchestrator_home_script: |
     export THIS_MONTH=$(date '+%Y-%m')
     echo "THIS_MONTH=${THIS_MONTH}" >> $CIRRUS_ENV
