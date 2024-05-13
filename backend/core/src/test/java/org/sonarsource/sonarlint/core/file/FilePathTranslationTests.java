@@ -35,11 +35,27 @@ class FilePathTranslationTests {
   }
 
   @Test
+  void serverToPathTranslationWhenPrefixIsEmpty() {
+    var underTest = new FilePathTranslation(Path.of("ide"), Path.of(""));
+
+    assertThat(underTest.serverToIdePath(Path.of("baz"))).isEqualTo(Path.of("ide/baz"));
+    assertThat(underTest.serverToIdePath(Path.of("bar/baz"))).isEqualTo(Path.of("ide/bar/baz"));
+  }
+
+  @Test
   void ideToServerPathTranslation() {
     var underTest = new FilePathTranslation(Path.of("/foo"), Path.of("/bar"));
 
     assertThat(underTest.ideToServerPath(Path.of("/baz"))).isEqualTo(Path.of("/baz"));
     assertThat(underTest.ideToServerPath(Path.of("/foo/baz"))).isEqualTo(Path.of("/bar/baz"));
+  }
+
+  @Test
+  void ideToServerPathTranslationWhenPrefixIsEmpty() {
+    var underTest = new FilePathTranslation(Path.of(""), Path.of("server"));
+
+    assertThat(underTest.ideToServerPath(Path.of("baz"))).isEqualTo(Path.of("server/baz"));
+    assertThat(underTest.ideToServerPath(Path.of("foo/baz"))).isEqualTo(Path.of("server/foo/baz"));
   }
 
 }
