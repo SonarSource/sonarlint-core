@@ -43,6 +43,7 @@ import java.util.UUID;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 
 public class TrackedIssue {
   private final UUID id;
@@ -60,6 +61,7 @@ public class TrackedIssue {
   private final List<Flow> flows;
   private final List<QuickFix> quickFixes;
   private final VulnerabilityProbability vulnerabilityProbability;
+  private final HotspotStatus hotspotStatus;
   private final String ruleDescriptionContextKey;
   private final CleanCodeAttribute cleanCodeAttribute;
   private final URI fileUri;
@@ -67,7 +69,7 @@ public class TrackedIssue {
   public TrackedIssue(UUID id, String message, @Nullable Instant introductionDate, boolean resolved, IssueSeverity overriddenSeverity,
     RuleType type, String ruleKey, boolean isOnNewCode, @Nullable TextRangeWithHash textRangeWithHash,
     @Nullable LineWithHash lineWithHash, @Nullable String serverKey, Map<SoftwareQuality, ImpactSeverity> impacts,
-    List<Flow> flows, List<QuickFix> quickFixes, VulnerabilityProbability vulnerabilityProbability,
+    List<Flow> flows, List<QuickFix> quickFixes, VulnerabilityProbability vulnerabilityProbability, HotspotStatus hotspotStatus,
     @Nullable String ruleDescriptionContextKey, CleanCodeAttribute cleanCodeAttribute, @Nullable URI fileUri) {
     this.id = id;
     this.message = message;
@@ -84,6 +86,7 @@ public class TrackedIssue {
     this.flows = flows;
     this.quickFixes = quickFixes;
     this.vulnerabilityProbability = vulnerabilityProbability;
+    this.hotspotStatus = hotspotStatus;
     this.ruleDescriptionContextKey = ruleDescriptionContextKey;
     this.cleanCodeAttribute = cleanCodeAttribute;
     this.fileUri = fileUri;
@@ -165,6 +168,10 @@ public class TrackedIssue {
   @CheckForNull
   public URI getFileUri() {
     return fileUri;
+  }
+
+  public HotspotStatus getHotspotStatus() {
+    return hotspotStatus;
   }
 
   public Collection<Integer> getLineNumbers() {

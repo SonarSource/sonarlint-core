@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.UUID;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueFlowDto;
@@ -36,19 +37,26 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 
 public class RaisedHotspotDto extends RaisedFindingDto {
 
+  private final HotspotStatus status;
   private final VulnerabilityProbability vulnerabilityProbability;
 
   public RaisedHotspotDto(UUID id, @Nullable String serverKey, String ruleKey, String primaryMessage, IssueSeverity severity, RuleType type,
     CleanCodeAttribute cleanCodeAttribute, List<ImpactDto> impacts, Instant introductionDate, boolean isOnNewCode, boolean resolved, @Nullable TextRangeDto textRange,
-    List<IssueFlowDto> flows, List<QuickFixDto> quickFixes, @Nullable String ruleDescriptionContextKey, @Nullable VulnerabilityProbability vulnerabilityProbability) {
+    List<IssueFlowDto> flows, List<QuickFixDto> quickFixes, @Nullable String ruleDescriptionContextKey, @Nullable VulnerabilityProbability vulnerabilityProbability,
+    HotspotStatus status) {
     super(id, serverKey, ruleKey, primaryMessage, severity, type, cleanCodeAttribute, impacts, introductionDate,
       isOnNewCode, resolved, textRange, flows,quickFixes, ruleDescriptionContextKey);
     this.vulnerabilityProbability = vulnerabilityProbability;
+    this.status = status;
   }
-
 
   @CheckForNull
   public VulnerabilityProbability getVulnerabilityProbability() {
     return vulnerabilityProbability;
+  }
+
+  @CheckForNull
+  public HotspotStatus getStatus() {
+    return status;
   }
 }

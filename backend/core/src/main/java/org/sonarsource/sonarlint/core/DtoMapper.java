@@ -67,8 +67,7 @@ public class DtoMapper {
       toTextRangeDto(issue.getTextRangeWithHash()),
       issue.getFlows().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()),
       issue.getQuickFixes().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()),
-      issue.getRuleDescriptionContextKey(), RuleDetailsAdapter.adapt(issue.getVulnerabilityProbability()));
+      issue.getRuleDescriptionContextKey(), RuleDetailsAdapter.adapt(issue.getVulnerabilityProbability()), issue.getHotspotStatus());
   }
-
 
 }

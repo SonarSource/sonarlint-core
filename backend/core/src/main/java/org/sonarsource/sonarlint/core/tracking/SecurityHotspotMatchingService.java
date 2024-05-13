@@ -275,7 +275,7 @@ public class SecurityHotspotMatchingService {
       newCodeDefinition.isOnNewCode(serverHotspot.getCreationDate().toEpochMilli()),
       trackedHotspot.getTextRangeWithHash(), trackedHotspot.getLineWithHash(),
       serverHotspot.getKey(), trackedHotspot.getImpacts(), trackedHotspot.getFlows(), trackedHotspot.getQuickFixes(),
-      serverHotspot.getVulnerabilityProbability(), trackedHotspot.getRuleDescriptionContextKey(),
+      serverHotspot.getVulnerabilityProbability(), HotspotStatus.valueOf(serverHotspot.getStatus().name()), trackedHotspot.getRuleDescriptionContextKey(),
       trackedHotspot.getCleanCodeAttribute(), trackedHotspot.getFileUri());
   }
 

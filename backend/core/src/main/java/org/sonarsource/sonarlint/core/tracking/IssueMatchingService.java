@@ -283,7 +283,7 @@ public class IssueMatchingService {
       trackedIssue.isResolved(), trackedIssue.getSeverity(), trackedIssue.getType(), trackedIssue.getRuleKey(),
       isOnNewCode, trackedIssue.getTextRangeWithHash(),
       trackedIssue.getLineWithHash(), trackedIssue.getServerKey(), trackedIssue.getImpacts(), trackedIssue.getFlows(),
-      trackedIssue.getQuickFixes(), trackedIssue.getVulnerabilityProbability(), trackedIssue.getRuleDescriptionContextKey(),
+      trackedIssue.getQuickFixes(), trackedIssue.getVulnerabilityProbability(), trackedIssue.getHotspotStatus(), trackedIssue.getRuleDescriptionContextKey(),
       trackedIssue.getCleanCodeAttribute(), trackedIssue.getFileUri());
   }
 
@@ -315,7 +315,7 @@ public class IssueMatchingService {
           issue.getSeverity(), issue.getRuleType(), issue.getRuleKey(), true,
           getTextRangeWithHash(issue.getTextRange(), issue.getClientInputFile()),
           getLineWithHash(issue.getTextRange(), issue.getClientInputFile()), null,
-          issue.getImpacts(), issue.getFlows(), issue.getQuickFixes(), issue.getVulnerabilityProbability(),
+          issue.getImpacts(), issue.getFlows(), issue.getQuickFixes(), issue.getVulnerabilityProbability(), null,
           issue.getRuleDescriptionContextKey(), issue.getCleanCodeAttribute(), issue.getFileUri()))
         .collect(toList())))
       .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -386,7 +386,7 @@ public class IssueMatchingService {
       serverIssue.isResolved(), severity, serverIssue.getType(), serverIssue.getRuleKey(),
       newCodeDefinition.isOnNewCode(serverIssue.getCreationDate().toEpochMilli()), trackedIssue.getTextRangeWithHash(),
       trackedIssue.getLineWithHash(), serverIssue.getKey(), trackedIssue.getImpacts(), trackedIssue.getFlows(),
-      trackedIssue.getQuickFixes(), trackedIssue.getVulnerabilityProbability(), trackedIssue.getRuleDescriptionContextKey(),
+      trackedIssue.getQuickFixes(), trackedIssue.getVulnerabilityProbability(), trackedIssue.getHotspotStatus(), trackedIssue.getRuleDescriptionContextKey(),
       trackedIssue.getCleanCodeAttribute(), trackedIssue.getFileUri());
   }
 
@@ -396,7 +396,7 @@ public class IssueMatchingService {
       true,
       TextRangeUtils.getTextRangeWithHash(rawIssue.getTextRange(), rawIssue.getClientInputFile()),
       TextRangeUtils.getLineWithHash(rawIssue.getTextRange(), rawIssue.getClientInputFile()), knownIssue.getServerKey(),
-      rawIssue.getImpacts(), rawIssue.getFlows(), rawIssue.getQuickFixes(), rawIssue.getVulnerabilityProbability(),
+      rawIssue.getImpacts(), rawIssue.getFlows(), rawIssue.getQuickFixes(), rawIssue.getVulnerabilityProbability(), null,
       rawIssue.getRuleDescriptionContextKey(), rawIssue.getCleanCodeAttribute(), rawIssue.getFileUri());
   }
 
@@ -405,7 +405,7 @@ public class IssueMatchingService {
       newIssue.isResolved(), newIssue.getSeverity(), newIssue.getType(), newIssue.getRuleKey(),
       newIssue.isOnNewCode(), newIssue.getTextRangeWithHash(),
       newIssue.getLineWithHash(), newIssue.getServerKey(), newIssue.getImpacts(), newIssue.getFlows(),
-      newIssue.getQuickFixes(), newIssue.getVulnerabilityProbability(), newIssue.getRuleDescriptionContextKey(),
+      newIssue.getQuickFixes(), newIssue.getVulnerabilityProbability(), newIssue.getHotspotStatus(), newIssue.getRuleDescriptionContextKey(),
       newIssue.getCleanCodeAttribute(), newIssue.getFileUri());
   }
 
@@ -414,7 +414,7 @@ public class IssueMatchingService {
       localOnlyIssue.getResolution() != null, trackedIssue.getSeverity(), trackedIssue.getType(), trackedIssue.getRuleKey(),
       true, trackedIssue.getTextRangeWithHash(),
       trackedIssue.getLineWithHash(), trackedIssue.getServerKey(), trackedIssue.getImpacts(), trackedIssue.getFlows(),
-      trackedIssue.getQuickFixes(), trackedIssue.getVulnerabilityProbability(), trackedIssue.getRuleDescriptionContextKey(),
+      trackedIssue.getQuickFixes(), trackedIssue.getVulnerabilityProbability(), trackedIssue.getHotspotStatus(), trackedIssue.getRuleDescriptionContextKey(),
       trackedIssue.getCleanCodeAttribute(), trackedIssue.getFileUri());
   }
 

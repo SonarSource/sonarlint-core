@@ -37,7 +37,7 @@ public class IssueMapper {
       issue.getRuleType(), issue.getRuleKey(), true, getTextRangeWithHash(issue.getTextRange(),
       issue.getClientInputFile()), getLineWithHash(issue.getTextRange(),
       issue.getClientInputFile()), null, issue.getImpacts(), issue.getFlows(), issue.getQuickFixes(),
-      issue.getVulnerabilityProbability(),  issue.getRuleDescriptionContextKey(), issue.getCleanCodeAttribute(), issue.getFileUri());
+      issue.getVulnerabilityProbability(), null,  issue.getRuleDescriptionContextKey(), issue.getCleanCodeAttribute(), issue.getFileUri());
   }
 
 }
