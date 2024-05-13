@@ -74,6 +74,8 @@
 
     <!-- Exclude Maven Shade plug-in dependency as the test is done via the Maven build itself ... -->
     <sonar.coverage.exclusions>buildSrc/maven-shade-ext-bnd-transformer/**</sonar.coverage.exclusions>
+    <!-- Exclude from the duplication detection deprecated DTOs that were replaced by new types. They should be removed in 10.3 -->
+    <sonar.cpd.exclusions>rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/client/analysis/*Dto.java</sonar.cpd.exclusions>
   </properties>
 
   <dependencyManagement>
