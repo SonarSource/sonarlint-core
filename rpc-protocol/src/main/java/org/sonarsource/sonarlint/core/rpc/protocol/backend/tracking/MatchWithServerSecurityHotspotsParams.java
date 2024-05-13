@@ -22,7 +22,13 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 
+/**
+ * @deprecated Use {@link AnalysisRpcService#analyzeFilesAndTrack(AnalyzeFilesAndTrackParams)} instead.
+ */
+@Deprecated(since = "10.2")
 public class MatchWithServerSecurityHotspotsParams {
   private final String configurationScopeId;
   private final Map<Path, List<ClientTrackedFindingDto>> clientTrackedHotspotsByIdeRelativePath;

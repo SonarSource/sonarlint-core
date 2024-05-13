@@ -20,7 +20,13 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.client.analysis;
 
 import java.util.List;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 
+/**
+ * @deprecated since 10.2, replaced by {@link org.sonarsource.sonarlint.core.rpc.protocol.client.issue.QuickFixDto}
+ * See {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFilesAndTrack(AnalyzeFilesAndTrackParams)}
+ */
+@Deprecated(since = "10.2")
 public class QuickFixDto {
 
   private final List<FileEditDto> inputFileEdits;

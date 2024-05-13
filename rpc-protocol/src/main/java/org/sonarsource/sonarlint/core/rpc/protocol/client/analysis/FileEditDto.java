@@ -21,7 +21,12 @@ package org.sonarsource.sonarlint.core.rpc.protocol.client.analysis;
 
 import java.net.URI;
 import java.util.List;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 
+/**
+ * @deprecated since 10.2, replaced by {@link org.sonarsource.sonarlint.core.rpc.protocol.client.issue.FileEditDto}
+ * See {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFilesAndTrack(AnalyzeFilesAndTrackParams)}
+ */
 public class FileEditDto {
   private final URI target;
   private final List<TextEditDto> textEdits;
