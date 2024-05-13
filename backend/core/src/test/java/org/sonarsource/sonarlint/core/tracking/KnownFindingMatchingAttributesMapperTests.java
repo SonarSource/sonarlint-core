@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.tracking;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.commons.KnownIssue;
+import org.sonarsource.sonarlint.core.commons.KnownFinding;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 
@@ -30,28 +30,28 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class KnownIssueMatchingAttributesMapperTests {
+class KnownFindingMatchingAttributesMapperTests {
 
-  private final KnownIssue knownIssue = mock(KnownIssue.class);
+  private final KnownFinding knownFinding = mock(KnownFinding.class);
   private final KnownIssueMatchingAttributesMapper underTest = new KnownIssueMatchingAttributesMapper();
 
   @BeforeEach
   void prepare() {
-    when(knownIssue.getId()).thenReturn(UUID.randomUUID());
-    when(knownIssue.getMessage()).thenReturn("msg");
-    when(knownIssue.getRuleKey()).thenReturn("ruleKey");
-    when(knownIssue.getTextRangeWithHash()).thenReturn(new TextRangeWithHash(1, 2, 3, 4, "rangehash"));
-    when(knownIssue.getLineWithHash()).thenReturn(new LineWithHash(1, "linehash"));
+    when(knownFinding.getId()).thenReturn(UUID.randomUUID());
+    when(knownFinding.getMessage()).thenReturn("msg");
+    when(knownFinding.getRuleKey()).thenReturn("ruleKey");
+    when(knownFinding.getTextRangeWithHash()).thenReturn(new TextRangeWithHash(1, 2, 3, 4, "rangehash"));
+    when(knownFinding.getLineWithHash()).thenReturn(new LineWithHash(1, "linehash"));
   }
 
   @Test
   void should_delegate_fields_to_server_issue() {
-    assertThat(underTest.getMessage(knownIssue)).isEqualTo(knownIssue.getMessage());
-    assertThat(underTest.getRuleKey(knownIssue)).isEqualTo(knownIssue.getRuleKey());
-    assertThat(underTest.getLine(knownIssue)).contains(knownIssue.getLineWithHash().getNumber());
-    assertThat(underTest.getLineHash(knownIssue)).contains(knownIssue.getLineWithHash().getHash());
-    assertThat(underTest.getTextRangeHash(knownIssue)).contains(knownIssue.getTextRangeWithHash().getHash());
-    assertThat(underTest.getServerIssueKey(knownIssue)).isEmpty();
+    assertThat(underTest.getMessage(knownFinding)).isEqualTo(knownFinding.getMessage());
+    assertThat(underTest.getRuleKey(knownFinding)).isEqualTo(knownFinding.getRuleKey());
+    assertThat(underTest.getLine(knownFinding)).contains(knownFinding.getLineWithHash().getNumber());
+    assertThat(underTest.getLineHash(knownFinding)).contains(knownFinding.getLineWithHash().getHash());
+    assertThat(underTest.getTextRangeHash(knownFinding)).contains(knownFinding.getTextRangeWithHash().getHash());
+    assertThat(underTest.getServerIssueKey(knownFinding)).isEmpty();
   }
 
 }

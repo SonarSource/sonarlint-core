@@ -27,7 +27,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+
+import static java.util.stream.Collectors.toList;
 
 public class AnalysisFinishedEvent {
   private final UUID analysisId;
@@ -84,7 +87,11 @@ public class AnalysisFinishedEvent {
   }
 
   public List<RawIssue> getIssues() {
-    return issues;
+    return issues.stream().filter(issue -> !issue.getRuleType().equals(RuleType.SECURITY_HOTSPOT)).collect(toList());
+  }
+
+  public List<RawIssue> getHotspots() {
+    return issues.stream().filter(issue -> issue.getRuleType().equals(RuleType.SECURITY_HOTSPOT)).collect(toList());
   }
 
   public boolean isTrackingEnabled() {

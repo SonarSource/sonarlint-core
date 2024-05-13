@@ -25,7 +25,6 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedList;
@@ -40,6 +39,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -53,7 +53,7 @@ import org.sonarsource.sonarlint.core.analysis.RawIssue;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.GitBlameUtils;
-import org.sonarsource.sonarlint.core.commons.KnownIssue;
+import org.sonarsource.sonarlint.core.commons.KnownFinding;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
@@ -87,7 +87,6 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
-import static java.util.stream.Collectors.toSet;
 import static org.sonarsource.sonarlint.core.tracking.TextRangeUtils.getLineWithHash;
 import static org.sonarsource.sonarlint.core.tracking.TextRangeUtils.getTextRangeWithHash;
 
@@ -101,7 +100,7 @@ public class IssueMatchingService {
   private final StorageService storageService;
   private final SonarProjectBranchTrackingService branchTrackingService;
   private final IssueSynchronizationService issueSynchronizationService;
-  private final KnownIssuesStorageService knownIssuesStorageService;
+  private final KnownFindingsStorageService knownFindingsStorageService;
   private final LocalOnlyIssueRepository localOnlyIssueRepository;
   private final LocalOnlyIssueStorageService localOnlyIssueStorageService;
   private final NewCodeService newCodeService;
@@ -110,15 +109,15 @@ public class IssueMatchingService {
   private final SonarLintRpcClient client;
 
   public IssueMatchingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, StorageService storageService,
-    SonarProjectBranchTrackingService branchTrackingService, IssueSynchronizationService issueSynchronizationService,
-    KnownIssuesStorageService knownIssuesStorageService, LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
-    NewCodeService newCodeService, PathTranslationService pathTranslationService) {
+    SonarProjectBranchTrackingService branchTrackingService, IssueSynchronizationService issueSynchronizationService, KnownFindingsStorageService knownFindingsStorageService,
+    LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository, NewCodeService newCodeService,
+    PathTranslationService pathTranslationService) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.storageService = storageService;
     this.branchTrackingService = branchTrackingService;
     this.issueSynchronizationService = issueSynchronizationService;
-    this.knownIssuesStorageService = knownIssuesStorageService;
+    this.knownFindingsStorageService = knownFindingsStorageService;
     this.localOnlyIssueStorageService = localOnlyIssueStorageService;
     this.localOnlyIssueRepository = localOnlyIssueRepository;
     this.newCodeService = newCodeService;
@@ -182,45 +181,34 @@ public class IssueMatchingService {
   }
 
   private void processEvent(AnalysisFinishedEvent event) {
-    String configurationScopeId = event.getConfigurationScopeId();
-    var issues = event.getIssues();
+    var configurationScopeId = event.getConfigurationScopeId();
+    var allIssues = event.getIssues();
+
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     var activeBranchOpt = branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId);
     var translationOpt = pathTranslationService.getOrComputePathTranslation(configurationScopeId);
-    Map<Path, List<RawIssue>> rawIssuesByIdeRelativePath = issues.stream().filter(it -> Objects.nonNull(it.getIdeRelativePath()))
+    var rawIssuesByIdeRelativePath = allIssues.stream().filter(it -> Objects.nonNull(it.getIdeRelativePath()))
       .collect(Collectors.groupingBy(RawIssue::getIdeRelativePath, mapping(Function.identity(), toList())));
     Map<Path, List<TrackedIssue>> newIssues;
-    var knownIssuesStore = knownIssuesStorageService.get();
+    var knownFindingsStore = knownFindingsStorageService.get();
     if (effectiveBindingOpt.isEmpty() || activeBranchOpt.isEmpty() || translationOpt.isEmpty()) {
-      newIssues = rawIssuesByIdeRelativePath.entrySet().stream()
-        .map(e -> Map.entry(e.getKey(), e.getValue().stream()
-          .map(issue -> new TrackedIssue(UUID.randomUUID(), issue.getMessage(), null, false,
-            issue.getSeverity(), issue.getRuleType(), issue.getRuleKey(), true,
-            getTextRangeWithHash(issue.getTextRange(), issue.getClientInputFile()),
-            getLineWithHash(issue.getTextRange(), issue.getClientInputFile()), null,
-            issue.getImpacts(), issue.getFlows(), issue.getQuickFixes(), issue.getVulnerabilityProbability(),
-            issue.getRuleDescriptionContextKey(), issue.getCleanCodeAttribute(), issue.getFileUri()))
-          .collect(toList())))
-        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-      Map<Path, List<TrackedIssue>> updatedIssues = newIssues.entrySet().stream()
+      newIssues = getNewTrackedIssues(rawIssuesByIdeRelativePath);
+      var updatedIssues = newIssues.entrySet().stream()
         .collect(toMap(Map.Entry::getKey, e -> {
-          var previouslyKnownIssues = knownIssuesStore.loadForFile(configurationScopeId, e.getKey());
+          var previouslyKnownIssues = knownFindingsStore.loadIssuesForFile(configurationScopeId, e.getKey());
           if (previouslyKnownIssues == null || previouslyKnownIssues.isEmpty()) {
             return e.getValue();
           }
           var localIssueMatcher = new IssueMatcher<>(new KnownIssueMatchingAttributesMapper(), new TrackedIssueFindingMatchingAttributeMapper());
           var localMatchingResult = localIssueMatcher.match(previouslyKnownIssues, e.getValue());
-          var matchedAndUnmatchedIssues = localMatchingResult.getMatchedLefts().entrySet().stream()
-            .map(matchedEntry -> updateTrackedIssueWithPreviousTrackingData(matchedEntry.getKey(), matchedEntry.getValue())).collect(Collectors.toCollection(ArrayList::new));
-          List<TrackedIssue> unmatchedIssues =
-            StreamSupport.stream(localMatchingResult.getUnmatchedRights().spliterator(), false).collect(Collectors.toList());
-          matchedAndUnmatchedIssues.addAll(unmatchedIssues);
-          return matchedAndUnmatchedIssues;
+          var matchedIssues = localMatchingResult.getMatchedLefts().entrySet().stream()
+            .map(matchedEntry -> updateTrackedIssueWithPreviousTrackingData(matchedEntry.getKey(), matchedEntry.getValue()));
+          var unmatchedIssues = StreamSupport.stream(localMatchingResult.getUnmatchedRights().spliterator(), false);
+          return Stream.concat(matchedIssues, unmatchedIssues).collect(toList());
         }));
 
-      updatedIssues = setIntroductionDateAndNewCode(updatedIssues, true);
-
-      updatedIssues.forEach((clientRelativePath, trackedIssues) -> storeTrackedIssues(knownIssuesStore, configurationScopeId, clientRelativePath, trackedIssues));
+      updatedIssues = setIntroductionDateAndNewCode(updatedIssues, effectiveBindingOpt.isEmpty());
+      updatedIssues.forEach((clientRelativePath, trackedIssues) -> storeTrackedIssues(knownFindingsStore, configurationScopeId, clientRelativePath, trackedIssues));
       var issuesToRaise = getIssuesToRaise(updatedIssues);
       client.raiseIssues(new RaiseIssuesParams(configurationScopeId, issuesToRaise, false, event.getAnalysisId()));
       return;
@@ -242,33 +230,20 @@ public class IssueMatchingService {
       var serverIssues = storageService.binding(binding).findings().load(activeBranch, serverRelativePath);
       var localOnlyIssues = localOnlyIssueStorageService.get().loadForFile(configurationScopeId, serverRelativePath);
       var rawIssues = e.getValue();
-      var previouslyKnownIssues = knownIssuesStore.loadForFile(configurationScopeId, e.getKey());
-      List<TrackedIssue> allTrackedIssues;
-      if (previouslyKnownIssues != null && !previouslyKnownIssues.isEmpty()) {
-        var localIssueMatcher = new IssueMatcher<>(new KnownIssueMatchingAttributesMapper(), new RawIssueFindingMatchingAttributeMapper());
-        var localMatchingResult = localIssueMatcher.match(previouslyKnownIssues, rawIssues);
-        var newTrackedIssues = StreamSupport.stream(localMatchingResult.getUnmatchedRights().spliterator(), false)
-          .map(IssueMapper::toTrackedIssue).collect(toSet());
-        var updatedMatchedIssues = localMatchingResult.getMatchedLefts().entrySet().stream()
-          .map(entry -> updateTrackedIssueWithRawIssueData(entry.getKey(), entry.getValue())).collect(toList());
-        allTrackedIssues = new ArrayList<>(newTrackedIssues);
-        allTrackedIssues.addAll(updatedMatchedIssues);
-      } else {
-        allTrackedIssues = rawIssues.stream()
-          .map(IssueMapper::toTrackedIssue).collect(Collectors.toList());
-      }
+      var previouslyKnownIssues = knownFindingsStore.loadIssuesForFile(configurationScopeId, e.getKey());
+      List<TrackedIssue> allTrackedIssues = matchAndTrack(rawIssues, previouslyKnownIssues);
       var matches = newMatchIssues(serverRelativePath, serverIssues, localOnlyIssues, allTrackedIssues, newCodeDefinition);
       return Map.entry(ideRelativePath, matches);
     }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
     newIssues = setIntroductionDateAndNewCode(newIssues, false);
 
-    newIssues.forEach((clientRelativePath, trackedIssues) -> storeTrackedIssues(knownIssuesStore, configurationScopeId, clientRelativePath, trackedIssues));
+    newIssues.forEach((clientRelativePath, trackedIssues) -> storeTrackedIssues(knownFindingsStore, configurationScopeId, clientRelativePath, trackedIssues));
     var issuesToRaise = getIssuesToRaise(newIssues);
     client.raiseIssues(new RaiseIssuesParams(configurationScopeId, issuesToRaise, false, event.getAnalysisId()));
   }
 
-  private static Map<Path, List<TrackedIssue>> setIntroductionDateAndNewCode(Map<Path, List<TrackedIssue>> issueMap, boolean isStandalone) {
+  public static Map<Path, List<TrackedIssue>> setIntroductionDateAndNewCode(Map<Path, List<TrackedIssue>> issueMap, boolean isStandalone) {
     var thresholdDate = Instant.now().minus(STANDALONE_NEW_CODE_PERIOD);
     var issuesByFileToBlame = getIssuesByFileToBlame(issueMap);
     var sonarLintBlameResultOpt = getSonarLintBlameResult(issuesByFileToBlame);
@@ -314,8 +289,8 @@ public class IssueMatchingService {
 
   private static Instant determineIntroductionDate(Path path, TrackedIssue trackedIssue, SonarLintBlameResult sonarLintBlameResult) {
     return sonarLintBlameResult.getLatestChangeDateForLinesInFile(path, trackedIssue.getLineNumbers())
-        .map(Date::toInstant)
-        .orElse(Instant.now());
+      .map(Date::toInstant)
+      .orElse(Instant.now());
   }
 
   private static Optional<SonarLintBlameResult> getSonarLintBlameResult(Map<Path, List<TrackedIssue>> issueMap) {
@@ -331,14 +306,30 @@ public class IssueMatchingService {
     }
   }
 
-  private static Map<URI, List<RaisedIssueDto>> getIssuesToRaise(Map<Path, List<TrackedIssue>> updatedIssues) {
+  @NotNull
+  static Map<Path, List<TrackedIssue>> getNewTrackedIssues(Map<Path, List<RawIssue>> rawIssuesByIdeRelativePath) {
+    Map<Path, List<TrackedIssue>> newIssues;
+    newIssues = rawIssuesByIdeRelativePath.entrySet().stream()
+      .map(e -> Map.entry(e.getKey(), e.getValue().stream()
+        .map(issue -> new TrackedIssue(UUID.randomUUID(), issue.getMessage(), null, false,
+          issue.getSeverity(), issue.getRuleType(), issue.getRuleKey(), true,
+          getTextRangeWithHash(issue.getTextRange(), issue.getClientInputFile()),
+          getLineWithHash(issue.getTextRange(), issue.getClientInputFile()), null,
+          issue.getImpacts(), issue.getFlows(), issue.getQuickFixes(), issue.getVulnerabilityProbability(),
+          issue.getRuleDescriptionContextKey(), issue.getCleanCodeAttribute(), issue.getFileUri()))
+        .collect(toList())))
+      .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    return newIssues;
+  }
+
+  public static Map<URI, List<RaisedIssueDto>> getIssuesToRaise(Map<Path, List<TrackedIssue>> updatedIssues) {
     return updatedIssues.values().stream().flatMap(Collection::stream)
       .collect(groupingBy(TrackedIssue::getFileUri, Collectors.mapping(DtoMapper::toRaisedIssueDto, Collectors.toList())));
   }
 
-  public void storeTrackedIssues(XodusKnownIssuesStore knownIssuesStore, String configurationScopeId, Path clientRelativePath, List<TrackedIssue> newKnownIssues) {
+  private static void storeTrackedIssues(XodusKnownFindingsStore knownIssuesStore, String configurationScopeId, Path clientRelativePath, List<TrackedIssue> newKnownIssues) {
     knownIssuesStore.storeKnownIssues(configurationScopeId, clientRelativePath,
-      newKnownIssues.stream().map(i -> new KnownIssue(i.getId(), i.getServerKey(), i.getTextRangeWithHash(), i.getLineWithHash(), i.getRuleKey(), i.getMessage(),
+      newKnownIssues.stream().map(i -> new KnownFinding(i.getId(), i.getServerKey(), i.getTextRangeWithHash(), i.getLineWithHash(), i.getRuleKey(), i.getMessage(),
         i.getIntroductionDate())).collect(Collectors.toList()));
   }
 
@@ -399,7 +390,7 @@ public class IssueMatchingService {
       trackedIssue.getCleanCodeAttribute(), trackedIssue.getFileUri());
   }
 
-  private static TrackedIssue updateTrackedIssueWithRawIssueData(KnownIssue knownIssue, RawIssue rawIssue) {
+  static TrackedIssue updateTrackedIssueWithRawIssueData(KnownFinding knownIssue, RawIssue rawIssue) {
     return new TrackedIssue(knownIssue.getId(), knownIssue.getMessage(), knownIssue.getIntroductionDate(),
       false, rawIssue.getSeverity(), rawIssue.getRuleType(), knownIssue.getRuleKey(),
       true,
@@ -409,7 +400,7 @@ public class IssueMatchingService {
       rawIssue.getRuleDescriptionContextKey(), rawIssue.getCleanCodeAttribute(), rawIssue.getFileUri());
   }
 
-  private static TrackedIssue updateTrackedIssueWithPreviousTrackingData(KnownIssue oldIssue, TrackedIssue newIssue) {
+  public static TrackedIssue updateTrackedIssueWithPreviousTrackingData(KnownFinding oldIssue, TrackedIssue newIssue) {
     return new TrackedIssue(oldIssue.getId(), newIssue.getMessage(), oldIssue.getIntroductionDate(),
       newIssue.isResolved(), newIssue.getSeverity(), newIssue.getType(), newIssue.getRuleKey(),
       newIssue.isOnNewCode(), newIssue.getTextRangeWithHash(),
@@ -445,6 +436,23 @@ public class IssueMatchingService {
     var localOnlyIssuesMatched = matches.stream().filter(Either::isRight).map(Either::getRight).collect(Collectors.toList());
     localOnlyIssueRepository.save(serverRelativePath, localOnlyIssuesMatched);
     return matches;
+  }
+
+  public static List<TrackedIssue> matchAndTrack(List<RawIssue> rawIssues, @Nullable List<KnownFinding> previouslyKnownFindings) {
+    List<TrackedIssue> allTrackedIssues;
+    if (previouslyKnownFindings != null && !previouslyKnownFindings.isEmpty()) {
+      var localIssueMatcher = new IssueMatcher<>(new KnownIssueMatchingAttributesMapper(), new RawIssueFindingMatchingAttributeMapper());
+      var localMatchingResult = localIssueMatcher.match(previouslyKnownFindings, rawIssues);
+      var newTrackedIssues = StreamSupport.stream(localMatchingResult.getUnmatchedRights().spliterator(), false)
+        .map(IssueMapper::toTrackedIssue);
+      var updatedMatchedIssues = localMatchingResult.getMatchedLefts().entrySet().stream()
+        .map(entry -> updateTrackedIssueWithRawIssueData(entry.getKey(), entry.getValue()));
+      allTrackedIssues = Stream.concat(newTrackedIssues, updatedMatchedIssues).collect(toList());
+    } else {
+      allTrackedIssues = rawIssues.stream()
+        .map(IssueMapper::toTrackedIssue).collect(Collectors.toList());
+    }
+    return allTrackedIssues;
   }
 
   @NotNull

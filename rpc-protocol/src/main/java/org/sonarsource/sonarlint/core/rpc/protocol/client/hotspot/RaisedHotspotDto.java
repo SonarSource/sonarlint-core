@@ -17,25 +17,38 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.client.issue;
+package org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.VulnerabilityProbability;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueFlowDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.QuickFixDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 
-public class RaisedIssueDto extends RaisedFindingDto {
+public class RaisedHotspotDto extends RaisedFindingDto {
 
-  public RaisedIssueDto(UUID id, @Nullable String serverKey, String ruleKey, String primaryMessage, IssueSeverity severity, RuleType type,
+  private final VulnerabilityProbability vulnerabilityProbability;
+
+  public RaisedHotspotDto(UUID id, @Nullable String serverKey, String ruleKey, String primaryMessage, IssueSeverity severity, RuleType type,
     CleanCodeAttribute cleanCodeAttribute, List<ImpactDto> impacts, Instant introductionDate, boolean isOnNewCode, boolean resolved, @Nullable TextRangeDto textRange,
-    List<IssueFlowDto> flows, List<QuickFixDto> quickFixes, @Nullable String ruleDescriptionContextKey) {
-    super(id, serverKey, ruleKey, primaryMessage, severity, type, cleanCodeAttribute, impacts,
-      introductionDate, isOnNewCode, resolved, textRange, flows,quickFixes, ruleDescriptionContextKey);
+    List<IssueFlowDto> flows, List<QuickFixDto> quickFixes, @Nullable String ruleDescriptionContextKey, @Nullable VulnerabilityProbability vulnerabilityProbability) {
+    super(id, serverKey, ruleKey, primaryMessage, severity, type, cleanCodeAttribute, impacts, introductionDate,
+      isOnNewCode, resolved, textRange, flows,quickFixes, ruleDescriptionContextKey);
+    this.vulnerabilityProbability = vulnerabilityProbability;
   }
 
+
+  @CheckForNull
+  public VulnerabilityProbability getVulnerabilityProbability() {
+    return vulnerabilityProbability;
+  }
 }
