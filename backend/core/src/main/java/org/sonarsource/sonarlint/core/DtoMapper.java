@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.analysis.RuleDetailsForAnalysis;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
@@ -59,6 +60,8 @@ public class DtoMapper {
   }
 
   public static RaisedHotspotDto toRaisedHotspotDto(TrackedIssue issue) {
+    var status = issue.getHotspotStatus();
+    status = status != null ? status : HotspotStatus.TO_REVIEW;
     return new RaisedHotspotDto(issue.getId(), issue.getServerKey(), issue.getRuleKey(), issue.getMessage(),
       RuleDetailsAdapter.adapt(issue.getSeverity()),
       RuleDetailsAdapter.adapt(issue.getType()),
@@ -67,8 +70,7 @@ public class DtoMapper {
       toTextRangeDto(issue.getTextRangeWithHash()),
       issue.getFlows().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()),
       issue.getQuickFixes().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()),
-      issue.getRuleDescriptionContextKey(), RuleDetailsAdapter.adapt(issue.getVulnerabilityProbability()));
+      issue.getRuleDescriptionContextKey(), RuleDetailsAdapter.adapt(issue.getVulnerabilityProbability()), status);
   }
-
 
 }
