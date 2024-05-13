@@ -41,6 +41,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFiles
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
@@ -121,9 +122,9 @@ class SecurityHotspotTrackingMediumTests {
     var firstPublishedIssue = analyzeFileAndGetHotspot(fileUri, client);
 
     assertThat(firstPublishedIssue)
-      .extracting("ruleKey", "primaryMessage", "severity", "type", "serverKey", "introductionDate",
+      .extracting("ruleKey", "primaryMessage", "severity", "type", "serverKey", "status", "introductionDate",
         "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
-      .containsExactly(ruleKey, message, IssueSeverity.MINOR, RuleType.SECURITY_HOTSPOT, "uuid", Instant.ofEpochSecond(123456789L), 6, 11, 6, 19);
+      .containsExactly(ruleKey, message, IssueSeverity.MINOR, RuleType.SECURITY_HOTSPOT, "uuid", HotspotStatus.TO_REVIEW, Instant.ofEpochSecond(123456789L), 6, 11, 6, 19);
   }
 
   @Test
