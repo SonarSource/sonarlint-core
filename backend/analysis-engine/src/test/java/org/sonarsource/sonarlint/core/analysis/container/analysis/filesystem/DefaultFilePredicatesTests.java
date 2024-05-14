@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -59,7 +60,8 @@ class DefaultFilePredicatesTests {
     Files.createDirectories(filePath.getParent());
     Files.write(filePath, "foo".getBytes(StandardCharsets.UTF_8));
     var clientInputFile = new OnDiskTestClientInputFile(filePath, "src/main/java/struts/Action.java", false, StandardCharsets.UTF_8, SonarLanguage.JAVA);
-    javaFile = new SonarLintInputFile(clientInputFile, f -> new FileMetadata().readMetadata(filePath.toFile(), StandardCharsets.UTF_8))
+    InputStream fileInputStream = Files.newInputStream(filePath);
+    javaFile = new SonarLintInputFile(clientInputFile, f -> new FileMetadata().readMetadata(fileInputStream, StandardCharsets.UTF_8, filePath.toUri(), null))
       .setType(Type.MAIN)
       .setLanguage(SonarLanguage.JAVA);
   }
