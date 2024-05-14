@@ -22,15 +22,18 @@ package org.sonarsource.sonarlint.core.analysis.api;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueDto;
 
 public class AnalysisResults {
   private final Set<ClientInputFile> failedAnalysisFiles = new LinkedHashSet<>();
   private int indexedFileCount;
   private final Map<ClientInputFile, SonarLanguage> languagePerFile = new LinkedHashMap<>();
+  private List<RawIssueDto> rawIssues;
 
   public AnalysisResults setIndexedFileCount(int indexedFileCount) {
     this.indexedFileCount = indexedFileCount;
@@ -69,4 +72,11 @@ public class AnalysisResults {
     return failedAnalysisFiles;
   }
 
+  public void setRawIssues(List<RawIssueDto> rawIssues) {
+    this.rawIssues = rawIssues;
+  }
+
+  public List<RawIssueDto> getRawIssues() {
+    return rawIssues;
+  }
 }
