@@ -81,7 +81,7 @@ class SonarPluginRequirementsCheckerTests {
 
   @Test
   void load_no_plugins() {
-    var loadedPlugins = underTest.checkRequirements(Set.of(), NONE, null, true, null, false);
+    var loadedPlugins = underTest.checkRequirements(Set.of(), NONE, null, null, false);
 
     assertThat(loadedPlugins).isEmpty();
   }
@@ -89,7 +89,7 @@ class SonarPluginRequirementsCheckerTests {
   @Test
   void load_plugin_fail_if_missing_jar() {
     Set<Path> jars = Set.of(Paths.get("doesntexists.jar"));
-    var checkRequirements = underTest.checkRequirements(jars, NONE, null, true, null, false);
+    var checkRequirements = underTest.checkRequirements(jars, NONE, null, null, false);
 
     assertThat(checkRequirements).isEmpty();
     assertThat(logTester.logs(Level.ERROR)).contains("Unable to load plugin doesntexists.jar");
@@ -100,7 +100,7 @@ class SonarPluginRequirementsCheckerTests {
     var fakePlugin = fakePlugin(storage, "sonarjs.jar");
     Set<Path> jars = Set.of(fakePlugin);
 
-    var checkRequirements = underTest.checkRequirements(jars, NONE, null, true, null, false);
+    var checkRequirements = underTest.checkRequirements(jars, NONE, null, null, false);
 
     assertThat(checkRequirements).isEmpty();
     assertThat(logTester.logs(Level.ERROR)).contains("Unable to load plugin " + fakePlugin);
@@ -112,7 +112,7 @@ class SonarPluginRequirementsCheckerTests {
       withSqApiVersion("99.9")));
     Set<Path> jars = Set.of(fakePlugin);
 
-    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, true, null, false);
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, null, false);
 
     assertThat(loadedPlugins.values())
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
@@ -128,7 +128,7 @@ class SonarPluginRequirementsCheckerTests {
 
     when(pluginMinVersions.getMinimumVersion(FAKE_PLUGIN_KEY)).thenReturn("2.0");
 
-    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, true, null, false);
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, null, false);
 
     assertThat(loadedPlugins.values())
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
@@ -141,7 +141,7 @@ class SonarPluginRequirementsCheckerTests {
     var fakePlugin = fakePlugin(storage, "sonarphp.jar", path -> createPluginManifest(path, SonarLanguage.PHP.getPluginKey(), V1_0));
     Set<Path> jars = Set.of(fakePlugin);
 
-    var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.TS), null, true, null, false);
+    var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.TS), null, null, false);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("php", true, new SkipReason.LanguagesNotEnabled(new HashSet<>(asList(SonarLanguage.PHP)))));
@@ -154,7 +154,7 @@ class SonarPluginRequirementsCheckerTests {
     Set<Path> jars = Set.of(fakePlugin);
     doReturn(V1_0).when(pluginMinVersions).getMinimumVersion(SonarLanguage.C.getPluginKey());
 
-    var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.JS), null, true, null, false);
+    var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.JS), null, null, false);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("cpp", true, new SkipReason.LanguagesNotEnabled(new HashSet<>(asList(SonarLanguage.C, SonarLanguage.CPP, SonarLanguage.OBJC)))));
@@ -167,7 +167,7 @@ class SonarPluginRequirementsCheckerTests {
     Set<Path> jars = Set.of(fakePlugin);
     doReturn(V1_0).when(pluginMinVersions).getMinimumVersion(SonarLanguage.CPP.getPluginKey());
 
-    var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.CPP), null, true, null, false);
+    var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.CPP), null, null, false);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("cpp", false, null));
@@ -179,7 +179,7 @@ class SonarPluginRequirementsCheckerTests {
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withBasePlugin(SonarLanguage.JS.getPluginKey())));
     Set<Path> jars = Set.of(fakePlugin);
 
-    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, true, null, false);
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, null, false);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", true, new SkipReason.UnsatisfiedDependency("javascript")));
@@ -197,7 +197,7 @@ class SonarPluginRequirementsCheckerTests {
     // Ensure base plugin is skipped because of min version
     doReturn("2.0").when(pluginMinVersions).getMinimumVersion(SonarLanguage.JS.getPluginKey());
 
-    var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.JS), null, true, null, false);
+    var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.JS), null, null, false);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(
@@ -217,7 +217,7 @@ class SonarPluginRequirementsCheckerTests {
     // Ensure base plugin is not skipped
     doReturn(V1_0).when(pluginMinVersions).getMinimumVersion(SonarLanguage.JS.getPluginKey());
 
-    var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.JS), null, true, null, false);
+    var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.JS), null, null, false);
 
     assertThat(loadedPlugins.values())
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
@@ -232,7 +232,7 @@ class SonarPluginRequirementsCheckerTests {
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withRequiredPlugins("required2:1.0")));
     Set<Path> jars = Set.of(fakePlugin);
 
-    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, true, null, false);
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, null, false);
 
     assertThat(loadedPlugins.values())
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
@@ -246,7 +246,7 @@ class SonarPluginRequirementsCheckerTests {
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withRequiredPlugins("license:1.0")));
     Set<Path> jars = Set.of(fakePlugin);
 
-    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, true, null, false);
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, null, false);
 
     assertThat(loadedPlugins.values())
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped)
@@ -264,7 +264,7 @@ class SonarPluginRequirementsCheckerTests {
     // Ensure dep plugin is skipped because of min version
     doReturn("2.0").when(pluginMinVersions).getMinimumVersion("required2");
 
-    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, true, null, false);
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, null, false);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", true, new SkipReason.UnsatisfiedDependency("required2")),
@@ -280,7 +280,7 @@ class SonarPluginRequirementsCheckerTests {
     Set<Path> jars = Set.of(fakePlugin);
     doReturn(true).when(pluginMinVersions).isVersionSupported(SonarLanguage.JS.getPluginKey(), Version.create(V1_0));
 
-    var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.JS), null, true, null, false);
+    var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.JS), null, null, false);
 
     assertThat(loadedPlugins.values()).as(logsWithoutStartStop().collect(Collectors.joining("\n")))
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped)
@@ -293,7 +293,7 @@ class SonarPluginRequirementsCheckerTests {
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withSqApiVersion("7.9")));
     Set<Path> jars = Set.of(fakePlugin);
 
-    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, true, null, false);
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, null, false);
 
     assertThat(loadedPlugins.values()).as(logsWithoutStartStop().collect(Collectors.joining("\n")))
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped)
@@ -305,7 +305,7 @@ class SonarPluginRequirementsCheckerTests {
     var fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withJreMinVersion("11")));
     Set<Path> jars = Set.of(fakePlugin);
 
-    var loadedPlugins = underTest.checkRequirements(jars, NONE, Version.create("1.8"), true, null, false);
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, Version.create("1.8"), null, false);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", true, new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.JRE, "1.8", "11")));
@@ -318,7 +318,7 @@ class SonarPluginRequirementsCheckerTests {
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withNodejsMinVersion("10.1.2")));
     Set<Path> jars = Set.of(fakePlugin);
 
-    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, true, Optional.of(Version.create("10.1.3")), false);
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, Optional.of(Version.create("10.1.3")), false);
 
     assertThat(loadedPlugins.values())
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped)
@@ -331,7 +331,7 @@ class SonarPluginRequirementsCheckerTests {
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withNodejsMinVersion("15.0.0")));
     Set<Path> jars = Set.of(fakePlugin);
 
-    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, true, Optional.of(Version.create("15.0.0-nightly20200921039c274dde")), false);
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, Optional.of(Version.create("15.0.0-nightly20200921039c274dde")), false);
 
     assertThat(loadedPlugins.values())
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped)
@@ -344,7 +344,7 @@ class SonarPluginRequirementsCheckerTests {
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withNodejsMinVersion("10.1.2")));
     Set<Path> jars = Set.of(fakePlugin);
 
-    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, true, Optional.of(Version.create("10.1.1")), false);
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, Optional.of(Version.create("10.1.1")), false);
 
     assertThat(loadedPlugins.values())
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
@@ -358,7 +358,7 @@ class SonarPluginRequirementsCheckerTests {
       path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withNodejsMinVersion("10.1.2")));
     Set<Path> jars = Set.of(fakePlugin);
 
-    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, true, Optional.empty(), false);
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, null,  Optional.empty(), false);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("pluginkey", true, new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.NODEJS, null, "10.1.2")));
@@ -370,7 +370,7 @@ class SonarPluginRequirementsCheckerTests {
     var fakePlugin = fakePlugin(storage, "fake.jar", path -> createPluginManifest(path, FAKE_PLUGIN_KEY, V1_0, withJreMinVersion("1.7")));
     Set<Path> jars = Set.of(fakePlugin);
 
-    var loadedPlugins = underTest.checkRequirements(jars, NONE, Version.create("1.8"), true, Optional.empty(), false);
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, Version.create("1.8"),  Optional.empty(), false);
 
     assertThat(loadedPlugins.values())
       .extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped)
@@ -383,7 +383,7 @@ class SonarPluginRequirementsCheckerTests {
       path -> createPluginManifest(path, "dbdpythonfrontend", V1_0));
     Set<Path> jars = Set.of(fakePlugin);
 
-    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, false, Optional.empty(), false);
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, Optional.empty(), false);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("dbdpythonfrontend", true, SkipReason.UnsupportedFeature.INSTANCE));
@@ -396,7 +396,7 @@ class SonarPluginRequirementsCheckerTests {
       path -> createPluginManifest(path, "dbd", V1_0));
     Set<Path> jars = Set.of(fakePlugin);
 
-    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, false, Optional.empty(), true);
+    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, Optional.empty(), true);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(tuple("dbd", true, new SkipReason.UnsatisfiedDependency(SonarLanguage.PYTHON.getPluginKey())));
@@ -411,7 +411,7 @@ class SonarPluginRequirementsCheckerTests {
       path -> createPluginManifest(path, SonarLanguage.PYTHON.getPluginKey(), "1.15"));
     Set<Path> jars = Set.of(fakePlugin, fakePythonPlugin);
 
-    var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.PYTHON), null, false, Optional.empty(), true);
+    var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.PYTHON), null, Optional.empty(), true);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(
@@ -428,7 +428,7 @@ class SonarPluginRequirementsCheckerTests {
       path -> createPluginManifest(path, SonarLanguage.PYTHON.getPluginKey(), "1.15"));
     Set<Path> jars = Set.of(fakePlugin, fakePythonPlugin);
 
-    var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.PYTHON), null, false, Optional.empty(), true);
+    var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.PYTHON), null, Optional.empty(), true);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(
@@ -445,7 +445,7 @@ class SonarPluginRequirementsCheckerTests {
       path -> createPluginManifest(path, SonarLanguage.PYTHON.getPluginKey(), "1.15"));
     Set<Path> jars = Set.of(fakePlugin, fakePythonPlugin);
 
-    var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.PYTHON), null, false, Optional.empty(), false);
+    var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.PYTHON), null, Optional.empty(), false);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
       .containsOnly(

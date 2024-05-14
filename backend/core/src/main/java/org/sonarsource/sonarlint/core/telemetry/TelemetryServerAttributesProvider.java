@@ -88,8 +88,7 @@ public class TelemetryServerAttributesProvider {
 
   @CheckForNull
   private String getNodeJsVersion() {
-    var activeNodeJs = nodeJsService.getActiveNodeJs();
-    return activeNodeJs == null ? null : activeNodeJs.getVersion().toString();
+    return nodeJsService.getActiveNodeJsVersion().map(Objects::toString).orElse(null);
   }
 
   private boolean hasDisableNotifications(BoundScope binding) {

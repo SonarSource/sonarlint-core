@@ -28,8 +28,8 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.sonar.api.utils.System2;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInfo;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInstancesLoader;
@@ -49,31 +49,21 @@ public class PluginsLoader {
   public static class Configuration {
     private final Set<Path> pluginJarLocations;
     private final Set<SonarLanguage> enabledLanguages;
-    private final boolean shouldCheckNodeVersion;
     private final Optional<Version> nodeCurrentVersion;
     private final boolean enableDataflowBugDetection;
-
-    public Configuration(Set<Path> pluginJarLocations, Set<SonarLanguage> enabledLanguages, boolean enableDataflowBugDetection) {
-      this.pluginJarLocations = pluginJarLocations;
-      this.enabledLanguages = enabledLanguages;
-      this.nodeCurrentVersion = Optional.empty();
-      this.enableDataflowBugDetection = enableDataflowBugDetection;
-      this.shouldCheckNodeVersion = false;
-    }
 
     public Configuration(Set<Path> pluginJarLocations, Set<SonarLanguage> enabledLanguages, boolean enableDataflowBugDetection, Optional<Version> nodeCurrentVersion) {
       this.pluginJarLocations = pluginJarLocations;
       this.enabledLanguages = enabledLanguages;
       this.nodeCurrentVersion = nodeCurrentVersion;
       this.enableDataflowBugDetection = enableDataflowBugDetection;
-      this.shouldCheckNodeVersion = true;
     }
   }
 
   public PluginsLoadResult load(Configuration configuration) {
     var javaSpecVersion = Objects.requireNonNull(System2.INSTANCE.property("java.specification.version"), "Missing Java property 'java.specification.version'");
     var pluginCheckResultByKeys = requirementsChecker.checkRequirements(configuration.pluginJarLocations, configuration.enabledLanguages, Version.create(javaSpecVersion),
-      configuration.shouldCheckNodeVersion, configuration.nodeCurrentVersion, configuration.enableDataflowBugDetection);
+      configuration.nodeCurrentVersion, configuration.enableDataflowBugDetection);
 
     var nonSkippedPlugins = getNonSkippedPlugins(pluginCheckResultByKeys);
     logPlugins(nonSkippedPlugins);

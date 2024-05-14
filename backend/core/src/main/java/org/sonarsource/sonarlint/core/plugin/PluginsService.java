@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.jetbrains.annotations.NotNull;
+import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -57,10 +58,11 @@ public class PluginsService {
   private final Set<Path> embeddedPluginPaths;
   private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
+  private final NodeJsService nodeJsService;
   private final boolean enableDataflowBugDetection;
 
   public PluginsService(PluginsRepository pluginsRepository, SkippedPluginsRepository skippedPluginsRepository, LanguageSupportRepository languageSupportRepository,
-    StorageService storageService, InitializeParams params, ConnectionConfigurationRepository connectionConfigurationRepository) {
+    StorageService storageService, InitializeParams params, ConnectionConfigurationRepository connectionConfigurationRepository, NodeJsService nodeJsService) {
     this.pluginsRepository = pluginsRepository;
     this.skippedPluginsRepository = skippedPluginsRepository;
     this.languageSupportRepository = languageSupportRepository;
@@ -69,6 +71,7 @@ public class PluginsService {
     this.connectedModeEmbeddedPluginPathsByKey = params.getConnectedModeEmbeddedPluginPathsByKey();
     this.enableDataflowBugDetection = params.getFeatureFlags().isEnableDataflowBugDetection();
     this.connectionConfigurationRepository = connectionConfigurationRepository;
+    this.nodeJsService = nodeJsService;
   }
 
   public LoadedPlugins getEmbeddedPlugins() {
@@ -139,9 +142,8 @@ public class PluginsService {
       .orElse(false);
   }
 
-  private static PluginsLoadResult loadPlugins(Set<SonarLanguage> enabledLanguages, Set<Path> pluginPaths, boolean enableDataflowBugDetection) {
-    // not interested in the Node.js path at the moment
-    var config = new PluginsLoader.Configuration(pluginPaths, enabledLanguages, enableDataflowBugDetection);
+  private PluginsLoadResult loadPlugins(Set<SonarLanguage> enabledLanguages, Set<Path> pluginPaths, boolean enableDataflowBugDetection) {
+    var config = new PluginsLoader.Configuration(pluginPaths, enabledLanguages, enableDataflowBugDetection, nodeJsService.getActiveNodeJsVersion());
     return new PluginsLoader().load(config);
   }
 
