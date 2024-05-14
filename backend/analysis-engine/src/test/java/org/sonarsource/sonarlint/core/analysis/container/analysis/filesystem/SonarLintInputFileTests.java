@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -46,7 +47,8 @@ class SonarLintInputFileTests {
     var filePath = path.resolve("foo.php");
     Files.write(filePath, "test string".getBytes(StandardCharsets.UTF_8));
     ClientInputFile inputFile = new OnDiskTestClientInputFile(filePath, "file", false, StandardCharsets.UTF_8);
-    var file = new SonarLintInputFile(inputFile, f -> new FileMetadata().readMetadata(filePath.toFile(), StandardCharsets.UTF_8));
+    InputStream fileInputStream = Files.newInputStream(filePath);
+    var file = new SonarLintInputFile(inputFile, f -> new FileMetadata().readMetadata(fileInputStream, StandardCharsets.UTF_8, filePath.toUri(), null));
 
     assertThat(file.contents()).isEqualTo("test string");
     assertThat(file.md5Hash()).isEqualTo("6f8db599de986fab7a21625b7916589c");

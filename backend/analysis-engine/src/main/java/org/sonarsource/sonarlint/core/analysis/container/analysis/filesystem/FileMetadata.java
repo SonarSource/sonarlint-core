@@ -20,9 +20,6 @@
 package org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -32,8 +29,6 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
-import org.apache.commons.io.ByteOrderMark;
-import org.apache.commons.io.input.BOMInputStream;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
@@ -131,14 +126,6 @@ public class FileMetadata {
   }
 
   /**
-   * For testing
-   */
-  Metadata readMetadata(File file, Charset encoding) {
-    var stream = streamFile(file);
-    return readMetadata(stream, encoding, file.toURI(), null);
-  }
-
-  /**
    * Compute hash of an inputStream ignoring line ends differences.
    * Maximum performance is needed.
    */
@@ -157,15 +144,6 @@ public class FileMetadata {
       throw new IllegalStateException(String.format("Fail to read file '%s' with encoding '%s'", fileUri, encoding), e);
     }
     return new Metadata(lineCounter.lines(), lineOffsetCounter.getOriginalLineOffsets().stream().mapToInt(i -> i).toArray(), lineOffsetCounter.getLastValidOffset());
-  }
-
-  private static InputStream streamFile(File file) {
-    try {
-      return new BOMInputStream(new FileInputStream(file),
-        ByteOrderMark.UTF_8, ByteOrderMark.UTF_16LE, ByteOrderMark.UTF_16BE, ByteOrderMark.UTF_32LE, ByteOrderMark.UTF_32BE);
-    } catch (FileNotFoundException e) {
-      throw new IllegalStateException("File not found: " + file.getAbsolutePath(), e);
-    }
   }
 
   private static void read(Reader reader, CharHandler... handlers) throws IOException {
