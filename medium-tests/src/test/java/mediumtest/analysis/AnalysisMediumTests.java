@@ -207,6 +207,27 @@ class AnalysisMediumTests {
   }
 
   @Test
+  void analysis_response_should_contain_raw_issues(@TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "secret.py",
+      "KEY = \"AKIAIGKECZXA7AEIJLMQ\"");
+    var fileUri = filePath.toUri();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.TEXT)
+      .build(client);
+    var analysisId = UUID.randomUUID();
+
+    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
+
+    assertThat(result.getFailedAnalysisFiles()).isEmpty();
+    assertThat(result.getRawIssues()).hasSize(1);
+    assertThat(result.getRawIssues().get(0).getRuleKey()).isEqualTo("secrets:S6290");
+  }
+
+  @Test
   void it_should_report_issues_for_multi_file_analysis_taking_data_from_module_filesystem(@TempDir Path baseDir) {
     var fileIssue = createFile(baseDir, "fileIssue.py",
       "from fileFuncDef import foo\n" +

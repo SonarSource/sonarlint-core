@@ -26,6 +26,10 @@
   * Each raised hotspot went through hotspot tracking, and has potentially been matched with a previously known hotspot and/or a server hotspot in connected mode.
   * This new method reports a collection of hotspots replacing the ones previously raised. Every call contains the full list of known hotspots.
 
+* Add `getRawIssues` method to `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesResponse`
+  * It allows clients to get raised issues in the analysis response.
+  * This method is temporarily added and will be removed when the deprecated APIs have been dropped.
+
 ## Deprecation
 
 * `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFiles` and the underlying DTOs are deprecated, should be replaced by `analyzeFilesAndTrack`.

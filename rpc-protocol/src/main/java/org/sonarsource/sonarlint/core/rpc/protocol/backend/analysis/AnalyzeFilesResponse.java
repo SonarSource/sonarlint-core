@@ -20,16 +20,24 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis;
 
 import java.net.URI;
+import java.util.List;
 import java.util.Set;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueDto;
 
 public class AnalyzeFilesResponse {
   private final Set<URI> failedAnalysisFiles;
+  private final List<RawIssueDto> rawIssues;
 
-  public AnalyzeFilesResponse(Set<URI> failedAnalysisFiles) {
+  public AnalyzeFilesResponse(Set<URI> failedAnalysisFiles, List<RawIssueDto> rawIssues) {
     this.failedAnalysisFiles = failedAnalysisFiles;
+    this.rawIssues = rawIssues;
   }
 
   public Set<URI> getFailedAnalysisFiles() {
     return failedAnalysisFiles;
+  }
+
+  public List<RawIssueDto> getRawIssues() {
+    return rawIssues;
   }
 }

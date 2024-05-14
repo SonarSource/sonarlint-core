@@ -564,6 +564,7 @@ public class AnalysisService {
             (map, entry) -> map.put(entry.getKey().uri(), entry.getValue()), HashMap::putAll);
           eventPublisher.publishEvent(new AnalysisFinishedEvent(analysisId, configurationScopeId, endTime - startTime,
             languagePerFile, results.failedAnalysisFiles().isEmpty(), raisedIssues, enableTracking, shouldFetchServerIssues));
+          results.setRawIssues(raisedIssues.stream().map(issue -> toDto(issue.getIssue(), issue.getActiveRule())).collect(toList()));
         }
       });
   }
