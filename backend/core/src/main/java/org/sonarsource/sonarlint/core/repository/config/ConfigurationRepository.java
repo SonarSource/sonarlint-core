@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.repository.config;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -60,6 +61,19 @@ public class ConfigurationRepository {
     var removedScope = configScopePerId.remove(idToRemove);
     var removeBindingConfiguration = bindingPerConfigScopeId.remove(idToRemove);
     return removedScope == null ? null : new ConfigurationScopeWithBinding(removedScope, removeBindingConfiguration);
+  }
+
+  public Map<String, BindingConfiguration> removeBindingForConnection(String connectionId) {
+    var removedBindingByConfigScope = new HashMap<String, BindingConfiguration>();
+    var configScopesToUnbind =
+      bindingPerConfigScopeId.entrySet().stream().filter(e -> connectionId.equals(e.getValue().getConnectionId())).map(Map.Entry::getKey).collect(toSet());
+    configScopesToUnbind.forEach(configScope -> {
+      var removedBindingConfiguration = bindingPerConfigScopeId.remove(configScope);
+      if (removedBindingConfiguration != null) {
+        removedBindingByConfigScope.put(configScope, removedBindingConfiguration);
+      }
+    });
+    return removedBindingByConfigScope;
   }
 
   public void updateBinding(String configScopeId, BindingConfiguration bindingConfig) {

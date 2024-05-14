@@ -25,10 +25,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
@@ -42,11 +44,15 @@ class ConfigurationServiceTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
-  public static final BindingConfigurationDto BINDING_DTO_1 = new BindingConfigurationDto("connection1", "projectKey1", false);
-  public static final BindingConfigurationDto BINDING_DTO_2 = new BindingConfigurationDto("connection1", "projectKey2", true);
+  private static final String CONNECTION_1 = "connection1";
+  private static final String CONNECTION_2 = "connection2";
+  public static final BindingConfigurationDto BINDING_DTO_1 = new BindingConfigurationDto(CONNECTION_1, "projectKey1", false);
+  public static final BindingConfigurationDto BINDING_DTO_2 = new BindingConfigurationDto(CONNECTION_1, "projectKey2", true);
+  public static final BindingConfigurationDto BINDING_DTO_3 = new BindingConfigurationDto(CONNECTION_2, "projectKey3", true);
   public static final ConfigurationScopeDto CONFIG_DTO_1 = new ConfigurationScopeDto("id1", null, true, "Scope 1", BINDING_DTO_1);
   public static final ConfigurationScopeDto CONFIG_DTO_1_DUP = new ConfigurationScopeDto("id1", null, false, "Scope 1 dup", BINDING_DTO_2);
   public static final ConfigurationScopeDto CONFIG_DTO_2 = new ConfigurationScopeDto("id2", null, true, "Scope 2", BINDING_DTO_2);
+  public static final ConfigurationScopeDto CONFIG_DTO_3 = new ConfigurationScopeDto("id3", null, true, "Scope 2", BINDING_DTO_3);
   private final ConfigurationRepository repository = new ConfigurationRepository();
 
   private ApplicationEventPublisher eventPublisher;
@@ -149,11 +155,11 @@ class ConfigurationServiceTests {
     var event = captor.getValue();
 
     assertThat(event.getConfigScopeId()).isEqualTo("id1");
-    assertThat(event.getPreviousConfig().getConnectionId()).isEqualTo("connection1");
+    assertThat(event.getPreviousConfig().getConnectionId()).isEqualTo(CONNECTION_1);
     assertThat(event.getPreviousConfig().getSonarProjectKey()).isEqualTo("projectKey1");
     assertThat(event.getPreviousConfig().isBindingSuggestionDisabled()).isFalse();
 
-    assertThat(event.getNewConfig().getConnectionId()).isEqualTo("connection1");
+    assertThat(event.getNewConfig().getConnectionId()).isEqualTo(CONNECTION_1);
     assertThat(event.getNewConfig().getSonarProjectKey()).isEqualTo("projectKey2");
     assertThat(event.getNewConfig().isBindingSuggestionDisabled()).isTrue();
   }
@@ -165,6 +171,18 @@ class ConfigurationServiceTests {
     underTest.didUpdateBinding("id2", BINDING_DTO_2);
 
     assertThat(logTester.logs(LogOutput.Level.ERROR)).containsExactly("Attempt to update binding in configuration scope 'id2' that was not registered");
+  }
+
+  @Test
+  void should_remove_binding_if_connection_removed() {
+    underTest.didAddConfigurationScopes(List.of(CONFIG_DTO_1, CONFIG_DTO_3));
+    assertThat(repository.getConfigScopeIds()).containsOnly("id1", "id3");
+
+    underTest.connectionRemoved(new ConnectionConfigurationRemovedEvent(CONNECTION_1));
+    assertThat(repository.getAllBoundScopes()).hasSize(1);
+    assertThat(repository.getBoundScope("id3"))
+      .isNotNull()
+      .extracting(BoundScope::getConnectionId).isEqualTo(CONNECTION_2);
   }
 
 }

@@ -37,6 +37,10 @@ public class BindingConfiguration {
     this.bindingSuggestionDisabled = bindingSuggestionDisabled;
   }
 
+  public static BindingConfiguration noBinding() {
+    return new BindingConfiguration(null, null, false);
+  }
+
   @CheckForNull
   public String getConnectionId() {
     return connectionId;
