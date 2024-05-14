@@ -20,11 +20,13 @@
 package org.sonarsource.sonarlint.core.analysis;
 
 import java.nio.file.Path;
+import java.util.Optional;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.SystemUtils;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.nodejs.InstalledNodeJs;
 import org.sonarsource.sonarlint.core.nodejs.NodeJsHelper;
@@ -66,6 +68,10 @@ public class NodeJsService {
   @CheckForNull
   public synchronized InstalledNodeJs getActiveNodeJs() {
     return clientNodeJsPath == null ? getAutoDetectedNodeJs() : getClientForcedNodeJs();
+  }
+
+  public synchronized Optional<Version> getActiveNodeJsVersion() {
+    return Optional.ofNullable(getActiveNodeJs()).map(InstalledNodeJs::getVersion);
   }
 
   @CheckForNull

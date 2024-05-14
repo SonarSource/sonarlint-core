@@ -20,12 +20,14 @@
 package mediumtest.analysis;
 
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetStandaloneRuleDescriptionParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
@@ -45,7 +47,7 @@ class NodeJsMediumTests {
   }
 
   @Test
-  void wrong_node_path_can_still_load_rules() {
+  void wrong_node_path_prevents_loading_sonar_js_rules() {
     var client = newFakeClient().build();
     backend = newBackend()
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVASCRIPT)
@@ -57,10 +59,13 @@ class NodeJsMediumTests {
     assertThat(globalConfig.getNodeJsDetails()).isNull();
     assertThat(client.getLogMessages()).contains("Unable to query node version");
 
-    var ruleDetails = backend.getRulesService().getStandaloneRuleDetails(new GetStandaloneRuleDescriptionParams(JAVASCRIPT_S1481)).join().getRuleDefinition();
-    assertThat(ruleDetails.getName()).isEqualTo("Unused local variables and functions should be removed");
-    assertThat(ruleDetails.getLanguage()).isEqualTo(org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JS);
-    assertThat(ruleDetails.getSeverity()).isEqualTo(IssueSeverity.MINOR);
+    var futureRuleDetails = backend.getRulesService().getStandaloneRuleDetails(new GetStandaloneRuleDescriptionParams(JAVASCRIPT_S1481));
+
+    assertThat(futureRuleDetails).failsWithin(Duration.ofMillis(200))
+      .withThrowableOfType(ExecutionException.class)
+      .havingCause()
+      .isInstanceOf(ResponseErrorException.class)
+      .withMessage("Could not find rule 'javascript:S1481' in embedded rules");
   }
 
   @Test

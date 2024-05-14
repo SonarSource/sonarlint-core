@@ -57,7 +57,7 @@ public class SonarPluginRequirementsChecker {
    * Attempt to read JAR manifests, load metadata, and check all requirements to ensure the plugin can be instantiated.
    */
   public Map<String, PluginRequirementsCheckResult> checkRequirements(Set<Path> pluginJarLocations, Set<SonarLanguage> enabledLanguages, Version jreCurrentVersion,
-    boolean shouldCheckNodeVersion, Optional<Version> nodeCurrentVersion, boolean enableDataflowBugDetection) {
+    Optional<Version> nodeCurrentVersion, boolean enableDataflowBugDetection) {
     Map<String, PluginRequirementsCheckResult> resultsByKey = new HashMap<>();
 
     for (Path jarLocation : pluginJarLocations) {
@@ -73,7 +73,7 @@ public class SonarPluginRequirementsChecker {
         throw new IllegalStateException(
           "Duplicate plugin key '" + plugin.getKey() + "' from '" + plugin.getJarFile() + "' and '" + resultsByKey.get(plugin.getKey()).getPlugin().getJarFile() + "'");
       }
-      resultsByKey.put(plugin.getKey(), checkIfSkippedAndPopulateReason(plugin, enabledLanguages, jreCurrentVersion, shouldCheckNodeVersion, nodeCurrentVersion));
+      resultsByKey.put(plugin.getKey(), checkIfSkippedAndPopulateReason(plugin, enabledLanguages, jreCurrentVersion, nodeCurrentVersion));
     }
     // Second pass of checks
     for (PluginRequirementsCheckResult result : resultsByKey.values()) {
@@ -85,7 +85,7 @@ public class SonarPluginRequirementsChecker {
   }
 
   private PluginRequirementsCheckResult checkIfSkippedAndPopulateReason(PluginInfo plugin, Set<SonarLanguage> enabledLanguages, Version jreCurrentVersion,
-    boolean shouldCheckNodeVersion, Optional<Version> nodeCurrentVersion) {
+    Optional<Version> nodeCurrentVersion) {
     var pluginKey = plugin.getKey();
     var languages = SonarLanguage.getLanguagesByPluginKey(pluginKey);
     if (!languages.isEmpty() && enabledLanguages.stream().noneMatch(languages::contains)) {
@@ -116,17 +116,15 @@ public class SonarPluginRequirementsChecker {
       return new PluginRequirementsCheckResult(plugin,
         new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.JRE, jreCurrentVersion.toString(), jreMinVersion.toString()));
     }
-    if (shouldCheckNodeVersion) {
-      var nodeMinVersion = plugin.getNodeJsMinVersion();
-      if (nodeMinVersion != null) {
-        if (nodeCurrentVersion.isEmpty()) {
-          LOG.debug("Plugin '{}' requires Node.js {}. Skip loading it.", plugin.getName(), nodeMinVersion);
-          return new PluginRequirementsCheckResult(plugin, new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.NODEJS, null, nodeMinVersion.toString()));
-        } else if (!nodeCurrentVersion.get().satisfiesMinRequirement(nodeMinVersion)) {
-          LOG.debug("Plugin '{}' requires Node.js {} while current is {}. Skip loading it.", plugin.getName(), nodeMinVersion, nodeCurrentVersion.get());
-          return new PluginRequirementsCheckResult(plugin,
-            new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.NODEJS, nodeCurrentVersion.get().toString(), nodeMinVersion.toString()));
-        }
+    var nodeMinVersion = plugin.getNodeJsMinVersion();
+    if (nodeMinVersion != null) {
+      if (nodeCurrentVersion.isEmpty()) {
+        LOG.debug("Plugin '{}' requires Node.js {}. Skip loading it.", plugin.getName(), nodeMinVersion);
+        return new PluginRequirementsCheckResult(plugin, new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.NODEJS, null, nodeMinVersion.toString()));
+      } else if (!nodeCurrentVersion.get().satisfiesMinRequirement(nodeMinVersion)) {
+        LOG.debug("Plugin '{}' requires Node.js {} while current is {}. Skip loading it.", plugin.getName(), nodeMinVersion, nodeCurrentVersion.get());
+        return new PluginRequirementsCheckResult(plugin,
+          new SkipReason.UnsatisfiedRuntimeRequirement(RuntimeRequirement.NODEJS, nodeCurrentVersion.get().toString(), nodeMinVersion.toString()));
       }
     }
 
