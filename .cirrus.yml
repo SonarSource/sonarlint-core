@@ -29,6 +29,20 @@ only_main_branches: &ONLY_MAIN_BRANCHES
   skip: "changesIncludeOnly('docs/**/*', 'spec/**/*', 'README.md')"
   only_if: $CIRRUS_USER_COLLABORATOR == 'true' && $CIRRUS_TAG == "" && ($CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-.*")
 
+orchestrator_monthly_cache_template: &ORCHESTRATOR_MONTHLY_CACHE_TEMPLATE
+  env:
+    JDK_VERSION: "17"
+  set_orchestrator_home_script: |
+    export THIS_MONTH=$(date '+%Y-%m')
+    echo "THIS_MONTH=${THIS_MONTH}" >> $CIRRUS_ENV
+    echo "ORCHESTRATOR_HOME=${CIRRUS_WORKING_DIR}/orchestrator/${THIS_MONTH}" >> $CIRRUS_ENV
+  mkdir_orchestrator_home_script: |
+    echo "Create dir ${ORCHESTRATOR_HOME} if needed"
+    mkdir -p ${ORCHESTRATOR_HOME}
+  orchestrator_cache:
+    folder: ${ORCHESTRATOR_HOME}
+    fingerprint_script: echo ${THIS_MONTH}
+
 maven_cache_definition: &MAVEN_CACHE_DEFINITION
   maven_cache:
     folder: ${CIRRUS_WORKING_DIR}/.m2/repository
@@ -128,6 +142,21 @@ test_windows_task:
     slack_notification_script: |
       .cirrus/slack-notification.sh
 
+inspect_orchestrator_cache_task:
+  <<: *ONLY_IF_EXCEPT_NIGHTLY
+  depends_on: build
+  eks_container:
+    <<: *CONTAINER_DEFINITION
+    cpu: 1
+    memory: 1G
+  <<: *ORCHESTRATOR_MONTHLY_CACHE_TEMPLATE
+  inspect_cache_script: |
+    echo "Inspecting cache ${ORCHESTRATOR_HOME}..."
+    cd "${ORCHESTRATOR_HOME}"
+    ls -l
+    find .
+    echo "Inspecting cache done."
+
 mend_scan_task:
   # Run Mend analysis
   depends_on:
@@ -158,6 +187,7 @@ qa_task:
   depends_on:
     - build
   <<: *ONLY_IF_EXCEPT_NIGHTLY
+  <<: *ORCHESTRATOR_MONTHLY_CACHE_TEMPLATE
   eks_container:
     <<: *CONTAINER_DEFINITION
     cpu: 4
