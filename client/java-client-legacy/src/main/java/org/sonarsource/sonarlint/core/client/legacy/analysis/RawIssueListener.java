@@ -19,6 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.client.legacy.analysis;
 
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
+
+/**
+ * @deprecated Use {@link AnalysisRpcService#analyzeFilesAndTrack(AnalyzeFilesAndTrackParams)} instead.
+ */
+@Deprecated(since = "10.2")
 @FunctionalInterface
 public interface RawIssueListener {
   void handle(RawIssue rawIssue);

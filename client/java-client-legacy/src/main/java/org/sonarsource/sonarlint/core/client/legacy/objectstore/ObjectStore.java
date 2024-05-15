@@ -21,13 +21,13 @@ package org.sonarsource.sonarlint.core.client.legacy.objectstore;
 
 import java.io.IOException;
 import java.util.Optional;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 
 /**
- * Store and retrieve objects from the filesystem.
- *
- * @param <K> type of the key to store by and used when reading back
- * @param <V> type of the value to store
+ * @deprecated Use {@link AnalysisRpcService#analyzeFilesAndTrack(AnalyzeFilesAndTrackParams)} instead.
  */
+@Deprecated(since = "10.2")
 public interface ObjectStore<K, V> {
 
   void write(K key, V values) throws IOException;

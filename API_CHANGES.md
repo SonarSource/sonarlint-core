@@ -36,7 +36,7 @@
 * As a consequence, `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient.didRaiseIssue` and the underlying DTOs are now deprecated. It should be replaced by `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient.raiseIssues` and `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient.raiseHotspots`.
 * `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.IssueTrackingRpcService` and the underlying DTOs are deprecated, the functionality is now handled by `analyzeFilesAndTrack`.
 * `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.SecurityHotspotMatchingRpcService` and the underlying DTOs are deprecated, the functionality is now handled by `analyzeFilesAndTrack`.
-* `org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine` is now deprecated. Analysis should happen via `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFilesAndTrack`.
+* `org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine` and all classes from the `sonarlint-java-client-legacy` module are now deprecated. Analysis should happen via `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFilesAndTrack`, and the `sonarlint-java-client-legacy` artifact will soon be removed.
 * The `pid` parameter of the `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto` constructor is not used anymore (the backend PID is used instead). The constructor is now deprecated, and a new constructor without this parameter was introduced and should be used. The `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto.getPid` method is not used anymore and also deprecated.
 
 # 10.1

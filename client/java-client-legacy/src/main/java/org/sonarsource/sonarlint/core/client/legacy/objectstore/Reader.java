@@ -21,7 +21,13 @@ package org.sonarsource.sonarlint.core.client.legacy.objectstore;
 
 import java.io.InputStream;
 import java.util.function.Function;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 
+/**
+ * @deprecated Use {@link AnalysisRpcService#analyzeFilesAndTrack(AnalyzeFilesAndTrackParams)} instead.
+ */
+@Deprecated(since = "10.2")
 @FunctionalInterface
 public interface Reader<V> extends Function<InputStream, V> {
 }

@@ -22,13 +22,13 @@ package org.sonarsource.sonarlint.core.client.legacy.objectstore;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Optional;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 
 /**
- * An ObjectStore without internal cache that derives the filesystem path to storage using a provided PathMapper.
- *
- * @param <K> type of the key to store by and used when reading back; must be hashable
- * @param <V> type of the value to store
+ * @deprecated Use {@link AnalysisRpcService#analyzeFilesAndTrack(AnalyzeFilesAndTrackParams)} instead.
  */
+@Deprecated(since = "10.2")
 public class SimpleObjectStore<K, V> implements ObjectStore<K, V> {
 
   private final PathMapper<K> pathMapper;
