@@ -79,10 +79,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.ActiveRuleDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetGlobalConfigurationResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.NodeJsDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnalysisReadinessParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidDetectSecretParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidRaiseIssueParams;
@@ -546,6 +544,7 @@ public class AnalysisService {
     Map<String, String> extraProperties, long startTime, boolean enableTracking, boolean shouldFetchServerIssues) {
     var analysisEngine = engineCache.getOrCreateAnalysisEngine(configurationScopeId);
     var analysisConfig = getAnalysisConfigForEngine(configurationScopeId, filePathsToAnalyze, extraProperties);
+    LOG.info("Triggering analysis with configuration: {}", analysisConfig);
     if (!analysisConfig.inputFiles().iterator().hasNext()) {
       LOG.error("No file to analyze");
       return CompletableFuture.completedFuture(new AnalysisResults());
@@ -562,11 +561,26 @@ public class AnalysisService {
         if (error == null) {
           var languagePerFile = results.languagePerFile().entrySet().stream().collect(HashMap<URI, SonarLanguage>::new,
             (map, entry) -> map.put(entry.getKey().uri(), entry.getValue()), HashMap::putAll);
-          eventPublisher.publishEvent(new AnalysisFinishedEvent(analysisId, configurationScopeId, endTime - startTime,
+          var analysisDuration = endTime - startTime;
+          logSummary(raisedIssues, analysisDuration);
+          eventPublisher.publishEvent(new AnalysisFinishedEvent(analysisId, configurationScopeId, analysisDuration,
             languagePerFile, results.failedAnalysisFiles().isEmpty(), raisedIssues, enableTracking, shouldFetchServerIssues));
           results.setRawIssues(raisedIssues.stream().map(issue -> toDto(issue.getIssue(), issue.getActiveRule())).collect(toList()));
         }
       });
+  }
+
+  private static void logSummary(ArrayList<RawIssue> rawIssues, long analysisDuration) {
+    // ignore project-level issues for now
+    var fileRawIssues = rawIssues.stream().filter(issue -> issue.getTextRange() != null).collect(toList());
+    var issuesCount = fileRawIssues.stream().filter(issue -> issue.getRuleType() != RuleType.SECURITY_HOTSPOT).count();
+    var hotspotsCount = fileRawIssues.stream().filter(issue -> issue.getRuleType() == RuleType.SECURITY_HOTSPOT).count();
+    LOG.info("Analysis detected {} and {} in {}ms", pluralize(issuesCount, "issue"), pluralize(hotspotsCount, "Security Hotspot"), analysisDuration);
+  }
+
+  private static String pluralize(long count, String word) {
+    var pluralizedWord = count == 1 ? word : (word + 's');
+    return count + " " + pluralizedWord;
   }
 
   private void streamIssue(String configScopeId, UUID analysisId, Issue issue, ConcurrentHashMap<String, RuleDetailsForAnalysis> ruleDetailsCache,
