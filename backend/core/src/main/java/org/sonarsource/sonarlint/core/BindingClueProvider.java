@@ -45,6 +45,7 @@ import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnection
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
 
 import static java.util.stream.Collectors.toSet;
+import static org.apache.commons.lang.StringUtils.isEmpty;
 import static org.apache.commons.lang.StringUtils.removeEnd;
 import static org.apache.commons.lang.StringUtils.trimToNull;
 import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singlePlural;
@@ -151,21 +152,22 @@ public class BindingClueProvider {
     var serverUrl = scannerProps.serverUrl;
     var projectKey = scannerProps.projectKey;
     var organization = scannerProps.organization;
-    if (StringUtils.isEmpty(projectKey) || projectKey.isBlank()) {
-      return true;
+    if (serverUrl == null) {
+      return isEmptyScConfig(projectKey, organization);
     }
-    if (sqConnectionConfiguredWithBlankValue(organization, serverUrl)) {
-      return true;
-    }
-    return scConnectionConfiguredWithBlankValue(serverUrl, organization);
+    return isEmptySqConfig(projectKey, serverUrl);
   }
 
-  private static boolean sqConnectionConfiguredWithBlankValue(@Nullable String organization, @Nullable String serverUrl) {
-    return organization == null && StringUtils.isBlank(serverUrl);
+  private static boolean isEmptySqConfig(@Nullable String projectKey, @Nullable String serverUrl) {
+    return isEmptyValue(projectKey) && isEmptyValue(serverUrl);
   }
 
-  private static boolean scConnectionConfiguredWithBlankValue(@Nullable String serverUrl, @Nullable String organization) {
-    return serverUrl == null && StringUtils.isBlank(organization);
+  private static boolean isEmptyScConfig(@Nullable String projectKey, @Nullable String organization) {
+    return isEmptyValue(projectKey) && isEmptyValue(organization);
+  }
+
+  private static boolean isEmptyValue(@Nullable String value) {
+    return StringUtils.isEmpty(value) || StringUtils.isBlank(value);
   }
 
   private Set<String> matchConnections(BindingClue bindingClue, Set<String> eligibleConnectionIds) {
