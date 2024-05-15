@@ -21,12 +21,13 @@ package org.sonarsource.sonarlint.core.client.legacy.objectstore;
 
 import java.nio.file.Path;
 import java.util.function.Function;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 
 /**
- * Map objects to unique relative filesystem paths.
- *
- * @param <T>
+ * @deprecated Use {@link AnalysisRpcService#analyzeFilesAndTrack(AnalyzeFilesAndTrackParams)} instead.
  */
+@Deprecated(since = "10.2")
 @FunctionalInterface
 public interface PathMapper<T> extends Function<T, Path> {
 }

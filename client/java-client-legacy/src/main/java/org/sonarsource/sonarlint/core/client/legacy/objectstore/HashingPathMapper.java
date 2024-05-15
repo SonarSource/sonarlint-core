@@ -23,10 +23,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 
 /**
- * Map strings to unique relative filesystem paths using their SHA1 hash.
+ * @deprecated Use {@link AnalysisRpcService#analyzeFilesAndTrack(AnalyzeFilesAndTrackParams)} instead.
  */
+@Deprecated(since = "10.2")
 public class HashingPathMapper implements PathMapper<String> {
 
   private static final String HEX_LETTERS = "0123456789abcdef";

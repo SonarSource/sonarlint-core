@@ -20,12 +20,13 @@
 package org.sonarsource.sonarlint.core.client.legacy.analysis;
 
 import org.sonarsource.sonarlint.core.commons.SonarLintException;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 
 /**
- * This exception will never be returned as a cause for another exception.
- * The SonarLint engines extract it as return it by itself if it finds it in the causal chain of an exception. 
- * See {@link SonarLintWrappedException}.
+ * @deprecated Use {@link AnalysisRpcService#analyzeFilesAndTrack(AnalyzeFilesAndTrackParams)} instead.
  */
+@Deprecated(since = "10.2")
 public class MessageException extends SonarLintException {
   public MessageException(String msg) {
     super(msg, null);

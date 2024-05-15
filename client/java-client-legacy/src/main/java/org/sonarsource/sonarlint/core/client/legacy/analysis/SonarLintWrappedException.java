@@ -21,10 +21,13 @@ package org.sonarsource.sonarlint.core.client.legacy.analysis;
 
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.SonarLintException;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 
 /**
- * Client should not depend on this technical class
+ * @deprecated Use {@link AnalysisRpcService#analyzeFilesAndTrack(AnalyzeFilesAndTrackParams)} instead.
  */
+@Deprecated(since = "10.2")
 public class SonarLintWrappedException extends SonarLintException {
 
   private final String originalClassToString;

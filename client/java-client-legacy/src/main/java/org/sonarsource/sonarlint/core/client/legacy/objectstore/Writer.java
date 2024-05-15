@@ -21,7 +21,13 @@ package org.sonarsource.sonarlint.core.client.legacy.objectstore;
 
 import java.io.OutputStream;
 import java.util.function.BiConsumer;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 
+/**
+ * @deprecated Use {@link AnalysisRpcService#analyzeFilesAndTrack(AnalyzeFilesAndTrackParams)} instead.
+ */
+@Deprecated(since = "10.2")
 @FunctionalInterface
 public interface Writer<V> extends BiConsumer<OutputStream, V> {
 }
