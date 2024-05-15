@@ -31,10 +31,14 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
@@ -96,6 +100,28 @@ class ConnectionSuggestionMediumTests {
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft().getServerUrl()).isEqualTo(sonarqubeMock.baseUrl());
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft().getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).isFromSharedConfiguration()).isTrue();
+  }
+
+  @ParameterizedTest(name = "Should not suggest connection setup for projectKey: {0}, SQ server URL: {1}, and SC organization key: {2}")
+  @MethodSource("emptyBindingSuggestionsTestValueProvider")
+  void should_not_suggest_connection_for_empty_values(String projectKey, String serverUrl, String organizationKey, @TempDir Path tmp) throws IOException {
+    var sonarlintDir = tmp.resolve(".sonarlint/");
+    Files.createDirectory(sonarlintDir);
+    var serverData = serverUrl != null ? "\"sonarQubeUri\":\"" + serverUrl + "\"" : "\"sonarCloudOrganization\":\"" + organizationKey + "\"";
+    var clue = tmp.resolve(".sonarlint/connectedMode.json");
+    var content = "{\"projectKey\": \"" + projectKey + "\"," + serverData + "}";
+    Files.writeString(clue, content, StandardCharsets.UTF_8);
+    var fileDto = new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null);
+    var fakeClient = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID,
+        List.of(fileDto))
+      .build();
+
+    backend = newBackend().build(fakeClient);
+
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
+
+    assertThat(fakeClient.getSuggestionsByConfigScope()).isEmpty();
   }
 
   @Test
@@ -383,4 +409,14 @@ class ConnectionSuggestionMediumTests {
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).isFromSharedConfiguration()).isTrue();
   }
 
+  private static Stream<Arguments> emptyBindingSuggestionsTestValueProvider() {
+    return Stream.of(
+      Arguments.of("", "", ""),
+      Arguments.of("", "foo", ""),
+      Arguments.of("", "", "foo"),
+      Arguments.of("key", "foo", ""),
+      Arguments.of("key", null, "foo"),
+      Arguments.of("key", "foo", null)
+    );
+  }
 }

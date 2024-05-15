@@ -34,6 +34,7 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
@@ -132,7 +133,7 @@ public class BindingClueProvider {
     for (var foundFile : files) {
       cancelMonitor.checkCanceled();
       var scannerProps = extractConnectionProperties(foundFile);
-      if (scannerProps == null) {
+      if (scannerProps == null || hasBlankValues(scannerProps)) {
         continue;
       }
       var bindingClue = computeBindingClue(foundFile.getFileName(), scannerProps);
@@ -144,6 +145,27 @@ public class BindingClueProvider {
       }
     }
     return bindingClues;
+  }
+
+  private static boolean hasBlankValues(BindingProperties scannerProps) {
+    var serverUrl = scannerProps.serverUrl;
+    var projectKey = scannerProps.projectKey;
+    var organization = scannerProps.organization;
+    if (StringUtils.isEmpty(projectKey) || projectKey.isBlank()) {
+      return true;
+    }
+    if (sqConnectionConfiguredWithBlankValue(organization, serverUrl)) {
+      return true;
+    }
+    return scConnectionConfiguredWithBlankValue(serverUrl, organization);
+  }
+
+  private static boolean sqConnectionConfiguredWithBlankValue(@Nullable String organization, @Nullable String serverUrl) {
+    return organization == null && StringUtils.isBlank(serverUrl);
+  }
+
+  private static boolean scConnectionConfiguredWithBlankValue(@Nullable String serverUrl, @Nullable String organization) {
+    return serverUrl == null && StringUtils.isBlank(organization);
   }
 
   private Set<String> matchConnections(BindingClue bindingClue, Set<String> eligibleConnectionIds) {
