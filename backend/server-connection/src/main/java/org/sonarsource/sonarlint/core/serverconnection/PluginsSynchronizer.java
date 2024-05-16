@@ -61,8 +61,13 @@ public class PluginsSynchronizer {
     var pluginsToDownload = serverPlugins.stream()
       .filter(p -> shouldDownload(p, storedPluginsByKey))
       .collect(Collectors.toList());
+
+    if (pluginsToDownload.isEmpty()) {
+      storage.plugins().storeNoPlugins();
+      return new PluginSynchronizationSummary(false);
+    }
     downloadAll(serverApi, pluginsToDownload, cancelMonitor);
-    return new PluginSynchronizationSummary(!pluginsToDownload.isEmpty());
+    return new PluginSynchronizationSummary(true);
   }
 
   private void downloadAll(ServerApi serverApi, List<ServerPlugin> pluginsToDownload, SonarLintCancelMonitor cancelMonitor) {

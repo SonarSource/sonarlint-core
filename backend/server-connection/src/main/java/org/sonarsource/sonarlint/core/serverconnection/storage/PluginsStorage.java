@@ -128,4 +128,22 @@ public class PluginsStorage {
       return Collections.emptyList();
     }
   }
+
+  public void storeNoPlugins() {
+    if (!Files.exists(pluginReferencesFilePath)) {
+      createPluginDirectory();
+      rwLock.write(() -> {
+        var references = Sonarlint.PluginReferences.newBuilder().build();
+        ProtobufFileUtil.writeToFile(references, pluginReferencesFilePath);
+      });
+    }
+  }
+
+  private void createPluginDirectory() {
+    try {
+      Files.createDirectories(pluginReferencesFilePath.getParent());
+    } catch (IOException e) {
+      throw new StorageException(String.format("Cannot create plugin file directory: %s", rootPath), e);
+    }
+  }
 }
