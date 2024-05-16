@@ -19,6 +19,7 @@
  */
 package mediumtest.synchronization;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -30,13 +31,14 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint.PluginReferences.PluginReference;
+import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 import testutils.PluginLocator;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.ServerFixture.ServerStatus.DOWN;
 import static mediumtest.fixtures.ServerFixture.ServerStatus.UP;
+import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.as;
@@ -154,7 +156,9 @@ class PluginSynchronizationMediumTests {
       .build(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
-      assertThat(getPluginsStorageFolder()).doesNotExist();
+      File[] files = getPluginsStorageFolder().toFile().listFiles();
+      assertThat(files).hasSize(1);
+      assertThat(files[0]).hasName(PluginsStorage.PLUGIN_REFERENCES_PB);
       assertThat(client.getLogMessages()).contains("[SYNC] Code analyzer 'pluginKey' does not support SonarLint. Skip downloading it.");
     });
   }
@@ -174,7 +178,9 @@ class PluginSynchronizationMediumTests {
       .build(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
-      assertThat(getPluginsStorageFolder()).doesNotExist();
+      File[] files = getPluginsStorageFolder().toFile().listFiles();
+      assertThat(files).hasSize(1);
+      assertThat(files[0]).hasName(PluginsStorage.PLUGIN_REFERENCES_PB);
       assertThat(client.getLogMessages()).contains("[SYNC] Code analyzer 'java' version '5.12.0' is not supported (minimal version is '5.13.1.18282'). Skip downloading it.");
     });
   }
@@ -194,7 +200,9 @@ class PluginSynchronizationMediumTests {
       .build(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
-      assertThat(getPluginsStorageFolder()).doesNotExist();
+      File[] files = getPluginsStorageFolder().toFile().listFiles();
+      assertThat(files).hasSize(1);
+      assertThat(files[0]).hasName(PluginsStorage.PLUGIN_REFERENCES_PB);
       assertThat(client.getLogMessages()).contains("[SYNC] Code analyzer 'java' is embedded in SonarLint. Skip downloading it.");
     });
   }
@@ -213,7 +221,9 @@ class PluginSynchronizationMediumTests {
       .build(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
-      assertThat(getPluginsStorageFolder()).doesNotExist();
+      File[] files = getPluginsStorageFolder().toFile().listFiles();
+      assertThat(files).hasSize(1);
+      assertThat(files[0]).hasName(PluginsStorage.PLUGIN_REFERENCES_PB);
       assertThat(client.getLogMessages()).contains("[SYNC] Code analyzer 'java' is disabled in SonarLint (language not enabled). Skip downloading it.");
     });
   }
@@ -281,7 +291,9 @@ class PluginSynchronizationMediumTests {
       .build(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
-      assertThat(getPluginsStorageFolder()).doesNotExist();
+      File[] files = getPluginsStorageFolder().toFile().listFiles();
+      assertThat(files).hasSize(1);
+      assertThat(files[0]).hasName(PluginsStorage.PLUGIN_REFERENCES_PB);
       assertThat(client.getLogMessages()).contains("[SYNC] Code analyzer 'typescript' is disabled in SonarLint (language not enabled). Skip downloading it.");
     });
   }
