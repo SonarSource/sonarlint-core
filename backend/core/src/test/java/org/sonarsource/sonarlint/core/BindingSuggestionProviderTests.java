@@ -87,7 +87,7 @@ class BindingSuggestionProviderTests {
   void trigger_suggest_binding_if_config_flag_turned_on() {
     when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1));
 
-    underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID_1, new BindingConfiguration(null, null, true),
+    underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID_1, BindingConfiguration.noBinding(true),
       BindingConfiguration.noBinding()));
 
     assertThat(logTester.logs(LogOutput.Level.DEBUG)).contains("Binding suggestion computation queued for config scopes '" + CONFIG_SCOPE_ID_1 + "'...");
@@ -98,7 +98,7 @@ class BindingSuggestionProviderTests {
     when(connectionRepository.getConnectionsById()).thenReturn(Map.of(SQ_1_ID, SQ_1));
 
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID_1, BindingConfiguration.noBinding(),
-      new BindingConfiguration(null, null, true)));
+      BindingConfiguration.noBinding(true)));
 
     assertThat(logTester.logs()).isEmpty();
   }
@@ -147,7 +147,7 @@ class BindingSuggestionProviderTests {
     when(configRepository.getBindingConfiguration("alreadyBound")).thenReturn(new BindingConfiguration(SQ_1_ID, PROJECT_KEY_1, false));
 
     when(configRepository.getConfigurationScope("suggestionsDisabled")).thenReturn(new ConfigurationScope("suggestionsDisabled", null, true, "Suggestion disabled"));
-    when(configRepository.getBindingConfiguration("suggestionsDisabled")).thenReturn(new BindingConfiguration(null, null, true));
+    when(configRepository.getBindingConfiguration("suggestionsDisabled")).thenReturn(BindingConfiguration.noBinding(true));
 
     underTest.suggestBindingForGivenScopesAndAllConnections(ImmutableSortedSet.of("configScopeWithNoBinding", "configScopeWithNoConfig", "configScopeNotBindable", "alreadyBound", "suggestionsDisabled"));
 

@@ -65,12 +65,12 @@ public class ConfigurationRepository {
 
   public Map<String, BindingConfiguration> removeBindingForConnection(String connectionId) {
     var removedBindingByConfigScope = new HashMap<String, BindingConfiguration>();
-    var configScopesToUnbind =
+    var configScopeIdsToUnbind =
       bindingPerConfigScopeId.entrySet().stream().filter(e -> connectionId.equals(e.getValue().getConnectionId())).map(Map.Entry::getKey).collect(toSet());
-    configScopesToUnbind.forEach(configScope -> {
-      var removedBindingConfiguration = bindingPerConfigScopeId.remove(configScope);
+    configScopeIdsToUnbind.forEach(configScopeId -> {
+      var removedBindingConfiguration = bindingPerConfigScopeId.remove(configScopeId);
       if (removedBindingConfiguration != null) {
-        removedBindingByConfigScope.put(configScope, removedBindingConfiguration);
+        removedBindingByConfigScope.put(configScopeId, removedBindingConfiguration);
       }
     });
     return removedBindingByConfigScope;

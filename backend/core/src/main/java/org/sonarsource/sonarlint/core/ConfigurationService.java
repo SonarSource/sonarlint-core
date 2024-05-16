@@ -106,7 +106,8 @@ public class ConfigurationService {
   public void connectionRemoved(ConnectionConfigurationRemovedEvent event) {
     var bindingConfigurationByConfigScope = repository.removeBindingForConnection(event.getRemovedConnectionId());
     bindingConfigurationByConfigScope.forEach((configScope, bindingConfiguration) ->
-      applicationEventPublisher.publishEvent(new BindingConfigChangedEvent(configScope, bindingConfiguration, BindingConfiguration.noBinding())));
+      applicationEventPublisher.publishEvent(new BindingConfigChangedEvent(configScope, bindingConfiguration,
+        BindingConfiguration.noBinding(bindingConfiguration.isBindingSuggestionDisabled()))));
   }
 
   @CheckForNull

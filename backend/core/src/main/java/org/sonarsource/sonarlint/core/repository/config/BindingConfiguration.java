@@ -38,7 +38,11 @@ public class BindingConfiguration {
   }
 
   public static BindingConfiguration noBinding() {
-    return new BindingConfiguration(null, null, false);
+    return noBinding(false);
+  }
+
+  public static BindingConfiguration noBinding(boolean bindingSuggestionDisabled) {
+    return new BindingConfiguration(null, null, bindingSuggestionDisabled);
   }
 
   @CheckForNull
