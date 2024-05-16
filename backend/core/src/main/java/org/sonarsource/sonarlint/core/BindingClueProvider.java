@@ -34,7 +34,6 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.apache.commons.lang.StringUtils;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
@@ -45,6 +44,7 @@ import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnection
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
 
 import static java.util.stream.Collectors.toSet;
+import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.apache.commons.lang.StringUtils.removeEnd;
 import static org.apache.commons.lang.StringUtils.trimToNull;
 import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singlePlural;
@@ -158,15 +158,11 @@ public class BindingClueProvider {
   }
 
   private static boolean isEmptySqConfig(@Nullable String projectKey, @Nullable String serverUrl) {
-    return isEmptyValue(projectKey) && isEmptyValue(serverUrl);
+    return isBlank(projectKey) && isBlank(serverUrl);
   }
 
   private static boolean isEmptyScConfig(@Nullable String projectKey, @Nullable String organization) {
-    return isEmptyValue(projectKey) && isEmptyValue(organization);
-  }
-
-  private static boolean isEmptyValue(@Nullable String value) {
-    return StringUtils.isEmpty(value) || StringUtils.isBlank(value);
+    return isBlank(projectKey) && isBlank(organization);
   }
 
   private Set<String> matchConnections(BindingClue bindingClue, Set<String> eligibleConnectionIds) {
