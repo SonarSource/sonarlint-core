@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +53,7 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
@@ -107,9 +109,34 @@ class ConnectionSuggestionMediumTests {
   void should_not_suggest_connection_for_empty_values(String projectKey, String serverUrl, String organizationKey, @TempDir Path tmp) throws IOException {
     var sonarlintDir = tmp.resolve(".sonarlint/");
     Files.createDirectory(sonarlintDir);
-    var serverData = serverUrl != null ? "\"sonarQubeUri\":\"" + serverUrl + "\"" : "\"sonarCloudOrganization\":\"" + organizationKey + "\"";
+    var projectKeyData = projectKey != null ? "\"projectKey\":\"" + projectKey + "\"," : "";
+    var serverData = serverUrl != null ? "\"sonarQubeUri\":\"" + serverUrl + "\"" :
+      organizationKey != null ? "\"sonarCloudOrganization\":\"" + organizationKey + "\"" : "";
     var clue = tmp.resolve(".sonarlint/connectedMode.json");
-    var content = "{\"projectKey\": \"" + projectKey + "\"," + serverData + "}";
+    var content = "{" + projectKeyData + serverData + "}";
+    Files.writeString(clue, content, StandardCharsets.UTF_8);
+    var fileDto = new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null);
+    var fakeClient = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, List.of(fileDto))
+      .build();
+
+    backend = newBackend().build(fakeClient);
+
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
+
+    await().pollDelay(Duration.ofMillis(300)).untilAsserted(() -> assertThat(fakeClient.getSuggestionsByConfigScope()).isEmpty());
+  }
+
+  @ParameterizedTest(name = "Should not suggest connection setup for projectKey: {0}, SQ server URL: {1}, and SC organization key: {2}")
+  @MethodSource("nonEmptyBindingSuggestionsTestValueProvider")
+  void should_suggest_connection_for_non_empty_values(String projectKey, String serverUrl, String organizationKey, @TempDir Path tmp) throws IOException {
+    var sonarlintDir = tmp.resolve(".sonarlint/");
+    Files.createDirectory(sonarlintDir);
+    var projectKeyData = projectKey != null ? "\"projectKey\":\"" + projectKey + "\"," : "";
+    var serverData = serverUrl != null ? "\"sonarQubeUri\":\"" + serverUrl + "\"" :
+      organizationKey != null ? "\"sonarCloudOrganization\":\"" + organizationKey + "\"" : "";
+    var clue = tmp.resolve(".sonarlint/connectedMode.json");
+    var content = "{" + projectKeyData + serverData + "}";
     Files.writeString(clue, content, StandardCharsets.UTF_8);
     var fileDto = new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null);
     var fakeClient = newFakeClient()
@@ -121,7 +148,7 @@ class ConnectionSuggestionMediumTests {
 
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
 
-    assertThat(fakeClient.getSuggestionsByConfigScope()).isEmpty();
+    await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(fakeClient.getSuggestionsByConfigScope()).hasSize(1));
   }
 
   @Test
@@ -412,11 +439,28 @@ class ConnectionSuggestionMediumTests {
   private static Stream<Arguments> emptyBindingSuggestionsTestValueProvider() {
     return Stream.of(
       Arguments.of("", "", ""),
-      Arguments.of("", "foo", ""),
+      Arguments.of("", "", null),
       Arguments.of("", "", "foo"),
-      Arguments.of("key", "foo", ""),
-      Arguments.of("key", null, "foo"),
-      Arguments.of("key", "foo", null)
+      Arguments.of("", "", "foo"),
+      Arguments.of("", null, ""),
+      Arguments.of(null, "", ""),
+      Arguments.of("", null, null),
+      Arguments.of(null, "", null),
+      Arguments.of(null, null, ""),
+      Arguments.of(null, "foo", "bar")
     );
   }
+
+  public static Stream<Arguments> nonEmptyBindingSuggestionsTestValueProvider() {
+    return Stream.of(
+      Arguments.of("", "foo", ""),
+      Arguments.of("", "foo", null),
+      Arguments.of("", null, "foo"),
+      Arguments.of("key", "foo", ""),
+      Arguments.of("key", "foo", null),
+      Arguments.of("key", null, "foo"),
+      Arguments.of("key", "", "foo")
+    );
+  }
+
 }
