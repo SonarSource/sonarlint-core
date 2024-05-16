@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnection
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
 
 import static java.util.stream.Collectors.toSet;
+import static org.apache.commons.lang.StringUtils.isBlank;
 import static org.apache.commons.lang.StringUtils.removeEnd;
 import static org.apache.commons.lang.StringUtils.trimToNull;
 import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singlePlural;
@@ -132,7 +133,7 @@ public class BindingClueProvider {
     for (var foundFile : files) {
       cancelMonitor.checkCanceled();
       var scannerProps = extractConnectionProperties(foundFile);
-      if (scannerProps == null) {
+      if (scannerProps == null || hasBlankValues(scannerProps)) {
         continue;
       }
       var bindingClue = computeBindingClue(foundFile.getFileName(), scannerProps);
@@ -144,6 +145,24 @@ public class BindingClueProvider {
       }
     }
     return bindingClues;
+  }
+
+  private static boolean hasBlankValues(BindingProperties scannerProps) {
+    var serverUrl = scannerProps.serverUrl;
+    var projectKey = scannerProps.projectKey;
+    var organization = scannerProps.organization;
+    if (serverUrl == null) {
+      return isEmptyScConfig(projectKey, organization);
+    }
+    return isEmptySqConfig(projectKey, serverUrl);
+  }
+
+  private static boolean isEmptySqConfig(@Nullable String projectKey, @Nullable String serverUrl) {
+    return isBlank(projectKey) && isBlank(serverUrl);
+  }
+
+  private static boolean isEmptyScConfig(@Nullable String projectKey, @Nullable String organization) {
+    return isBlank(projectKey) && isBlank(organization);
   }
 
   private Set<String> matchConnections(BindingClue bindingClue, Set<String> eligibleConnectionIds) {

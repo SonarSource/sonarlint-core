@@ -552,6 +552,7 @@ public class SonarLintBackendFixture {
     private final Queue<ShowSmartNotificationParams> smartNotificationsToShow = new ConcurrentLinkedQueue<>();
     private final Map<String, ProgressReport> progressReportsByTaskId = new ConcurrentHashMap<>();
     private final Set<String> synchronizedConfigScopeIds = new HashSet<>();
+    private final Map<String, List<ConnectionSuggestionDto>> suggestionsByConfigScope = new HashMap<>();
     private final Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId;
     private final boolean printLogsToStdOut;
     private final Queue<LogParams> logs = new ConcurrentLinkedQueue<>();
@@ -635,6 +636,10 @@ public class SonarLintBackendFixture {
       return synchronizedConfigScopeIds;
     }
 
+    public Map<String, List<ConnectionSuggestionDto>> getSuggestionsByConfigScope() {
+      return suggestionsByConfigScope;
+    }
+
     @Override
     public Either<TokenDto, UsernamePasswordDto> getCredentials(String connectionId) {
       return credentialsByConnectionId.get(connectionId);
@@ -683,7 +688,7 @@ public class SonarLintBackendFixture {
 
     @Override
     public void suggestConnection(Map<String, List<ConnectionSuggestionDto>> suggestionsByConfigScope) {
-
+      this.suggestionsByConfigScope.putAll(suggestionsByConfigScope);
     }
 
     @Override

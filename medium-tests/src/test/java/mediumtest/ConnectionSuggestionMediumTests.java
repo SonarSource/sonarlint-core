@@ -25,16 +25,21 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
@@ -48,6 +53,7 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
@@ -96,6 +102,53 @@ class ConnectionSuggestionMediumTests {
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft().getServerUrl()).isEqualTo(sonarqubeMock.baseUrl());
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getLeft().getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).isFromSharedConfiguration()).isTrue();
+  }
+
+  @ParameterizedTest(name = "Should not suggest connection setup for projectKey: {0}, SQ server URL: {1}, and SC organization key: {2}")
+  @MethodSource("emptyBindingSuggestionsTestValueProvider")
+  void should_not_suggest_connection_for_empty_values(String projectKey, String serverUrl, String organizationKey, @TempDir Path tmp) throws IOException {
+    var sonarlintDir = tmp.resolve(".sonarlint/");
+    Files.createDirectory(sonarlintDir);
+    var projectKeyData = projectKey != null ? "\"projectKey\":\"" + projectKey + "\"," : "";
+    var serverData = serverUrl != null ? "\"sonarQubeUri\":\"" + serverUrl + "\"" :
+      organizationKey != null ? "\"sonarCloudOrganization\":\"" + organizationKey + "\"" : "";
+    var clue = tmp.resolve(".sonarlint/connectedMode.json");
+    var content = "{" + projectKeyData + serverData + "}";
+    Files.writeString(clue, content, StandardCharsets.UTF_8);
+    var fileDto = new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null);
+    var fakeClient = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, List.of(fileDto))
+      .build();
+
+    backend = newBackend().build(fakeClient);
+
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
+
+    await().pollDelay(Duration.ofMillis(300)).untilAsserted(() -> assertThat(fakeClient.getSuggestionsByConfigScope()).isEmpty());
+  }
+
+  @ParameterizedTest(name = "Should not suggest connection setup for projectKey: {0}, SQ server URL: {1}, and SC organization key: {2}")
+  @MethodSource("nonEmptyBindingSuggestionsTestValueProvider")
+  void should_suggest_connection_for_non_empty_values(String projectKey, String serverUrl, String organizationKey, @TempDir Path tmp) throws IOException {
+    var sonarlintDir = tmp.resolve(".sonarlint/");
+    Files.createDirectory(sonarlintDir);
+    var projectKeyData = projectKey != null ? "\"projectKey\":\"" + projectKey + "\"," : "";
+    var serverData = serverUrl != null ? "\"sonarQubeUri\":\"" + serverUrl + "\"" :
+      organizationKey != null ? "\"sonarCloudOrganization\":\"" + organizationKey + "\"" : "";
+    var clue = tmp.resolve(".sonarlint/connectedMode.json");
+    var content = "{" + projectKeyData + serverData + "}";
+    Files.writeString(clue, content, StandardCharsets.UTF_8);
+    var fileDto = new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null);
+    var fakeClient = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID,
+        List.of(fileDto))
+      .build();
+
+    backend = newBackend().build(fakeClient);
+
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
+
+    await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(fakeClient.getSuggestionsByConfigScope()).hasSize(1));
   }
 
   @Test
@@ -381,6 +434,33 @@ class ConnectionSuggestionMediumTests {
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getRight().getOrganization()).isEqualTo(ORGANIZATION);
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).getConnectionSuggestion().getRight().getProjectKey()).isEqualTo(SLCORE_PROJECT_KEY);
     assertThat(connectionSuggestion.get(CONFIG_SCOPE_ID).get(0).isFromSharedConfiguration()).isTrue();
+  }
+
+  private static Stream<Arguments> emptyBindingSuggestionsTestValueProvider() {
+    return Stream.of(
+      Arguments.of("", "", ""),
+      Arguments.of("", "", null),
+      Arguments.of("", "", "foo"),
+      Arguments.of("", "", "foo"),
+      Arguments.of("", null, ""),
+      Arguments.of(null, "", ""),
+      Arguments.of("", null, null),
+      Arguments.of(null, "", null),
+      Arguments.of(null, null, ""),
+      Arguments.of(null, "foo", "bar")
+    );
+  }
+
+  public static Stream<Arguments> nonEmptyBindingSuggestionsTestValueProvider() {
+    return Stream.of(
+      Arguments.of("", "foo", ""),
+      Arguments.of("", "foo", null),
+      Arguments.of("", null, "foo"),
+      Arguments.of("key", "foo", ""),
+      Arguments.of("key", "foo", null),
+      Arguments.of("key", null, "foo"),
+      Arguments.of("key", "", "foo")
+    );
   }
 
 }
