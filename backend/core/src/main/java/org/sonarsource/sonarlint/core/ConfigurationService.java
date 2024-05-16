@@ -30,12 +30,14 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
 
 @Named
 @Singleton
@@ -75,7 +77,7 @@ public class ConfigurationService {
 
   private static BindingConfiguration adapt(@Nullable BindingConfigurationDto dto) {
     if (dto == null) {
-      return new BindingConfiguration(null, null, false);
+      return BindingConfiguration.noBinding();
     }
     return new BindingConfiguration(dto.getConnectionId(), dto.getSonarProjectKey(), dto.isBindingSuggestionDisabled());
   }
@@ -98,6 +100,14 @@ public class ConfigurationService {
     if (boundEvent != null) {
       applicationEventPublisher.publishEvent(boundEvent);
     }
+  }
+
+  @EventListener
+  public void connectionRemoved(ConnectionConfigurationRemovedEvent event) {
+    var bindingConfigurationByConfigScope = repository.removeBindingForConnection(event.getRemovedConnectionId());
+    bindingConfigurationByConfigScope.forEach((configScope, bindingConfiguration) ->
+      applicationEventPublisher.publishEvent(new BindingConfigChangedEvent(configScope, bindingConfiguration,
+        BindingConfiguration.noBinding(bindingConfiguration.isBindingSuggestionDisabled()))));
   }
 
   @CheckForNull

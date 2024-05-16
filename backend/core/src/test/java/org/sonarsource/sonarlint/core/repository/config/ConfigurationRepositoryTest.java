@@ -42,7 +42,7 @@ class ConfigurationRepositoryTest {
 
   @Test
   void it_should_not_find_any_binding_on_an_unbound_scope() {
-    configurationRepository.addOrReplace(new ConfigurationScope("id", null, true, "name"), new BindingConfiguration(null, null, true));
+    configurationRepository.addOrReplace(new ConfigurationScope("id", null, true, "name"), BindingConfiguration.noBinding(true));
 
     var binding = configurationRepository.getEffectiveBinding("id");
 

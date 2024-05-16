@@ -27,7 +27,7 @@ class BindingConfigurationTest {
 
   @Test
   void test_isBound() {
-    BindingConfiguration noBinding = new BindingConfiguration(null, null, true);
+    BindingConfiguration noBinding = BindingConfiguration.noBinding();
     assertThat(noBinding.isBound()).isFalse();
 
     BindingConfiguration noProjectKey = new BindingConfiguration("connection", null, true);
