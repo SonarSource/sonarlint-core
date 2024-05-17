@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -37,7 +37,7 @@ abstract class AbstractRpcServiceDelegate {
 
   private final Supplier<BeanFactory> beanFactorySupplier;
   private final ExecutorServiceShutdownWatchable<?> requestsExecutor;
-  private final ExecutorService requestAndNotificationsSequentialExecutor;
+  private final Executor requestAndNotificationsSequentialExecutor;
   private final Supplier<RpcClientLogOutput> logOutputSupplier;
 
   protected AbstractRpcServiceDelegate(SonarLintRpcServerImpl server) {
@@ -62,7 +62,7 @@ abstract class AbstractRpcServiceDelegate {
     // We can maybe cancel early
     var sequentialFuture = CompletableFuture.runAsync(cancelMonitor::checkCanceled, requestAndNotificationsSequentialExecutor);
     // Then requests are processed asynchronously to not block the processing of notifications, responses and cancellations
-    var requestFuture = sequentialFuture.thenApplyAsync(unused -> withLogger(() -> {
+    var requestFuture = sequentialFuture.thenApplyAsync(unused -> computeWithLogger(() -> {
       cancelMonitor.checkCanceled();
       return code.apply(cancelMonitor);
     }, configScopeId), requestsExecutor);
@@ -74,10 +74,6 @@ abstract class AbstractRpcServiceDelegate {
     return requestFuture;
   }
 
-  protected CompletableFuture<Void> runAsync(Consumer<SonarLintCancelMonitor> code) {
-    return runAsync(code, null);
-  }
-
   protected CompletableFuture<Void> runAsync(Consumer<SonarLintCancelMonitor> code, @Nullable String configScopeId) {
     var cancelMonitor = new SonarLintCancelMonitor();
     cancelMonitor.watchForShutdown(requestsExecutor);
@@ -86,7 +82,7 @@ abstract class AbstractRpcServiceDelegate {
     var sequentialFuture = CompletableFuture.runAsync(cancelMonitor::checkCanceled, requestAndNotificationsSequentialExecutor);
     // Then requests are processed asynchronously to not block the processing of notifications, responses and cancellations
     var requestFuture = sequentialFuture.<Void>thenApplyAsync(unused -> {
-      withLogger(() -> {
+      doWithLogger(() -> {
         cancelMonitor.checkCanceled();
         code.accept(cancelMonitor);
       }, configScopeId);
@@ -108,11 +104,17 @@ abstract class AbstractRpcServiceDelegate {
     notify(code, null);
   }
 
-  protected void notify(Runnable code, String configScopeId) {
-    requestAndNotificationsSequentialExecutor.submit(() -> withLogger(code, configScopeId));
+  protected void notify(Runnable code, @Nullable String configScopeId) {
+    requestAndNotificationsSequentialExecutor.execute(() -> doWithLogger(() -> {
+      try {
+        code.run();
+      } catch (Throwable throwable) {
+        SonarLintLogger.get().error("Error when handling notification", throwable);
+      }
+    }, configScopeId));
   }
 
-  private void withLogger(Runnable code, @Nullable String configScopeId) {
+  private void doWithLogger(Runnable code, @Nullable String configScopeId) {
     SonarLintLogger.setTarget(logOutputSupplier.get());
     SonarLintMDC.putConfigScopeId(configScopeId);
     logOutputSupplier.get().setConfigScopeId(configScopeId);
@@ -125,7 +127,7 @@ abstract class AbstractRpcServiceDelegate {
     }
   }
 
-  private <G> G withLogger(Supplier<G> code, @Nullable String configScopeId) {
+  private <G> G computeWithLogger(Supplier<G> code, @Nullable String configScopeId) {
     SonarLintLogger.setTarget(logOutputSupplier.get());
     SonarLintMDC.putConfigScopeId(configScopeId);
     logOutputSupplier.get().setConfigScopeId(configScopeId);

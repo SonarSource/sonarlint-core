@@ -22,9 +22,6 @@ package org.sonarsource.sonarlint.core.rpc.client;
 import java.io.Closeable;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.time.Instant;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -32,8 +29,6 @@ import java.util.concurrent.TimeUnit;
 import org.sonarsource.sonarlint.core.rpc.protocol.SingleThreadedMessageConsumer;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintLauncherBuilder;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 
 public class ClientJsonRpcLauncher implements Closeable {
 
@@ -65,19 +60,11 @@ public class ClientJsonRpcLauncher implements Closeable {
       .setOutput(out)
       .setExecutorService(messageReaderExecutor)
       .wrapMessages(m -> new SingleThreadedMessageConsumer(m, messageWriterExecutor,
-        ex -> clientDelegate.log(new LogParams(LogLevel.ERROR, null, null, stackTraceToString(ex), Instant.now()))))
+        ex -> client.logClientSideError("Error consuming RPC message", ex)))
       .create();
 
     this.serverProxy = clientLauncher.getRemoteProxy();
     this.future = clientLauncher.startListening();
-  }
-
-
-  private static String stackTraceToString(Throwable t) {
-    var stringWriter = new StringWriter();
-    var printWriter = new PrintWriter(stringWriter);
-    t.printStackTrace(printWriter);
-    return stringWriter.toString();
   }
 
   public SonarLintRpcServer getServerProxy() {
