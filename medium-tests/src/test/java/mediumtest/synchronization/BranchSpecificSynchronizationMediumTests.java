@@ -58,7 +58,7 @@ class BranchSpecificSynchronizationMediumTests {
 
   @Test
   void it_should_automatically_synchronize_bound_projects_that_have_an_active_branch() {
-    server = newSonarQubeServer("9.6")
+    server = newSonarQubeServer()
       .withProject("projectKey",
         project -> project.withBranch("main",
           branch -> branch.withIssue("key", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", Instant.now(), new TextRange(1, 0, 3, 4))
@@ -81,7 +81,7 @@ class BranchSpecificSynchronizationMediumTests {
 
   @Test
   void it_should_honor_binding_inheritance() {
-    server = newSonarQubeServer("9.6")
+    server = newSonarQubeServer()
       .withProject("projectKey",
         project -> project
           .withBranch("branchNameParent",
@@ -129,7 +129,7 @@ class BranchSpecificSynchronizationMediumTests {
   void it_should_report_progress_to_the_client_when_synchronizing() {
     var fakeClient = newFakeClient()
       .build();
-    server = newSonarQubeServer("9.6")
+    server = newSonarQubeServer()
       .withProject("projectKey")
       .withProject("projectKey2")
       .start();
@@ -160,7 +160,7 @@ class BranchSpecificSynchronizationMediumTests {
       .when(fakeClient)
       .startProgress(any());
 
-    server = newSonarQubeServer("9.6")
+    server = newSonarQubeServer()
       .withProject("projectKey")
       .withProject("projectKey2")
       .start();
@@ -182,7 +182,7 @@ class BranchSpecificSynchronizationMediumTests {
   void it_should_skip_second_consecutive_synchronization_for_the_same_server_project() {
     var fakeClient = newFakeClient()
       .build();
-    server = newSonarQubeServer("9.6")
+    server = newSonarQubeServer()
       .withProject("projectKey")
       .withProject("projectKey2")
       .start();
@@ -196,7 +196,7 @@ class BranchSpecificSynchronizationMediumTests {
 
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
       new ConfigurationScopeDto("configScope2", null, true, "Child1", new BindingConfigurationDto("connectionId", "projectKey", true))
-      )));
+    )));
 
     verify(fakeClient, after(2000).times(0)).didSynchronizeConfigurationScopes(any());
   }
