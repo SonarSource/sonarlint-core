@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.reporting.PreviouslyRaisedFindingsRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaiseHotspotsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
@@ -52,14 +53,17 @@ public class FindingReportingService {
   private final SonarLintRpcClient client;
   private final ConfigurationRepository configurationRepository;
   private final NewCodeService newCodeService;
+  private final PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository;
   private final Map<URI, Collection<TrackedIssue>> issuesPerFileUri = new ConcurrentHashMap<>();
   private final Map<URI, Collection<TrackedIssue>> securityHotspotsPerFileUri = new ConcurrentHashMap<>();
   private final Map<String, Alarm> streamingTriggeringAlarmByConfigScopeId = new ConcurrentHashMap<>();
 
-  public FindingReportingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, NewCodeService newCodeService) {
+  public FindingReportingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, NewCodeService newCodeService,
+    PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.newCodeService = newCodeService;
+    this.previouslyRaisedFindingsRepository = previouslyRaisedFindingsRepository;
   }
 
   public void stream(String configurationScopeId, UUID analysisId, TrackedIssue trackedIssue) {
@@ -73,14 +77,17 @@ public class FindingReportingService {
 
   private void triggerStreaming(String configurationScopeId, UUID analysisId) {
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId).orElseGet(NewCodeDefinition::withAlwaysNew);
-    client.raiseIssues(new RaiseIssuesParams(configurationScopeId, issuesPerFileUri.entrySet().stream()
+    var issuesToRaise = issuesPerFileUri.entrySet().stream()
       .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedIssueDto(issue, newCodeDefinition)).collect(toList())))
-      .collect(toMap(Map.Entry::getKey, Map.Entry::getValue)), true,
+      .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+    previouslyRaisedFindingsRepository.addOrReplaceIssues(configurationScopeId, issuesToRaise);
+    client.raiseIssues(new RaiseIssuesParams(configurationScopeId, issuesToRaise, true,
       analysisId));
-    client.raiseHotspots(new RaiseHotspotsParams(configurationScopeId,
-      securityHotspotsPerFileUri.entrySet().stream()
-        .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedHotspotDto(issue, newCodeDefinition)).collect(toList())))
-        .collect(toMap(Map.Entry::getKey, Map.Entry::getValue)),
+    var hotspotsToRaise = securityHotspotsPerFileUri.entrySet().stream()
+      .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedHotspotDto(issue, newCodeDefinition)).collect(toList())))
+      .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+    previouslyRaisedFindingsRepository.addOrReplaceHotspots(configurationScopeId, hotspotsToRaise);
+    client.raiseHotspots(new RaiseHotspotsParams(configurationScopeId, hotspotsToRaise,
       true,
       analysisId));
   }
@@ -91,10 +98,12 @@ public class FindingReportingService {
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId).orElseGet(NewCodeDefinition::withAlwaysNew);
     var issuesToRaise = getIssuesToRaise(issuesToReport, newCodeDefinition);
     var hotspotsToRaise = getHotspotsToRaise(hotspotsToReport, newCodeDefinition);
+    previouslyRaisedFindingsRepository.addOrReplaceIssues(configurationScopeId, issuesToRaise);
     client.raiseIssues(new RaiseIssuesParams(configurationScopeId, issuesToRaise, false, analysisId));
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     if (effectiveBindingOpt.isPresent()) {
       // security hotspots are only supported in connected mode
+      previouslyRaisedFindingsRepository.addOrReplaceHotspots(configurationScopeId, hotspotsToRaise);
       client.raiseHotspots(new RaiseHotspotsParams(configurationScopeId, hotspotsToRaise, false, analysisId));
     }
   }

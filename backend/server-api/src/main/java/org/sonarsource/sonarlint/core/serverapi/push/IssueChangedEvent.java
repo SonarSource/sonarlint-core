@@ -49,16 +49,25 @@ public class IssueChangedEvent implements SonarProjectEvent {
     return impactedIssueKeys;
   }
 
+  /**
+   * @return null when not changed
+   */
   @CheckForNull
   public IssueSeverity getUserSeverity() {
     return userSeverity;
   }
 
+  /**
+   * @return null when not changed
+   */
   @CheckForNull
   public RuleType getUserType() {
     return userType;
   }
 
+  /**
+   * @return null when not changed
+   */
   @CheckForNull
   public Boolean getResolved() {
     return resolved;

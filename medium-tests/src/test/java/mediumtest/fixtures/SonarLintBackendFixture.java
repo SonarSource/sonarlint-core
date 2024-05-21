@@ -53,6 +53,8 @@ import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintCancelChecker;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
@@ -564,6 +566,8 @@ public class SonarLintBackendFixture {
     private final Map<String, String> matchedBranchPerScopeId;
     private final Map<String, Path> baseDirsByConfigScope;
     private final Map<String, List<ClientFileDto>> initialFilesByConfigScope;
+    Map<String, Map<URI, List<RaisedIssueDto>>> raisedIssuesByScopeId = new HashMap<>();
+    Map<String, Map<URI, List<RaisedHotspotDto>>> raisedHotspotsByScopeId = new HashMap<>();
 
     public FakeSonarLintRpcClient(Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId, boolean printLogsToStdOut,
       Map<String, String> matchedBranchPerScopeId, Map<String, Path> baseDirsByConfigScope, Map<String, List<ClientFileDto>> initialFilesByConfigScope) {
@@ -739,6 +743,32 @@ public class SonarLintBackendFixture {
     @Override
     public void didChangeAnalysisReadiness(Set<String> configurationScopeIds, boolean areReadyForAnalysis) {
 
+    }
+
+    @Override
+    public void raiseIssues(String configurationScopeId, Map<URI, List<RaisedIssueDto>> issuesByFileUri, boolean isIntermediatePublication, @Nullable UUID analysisId) {
+      raisedIssuesByScopeId.put(configurationScopeId, issuesByFileUri);
+    }
+
+    @Override
+    public void raiseHotspots(String configurationScopeId, Map<URI, List<RaisedHotspotDto>> issuesByFileUri, boolean isIntermediatePublication, @org.jetbrains.annotations.Nullable UUID analysisId) {
+      raisedHotspotsByScopeId.put(configurationScopeId, issuesByFileUri);
+    }
+
+    public Map<URI, List<RaisedIssueDto>> getRaisedIssuesForScopeId(String configurationScopeId) {
+      return raisedIssuesByScopeId.get(configurationScopeId);
+    }
+
+    public Map<URI, List<RaisedHotspotDto>> getRaisedHotspotsForScopeId(String configurationScopeId) {
+      return raisedHotspotsByScopeId.get(configurationScopeId);
+    }
+
+    public void cleanRaisedIssues() {
+      raisedIssuesByScopeId.clear();
+    }
+
+    public void cleanRaisedHotspots() {
+      raisedHotspotsByScopeId.clear();
     }
 
     public Queue<ShowSmartNotificationParams> getSmartNotificationsToShow() {

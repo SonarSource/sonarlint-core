@@ -160,7 +160,7 @@ public class ConfigurationRepository {
       .collect(Collectors.toList());
   }
 
-  public Collection<ConfigurationScope> getAllBindbableUnboundScopes() {
+  public Collection<ConfigurationScope> getAllBindableUnboundScopes() {
     return configScopePerId.entrySet()
       .stream()
       .filter(e -> e.getValue().isBindable())

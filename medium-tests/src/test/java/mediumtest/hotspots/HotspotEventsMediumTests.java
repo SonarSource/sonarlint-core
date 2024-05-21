@@ -19,18 +19,38 @@
  */
 package mediumtest.hotspots;
 
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.ServerFixture;
 import mediumtest.fixtures.SonarLintTestRpcServer;
+import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
+import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
+import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -39,22 +59,32 @@ import static com.github.tomakehurst.wiremock.client.WireMock.okForContentType;
 import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
+import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static mediumtest.fixtures.storage.ServerSecurityHotspotFixture.aServerHotspot;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 
 class HotspotEventsMediumTests {
 
   @RegisterExtension
   static SonarLintLogTester logTester = new SonarLintLogTester();
-
+  private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
   private SonarLintTestRpcServer backend;
+  private ServerFixture.Server serverWithHotspots;
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
     backend.shutdown().get();
+    if (serverWithHotspots != null) {
+      serverWithHotspots.shutdown();
+    }
   }
 
   @Nested
@@ -125,10 +155,105 @@ class HotspotEventsMediumTests {
       await().atMost(Duration.ofSeconds(4)).untilAsserted(() -> assertThat(readHotspots("connectionId", "projectKey", "branchName", "file/path"))
         .isEmpty());
     }
+
+    @Test
+    void should_republish_hotspots_without_closed_one(@TempDir Path baseDir) {
+      var filePath = createFile(baseDir, "Foo.java",
+        "public class Foo {\n" +
+          "\n" +
+          "  void foo() {\n" +
+          "    String password = \"blue\";\n" +
+          "    String passwordD = \"red\";\n" +
+          "  }\n" +
+          "}\n");
+      var fileUri = filePath.toUri();
+      var connectionId = "connectionId";
+      var branchName = "branchName";
+      var projectKey = "projectKey";
+      var serverHotspotKey1 = "myHotspotKey1";
+      var serverHotspotKey2 = "myHotspotKey2";
+      var client = newFakeClient()
+        .withToken(connectionId, "token")
+        .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
+        .build();
+      when(client.matchSonarProjectBranch(eq(CONFIG_SCOPE_ID), eq("main"), eq(Set.of("main", branchName)), any())).thenReturn(branchName);
+      var introductionDate = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+      serverWithHotspots = newSonarQubeServer("10.4")
+        .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java").withActiveRule("java:S2068", activeRule -> activeRule
+          .withSeverity(IssueSeverity.MAJOR)
+        ))
+        .withProject(projectKey,
+          project -> project
+            .withQualityProfile("qpKey")
+            .withBranch(branchName,
+              branch -> branch.withHotspot(serverHotspotKey1, hotspot -> hotspot
+                  .withFilePath(baseDir.relativize(filePath).toString())
+                  .withStatus(HotspotReviewStatus.TO_REVIEW)
+                  .withVulnerabilityProbability(VulnerabilityProbability.HIGH)
+                  .withTextRange(new TextRange(4, 11, 4, 19))
+                  .withRuleKey("java:S2068")
+                  .withMessage("'password' detected in this expression, review this potentially hard-coded password.")
+                  .withCreationDate(introductionDate)
+                  .withAuthor("author")
+                )
+                .withHotspot(serverHotspotKey2, hotspot -> hotspot
+                  .withFilePath(baseDir.relativize(filePath).toString())
+                  .withStatus(HotspotReviewStatus.TO_REVIEW)
+                  .withVulnerabilityProbability(VulnerabilityProbability.HIGH)
+                  .withTextRange(new TextRange(5, 11, 5, 20))
+                  .withRuleKey("java:S2068")
+                  .withMessage("'password' detected in this expression, review this potentially hard-coded password.")
+                  .withCreationDate(introductionDate)
+                  .withAuthor("author")
+                )
+            ))
+        .withPlugin(TestPlugin.JAVA)
+        .start();
+
+      serverWithHotspots.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java")
+        .inScenario("Single event")
+        .whenScenarioStateIs(STARTED)
+        .willReturn(okForContentType("text/event-stream", "event: SecurityHotspotClosed\n" +
+          "data: {" +
+          "    \"key\": \"myHotspotKey1\"," +
+          "    \"projectKey\": \"projectKey\"," +
+          "    \"filePath\": \"Foo.java\"" +
+          "}\n\n")
+          // Add a delay to ensure event will arrive after the first analysis
+          .withFixedDelay(5000))
+        .willSetStateTo("Event delivered"));
+      // avoid later reconnection
+      serverWithHotspots.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java")
+        .inScenario("Single event")
+        .whenScenarioStateIs("Event delivered")
+        .willReturn(notFound()));
+      backend = newBackend()
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
+        .withSecurityHotspotsEnabled()
+        .withServerSentEventsEnabled()
+        .withFullSynchronization()
+        .withSonarQubeConnection(connectionId, serverWithHotspots)
+        .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
+        .build(client);
+
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
+      analyzeFileAndGetHotspots(fileUri, client);
+      var raisedHotspots = client.getRaisedHotspotsForScopeId(CONFIG_SCOPE_ID).get(fileUri);
+      assertThat(raisedHotspots).hasSize(2);
+      client.cleanRaisedHotspots();
+
+      await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> assertThat(client.getRaisedHotspotsForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
+      raisedHotspots = client.getRaisedHotspotsForScopeId(CONFIG_SCOPE_ID).get(fileUri);
+
+      assertThat(raisedHotspots).hasSize(1);
+      var raisedHotspot = raisedHotspots.get(0);
+      assertThat(raisedHotspot.getServerKey()).isEqualTo(serverHotspotKey2);
+    }
   }
 
   @Nested
   class WhenReceivingSecurityHotspotChangedEvent {
+
     @Test
     void it_should_update_hotspot_in_storage_when_changing_status() {
       var server = newSonarQubeServer("10.0")
@@ -188,6 +313,118 @@ class HotspotEventsMediumTests {
         .extracting(ServerHotspot::getKey, ServerHotspot::getAssignee)
         .containsOnly(tuple("AYhSN6mVrRF_krvNbHl1", "assigneeEmail")));
     }
+
+
+    @Test
+    void should_raise_hotspot_with_changed_data(@TempDir Path baseDir) {
+      var filePath = createFile(baseDir, "Foo.java",
+        "public class Foo {\n" +
+          "\n" +
+          "  void foo() {\n" +
+          "    String password = \"blue\";\n" +
+          "  }\n" +
+          "}\n");
+      var fileUri = filePath.toUri();
+      var connectionId = "connectionId";
+      var branchName = "branchName";
+      var projectKey = "projectKey";
+      var serverHotspotKey = "myHotspotKey";
+      var client = newFakeClient()
+        .withToken(connectionId, "token")
+        .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
+        .build();
+      when(client.matchSonarProjectBranch(eq(CONFIG_SCOPE_ID), eq("main"), eq(Set.of("main", branchName)), any())).thenReturn(branchName);
+      var introductionDate = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+      serverWithHotspots = newSonarQubeServer("10.4")
+        .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java").withActiveRule("java:S2068", activeRule -> activeRule
+          .withSeverity(IssueSeverity.MAJOR)
+        ))
+        .withProject(projectKey,
+          project -> project
+            .withQualityProfile("qpKey")
+            .withBranch(branchName,
+              branch -> branch.withHotspot(serverHotspotKey, hotspot -> hotspot
+                  .withFilePath(baseDir.relativize(filePath).toString())
+                  .withStatus(HotspotReviewStatus.TO_REVIEW)
+                  .withVulnerabilityProbability(VulnerabilityProbability.HIGH)
+                  .withTextRange(new TextRange(4, 11, 4, 19))
+                  .withRuleKey("java:S2068")
+                  .withMessage("'password' detected in this expression, review this potentially hard-coded password.")
+                  .withCreationDate(introductionDate)
+                  .withAuthor("author")
+                )
+            ))
+        .withPlugin(TestPlugin.JAVA)
+        .start();
+
+      serverWithHotspots.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java")
+        .inScenario("Single event")
+        .whenScenarioStateIs(STARTED)
+        .willReturn(okForContentType("text/event-stream", "event: SecurityHotspotChanged\n" +
+          "data: {" +
+          "  \"key\": \"myHotspotKey\"," +
+          "  \"projectKey\": \"projectKey\"," +
+          "  \"updateDate\": 1685007187000," +
+          "  \"status\": \"REVIEWED\"," +
+          "  \"assignee\": \"assigneeEmail\"," +
+          "  \"resolution\": \"SAFE\"," +
+          "  \"filePath\": \"" + baseDir.relativize(filePath) + "\"" +
+          "}\n\n")
+          // Add a delay to ensure event will arrive after the first analysis
+          .withFixedDelay(5000))
+        .willSetStateTo("Event delivered"));
+      // avoid later reconnection
+      serverWithHotspots.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java")
+        .inScenario("Single event")
+        .whenScenarioStateIs("Event delivered")
+        .willReturn(notFound()));
+      backend = newBackend()
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
+        .withSecurityHotspotsEnabled()
+        .withServerSentEventsEnabled()
+        .withFullSynchronization()
+        .withSonarQubeConnection(connectionId, serverWithHotspots)
+        .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
+        .build(client);
+
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
+      analyzeFileAndGetHotspots(fileUri, client);
+      client.cleanRaisedHotspots();
+
+      await().atMost(Duration.ofMinutes(15)).untilAsserted(() -> assertThat(client.getRaisedHotspotsForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
+      var raisedHotspots = client.getRaisedHotspotsForScopeId(CONFIG_SCOPE_ID).get(fileUri);
+
+      assertThat(raisedHotspots).hasSize(1);
+      var raisedHotspot = raisedHotspots.get(0);
+      assertThat(raisedHotspot.getServerKey()).isEqualTo(serverHotspotKey);
+      assertThat(raisedHotspot.getStatus()).isEqualTo(HotspotStatus.SAFE);
+    }
+  }
+
+  private static Path createFile(Path folderPath, String fileName, String content) {
+    var filePath = folderPath.resolve(fileName);
+    try {
+      Files.writeString(filePath, content);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    return filePath;
+  }
+
+  private void analyzeFileAndGetHotspots(URI fileUri, SonarLintRpcClientDelegate client) {
+    var analysisId = UUID.randomUUID();
+    var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
+        new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true, System.currentTimeMillis()))
+      .join();
+    var publishedHotspotsByFile = getPublishedHotspots(client, analysisId);
+    assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
+    assertThat(publishedHotspotsByFile).containsOnlyKeys(fileUri);
+  }
+
+  private Map<URI, List<RaisedHotspotDto>> getPublishedHotspots(SonarLintRpcClientDelegate client, UUID analysisId) {
+    ArgumentCaptor<Map<URI, List<RaisedHotspotDto>>> trackedIssuesCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(client, timeout(300)).raiseHotspots(eq(CONFIG_SCOPE_ID), trackedIssuesCaptor.capture(), eq(false), eq(analysisId));
+    return trackedIssuesCaptor.getValue();
   }
 
   private Collection<ServerHotspot> readHotspots(String connectionId, String projectKey, String branchName, String filePath) {

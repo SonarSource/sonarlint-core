@@ -24,7 +24,10 @@ import java.util.List;
 import java.util.UUID;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.VulnerabilityProbability;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
@@ -134,4 +137,92 @@ public abstract class RaisedFindingDto {
     return ruleDescriptionContextKey;
   }
 
+  public RaisedFindingDtoBuilder builder() {
+    return RaisedFindingDtoBuilder.from(this);
+  }
+
+  public static class RaisedFindingDtoBuilder {
+    private final UUID id;
+    private final String serverKey;
+    private final String ruleKey;
+    private final String primaryMessage;
+    private IssueSeverity severity;
+    private RuleType type;
+    private final CleanCodeAttribute cleanCodeAttribute;
+    private final List<ImpactDto> impacts;
+    private final Instant introductionDate;
+    private final boolean isOnNewCode;
+    private boolean resolved;
+    private final TextRangeDto textRange;
+    private final List<IssueFlowDto> flows;
+    private final List<QuickFixDto> quickFixes;
+    private final String ruleDescriptionContextKey;
+    private HotspotStatus status;
+    private final VulnerabilityProbability vulnerabilityProbability;
+
+    private RaisedFindingDtoBuilder(UUID id, @Nullable String serverKey, String ruleKey, String primaryMessage, IssueSeverity severity, RuleType type,
+      CleanCodeAttribute cleanCodeAttribute, List<ImpactDto> impacts, Instant introductionDate, boolean isOnNewCode, boolean resolved, @Nullable TextRangeDto textRange,
+      List<IssueFlowDto> flows, List<QuickFixDto> quickFixes, @Nullable String ruleDescriptionContextKey, @Nullable HotspotStatus status,
+      @Nullable VulnerabilityProbability vulnerabilityProbability) {
+      this.id = id;
+      this.serverKey = serverKey;
+      this.ruleKey = ruleKey;
+      this.primaryMessage = primaryMessage;
+      this.severity = severity;
+      this.type = type;
+      this.cleanCodeAttribute = cleanCodeAttribute;
+      this.impacts = impacts;
+      this.introductionDate = introductionDate;
+      this.isOnNewCode = isOnNewCode;
+      this.resolved = resolved;
+      this.textRange = textRange;
+      this.flows = flows;
+      this.quickFixes = quickFixes;
+      this.ruleDescriptionContextKey = ruleDescriptionContextKey;
+      this.status = status;
+      this.vulnerabilityProbability = vulnerabilityProbability;
+    }
+
+    public static RaisedFindingDtoBuilder from(RaisedFindingDto dto) {
+      HotspotStatus status = null;
+      VulnerabilityProbability vulnerabilityProbability = null;
+      if (dto instanceof RaisedHotspotDto) {
+        status = ((RaisedHotspotDto) dto).getStatus();
+        vulnerabilityProbability = ((RaisedHotspotDto) dto).getVulnerabilityProbability();
+      }
+      return new RaisedFindingDtoBuilder(dto.getId(), dto.getServerKey(), dto.getRuleKey(), dto.getPrimaryMessage(), dto.getSeverity(), dto.getType(), dto.getCleanCodeAttribute(),
+        dto.getImpacts(), dto.getIntroductionDate(), dto.isOnNewCode(), dto.isResolved(), dto.getTextRange(), dto.getFlows(), dto.getQuickFixes(),
+        dto.getRuleDescriptionContextKey(), status, vulnerabilityProbability);
+    }
+
+    public RaisedFindingDtoBuilder withResolution(boolean resolved) {
+      this.resolved = resolved;
+      return this;
+    }
+
+    public RaisedFindingDtoBuilder withSeverity(IssueSeverity severity) {
+      this.severity = severity;
+      return this;
+    }
+
+    public RaisedFindingDtoBuilder withType(RuleType type) {
+      this.type = type;
+      return this;
+    }
+
+    public RaisedFindingDtoBuilder withHotspotStatus(HotspotStatus status) {
+      this.status = status;
+      return this;
+    }
+
+    public RaisedIssueDto buildIssue() {
+      return new RaisedIssueDto(id, serverKey, ruleKey, primaryMessage, severity, type, cleanCodeAttribute, impacts,
+        introductionDate, isOnNewCode, resolved, textRange, flows, quickFixes, ruleDescriptionContextKey);
+    }
+
+    public RaisedHotspotDto buildHotspot() {
+      return new RaisedHotspotDto(id, serverKey, ruleKey, primaryMessage, severity, type, cleanCodeAttribute, impacts,
+        introductionDate, isOnNewCode, resolved, textRange, flows, quickFixes, ruleDescriptionContextKey, vulnerabilityProbability, status);
+    }
+  }
 }
