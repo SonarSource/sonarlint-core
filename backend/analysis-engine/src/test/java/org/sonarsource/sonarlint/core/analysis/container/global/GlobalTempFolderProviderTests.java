@@ -36,15 +36,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class GlobalTempFolderProviderTests {
 
-  @TempDir
-  private Path workingDir;
-
-  private final GlobalTempFolderProvider tempFolderProvider = new GlobalTempFolderProvider();
-
   @Test
-  void createTempFolderProps() throws Exception {
+  void createTempFolderProps(@TempDir Path workingDir) {
 
-    TempFolder tempFolder = tempFolderProvider.provide(AnalysisEngineConfiguration.builder().setWorkDir(workingDir).build());
+    TempFolder tempFolder = new GlobalTempFolderProvider().provide(AnalysisEngineConfiguration.builder().setWorkDir(workingDir).build());
     tempFolder.newDir();
     tempFolder.newFile();
     assertThat(getCreatedTempDir(workingDir)).exists();
@@ -54,7 +49,7 @@ class GlobalTempFolderProviderTests {
   }
 
   @Test
-  void cleanUpOld() throws IOException {
+  void cleanUpOld(@TempDir Path workingDir) throws IOException {
     var creationTime = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(100);
 
     for (var i = 0; i < 3; i++) {
@@ -63,7 +58,7 @@ class GlobalTempFolderProviderTests {
       setFileCreationDate(tmp, creationTime);
     }
 
-    tempFolderProvider.provide(AnalysisEngineConfiguration.builder().setWorkDir(workingDir).build());
+    new GlobalTempFolderProvider().provide(AnalysisEngineConfiguration.builder().setWorkDir(workingDir).build());
     // this also checks that all other temps were deleted
     assertThat(getCreatedTempDir(workingDir)).exists();
 
