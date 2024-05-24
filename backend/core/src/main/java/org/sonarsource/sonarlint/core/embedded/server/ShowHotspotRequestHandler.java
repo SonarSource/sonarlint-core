@@ -41,6 +41,8 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarQubeConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.ShowHotspotParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
@@ -77,8 +79,9 @@ public class ShowHotspotRequestHandler implements HttpRequestHandler {
       return;
     }
     telemetryService.showHotspotRequestReceived();
-
-    requestHandlerBindingAssistant.assistConnectionAndBindingIfNeededAsync(showHotspotQuery.serverUrl, null, null, showHotspotQuery.projectKey,
+    var sonarQubeConnectionParams = new SonarQubeConnectionParams(showHotspotQuery.serverUrl, null, null);
+    var connectionParams = new AssistCreatingConnectionParams(sonarQubeConnectionParams);
+    requestHandlerBindingAssistant.assistConnectionAndBindingIfNeededAsync(connectionParams, showHotspotQuery.projectKey,
       (connectionId, configScopeId, cancelMonitor) -> {
         if (configScopeId != null) {
           showHotspotForScope(connectionId, configScopeId, showHotspotQuery.hotspotKey, cancelMonitor);

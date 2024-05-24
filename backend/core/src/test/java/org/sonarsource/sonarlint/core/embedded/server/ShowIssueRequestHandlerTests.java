@@ -30,12 +30,14 @@ import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.Method;
+import org.apache.hc.core5.http.ProtocolException;
 import org.apache.hc.core5.http.message.BasicClassicHttpRequest;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
@@ -148,44 +150,98 @@ class ShowIssueRequestHandlerTests {
   }
 
   @Test
-  void should_extract_query_from_request_without_token() {
-    var issueQuery = ShowIssueRequestHandler.extractQuery(new BasicClassicHttpRequest("GET", "/sonarlint/api/issues/show?server=" +
-      "https%3A%2F%2Fnext.sonarqube.com%2Fsonarqube&project=org.sonarsource.sonarlint" +
-      ".core%3Asonarlint-core-parent&issue=AX2VL6pgAvx3iwyNtLyr"));
+  void should_extract_query_from_sq_request_without_token() throws ProtocolException {
+    SonarCloudActiveEnvironment sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
+    ShowIssueRequestHandler showIssueRequestHandler = new ShowIssueRequestHandler(null, null, null, null, null, sonarCloudActiveEnvironment);
+    var issueQuery = showIssueRequestHandler.extractQuery(new BasicClassicHttpRequest("GET", "/sonarlint/api/issues/show" +
+      "?server=https%3A%2F%2Fnext.sonarqube.com%2Fsonarqube" +
+      "&project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
+      "&issue=AX2VL6pgAvx3iwyNtLyr" +
+      "&organizationKey=sample-organization"));
     assertThat(issueQuery.getServerUrl()).isEqualTo("https://next.sonarqube.com/sonarqube");
     assertThat(issueQuery.getProjectKey()).isEqualTo("org.sonarsource.sonarlint.core:sonarlint-core-parent");
     assertThat(issueQuery.getIssueKey()).isEqualTo("AX2VL6pgAvx3iwyNtLyr");
+    assertThat(issueQuery.getOrganizationKey()).isEqualTo("sample-organization");
     assertThat(issueQuery.getTokenName()).isNull();
     assertThat(issueQuery.getTokenValue()).isNull();
   }
 
   @Test
-  void should_extract_query_from_request_with_token() {
-    var issueQuery = ShowIssueRequestHandler.extractQuery(new BasicClassicHttpRequest("GET", "/sonarlint/api/issues/show?server=" +
-      "https%3A%2F%2Fnext.sonarqube.com%2Fsonarqube&project=org.sonarsource.sonarlint" +
-      ".core%3Asonarlint-core-parent&issue=AX2VL6pgAvx3iwyNtLyr&tokenName=abc&tokenValue=123"));
+  void should_extract_query_from_sq_request_with_token() throws ProtocolException {
+    SonarCloudActiveEnvironment sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
+    ShowIssueRequestHandler showIssueRequestHandler = new ShowIssueRequestHandler(null, null, null, null, null, sonarCloudActiveEnvironment);
+    var issueQuery = showIssueRequestHandler.extractQuery(new BasicClassicHttpRequest("GET", "/sonarlint/api/issues/show" +
+      "?server=https%3A%2F%2Fnext.sonarqube.com%2Fsonarqube" +
+      "&project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
+      "&issue=AX2VL6pgAvx3iwyNtLyr&tokenName=abc" +
+      "&organizationKey=sample-organization" +
+      "&tokenValue=123"));
     assertThat(issueQuery.getServerUrl()).isEqualTo("https://next.sonarqube.com/sonarqube");
     assertThat(issueQuery.getProjectKey()).isEqualTo("org.sonarsource.sonarlint.core:sonarlint-core-parent");
     assertThat(issueQuery.getIssueKey()).isEqualTo("AX2VL6pgAvx3iwyNtLyr");
     assertThat(issueQuery.getTokenName()).isEqualTo("abc");
+    assertThat(issueQuery.getOrganizationKey()).isEqualTo("sample-organization");
     assertThat(issueQuery.getTokenValue()).isEqualTo("123");
   }
 
   @Test
-  void should_validate_issue_query() {
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", null, null).isValid()).isTrue();
+  void should_extract_query_from_sc_request_without_token() throws ProtocolException {
+    SonarCloudActiveEnvironment sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
+    ShowIssueRequestHandler showIssueRequestHandler = new ShowIssueRequestHandler(null, null, null, null, null, sonarCloudActiveEnvironment);
+    BasicClassicHttpRequest request = new BasicClassicHttpRequest("GET", "/sonarlint/api/issues/show" +
+      "?project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
+      "&issue=AX2VL6pgAvx3iwyNtLyr" +
+      "&organizationKey=sample-organization");
+    request.addHeader("Origin", SonarCloudActiveEnvironment.PRODUCTION_URI);
+    var issueQuery = showIssueRequestHandler.extractQuery(request);
+    assertThat(issueQuery.getServerUrl()).isEqualTo("https://sonarcloud.io");
+    assertThat(issueQuery.getProjectKey()).isEqualTo("org.sonarsource.sonarlint.core:sonarlint-core-parent");
+    assertThat(issueQuery.getIssueKey()).isEqualTo("AX2VL6pgAvx3iwyNtLyr");
+    assertThat(issueQuery.getOrganizationKey()).isEqualTo("sample-organization");
+    assertThat(issueQuery.getTokenName()).isNull();
+    assertThat(issueQuery.getTokenValue()).isNull();
+  }
 
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("", "project", "issue", "branch", "pullRequest", null, null).isValid()).isFalse();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "", "issue", "branch", "pullRequest", null, null).isValid()).isFalse();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "", "branch", "pullRequest", null, null).isValid()).isFalse();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "", "", null, null).isValid()).isFalse();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", null, null, null).isValid()).isTrue();
+  @Test
+  void should_extract_query_from_sc_request_with_token() throws ProtocolException {
+    SonarCloudActiveEnvironment sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
+    ShowIssueRequestHandler showIssueRequestHandler = new ShowIssueRequestHandler(null, null, null, null, null, sonarCloudActiveEnvironment);
+    BasicClassicHttpRequest request = new BasicClassicHttpRequest("GET", "/sonarlint/api/issues/show" +
+      "?project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
+      "&issue=AX2VL6pgAvx3iwyNtLyr&tokenName=abc" +
+      "&organizationKey=sample-organization" +
+      "&tokenValue=123");
+    request.addHeader("Origin", SonarCloudActiveEnvironment.PRODUCTION_URI);
+    var issueQuery = showIssueRequestHandler.extractQuery(request);
+    assertThat(issueQuery.getServerUrl()).isEqualTo("https://sonarcloud.io");
+    assertThat(issueQuery.getProjectKey()).isEqualTo("org.sonarsource.sonarlint.core:sonarlint-core-parent");
+    assertThat(issueQuery.getIssueKey()).isEqualTo("AX2VL6pgAvx3iwyNtLyr");
+    assertThat(issueQuery.getTokenName()).isEqualTo("abc");
+    assertThat(issueQuery.getOrganizationKey()).isEqualTo("sample-organization");
+    assertThat(issueQuery.getTokenValue()).isEqualTo("123");
+  }
 
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "name", null).isValid()).isFalse();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", null, "value").isValid()).isFalse();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "name", "").isValid()).isFalse();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "", "value").isValid()).isFalse();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "name", "value").isValid()).isTrue();
+  @Test
+  void should_validate_issue_query_for_sq() {
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", null, null, null, false).isValid()).isTrue();
+
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("", "project", "issue", "branch", "pullRequest", null, null, null, false).isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "", "issue", "branch", "pullRequest", null, null, null, false).isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "", "branch", "pullRequest", null, null, null, false).isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "", "", null, null, null, false).isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", null, null, null, null, false).isValid()).isTrue();
+
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "name", null, null, false).isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", null, "value", null, false).isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "name", "", null, false).isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "", "value", null, false).isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "name", "value", null, false).isValid()).isTrue();
+  }
+
+  @Test
+  void should_validate_issue_query_for_sc() {
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery(null, "project", "issue", "branch", "pullRequest", "name", "value", "organizationKey", true).isValid()).isTrue();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery(null, "project", "issue", "branch", "pullRequest", "name", "value", null, true).isValid()).isFalse();
   }
 
   @Test
@@ -214,7 +270,8 @@ class ShowIssueRequestHandlerTests {
     var sonarLintClient = mock(SonarLintRpcClient.class);
     var pathTranslationService = mock(PathTranslationService.class);
     var userTokenService = mock(UserTokenService.class);
+    SonarCloudActiveEnvironment sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
     return new ShowIssueRequestHandler(sonarLintClient, serverApiProvider, telemetryService,
-      new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintClient, repository, configurationRepository, userTokenService), pathTranslationService);
+      new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintClient, repository, configurationRepository, userTokenService, sonarCloudActiveEnvironment), pathTranslationService, sonarCloudActiveEnvironment);
   }
 }
