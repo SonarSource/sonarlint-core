@@ -19,32 +19,47 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.connection;
 
-import javax.annotation.Nullable;
+import com.google.gson.annotations.JsonAdapter;
+import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherSonarQubeSonarCloudConnectionParamsAdapterFactory;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 
 public class AssistCreatingConnectionParams {
-  private final String serverUrl;
-  @Nullable
-  private final String tokenName;
-  @Nullable
-  private final String tokenValue;
+  @JsonAdapter(EitherSonarQubeSonarCloudConnectionParamsAdapterFactory.class)
+  private final Either<SonarQubeConnectionParams, SonarCloudConnectionParams> connectionParams;
 
-  public AssistCreatingConnectionParams(String serverUrl, @Nullable String tokenName, @Nullable String tokenValue) {
-    this.serverUrl = serverUrl;
-    this.tokenName = tokenName;
-    this.tokenValue = tokenValue;
+  public AssistCreatingConnectionParams(Either<SonarQubeConnectionParams, SonarCloudConnectionParams> connectionParams) {
+    this.connectionParams = connectionParams;
   }
 
+  public AssistCreatingConnectionParams(SonarQubeConnectionParams sonarQubeConnection) {
+    this(Either.forLeft(sonarQubeConnection));
+  }
+
+  public AssistCreatingConnectionParams(SonarCloudConnectionParams sonarCloudConnection) {
+    this(Either.forRight(sonarCloudConnection));
+  }
+
+  public Either<SonarQubeConnectionParams, SonarCloudConnectionParams> getConnectionParams() {
+    return connectionParams;
+  }
+
+  /**
+   * @deprecated Use {@link #getConnectionParams()}.getLeft().getServerUrl() instead.
+   */
+  @Deprecated(since = "10.3", forRemoval = true)
   public String getServerUrl() {
-    return serverUrl;
+    return connectionParams.isLeft() ? connectionParams.getLeft().getServerUrl() : null;
   }
 
-  @Nullable
   public String getTokenName() {
-    return tokenName;
+    return connectionParams.isLeft() ?
+      connectionParams.getLeft().getTokenName()
+      : connectionParams.getRight().getTokenName();
   }
 
-  @Nullable
   public String getTokenValue() {
-    return tokenValue;
+    return connectionParams.isLeft() ?
+      connectionParams.getLeft().getTokenValue()
+      : connectionParams.getRight().getTokenValue();
   }
 }

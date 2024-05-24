@@ -35,15 +35,21 @@ import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.HttpStatus;
 import org.apache.hc.core5.http.Method;
+import org.apache.hc.core5.http.NameValuePair;
+import org.apache.hc.core5.http.ProtocolException;
 import org.apache.hc.core5.http.io.HttpRequestHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.net.URIBuilder;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarCloudConnectionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarQubeConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
@@ -69,14 +75,16 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
   private final TelemetryService telemetryService;
   private final RequestHandlerBindingAssistant requestHandlerBindingAssistant;
   private final PathTranslationService pathTranslationService;
+  private final String sonarCloudUrl;
 
   public ShowIssueRequestHandler(SonarLintRpcClient client, ServerApiProvider serverApiProvider, TelemetryService telemetryService,
-    RequestHandlerBindingAssistant requestHandlerBindingAssistant, PathTranslationService pathTranslationService) {
+    RequestHandlerBindingAssistant requestHandlerBindingAssistant, PathTranslationService pathTranslationService, SonarCloudActiveEnvironment sonarCloudActiveEnvironment) {
     this.client = client;
     this.serverApiProvider = serverApiProvider;
     this.telemetryService = telemetryService;
     this.requestHandlerBindingAssistant = requestHandlerBindingAssistant;
     this.pathTranslationService = pathTranslationService;
+    this.sonarCloudUrl = sonarCloudActiveEnvironment.getUri().toString();
   }
 
   @Override
@@ -88,7 +96,11 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
     }
     telemetryService.showIssueRequestReceived();
 
-    requestHandlerBindingAssistant.assistConnectionAndBindingIfNeededAsync(showIssueQuery.serverUrl, showIssueQuery.tokenName, showIssueQuery.tokenValue, showIssueQuery.projectKey,
+    AssistCreatingConnectionParams serverConnectionParams = createAssistServerConnectionParams(showIssueQuery);
+
+    requestHandlerBindingAssistant.assistConnectionAndBindingIfNeededAsync(
+      serverConnectionParams,
+      showIssueQuery.projectKey,
       (connectionId, configScopeId, cancelMonitor) -> {
         if (configScopeId != null) {
           showIssueForScope(connectionId, configScopeId, showIssueQuery.issueKey, showIssueQuery.projectKey, showIssueQuery.branch,
@@ -98,6 +110,21 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
 
     response.setCode(HttpStatus.SC_OK);
     response.setEntity(new StringEntity("OK"));
+  }
+
+  private static AssistCreatingConnectionParams createAssistServerConnectionParams(ShowIssueQuery query) {
+    String tokenName = query.getTokenName();
+    String tokenValue = query.getTokenValue();
+    return query.isSonarCloud ?
+      new AssistCreatingConnectionParams(new SonarCloudConnectionParams(query.getOrganizationKey(), tokenName, tokenValue))
+      : new AssistCreatingConnectionParams(new SonarQubeConnectionParams(query.getServerUrl(), tokenName, tokenValue));
+  }
+
+  private boolean isSonarCloud(ClassicHttpRequest request) throws ProtocolException {
+    return Optional.ofNullable(request.getHeader("Origin"))
+      .map(NameValuePair::getValue)
+      .map(sonarCloudUrl::equals)
+      .orElse(false);
   }
 
   private void showIssueForScope(String connectionId, String configScopeId, String issueKey, String projectKey,
@@ -159,7 +186,7 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
   }
 
   @VisibleForTesting
-  static ShowIssueQuery extractQuery(ClassicHttpRequest request) {
+  ShowIssueQuery extractQuery(ClassicHttpRequest request) throws ProtocolException {
     var params = new HashMap<String, String>();
     try {
       new URIBuilder(request.getUri(), StandardCharsets.UTF_8)
@@ -168,8 +195,10 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
     } catch (URISyntaxException e) {
       // Ignored
     }
-    return new ShowIssueQuery(params.get("server"), params.get("project"), params.get("issue"), params.get("branch"),
-      params.get("pullRequest"), params.get("tokenName"), params.get("tokenValue"));
+    boolean isSonarCloud = isSonarCloud(request);
+    String serverUrl = isSonarCloud ? sonarCloudUrl : params.get("server");
+    return new ShowIssueQuery(serverUrl, params.get("project"), params.get("issue"), params.get("branch"),
+      params.get("pullRequest"), params.get("tokenName"), params.get("tokenValue"), params.get("organizationKey"), isSonarCloud);
   }
 
   @VisibleForTesting
@@ -184,9 +213,12 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
     private final String tokenName;
     @Nullable
     private final String tokenValue;
+    @Nullable
+    private final String organizationKey;
+    private final boolean isSonarCloud;
 
-    public ShowIssueQuery(String serverUrl, String projectKey, String issueKey, String branch,
-      @Nullable String pullRequest, @Nullable String tokenName, @Nullable String tokenValue) {
+    public ShowIssueQuery(String serverUrl, String projectKey, String issueKey, String branch, @Nullable String pullRequest,
+      @Nullable String tokenName, @Nullable String tokenValue, @Nullable String organizationKey, boolean isSonarCloud) {
       this.serverUrl = serverUrl;
       this.projectKey = projectKey;
       this.issueKey = issueKey;
@@ -194,10 +226,14 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
       this.pullRequest = pullRequest;
       this.tokenName = tokenName;
       this.tokenValue = tokenValue;
+      this.organizationKey = organizationKey;
+      this.isSonarCloud = isSonarCloud;
     }
 
     public boolean isValid() {
-      return isNotBlank(serverUrl) && isNotBlank(projectKey) && isNotBlank(issueKey) && isNotBlank(branch)
+      return isNotBlank(projectKey) && isNotBlank(issueKey) && isNotBlank(branch)
+        && (isSonarCloud || isNotBlank(serverUrl))
+        && (!isSonarCloud || isNotBlank(organizationKey))
         && isPullRequestParamValid() && isTokenValid();
     }
 
@@ -225,6 +261,11 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
 
     public String getProjectKey() {
       return projectKey;
+    }
+
+    @Nullable
+    public String getOrganizationKey() {
+      return organizationKey;
     }
 
     public String getIssueKey() {

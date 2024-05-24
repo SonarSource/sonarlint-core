@@ -45,18 +45,23 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpd
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueDetailsDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -308,6 +313,63 @@ class OpenIssueInIdeMediumTests {
 
     verify(fakeClient, timeout(2000)).showIssue(eq(CONFIG_SCOPE_ID), any());
     verify(fakeClient, never()).showMessage(any(), any());
+
+    ArgumentCaptor<AssistCreatingConnectionParams> captor = ArgumentCaptor.captor();
+    verify(fakeClient, timeout(1000)).assistCreatingConnection(captor.capture(), any());
+    assertThat(captor.getAllValues())
+      .extracting(connectionParams -> connectionParams.getConnectionParams().getLeft().getServerUrl(),
+        connectionParams -> connectionParams.getConnectionParams().getLeft() != null,
+        AssistCreatingConnectionParams::getTokenName,
+        AssistCreatingConnectionParams::getTokenValue)
+      .containsExactly(tuple(serverWithIssues.baseUrl(), true, null, null));
+  }
+
+  @Test
+  void it_should_assist_creating_the_connection_when_no_sc_connection() throws Exception {
+    var fakeClient = newFakeClient().build();
+    mockAssistCreatingConnection(fakeClient, CONNECTION_ID);
+    mockAssistBinding(fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
+
+    backend = newBackend()
+      .withSonarCloudUrl("https://sonar.my")
+      .withUnboundConfigScope(CONFIG_SCOPE_ID, SONAR_PROJECT_NAME)
+      .withEmbeddedServer()
+      .build(fakeClient);
+
+    var statusCode = executeOpenSCIssueRequest(ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, "orgKey");
+    assertThat(statusCode).isEqualTo(200);
+
+    verify(fakeClient, timeout(2000)).showIssue(eq(CONFIG_SCOPE_ID), any());
+    verify(fakeClient, never()).showMessage(any(), any());
+
+    ArgumentCaptor<AssistCreatingConnectionParams> captor = ArgumentCaptor.captor();
+    verify(fakeClient, timeout(1000)).assistCreatingConnection(captor.capture(), any());
+    assertThat(captor.getAllValues())
+      .extracting(connectionParams -> connectionParams.getConnectionParams().getRight().getOrganizationKey(),
+        AssistCreatingConnectionParams::getTokenName,
+        AssistCreatingConnectionParams::getTokenValue)
+      .containsExactly(tuple("orgKey", null, null));
+  }
+
+  @Test
+  void it_should_revoke_token_when_exception_thrown_while_assist_creating_the_connection() throws Exception {
+    var fakeClient = newFakeClient().build();
+    doThrow(RuntimeException.class).when(fakeClient).assistCreatingConnection(any(), any());
+
+    backend = newBackend()
+      .withSonarCloudUrl("https://sonar.my")
+      .withUnboundConfigScope(CONFIG_SCOPE_ID, SONAR_PROJECT_NAME)
+      .withEmbeddedServer()
+      .build(fakeClient);
+
+    var statusCode = executeOpenSCIssueRequest(ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, "orgKey", "token-name", "token-value");
+    assertThat(statusCode).isEqualTo(200);
+
+    ArgumentCaptor<LogParams> captor = ArgumentCaptor.captor();
+    verify(fakeClient, after(500).atLeastOnce()).log(captor.capture());
+    assertThat(captor.getAllValues())
+      .extracting(LogParams::getMessage)
+      .containsAnyOf("Revoking token 'token-name'");
   }
 
   @Test
@@ -333,29 +395,33 @@ class OpenIssueInIdeMediumTests {
   }
 
   private int executeOpenIssueRequest(String issueKey, String projectKey, String branch) throws IOException, InterruptedException {
-    HttpRequest request = openIssueWithProjectAndKeyRequest("&issue=" + issueKey, "&project=" + projectKey, "&branch=" + branch);
+    HttpRequest request = openIssueRequest("&issue=" + issueKey, "&project=" + projectKey, "&branch=" + branch);
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    return response.statusCode();
+  }
+
+  private int executeOpenSCIssueRequest(String issueKey, String projectKey, String branch, String organizationKey) throws IOException, InterruptedException {
+    HttpRequest request = this.openIssueRequest("&issue=" + issueKey, "&project=" + projectKey, "&branch=" + branch, "&organizationKey=" + organizationKey);
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    return response.statusCode();
+  }
+
+  private Object executeOpenSCIssueRequest(String issueKey, String projectKey, String branchName, String orgKey, String tokenName, String tokenValue) throws IOException, InterruptedException {
+    HttpRequest request = this.openIssueRequest("&issue=" + issueKey, "&project=" + projectKey, "&branch=" + branchName, "&organizationKey=" + orgKey, "&tokenName=" + tokenName, "&tokenValue=" + tokenValue);
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
     return response.statusCode();
   }
 
   private int executeOpenIssueRequest(String issueKey, String projectKey, String branch, String pullRequest) throws IOException, InterruptedException {
-    HttpRequest request = openIssueWithBranchAndPRRequest("&issue=" + issueKey, "&project=" + projectKey, "&branch=" + branch, "&pullRequest=" + pullRequest);
+    HttpRequest request = openIssueRequest("&issue=" + issueKey, "&project=" + projectKey, "&branch=" + branch, "&pullRequest=" + pullRequest);
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
     return response.statusCode();
   }
 
-  private HttpRequest openIssueWithProjectAndKeyRequest(String issueParam, String projectParam, String branchParam) {
+  private HttpRequest openIssueRequest(String... params) {
     return HttpRequest.newBuilder()
       .uri(URI.create(
-        "http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/issues/show?server=" + serverWithIssues.baseUrl() + projectParam + issueParam + branchParam))
-      .header("Origin", "https://sonar.my")
-      .GET().build();
-  }
-
-  private HttpRequest openIssueWithBranchAndPRRequest(String issueParam, String projectParam, String branchParam, String pullRequestParam) {
-    return HttpRequest.newBuilder()
-      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/issues/show?server=" + serverWithIssues.baseUrl() + projectParam + issueParam
-        + branchParam + pullRequestParam))
+        "http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/issues/show?server=" + serverWithIssues.baseUrl() + String.join("", params)))
       .header("Origin", "https://sonar.my")
       .GET().build();
   }

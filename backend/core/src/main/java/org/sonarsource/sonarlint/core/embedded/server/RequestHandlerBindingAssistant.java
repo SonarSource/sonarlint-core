@@ -31,6 +31,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
+import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -56,10 +57,11 @@ public class RequestHandlerBindingAssistant {
   private final ConfigurationRepository configurationRepository;
   private final UserTokenService userTokenService;
   private final ExecutorServiceShutdownWatchable<?> executorService;
+  private final String sonarCloudUrl;
 
-  public RequestHandlerBindingAssistant(BindingSuggestionProvider bindingSuggestionProvider, BindingCandidatesFinder bindingCandidatesFinder, SonarLintRpcClient client,
-    ConnectionConfigurationRepository connectionConfigurationRepository,
-    ConfigurationRepository configurationRepository, UserTokenService userTokenService) {
+  public RequestHandlerBindingAssistant(BindingSuggestionProvider bindingSuggestionProvider, BindingCandidatesFinder bindingCandidatesFinder,
+    SonarLintRpcClient client, ConnectionConfigurationRepository connectionConfigurationRepository, ConfigurationRepository configurationRepository,
+    UserTokenService userTokenService, SonarCloudActiveEnvironment sonarCloudActiveEnvironment) {
     this.bindingSuggestionProvider = bindingSuggestionProvider;
     this.bindingCandidatesFinder = bindingCandidatesFinder;
     this.client = client;
@@ -68,27 +70,29 @@ public class RequestHandlerBindingAssistant {
     this.userTokenService = userTokenService;
     this.executorService = new ExecutorServiceShutdownWatchable<>(new ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS,
       new LinkedBlockingQueue<>(), r -> new Thread(r, "Show Issue or Hotspot Request Handler")));
+    this.sonarCloudUrl = sonarCloudActiveEnvironment.getUri().toString();
   }
 
   interface Callback {
     void andThen(String connectionId, @Nullable String configurationScopeId, SonarLintCancelMonitor cancelMonitor);
   }
 
-  void assistConnectionAndBindingIfNeededAsync(String serverUrl, @Nullable String tokenName, @Nullable String tokenValue, String projectKey, Callback callback) {
+  void assistConnectionAndBindingIfNeededAsync(AssistCreatingConnectionParams connectionParams, String projectKey, Callback callback) {
     var cancelMonitor = new SonarLintCancelMonitor();
     cancelMonitor.watchForShutdown(executorService);
-    executorService.submit(() -> assistConnectionAndBindingIfNeeded(serverUrl, tokenName, tokenValue, projectKey, callback, cancelMonitor));
+    executorService.submit(() -> assistConnectionAndBindingIfNeeded(connectionParams, projectKey, callback, cancelMonitor));
   }
 
-  private void assistConnectionAndBindingIfNeeded(String serverUrl, @Nullable String tokenName, @Nullable String tokenValue, String projectKey,
+  private void assistConnectionAndBindingIfNeeded(AssistCreatingConnectionParams connectionParams, String projectKey,
     Callback callback, SonarLintCancelMonitor cancelMonitor) {
+    String serverUrl = getServerUrl(connectionParams);
     LOG.debug("Assist connection and binding if needed for project {} and server {}", projectKey, serverUrl);
     try {
       var connectionsMatchingOrigin = connectionConfigurationRepository.findByUrl(serverUrl);
       if (connectionsMatchingOrigin.isEmpty()) {
         startFullBindingProcess();
         try {
-          var assistNewConnectionResult = assistCreatingConnectionAndWaitForRepositoryUpdate(serverUrl, tokenName, tokenValue, cancelMonitor);
+          var assistNewConnectionResult = assistCreatingConnectionAndWaitForRepositoryUpdate(connectionParams, cancelMonitor);
           var assistNewBindingResult = assistBindingAndWaitForRepositoryUpdate(assistNewConnectionResult.getNewConnectionId(),
             projectKey, cancelMonitor);
           callback.andThen(assistNewConnectionResult.getNewConnectionId(), assistNewBindingResult.getConfigurationScopeId(), cancelMonitor);
@@ -105,9 +109,13 @@ public class RequestHandlerBindingAssistant {
     }
   }
 
-  private AssistCreatingConnectionResponse assistCreatingConnectionAndWaitForRepositoryUpdate(String serverUrl, @Nullable String tokenName, @Nullable String tokenValue,
-    SonarLintCancelMonitor cancelMonitor) {
-    var assistNewConnectionResult = assistCreatingConnection(serverUrl, tokenName, tokenValue, cancelMonitor);
+  private String getServerUrl(AssistCreatingConnectionParams connectionParams) {
+    return connectionParams.getConnectionParams().isLeft() ? connectionParams.getConnectionParams().getLeft().getServerUrl() : sonarCloudUrl;
+  }
+
+  private AssistCreatingConnectionResponse assistCreatingConnectionAndWaitForRepositoryUpdate(
+    AssistCreatingConnectionParams connectionParams, SonarLintCancelMonitor cancelMonitor) {
+    var assistNewConnectionResult = assistCreatingConnection(connectionParams, cancelMonitor);
 
     // Wait 5s for the connection to be created in the repository. This is happening asynchronously by the
     // ConnectionService::didUpdateConnections event
@@ -179,16 +187,23 @@ public class RequestHandlerBindingAssistant {
     bindingSuggestionProvider.enable();
   }
 
-  AssistCreatingConnectionResponse assistCreatingConnection(String serverUrl, @Nullable String tokenName, @Nullable String tokenValue, SonarLintCancelMonitor cancelMonitor) {
+  AssistCreatingConnectionResponse assistCreatingConnection(AssistCreatingConnectionParams connectionParams, SonarLintCancelMonitor cancelMonitor) {
     try {
-      var future = client.assistCreatingConnection(new AssistCreatingConnectionParams(serverUrl, tokenName, tokenValue));
+      var future = client.assistCreatingConnection(connectionParams);
       cancelMonitor.onCancel(() -> future.cancel(true));
       return future.join();
     } catch (Exception e) {
-      if (tokenName != null && tokenValue != null) {
-        userTokenService.revokeToken(new RevokeTokenParams(serverUrl, tokenName, tokenValue), cancelMonitor);
-      }
+      revokeToken(connectionParams, cancelMonitor);
       throw e;
+    }
+  }
+
+  private void revokeToken(AssistCreatingConnectionParams connectionParams, SonarLintCancelMonitor cancelMonitor) {
+    String tokenName = connectionParams.getTokenName();
+    String tokenValue = connectionParams.getTokenValue();
+    if (tokenName != null && tokenValue != null) {
+      var revokeTokenParams = new RevokeTokenParams(getServerUrl(connectionParams), tokenName, tokenValue);
+      userTokenService.revokeToken(revokeTokenParams, cancelMonitor);
     }
   }
 

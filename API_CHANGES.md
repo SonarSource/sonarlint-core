@@ -1,3 +1,21 @@
+# 10.3
+
+## Breaking changes
+
+## New features
+
+### Open Issue in IDE
+
+* Add the `getConnectionParams` method to `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams`
+  * It allows clients to get parameters to create either SonarQube or SonarCloud connection
+  * This field type is `Either<AssistSonarQubeConnection, AssistSonarCloudConnection>`
+  * Common methods of both connection types are added to the `AssistCreatingConnectionParams` class to provide users simplicity
+
+## Deprecation
+
+* `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams.getServerUrl` is only meaningful for SQ
+  connections. Use `getConnection().getLeft().getServerUrl()` instead to get the `serverUrl` of a SQ connection
+
 # 10.2
 
 ## Breaking changes
