@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.analysis.api;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -33,7 +34,7 @@ public class AnalysisResults {
   private final Set<ClientInputFile> failedAnalysisFiles = new LinkedHashSet<>();
   private int indexedFileCount;
   private final Map<ClientInputFile, SonarLanguage> languagePerFile = new LinkedHashMap<>();
-  private List<RawIssueDto> rawIssues;
+  private List<RawIssueDto> rawIssues = new ArrayList<>();
 
   public AnalysisResults setIndexedFileCount(int indexedFileCount) {
     this.indexedFileCount = indexedFileCount;
