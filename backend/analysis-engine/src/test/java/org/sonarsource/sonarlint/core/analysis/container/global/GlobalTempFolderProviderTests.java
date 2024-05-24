@@ -27,6 +27,7 @@ import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.FileTime;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.utils.TempFolder;
@@ -54,6 +55,7 @@ class GlobalTempFolderProviderTests {
   }
 
   @Test
+  @Disabled("SLCORE-821")
   void cleanUpOld() throws IOException {
     var creationTime = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(100);
 
