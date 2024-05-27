@@ -83,7 +83,7 @@ class NewCodeServiceTests {
       .thenReturn(storage);
     var newCodeDefStorage = mock(NewCodeDefinitionStorage.class);
     when(storage.newCodeDefinition()).thenReturn(newCodeDefStorage);
-    var newCodeDefinition = NewCodeDefinition.withNumberOfDays(42, 1234567890123L);
+    var newCodeDefinition = NewCodeDefinition.withNumberOfDaysWithDate(42, 1234567890123L);
     when(newCodeDefStorage.read()).thenReturn(Optional.of(newCodeDefinition));
     var ncd = underTest.getNewCodeDefinition("scope");
     assertThat(ncd).extracting(GetNewCodeDefinitionResponse::getDescription, GetNewCodeDefinitionResponse::isSupported)

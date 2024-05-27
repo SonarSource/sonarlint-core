@@ -30,8 +30,8 @@ class NewCodeDefinitionTests {
     var analysisDate = Instant.parse("2023-09-12T10:15:30.00Z");
     var issueCreationDateBeforeAnalysis = Instant.parse("2023-09-10T10:15:30.00Z");
     var issueCreationDateAfterAnalysis = Instant.parse("2023-09-14T10:15:30.00Z");
-    var newCodeDefinitionWithoutDate = NewCodeDefinition.withNumberOfDays(30, 0);
-    var newCodeDefinitionWithDate = NewCodeDefinition.withNumberOfDays(30, analysisDate.toEpochMilli());
+    var newCodeDefinitionWithoutDate = NewCodeDefinition.withNumberOfDaysWithDate(30, 0);
+    var newCodeDefinitionWithDate = NewCodeDefinition.withNumberOfDaysWithDate(30, analysisDate.toEpochMilli());
 
     assertThat(newCodeDefinitionWithoutDate.isOnNewCode(analysisDate.toEpochMilli())).isTrue();
     assertThat(newCodeDefinitionWithDate.isOnNewCode(issueCreationDateAfterAnalysis.toEpochMilli())).isTrue();
@@ -41,7 +41,7 @@ class NewCodeDefinitionTests {
   @Test
   void toStringTest() {
     var analysisEpochDate = Instant.parse("2023-09-12T10:15:30.00Z").toEpochMilli();
-    var numberOfDays = NewCodeDefinition.withNumberOfDays(30, analysisEpochDate);
+    var numberOfDays = NewCodeDefinition.withNumberOfDaysWithDate(30, analysisEpochDate);
     var previousVersionNull = NewCodeDefinition.withPreviousVersion(analysisEpochDate, null);
     var previousVersion = NewCodeDefinition.withPreviousVersion(analysisEpochDate, "version");
     var specificAnalysis = NewCodeDefinition.withSpecificAnalysis(analysisEpochDate);

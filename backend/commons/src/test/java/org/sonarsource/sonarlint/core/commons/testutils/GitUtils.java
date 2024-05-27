@@ -23,14 +23,17 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Instant;
 import java.util.Date;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.util.SystemReader;
 
 public class GitUtils {
 
-  private GitUtils(){
+  private GitUtils() {
     // Utils class
   }
 
@@ -52,6 +55,20 @@ public class GitUtils {
     return commit.getCommitterIdent().getWhen();
   }
 
+  public static Date commitAtDate(Git git, Instant commitDate, String... paths) throws GitAPIException {
+    if (paths.length > 0) {
+      var add = git.add();
+      for (String p : paths) {
+        add.addFilepattern(p);
+      }
+      add.call();
+    }
+    var commitTimestamp = commitDate.toEpochMilli();
+    var commit = git.commit().setCommitter(new PersonIdent("joe", "email@email.com", commitTimestamp, SystemReader.getInstance()
+      .getTimezone(commitTimestamp))).setMessage("msg").call();
+    return commit.getCommitterIdent().getWhen();
+  }
+
   public static void createFile(Path worktree, String relativePath, String... lines) throws IOException {
     var newFile = worktree.resolve(relativePath);
     Files.createDirectories(newFile.getParent());
@@ -63,6 +80,7 @@ public class GitUtils {
     var content = String.join(System.lineSeparator(), lines) + System.lineSeparator();
     Files.write(file, content.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND);
   }
+
   public static void modifyFile(Path file, String... lines) throws IOException {
     var content = String.join(System.lineSeparator(), lines) + System.lineSeparator();
     Files.write(file, content.getBytes(), StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);

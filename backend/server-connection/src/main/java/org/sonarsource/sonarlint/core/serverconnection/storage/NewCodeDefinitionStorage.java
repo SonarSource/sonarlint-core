@@ -58,7 +58,7 @@ public class NewCodeDefinitionStorage {
     var builder = Sonarlint.NewCodeDefinition.newBuilder()
       .setMode(Sonarlint.NewCodeDefinitionMode.valueOf(newCodeDefinition.getMode().name()));
     if (newCodeDefinition.getMode() == NewCodeMode.NUMBER_OF_DAYS) {
-      var newCodeNumberOfDays = (NewCodeDefinition.NewCodeNumberOfDays) newCodeDefinition;
+      var newCodeNumberOfDays = (NewCodeDefinition.NewCodeNumberOfDaysWithDate) newCodeDefinition;
       builder.setDays(newCodeNumberOfDays.getDays());
     }
     if (newCodeDefinition.getMode() != NewCodeMode.REFERENCE_BRANCH) {
@@ -83,7 +83,7 @@ public class NewCodeDefinitionStorage {
     var mode = newCodeDefinition.getMode();
     switch (mode) {
       case NUMBER_OF_DAYS:
-        return NewCodeDefinition.withNumberOfDays(newCodeDefinition.getDays(), thresholdDate);
+        return NewCodeDefinition.withNumberOfDaysWithDate(newCodeDefinition.getDays(), thresholdDate);
       case PREVIOUS_VERSION:
         var version = newCodeDefinition.hasVersion() ? newCodeDefinition.getVersion() : null;
         return NewCodeDefinition.withPreviousVersion(thresholdDate, version);

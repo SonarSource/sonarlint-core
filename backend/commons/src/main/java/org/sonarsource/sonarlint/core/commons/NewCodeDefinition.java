@@ -23,6 +23,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
@@ -32,7 +33,9 @@ public interface NewCodeDefinition {
   DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern(DATETIME_FORMAT);
 
   NewCodeMode getMode();
+
   boolean isOnNewCode(long creationDate);
+
   default boolean isOnNewCode(Instant introductionDate) {
     return isOnNewCode(introductionDate.toEpochMilli());
   }
@@ -47,8 +50,16 @@ public interface NewCodeDefinition {
     return new NewCodeAlwaysNew();
   }
 
-  static NewCodeDefinition withNumberOfDays(int days, long thresholdDate) {
-    return new NewCodeNumberOfDays(days, thresholdDate);
+  static NewCodeDefinition withExactNumberOfDays(int days) {
+    return new NewCodeExactNumberOfDays(days);
+  }
+
+  /**
+   * @param days the theoretical number of days
+   * @param thresholdDate the actual date in the past that serves for the comparison. Can be different from the number of days as it is updated after analysis on the server side
+   */
+  static NewCodeDefinition withNumberOfDaysWithDate(int days, long thresholdDate) {
+    return new NewCodeNumberOfDaysWithDate(days, thresholdDate);
   }
 
   static NewCodeDefinition withPreviousVersion(long thresholdDate, @Nullable String version) {
@@ -83,10 +94,38 @@ public interface NewCodeDefinition {
     }
   }
 
-  class NewCodeNumberOfDays extends NewCodeDefinitionWithDate {
+  class NewCodeExactNumberOfDays implements NewCodeDefinition {
+    private final int days;
+
+    public NewCodeExactNumberOfDays(int days) {
+      this.days = days;
+    }
+
+    @Override
+    public NewCodeMode getMode() {
+      return NewCodeMode.NUMBER_OF_DAYS;
+    }
+
+    @Override
+    public boolean isOnNewCode(long creationDate) {
+      return creationDate > Instant.now().minus(days, ChronoUnit.DAYS).toEpochMilli();
+    }
+
+    @Override
+    public boolean isSupported() {
+      return true;
+    }
+
+    @Override
+    public String toString() {
+      return String.format("From last %s days", days);
+    }
+  }
+
+  class NewCodeNumberOfDaysWithDate extends NewCodeDefinitionWithDate {
     Integer days;
 
-    private NewCodeNumberOfDays(Integer days, long thresholdDate) {
+    private NewCodeNumberOfDaysWithDate(Integer days, long thresholdDate) {
       super(thresholdDate);
       this.days = days;
     }
@@ -147,7 +186,7 @@ public interface NewCodeDefinition {
     }
   }
 
-  class NewCodeReferenceBranch implements NewCodeDefinition{
+  class NewCodeReferenceBranch implements NewCodeDefinition {
     private final String branchName;
 
     private NewCodeReferenceBranch(String branchName) {
