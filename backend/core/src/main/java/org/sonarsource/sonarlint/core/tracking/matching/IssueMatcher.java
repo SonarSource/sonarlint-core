@@ -290,10 +290,10 @@ public class IssueMatcher<LEFT, RIGHT> {
     @Override
     public boolean equals(Object o) {
       var that = (ServerIssueSearchKey) o;
-      return !isBlank(serverIssueKey) && !isBlank(that.serverIssueKey) && serverIssueKey.equals(that.serverIssueKey);
+      return that != null && !isBlank(serverIssueKey) && !isBlank(that.serverIssueKey) && serverIssueKey.equals(that.serverIssueKey);
     }
 
-    private static boolean isBlank(String s) {
+    private static boolean isBlank(@Nullable String s) {
       return s == null || s.isEmpty();
     }
 
