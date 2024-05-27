@@ -71,6 +71,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
+import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commitAtDate;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRepository;
 import static testutils.TestUtils.protobufBody;
 import static testutils.plugins.SonarPluginBuilder.newSonarPlugin;
@@ -671,7 +672,8 @@ class IssueTrackingMediumTests {
   void it_should_stream_issues(@TempDir Path baseDir) throws IOException, GitAPIException {
     var repository = createRepository(baseDir);
     var filePath = createFile(baseDir, "Foo.java", "a");
-    var commitDate = commit(repository, filePath.getFileName().toString());
+    var introductionDate = Instant.now().minus(5, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
+    var commitDate = commitAtDate(repository, introductionDate, filePath.getFileName().toString());
     var fileUri = filePath.toUri();
     var client = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
@@ -694,13 +696,13 @@ class IssueTrackingMediumTests {
     var firstRaisedIntermediateIssuesByFile = allRaisedIntermediateIssuesByFile.get(0);
     assertThat(firstRaisedIntermediateIssuesByFile).containsOnlyKeys(fileUri);
     assertThat(firstRaisedIntermediateIssuesByFile.get(fileUri))
-      .extracting(RaisedIssueDto::getPrimaryMessage, RaisedFindingDto::getIntroductionDate)
-      .containsExactly(tuple("Issue 1", commitDate.toInstant()));
+      .extracting(RaisedIssueDto::getPrimaryMessage, RaisedFindingDto::getIntroductionDate, RaisedFindingDto::isOnNewCode)
+      .containsExactly(tuple("Issue 1", introductionDate, true));
     var secondRaisedIntermediateIssuesByFile = allRaisedIntermediateIssuesByFile.get(1);
     assertThat(secondRaisedIntermediateIssuesByFile).containsOnlyKeys(fileUri);
     assertThat(secondRaisedIntermediateIssuesByFile.get(fileUri))
-      .extracting(RaisedIssueDto::getPrimaryMessage, RaisedFindingDto::getIntroductionDate)
-      .containsExactly(tuple("Issue 1", commitDate.toInstant()), tuple("Issue 2", commitDate.toInstant()));
+      .extracting(RaisedIssueDto::getPrimaryMessage, RaisedFindingDto::getIntroductionDate, RaisedFindingDto::isOnNewCode)
+      .containsExactly(tuple("Issue 1", introductionDate, true), tuple("Issue 2", commitDate.toInstant(), true));
     ArgumentCaptor<Map<URI, List<RaisedIssueDto>>> finalIssuesByFileArgumentCaptor = ArgumentCaptor.forClass(Map.class);
     verify(client).raiseIssues(eq(CONFIG_SCOPE_ID), finalIssuesByFileArgumentCaptor.capture(), eq(false), any());
     var finalIssuesByFile = finalIssuesByFileArgumentCaptor.getValue();

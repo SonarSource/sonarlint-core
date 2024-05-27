@@ -31,7 +31,7 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 @Named
 @Singleton
 public class NewCodeService {
-  private static final NewCodeDefinition STANDALONE_NEW_CODE_DEFINITION = NewCodeDefinition.withNumberOfDays(30, System.currentTimeMillis());
+  private static final NewCodeDefinition STANDALONE_NEW_CODE_DEFINITION = NewCodeDefinition.withExactNumberOfDays(30);
   private final ConfigurationRepository configurationRepository;
   private final StorageService storageService;
   private final TelemetryService telemetryService;

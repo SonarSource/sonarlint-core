@@ -72,7 +72,7 @@ public class NewCodeApi {
     var date = periodFromWs.hasDate() ? parseOffsetDateTime(periodFromWs.getDate()).toInstant().toEpochMilli() : 0;
     if ((modeString.equals("NUMBER_OF_DAYS") || modeString.equals("days")) && parameter != null) {
       var days = Integer.parseInt(parameter);
-      return Optional.of(NewCodeDefinition.withNumberOfDays(days, date));
+      return Optional.of(NewCodeDefinition.withNumberOfDaysWithDate(days, date));
     }
     if (modeString.equalsIgnoreCase("PREVIOUS_VERSION")) {
       return Optional.of(NewCodeDefinition.withPreviousVersion(date, parameter));

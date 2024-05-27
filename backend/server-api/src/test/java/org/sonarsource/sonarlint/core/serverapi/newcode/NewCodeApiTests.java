@@ -126,7 +126,7 @@ class NewCodeApiTests {
 
     var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, RECENT_SQ_VERSION, new SonarLintCancelMonitor()).orElseThrow();
 
-    assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodeNumberOfDays.class)
+    assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodeNumberOfDaysWithDate.class)
       .hasToString("From last 42 days");
     assertThat(newCodeDefinition.isOnNewCode(SOME_DATE_EPOCH_MILLIS + 1)).isTrue();
     assertThat(newCodeDefinition.isOnNewCode(SOME_DATE_EPOCH_MILLIS - 1)).isFalse();
@@ -143,7 +143,7 @@ class NewCodeApiTests {
 
     var newCodeDefinition = underTest.getNewCodeDefinition(PROJECT, BRANCH, SC_VERSION, new SonarLintCancelMonitor()).orElseThrow();
 
-    assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodeNumberOfDays.class)
+    assertThat(newCodeDefinition).isInstanceOf(NewCodeDefinition.NewCodeNumberOfDaysWithDate.class)
       .hasToString("From last 42 days");
     assertThat(newCodeDefinition.isOnNewCode(SOME_DATE_EPOCH_MILLIS + 1)).isTrue();
     assertThat(newCodeDefinition.isOnNewCode(SOME_DATE_EPOCH_MILLIS - 1)).isFalse();

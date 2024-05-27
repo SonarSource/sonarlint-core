@@ -31,7 +31,7 @@ class NewCodeDefinitionStorageTests {
 
   @Test
   void shouldAdaptToProtobuf() {
-    var days = adapt(NewCodeDefinition.withNumberOfDays(30, 1000));
+    var days = adapt(NewCodeDefinition.withNumberOfDaysWithDate(30, 1000));
     assertThat(days.getDays()).isEqualTo(30);
     assertThat(days.getThresholdDate()).isEqualTo(1000);
 
@@ -56,9 +56,9 @@ class NewCodeDefinitionStorageTests {
       .build();
     var days = adapt(daysProto);
     assertThat(days.isSupported()).isTrue();
-    assertThat(days).isInstanceOf(NewCodeDefinition.NewCodeNumberOfDays.class);
-    assertThat(((NewCodeDefinition.NewCodeNumberOfDays) days).getThresholdDate()).isEqualTo(1000);
-    assertThat(((NewCodeDefinition.NewCodeNumberOfDays) days).getDays()).isEqualTo(30);
+    assertThat(days).isInstanceOf(NewCodeDefinition.NewCodeNumberOfDaysWithDate.class);
+    assertThat(((NewCodeDefinition.NewCodeNumberOfDaysWithDate) days).getThresholdDate()).isEqualTo(1000);
+    assertThat(((NewCodeDefinition.NewCodeNumberOfDaysWithDate) days).getDays()).isEqualTo(30);
 
     var previousWithVersionProto = Sonarlint.NewCodeDefinition.newBuilder()
       .setMode(Sonarlint.NewCodeDefinitionMode.PREVIOUS_VERSION)
