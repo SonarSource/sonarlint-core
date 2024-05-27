@@ -45,11 +45,17 @@ import java.util.stream.Collectors;
  * Performance of search: O(log N) on the number of indexed terms + O(N) on the number of results
  */
 public class TextSearchIndex<T> {
-  private static final String SPLIT_PATTERN = "\\W";
+  private static final String DEFAULT_SPLIT_PATTERN = "\\W";
+  private final String splitPattern;
   private TreeMap<String, List<DictEntry>> termToObj;
   private Map<T, Integer> objToWordFrequency;
 
   public TextSearchIndex() {
+    this(DEFAULT_SPLIT_PATTERN);
+  }
+
+  public TextSearchIndex(String splitPattern) {
+    this.splitPattern = splitPattern;
     clear();
   }
 
@@ -180,8 +186,8 @@ public class TextSearchIndex<T> {
     entries.add(new DictEntry(obj, tokenIndex));
   }
 
-  private static List<String> tokenize(String text) {
-    var split = text.split(SPLIT_PATTERN);
+  private List<String> tokenize(String text) {
+    var split = text.split(splitPattern);
     List<String> terms = new ArrayList<>(split.length);
 
     for (String s : split) {

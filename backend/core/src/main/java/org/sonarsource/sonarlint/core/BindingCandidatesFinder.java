@@ -40,6 +40,7 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 public class BindingCandidatesFinder {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private static final String SPLIT_PATTERN = "[\\W_]+";
   private final ConfigurationRepository configRepository;
   private final BindingClueProvider bindingClueProvider;
   private final SonarProjectsCache sonarProjectsCache;
@@ -106,7 +107,7 @@ public class BindingCandidatesFinder {
       LOG.debug("Unable to find SonarProject with key '{}' on connection '{}' in the cache", projectKey, connectionId);
       return false;
     }
-    TextSearchIndex<ServerProject> index = new TextSearchIndex<>();
+    TextSearchIndex<ServerProject> index = new TextSearchIndex<>(SPLIT_PATTERN);
     var p = sonarProjectOpt.get();
     index.index(p, p.getKey() + " " + p.getName());
     var searchResult = index.search(configScopeName);
