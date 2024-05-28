@@ -22,11 +22,6 @@
       <artifactId>org.eclipse.lsp4j.jsonrpc</artifactId>
       <version>${lsp4j.version}</version>
     </dependency>
-    <dependency>
-      <groupId>com.google.protobuf</groupId>
-      <artifactId>protobuf-java</artifactId>
-      <version>${protobuf.version}</version>
-    </dependency>
   </dependencies>
 
   <build>
@@ -71,7 +66,6 @@
             <includes>
               <include>com.google.code.gson:gson</include>
               <include>org.eclipse.lsp4j:org.eclipse.lsp4j.jsonrpc</include>
-              <include>com.google.protobuf:protobuf-java</include>
             </includes>
           </artifactSet>
 
@@ -102,14 +96,6 @@
                 <exclude>NOTICE*</exclude>
                 <exclude>*.proto</exclude>
               </excludes>
-            </filter>
-
-            <!-- Shade protobuf so we don't have to ship an additional bundle -->
-            <filter>
-              <artifact>com.google.protobuf:protobuf-java</artifact>
-              <includes>
-                <include>**</include>
-              </includes>
             </filter>
           </filters>
         </configuration>
