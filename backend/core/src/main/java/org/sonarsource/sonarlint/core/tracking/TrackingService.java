@@ -147,7 +147,7 @@ public class TrackingService {
       var binding = effectiveBindingOpt.get();
       var activeBranch = activeBranchOpt.get();
       var translation = translationOpt.get();
-      issuesToReport = matchingSession.getIssuesPerFile().entrySet().stream().map(e -> {
+      issuesToReport = issuesToReport.entrySet().stream().map(e -> {
         var ideRelativePath = e.getKey();
         var serverRelativePath = translation.ideToServerPath(ideRelativePath);
         var serverIssues = storageService.binding(binding).findings().load(activeBranch, serverRelativePath);
@@ -155,7 +155,7 @@ public class TrackingService {
         var matches = matchWithServerIssues(serverRelativePath, serverIssues, localOnlyIssues, e.getValue());
         return Map.entry(ideRelativePath, matches);
       }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-      hotspotsToReport = matchingSession.getSecurityHotspotsPerFile().entrySet().stream().map(e -> {
+      hotspotsToReport = hotspotsToReport.entrySet().stream().map(e -> {
         var ideRelativePath = e.getKey();
         var serverRelativePath = translation.ideToServerPath(ideRelativePath);
         var serverHotspots = storageService.binding(binding).findings().loadHotspots(activeBranch, serverRelativePath);
