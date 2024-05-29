@@ -27,7 +27,7 @@ public class DataflowBugDetection {
     // Static stuff only
   }
 
-  public static final Set<String> PLUGIN_ALLOW_LIST = Set.of("dbd", "dbdpythonfrontend");
+  public static final Set<String> PLUGIN_ALLOW_LIST = Set.of("dbd", "dbdpythonfrontend", "dbdjavafrontend");
 
   static Set<String> getPluginAllowList(boolean isDataflowBugDetectionEnabled) {
     return isDataflowBugDetectionEnabled ? PLUGIN_ALLOW_LIST : Set.of();
