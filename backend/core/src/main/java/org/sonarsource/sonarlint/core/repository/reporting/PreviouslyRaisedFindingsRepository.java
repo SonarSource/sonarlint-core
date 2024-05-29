@@ -21,35 +21,50 @@
 package org.sonarsource.sonarlint.core.repository.reporting;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 
 @Named
 @Singleton
 public class PreviouslyRaisedFindingsRepository {
-
   private final Map<String, Map<URI, List<RaisedIssueDto>>> previouslyRaisedIssuesByScopeId = new ConcurrentHashMap<>();
   private final Map<String, Map<URI, List<RaisedHotspotDto>>> previouslyRaisedHotspotsByScopeId = new ConcurrentHashMap<>();
 
-  public void addOrReplaceIssues(String scopeId, Map<URI, List<RaisedIssueDto>> raisedIssues) {
-    previouslyRaisedIssuesByScopeId.put(scopeId, raisedIssues);
+  public Map<URI, List<RaisedIssueDto>> replaceIssuesForFiles(String scopeId, Map<URI, List<RaisedIssueDto>> raisedIssues) {
+    return addOrReplaceFindings(scopeId, raisedIssues, previouslyRaisedIssuesByScopeId);
+  }
+
+  public Map<URI, List<RaisedHotspotDto>> replaceHotspotsForFiles(String scopeId, Map<URI, List<RaisedHotspotDto>> raisedHotpots) {
+    return addOrReplaceFindings(scopeId, raisedHotpots, previouslyRaisedHotspotsByScopeId);
+  }
+
+  private static <F extends RaisedFindingDto> Map<URI, List<F>> addOrReplaceFindings(String scopeId, Map<URI, List<F>> raisedFindings,
+    Map<String, Map<URI, List<F>>> previouslyRaisedFindingsByScopeId) {
+    var findingsPerFile = previouslyRaisedFindingsByScopeId.computeIfAbsent(scopeId, k -> new ConcurrentHashMap<>());
+    findingsPerFile.putAll(raisedFindings);
+    return findingsPerFile;
   }
 
   public Map<URI, List<RaisedIssueDto>> getRaisedIssuesForScope(String scopeId) {
     return previouslyRaisedIssuesByScopeId.getOrDefault(scopeId, Map.of());
   }
 
-  public void addOrReplaceHotspots(String scopeId, Map<URI, List<RaisedHotspotDto>> raisedHotpots) {
-    previouslyRaisedHotspotsByScopeId.put(scopeId, raisedHotpots);
-  }
-
   public Map<URI, List<RaisedHotspotDto>> getRaisedHotspotsForScope(String scopeId) {
     return previouslyRaisedHotspotsByScopeId.getOrDefault(scopeId, Map.of());
   }
 
+  public void resetFindingsForFiles(String configurationScopeId, Set<URI> files) {
+    replaceIssuesForFiles(configurationScopeId, files.stream().collect(Collectors.toMap(Function.identity(), e -> new ArrayList<>())));
+    replaceHotspotsForFiles(configurationScopeId, files.stream().collect(Collectors.toMap(Function.identity(), e -> new ArrayList<>())));
+  }
 }
