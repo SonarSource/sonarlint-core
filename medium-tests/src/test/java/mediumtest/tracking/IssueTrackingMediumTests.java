@@ -67,6 +67,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.api.InstanceOfAssertFactories.INSTANT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
@@ -753,6 +754,28 @@ class IssueTrackingMediumTests {
     var finalIssuesByFile = finalIssuesByFileArgumentCaptor.getValue();
     assertThat(secondRaisedIntermediateIssuesByFile.keySet()).isEqualTo(finalIssuesByFile.keySet());
     assertThat(secondRaisedIntermediateIssuesByFile.get(fileUri)).usingRecursiveFieldByFieldElementComparatorIgnoringFields().isEqualTo(finalIssuesByFile.get(fileUri));
+  }
+
+  @Test
+  void it_should_include_a_file_without_issues_when_raising_issues(@TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "Foo.java", "");
+    var fileUri = filePath.toUri();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
+      .build();
+    var pluginPath = newSonarPlugin("java")
+      .generate(baseDir);
+    backend = newBackend()
+      .withStandaloneEmbeddedPlugin(pluginPath)
+      .withEnabledLanguageInStandaloneMode(Language.JAVA)
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .build(client);
+    backend.getAnalysisService().analyzeFilesAndTrack(
+      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), true, System.currentTimeMillis()))
+      .join();
+
+    verify(client, never()).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(true), any());
+    verify(client).raiseIssues(eq(CONFIG_SCOPE_ID), eq(Map.of(fileUri, List.of())), eq(false), any());
   }
 
   private List<RaisedIssueDto> analyzeFileAndGetAllIssuesOfRule(URI fileUri, SonarLintRpcClientDelegate client, String ruleKey) {

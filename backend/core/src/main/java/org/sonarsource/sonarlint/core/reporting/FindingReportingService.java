@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.UnaryOperator;
@@ -71,18 +72,16 @@ public class FindingReportingService {
     this.previouslyRaisedFindingsRepository = previouslyRaisedFindingsRepository;
   }
 
-  public void clearFindingsForFiles(Iterable<URI> files) {
+  public void resetFindingsForFiles(String configurationScopeId, Set<URI> files) {
     files.forEach(fileUri -> {
-      clearFindingsForFile(issuesPerFileUri, fileUri);
-      clearFindingsForFile(securityHotspotsPerFileUri, fileUri);
+      resetFindingsForFile(issuesPerFileUri, fileUri);
+      resetFindingsForFile(securityHotspotsPerFileUri, fileUri);
     });
+    previouslyRaisedFindingsRepository.resetFindingsForFiles(configurationScopeId, files);
   }
 
-  private static void clearFindingsForFile(Map<URI, Collection<TrackedIssue>> findingsMap, URI fileUri) {
-    var trackedFinding = findingsMap.get(fileUri);
-    if (trackedFinding != null) {
-      trackedFinding.clear();
-    }
+  private static void resetFindingsForFile(Map<URI, Collection<TrackedIssue>> findingsMap, URI fileUri) {
+    findingsMap.computeIfAbsent(fileUri, k -> new ArrayList<>()).clear();
   }
 
   public void streamIssue(String configurationScopeId, UUID analysisId, TrackedIssue trackedIssue) {
@@ -99,19 +98,10 @@ public class FindingReportingService {
     var issuesToRaise = issuesPerFileUri.entrySet().stream()
       .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedIssueDto(issue, newCodeDefinition)).collect(toList())))
       .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
-    previouslyRaisedFindingsRepository.addOrReplaceIssues(configurationScopeId, issuesToRaise);
-    client.raiseIssues(new RaiseIssuesParams(configurationScopeId, issuesToRaise, true,
-      analysisId));
-    var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
-    if (effectiveBindingOpt.isPresent()) {
-      var hotspotsToRaise = securityHotspotsPerFileUri.entrySet().stream()
-        .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedHotspotDto(issue, newCodeDefinition)).collect(toList())))
-        .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
-      previouslyRaisedFindingsRepository.addOrReplaceHotspots(configurationScopeId, hotspotsToRaise);
-      client.raiseHotspots(new RaiseHotspotsParams(configurationScopeId, hotspotsToRaise,
-        true,
-        analysisId));
-    }
+    var hotspotsToRaise = securityHotspotsPerFileUri.entrySet().stream()
+      .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedHotspotDto(issue, newCodeDefinition)).collect(toList())))
+      .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+    updateRaisedFindingsCacheAndNotifyClient(configurationScopeId, analysisId, issuesToRaise, hotspotsToRaise, true);
   }
 
   public void reportTrackedFindings(String configurationScopeId, UUID analysisId, Map<Path, List<TrackedIssue>> issuesToReport, Map<Path, List<TrackedIssue>> hotspotsToReport) {
@@ -120,18 +110,18 @@ public class FindingReportingService {
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId).orElseGet(NewCodeDefinition::withAlwaysNew);
     var issuesToRaise = getIssuesToRaise(issuesToReport, newCodeDefinition);
     var hotspotsToRaise = getHotspotsToRaise(hotspotsToReport, newCodeDefinition);
-    updateRaisedIssuesCacheAndNotifyClient(configurationScopeId, analysisId, issuesToRaise, hotspotsToRaise);
+    updateRaisedFindingsCacheAndNotifyClient(configurationScopeId, analysisId, issuesToRaise, hotspotsToRaise, false);
   }
 
-  private synchronized void updateRaisedIssuesCacheAndNotifyClient(String configurationScopeId, @Nullable UUID analysisId, Map<URI, List<RaisedIssueDto>> issuesToRaise,
-    Map<URI, List<RaisedHotspotDto>> hotspotsToRaise) {
-    previouslyRaisedFindingsRepository.addOrReplaceIssues(configurationScopeId, issuesToRaise);
-    client.raiseIssues(new RaiseIssuesParams(configurationScopeId, issuesToRaise, false, analysisId));
+  private synchronized void updateRaisedFindingsCacheAndNotifyClient(String configurationScopeId, @Nullable UUID analysisId, Map<URI, List<RaisedIssueDto>> updatedIssues,
+    Map<URI, List<RaisedHotspotDto>> updatedHotspots, boolean isIntermediatePublication) {
+    var issuesToRaise = previouslyRaisedFindingsRepository.replaceIssuesForFiles(configurationScopeId, updatedIssues);
+    client.raiseIssues(new RaiseIssuesParams(configurationScopeId, issuesToRaise, isIntermediatePublication, analysisId));
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     if (effectiveBindingOpt.isPresent()) {
       // security hotspots are only supported in connected mode
-      previouslyRaisedFindingsRepository.addOrReplaceHotspots(configurationScopeId, hotspotsToRaise);
-      client.raiseHotspots(new RaiseHotspotsParams(configurationScopeId, hotspotsToRaise, false, analysisId));
+      var hotspotsToRaise = previouslyRaisedFindingsRepository.replaceHotspotsForFiles(configurationScopeId, updatedHotspots);
+      client.raiseHotspots(new RaiseHotspotsParams(configurationScopeId, hotspotsToRaise, isIntermediatePublication, analysisId));
     }
   }
 
@@ -169,13 +159,10 @@ public class FindingReportingService {
     updateAndReportFindings(configurationScopeId, hotspotUpdater, UnaryOperator.identity());
   }
 
-  public void updateAndReportFindings(String configurationScopeId,
-    UnaryOperator<RaisedHotspotDto> hotspotUpdater, UnaryOperator<RaisedIssueDto> issueUpdater) {
-    var previouslyRaisedIssues = previouslyRaisedFindingsRepository.getRaisedIssuesForScope(configurationScopeId);
-    var previouslyRaisedHotspots = previouslyRaisedFindingsRepository.getRaisedHotspotsForScope(configurationScopeId);
-    Map<URI, List<RaisedHotspotDto>> updatedHotspots = updateFindings(hotspotUpdater, previouslyRaisedHotspots);
-    Map<URI, List<RaisedIssueDto>> updatedIssues = updateFindings(issueUpdater, previouslyRaisedIssues);
-    reportRaisedFindings(configurationScopeId, null, updatedIssues, updatedHotspots);
+  public void updateAndReportFindings(String configurationScopeId, UnaryOperator<RaisedHotspotDto> hotspotUpdater, UnaryOperator<RaisedIssueDto> issueUpdater) {
+    var updatedHotspots = updateFindings(hotspotUpdater, previouslyRaisedFindingsRepository.getRaisedHotspotsForScope(configurationScopeId));
+    var updatedIssues = updateFindings(issueUpdater, previouslyRaisedFindingsRepository.getRaisedIssuesForScope(configurationScopeId));
+    updateRaisedFindingsCacheAndNotifyClient(configurationScopeId, null, updatedIssues, updatedHotspots, false);
   }
 
   private static <F extends RaisedFindingDto> Map<URI, List<F>> updateFindings(UnaryOperator<F> findingUpdater, Map<URI, List<F>> previouslyRaisedFindings) {
@@ -188,12 +175,5 @@ public class FindingReportingService {
       updatedFindings.put(uri, updatedFindingsForFile);
     });
     return updatedFindings;
-  }
-
-  public void reportRaisedFindings(String configurationScopeId, @Nullable UUID analysisId, Map<URI, List<RaisedIssueDto>> issuesToRaise,
-    Map<URI, List<RaisedHotspotDto>> hotspotsToRaise) {
-    // stop streaming now, we will raise all issues one last time from this method
-    stopStreaming(configurationScopeId);
-    updateRaisedIssuesCacheAndNotifyClient(configurationScopeId, analysisId, issuesToRaise, hotspotsToRaise);
   }
 }

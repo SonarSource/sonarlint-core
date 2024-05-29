@@ -34,7 +34,6 @@ import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.analysis.AnalysisFinishedEvent;
 import org.sonarsource.sonarlint.core.analysis.AnalysisStartedEvent;
 import org.sonarsource.sonarlint.core.analysis.RawIssueDetectedEvent;
-import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.GitBlameUtils;
 import org.sonarsource.sonarlint.core.commons.KnownFinding;
@@ -98,9 +97,9 @@ public class TrackingService {
   public void onAnalysisStarted(AnalysisStartedEvent event) {
     if (event.isTrackingEnabled()) {
       var configurationScopeId = event.getConfigurationScopeId();
-      var matchingSession = startMatchingSession(configurationScopeId, event.getFiles());
+      var matchingSession = startMatchingSession(configurationScopeId, event.getFileRelativePaths());
       matchingSessionByAnalysisId.put(event.getAnalysisId(), matchingSession);
-      reportingService.clearFindingsForFiles(event.getFiles().stream().map(ClientInputFile::uri).collect(toList()));
+      reportingService.resetFindingsForFiles(configurationScopeId, event.getFileUris());
     }
   }
 
@@ -249,9 +248,8 @@ public class TrackingService {
       trackedIssue.getCleanCodeAttribute(), trackedIssue.getFileUri());
   }
 
-  private MatchingSession startMatchingSession(String configurationScopeId, List<ClientInputFile> files) {
+  private MatchingSession startMatchingSession(String configurationScopeId, Set<Path> fileRelativePaths) {
     var knownFindingsStore = knownFindingsStorageService.get();
-    var fileRelativePaths = files.stream().map(ClientInputFile::relativePath).map(Path::of).collect(Collectors.toSet());
     var issuesByRelativePath = fileRelativePaths.stream()
       .collect(toMap(Function.identity(), relativePath -> knownFindingsStore.loadIssuesForFile(configurationScopeId, relativePath)));
     var hotspotsByRelativePath = fileRelativePaths.stream()

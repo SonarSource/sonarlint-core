@@ -19,11 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.analysis;
 
+import java.net.URI;
+import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
+
+import static java.util.stream.Collectors.toSet;
 
 public class AnalysisStartedEvent {
   private final String configurationScopeId;
@@ -46,8 +51,12 @@ public class AnalysisStartedEvent {
     return configurationScopeId;
   }
 
-  public List<ClientInputFile> getFiles() {
-    return files;
+  public Set<Path> getFileRelativePaths() {
+    return files.stream().map(ClientInputFile::relativePath).map(Path::of).collect(toSet());
+  }
+
+  public Set<URI> getFileUris() {
+    return files.stream().map(ClientInputFile::uri).collect(toSet());
   }
 
   public boolean isTrackingEnabled() {
