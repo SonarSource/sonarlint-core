@@ -87,13 +87,16 @@ public class FindingReportingService {
     previouslyRaisedFindingsRepository.addOrReplaceIssues(configurationScopeId, issuesToRaise);
     client.raiseIssues(new RaiseIssuesParams(configurationScopeId, issuesToRaise, true,
       analysisId));
-    var hotspotsToRaise = securityHotspotsPerFileUri.entrySet().stream()
-      .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedHotspotDto(issue, newCodeDefinition)).collect(toList())))
-      .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
-    previouslyRaisedFindingsRepository.addOrReplaceHotspots(configurationScopeId, hotspotsToRaise);
-    client.raiseHotspots(new RaiseHotspotsParams(configurationScopeId, hotspotsToRaise,
-      true,
-      analysisId));
+    var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
+    if (effectiveBindingOpt.isPresent()) {
+      var hotspotsToRaise = securityHotspotsPerFileUri.entrySet().stream()
+        .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedHotspotDto(issue, newCodeDefinition)).collect(toList())))
+        .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+      previouslyRaisedFindingsRepository.addOrReplaceHotspots(configurationScopeId, hotspotsToRaise);
+      client.raiseHotspots(new RaiseHotspotsParams(configurationScopeId, hotspotsToRaise,
+        true,
+        analysisId));
+    }
   }
 
   public void reportTrackedFindings(String configurationScopeId, UUID analysisId, Map<Path, List<TrackedIssue>> issuesToReport, Map<Path, List<TrackedIssue>> hotspotsToReport) {
