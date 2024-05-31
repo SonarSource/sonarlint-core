@@ -27,28 +27,4 @@ public interface ClientProgressMonitor {
     return false;
   }
 
-  /**
-   * Handles a message regarding the current action
-   */
-  void setMessage(String msg);
-
-  /**
-   * Handles the approximate fraction of the task completed.
-   * @param fraction Number between 0.0f and 1.0f
-   */
-  void setFraction(float fraction);
-
-  /**
-   * Handles whether the task in progress can determinate the fraction of its progress.
-   * If not set, it should be assumed false
-   */
-  void setIndeterminate(boolean indeterminate);
-
-  /**
-   * Execute a section of code that can't be canceled
-   */
-  default void executeNonCancelableSection(Runnable nonCancelable) {
-    nonCancelable.run();
-  }
-
 }

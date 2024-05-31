@@ -21,14 +21,11 @@ package org.sonarsource.sonarlint.core.commons.progress;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.AdditionalMatchers;
 import org.sonarsource.sonarlint.core.commons.api.progress.CanceledException;
 import org.sonarsource.sonarlint.core.commons.api.progress.ClientProgressMonitor;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class ProgressMonitorTests {
@@ -42,73 +39,8 @@ class ProgressMonitorTests {
   }
 
   @Test
-  void testMsg() {
-    progress.setProgressAndCheckCancel("msg", 0.5f);
-
-    verify(monitor).setMessage("msg");
-    verify(monitor).setFraction(0.5f);
-    verify(monitor).isCanceled();
-
-    verifyNoMoreInteractions(monitor);
-  }
-
-  @Test
-  void testCancelSection() {
-    var r = mock(Runnable.class);
-    progress.executeNonCancelableSection(r);
-
-    verify(monitor).executeNonCancelableSection(r);
-  }
-
-  @Test
   void testCancel() {
     when(monitor.isCanceled()).thenReturn(true);
     assertThrows(CanceledException.class, () -> progress.checkCancel());
-  }
-
-  @Test
-  void testProgress() {
-    when(monitor.isCanceled()).thenReturn(false);
-    progress.setProgress("msg", 0.5f);
-    verify(monitor).setMessage("msg");
-    verify(monitor).setFraction(0.5f);
-  }
-
-  @Test
-  void testProgressSubMonitor() {
-    when(monitor.isCanceled()).thenReturn(false);
-    var subProgress = progress.subProgress(0.2f, 0.4f, "prefix");
-    subProgress.setProgress("msg", 0.0f);
-    verify(monitor).setMessage("prefix - msg");
-    verify(monitor).setFraction(0.2f);
-    subProgress.setProgress("msg2", 0.5f);
-    verify(monitor).setMessage("prefix - msg2");
-    verify(monitor).setFraction(0.3f);
-    subProgress.setProgress("msg3", 1.0f);
-    verify(monitor).setMessage("prefix - msg3");
-    verify(monitor).setFraction(0.4f);
-  }
-
-  @Test
-  void testProgressSubSubMonitor() {
-    when(monitor.isCanceled()).thenReturn(false);
-    var subProgress = progress.subProgress(0.2f, 0.4f, "prefix");
-    var subSubProgress = subProgress.subProgress(0.5f, 1.0f, "subprefix");
-    subSubProgress.setProgress("msg", 0.0f);
-    verify(monitor).setMessage("prefix - subprefix - msg");
-    verify(monitor).setFraction(0.3f);
-    subSubProgress.setProgress("msg2", 0.5f);
-    verify(monitor).setMessage("prefix - subprefix - msg2");
-    verify(monitor).setFraction(AdditionalMatchers.eq(0.35f, 0.001f));
-    subSubProgress.setProgress("msg3", 1.0f);
-    verify(monitor).setMessage("prefix - subprefix - msg3");
-    verify(monitor).setFraction(0.4f);
-  }
-
-  @Test
-  void testNoMonitor() {
-    progress = new ProgressMonitor(null);
-    progress.checkCancel();
-    progress.setProgressAndCheckCancel("msg", 0.5f);
   }
 }
