@@ -317,6 +317,7 @@ public class RulesService {
   }
 
   private void processEvent(RuleSetChangedEvent event, String connectionId) {
+    // TODO add analysis triggering here if rules were activated - https://sonarsource.atlassian.net/browse/SLCORE-829
     var deactivatedRules = event.getDeactivatedRules();
     if (!deactivatedRules.isEmpty()) {
       var changedProjectKeys = event.getProjectKeys();
