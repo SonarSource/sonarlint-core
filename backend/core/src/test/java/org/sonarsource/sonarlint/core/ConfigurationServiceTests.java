@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
+import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
@@ -174,7 +175,7 @@ class ConfigurationServiceTests {
   }
 
   @Test
-  void should_remove_binding_if_connection_removed() {
+  void should_clear_binding_if_connection_removed() {
     underTest.didAddConfigurationScopes(List.of(CONFIG_DTO_1, CONFIG_DTO_3));
     assertThat(repository.getConfigScopeIds()).containsOnly("id1", "id3");
 
@@ -183,6 +184,12 @@ class ConfigurationServiceTests {
     assertThat(repository.getBoundScope("id3"))
       .isNotNull()
       .extracting(BoundScope::getConnectionId).isEqualTo(CONNECTION_2);
+    assertThat(repository.getBindingConfiguration(CONFIG_DTO_1.getId()))
+      .extracting(BindingConfiguration::getConnectionId, BindingConfiguration::getSonarProjectKey, BindingConfiguration::isBindingSuggestionDisabled)
+      .containsExactly(null, null, false);
+    assertThat(repository.getBindingConfiguration(CONFIG_DTO_3.getId()))
+      .extracting(BindingConfiguration::getConnectionId, BindingConfiguration::getSonarProjectKey, BindingConfiguration::isBindingSuggestionDisabled)
+      .containsExactly(BINDING_DTO_3.getConnectionId(), BINDING_DTO_3.getSonarProjectKey(), BINDING_DTO_3.isBindingSuggestionDisabled());
   }
 
 }
