@@ -19,20 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.commons.progress;
 
+import java.util.function.Supplier;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.api.progress.CanceledException;
 import org.sonarsource.sonarlint.core.commons.api.progress.ClientProgressMonitor;
 
 public class ProgressMonitor {
-  public static ProgressMonitor wrapping(SonarLintCancelMonitor cancelMonitor) {
-    return new ProgressMonitor(new ClientProgressMonitor() {
-      @Override
-      public boolean isCanceled() {
-        return cancelMonitor.isCanceled();
-      }
-    });
-  }
-
   private final ClientProgressMonitor clientMonitor;
   private volatile boolean canceled;
 
@@ -44,6 +37,11 @@ public class ProgressMonitor {
     if (isCanceled()) {
       throw new CanceledException();
     }
+  }
+
+  @CheckForNull
+  public <T> T startTask(String message, Supplier<T> task) {
+    return task.get();
   }
 
   public boolean isCanceled() {

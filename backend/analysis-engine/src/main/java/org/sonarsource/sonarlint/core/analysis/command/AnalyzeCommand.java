@@ -29,6 +29,8 @@ import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 
+import static org.sonarsource.sonarlint.core.commons.util.StringUtils.pluralize;
+
 public class AnalyzeCommand implements Command<AnalysisResults> {
   @Nullable
   private final Object moduleKey;
@@ -48,6 +50,11 @@ public class AnalyzeCommand implements Command<AnalysisResults> {
     if (logOutput != null) {
       SonarLintLogger.setTarget(logOutput);
     }
+    return progressMonitor.startTask("Analyzing " + pluralize(configuration.inputFiles().size(), "file"),
+      () -> doRunAnalysis(moduleRegistry, progressMonitor));
+  }
+
+  private AnalysisResults doRunAnalysis(ModuleRegistry moduleRegistry, ProgressMonitor progressMonitor) {
     var moduleContainer = moduleKey != null ? moduleRegistry.getContainerFor(moduleKey) : null;
     if (moduleContainer == null) {
       // if not found, means we are outside of any module (e.g. single file analysis on VSCode)

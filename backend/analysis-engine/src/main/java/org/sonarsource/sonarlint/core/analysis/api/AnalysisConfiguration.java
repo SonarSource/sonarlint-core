@@ -31,7 +31,7 @@ import javax.annotation.concurrent.Immutable;
 @Immutable
 public class AnalysisConfiguration {
 
-  private final Iterable<ClientInputFile> inputFiles;
+  private final List<ClientInputFile> inputFiles;
   private final Map<String, String> extraProperties;
   private final Path baseDir;
   private final Collection<ActiveRule> activeRules;
@@ -57,7 +57,7 @@ public class AnalysisConfiguration {
     return baseDir;
   }
 
-  public Iterable<ClientInputFile> inputFiles() {
+  public List<ClientInputFile> inputFiles() {
     return inputFiles;
   }
 
