@@ -1017,18 +1017,6 @@ class StandaloneIssueMediumTests {
     public boolean isCanceled() {
       return true;
     }
-
-    @Override
-    public void setMessage(String msg) {
-    }
-
-    @Override
-    public void setIndeterminate(boolean indeterminate) {
-    }
-
-    @Override
-    public void setFraction(float fraction) {
-    }
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding, @Nullable SonarLanguage language) throws IOException {

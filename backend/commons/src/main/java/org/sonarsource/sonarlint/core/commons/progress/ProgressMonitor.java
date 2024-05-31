@@ -27,21 +27,6 @@ public class ProgressMonitor {
   public static ProgressMonitor wrapping(SonarLintCancelMonitor cancelMonitor) {
     return new ProgressMonitor(new ClientProgressMonitor() {
       @Override
-      public void setMessage(String msg) {
-        // no-op
-      }
-
-      @Override
-      public void setFraction(float fraction) {
-        // no-op
-      }
-
-      @Override
-      public void setIndeterminate(boolean indeterminate) {
-        // no-op
-      }
-
-      @Override
       public boolean isCanceled() {
         return cancelMonitor.isCanceled();
       }
@@ -49,29 +34,14 @@ public class ProgressMonitor {
   }
 
   private final ClientProgressMonitor clientMonitor;
-  private final float offset;
-  private final float factor;
-  private final String msgPrefix;
   private volatile boolean canceled;
 
-  private ProgressMonitor(float offset, float factor, @Nullable String msgPrefix, @Nullable ClientProgressMonitor clientMonitor) {
-    this.offset = offset;
-    this.factor = factor;
-    this.msgPrefix = msgPrefix;
-    this.clientMonitor = clientMonitor == null ? new NoOpProgressMonitor() : clientMonitor;
-  }
-
   public ProgressMonitor(@Nullable ClientProgressMonitor clientMonitor) {
-    this(0.0f, 1.0f, null, clientMonitor);
-  }
-
-  public ProgressMonitor subProgress(float fromFraction, float toFraction, String msgPrefix) {
-    return new ProgressMonitor(offset + fromFraction * factor, (toFraction - fromFraction) * factor, prependPrefix(msgPrefix), clientMonitor);
+    this.clientMonitor = clientMonitor == null ? new NoOpProgressMonitor() : clientMonitor;
   }
 
   public void checkCancel() {
     if (isCanceled()) {
-      clientMonitor.setMessage("Cancelling");
       throw new CanceledException();
     }
   }
@@ -84,44 +54,6 @@ public class ProgressMonitor {
     canceled = true;
   }
 
-  public void setProgress(String msg, float fraction) {
-    clientMonitor.setMessage(prependPrefix(msg));
-    setFraction(fraction);
-  }
-
-  private String prependPrefix(String suffix) {
-    return this.msgPrefix != null ? (this.msgPrefix + " - " + suffix) : suffix;
-  }
-
-  public void setProgressAndCheckCancel(String msg, float fraction) {
-    checkCancel();
-    setProgress(msg, fraction);
-  }
-
-  private void setFraction(float fraction) {
-    clientMonitor.setFraction(offset + fraction * factor);
-  }
-
-  public void executeNonCancelableSection(Runnable r) {
-    clientMonitor.executeNonCancelableSection(r);
-  }
-
   private static class NoOpProgressMonitor implements ClientProgressMonitor {
-
-    @Override
-    public void setMessage(String msg) {
-      // no-op
-    }
-
-    @Override
-    public void setFraction(float fraction) {
-      // no-op
-    }
-
-    @Override
-    public void setIndeterminate(boolean indeterminate) {
-      // no-op
-    }
-
   }
 }
