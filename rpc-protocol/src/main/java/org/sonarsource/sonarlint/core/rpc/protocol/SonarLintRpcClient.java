@@ -185,7 +185,7 @@ public interface SonarLintRpcClient {
   CompletableFuture<CheckServerTrustedResponse> checkServerTrusted(CheckServerTrustedParams params);
 
   /**
-   * @deprecated Shouldn't have no-op implementation until method is removed, since event is fully handled by backend now
+   * @deprecated Should have no-op implementation until method is removed, since event is fully handled by backend now
    */
   @Deprecated(since = "10.3")
   @JsonNotification

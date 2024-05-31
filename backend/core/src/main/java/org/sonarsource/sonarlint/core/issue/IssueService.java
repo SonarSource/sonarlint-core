@@ -19,9 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.issue;
 
-import java.net.URI;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -46,14 +44,12 @@ import org.sonarsource.sonarlint.core.event.ServerIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.local.only.XodusLocalOnlyIssueStore;
+import org.sonarsource.sonarlint.core.reporting.FindingReportingService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.repository.reporting.PreviouslyRaisedFindingsRepository;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssuesForFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseIssuesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
@@ -93,20 +89,18 @@ public class IssueService {
   private final LocalOnlyIssueStorageService localOnlyIssueStorageService;
   private final LocalOnlyIssueRepository localOnlyIssueRepository;
   private final ApplicationEventPublisher eventPublisher;
-  private final PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository;
-  private final SonarLintRpcClient client;
+  private final FindingReportingService findingReportingService;
 
   public IssueService(ConfigurationRepository configurationRepository, ServerApiProvider serverApiProvider, StorageService storageService,
     LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
-    ApplicationEventPublisher eventPublisher, PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, SonarLintRpcClient client) {
+    ApplicationEventPublisher eventPublisher, FindingReportingService findingReportingService) {
     this.configurationRepository = configurationRepository;
     this.serverApiProvider = serverApiProvider;
     this.storageService = storageService;
     this.localOnlyIssueStorageService = localOnlyIssueStorageService;
     this.localOnlyIssueRepository = localOnlyIssueRepository;
     this.eventPublisher = eventPublisher;
-    this.previouslyRaisedFindingsRepository = previouslyRaisedFindingsRepository;
-    this.client = client;
+    this.findingReportingService = findingReportingService;
   }
 
   public void changeStatus(String configurationScopeId, String issueKey, ResolutionStatus newStatus, boolean isTaintIssue, SonarLintCancelMonitor cancelMonitor) {
@@ -347,48 +341,36 @@ public class IssueService {
     var boundScopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, event.getProjectKey());
     boundScopes.forEach(scope -> {
       var scopeId = scope.getConfigScopeId();
-      var previouslyRaisedIssues = previouslyRaisedFindingsRepository.getRaisedIssuesForScope(scopeId);
-      var updatedIssues = updateIssuesWithEventData(previouslyRaisedIssues, event);
-      if (!updatedIssues.isEmpty()) {
-        previouslyRaisedFindingsRepository.addOrReplaceIssues(scopeId, updatedIssues);
-        client.raiseIssues(new RaiseIssuesParams(scopeId, updatedIssues, false, UUID.randomUUID()));
-      }
+      findingReportingService.updateAndReportIssues(scopeId, new SonarServerEventReceivedEvent(null, event),
+        IssueService::raisedIssueUpdater);
     });
   }
 
-  private static Map<URI, List<RaisedIssueDto>> updateIssuesWithEventData(Map<URI, List<RaisedIssueDto>> previouslyRaisedIssues, IssueChangedEvent event) {
+  public static RaisedIssueDto raisedIssueUpdater(RaisedIssueDto previouslyRaisedIssue, SonarServerEventReceivedEvent eventReceived) {
+    var event = (IssueChangedEvent) eventReceived.getEvent();
     var resolved = event.getResolved();
     var userSeverity = event.getUserSeverity();
     var userType = event.getUserType();
     var impactedIssueKeys = Set.copyOf(event.getImpactedIssueKeys());
     if (resolved != null) {
       UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder().withResolution(resolved).buildIssue();
-      return updateIssues(previouslyRaisedIssues, impactedIssueKeys, issueUpdater);
+      return updateIssue(previouslyRaisedIssue, impactedIssueKeys, issueUpdater);
     } else if (userSeverity != null) {
       UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder().withSeverity(IssueSeverity.valueOf(userSeverity.name())).buildIssue();
-      return updateIssues(previouslyRaisedIssues, impactedIssueKeys, issueUpdater);
+      return updateIssue(previouslyRaisedIssue, impactedIssueKeys, issueUpdater);
     } else if (userType != null) {
       UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder().withType(RuleType.valueOf(userType.name())).buildIssue();
-      return updateIssues(previouslyRaisedIssues, impactedIssueKeys, issueUpdater);
+      return updateIssue(previouslyRaisedIssue, impactedIssueKeys, issueUpdater);
     }
-    // shouldn't get such events
-    return Map.of();
+    return previouslyRaisedIssue;
   }
 
-  private static Map<URI, List<RaisedIssueDto>> updateIssues(Map<URI, List<RaisedIssueDto>> previouslyRaisedIssues, Set<String> impactedIssueKeys,
-    UnaryOperator<RaisedIssueDto> issueUpdater) {
-    Map<URI, List<RaisedIssueDto>> updatedIssues = new HashMap<>();
-    previouslyRaisedIssues.forEach((uri, issues) -> {
-      var updatedIssuesForFile = issues.stream().map(issue -> {
-        var serverKey = issue.getServerKey();
-        if (serverKey != null && impactedIssueKeys.contains(serverKey)) {
-          return issueUpdater.apply(issue);
-        }
-        return issue;
-      }).collect(Collectors.toList());
-      updatedIssues.put(uri, updatedIssuesForFile);
-    });
-    return updatedIssues;
+  private static RaisedIssueDto updateIssue(RaisedIssueDto issue, Set<String> impactedIssueKeys, UnaryOperator<RaisedIssueDto> issueUpdater) {
+    var serverKey = issue.getServerKey();
+    if (serverKey != null && impactedIssueKeys.contains(serverKey)) {
+      return issueUpdater.apply(issue);
+    }
+    return issue;
   }
 
   private void updateProjectIssueStorage(String connectionId, IssueChangedEvent event) {

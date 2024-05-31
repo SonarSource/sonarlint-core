@@ -21,9 +21,9 @@
 package org.sonarsource.sonarlint.core.repository.reporting;
 
 import java.net.URI;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
@@ -33,16 +33,15 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 @Singleton
 public class PreviouslyRaisedFindingsRepository {
 
-  Map<String, Map<URI, List<RaisedIssueDto>>> previouslyRaisedIssuesByScopeId = new HashMap<>();
-  Map<String, Map<URI, List<RaisedHotspotDto>>> previouslyRaisedHotspotsByScopeId = new HashMap<>();
+  private final Map<String, Map<URI, List<RaisedIssueDto>>> previouslyRaisedIssuesByScopeId = new ConcurrentHashMap<>();
+  private final Map<String, Map<URI, List<RaisedHotspotDto>>> previouslyRaisedHotspotsByScopeId = new ConcurrentHashMap<>();
 
   public void addOrReplaceIssues(String scopeId, Map<URI, List<RaisedIssueDto>> raisedIssues) {
     previouslyRaisedIssuesByScopeId.put(scopeId, raisedIssues);
   }
 
   public Map<URI, List<RaisedIssueDto>> getRaisedIssuesForScope(String scopeId) {
-    var issues = previouslyRaisedIssuesByScopeId.get(scopeId);
-    return issues == null ? Map.of() : issues;
+    return previouslyRaisedIssuesByScopeId.getOrDefault(scopeId, Map.of());
   }
 
   public void addOrReplaceHotspots(String scopeId, Map<URI, List<RaisedHotspotDto>> raisedHotpots) {
@@ -50,8 +49,7 @@ public class PreviouslyRaisedFindingsRepository {
   }
 
   public Map<URI, List<RaisedHotspotDto>> getRaisedHotspotsForScope(String scopeId) {
-    var hotspots = previouslyRaisedHotspotsByScopeId.get(scopeId);
-    return hotspots == null ? Map.of() : hotspots;
+    return previouslyRaisedHotspotsByScopeId.getOrDefault(scopeId, Map.of());
   }
 
 }
