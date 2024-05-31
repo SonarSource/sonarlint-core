@@ -322,11 +322,11 @@ public class RulesService {
     if (!deactivatedRules.isEmpty()) {
       var changedProjectKeys = event.getProjectKeys();
       configurationRepository.getAllBoundScopes().stream()
-        .filter(scope -> connectionId.equals(scope.getConfigScopeId()) && changedProjectKeys.contains(scope.getSonarProjectKey()))
+        .filter(scope -> connectionId.equals(scope.getConnectionId()) && changedProjectKeys.contains(scope.getSonarProjectKey()))
         .map(BoundScope::getConfigScopeId)
         .forEach(scopeId -> findingReportingService.updateAndReportFindings(scopeId,
           hotspot -> raisedHotspotUpdater(hotspot, event),
-          hotspot -> raisedIssueUpdater(hotspot, event)));
+          issue -> raisedIssueUpdater(issue, event)));
     }
   }
 
