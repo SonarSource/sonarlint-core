@@ -284,6 +284,8 @@ class RuleEventsMediumTests {
           "  void foo() {\n" +
           "    // TODO foo\n" +
           "    int i = 0;\n" +
+          "    String password = \"blue\";\n" +
+          "    String ip = \"192.168.12.42\";\n" +
           "  }\n" +
           "}\n");
       var fileUri = filePath.toUri();
@@ -297,7 +299,10 @@ class RuleEventsMediumTests {
       var server = newSonarQubeServer()
         .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java")
           .withActiveRule("java:S1481", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR))
-          .withActiveRule("java:S1135", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
+          .withActiveRule("java:S1135", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR))
+          .withActiveRule("java:S1313", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR))
+          .withActiveRule("java:S2068", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR))
+        )
         .withProject(projectKey,
           project -> project
             .withQualityProfile("qpKey"))
@@ -311,7 +316,7 @@ class RuleEventsMediumTests {
           "data: {" +
           "\"projects\": [\"projectKey\"]," +
           "\"activatedRules\": []," +
-          "\"deactivatedRules\": [\"java:S1481\"]" +
+          "\"deactivatedRules\": [\"java:S1481\", \"java:S1313\"]" +
           "}\n\n")
           // Add a delay to ensure event will arrive after the first analysis
           .withFixedDelay(5000))
@@ -324,6 +329,7 @@ class RuleEventsMediumTests {
       backend = newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
+        .withSecurityHotspotsEnabled()
         .withFullSynchronization()
         .withSonarQubeConnection(connectionId, server)
         .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
@@ -331,15 +337,20 @@ class RuleEventsMediumTests {
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
       var raisedIssues = analyzeFileAndGetIssues(fileUri, client);
-      assertThat(raisedIssues).hasSize(2);
+      assertThat(raisedIssues).hasSize(4);
       client.cleanRaisedIssues();
+      client.cleanRaisedHotspots();
 
       await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
       raisedIssues = client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID).get(fileUri);
+      var raisedHotspots = client.getRaisedHotspotsForScopeId(CONFIG_SCOPE_ID).get(fileUri);
 
       assertThat(raisedIssues).hasSize(1);
-      var raisedIssueDto = raisedIssues.get(0);
-      assertThat(raisedIssueDto.getRuleKey()).isEqualTo("java:S1135");
+      var raisedIssue = raisedIssues.get(0);
+      assertThat(raisedIssue.getRuleKey()).isEqualTo("java:S1135");
+      assertThat(raisedHotspots).hasSize(1);
+      var raisedHotspot = raisedHotspots.get(0);
+      assertThat(raisedHotspot.getRuleKey()).isEqualTo("java:S2068");
     }
   }
 
