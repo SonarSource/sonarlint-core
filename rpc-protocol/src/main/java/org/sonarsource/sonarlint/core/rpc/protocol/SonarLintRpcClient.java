@@ -184,6 +184,10 @@ public interface SonarLintRpcClient {
   @JsonRequest
   CompletableFuture<CheckServerTrustedResponse> checkServerTrusted(CheckServerTrustedParams params);
 
+  /**
+   * @deprecated Should have no-op implementation until method is removed, since event is fully handled by backend now
+   */
+  @Deprecated(since = "10.3")
   @JsonNotification
   void didReceiveServerHotspotEvent(DidReceiveServerHotspotEvent params);
 

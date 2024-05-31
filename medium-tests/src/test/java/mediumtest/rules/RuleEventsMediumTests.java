@@ -19,14 +19,27 @@
  */
 package mediumtest.rules;
 
+import java.net.URI;
+import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.ServerFixture;
 import mediumtest.fixtures.SonarLintTestRpcServer;
+import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
+import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 
@@ -41,12 +54,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
+import static testutils.AnalysisUtils.createFile;
 
 class RuleEventsMediumTests {
 
+  private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
   private SonarLintTestRpcServer backend;
 
   @AfterEach
@@ -258,6 +275,100 @@ class RuleEventsMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets("connectionId", "projectKey"))
         .isEmpty());
     }
+
+    @Test
+    void it_should_re_raise_issues_without_deactivated_rules(@TempDir Path baseDir) {
+      var filePath = createFile(baseDir, "Foo.java",
+        "public class Foo {\n" +
+          "\n" +
+          "  void foo() {\n" +
+          "    // TODO foo\n" +
+          "    int i = 0;\n" +
+          "    String password = \"blue\";\n" +
+          "    String ip = \"192.168.12.42\";\n" +
+          "  }\n" +
+          "}\n");
+      var fileUri = filePath.toUri();
+      var connectionId = "connectionId";
+      var branchName = "branchName";
+      var projectKey = "projectKey";
+      var client = newFakeClient()
+        .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath,null, null)))
+        .build();
+      when(client.matchSonarProjectBranch(eq(CONFIG_SCOPE_ID), eq("main"), eq(Set.of("main", branchName)), any())).thenReturn(branchName);
+      var server = newSonarQubeServer()
+        .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java")
+          .withActiveRule("java:S1481", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR))
+          .withActiveRule("java:S1135", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR))
+          .withActiveRule("java:S1313", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR))
+          .withActiveRule("java:S2068", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR))
+        )
+        .withProject(projectKey,
+          project -> project
+            .withQualityProfile("qpKey"))
+        .withPlugin(TestPlugin.JAVA)
+        .start();
+
+      server.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java")
+        .inScenario("Single event")
+        .whenScenarioStateIs(STARTED)
+        .willReturn(okForContentType("text/event-stream", "event: RuleSetChanged\n" +
+          "data: {" +
+          "\"projects\": [\"projectKey\"]," +
+          "\"activatedRules\": []," +
+          "\"deactivatedRules\": [\"java:S1481\", \"java:S1313\"]" +
+          "}\n\n")
+          // Add a delay to ensure event will arrive after the first analysis
+          .withFixedDelay(5000))
+        .willSetStateTo("Event delivered"));
+      // avoid later reconnection
+      server.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java")
+        .inScenario("Single event")
+        .whenScenarioStateIs("Event delivered")
+        .willReturn(notFound()));
+      backend = newBackend()
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
+        .withServerSentEventsEnabled()
+        .withSecurityHotspotsEnabled()
+        .withFullSynchronization()
+        .withSonarQubeConnection(connectionId, server)
+        .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
+        .build(client);
+
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
+      var raisedIssues = analyzeFileAndGetIssues(fileUri, client);
+      assertThat(raisedIssues).hasSize(4);
+      client.cleanRaisedIssues();
+      client.cleanRaisedHotspots();
+
+      await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
+      raisedIssues = client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID).get(fileUri);
+      var raisedHotspots = client.getRaisedHotspotsForScopeId(CONFIG_SCOPE_ID).get(fileUri);
+
+      assertThat(raisedIssues).hasSize(1);
+      var raisedIssue = raisedIssues.get(0);
+      assertThat(raisedIssue.getRuleKey()).isEqualTo("java:S1135");
+      assertThat(raisedHotspots).hasSize(1);
+      var raisedHotspot = raisedHotspots.get(0);
+      assertThat(raisedHotspot.getRuleKey()).isEqualTo("java:S2068");
+    }
+  }
+
+  private List<RaisedIssueDto> analyzeFileAndGetIssues(URI fileUri, SonarLintRpcClientDelegate client) {
+    var analysisId = UUID.randomUUID();
+    var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
+        new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true, System.currentTimeMillis()))
+      .join();
+    var publishedIssuesByFile = getPublishedIssues(client, analysisId);
+    assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
+    assertThat(publishedIssuesByFile).containsOnlyKeys(fileUri);
+    return publishedIssuesByFile.get(fileUri);
+  }
+
+  private Map<URI, List<RaisedIssueDto>> getPublishedIssues(SonarLintRpcClientDelegate client, UUID analysisId) {
+    ArgumentCaptor<Map<URI, List<RaisedIssueDto>>> trackedIssuesCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(client, timeout(300)).raiseIssues(eq(CONFIG_SCOPE_ID), trackedIssuesCaptor.capture(), eq(false), eq(analysisId));
+    return trackedIssuesCaptor.getValue();
   }
 
   private Map<String, Sonarlint.RuleSet> readRuleSets(String connectionId, String projectKey) {
@@ -269,10 +380,15 @@ class RuleEventsMediumTests {
   }
 
   private static void mockEvent(ServerFixture.Server server, String projectKey, String eventPayload) {
+    mockEventWithDelay(server, projectKey, eventPayload, 0);
+  }
+
+  private static void mockEventWithDelay(ServerFixture.Server server, String projectKey, String eventPayload, Integer delay) {
     server.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java")
       .inScenario("Single event")
       .whenScenarioStateIs(STARTED)
-      .willReturn(okForContentType("text/event-stream", eventPayload))
+      .willReturn(okForContentType("text/event-stream", eventPayload)
+        .withFixedDelay(delay))
       .willSetStateTo("Event delivered"));
     // avoid later reconnection
     server.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java")

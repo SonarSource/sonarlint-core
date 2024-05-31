@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -40,11 +41,13 @@ import org.slf4j.LoggerFactory;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.analysis.RuleDetailsForAnalysis;
 import org.sonarsource.sonarlint.core.commons.Binding;
+import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
+import org.sonarsource.sonarlint.core.reporting.FindingReportingService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
@@ -52,11 +55,13 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetStandaloneRuleDescriptionResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDefinitionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleParamDefinitionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleParamType;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamDefinition;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamType;
@@ -69,6 +74,7 @@ import org.sonarsource.sonarlint.core.serverconnection.RuleSet;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 
 import static org.sonarsource.sonarlint.core.commons.CleanCodeAttribute.CONVENTIONAL;
@@ -89,6 +95,7 @@ public class RulesService {
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private static final String COULD_NOT_FIND_RULE = "Could not find rule '";
   private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfig = new ConcurrentHashMap<>();
+  private FindingReportingService findingReportingService;
 
   @Inject
   public RulesService(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository, StorageService storageService,
@@ -303,8 +310,51 @@ public class RulesService {
     var connectionId = eventReceived.getConnectionId();
     var serverEvent = eventReceived.getEvent();
     if (serverEvent instanceof RuleSetChangedEvent) {
-      updateStorage(connectionId, (RuleSetChangedEvent) serverEvent);
+      var ruleSetChangedEvent = (RuleSetChangedEvent) serverEvent;
+      updateStorage(connectionId, ruleSetChangedEvent);
+      processEvent(ruleSetChangedEvent, connectionId);
     }
+  }
+
+  private void processEvent(RuleSetChangedEvent event, String connectionId) {
+    // TODO add analysis triggering here if rules were activated - https://sonarsource.atlassian.net/browse/SLCORE-829
+    var deactivatedRules = event.getDeactivatedRules();
+    if (!deactivatedRules.isEmpty()) {
+      var changedProjectKeys = event.getProjectKeys();
+      configurationRepository.getAllBoundScopes().stream()
+        .filter(scope -> connectionId.equals(scope.getConnectionId()) && changedProjectKeys.contains(scope.getSonarProjectKey()))
+        .map(BoundScope::getConfigScopeId)
+        .forEach(scopeId -> findingReportingService.updateAndReportFindings(scopeId,
+          hotspot -> raisedHotspotUpdater(hotspot, event),
+          issue -> raisedIssueUpdater(issue, event)));
+    }
+  }
+
+  @CheckForNull
+  public static RaisedIssueDto raisedIssueUpdater(RaisedIssueDto raisedIssue, RuleSetChangedEvent event) {
+    var finding = raisedFindingUpdater(raisedIssue, event);
+    if (finding instanceof RaisedIssueDto) {
+      return ((RaisedIssueDto) finding);
+    }
+    return null;
+  }
+
+  @CheckForNull
+  public static RaisedHotspotDto raisedHotspotUpdater(RaisedHotspotDto raisedHotspot, RuleSetChangedEvent event) {
+    var finding = raisedFindingUpdater(raisedHotspot, event);
+    if (finding instanceof RaisedHotspotDto) {
+      return ((RaisedHotspotDto) finding);
+    }
+    return null;
+  }
+
+  @CheckForNull
+  private static RaisedFindingDto raisedFindingUpdater(RaisedFindingDto raisedFinding, RuleSetChangedEvent event) {
+    var deactivatedRules = event.getDeactivatedRules();
+    if (deactivatedRules.contains(raisedFinding.getRuleKey())) {
+      return null;
+    }
+    return raisedFinding;
   }
 
   private void updateStorage(String connectionId, RuleSetChangedEvent event) {
@@ -400,4 +450,10 @@ public class RulesService {
       .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(SECRET_ANALYSIS_MIN_SQ_VERSION) >= 0)
       .orElse(false);
   }
+
+  @Autowired
+  public void setFindingReportingService(FindingReportingService findingReportingService) {
+    this.findingReportingService = findingReportingService;
+  }
+
 }

@@ -24,18 +24,23 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.reporting.PreviouslyRaisedFindingsRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaiseHotspotsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseIssuesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.tracking.TrackedIssue;
 import org.sonarsource.sonarlint.core.tracking.streaming.Alarm;
@@ -52,14 +57,17 @@ public class FindingReportingService {
   private final SonarLintRpcClient client;
   private final ConfigurationRepository configurationRepository;
   private final NewCodeService newCodeService;
+  private final PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository;
   private final Map<URI, Collection<TrackedIssue>> issuesPerFileUri = new ConcurrentHashMap<>();
   private final Map<URI, Collection<TrackedIssue>> securityHotspotsPerFileUri = new ConcurrentHashMap<>();
   private final Map<String, Alarm> streamingTriggeringAlarmByConfigScopeId = new ConcurrentHashMap<>();
 
-  public FindingReportingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, NewCodeService newCodeService) {
+  public FindingReportingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, NewCodeService newCodeService,
+    PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.newCodeService = newCodeService;
+    this.previouslyRaisedFindingsRepository = previouslyRaisedFindingsRepository;
   }
 
   public void stream(String configurationScopeId, UUID analysisId, TrackedIssue trackedIssue) {
@@ -73,28 +81,38 @@ public class FindingReportingService {
 
   private void triggerStreaming(String configurationScopeId, UUID analysisId) {
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId).orElseGet(NewCodeDefinition::withAlwaysNew);
-    client.raiseIssues(new RaiseIssuesParams(configurationScopeId, issuesPerFileUri.entrySet().stream()
+    var issuesToRaise = issuesPerFileUri.entrySet().stream()
       .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedIssueDto(issue, newCodeDefinition)).collect(toList())))
-      .collect(toMap(Map.Entry::getKey, Map.Entry::getValue)), true,
+      .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+    previouslyRaisedFindingsRepository.addOrReplaceIssues(configurationScopeId, issuesToRaise);
+    client.raiseIssues(new RaiseIssuesParams(configurationScopeId, issuesToRaise, true,
       analysisId));
-    client.raiseHotspots(new RaiseHotspotsParams(configurationScopeId,
-      securityHotspotsPerFileUri.entrySet().stream()
-        .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedHotspotDto(issue, newCodeDefinition)).collect(toList())))
-        .collect(toMap(Map.Entry::getKey, Map.Entry::getValue)),
+    var hotspotsToRaise = securityHotspotsPerFileUri.entrySet().stream()
+      .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedHotspotDto(issue, newCodeDefinition)).collect(toList())))
+      .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
+    previouslyRaisedFindingsRepository.addOrReplaceHotspots(configurationScopeId, hotspotsToRaise);
+    client.raiseHotspots(new RaiseHotspotsParams(configurationScopeId, hotspotsToRaise,
       true,
       analysisId));
   }
 
-  public void report(String configurationScopeId, UUID analysisId, Map<Path, List<TrackedIssue>> issuesToReport, Map<Path, List<TrackedIssue>> hotspotsToReport) {
+  public void reportTrackedFindings(String configurationScopeId, UUID analysisId, Map<Path, List<TrackedIssue>> issuesToReport, Map<Path, List<TrackedIssue>> hotspotsToReport) {
     // stop streaming now, we will raise all issues one last time from this method
     stopStreaming(configurationScopeId);
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId).orElseGet(NewCodeDefinition::withAlwaysNew);
     var issuesToRaise = getIssuesToRaise(issuesToReport, newCodeDefinition);
     var hotspotsToRaise = getHotspotsToRaise(hotspotsToReport, newCodeDefinition);
+    updateRaisedIssuesCacheAndNotifyClient(configurationScopeId, analysisId, issuesToRaise, hotspotsToRaise);
+  }
+
+  private synchronized void updateRaisedIssuesCacheAndNotifyClient(String configurationScopeId, UUID analysisId, Map<URI, List<RaisedIssueDto>> issuesToRaise,
+    Map<URI, List<RaisedHotspotDto>> hotspotsToRaise) {
+    previouslyRaisedFindingsRepository.addOrReplaceIssues(configurationScopeId, issuesToRaise);
     client.raiseIssues(new RaiseIssuesParams(configurationScopeId, issuesToRaise, false, analysisId));
     var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
     if (effectiveBindingOpt.isPresent()) {
       // security hotspots are only supported in connected mode
+      previouslyRaisedFindingsRepository.addOrReplaceHotspots(configurationScopeId, hotspotsToRaise);
       client.raiseHotspots(new RaiseHotspotsParams(configurationScopeId, hotspotsToRaise, false, analysisId));
     }
   }
@@ -124,4 +142,40 @@ public class FindingReportingService {
     return hotspots.values().stream().flatMap(Collection::stream)
       .collect(groupingBy(TrackedIssue::getFileUri, Collectors.mapping(hotspot -> toRaisedHotspotDto(hotspot, newCodeDefinition), Collectors.toList())));
   }
+
+  public void updateAndReportIssues(String configurationScopeId, UnaryOperator<RaisedIssueDto> issueUpdater) {
+    updateAndReportFindings(configurationScopeId, UnaryOperator.identity(), issueUpdater);
+  }
+
+  public void updateAndReportHotspots(String configurationScopeId, UnaryOperator<RaisedHotspotDto> hotspotUpdater) {
+    updateAndReportFindings(configurationScopeId, hotspotUpdater, UnaryOperator.identity());
+  }
+
+  public void updateAndReportFindings(String configurationScopeId,
+    UnaryOperator<RaisedHotspotDto> hotspotUpdater, UnaryOperator<RaisedIssueDto> issueUpdater) {
+    var previouslyRaisedIssues = previouslyRaisedFindingsRepository.getRaisedIssuesForScope(configurationScopeId);
+    var previouslyRaisedHotspots = previouslyRaisedFindingsRepository.getRaisedHotspotsForScope(configurationScopeId);
+    Map<URI, List<RaisedHotspotDto>> updatedHotspots = updateFindings(hotspotUpdater, previouslyRaisedHotspots);
+    Map<URI, List<RaisedIssueDto>> updatedIssues = updateFindings(issueUpdater, previouslyRaisedIssues);
+    reportRaisedFindings(configurationScopeId, null, updatedIssues, updatedHotspots);
+  }
+
+  private static <F extends RaisedFindingDto> Map<URI, List<F>> updateFindings(UnaryOperator<F> findingUpdater, Map<URI, List<F>> previouslyRaisedFindings) {
+    Map<URI, List<F>> updatedFindings = new HashMap<>();
+    previouslyRaisedFindings.forEach((uri, finding) -> {
+      var updatedFindingsForFile = finding.stream()
+        .map(findingUpdater)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toList());
+      updatedFindings.put(uri, updatedFindingsForFile);
+    });
+    return updatedFindings;
+  }
+
+  public void reportRaisedFindings(String configurationScopeId, UUID analysisId, Map<URI, List<RaisedIssueDto>> issuesToRaise, Map<URI, List<RaisedHotspotDto>> hotspotsToRaise) {
+    // stop streaming now, we will raise all issues one last time from this method
+    stopStreaming(configurationScopeId);
+    updateRaisedIssuesCacheAndNotifyClient(configurationScopeId, analysisId, issuesToRaise, hotspotsToRaise);
+  }
+
 }

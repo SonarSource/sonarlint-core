@@ -53,7 +53,7 @@ public class BindingCandidatesFinder {
   }
 
   public Set<ConfigurationScopeSharedContext> findConfigScopesToBind(String connectionId, String projectKey, SonarLintCancelMonitor cancelMonitor) {
-    var configScopeCandidates = configRepository.getAllBindbableUnboundScopes();
+    var configScopeCandidates = configRepository.getAllBindableUnboundScopes();
     if (configScopeCandidates.isEmpty()) {
       return Set.of();
     }

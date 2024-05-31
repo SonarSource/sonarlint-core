@@ -133,7 +133,7 @@ public class TrackingService {
       findingsSynchronizationService.refreshServerFindings(configurationScopeId, matchingSession.getRelativePathsInvolved());
     }
     var result = matchWithServerFindings(configurationScopeId, matchingSession);
-    reportingService.report(configurationScopeId, analysisId, result.issuesToReport, result.hotspotsToReport);
+    reportingService.reportTrackedFindings(configurationScopeId, analysisId, result.issuesToReport, result.hotspotsToReport);
   }
 
   private MatchingResult matchWithServerFindings(String configurationScopeId, MatchingSession matchingSession) {

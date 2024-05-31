@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.inject.Named;
@@ -43,11 +44,15 @@ import org.sonarsource.sonarlint.core.event.ServerIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.local.only.XodusLocalOnlyIssueStore;
+import org.sonarsource.sonarlint.core.reporting.FindingReportingService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssuesForFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
@@ -84,16 +89,18 @@ public class IssueService {
   private final LocalOnlyIssueStorageService localOnlyIssueStorageService;
   private final LocalOnlyIssueRepository localOnlyIssueRepository;
   private final ApplicationEventPublisher eventPublisher;
+  private final FindingReportingService findingReportingService;
 
   public IssueService(ConfigurationRepository configurationRepository, ServerApiProvider serverApiProvider, StorageService storageService,
     LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
-    ApplicationEventPublisher eventPublisher) {
+    ApplicationEventPublisher eventPublisher, FindingReportingService findingReportingService) {
     this.configurationRepository = configurationRepository;
     this.serverApiProvider = serverApiProvider;
     this.storageService = storageService;
     this.localOnlyIssueStorageService = localOnlyIssueStorageService;
     this.localOnlyIssueRepository = localOnlyIssueRepository;
     this.eventPublisher = eventPublisher;
+    this.findingReportingService = findingReportingService;
   }
 
   public void changeStatus(String configurationScopeId, String issueKey, ResolutionStatus newStatus, boolean isTaintIssue, SonarLintCancelMonitor cancelMonitor) {
@@ -321,11 +328,50 @@ public class IssueService {
     var connectionId = eventReceived.getConnectionId();
     var serverEvent = eventReceived.getEvent();
     if (serverEvent instanceof IssueChangedEvent) {
-      updateStorage(connectionId, (IssueChangedEvent) serverEvent);
+      handleEvent(connectionId, (IssueChangedEvent) serverEvent);
     }
   }
 
-  private void updateStorage(String connectionId, IssueChangedEvent event) {
+  private void handleEvent(String connectionId, IssueChangedEvent event) {
+    updateProjectIssueStorage(connectionId, event);
+    republishPreviouslyRaisedIssues(connectionId, event);
+  }
+
+  private void republishPreviouslyRaisedIssues(String connectionId, IssueChangedEvent event) {
+    var boundScopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, event.getProjectKey());
+    boundScopes.forEach(scope -> {
+      var scopeId = scope.getConfigScopeId();
+      findingReportingService.updateAndReportIssues(scopeId, previouslyRaisedIssue -> raisedIssueUpdater(previouslyRaisedIssue, event));
+    });
+  }
+
+  public static RaisedIssueDto raisedIssueUpdater(RaisedIssueDto previouslyRaisedIssue, IssueChangedEvent event) {
+    var resolved = event.getResolved();
+    var userSeverity = event.getUserSeverity();
+    var userType = event.getUserType();
+    var impactedIssueKeys = Set.copyOf(event.getImpactedIssueKeys());
+    if (resolved != null) {
+      UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder().withResolution(resolved).buildIssue();
+      return updateIssue(previouslyRaisedIssue, impactedIssueKeys, issueUpdater);
+    } else if (userSeverity != null) {
+      UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder().withSeverity(IssueSeverity.valueOf(userSeverity.name())).buildIssue();
+      return updateIssue(previouslyRaisedIssue, impactedIssueKeys, issueUpdater);
+    } else if (userType != null) {
+      UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder().withType(RuleType.valueOf(userType.name())).buildIssue();
+      return updateIssue(previouslyRaisedIssue, impactedIssueKeys, issueUpdater);
+    }
+    return previouslyRaisedIssue;
+  }
+
+  private static RaisedIssueDto updateIssue(RaisedIssueDto issue, Set<String> impactedIssueKeys, UnaryOperator<RaisedIssueDto> issueUpdater) {
+    var serverKey = issue.getServerKey();
+    if (serverKey != null && impactedIssueKeys.contains(serverKey)) {
+      return issueUpdater.apply(issue);
+    }
+    return issue;
+  }
+
+  private void updateProjectIssueStorage(String connectionId, IssueChangedEvent event) {
     var findingsStorage = storageService.connection(connectionId).project(event.getProjectKey()).findings();
     event.getImpactedIssueKeys().forEach(issueKey -> findingsStorage.updateIssue(issueKey, issue -> {
       var userSeverity = event.getUserSeverity();

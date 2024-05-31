@@ -24,7 +24,7 @@ import java.nio.file.Path;
 public class SecurityHotspotClosedEvent implements ServerHotspotEvent {
   private final String projectKey;
   private final String hotspotKey;
-  private Path filePath;
+  private final Path filePath;
 
   public SecurityHotspotClosedEvent(String projectKey, String hotspotKey, Path filePath) {
     this.projectKey = projectKey;

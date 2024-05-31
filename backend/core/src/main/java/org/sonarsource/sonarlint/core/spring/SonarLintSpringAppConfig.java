@@ -81,6 +81,7 @@ import org.sonarsource.sonarlint.core.promotion.PromotionService;
 import org.sonarsource.sonarlint.core.reporting.FindingReportingService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.reporting.PreviouslyRaisedFindingsRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -181,7 +182,8 @@ import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_S
   KnownFindingsStorageService.class,
   TrackingService.class,
   FindingsSynchronizationService.class,
-  FindingReportingService.class
+  FindingReportingService.class,
+  PreviouslyRaisedFindingsRepository.class
 })
 public class SonarLintSpringAppConfig {
 
