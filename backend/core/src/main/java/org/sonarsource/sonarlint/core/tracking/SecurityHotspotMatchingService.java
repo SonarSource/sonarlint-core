@@ -171,6 +171,7 @@ public class SecurityHotspotMatchingService {
       republishPreviouslyRaisedHotspots(connectionId, hotspotClosedEvent);
     } else if (serverEvent instanceof SecurityHotspotRaisedEvent) {
       var hotspotRaisedEvent = (SecurityHotspotRaisedEvent) serverEvent;
+      // We could try to match with an existing hotspot. But we don't do it because we don't invest in hotspots right now.
       updateStorage(connectionId, hotspotRaisedEvent);
     }
   }
@@ -191,7 +192,6 @@ public class SecurityHotspotMatchingService {
   }
 
   private void updateStorage(String connectionId, SecurityHotspotClosedEvent event) {
-    // backward compatibility handling
     var projectKey = event.getProjectKey();
     storageService.connection(connectionId).project(projectKey).findings().deleteHotspot(event.getHotspotKey());
   }

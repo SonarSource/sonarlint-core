@@ -312,15 +312,17 @@ public class RulesService {
     if (serverEvent instanceof RuleSetChangedEvent) {
       var ruleSetChangedEvent = (RuleSetChangedEvent) serverEvent;
       updateStorage(connectionId, ruleSetChangedEvent);
-      processEvent(ruleSetChangedEvent);
+      processEvent(ruleSetChangedEvent, connectionId);
     }
   }
 
-  private void processEvent(RuleSetChangedEvent event) {
+  private void processEvent(RuleSetChangedEvent event, String connectionId) {
     var deactivatedRules = event.getDeactivatedRules();
     if (!deactivatedRules.isEmpty()) {
       var changedProjectKeys = event.getProjectKeys();
-      configurationRepository.getAllBoundScopes().stream().filter(scope -> changedProjectKeys.contains(scope.getSonarProjectKey())).map(BoundScope::getConfigScopeId)
+      configurationRepository.getAllBoundScopes().stream()
+        .filter(scope -> connectionId.equals(scope.getConfigScopeId()) && changedProjectKeys.contains(scope.getSonarProjectKey()))
+        .map(BoundScope::getConfigScopeId)
         .forEach(scopeId -> findingReportingService.updateAndReportFindings(scopeId,
           hotspot -> raisedHotspotUpdater(hotspot, event),
           hotspot -> raisedIssueUpdater(hotspot, event)));
