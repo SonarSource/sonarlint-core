@@ -330,21 +330,31 @@ public class RulesService {
     }
   }
 
-  public static RaisedIssueDto raisedIssueUpdater(RaisedIssueDto previouslyRaisedIssue, RuleSetChangedEvent event) {
-    return ((RaisedIssueDto) raisedFindingUpdater(previouslyRaisedIssue, event));
-  }
-
-  public static RaisedHotspotDto raisedHotspotUpdater(RaisedHotspotDto previouslyRaisedIssue, RuleSetChangedEvent event) {
-    return ((RaisedHotspotDto) raisedFindingUpdater(previouslyRaisedIssue, event));
+  @CheckForNull
+  public static RaisedIssueDto raisedIssueUpdater(RaisedIssueDto raisedIssue, RuleSetChangedEvent event) {
+    var finding = raisedFindingUpdater(raisedIssue, event);
+    if (finding instanceof RaisedIssueDto) {
+      return ((RaisedIssueDto) finding);
+    }
+    return null;
   }
 
   @CheckForNull
-  private static RaisedFindingDto raisedFindingUpdater(RaisedFindingDto previouslyRaisedIssue, RuleSetChangedEvent event) {
+  public static RaisedHotspotDto raisedHotspotUpdater(RaisedHotspotDto raisedHotspot, RuleSetChangedEvent event) {
+    var finding = raisedFindingUpdater(raisedHotspot, event);
+    if (finding instanceof RaisedHotspotDto) {
+      return ((RaisedHotspotDto) finding);
+    }
+    return null;
+  }
+
+  @CheckForNull
+  private static RaisedFindingDto raisedFindingUpdater(RaisedFindingDto raisedFinding, RuleSetChangedEvent event) {
     var deactivatedRules = event.getDeactivatedRules();
-    if (deactivatedRules.contains(previouslyRaisedIssue.getRuleKey())) {
+    if (deactivatedRules.contains(raisedFinding.getRuleKey())) {
       return null;
     }
-    return previouslyRaisedIssue;
+    return raisedFinding;
   }
 
   private void updateStorage(String connectionId, RuleSetChangedEvent event) {
