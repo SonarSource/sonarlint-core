@@ -72,6 +72,7 @@ import org.sonarsource.sonarlint.core.fs.FileSystemUpdatedEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.nodejs.InstalledNodeJs;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
+import org.sonarsource.sonarlint.core.progress.RpcProgressMonitor;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
@@ -114,6 +115,7 @@ import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.trimToNull;
 import static org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.LanguageDetection.sanitizeExtension;
+import static org.sonarsource.sonarlint.core.commons.util.StringUtils.pluralize;
 
 @Named
 @Singleton
@@ -556,7 +558,8 @@ public class AnalysisService {
     eventPublisher.publishEvent(new AnalysisStartedEvent(configurationScopeId, analysisId, analysisConfig.inputFiles(), enableTracking));
     var analyzeCommand = new AnalyzeCommand(configurationScopeId, analysisConfig,
       issue -> streamIssue(configurationScopeId, analysisId, issue, ruleDetailsCache, raisedIssues, enableTracking), SonarLintLogger.getTargetForCopy());
-    return analysisEngine.post(analyzeCommand, ProgressMonitor.wrapping(cancelMonitor))
+    var rpcProgressMonitor = new RpcProgressMonitor(client, cancelMonitor, configurationScopeId, analysisId);
+    return analysisEngine.post(analyzeCommand, rpcProgressMonitor)
       .whenComplete((results, error) -> {
         long endTime = System.currentTimeMillis();
         if (error == null) {
@@ -567,6 +570,8 @@ public class AnalysisService {
           eventPublisher.publishEvent(new AnalysisFinishedEvent(analysisId, configurationScopeId, analysisDuration,
             languagePerFile, results.failedAnalysisFiles().isEmpty(), raisedIssues, enableTracking, shouldFetchServerIssues));
           results.setRawIssues(raisedIssues.stream().map(issue -> toDto(issue.getIssue(), issue.getActiveRule())).collect(toList()));
+        } else {
+          LOG.error("Error during analysis", error);
         }
       });
   }
@@ -577,11 +582,6 @@ public class AnalysisService {
     var issuesCount = fileRawIssues.stream().filter(not(RawIssue::isSecurityHotspot)).count();
     var hotspotsCount = fileRawIssues.stream().filter(RawIssue::isSecurityHotspot).count();
     LOG.info("Analysis detected {} and {} in {}ms", pluralize(issuesCount, "issue"), pluralize(hotspotsCount, "Security Hotspot"), analysisDuration);
-  }
-
-  private static String pluralize(long count, String word) {
-    var pluralizedWord = count == 1 ? word : (word + 's');
-    return count + " " + pluralizedWord;
   }
 
   private void streamIssue(String configScopeId, UUID analysisId, Issue issue, ConcurrentHashMap<String, RuleDetailsForAnalysis> ruleDetailsCache, List<RawIssue> rawIssues,

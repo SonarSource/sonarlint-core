@@ -40,6 +40,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddCo
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingPluginParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ProgressEndNotification;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
@@ -54,6 +57,7 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
@@ -204,6 +208,30 @@ class AnalysisMediumTests {
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     verify(client).didDetectSecret(CONFIG_SCOPE_ID);
+  }
+
+  @Test
+  void it_should_notify_client_on_analysis_progress(@TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "secret.py",
+      "KEY = \"AKIAIGKECZXA7AEIJLMQ\"");
+    var fileUri = filePath.toUri();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.TEXT)
+      .build(client);
+    var analysisId = UUID.randomUUID();
+
+    backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
+
+    verify(client).startProgress(refEq(new StartProgressParams(analysisId.toString(), CONFIG_SCOPE_ID, "Analyzing 1 file", null, true, false)));
+    var reportProgressCaptor = ArgumentCaptor.forClass(ReportProgressParams.class);
+    verify(client).reportProgress(reportProgressCaptor.capture());
+    assertThat(reportProgressCaptor.getValue())
+      .usingRecursiveComparison()
+      .isEqualTo(new ReportProgressParams(analysisId.toString(), new ProgressEndNotification()));
   }
 
   @Test
