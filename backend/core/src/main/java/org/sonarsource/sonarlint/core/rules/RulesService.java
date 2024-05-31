@@ -19,17 +19,15 @@
  */
 package org.sonarsource.sonarlint.core.rules;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -49,11 +47,10 @@ import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
+import org.sonarsource.sonarlint.core.reporting.FindingReportingService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
-import org.sonarsource.sonarlint.core.repository.reporting.PreviouslyRaisedFindingsRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
@@ -62,9 +59,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDefinitionD
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleParamDefinitionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleParamType;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaiseHotspotsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseIssuesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamDefinition;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamType;
@@ -77,6 +74,7 @@ import org.sonarsource.sonarlint.core.serverconnection.RuleSet;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.EventListener;
 
 import static org.sonarsource.sonarlint.core.commons.CleanCodeAttribute.CONVENTIONAL;
@@ -97,28 +95,24 @@ public class RulesService {
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private static final String COULD_NOT_FIND_RULE = "Could not find rule '";
   private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfig = new ConcurrentHashMap<>();
-  private final PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository;
-  private final SonarLintRpcClient client;
+  private FindingReportingService findingReportingService;
 
   @Inject
   public RulesService(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository, StorageService storageService,
-    SynchronizationService synchronizationService, ConnectionConfigurationRepository connectionConfigurationRepository, InitializeParams params,
-    PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, SonarLintRpcClient client) {
+    SynchronizationService synchronizationService, ConnectionConfigurationRepository connectionConfigurationRepository, InitializeParams params) {
     this(serverApiProvider, configurationRepository, rulesRepository, storageService, synchronizationService, connectionConfigurationRepository,
-      params.getStandaloneRuleConfigByKey(), previouslyRaisedFindingsRepository, client);
+      params.getStandaloneRuleConfigByKey());
   }
 
   RulesService(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository, StorageService storageService,
     SynchronizationService synchronizationService, ConnectionConfigurationRepository connectionConfigurationRepository,
-    @Nullable Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey, PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, SonarLintRpcClient client) {
+    @Nullable Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey) {
     this.serverApiProvider = serverApiProvider;
     this.configurationRepository = configurationRepository;
     this.rulesRepository = rulesRepository;
     this.storageService = storageService;
     this.synchronizationService = synchronizationService;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
-    this.previouslyRaisedFindingsRepository = previouslyRaisedFindingsRepository;
-    this.client = client;
     if (standaloneRuleConfigByKey != null) {
       this.standaloneRuleConfig.putAll(standaloneRuleConfigByKey);
     }
@@ -327,30 +321,27 @@ public class RulesService {
     if (!deactivatedRules.isEmpty()) {
       var changedProjectKeys = event.getProjectKeys();
       configurationRepository.getAllBoundScopes().stream().filter(scope -> changedProjectKeys.contains(scope.getSonarProjectKey())).map(BoundScope::getConfigScopeId)
-        .forEach(scopeId -> {
-          var analysisId = UUID.randomUUID();
-          var deactivatedRuleSet = Set.copyOf(deactivatedRules);
-          var issues = previouslyRaisedFindingsRepository.getRaisedIssuesForScope(scopeId);
-          var issuesForActiveRules = filterOutDeactivatiedRules(issues, deactivatedRuleSet);
-          previouslyRaisedFindingsRepository.addOrReplaceIssues(scopeId, issuesForActiveRules);
-          client.raiseIssues(new RaiseIssuesParams(scopeId, issuesForActiveRules, false, analysisId));
-
-          var hotspots = previouslyRaisedFindingsRepository.getRaisedHotspotsForScope(scopeId);
-          var hotspotsForActiveRules = filterOutDeactivatiedRules(hotspots, deactivatedRuleSet);
-          previouslyRaisedFindingsRepository.addOrReplaceHotspots(scopeId, hotspotsForActiveRules);
-          client.raiseHotspots(new RaiseHotspotsParams(scopeId, hotspotsForActiveRules, false, analysisId));
-        });
+        .forEach(scopeId -> findingReportingService.updateAndReportFindings(scopeId,
+          hotspot -> raisedHotspotUpdater(hotspot, event),
+          hotspot -> raisedIssueUpdater(hotspot, event)));
     }
   }
 
-  private static <F extends RaisedFindingDto> Map<URI, List<F>> filterOutDeactivatiedRules(Map<URI, List<F>> previouslyRaisedFindings,
-    Set<String> deactivatedRuleKeys) {
-    Map<URI, List<F>> updatedIssues = new HashMap<>();
-    previouslyRaisedFindings.forEach((uri, issues) -> {
-      var updatedIssuesForFile = issues.stream().filter(issue -> !deactivatedRuleKeys.contains(issue.getRuleKey())).collect(Collectors.toList());
-      updatedIssues.put(uri, updatedIssuesForFile);
-    });
-    return updatedIssues;
+  public static RaisedIssueDto raisedIssueUpdater(RaisedIssueDto previouslyRaisedIssue, RuleSetChangedEvent event) {
+    return ((RaisedIssueDto) raisedFindingUpdater(previouslyRaisedIssue, event));
+  }
+
+  public static RaisedHotspotDto raisedHotspotUpdater(RaisedHotspotDto previouslyRaisedIssue, RuleSetChangedEvent event) {
+    return ((RaisedHotspotDto) raisedFindingUpdater(previouslyRaisedIssue, event));
+  }
+
+  @CheckForNull
+  private static RaisedFindingDto raisedFindingUpdater(RaisedFindingDto previouslyRaisedIssue, RuleSetChangedEvent event) {
+    var deactivatedRules = event.getDeactivatedRules();
+    if (deactivatedRules.contains(previouslyRaisedIssue.getRuleKey())) {
+      return null;
+    }
+    return previouslyRaisedIssue;
   }
 
   private void updateStorage(String connectionId, RuleSetChangedEvent event) {
@@ -446,4 +437,10 @@ public class RulesService {
       .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(SECRET_ANALYSIS_MIN_SQ_VERSION) >= 0)
       .orElse(false);
   }
+
+  @Autowired
+  public void setFindingReportingService(FindingReportingService findingReportingService) {
+    this.findingReportingService = findingReportingService;
+  }
+
 }

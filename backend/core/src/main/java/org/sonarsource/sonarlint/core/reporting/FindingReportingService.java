@@ -30,10 +30,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiFunction;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
-import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.reporting.PreviouslyRaisedFindingsRepository;
@@ -41,6 +40,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaiseHotspotsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseIssuesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.tracking.TrackedIssue;
 import org.sonarsource.sonarlint.core.tracking.streaming.Alarm;
@@ -143,34 +143,33 @@ public class FindingReportingService {
       .collect(groupingBy(TrackedIssue::getFileUri, Collectors.mapping(hotspot -> toRaisedHotspotDto(hotspot, newCodeDefinition), Collectors.toList())));
   }
 
-  public void updateAndReportIssues(String configurationScopeId, SonarServerEventReceivedEvent receivedEvent,
-    BiFunction<RaisedIssueDto, SonarServerEventReceivedEvent, RaisedIssueDto> issueUpdater) {
-    // get issues from cache, update with updater and report
-    var previouslyRaisedIssues = previouslyRaisedFindingsRepository.getRaisedIssuesForScope(configurationScopeId);
-    Map<URI, List<RaisedIssueDto>> updatedIssues = new HashMap<>();
-    previouslyRaisedIssues.forEach((uri, issues) -> {
-      var updatedIssuesForFile = issues.stream()
-        .map(issue -> issueUpdater.apply(issue, receivedEvent))
-        .filter(Objects::nonNull)
-        .collect(Collectors.toList());
-      updatedIssues.put(uri, updatedIssuesForFile);
-    });
-    reportRaisedFindings(configurationScopeId, null, updatedIssues, Map.of());
+  public void updateAndReportIssues(String configurationScopeId, UnaryOperator<RaisedIssueDto> issueUpdater) {
+    updateAndReportFindings(configurationScopeId, UnaryOperator.identity(), issueUpdater);
   }
 
-  public void updateAndReportHotspots(String configurationScopeId, SonarServerEventReceivedEvent receivedEvent,
-    BiFunction<RaisedHotspotDto, SonarServerEventReceivedEvent, RaisedHotspotDto> issueUpdater) {
-    // get issues from cache, update with updater and report
-    var previouslyRaisedIssues = previouslyRaisedFindingsRepository.getRaisedHotspotsForScope(configurationScopeId);
-    Map<URI, List<RaisedHotspotDto>> updatedHotspots = new HashMap<>();
-    previouslyRaisedIssues.forEach((uri, hotspots) -> {
-      var updatedIssuesForFile = hotspots.stream()
-        .map(issue -> issueUpdater.apply(issue, receivedEvent))
+  public void updateAndReportHotspots(String configurationScopeId, UnaryOperator<RaisedHotspotDto> hotspotUpdater) {
+    updateAndReportFindings(configurationScopeId, hotspotUpdater, UnaryOperator.identity());
+  }
+
+  public void updateAndReportFindings(String configurationScopeId,
+    UnaryOperator<RaisedHotspotDto> hotspotUpdater, UnaryOperator<RaisedIssueDto> issueUpdater) {
+    var previouslyRaisedIssues = previouslyRaisedFindingsRepository.getRaisedIssuesForScope(configurationScopeId);
+    var previouslyRaisedHotspots = previouslyRaisedFindingsRepository.getRaisedHotspotsForScope(configurationScopeId);
+    Map<URI, List<RaisedHotspotDto>> updatedHotspots = updateFindings(hotspotUpdater, previouslyRaisedHotspots);
+    Map<URI, List<RaisedIssueDto>> updatedIssues = updateFindings(issueUpdater, previouslyRaisedIssues);
+    reportRaisedFindings(configurationScopeId, null, updatedIssues, updatedHotspots);
+  }
+
+  private static <F extends RaisedFindingDto> Map<URI, List<F>> updateFindings(UnaryOperator<F> findingUpdater, Map<URI, List<F>> previouslyRaisedFindings) {
+    Map<URI, List<F>> updatedFindings = new HashMap<>();
+    previouslyRaisedFindings.forEach((uri, finding) -> {
+      var updatedFindingsForFile = finding.stream()
+        .map(findingUpdater)
         .filter(Objects::nonNull)
         .collect(Collectors.toList());
-      updatedHotspots.put(uri, updatedIssuesForFile);
+      updatedFindings.put(uri, updatedFindingsForFile);
     });
-    reportRaisedFindings(configurationScopeId, null, Map.of(), updatedHotspots);
+    return updatedFindings;
   }
 
   public void reportRaisedFindings(String configurationScopeId, UUID analysisId, Map<URI, List<RaisedIssueDto>> issuesToRaise, Map<URI, List<RaisedHotspotDto>> hotspotsToRaise) {

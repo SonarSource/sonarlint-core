@@ -214,13 +214,12 @@ public class SecurityHotspotMatchingService {
     var boundScopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, event.getProjectKey());
     boundScopes.forEach(scope -> {
       var scopeId = scope.getConfigScopeId();
-      findingReportingService.updateAndReportHotspots(scopeId, new SonarServerEventReceivedEvent(null, event),
-        SecurityHotspotMatchingService::changedHotspotUpdater);
+      findingReportingService.updateAndReportHotspots(scopeId,
+        raisedHotspotDto -> changedHotspotUpdater(raisedHotspotDto, event));
     });
   }
 
-  private static RaisedHotspotDto changedHotspotUpdater(RaisedHotspotDto raisedHotspotDto, SonarServerEventReceivedEvent receivedEvent) {
-    var event = (SecurityHotspotChangedEvent) receivedEvent.getEvent();
+  private static RaisedHotspotDto changedHotspotUpdater(RaisedHotspotDto raisedHotspotDto, SecurityHotspotChangedEvent event) {
     if (event.getHotspotKey().equals(raisedHotspotDto.getServerKey())) {
       return raisedHotspotDto.builder().withHotspotStatus(HotspotStatus.valueOf(event.getStatus().name())).buildHotspot();
     }
@@ -231,13 +230,12 @@ public class SecurityHotspotMatchingService {
     var boundScopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, event.getProjectKey());
     boundScopes.forEach(scope -> {
       var scopeId = scope.getConfigScopeId();
-      findingReportingService.updateAndReportHotspots(scopeId, new SonarServerEventReceivedEvent(null, event),
-        SecurityHotspotMatchingService::closedHotspotUpdater);
+      findingReportingService.updateAndReportHotspots(scopeId,
+        raisedHotspotDto -> closedHotspotUpdater(raisedHotspotDto, event));
     });
   }
 
-  private static RaisedHotspotDto closedHotspotUpdater(RaisedHotspotDto raisedHotspotDto, SonarServerEventReceivedEvent receivedEvent) {
-    var event = (SecurityHotspotClosedEvent) receivedEvent.getEvent();
+  private static RaisedHotspotDto closedHotspotUpdater(RaisedHotspotDto raisedHotspotDto, SecurityHotspotClosedEvent event) {
     if (event.getHotspotKey().equals(raisedHotspotDto.getServerKey())) {
       return null;
     }

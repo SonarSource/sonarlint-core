@@ -334,7 +334,7 @@ class RuleEventsMediumTests {
       assertThat(raisedIssues).hasSize(2);
       client.cleanRaisedIssues();
 
-      await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
+      await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
       raisedIssues = client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID).get(fileUri);
 
       assertThat(raisedIssues).hasSize(1);

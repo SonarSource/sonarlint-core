@@ -341,13 +341,11 @@ public class IssueService {
     var boundScopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, event.getProjectKey());
     boundScopes.forEach(scope -> {
       var scopeId = scope.getConfigScopeId();
-      findingReportingService.updateAndReportIssues(scopeId, new SonarServerEventReceivedEvent(null, event),
-        IssueService::raisedIssueUpdater);
+      findingReportingService.updateAndReportIssues(scopeId, previouslyRaisedIssue -> raisedIssueUpdater(previouslyRaisedIssue, event));
     });
   }
 
-  public static RaisedIssueDto raisedIssueUpdater(RaisedIssueDto previouslyRaisedIssue, SonarServerEventReceivedEvent eventReceived) {
-    var event = (IssueChangedEvent) eventReceived.getEvent();
+  public static RaisedIssueDto raisedIssueUpdater(RaisedIssueDto previouslyRaisedIssue, IssueChangedEvent event) {
     var resolved = event.getResolved();
     var userSeverity = event.getUserSeverity();
     var userType = event.getUserType();
