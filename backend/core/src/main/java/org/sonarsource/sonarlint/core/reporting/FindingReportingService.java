@@ -32,6 +32,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -108,7 +109,7 @@ public class FindingReportingService {
     updateRaisedIssuesCacheAndNotifyClient(configurationScopeId, analysisId, issuesToRaise, hotspotsToRaise);
   }
 
-  private synchronized void updateRaisedIssuesCacheAndNotifyClient(String configurationScopeId, UUID analysisId, Map<URI, List<RaisedIssueDto>> issuesToRaise,
+  private synchronized void updateRaisedIssuesCacheAndNotifyClient(String configurationScopeId, @Nullable UUID analysisId, Map<URI, List<RaisedIssueDto>> issuesToRaise,
     Map<URI, List<RaisedHotspotDto>> hotspotsToRaise) {
     previouslyRaisedFindingsRepository.addOrReplaceIssues(configurationScopeId, issuesToRaise);
     client.raiseIssues(new RaiseIssuesParams(configurationScopeId, issuesToRaise, false, analysisId));
@@ -175,7 +176,8 @@ public class FindingReportingService {
     return updatedFindings;
   }
 
-  public void reportRaisedFindings(String configurationScopeId, UUID analysisId, Map<URI, List<RaisedIssueDto>> issuesToRaise, Map<URI, List<RaisedHotspotDto>> hotspotsToRaise) {
+  public void reportRaisedFindings(String configurationScopeId, @Nullable UUID analysisId, Map<URI, List<RaisedIssueDto>> issuesToRaise,
+    Map<URI, List<RaisedHotspotDto>> hotspotsToRaise) {
     // stop streaming now, we will raise all issues one last time from this method
     stopStreaming(configurationScopeId);
     updateRaisedIssuesCacheAndNotifyClient(configurationScopeId, analysisId, issuesToRaise, hotspotsToRaise);
