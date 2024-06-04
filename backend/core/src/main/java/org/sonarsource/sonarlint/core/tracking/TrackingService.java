@@ -30,7 +30,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.analysis.AnalysisFinishedEvent;
 import org.sonarsource.sonarlint.core.analysis.AnalysisStartedEvent;
@@ -98,8 +97,10 @@ public class TrackingService {
   @EventListener
   public void onAnalysisStarted(AnalysisStartedEvent event) {
     if (event.isTrackingEnabled()) {
-      var matchingSession = startMatchingSession(event.getConfigurationScopeId(), event.getFiles());
+      var configurationScopeId = event.getConfigurationScopeId();
+      var matchingSession = startMatchingSession(configurationScopeId, event.getFiles());
       matchingSessionByAnalysisId.put(event.getAnalysisId(), matchingSession);
+      reportingService.clearFindingsForFiles(event.getFiles().stream().map(ClientInputFile::uri).collect(toList()));
     }
   }
 
@@ -116,7 +117,7 @@ public class TrackingService {
     if (isSupported) {
       // we don't support global issues for now
       var trackedIssue = matchingSession.matchWithKnownFinding(requireNonNull(detectedIssue.getIdeRelativePath()), detectedIssue);
-      reportingService.stream(event.getConfigurationScopeId(), analysisId, trackedIssue);
+      reportingService.streamIssue(event.getConfigurationScopeId(), analysisId, trackedIssue);
     }
   }
 
@@ -248,9 +249,9 @@ public class TrackingService {
       trackedIssue.getCleanCodeAttribute(), trackedIssue.getFileUri());
   }
 
-  private MatchingSession startMatchingSession(String configurationScopeId, Iterable<ClientInputFile> files) {
+  private MatchingSession startMatchingSession(String configurationScopeId, List<ClientInputFile> files) {
     var knownFindingsStore = knownFindingsStorageService.get();
-    var fileRelativePaths = StreamSupport.stream(files.spliterator(), false).map(ClientInputFile::relativePath).map(Path::of).collect(Collectors.toSet());
+    var fileRelativePaths = files.stream().map(ClientInputFile::relativePath).map(Path::of).collect(Collectors.toSet());
     var issuesByRelativePath = fileRelativePaths.stream()
       .collect(toMap(Function.identity(), relativePath -> knownFindingsStore.loadIssuesForFile(configurationScopeId, relativePath)));
     var hotspotsByRelativePath = fileRelativePaths.stream()

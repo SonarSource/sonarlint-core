@@ -716,7 +716,7 @@ class IssueTrackingMediumTests {
     var repository = createRepository(baseDir);
     var filePath = createFile(baseDir, "Foo.java", "a");
     var introductionDate = Instant.now().minus(5, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
-    var commitDate = commitAtDate(repository, introductionDate, filePath.getFileName().toString());
+    commitAtDate(repository, introductionDate, filePath.getFileName().toString());
     var fileUri = filePath.toUri();
     var client = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
@@ -742,16 +742,17 @@ class IssueTrackingMediumTests {
     assertThat(firstRaisedIntermediateIssuesByFile).containsOnlyKeys(fileUri);
     assertThat(firstRaisedIntermediateIssuesByFile.get(fileUri))
       .extracting(RaisedIssueDto::getPrimaryMessage, RaisedFindingDto::getIntroductionDate, RaisedFindingDto::isOnNewCode)
-      .contains(tuple("Issue 3", introductionDate, true));
+      .containsExactly(tuple("Issue 1", introductionDate, true));
     var secondRaisedIntermediateIssuesByFile = allRaisedIntermediateIssuesByFile.get(1);
     assertThat(secondRaisedIntermediateIssuesByFile).containsOnlyKeys(fileUri);
     assertThat(secondRaisedIntermediateIssuesByFile.get(fileUri))
       .extracting(RaisedIssueDto::getPrimaryMessage, RaisedFindingDto::getIntroductionDate, RaisedFindingDto::isOnNewCode)
-      .contains(tuple("Issue 4", introductionDate, true));
+      .containsExactly(tuple("Issue 1", introductionDate, true), tuple("Issue 2", introductionDate, true));
     ArgumentCaptor<Map<URI, List<RaisedIssueDto>>> finalIssuesByFileArgumentCaptor = ArgumentCaptor.forClass(Map.class);
     verify(client).raiseIssues(eq(CONFIG_SCOPE_ID), finalIssuesByFileArgumentCaptor.capture(), eq(false), any());
     var finalIssuesByFile = finalIssuesByFileArgumentCaptor.getValue();
     assertThat(secondRaisedIntermediateIssuesByFile.keySet()).isEqualTo(finalIssuesByFile.keySet());
+    assertThat(secondRaisedIntermediateIssuesByFile.get(fileUri)).usingRecursiveFieldByFieldElementComparatorIgnoringFields().isEqualTo(finalIssuesByFile.get(fileUri));
   }
 
   private List<RaisedIssueDto> analyzeFileAndGetAllIssuesOfRule(URI fileUri, SonarLintRpcClientDelegate client, String ruleKey) {
