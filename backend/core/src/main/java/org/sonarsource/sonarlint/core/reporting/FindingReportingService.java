@@ -122,7 +122,7 @@ public class FindingReportingService {
   }
 
   private void stopStreaming(String configurationScopeId) {
-    var alarm = getStreamingDebounceAlarmIfExists(configurationScopeId);
+    var alarm = removeStreamingDebounceAlarmIfExists(configurationScopeId);
     if (alarm != null) {
       alarm.shutdownNow();
     }
@@ -133,8 +133,8 @@ public class FindingReportingService {
       id -> new Alarm("sonarlint-finding-streamer", STREAMING_INTERVAL, () -> triggerStreaming(configurationScopeId, analysisId)));
   }
 
-  private Alarm getStreamingDebounceAlarmIfExists(String configurationScopeId) {
-    return streamingTriggeringAlarmByConfigScopeId.get(configurationScopeId);
+  private Alarm removeStreamingDebounceAlarmIfExists(String configurationScopeId) {
+    return streamingTriggeringAlarmByConfigScopeId.remove(configurationScopeId);
   }
 
   private static Map<URI, List<RaisedIssueDto>> getIssuesToRaise(Map<Path, List<TrackedIssue>> updatedIssues, NewCodeDefinition newCodeDefinition) {
@@ -182,5 +182,4 @@ public class FindingReportingService {
     stopStreaming(configurationScopeId);
     updateRaisedIssuesCacheAndNotifyClient(configurationScopeId, analysisId, issuesToRaise, hotspotsToRaise);
   }
-
 }
