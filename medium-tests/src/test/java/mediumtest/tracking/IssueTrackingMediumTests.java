@@ -67,6 +67,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.api.InstanceOfAssertFactories.INSTANT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -708,6 +709,49 @@ class IssueTrackingMediumTests {
     var finalIssuesByFile = finalIssuesByFileArgumentCaptor.getValue();
     assertThat(secondRaisedIntermediateIssuesByFile.keySet()).isEqualTo(finalIssuesByFile.keySet());
     assertThat(secondRaisedIntermediateIssuesByFile.get(fileUri)).usingRecursiveFieldByFieldElementComparatorIgnoringFields().isEqualTo(finalIssuesByFile.get(fileUri));
+  }
+
+  @Test
+  void it_should_stream_issues_on_two_analyses_in_a_row(@TempDir Path baseDir) throws IOException, GitAPIException {
+    var repository = createRepository(baseDir);
+    var filePath = createFile(baseDir, "Foo.java", "a");
+    var introductionDate = Instant.now().minus(5, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
+    var commitDate = commitAtDate(repository, introductionDate, filePath.getFileName().toString());
+    var fileUri = filePath.toUri();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
+      .build();
+    var pluginPath = newSonarPlugin("java")
+      .withSensor(IssueStreamingSensor.class)
+      .withRulesDefinition(IssueStreamingRulesDefinition.class)
+      .generate(baseDir);
+    backend = newBackend()
+      .withStandaloneEmbeddedPlugin(pluginPath)
+      .withEnabledLanguageInStandaloneMode(Language.JAVA)
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .build(client);
+    analyzeFileAndGetAllIssues(fileUri, client);
+    reset(client);
+
+    analyzeFileAndGetAllIssues(fileUri, client);
+
+    ArgumentCaptor<Map<URI, List<RaisedIssueDto>>> intermediateIssuesByFileArgumentCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(client, times(2)).raiseIssues(eq(CONFIG_SCOPE_ID), intermediateIssuesByFileArgumentCaptor.capture(), eq(true), any());
+    var allRaisedIntermediateIssuesByFile = intermediateIssuesByFileArgumentCaptor.getAllValues();
+    var firstRaisedIntermediateIssuesByFile = allRaisedIntermediateIssuesByFile.get(0);
+    assertThat(firstRaisedIntermediateIssuesByFile).containsOnlyKeys(fileUri);
+    assertThat(firstRaisedIntermediateIssuesByFile.get(fileUri))
+      .extracting(RaisedIssueDto::getPrimaryMessage, RaisedFindingDto::getIntroductionDate, RaisedFindingDto::isOnNewCode)
+      .contains(tuple("Issue 3", introductionDate, true));
+    var secondRaisedIntermediateIssuesByFile = allRaisedIntermediateIssuesByFile.get(1);
+    assertThat(secondRaisedIntermediateIssuesByFile).containsOnlyKeys(fileUri);
+    assertThat(secondRaisedIntermediateIssuesByFile.get(fileUri))
+      .extracting(RaisedIssueDto::getPrimaryMessage, RaisedFindingDto::getIntroductionDate, RaisedFindingDto::isOnNewCode)
+      .contains(tuple("Issue 4", introductionDate, true));
+    ArgumentCaptor<Map<URI, List<RaisedIssueDto>>> finalIssuesByFileArgumentCaptor = ArgumentCaptor.forClass(Map.class);
+    verify(client).raiseIssues(eq(CONFIG_SCOPE_ID), finalIssuesByFileArgumentCaptor.capture(), eq(false), any());
+    var finalIssuesByFile = finalIssuesByFileArgumentCaptor.getValue();
+    assertThat(secondRaisedIntermediateIssuesByFile.keySet()).isEqualTo(finalIssuesByFile.keySet());
   }
 
   private List<RaisedIssueDto> analyzeFileAndGetAllIssuesOfRule(URI fileUri, SonarLintRpcClientDelegate client, String ruleKey) {
