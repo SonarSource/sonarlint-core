@@ -19,19 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.analysis;
 
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 
 public class AnalysisStartedEvent {
   private final String configurationScopeId;
   private final UUID analysisId;
-  private final Iterable<ClientInputFile> files;
+  private final List<ClientInputFile> files;
   private final boolean enableTracking;
 
   public AnalysisStartedEvent(String configurationScopeId, UUID analysisId, Iterable<ClientInputFile> files, boolean enableTracking) {
     this.configurationScopeId = configurationScopeId;
     this.analysisId = analysisId;
-    this.files = files;
+    this.files = StreamSupport.stream(files.spliterator(), false).collect(Collectors.toList());
     this.enableTracking = enableTracking;
   }
 
@@ -43,7 +46,7 @@ public class AnalysisStartedEvent {
     return configurationScopeId;
   }
 
-  public Iterable<ClientInputFile> getFiles() {
+  public List<ClientInputFile> getFiles() {
     return files;
   }
 

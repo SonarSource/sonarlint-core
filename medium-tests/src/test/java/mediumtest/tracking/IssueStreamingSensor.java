@@ -25,7 +25,6 @@ import org.sonar.api.batch.sensor.SensorDescriptor;
 import org.sonar.api.rule.RuleKey;
 
 public class IssueStreamingSensor implements Sensor {
-  private static int issueNumber = 1;
 
   @Override
   public void describe(SensorDescriptor descriptor) {
@@ -34,19 +33,19 @@ public class IssueStreamingSensor implements Sensor {
 
   @Override
   public void execute(SensorContext context) {
-    raiseIssue(context);
+    raiseIssue(context, 1);
     pause(500);
-    raiseIssue(context);
+    raiseIssue(context, 2);
     pause(500);
   }
 
-  private void raiseIssue(SensorContext context) {
+  private void raiseIssue(SensorContext context, int issueNumber) {
     var newIssue = context.newIssue();
     var newIssueLocation = newIssue.newLocation();
     var firstFile = context.fileSystem().inputFiles(file -> true).iterator().next();
     newIssue
       .at(newIssueLocation
-        .message("Issue " + issueNumber++)
+        .message("Issue " + issueNumber)
         .at(firstFile.newRange(1, 0, 1, 1))
         .on(firstFile))
       .forRule(RuleKey.of("repo", "rule")).save();

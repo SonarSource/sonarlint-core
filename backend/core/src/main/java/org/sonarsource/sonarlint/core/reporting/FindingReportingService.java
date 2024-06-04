@@ -71,7 +71,21 @@ public class FindingReportingService {
     this.previouslyRaisedFindingsRepository = previouslyRaisedFindingsRepository;
   }
 
-  public void stream(String configurationScopeId, UUID analysisId, TrackedIssue trackedIssue) {
+  public void clearFindingsForFiles(Iterable<URI> files) {
+    files.forEach(fileUri -> {
+      clearFindingsForFile(issuesPerFileUri, fileUri);
+      clearFindingsForFile(securityHotspotsPerFileUri, fileUri);
+    });
+  }
+
+  private static void clearFindingsForFile(Map<URI, Collection<TrackedIssue>> findingsMap, URI fileUri) {
+    var trackedFinding = findingsMap.get(fileUri);
+    if (trackedFinding != null) {
+      trackedFinding.clear();
+    }
+  }
+
+  public void streamIssue(String configurationScopeId, UUID analysisId, TrackedIssue trackedIssue) {
     if (trackedIssue.isSecurityHotspot()) {
       securityHotspotsPerFileUri.computeIfAbsent(trackedIssue.getFileUri(), k -> new ArrayList<>()).add(trackedIssue);
     } else {
