@@ -21,6 +21,7 @@ package mediumtest;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
@@ -58,7 +59,7 @@ class InitializationMediumTests {
         HttpConfigurationDto.defaultConfig(), null, featureFlags,
         Path.of("unused"), Path.of("unused"),
         emptySet(), emptyMap(), emptySet(), emptySet(),
-        emptyList(), emptyList(), "home", emptyMap(), false, null));
+        emptyList(), emptyList(), "home", emptyMap(), false, null, Map.of()));
 
     assertThat(future)
       .failsWithin(Duration.ofSeconds(1))
