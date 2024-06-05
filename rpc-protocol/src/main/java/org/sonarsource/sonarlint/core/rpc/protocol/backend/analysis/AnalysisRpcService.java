@@ -82,4 +82,10 @@ public interface AnalysisRpcService {
    */
   @JsonRequest
   CompletableFuture<AnalyzeFilesResponse> analyzeFilesAndTrack(AnalyzeFilesAndTrackParams params);
+
+  @JsonNotification
+  void didSetAnalysisExtraProperties(DidChangedAnalysisExtraPropertiesParams params);
+
+  @JsonNotification
+  void didUpdateAnalysisExtraProperties(DidChangedAnalysisExtraPropertiesParams params);
 }

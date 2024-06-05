@@ -25,6 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
+import org.sonarsource.sonarlint.core.analysis.AnalysisExtraPropertiesService;
 import org.sonarsource.sonarlint.core.analysis.AnalysisService;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
@@ -36,6 +37,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFiles
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeClientNodeJsPathParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangedAnalysisExtraPropertiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAutoDetectedNodeJsResponse;
@@ -129,6 +131,16 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
           true, params.isShouldFetchServerIssues()).join();
       return generateAnalyzeFilesResponse(analysisResults);
     }, configurationScopeId);
+  }
+
+  @Override
+  public void didSetAnalysisExtraProperties(DidChangedAnalysisExtraPropertiesParams params) {
+    notify(() -> getBean(AnalysisExtraPropertiesService.class).setExtraProperties(params.getConfigurationScopeId(), params.getExtraProperties()));
+  }
+
+  @Override
+  public void didUpdateAnalysisExtraProperties(DidChangedAnalysisExtraPropertiesParams params) {
+    notify(() -> getBean(AnalysisExtraPropertiesService.class).setOrUpdateExtraProperties(params.getConfigurationScopeId(), params.getExtraProperties()));
   }
 
   private static AnalyzeFilesResponse generateAnalyzeFilesResponse(AnalysisResults analysisResults) {

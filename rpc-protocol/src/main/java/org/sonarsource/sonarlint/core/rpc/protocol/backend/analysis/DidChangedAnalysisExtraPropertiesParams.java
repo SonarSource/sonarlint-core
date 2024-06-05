@@ -17,27 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis;
 
 import java.util.Map;
-import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+public class DidChangedAnalysisExtraPropertiesParams {
+  private final String configurationScopeId;
+  private final Map<String, String> extraProperties;
 
-class InitializeParamsTests {
-
-  @Test
-  void should_replace_null_collections_by_empty() {
-    var params = new InitializeParams(null, null, null, null, null, null,
-      null, null, null, null, null,
-      null, null, null, null, false, null, Map.of());
-    assertNotNull(params.getEmbeddedPluginPaths());
-    assertNotNull(params.getConnectedModeEmbeddedPluginPathsByKey());
-    assertNotNull(params.getEnabledLanguagesInStandaloneMode());
-    assertNotNull(params.getExtraEnabledLanguagesInConnectedMode());
-    assertNotNull(params.getSonarQubeConnections());
-    assertNotNull(params.getSonarCloudConnections());
-    assertNotNull(params.getStandaloneRuleConfigByKey());
+  public DidChangedAnalysisExtraPropertiesParams(String configurationScopeId, Map<String, String> extraProperties) {
+    this.configurationScopeId = configurationScopeId;
+    this.extraProperties = extraProperties;
   }
 
+  public String getConfigurationScopeId() {
+    return configurationScopeId;
+  }
+
+  public Map<String, String> getExtraProperties() {
+    return extraProperties;
+  }
 }
