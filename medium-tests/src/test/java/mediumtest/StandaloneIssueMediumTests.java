@@ -23,19 +23,19 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import mediumtest.fixtures.SonarLintBackendFixture;
 import mediumtest.fixtures.TestPlugin;
@@ -43,7 +43,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -68,10 +67,10 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDefinitionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.UpdateStandaloneRulesConfigurationParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import testutils.ConsoleConsumer;
 import testutils.OnDiskTestClientInputFile;
@@ -95,13 +94,15 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.PHP;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.PYTHON;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.TS;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.XML;
+import static testutils.AnalysisUtils.analyzeAndGetIssuesByFile;
+import static testutils.AnalysisUtils.createFile;
 
 class StandaloneIssueMediumTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private static final CanceledProgressMonitor CANCELED_PROGRESS_MONITOR = new CanceledProgressMonitor();
-  private static final SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient = newFakeClient().build();
+  private static SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient;
   private static Path sonarlintUserHome;
   private static Path fakeTypeScriptProjectPath;
 
@@ -110,10 +111,13 @@ class StandaloneIssueMediumTests {
   private static final String CONFIGURATION_SCOPE_ID = "configScopeId";
   private static final List<String> logs = new CopyOnWriteArrayList<>();
   private static SonarLintRpcServer backend;
-  private File baseDir;
+  private static Path javaScriptFilePath;
+  @TempDir
+  private static Path baseDir;
   // commercial plugins might not be available
   // (if you pass -Dcommercial to maven, a profile will be activated that downloads the commercial plugins)
   private static final boolean COMMERCIAL_ENABLED = System.getProperty("commercial") != null;
+  private static Path javascriptInNodeModulesFilePath;
 
   @BeforeAll
   static void prepare(@TempDir Path temp) throws Exception {
@@ -161,53 +165,44 @@ class StandaloneIssueMediumTests {
     if (COMMERCIAL_ENABLED) {
       backendBuilder = backendBuilder.withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.CFAMILY);
     }
+    javaScriptFilePath = createFile(baseDir, "foo.js", "function foo() {\n"
+      + "  let x;\n"
+      + "  let y; //NOSONAR\n"
+      + "}");
+    javascriptInNodeModulesFilePath = createFile(baseDir, "node_modules/foo.js", "function foo() {\n"
+      + "  let x;\n"
+      + "  let y; //NOSONAR\n"
+      + "}");
+    fakeClient = newFakeClient()
+      .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
+        new ClientFileDto(javaScriptFilePath.toUri(), baseDir.relativize(javaScriptFilePath), CONFIGURATION_SCOPE_ID, false, null, javaScriptFilePath, null, null),
+        new ClientFileDto(javascriptInNodeModulesFilePath.toUri(), baseDir.relativize(javascriptInNodeModulesFilePath), CONFIGURATION_SCOPE_ID, false, null, javascriptInNodeModulesFilePath, null, null)))
+      .build();
     backend = backendBuilder.build(fakeClient);
     engine = new SonarLintAnalysisEngine(configBuilder.build(), backend, null);
   }
 
   @AfterAll
-  static void stop() throws IOException, ExecutionException, InterruptedException {
+  static void stop() {
     engine.stop();
-    backend.shutdown().get();
-  }
-
-  @BeforeEach
-  void prepareBasedir(@TempDir Path temp) throws Exception {
-    baseDir = Files.createTempDirectory(temp, "baseDir").toFile();
+    backend.shutdown().join();
   }
 
   @Test
-  void simpleJavaScript() throws Exception {
-    var content = "function foo() {\n"
-      + "  let x;\n"
-      + "  let y; //NOSONAR\n"
-      + "}";
-    var inputFile = prepareInputFile("foo.js", content, false);
+  void simpleJavaScript() {
+    var issues = analyzeStandalone(javaScriptFilePath);
 
-    final List<RawIssue> issues = new ArrayList<>();
-    engine.analyze(
-      AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(),
-      issues::add, null,
-      null, CONFIGURATION_SCOPE_ID);
     assertThat(issues)
-      .extracting(RawIssue::getRuleKey, i -> i.getTextRange().getStartLine(), i -> i.getInputFile().relativePath(), RawIssue::getRuleDescriptionContextKey,
-        RawIssue::getCleanCodeAttribute,
-        RawIssue::getImpacts)
-      .containsOnly(tuple("javascript:S1481", 2, "foo.js", Optional.empty(), Optional.of(CleanCodeAttribute.CONVENTIONAL),
-        Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)));
+      .extracting(RaisedIssueDto::getRuleKey, i -> i.getTextRange().getStartLine(), RaisedIssueDto::getRuleDescriptionContextKey,
+        RaisedIssueDto::getCleanCodeAttribute)
+      .containsOnly(tuple("javascript:S1481", 2, null, CleanCodeAttribute.CONVENTIONAL));
+  }
 
+  @Test
+  void should_ignore_files_in_node_modules() {
     // SLCORE-160
-    inputFile = prepareInputFile("node_modules/foo.js", content, false);
+    var issues = analyzeStandalone(javascriptInNodeModulesFilePath);
 
-    issues.clear();
-    engine.analyze(AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(), issues::add, null,
-      null, CONFIGURATION_SCOPE_ID);
     assertThat(issues).isEmpty();
   }
 
@@ -224,7 +219,7 @@ class StandaloneIssueMediumTests {
     final List<RawIssue> issues = new ArrayList<>();
     engine.analyze(
       AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
+        .setBaseDir(baseDir)
         .addInputFile(inputFile)
         .build(),
       issues::add, null,
@@ -237,7 +232,7 @@ class StandaloneIssueMediumTests {
     issues.clear();
     engine.analyze(
       AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
+        .setBaseDir(baseDir)
         .addInputFile(inputFile)
         .putExtraProperty("sonar.javascript.globals", "LOCAL1")
         .build(),
@@ -250,7 +245,7 @@ class StandaloneIssueMediumTests {
 
   @Test
   void simpleTypeScript() throws Exception {
-    final var tsConfig = new File(baseDir, "tsconfig.json");
+    final var tsConfig = baseDir.resolve("tsconfig.json").toFile();
     FileUtils.write(tsConfig, "{}", StandardCharsets.UTF_8);
 
     var inputFile = prepareInputFile("foo.ts", "function foo() {\n"
@@ -259,9 +254,9 @@ class StandaloneIssueMediumTests {
 
     final List<RawIssue> issues = new ArrayList<>();
     engine.analyze(AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(), issues::add, null,
+      .setBaseDir(baseDir)
+      .addInputFile(inputFile)
+      .build(), issues::add, null,
       null, CONFIGURATION_SCOPE_ID);
     assertThat(issues).extracting(RawIssue::getRuleKey, i -> i.getTextRange().getStartLine(), i -> i.getInputFile().relativePath()).containsOnly(
       tuple("typescript:S1764", 2, "foo.ts"));
@@ -286,7 +281,7 @@ class StandaloneIssueMediumTests {
     final List<RawIssue> issues = new ArrayList<>();
     engine.analyze(
       AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
+        .setBaseDir(baseDir)
         .addInputFile(inputFile)
         .build(),
       issues::add, null,
@@ -323,7 +318,7 @@ class StandaloneIssueMediumTests {
     final List<RawIssue> issues = new ArrayList<>();
     engine.analyze(
       AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
+        .setBaseDir(baseDir)
         .addInputFile(inputFile)
         .putExtraProperty("sonar.cfamily.build-wrapper-content", buildWrapperContent)
         .build(),
@@ -346,9 +341,9 @@ class StandaloneIssueMediumTests {
 
     final List<RawIssue> issues = new ArrayList<>();
     engine.analyze(AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(), issues::add,
+      .setBaseDir(baseDir)
+      .addInputFile(inputFile)
+      .build(), issues::add,
       null, null, CONFIGURATION_SCOPE_ID);
     assertThat(issues).extracting(RawIssue::getRuleKey, i -> i.getTextRange().getStartLine(), i -> i.getInputFile().relativePath()).containsOnly(
       tuple("php:S1172", 2, "foo.php"));
@@ -365,7 +360,7 @@ class StandaloneIssueMediumTests {
     final List<RawIssue> issues = new ArrayList<>();
     engine.analyze(
       AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
+        .setBaseDir(baseDir)
         .addInputFile(inputFile)
         .build(),
       issues::add, null, null, CONFIGURATION_SCOPE_ID);
@@ -384,7 +379,7 @@ class StandaloneIssueMediumTests {
     final List<RawIssue> issues = new ArrayList<>();
     var results = engine.analyze(
       AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
+        .setBaseDir(baseDir)
         .addInputFile(inputFile)
         .build(),
       issues::add, null, null, CONFIGURATION_SCOPE_ID);
@@ -402,7 +397,7 @@ class StandaloneIssueMediumTests {
     final List<RawIssue> issues = new ArrayList<>();
     var results = engine.analyze(
       AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
+        .setBaseDir(baseDir)
         .addInputFile(inputFile)
         .build(),
       issues::add, null, null, CONFIGURATION_SCOPE_ID);
@@ -419,9 +414,9 @@ class StandaloneIssueMediumTests {
 
     final List<RawIssue> issues = new ArrayList<>();
     engine.analyze(AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(), issues::add,
+      .setBaseDir(baseDir)
+      .addInputFile(inputFile)
+      .build(), issues::add,
       null, null, CONFIGURATION_SCOPE_ID);
     assertThat(issues).extracting(RawIssue::getRuleKey, i -> i.getTextRange().getStartLine(), i -> i.getInputFile().relativePath()).containsOnly(
       tuple("python:S1172", 1, "foo.py"),
@@ -434,9 +429,9 @@ class StandaloneIssueMediumTests {
 
     final List<RawIssue> issues = new ArrayList<>();
     engine.analyze(AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(), issues::add,
+      .setBaseDir(baseDir)
+      .addInputFile(inputFile)
+      .build(), issues::add,
       null, null, CONFIGURATION_SCOPE_ID);
     assertThat(issues).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath()).containsOnly(
       tuple("kotlin:S6625", null, "settings.gradle.kts"));
@@ -446,7 +441,7 @@ class StandaloneIssueMediumTests {
   @Test
   void useRelativePathToEvaluatePathPatterns() throws Exception {
 
-    final var file = new File(baseDir, "foo.tmp"); // Temporary file doesn't have the correct file suffix
+    final var file = baseDir.resolve("foo.tmp").toFile(); // Temporary file doesn't have the correct file suffix
     FileUtils.write(file, "def my_function(name):\n"
       + "    print \"Hello\"\n"
       + "    print \"world!\" # NOSONAR\n"
@@ -455,9 +450,9 @@ class StandaloneIssueMediumTests {
 
     final List<RawIssue> issues = new ArrayList<>();
     engine.analyze(AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(), issues::add,
+      .setBaseDir(baseDir)
+      .addInputFile(inputFile)
+      .build(), issues::add,
       null, null, CONFIGURATION_SCOPE_ID);
     assertThat(issues).extracting(RawIssue::getRuleKey, i -> i.getTextRange().getStartLine(), i -> i.getInputFile().relativePath()).containsOnly(
       tuple("python:S1172", 1, "foo.py"),
@@ -478,9 +473,9 @@ class StandaloneIssueMediumTests {
 
     final List<RawIssue> issues = new ArrayList<>();
     engine.analyze(AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(), issues::add,
+      .setBaseDir(baseDir)
+      .addInputFile(inputFile)
+      .build(), issues::add,
       null, null, CONFIGURATION_SCOPE_ID);
 
     assertThat(issues).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath(), RawIssue::getSeverity)
@@ -504,9 +499,9 @@ class StandaloneIssueMediumTests {
 
     final List<RawIssue> issues = new ArrayList<>();
     engine.analyze(AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(), issues::add,
+      .setBaseDir(baseDir)
+      .addInputFile(inputFile)
+      .build(), issues::add,
       null, null, CONFIGURATION_SCOPE_ID);
 
     assertThat(issues).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath(), RawIssue::getSeverity)
@@ -544,10 +539,10 @@ class StandaloneIssueMediumTests {
 
     final List<RawIssue> issues = new ArrayList<>();
     engine.analyze(AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .putExtraProperty("sonar.java.libraries", "\"" + Paths.get("target/lib/guava,with,comma.jar").toAbsolutePath().toString() + "\"")
-        .build(), issues::add,
+      .setBaseDir(baseDir)
+      .addInputFile(inputFile)
+      .putExtraProperty("sonar.java.libraries", "\"" + Paths.get("target/lib/guava,with,comma.jar").toAbsolutePath().toString() + "\"")
+      .build(), issues::add,
       null, null, CONFIGURATION_SCOPE_ID);
 
     assertThat(issues).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath(), RawIssue::getSeverity)
@@ -591,7 +586,7 @@ class StandaloneIssueMediumTests {
     final List<RawIssue> issues = new ArrayList<>();
     engine.analyze(
       AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
+        .setBaseDir(baseDir)
         .addInputFile(inputFile)
         .build(),
       issues::add,
@@ -614,9 +609,9 @@ class StandaloneIssueMediumTests {
 
     final List<RawIssue> issues = new ArrayList<>();
     engine.analyze(AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(), issues::add,
+      .setBaseDir(baseDir)
+      .addInputFile(inputFile)
+      .build(), issues::add,
       null, null, CONFIGURATION_SCOPE_ID);
 
     assertThat(issues).extracting(RawIssue::getRuleKey, i -> i.getTextRange().getStartLine(), i -> i.getInputFile().relativePath(), RawIssue::getSeverity).containsOnly(
@@ -638,9 +633,9 @@ class StandaloneIssueMediumTests {
 
     final List<RawIssue> issues = new ArrayList<>();
     engine.analyze(AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(), issues::add,
+      .setBaseDir(baseDir)
+      .addInputFile(inputFile)
+      .build(), issues::add,
       null, null, CONFIGURATION_SCOPE_ID);
 
     assertThat(issues).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath(), RawIssue::getSeverity)
@@ -689,7 +684,7 @@ class StandaloneIssueMediumTests {
     final List<RawIssue> issues = new ArrayList<>();
     engine.analyze(
       AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
+        .setBaseDir(baseDir)
         .addInputFile(inputFile)
         .build(),
       issues::add, null, null, CONFIGURATION_SCOPE_ID);
@@ -717,7 +712,7 @@ class StandaloneIssueMediumTests {
     final List<RawIssue> issues = new ArrayList<>();
     engine.analyze(
       AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
+        .setBaseDir(baseDir)
         .addInputFile(inputFile)
         .build(),
       issues::add, (msg, lvl) -> logs.add(msg), null, CONFIGURATION_SCOPE_ID);
@@ -748,7 +743,7 @@ class StandaloneIssueMediumTests {
     final List<RawIssue> issues = new ArrayList<>();
     engine.analyze(
       AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
+        .setBaseDir(baseDir)
         .addInputFile(inputFile)
         .build(),
       issues::add, null, null, CONFIGURATION_SCOPE_ID);
@@ -780,7 +775,7 @@ class StandaloneIssueMediumTests {
     final List<RawIssue> issues = new ArrayList<>();
     engine.analyze(
       AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
+        .setBaseDir(baseDir)
         .addInputFile(inputFile)
         .build(),
       issues::add, (msg, lvl) -> logs.add(msg), null, CONFIGURATION_SCOPE_ID);
@@ -809,7 +804,7 @@ class StandaloneIssueMediumTests {
     final List<RawIssue> issues = new ArrayList<>();
     engine.analyze(
       AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
+        .setBaseDir(baseDir)
         .addInputFile(inputFile)
         .build(),
       issues::add, null, null, CONFIGURATION_SCOPE_ID);
@@ -838,7 +833,7 @@ class StandaloneIssueMediumTests {
     final List<RawIssue> issues = new ArrayList<>();
     engine.analyze(
       AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
+        .setBaseDir(baseDir)
         .addInputFile(inputFile)
         .build(),
       issues::add, null, null, CONFIGURATION_SCOPE_ID);
@@ -856,7 +851,7 @@ class StandaloneIssueMediumTests {
   @Test
   void testJavaSurefireDontCrashAnalysis() throws Exception {
 
-    var surefireReport = new File(baseDir, "reports/TEST-FooTest.xml");
+    var surefireReport = baseDir.resolve("reports/TEST-FooTest.xml").toFile();
     FileUtils.write(surefireReport, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
       "<testsuite name=\"FooTest\" time=\"0.121\" tests=\"1\" errors=\"0\" skipped=\"0\" failures=\"0\">\n" +
       "<testcase name=\"errorAnalysis\" classname=\"FooTest\" time=\"0.031\"/>\n" +
@@ -882,7 +877,7 @@ class StandaloneIssueMediumTests {
     final List<RawIssue> issues = new ArrayList<>();
     var results = engine.analyze(
       AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
+        .setBaseDir(baseDir)
         .addInputFiles(inputFile, inputFileTest)
         .putExtraProperty("sonar.junit.reportsPath", "reports/")
         .build(),
@@ -920,7 +915,7 @@ class StandaloneIssueMediumTests {
 
       Runnable worker = () -> engine.analyze(
         AnalysisConfiguration.builder()
-          .setBaseDir(baseDir.toPath())
+          .setBaseDir(baseDir)
           .addInputFile(inputFile)
           .build(),
         issue -> {
@@ -952,7 +947,7 @@ class StandaloneIssueMediumTests {
         + "  }\n"
         + "}",
       false);
-    var unexistingPath = new File(baseDir, "missing.bin");
+    var unexistingPath = baseDir.resolve("missing.bin").toFile();
     assertThat(unexistingPath).doesNotExist();
     ClientInputFile inputFile2 = new OnDiskTestClientInputFile(unexistingPath.toPath(), "missing.bin", false, StandardCharsets.UTF_8, null);
 
@@ -960,7 +955,7 @@ class StandaloneIssueMediumTests {
     final List<String> logs = new CopyOnWriteArrayList<>();
     var analysisResults = engine.analyze(
       AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
+        .setBaseDir(baseDir)
         .addInputFiles(inputFile1, inputFile2)
         .build(),
       issues::add,
@@ -1006,7 +1001,7 @@ class StandaloneIssueMediumTests {
 
     final List<RawIssue> issues = new ArrayList<>();
     AnalysisConfiguration analysisConfiguration = AnalysisConfiguration.builder()
-      .setBaseDir(baseDir.toPath())
+      .setBaseDir(baseDir)
       .addInputFile(inputFile)
       .build();
     assertThrows(CanceledException.class, () -> engine.analyze(analysisConfiguration, issues::add, null, CANCELED_PROGRESS_MONITOR, CONFIGURATION_SCOPE_ID));
@@ -1020,13 +1015,24 @@ class StandaloneIssueMediumTests {
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding, @Nullable SonarLanguage language) throws IOException {
-    final var file = new File(baseDir, relativePath);
+    final var file = baseDir.resolve(relativePath).toFile();
     FileUtils.write(file, content, encoding);
     return new OnDiskTestClientInputFile(file.toPath(), relativePath, isTest, encoding, language);
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
     return prepareInputFile(relativePath, content, isTest, StandardCharsets.UTF_8, null);
+  }
+
+  private List<RaisedIssueDto> analyzeStandalone(Path filePath) {
+    return analyzeStandalone(filePath, Map.of());
+  }
+
+  private List<RaisedIssueDto> analyzeStandalone(Path filePath, Map<String, String> extraProperties) {
+    var issuesByFile = analyzeAndGetIssuesByFile(backend, fakeClient, CONFIGURATION_SCOPE_ID, extraProperties, filePath.toUri());
+    return issuesByFile.values().stream()
+      .flatMap(Collection::stream)
+      .collect(Collectors.toList());
   }
 
 }

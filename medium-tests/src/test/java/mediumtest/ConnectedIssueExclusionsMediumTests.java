@@ -19,80 +19,76 @@
  */
 package mediumtest;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import mediumtest.fixtures.SonarLintBackendFixture;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
-import org.apache.commons.io.FileUtils;
+import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.AnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.EngineConfiguration;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.RawIssue;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.RawIssueListener;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
-import testutils.TestUtils;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
+import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
-import static testutils.TestUtils.createNoOpLogOutput;
+import static testutils.AnalysisUtils.analyzeAndGetIssuesByFile;
+import static testutils.AnalysisUtils.createFile;
 
 class ConnectedIssueExclusionsMediumTests {
-  @RegisterExtension
-  private static final SonarLintLogTester logTester = new SonarLintLogTester();
-
   private static final String FILE1_PATH = "Foo.java";
   private static final String FILE2_PATH = "Foo2.java";
   private static final String CONNECTION_ID = "local";
   private static final String JAVA_MODULE_KEY = "test-project-2";
-  private static final SonarLintTestRpcServer backend = newBackend()
-    .withSonarQubeConnection(CONNECTION_ID, storage -> storage
-      .withPlugin(TestPlugin.JAVA)
-      .withProject("test-project")
-      .withProject(JAVA_MODULE_KEY, project -> project
-        .withRuleSet("java", ruleSet -> ruleSet
-          .withActiveRule("java:S106", "MAJOR")
-          .withActiveRule("java:S1220", "MINOR")
-          .withActiveRule("java:S1481", "BLOCKER"))))
-    .withBoundConfigScope(JAVA_MODULE_KEY, CONNECTION_ID, JAVA_MODULE_KEY)
-    .withEnabledLanguageInStandaloneMode(Language.JAVA).build();
-  private static SonarLintAnalysisEngine engine;
 
   @TempDir
-  private static File baseDir;
+  private static Path baseDir;
+
+  private static Path filePath1;
+  private static Path filePath2;
+  private static SonarLintBackendFixture.FakeSonarLintRpcClient client;
+  private static SonarLintTestRpcServer backend;
 
   @BeforeAll
-  static void prepare(@TempDir Path slHome) {
-    var config = EngineConfiguration.builder()
-      .setSonarLintUserHome(slHome)
-      .setLogOutput(createNoOpLogOutput())
+  static void prepare() {
+    filePath1 = prepareJavaInputFile1(baseDir);
+    filePath2 = prepareJavaInputFile2(baseDir);
+    client = newFakeClient()
+      .withInitialFs(JAVA_MODULE_KEY, baseDir,
+        List.of(new ClientFileDto(filePath1.toUri(), baseDir.relativize(filePath1), JAVA_MODULE_KEY, false, null, filePath1, null, null),
+          new ClientFileDto(filePath2.toUri(), baseDir.relativize(filePath2), JAVA_MODULE_KEY, false, null, filePath2, null, null)))
       .build();
-    engine = new SonarLintAnalysisEngine(config, backend, CONNECTION_ID);
+    backend = newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, storage -> storage
+        .withPlugin(TestPlugin.JAVA)
+        .withProject("test-project")
+        .withProject(JAVA_MODULE_KEY, project -> project
+          .withRuleSet("java", ruleSet -> ruleSet
+            .withActiveRule("java:S106", "MAJOR")
+            .withActiveRule("java:S1220", "MINOR")
+            .withActiveRule("java:S1481", "BLOCKER"))))
+      .withBoundConfigScope(JAVA_MODULE_KEY, CONNECTION_ID, JAVA_MODULE_KEY)
+      .withEnabledLanguageInStandaloneMode(Language.JAVA).build(client);
   }
 
   @AfterAll
   static void stop() {
-    if (engine != null) {
-      engine.stop();
-      engine = null;
+    if (backend != null) {
+      backend.shutdown().join();
     }
   }
 
@@ -102,181 +98,197 @@ class ConnectedIssueExclusionsMediumTests {
   }
 
   @Test
-  void issueExclusions() throws Exception {
-    var inputFile1 = prepareJavaInputFile1();
-    var inputFile2 = prepareJavaInputFile2();
-
-    var issues = collectIssues(inputFile1, inputFile2);
-    assertThat(issues).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath())
-      .usingRecursiveFieldByFieldElementComparator()
+  void issueExclusions() {
+    assertThat(collectIssuesByFile(filePath1, filePath2))
       .containsOnly(
-        tuple("java:S106", new TextRangeDto(5, 4, 5, 14), FILE1_PATH),
-        tuple("java:S1220", null, FILE1_PATH),
-        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), FILE1_PATH),
-        tuple("java:S106", new TextRangeDto(4, 4, 4, 14), FILE2_PATH),
-        tuple("java:S1220", null, FILE2_PATH),
-        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), FILE2_PATH));
+        entry(filePath1.toUri(),
+          List.of(
+            tuple("java:S1220", null),
+            tuple("java:S1481", tuple(3, 8, 3, 9)),
+            tuple("java:S106", tuple(5, 4, 5, 14)))),
+        entry(filePath2.toUri(),
+          List.of(
+            tuple("java:S1220", null),
+            tuple("java:S1481", tuple(3, 8, 3, 9)),
+            tuple("java:S106", tuple(4, 4, 4, 14)))));
 
     updateIssueExclusionsSettings(Map.of("sonar.issue.ignore.multicriteria", "1",
       "sonar.issue.ignore.multicriteria.1.resourceKey", "*",
       "sonar.issue.ignore.multicriteria.1.ruleKey", "*"));
-    assertThat(collectIssues(inputFile1, inputFile2)).isEmpty();
+    assertThat(collectIssuesByFile(filePath1, filePath2)).isEmpty();
 
     updateIssueExclusionsSettings(Map.of("sonar.issue.ignore.multicriteria", "1",
       "sonar.issue.ignore.multicriteria.1.resourceKey", "*",
       "sonar.issue.ignore.multicriteria.1.ruleKey", "*S1481"));
-    assertThat(collectIssues(inputFile1, inputFile2)).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath())
-      .usingRecursiveFieldByFieldElementComparator()
+    assertThat(collectIssuesByFile(filePath1, filePath2))
       .containsOnly(
-        tuple("java:S106", new TextRangeDto(5, 4, 5, 14), FILE1_PATH),
-        tuple("java:S1220", null, FILE1_PATH),
-        tuple("java:S106", new TextRangeDto(4, 4, 4, 14), FILE2_PATH),
-        tuple("java:S1220", null, FILE2_PATH));
+        entry(filePath1.toUri(),
+          List.of(
+            tuple("java:S1220", null),
+            tuple("java:S106", tuple(5, 4, 5, 14)))),
+        entry(filePath2.toUri(),
+          List.of(
+            tuple("java:S1220", null),
+            tuple("java:S106", tuple(4, 4, 4, 14)))));
 
     updateIssueExclusionsSettings(Map.of("sonar.issue.ignore.multicriteria", "1",
       "sonar.issue.ignore.multicriteria.1.resourceKey", FILE2_PATH,
       "sonar.issue.ignore.multicriteria.1.ruleKey", "*"));
-    assertThat(collectIssues(inputFile1, inputFile2)).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath())
-      .usingRecursiveFieldByFieldElementComparator()
+    assertThat(collectIssuesByFile(filePath1, filePath2))
       .containsOnly(
-        tuple("java:S106", new TextRangeDto(5, 4, 5, 14), FILE1_PATH),
-        tuple("java:S1220", null, FILE1_PATH),
-        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), FILE1_PATH));
+        entry(filePath1.toUri(),
+          List.of(
+            tuple("java:S1220", null),
+            tuple("java:S1481", tuple(3, 8, 3, 9)),
+            tuple("java:S106", tuple(5, 4, 5, 14)))));
 
     updateIssueExclusionsSettings(Map.of("sonar.issue.ignore.multicriteria", "1,2",
       "sonar.issue.ignore.multicriteria.1.resourceKey", FILE2_PATH,
       "sonar.issue.ignore.multicriteria.1.ruleKey", "java:S1481",
       "sonar.issue.ignore.multicriteria.2.resourceKey", FILE1_PATH,
       "sonar.issue.ignore.multicriteria.2.ruleKey", "java:S106"));
-    assertThat(collectIssues(inputFile1, inputFile2)).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath())
-      .usingRecursiveFieldByFieldElementComparator()
+    assertThat(collectIssuesByFile(filePath1, filePath2))
       .containsOnly(
-        tuple("java:S1220", null, FILE1_PATH),
-        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), FILE1_PATH),
-        tuple("java:S106", new TextRangeDto(4, 4, 4, 14), FILE2_PATH),
-        tuple("java:S1220", null, FILE2_PATH));
+        entry(filePath1.toUri(),
+          List.of(
+            tuple("java:S1220", null),
+            tuple("java:S1481", tuple(3, 8, 3, 9)))),
+        entry(filePath2.toUri(),
+          List.of(
+            tuple("java:S1220", null),
+            tuple("java:S106", tuple(4, 4, 4, 14)))));
   }
 
   @Test
-  void issueExclusionsByRegexp() throws Exception {
-    var inputFile1 = prepareJavaInputFile1();
-    var inputFile2 = prepareJavaInputFile2();
-
-    assertThat(collectIssues(inputFile1, inputFile2)).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath())
-      .usingRecursiveFieldByFieldElementComparator()
+  void issueExclusionsByRegexp() {
+    assertThat(collectIssuesByFile(filePath1, filePath2))
       .containsOnly(
-        tuple("java:S106", new TextRangeDto(5, 4, 5, 14), FILE1_PATH),
-        tuple("java:S1220", null, FILE1_PATH),
-        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), FILE1_PATH),
-        tuple("java:S106", new TextRangeDto(4, 4, 4, 14), FILE2_PATH),
-        tuple("java:S1220", null, FILE2_PATH),
-        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), FILE2_PATH));
+        entry(filePath1.toUri(),
+          List.of(
+            tuple("java:S1220", null),
+            tuple("java:S1481", tuple(3, 8, 3, 9)),
+            tuple("java:S106", tuple(5, 4, 5, 14)))),
+        entry(filePath2.toUri(),
+          List.of(
+            tuple("java:S1220", null),
+            tuple("java:S1481", tuple(3, 8, 3, 9)),
+            tuple("java:S106", tuple(4, 4, 4, 14)))));
 
     updateIssueExclusionsSettings(Map.of("sonar.issue.ignore.allfile", "1",
       "sonar.issue.ignore.allfile.1.fileRegexp", "NOSL1"));
-    assertThat(collectIssues(inputFile1, inputFile2)).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath())
-      .usingRecursiveFieldByFieldElementComparator()
+    assertThat(collectIssuesByFile(filePath1, filePath2))
       .containsOnly(
-        tuple("java:S106", new TextRangeDto(4, 4, 4, 14), FILE2_PATH),
-        tuple("java:S1220", null, FILE2_PATH),
-        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), FILE2_PATH));
+        entry(filePath2.toUri(),
+          List.of(
+            tuple("java:S1220", null),
+            tuple("java:S1481", tuple(3, 8, 3, 9)),
+            tuple("java:S106", tuple(4, 4, 4, 14)))));
 
     updateIssueExclusionsSettings(Map.of("sonar.issue.ignore.allfile", "1",
       "sonar.issue.ignore.allfile.1.fileRegexp", "NOSL(1|2)"));
-    assertThat(collectIssues(inputFile1, inputFile2)).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath()).isEmpty();
+    assertThat(collectIssuesByFile(filePath1, filePath2)).isEmpty();
   }
 
   @Test
-  void issueExclusionsByBlock() throws Exception {
-    var inputFile1 = prepareJavaInputFile1();
-    var inputFile2 = prepareJavaInputFile2();
-
-    assertThat(collectIssues(inputFile1, inputFile2)).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath())
-      .usingRecursiveFieldByFieldElementComparator()
+  void issueExclusionsByBlock() {
+    assertThat(collectIssuesByFile(filePath1, filePath2))
       .containsOnly(
-        tuple("java:S106", new TextRangeDto(5, 4, 5, 14), FILE1_PATH),
-        tuple("java:S1220", null, FILE1_PATH),
-        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), FILE1_PATH),
-        tuple("java:S106", new TextRangeDto(4, 4, 4, 14), FILE2_PATH),
-        tuple("java:S1220", null, FILE2_PATH),
-        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), FILE2_PATH));
+        entry(filePath1.toUri(),
+          List.of(
+            tuple("java:S1220", null),
+            tuple("java:S1481", tuple(3, 8, 3, 9)),
+            tuple("java:S106", tuple(5, 4, 5, 14)))),
+        entry(filePath2.toUri(),
+          List.of(
+            tuple("java:S1220", null),
+            tuple("java:S1481", tuple(3, 8, 3, 9)),
+            tuple("java:S106", tuple(4, 4, 4, 14)))));
 
     updateIssueExclusionsSettings(Map.of("sonar.issue.ignore.block", "1",
       "sonar.issue.ignore.block.1.beginBlockRegexp", "SON.*-OFF",
       "sonar.issue.ignore.block.1.endBlockRegexp", "SON.*-ON"));
-    assertThat(collectIssues(inputFile1, inputFile2)).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath())
-      .usingRecursiveFieldByFieldElementComparator()
+    assertThat(collectIssuesByFile(filePath1, filePath2))
       .containsOnly(
-        tuple("java:S1220", null, FILE1_PATH),
-        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), FILE1_PATH),
-        tuple("java:S106", new TextRangeDto(4, 4, 4, 14), FILE2_PATH),
-        tuple("java:S1220", null, FILE2_PATH),
-        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), FILE2_PATH));
+        entry(filePath1.toUri(),
+          List.of(
+            tuple("java:S1220", null),
+            tuple("java:S1481", tuple(3, 8, 3, 9)))),
+        entry(filePath2.toUri(),
+          List.of(
+            tuple("java:S1220", null),
+            tuple("java:S1481", tuple(3, 8, 3, 9)),
+            tuple("java:S106", tuple(4, 4, 4, 14)))));
   }
 
   @Test
-  void issueInclusions() throws Exception {
-    var inputFile1 = prepareJavaInputFile1();
-    var inputFile2 = prepareJavaInputFile2();
-
+  void issueInclusions() {
     updateIssueExclusionsSettings(Map.of("sonar.issue.enforce.multicriteria", "1",
       "sonar.issue.enforce.multicriteria.1.resourceKey", "Foo*.java",
       "sonar.issue.enforce.multicriteria.1.ruleKey", "*"));
-    assertThat(collectIssues(inputFile1, inputFile2)).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath())
-      .usingRecursiveFieldByFieldElementComparator()
+    assertThat(collectIssuesByFile(filePath1, filePath2))
       .containsOnly(
-        tuple("java:S106", new TextRangeDto(5, 4, 5, 14), FILE1_PATH),
-        tuple("java:S1220", null, FILE1_PATH),
-        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), FILE1_PATH),
-        tuple("java:S106", new TextRangeDto(4, 4, 4, 14), FILE2_PATH),
-        tuple("java:S1220", null, FILE2_PATH),
-        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), FILE2_PATH));
+        entry(filePath1.toUri(),
+          List.of(
+            tuple("java:S1220", null),
+            tuple("java:S1481", tuple(3, 8, 3, 9)),
+            tuple("java:S106", tuple(5, 4, 5, 14)))),
+        entry(filePath2.toUri(),
+          List.of(
+            tuple("java:S1220", null),
+            tuple("java:S1481", tuple(3, 8, 3, 9)),
+            tuple("java:S106", tuple(4, 4, 4, 14)))));
 
     updateIssueExclusionsSettings(Map.of("sonar.issue.enforce.multicriteria", "1",
       "sonar.issue.enforce.multicriteria.1.resourceKey", FILE2_PATH,
       "sonar.issue.enforce.multicriteria.1.ruleKey", "*S1481"));
-    assertThat(collectIssues(inputFile1, inputFile2)).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath())
-      .usingRecursiveFieldByFieldElementComparator()
+    assertThat(collectIssuesByFile(filePath1, filePath2))
       .containsOnly(
-        tuple("java:S106", new TextRangeDto(5, 4, 5, 14), FILE1_PATH),
-        tuple("java:S1220", null, FILE1_PATH),
-        tuple("java:S106", new TextRangeDto(4, 4, 4, 14), FILE2_PATH),
-        tuple("java:S1220", null, FILE2_PATH),
-        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), FILE2_PATH));
+        entry(filePath1.toUri(),
+          List.of(
+            tuple("java:S1220", null),
+            tuple("java:S106", tuple(5, 4, 5, 14)))),
+        entry(filePath2.toUri(),
+          List.of(
+            tuple("java:S1220", null),
+            tuple("java:S1481", tuple(3, 8, 3, 9)),
+            tuple("java:S106", tuple(4, 4, 4, 14)))));
 
     updateIssueExclusionsSettings(Map.of("sonar.issue.enforce.multicriteria", "1",
       "sonar.issue.enforce.multicriteria.1.resourceKey", FILE2_PATH,
       "sonar.issue.enforce.multicriteria.1.ruleKey", "*"));
-    assertThat(collectIssues(inputFile1, inputFile2)).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath())
-      .usingRecursiveFieldByFieldElementComparator()
+    assertThat(collectIssuesByFile(filePath1, filePath2))
       .containsOnly(
-        tuple("java:S106", new TextRangeDto(4, 4, 4, 14), FILE2_PATH),
-        tuple("java:S1220", null, FILE2_PATH),
-        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), FILE2_PATH));
+        entry(filePath2.toUri(),
+          List.of(
+            tuple("java:S1220", null),
+            tuple("java:S1481", tuple(3, 8, 3, 9)),
+            tuple("java:S106", tuple(4, 4, 4, 14)))));
 
     updateIssueExclusionsSettings(Map.of("sonar.issue.enforce.multicriteria", "1,2",
       "sonar.issue.enforce.multicriteria.1.resourceKey", FILE2_PATH,
       "sonar.issue.enforce.multicriteria.1.ruleKey", "java:S1481",
       "sonar.issue.enforce.multicriteria.2.resourceKey", FILE1_PATH,
       "sonar.issue.enforce.multicriteria.2.ruleKey", "java:S106"));
-    assertThat(collectIssues(inputFile1, inputFile2)).extracting(RawIssue::getRuleKey, RawIssue::getTextRange, i -> i.getInputFile().relativePath())
-      .usingRecursiveFieldByFieldElementComparator()
+    assertThat(collectIssuesByFile(filePath1, filePath2))
       .containsOnly(
-        tuple("java:S106", new TextRangeDto(5, 4, 5, 14), FILE1_PATH),
-        tuple("java:S1220", null, FILE1_PATH),
-        tuple("java:S1220", null, FILE2_PATH),
-        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), FILE2_PATH));
+        entry(filePath1.toUri(),
+          List.of(
+            tuple("java:S1220", null),
+            tuple("java:S106", tuple(5, 4, 5, 14)))),
+        entry(filePath2.toUri(),
+          List.of(
+            tuple("java:S1220", null),
+            tuple("java:S1481", tuple(3, 8, 3, 9)))));
   }
 
-  private List<RawIssue> collectIssues(ClientInputFile inputFile1, ClientInputFile inputFile2) {
-    final List<RawIssue> issues = new ArrayList<>();
-    engine.analyze(
-      AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFiles(inputFile1, inputFile2)
-        .build(),
-      new StoreIssueListener(issues), null, null, JAVA_MODULE_KEY);
-    return issues;
+  private Map<URI, List<Tuple>> collectIssuesByFile(Path... filePaths) {
+    return analyzeAndGetIssuesByFile(backend, client, JAVA_MODULE_KEY, Arrays.stream(filePaths).map(Path::toUri).toArray(URI[]::new))
+      .entrySet().stream()
+      .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().stream().map(issue -> {
+        var textRange = issue.getTextRange();
+        return tuple(issue.getRuleKey(),
+          textRange == null ? null : tuple(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset()));
+      }).collect(Collectors.toList())));
   }
 
   private void updateIssueExclusionsSettings(Map<String, String> settings) {
@@ -292,8 +304,8 @@ class ConnectedIssueExclusionsMediumTests {
     ProtobufFileUtil.writeToFile(analyzerConfigurationBuilder.build(), analyzerConfigPath);
   }
 
-  private ClientInputFile prepareJavaInputFile1() throws IOException {
-    return prepareInputFile(FILE1_PATH,
+  private static Path prepareJavaInputFile1(Path baseDir) {
+    return createFile(baseDir, FILE1_PATH,
       "/*NOSL1*/ public class Foo {\n"
         + "  public void foo() {\n"
         + "    int x;\n"
@@ -301,38 +313,16 @@ class ConnectedIssueExclusionsMediumTests {
         + "    System.out.println(\"Foo\");\n"
         + "    // SONAR-ON\n"
         + "  }\n"
-        + "}",
-      false);
+        + "}");
   }
 
-  private ClientInputFile prepareJavaInputFile2() throws IOException {
-    return prepareInputFile(FILE2_PATH,
+  private static Path prepareJavaInputFile2(Path baseDir) {
+    return createFile(baseDir, FILE2_PATH,
       "/*NOSL2*/ public class Foo2 {\n"
         + "  public void foo() {\n"
         + "    int x;\n"
         + "    System.out.println(\"Foo\");\n"
         + "  }\n"
-        + "}",
-      false);
+        + "}");
   }
-
-  private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
-    final var file = new File(baseDir, relativePath);
-    FileUtils.write(file, content, StandardCharsets.UTF_8);
-    return TestUtils.createInputFile(file.toPath(), relativePath, isTest);
-  }
-
-  static class StoreIssueListener implements RawIssueListener {
-    private final List<RawIssue> issues;
-
-    StoreIssueListener(List<RawIssue> issues) {
-      this.issues = issues;
-    }
-
-    @Override
-    public void handle(RawIssue rawIssue) {
-      issues.add(rawIssue);
-    }
-  }
-
 }
