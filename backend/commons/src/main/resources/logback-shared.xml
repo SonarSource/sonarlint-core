@@ -7,4 +7,5 @@
   <logger name="jetbrains.exodus" level="warn" />
   <logger name="org.apache.hc" level="warn" />
   <logger name="org.eclipse.lsp4j.jsonrpc" level="error" />
+  <logger name="org.eclipse.jgit" level="info"/>
 </included>
