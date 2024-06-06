@@ -119,7 +119,7 @@ class FileExclusionTests extends AbstractConnectedTests {
             List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)),
             Collections.emptyList(),
             sonarUserHome.toString(),
-            Map.of(), false, null, Map.of()))
+            Map.of(), false, null))
         .get();
     } catch (Exception e) {
       throw new IllegalStateException("Cannot initialize the backend", e);

@@ -48,7 +48,6 @@ public class InitializeParams {
   private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey;
   private final boolean isFocusOnNewCode;
   private final LanguageSpecificRequirements languageSpecificRequirements;
-  private final Map<String, Map<String, String>> extraAnalyserPropsByConfigScopeId;
 
   /**
    * @param telemetryConstantAttributes Static information about the client, that will be sent with the telemetry payload
@@ -73,8 +72,7 @@ public class InitializeParams {
     @Nullable String sonarlintUserHome,
     @Nullable Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey,
     boolean isFocusOnNewCode,
-    @Nullable LanguageSpecificRequirements languageSpecificRequirements,
-    @Nullable Map<String, Map<String,String>> extraAnalyserPropsByConfigScopeId) {
+    @Nullable LanguageSpecificRequirements languageSpecificRequirements) {
     this.clientConstantInfo = clientConstantInfo;
     this.telemetryConstantAttributes = telemetryConstantAttributes;
     this.httpConfiguration = httpConfiguration;
@@ -92,7 +90,6 @@ public class InitializeParams {
     this.standaloneRuleConfigByKey = standaloneRuleConfigByKey;
     this.isFocusOnNewCode = isFocusOnNewCode;
     this.languageSpecificRequirements = languageSpecificRequirements;
-    this.extraAnalyserPropsByConfigScopeId = extraAnalyserPropsByConfigScopeId;
   }
 
   public ClientConstantInfoDto getClientConstantInfo() {
@@ -165,9 +162,5 @@ public class InitializeParams {
   @Nullable
   public LanguageSpecificRequirements getLanguageSpecificRequirements() {
     return languageSpecificRequirements;
-  }
-
-  public Map<String, Map<String, String>> getExtraAnalyserPropsByConfigScopeId() {
-    return extraAnalyserPropsByConfigScopeId;
   }
 }

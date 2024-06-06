@@ -103,7 +103,7 @@ class StandaloneTests {
           sonarUserHome.resolve("storage"),
           sonarUserHome.resolve("work"),
           Set.of(Paths.get("../plugins/global-extension-plugin/target/global-extension-plugin.jar")), Collections.emptyMap(),
-          languages, Collections.emptySet(), Collections.emptyList(), Collections.emptyList(), sonarUserHome.toString(), Map.of(), false, null, Map.of()))
+          languages, Collections.emptySet(), Collections.emptyList(), Collections.emptyList(), sonarUserHome.toString(), Map.of(), false, null))
         .get();
       System.out.println("After backend initialize");
     } catch (Exception e) {

@@ -21,20 +21,20 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis;
 
 import java.util.Map;
 
-public class DidChangedAnalysisExtraPropertiesParams {
+public class DidChangeAnalysisPropertiesParams {
   private final String configurationScopeId;
-  private final Map<String, String> extraProperties;
+  private final Map<String, String> properties;
 
-  public DidChangedAnalysisExtraPropertiesParams(String configurationScopeId, Map<String, String> extraProperties) {
+  public DidChangeAnalysisPropertiesParams(String configurationScopeId, Map<String, String> extraProperties) {
     this.configurationScopeId = configurationScopeId;
-    this.extraProperties = extraProperties;
+    this.properties = extraProperties;
   }
 
   public String getConfigurationScopeId() {
     return configurationScopeId;
   }
 
-  public Map<String, String> getExtraProperties() {
-    return extraProperties;
+  public Map<String, String> getProperties() {
+    return properties;
   }
 }

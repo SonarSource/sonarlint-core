@@ -83,9 +83,19 @@ public interface AnalysisRpcService {
   @JsonRequest
   CompletableFuture<AnalyzeFilesResponse> analyzeFilesAndTrack(AnalyzeFilesAndTrackParams params);
 
+  /**
+   *  Notify the client with new analysis properties.
+   *  The backend will take the provided set of properties as a full configuration, and previous values will be cleared.
+   * @param params configuration scope ID, new properties for this scope
+   */
   @JsonNotification
-  void didSetAnalysisExtraProperties(DidChangedAnalysisExtraPropertiesParams params);
+  void didSetAnalysisProperties(DidChangeAnalysisPropertiesParams params);
 
+  /**
+   *  Notify the client that analysis properties has changed.
+   *  The backend will update the configuration with the provided values, but previously provided properties will be kept.
+   * @param params configuration scope ID, additional properties and new values for existing ones
+   */
   @JsonNotification
-  void didUpdateAnalysisExtraProperties(DidChangedAnalysisExtraPropertiesParams params);
+  void didUpdateAnalysisProperties(DidChangeAnalysisPropertiesParams params);
 }

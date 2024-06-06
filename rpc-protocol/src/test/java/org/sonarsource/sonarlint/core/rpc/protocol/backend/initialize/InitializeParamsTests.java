@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
 
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -28,9 +27,7 @@ class InitializeParamsTests {
 
   @Test
   void should_replace_null_collections_by_empty() {
-    var params = new InitializeParams(null, null, null, null, null, null,
-      null, null, null, null, null,
-      null, null, null, null, false, null, Map.of());
+    var params = new InitializeParams(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, false, null);
     assertNotNull(params.getEmbeddedPluginPaths());
     assertNotNull(params.getConnectedModeEmbeddedPluginPathsByKey());
     assertNotNull(params.getEnabledLanguagesInStandaloneMode());
