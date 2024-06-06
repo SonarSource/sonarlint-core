@@ -416,7 +416,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
             connectedModeEmbeddedPluginPathsByKey, languages, emptySet(),
             List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), emptyList(),
             sonarUserHome.toString(),
-            Map.of(), false, null))
+            Map.of(), false, null, Map.of()))
         .get();
     } catch (Exception e) {
       throw new IllegalStateException("Cannot initialize the backend", e);
