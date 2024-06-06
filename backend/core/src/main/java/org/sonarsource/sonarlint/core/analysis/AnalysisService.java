@@ -69,7 +69,9 @@ import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.fs.FileExclusionService;
+import org.sonarsource.sonarlint.core.fs.FileOpenedEvent;
 import org.sonarsource.sonarlint.core.fs.FileSystemUpdatedEvent;
+import org.sonarsource.sonarlint.core.fs.OpenFilesRepository;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.nodejs.InstalledNodeJs;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
@@ -111,6 +113,7 @@ import org.springframework.context.event.EventListener;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
@@ -142,13 +145,14 @@ public class AnalysisService {
   private final UserAnalysisPropertiesRepository userAnalysisPropertiesRepository;
   private final boolean isDataflowBugDetectionEnabled;
   private final Map<String, Boolean> analysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
+  private final OpenFilesRepository openFilesRepository;
 
   public AnalysisService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
     StorageService storageService, PluginsService pluginsService, RulesService rulesService, RulesRepository rulesRepository,
     ConnectionConfigurationRepository connectionConfigurationRepository, InitializeParams initializeParams, NodeJsService nodeJsService,
     AnalysisEngineCache engineCache, ClientFileSystemService fileSystemService, FileExclusionService fileExclusionService,
     ApplicationEventPublisher eventPublisher,
-    UserAnalysisPropertiesRepository clientAnalysisPropertiesRepository) {
+    UserAnalysisPropertiesRepository clientAnalysisPropertiesRepository, OpenFilesRepository openFilesRepository) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
@@ -165,6 +169,7 @@ public class AnalysisService {
     this.fileExclusionService = fileExclusionService;
     this.eventPublisher = eventPublisher;
     this.userAnalysisPropertiesRepository = clientAnalysisPropertiesRepository;
+    this.openFilesRepository = openFilesRepository;
   }
 
   public List<String> getSupportedFilePatterns(String configScopeId) {
@@ -231,17 +236,18 @@ public class AnalysisService {
     var userAnalysisProperties = userAnalysisPropertiesRepository.getUserProperties(configScopeId);
     var nodeJsDetailsDto = activeNodeJs == null ? null : new NodeJsDetailsDto(activeNodeJs.getPath(), activeNodeJs.getVersion().toString());
     return bindingOpt.map(binding -> {
-        var serverProperties = storageService.binding(binding).analyzerConfiguration().read().getSettings().getAll();
-        var analysisProperties = new HashMap<>(serverProperties);
-        analysisProperties.putAll(userAnalysisProperties);
-        return new GetAnalysisConfigResponse(buildConnectedActiveRules(binding), analysisProperties, nodeJsDetailsDto,
-          Set.copyOf(pluginsService.getConnectedPluginPaths(binding.getConnectionId())));
-      })
+      var serverProperties = storageService.binding(binding).analyzerConfiguration().read().getSettings().getAll();
+      var analysisProperties = new HashMap<>(serverProperties);
+      analysisProperties.putAll(userAnalysisProperties);
+      return new GetAnalysisConfigResponse(buildConnectedActiveRules(binding), analysisProperties, nodeJsDetailsDto,
+        Set.copyOf(pluginsService.getConnectedPluginPaths(binding.getConnectionId())));
+    })
       .orElseGet(() -> new GetAnalysisConfigResponse(buildStandaloneActiveRules(), userAnalysisProperties, nodeJsDetailsDto,
         Set.copyOf(pluginsService.getEmbeddedPluginPaths())));
   }
 
   public AnalysisConfiguration getAnalysisConfigForEngine(String configScopeId, List<URI> filePathsToAnalyze, Map<String, String> extraProperties) {
+    // TODO check local exclusions
     var analysisConfig = getAnalysisConfig(configScopeId);
     var analysisProperties = analysisConfig.getAnalysisProperties();
     var inferredAnalysisProperties = client.getInferredAnalysisProperties(new GetInferredAnalysisPropertiesParams(configScopeId)).join().getProperties();
@@ -498,6 +504,19 @@ public class AnalysisService {
     sendModuleEvents(event.getAdded(), ModuleFileEvent.Type.CREATED);
     sendModuleEvents(event.getUpdated(), ModuleFileEvent.Type.MODIFIED);
     sendModuleEvents(event.getRemoved(), ModuleFileEvent.Type.DELETED);
+    var updatedFileUrisByConfigScope = event.getUpdated().stream().collect(groupingBy(ClientFile::getConfigScopeId, mapping(ClientFile::getUri, toSet())));
+    updatedFileUrisByConfigScope.forEach((configScopeId, fileUris) -> {
+      var openFileUris = openFilesRepository.getOpenFilesAmong(configScopeId, fileUris);
+      if (!openFileUris.isEmpty()) {
+        analyze(new SonarLintCancelMonitor(), configScopeId, UUID.randomUUID(), openFileUris, Map.of(), System.currentTimeMillis(), true, true);
+      }
+    });
+
+  }
+
+  @EventListener
+  public void onFileOpened(FileOpenedEvent event) {
+    analyze(new SonarLintCancelMonitor(), event.getConfigurationScopeId(), UUID.randomUUID(), List.of(event.getFileUri()), Map.of(), System.currentTimeMillis(), true, true);
   }
 
   private void sendModuleEvents(List<ClientFile> filesToProcess, ModuleFileEvent.Type type) {
