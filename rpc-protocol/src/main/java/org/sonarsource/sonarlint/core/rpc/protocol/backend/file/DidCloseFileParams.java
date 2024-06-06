@@ -19,29 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.file;
 
-import java.util.concurrent.CompletableFuture;
-import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
-import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
-import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
+import java.net.URI;
 
-@JsonSegment("file")
-public interface FileRpcService {
+public class DidCloseFileParams {
+  private final String configurationScopeId;
+  private final URI fileUri;
 
-  @JsonRequest
-  CompletableFuture<GetFilesStatusResponse> getFilesStatus(GetFilesStatusParams params);
+  public DidCloseFileParams(String configurationScopeId, URI fileUri) {
+    this.configurationScopeId = configurationScopeId;
+    this.fileUri = fileUri;
+  }
 
-  @JsonNotification
-  void didUpdateFileSystem(DidUpdateFileSystemParams params);
+  public String getConfigurationScopeId() {
+    return configurationScopeId;
+  }
 
-  /**
-   * Should be called by clients when a file has been opened in the editor.
-   */
-  @JsonNotification
-  void didOpenFile(DidOpenFileParams params);
-
-  /**
-   * Should be called by clients when a file has been closed in the editor.
-   */
-  @JsonNotification
-  void didCloseFile(DidCloseFileParams params);
+  public URI getFileUri() {
+    return fileUri;
+  }
 }
