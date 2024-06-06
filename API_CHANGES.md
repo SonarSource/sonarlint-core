@@ -13,6 +13,8 @@
   * Can be null or empty if clients do not wish to disable analysis for any loaded plugin
 
 
+None :)
+
 ## New features
 * Add a method to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient` to allow backend to request inferred analysis properties from the client before every analysis. It's important because properties may change depending on files being analysed.
   * `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#getInferredAnalysisProperties` to request inferred properties
@@ -26,6 +28,11 @@
   * It allows clients to get parameters to create either SonarQube or SonarCloud connection
   * This field type is `Either<AssistSonarQubeConnection, AssistSonarCloudConnection>`
   * Common methods of both connection types are added to the `AssistCreatingConnectionParams` class to provide users simplicity
+
+### File events
+
+* Add the `didOpenFile` and `didCloseFile` methods to `org.sonarsource.sonarlint.core.rpc.protocol.backend.file.FileRpcService`.
+  * Clients are supposed to call these methods when a file is opened in the editor or closed.
 
 ## Deprecation
 * Deprecate `isSonarCloud` parameter from `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams`
