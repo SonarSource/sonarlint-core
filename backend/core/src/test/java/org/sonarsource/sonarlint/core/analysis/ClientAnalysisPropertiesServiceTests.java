@@ -25,15 +25,15 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class AnalysisPropertiesServiceTests {
+class ClientAnalysisPropertiesServiceTests {
 
   private static final String CONFIG_SCOPE_ID = "scope-id";
   private static final String ANOTHER_CONFIG_SCOPE_ID = "another-scope-id";
-  AnalysisPropertiesService underTest;
+  ClientAnalysisPropertiesRepository underTest;
 
   @BeforeEach
   public void setup() {
-    underTest = new AnalysisPropertiesService();
+    underTest = new ClientAnalysisPropertiesRepository();
   }
 
   @Test
@@ -95,7 +95,5 @@ class AnalysisPropertiesServiceTests {
     assertThat(properties).hasSize(3).containsEntry("key1", "inferred_value")
       .containsEntry("key2", "value2").containsEntry("key3", "value3");
   }
-
-
 
 }

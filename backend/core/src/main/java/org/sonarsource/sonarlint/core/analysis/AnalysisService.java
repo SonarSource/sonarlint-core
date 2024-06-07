@@ -138,13 +138,15 @@ public class AnalysisService {
   private final ClientFileSystemService fileSystemService;
   private final FileExclusionService fileExclusionService;
   private final ApplicationEventPublisher eventPublisher;
+  private final ClientAnalysisPropertiesRepository clientAnalysisPropertiesRepository;
   private final boolean isDataflowBugDetectionEnabled;
   private final Map<String, Boolean> analysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
 
   public AnalysisService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
     StorageService storageService, PluginsService pluginsService, RulesService rulesService, RulesRepository rulesRepository,
     ConnectionConfigurationRepository connectionConfigurationRepository, InitializeParams initializeParams, NodeJsService nodeJsService, AnalysisEngineCache engineCache,
-    ClientFileSystemService fileSystemService, FileExclusionService fileExclusionService, ApplicationEventPublisher eventPublisher) {
+    ClientFileSystemService fileSystemService, FileExclusionService fileExclusionService, ApplicationEventPublisher eventPublisher,
+    ClientAnalysisPropertiesRepository clientAnalysisPropertiesRepository) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
@@ -160,6 +162,7 @@ public class AnalysisService {
     this.fileSystemService = fileSystemService;
     this.fileExclusionService = fileExclusionService;
     this.eventPublisher = eventPublisher;
+    this.clientAnalysisPropertiesRepository = clientAnalysisPropertiesRepository;
   }
 
   public List<String> getSupportedFilePatterns(String configScopeId) {
@@ -223,12 +226,18 @@ public class AnalysisService {
   public GetAnalysisConfigResponse getAnalysisConfig(String configScopeId) {
     var bindingOpt = configurationRepository.getEffectiveBinding(configScopeId);
     var activeNodeJs = nodeJsService.getActiveNodeJs();
+    var clientAnalysisProperties = clientAnalysisPropertiesRepository.getProperties(configScopeId);
 
     var nodeJsDetailsDto = activeNodeJs == null ? null : new NodeJsDetailsDto(activeNodeJs.getPath(), activeNodeJs.getVersion().toString());
-    return bindingOpt.map(binding -> new GetAnalysisConfigResponse(buildConnectedActiveRules(binding),
-      storageService.binding(binding).analyzerConfiguration().read().getSettings().getAll(), nodeJsDetailsDto,
-      Set.copyOf(pluginsService.getConnectedPluginPaths(binding.getConnectionId()))))
-      .orElseGet(() -> new GetAnalysisConfigResponse(buildStandaloneActiveRules(), Map.of(), nodeJsDetailsDto, Set.copyOf(pluginsService.getEmbeddedPluginPaths())));
+    return bindingOpt.map(binding -> {
+        var serverProperties = storageService.binding(binding).analyzerConfiguration().read().getSettings().getAll();
+        var analysisProperties = new ConcurrentHashMap<>(serverProperties);
+        analysisProperties.putAll(clientAnalysisProperties);
+        return new GetAnalysisConfigResponse(buildConnectedActiveRules(binding), analysisProperties, nodeJsDetailsDto,
+          Set.copyOf(pluginsService.getConnectedPluginPaths(binding.getConnectionId())));
+      })
+      .orElseGet(() -> new GetAnalysisConfigResponse(buildStandaloneActiveRules(), clientAnalysisProperties, nodeJsDetailsDto,
+        Set.copyOf(pluginsService.getEmbeddedPluginPaths())));
   }
 
   public AnalysisConfiguration getAnalysisConfigForEngine(String configScopeId, List<URI> filePathsToAnalyze, Map<String, String> extraProperties) {
@@ -238,6 +247,8 @@ public class AnalysisService {
     return AnalysisConfiguration.builder()
       .addInputFiles(toInputFiles(configScopeId, filePathsToAnalyze))
       .putAllExtraProperties(analysisConfig.getAnalysisProperties())
+      // properties sent by client using new API were merged in getAnalysisConfig()
+      // but this line is important for backward compatibility for clients directly triggering analysis
       .putAllExtraProperties(extraProperties)
       .addActiveRules(analysisConfig.getActiveRules().stream().map(r -> {
         var ar = new org.sonarsource.sonarlint.core.analysis.api.ActiveRule(r.getRuleKey(), r.getLanguageKey());
@@ -247,6 +258,22 @@ public class AnalysisService {
       }).collect(toList()))
       .setBaseDir(actualBaseDir)
       .build();
+  }
+
+  public void setUserAnalysisProperties(String configScopeId, Map<String, String> properties) {
+    clientAnalysisPropertiesRepository.setUserProperties(configScopeId, properties);
+  }
+
+  public void setInferredAnalysisProperties(String configScopeId, Map<String, String> properties) {
+    clientAnalysisPropertiesRepository.setInferredProperties(configScopeId, properties);
+  }
+
+  public void setOrUpdateInferredAnalysisProperties(String configScopeId, Map<String, String> properties) {
+    clientAnalysisPropertiesRepository.setOrUpdateInferredProperties(configScopeId, properties);
+  }
+
+  public Map<String, String> getClientAnalysisProperties(String configScopeId) {
+    return clientAnalysisPropertiesRepository.getProperties(configScopeId);
   }
 
   private static Path findCommonPrefix(List<URI> uris) {

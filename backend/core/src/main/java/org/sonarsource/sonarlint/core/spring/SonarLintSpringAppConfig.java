@@ -45,6 +45,7 @@ import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.TokenGeneratorHelper;
 import org.sonarsource.sonarlint.core.VersionSoonUnsupportedHelper;
 import org.sonarsource.sonarlint.core.analysis.AnalysisEngineCache;
+import org.sonarsource.sonarlint.core.analysis.ClientAnalysisPropertiesRepository;
 import org.sonarsource.sonarlint.core.analysis.AnalysisService;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
@@ -183,7 +184,8 @@ import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_S
   TrackingService.class,
   FindingsSynchronizationService.class,
   FindingReportingService.class,
-  PreviouslyRaisedFindingsRepository.class
+  PreviouslyRaisedFindingsRepository.class,
+  ClientAnalysisPropertiesRepository.class
 })
 public class SonarLintSpringAppConfig {
 

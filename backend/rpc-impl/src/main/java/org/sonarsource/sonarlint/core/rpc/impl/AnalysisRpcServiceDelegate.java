@@ -25,7 +25,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
-import org.sonarsource.sonarlint.core.analysis.AnalysisPropertiesService;
 import org.sonarsource.sonarlint.core.analysis.AnalysisService;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
@@ -78,7 +77,6 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
       cancelChecker -> getBean(AnalysisService.class).getGlobalConnectedConfiguration(params.getConnectionId()));
   }
 
-  // TODO deprecate this method?
   @Override
   public CompletableFuture<GetAnalysisConfigResponse> getAnalysisConfig(GetAnalysisConfigParams params) {
     return requestAsync(
@@ -136,17 +134,17 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
 
   @Override
   public void didSetUserAnalysisProperties(DidChangeAnalysisPropertiesParams params) {
-    notify(() -> getBean(AnalysisPropertiesService.class).setUserProperties(params.getConfigurationScopeId(), params.getProperties()));
+    notify(() -> getBean(AnalysisService.class).setUserAnalysisProperties(params.getConfigurationScopeId(), params.getProperties()));
   }
 
   @Override
   public void didSetInferredAnalysisProperties(DidChangeAnalysisPropertiesParams params) {
-    notify(() -> getBean(AnalysisPropertiesService.class).setInferredProperties(params.getConfigurationScopeId(), params.getProperties()));
+    notify(() -> getBean(AnalysisService.class).setInferredAnalysisProperties(params.getConfigurationScopeId(), params.getProperties()));
   }
 
   @Override
   public void didUpdateInferredAnalysisProperties(DidChangeAnalysisPropertiesParams params) {
-    notify(() -> getBean(AnalysisPropertiesService.class).setOrUpdateInferredProperties(params.getConfigurationScopeId(), params.getProperties()));
+    notify(() -> getBean(AnalysisService.class).setOrUpdateInferredAnalysisProperties(params.getConfigurationScopeId(), params.getProperties()));
   }
 
   private static AnalyzeFilesResponse generateAnalyzeFilesResponse(AnalysisResults analysisResults) {

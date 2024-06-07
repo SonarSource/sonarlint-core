@@ -27,7 +27,7 @@ import javax.inject.Singleton;
 
 @Named
 @Singleton
-public class AnalysisPropertiesService {
+public class ClientAnalysisPropertiesRepository {
 
   Map<String, Map<String, String>> userPropertiesByConfigScope = new ConcurrentHashMap<>();
   Map<String, Map<String, String>> inferredPropertiesByConfigScope = new ConcurrentHashMap<>();
