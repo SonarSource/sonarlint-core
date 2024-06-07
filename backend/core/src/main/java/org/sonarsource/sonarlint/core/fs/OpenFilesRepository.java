@@ -49,4 +49,8 @@ public class OpenFilesRepository {
     var openFiles = openFilesByConfigScopeId.getOrDefault(configurationScopeId, new ArrayList<>());
     return openFiles.stream().filter(fileUris::contains).collect(Collectors.toList());
   }
+
+  public Map<String, List<URI>> getOpenFilesByConfigScopeId() {
+    return openFilesByConfigScopeId;
+  }
 }
