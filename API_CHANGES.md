@@ -27,12 +27,20 @@ None :)
 * Add the `didOpenFile` and `didCloseFile` methods to `org.sonarsource.sonarlint.core.rpc.protocol.backend.file.FileRpcService`.
   * Clients are supposed to call these methods when a file is opened in the editor or closed.
 
+### Analysis
+
+* Add a new constructor in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams` to let clients provide if automatic analysis is enabled.
+* Add a new `didChangeAutomaticAnalysisSetting` method in `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService`
+  * Clients are expected to call it whenever users change the "enable automatic analysis" setting.
+
 ## Deprecation
 * Deprecate `isSonarCloud` parameter from `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams`
   * This value on no longer needed on the backend side.
 
 * `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams.getServerUrl` is only meaningful for SQ
   connections. Use `getConnection().getLeft().getServerUrl()` instead to get the `serverUrl` of a SQ connection
+
+* The existing constructor in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams` is now deprecated, the newly added constructor should be used instead (see above).
 
 # 10.2
 

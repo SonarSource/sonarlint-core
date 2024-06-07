@@ -150,6 +150,7 @@ public class SonarLintBackendFixture {
     private Path keyStorePath;
     private String keyStorePassword;
     private String keyStoreType;
+    private boolean automaticAnalysisEnabled = true;
 
     public SonarLintBackendBuilder withSonarQubeConnection() {
       return withSonarQubeConnection("connectionId");
@@ -415,6 +416,12 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+
+    public SonarLintBackendBuilder withAutomaticAnalysisEnabled(boolean enabled) {
+      this.automaticAnalysisEnabled = enabled;
+      return this;
+    }
+
     public SonarLintTestRpcServer build(SonarLintRpcClientDelegate client) {
       var sonarlintUserHome = tempDirectory("slUserHome");
       var workDir = tempDirectory("work");
@@ -447,7 +454,7 @@ public class SonarLintBackendFixture {
             featureFlags,
             storageRoot, workDir, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
             enabledLanguages, extraEnabledLanguagesInConnectedMode, disabledLanguagesForAnalysis, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
-            standaloneConfigByKey, isFocusOnNewCode, new LanguageSpecificRequirements(clientNodeJsPath, null)))
+            standaloneConfigByKey, isFocusOnNewCode, new LanguageSpecificRequirements(clientNodeJsPath, null), automaticAnalysisEnabled))
           .get();
         sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
         return sonarLintBackend;
