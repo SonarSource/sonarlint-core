@@ -146,6 +146,7 @@ public class AnalysisService {
   private final boolean isDataflowBugDetectionEnabled;
   private final Map<String, Boolean> analysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
   private final OpenFilesRepository openFilesRepository;
+  private boolean automaticAnalysisEnabled;
 
   public AnalysisService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
     StorageService storageService, PluginsService pluginsService, RulesService rulesService, RulesRepository rulesRepository,
@@ -169,6 +170,7 @@ public class AnalysisService {
     this.eventPublisher = eventPublisher;
     this.userAnalysisPropertiesRepository = clientAnalysisPropertiesRepository;
     this.openFilesRepository = openFilesRepository;
+    this.automaticAnalysisEnabled = initializeParams.isAutomaticAnalysisEnabled();
   }
 
   public List<String> getSupportedFilePatterns(String configScopeId) {
@@ -510,7 +512,7 @@ public class AnalysisService {
     updatedFileUrisByConfigScope.forEach((configScopeId, fileUris) -> {
       var openFileUris = openFilesRepository.getOpenFilesAmong(configScopeId, fileUris);
       if (!openFileUris.isEmpty()) {
-        analyze(new SonarLintCancelMonitor(), configScopeId, UUID.randomUUID(), openFileUris, Map.of(), System.currentTimeMillis(), true, true);
+        triggerAnalysis(configScopeId, openFileUris);
       }
     });
 
@@ -518,7 +520,7 @@ public class AnalysisService {
 
   @EventListener
   public void onFileOpened(FileOpenedEvent event) {
-    analyze(new SonarLintCancelMonitor(), event.getConfigurationScopeId(), UUID.randomUUID(), List.of(event.getFileUri()), Map.of(), System.currentTimeMillis(), true, true);
+    triggerAnalysis(event.getConfigurationScopeId(), List.of(event.getFileUri()));
   }
 
   private void sendModuleEvents(List<ClientFile> filesToProcess, ModuleFileEvent.Type type) {
@@ -715,4 +717,27 @@ public class AnalysisService {
     return nodeJsService.getAutoDetectedNodeJs();
   }
 
+  public void didChangeAutomaticAnalysisSetting(boolean enabled) {
+    var previouslyEnabled = this.automaticAnalysisEnabled;
+    this.automaticAnalysisEnabled = enabled;
+    if (!previouslyEnabled) {
+      triggerAnalysisForOpenFiles();
+    }
+  }
+
+  private void triggerAnalysisForOpenFiles() {
+    openFilesRepository.getOpenFilesByConfigScopeId()
+      .forEach(this::triggerAnalysis);
+  }
+
+  private void triggerAnalysis(String configurationScopeId, List<URI> files) {
+    if (shouldTriggerAutomaticAnalysis(configurationScopeId)) {
+      analyze(new SonarLintCancelMonitor(), configurationScopeId, UUID.randomUUID(), files, Map.of(), System.currentTimeMillis(), true, true);
+    }
+  }
+
+  private boolean shouldTriggerAutomaticAnalysis(String configurationScopeId) {
+    // in the future, if analysis is not ready, we should make it happen later when it becomes ready
+    return automaticAnalysisEnabled && isReadyForAnalysis(configurationScopeId);
+  }
 }

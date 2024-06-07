@@ -27,6 +27,7 @@ import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeAutomaticAnalysisSettingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidCloseFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
@@ -153,5 +154,35 @@ class AnalysisTriggeringMediumTests {
           + "</project>", null))));
 
     verify(client, timeout(500).times(0)).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(false), any());
+  }
+
+  @Test
+  void it_should_analyze_open_files_when_re_enabling_automatic_analysis(@TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+      + "<project>\n"
+      + "  <modelVersion>4.0.0</modelVersion>\n"
+      + "  <groupId>com.foo</groupId>\n"
+      + "  <artifactId>bar</artifactId>\n"
+      + "  <version>${pom.version}</version>\n"
+      + "</project>");
+    var fileUri = filePath.toUri();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .withAutomaticAnalysisEnabled(false)
+      .build(client);
+    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
+
+    backend.getAnalysisService().didChangeAutomaticAnalysisSetting(new DidChangeAutomaticAnalysisSettingParams(true));
+
+    var publishedIssues = getPublishedIssues(client, null, CONFIG_SCOPE_ID);
+    assertThat(publishedIssues)
+      .containsOnlyKeys(fileUri)
+      .hasEntrySatisfying(fileUri, issues -> assertThat(issues)
+        .extracting(RaisedIssueDto::getPrimaryMessage)
+        .containsExactly("Replace \"pom.version\" with \"project.version\"."));
   }
 }
