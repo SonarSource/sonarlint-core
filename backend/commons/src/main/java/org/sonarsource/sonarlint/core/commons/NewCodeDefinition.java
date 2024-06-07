@@ -116,6 +116,7 @@ public interface NewCodeDefinition {
       return true;
     }
 
+    // Text used by IDEs in the UI. Communicate changes to IDE squad prior to changing the wording.
     @Override
     public String toString() {
       return String.format("From last %s days", days);
@@ -130,6 +131,7 @@ public interface NewCodeDefinition {
       this.days = days;
     }
 
+    // Text used by IDEs in the UI. Communicate changes to IDE squad prior to changing the wording.
     @Override
     public String toString() {
       return String.format("From last %s days", days);
@@ -153,6 +155,7 @@ public interface NewCodeDefinition {
       this.version = version;
     }
 
+    // Text used by IDEs in the UI. Communicate changes to IDE squad prior to changing the wording.
     @Override
     public String toString() {
       var versionQualifier = (version == null) ? formatEpochToDate(this.thresholdDate) : ("version " + version);
@@ -175,6 +178,7 @@ public interface NewCodeDefinition {
       super(thresholdDate);
     }
 
+    // Text used by IDEs in the UI. Communicate changes to IDE squad prior to changing the wording.
     @Override
     public String toString() {
       return String.format("Since analysis from %s", formatEpochToDate(this.thresholdDate));
@@ -212,6 +216,7 @@ public interface NewCodeDefinition {
       return branchName;
     }
 
+    // Text used by IDEs in the UI. Communicate changes to IDE squad prior to changing the wording.
     @Override
     public String toString() {
       return "Current new code definition (reference branch) is not supported";
