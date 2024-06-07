@@ -78,6 +78,7 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
       cancelChecker -> getBean(AnalysisService.class).getGlobalConnectedConfiguration(params.getConnectionId()));
   }
 
+  // TODO deprecate this method?
   @Override
   public CompletableFuture<GetAnalysisConfigResponse> getAnalysisConfig(GetAnalysisConfigParams params) {
     return requestAsync(
@@ -134,13 +135,18 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
   }
 
   @Override
-  public void didSetAnalysisProperties(DidChangeAnalysisPropertiesParams params) {
-    notify(() -> getBean(AnalysisPropertiesService.class).setProperties(params.getConfigurationScopeId(), params.getProperties()));
+  public void didSetUserAnalysisProperties(DidChangeAnalysisPropertiesParams params) {
+    notify(() -> getBean(AnalysisPropertiesService.class).setUserProperties(params.getConfigurationScopeId(), params.getProperties()));
   }
 
   @Override
-  public void didUpdateAnalysisProperties(DidChangeAnalysisPropertiesParams params) {
-    notify(() -> getBean(AnalysisPropertiesService.class).setOrUpdateProperties(params.getConfigurationScopeId(), params.getProperties()));
+  public void didSetInferredAnalysisProperties(DidChangeAnalysisPropertiesParams params) {
+    notify(() -> getBean(AnalysisPropertiesService.class).setInferredProperties(params.getConfigurationScopeId(), params.getProperties()));
+  }
+
+  @Override
+  public void didUpdateInferredAnalysisProperties(DidChangeAnalysisPropertiesParams params) {
+    notify(() -> getBean(AnalysisPropertiesService.class).setOrUpdateInferredProperties(params.getConfigurationScopeId(), params.getProperties()));
   }
 
   private static AnalyzeFilesResponse generateAnalyzeFilesResponse(AnalysisResults analysisResults) {

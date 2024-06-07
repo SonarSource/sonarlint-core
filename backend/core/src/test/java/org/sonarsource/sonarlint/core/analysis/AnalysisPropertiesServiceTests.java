@@ -37,30 +37,30 @@ class AnalysisPropertiesServiceTests {
   }
 
   @Test
-  void it_should_override_only_provided_properties() {
+  void it_should_override_only_provided_inferred_properties() {
     var properties = underTest.getProperties(CONFIG_SCOPE_ID);
     assertThat(properties).isEmpty();
 
-    underTest.setOrUpdateProperties(CONFIG_SCOPE_ID, Map.of("key1", "value1", "key2", "value2"));
+    underTest.setOrUpdateInferredProperties(CONFIG_SCOPE_ID, Map.of("key1", "value1", "key2", "value2"));
     properties = underTest.getProperties(CONFIG_SCOPE_ID);
     assertThat(properties).hasSize(2).containsEntry("key1", "value1").containsEntry("key2", "value2");
 
-    underTest.setOrUpdateProperties(CONFIG_SCOPE_ID, Map.of("key2", "new-value2", "key3", "new-value3"));
+    underTest.setOrUpdateInferredProperties(CONFIG_SCOPE_ID, Map.of("key2", "new-value2", "key3", "new-value3"));
 
     properties = underTest.getProperties(CONFIG_SCOPE_ID);
     assertThat(properties).hasSize(3).containsEntry("key1", "value1").containsEntry("key2", "new-value2").containsEntry("key3", "new-value3");
   }
 
   @Test
-  void it_should_remove_previous_config_and_set_provided_properties() {
+  void it_should_remove_previous_config_and_set_provided_inferred_properties() {
     var properties = underTest.getProperties(CONFIG_SCOPE_ID);
     assertThat(properties).isEmpty();
 
-    underTest.setOrUpdateProperties(CONFIG_SCOPE_ID, Map.of("key1", "value1", "key2", "value2"));
+    underTest.setOrUpdateInferredProperties(CONFIG_SCOPE_ID, Map.of("key1", "value1", "key2", "value2"));
     properties = underTest.getProperties(CONFIG_SCOPE_ID);
     assertThat(properties).hasSize(2).containsEntry("key1", "value1").containsEntry("key2", "value2");
 
-    underTest.setProperties(CONFIG_SCOPE_ID, Map.of("key2", "new-value2", "key3", "new-value3"));
+    underTest.setInferredProperties(CONFIG_SCOPE_ID, Map.of("key2", "new-value2", "key3", "new-value3"));
 
     properties = underTest.getProperties(CONFIG_SCOPE_ID);
     assertThat(properties).hasSize(2).containsEntry("key2", "new-value2").containsEntry("key3", "new-value3");
@@ -71,17 +71,31 @@ class AnalysisPropertiesServiceTests {
     var properties = underTest.getProperties(CONFIG_SCOPE_ID);
     assertThat(properties).isEmpty();
 
-    underTest.setOrUpdateProperties(CONFIG_SCOPE_ID, Map.of("key1", "value1", "key2", "value2"));
-    underTest.setOrUpdateProperties(ANOTHER_CONFIG_SCOPE_ID, Map.of("key1", "value1"));
+    underTest.setOrUpdateInferredProperties(CONFIG_SCOPE_ID, Map.of("key1", "value1", "key2", "value2"));
+    underTest.setOrUpdateInferredProperties(ANOTHER_CONFIG_SCOPE_ID, Map.of("key1", "value1"));
     properties = underTest.getProperties(CONFIG_SCOPE_ID);
     assertThat(properties).hasSize(2).containsEntry("key1", "value1").containsEntry("key2", "value2");
 
-    underTest.setProperties(CONFIG_SCOPE_ID, Map.of("key2", "new-value2", "key3", "new-value3"));
+    underTest.setInferredProperties(CONFIG_SCOPE_ID, Map.of("key2", "new-value2", "key3", "new-value3"));
 
     properties = underTest.getProperties(CONFIG_SCOPE_ID);
     assertThat(properties).hasSize(2).containsEntry("key2", "new-value2").containsEntry("key3", "new-value3");
     var anotherProperties = underTest.getProperties(ANOTHER_CONFIG_SCOPE_ID);
     assertThat(anotherProperties).hasSize(1).containsEntry("key1", "value1");
   }
+
+  @Test
+  void it_should_merge_inferred_and_user_properties_prioritizing_inferred_properties() {
+    var properties = underTest.getProperties(CONFIG_SCOPE_ID);
+    assertThat(properties).isEmpty();
+
+    underTest.setInferredProperties(CONFIG_SCOPE_ID, Map.of("key1", "inferred_value", "key2", "value2"));
+    underTest.setUserProperties(CONFIG_SCOPE_ID, Map.of("key1", "user_value", "key3", "value3"));
+    properties = underTest.getProperties(CONFIG_SCOPE_ID);
+    assertThat(properties).hasSize(3).containsEntry("key1", "inferred_value")
+      .containsEntry("key2", "value2").containsEntry("key3", "value3");
+  }
+
+
 
 }

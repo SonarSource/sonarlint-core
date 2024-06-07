@@ -29,19 +29,31 @@ import javax.inject.Singleton;
 @Singleton
 public class AnalysisPropertiesService {
 
-  Map<String, Map<String, String>> propertiesByConfigScope = new ConcurrentHashMap<>();
+  Map<String, Map<String, String>> userPropertiesByConfigScope = new ConcurrentHashMap<>();
+  Map<String, Map<String, String>> inferredPropertiesByConfigScope = new ConcurrentHashMap<>();
 
+  /**
+   * This method returns merged user and inferred properties prioritizing inferred properties values in case of overlap
+   * @param configurationScopeId
+   * @return analysis properties for requested configuration scope ID
+   */
   public Map<String, String> getProperties(String configurationScopeId) {
-    return propertiesByConfigScope.getOrDefault(configurationScopeId, new ConcurrentHashMap<>());
+    var properties = userPropertiesByConfigScope.getOrDefault(configurationScopeId, new ConcurrentHashMap<>());
+    properties.putAll(inferredPropertiesByConfigScope.getOrDefault(configurationScopeId, new ConcurrentHashMap<>()));
+    return properties;
   }
 
-  public void setProperties(String configurationScopeId, Map<String, String> extraProperties) {
-    propertiesByConfigScope.put(configurationScopeId, new ConcurrentHashMap<>(extraProperties));
+  public void setUserProperties(String configurationScopeId, Map<String, String> extraProperties) {
+    userPropertiesByConfigScope.put(configurationScopeId, new ConcurrentHashMap<>(extraProperties));
   }
 
-  public void setOrUpdateProperties(String configurationScopeId, Map<String, String> extraProperties) {
-    propertiesByConfigScope.computeIfAbsent(configurationScopeId, k -> new ConcurrentHashMap<>());
-    propertiesByConfigScope.get(configurationScopeId).putAll(extraProperties);
+  public void setOrUpdateInferredProperties(String configurationScopeId, Map<String, String> extraProperties) {
+    inferredPropertiesByConfigScope.computeIfAbsent(configurationScopeId, k -> new ConcurrentHashMap<>());
+    inferredPropertiesByConfigScope.get(configurationScopeId).putAll(extraProperties);
+  }
+
+  public void setInferredProperties(String configurationScopeId, Map<String, String> extraProperties) {
+    inferredPropertiesByConfigScope.put(configurationScopeId, new ConcurrentHashMap<>(extraProperties));
   }
 
 }

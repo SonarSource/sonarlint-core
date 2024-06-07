@@ -3,6 +3,11 @@
 ## Breaking changes
 
 ## New features
+* Add a set of methods to `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService` the service to let the client notify the backend with analysis properties - inferred by SonarLint and defined by the user
+  * `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#didSetUserAnalysisProperties` to set user defined properties
+  * `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#didSetInferredAnalysisProperties` to set inferred properties
+  * `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#didUpdateInferredAnalysisProperties` to update inferred properties
+  * For analysis, both user-defined and inferred properties will be merged. In case if same property is inferred by SonarLint and provided by the user - the inferred value will be used for analysis
 
 ### Open Issue in IDE
 
