@@ -35,6 +35,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcS
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeAutomaticAnalysisSettingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeClientNodeJsPathParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeAnalysisPropertiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigParams;
@@ -135,6 +136,10 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
   @Override
   public void didSetUserAnalysisProperties(DidChangeAnalysisPropertiesParams params) {
     notify(() -> getBean(AnalysisService.class).setUserAnalysisProperties(params.getConfigurationScopeId(), params.getProperties()));
+  }
+
+  public void didChangeAutomaticAnalysisSetting(DidChangeAutomaticAnalysisSettingParams params) {
+    notify(() -> getBean(AnalysisService.class).didChangeAutomaticAnalysisSetting(params.isEnabled()));
   }
 
   private static AnalyzeFilesResponse generateAnalyzeFilesResponse(AnalysisResults analysisResults) {
