@@ -48,6 +48,38 @@ public class InitializeParams {
   private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey;
   private final boolean isFocusOnNewCode;
   private final LanguageSpecificRequirements languageSpecificRequirements;
+  private final boolean automaticAnalysisEnabled;
+
+  /**
+   * @param telemetryConstantAttributes Static information about the client, that will be sent with the telemetry payload
+   * @param workDir                     Path to work directory. If null, will default to [sonarlintUserHome]/work
+   * @param sonarlintUserHome           Path to SonarLint user home directory. If null, will default to ~/.sonarlint
+   * @param standaloneRuleConfigByKey   Local rule configuration for standalone analysis. This configuration will override defaults rule activation and parameters.
+   * @deprecated since 10.3, use the other constructor instead
+   */
+  @Deprecated(since = "10.3")
+  public InitializeParams(
+    ClientConstantInfoDto clientConstantInfo,
+    TelemetryClientConstantAttributesDto telemetryConstantAttributes,
+    HttpConfigurationDto httpConfiguration,
+    @Nullable SonarCloudAlternativeEnvironmentDto alternativeSonarCloudEnvironment,
+    FeatureFlagsDto featureFlags,
+    Path storageRoot,
+    @Nullable Path workDir,
+    @Nullable Set<Path> embeddedPluginPaths,
+    @Nullable Map<String, Path> connectedModeEmbeddedPluginPathsByKey,
+    @Nullable Set<Language> enabledLanguagesInStandaloneMode,
+    @Nullable Set<Language> extraEnabledLanguagesInConnectedMode,
+    @Nullable List<SonarQubeConnectionConfigurationDto> sonarQubeConnections,
+    @Nullable List<SonarCloudConnectionConfigurationDto> sonarCloudConnections,
+    @Nullable String sonarlintUserHome,
+    @Nullable Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey,
+    boolean isFocusOnNewCode,
+    @Nullable LanguageSpecificRequirements languageSpecificRequirements) {
+    this(clientConstantInfo, telemetryConstantAttributes, httpConfiguration, alternativeSonarCloudEnvironment, featureFlags, storageRoot, workDir, embeddedPluginPaths,
+      connectedModeEmbeddedPluginPathsByKey, enabledLanguagesInStandaloneMode, extraEnabledLanguagesInConnectedMode, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome,
+      standaloneRuleConfigByKey, isFocusOnNewCode, languageSpecificRequirements, false);
+  }
 
   /**
    * @param telemetryConstantAttributes Static information about the client, that will be sent with the telemetry payload
@@ -72,7 +104,8 @@ public class InitializeParams {
     @Nullable String sonarlintUserHome,
     @Nullable Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey,
     boolean isFocusOnNewCode,
-    @Nullable LanguageSpecificRequirements languageSpecificRequirements) {
+    @Nullable LanguageSpecificRequirements languageSpecificRequirements,
+    boolean automaticAnalysisEnabled) {
     this.clientConstantInfo = clientConstantInfo;
     this.telemetryConstantAttributes = telemetryConstantAttributes;
     this.httpConfiguration = httpConfiguration;
@@ -90,6 +123,7 @@ public class InitializeParams {
     this.standaloneRuleConfigByKey = standaloneRuleConfigByKey;
     this.isFocusOnNewCode = isFocusOnNewCode;
     this.languageSpecificRequirements = languageSpecificRequirements;
+    this.automaticAnalysisEnabled = automaticAnalysisEnabled;
   }
 
   public ClientConstantInfoDto getClientConstantInfo() {
@@ -162,5 +196,9 @@ public class InitializeParams {
   @Nullable
   public LanguageSpecificRequirements getLanguageSpecificRequirements() {
     return languageSpecificRequirements;
+  }
+
+  public boolean isAutomaticAnalysisEnabled() {
+    return automaticAnalysisEnabled;
   }
 }
