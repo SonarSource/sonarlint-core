@@ -86,6 +86,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnal
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidDetectSecretParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidRaiseIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.FileEditDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetInferredAnalysisPropertiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.QuickFixDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueFlowDto;
@@ -241,12 +242,15 @@ public class AnalysisService {
 
   public AnalysisConfiguration getAnalysisConfigForEngine(String configScopeId, List<URI> filePathsToAnalyze, Map<String, String> extraProperties) {
     var analysisConfig = getAnalysisConfig(configScopeId);
+    var analysisProperties = analysisConfig.getAnalysisProperties();
+    var inferredAnalysisProperties = client.getInferredAnalysisProperties(new GetInferredAnalysisPropertiesParams(configScopeId)).join().getProperties();
+    analysisProperties.putAll(inferredAnalysisProperties);
     var baseDir = fileSystemService.getBaseDir(configScopeId);
     var actualBaseDir = baseDir == null ? findCommonPrefix(filePathsToAnalyze) : baseDir;
     return AnalysisConfiguration.builder()
       .addInputFiles(toInputFiles(configScopeId, filePathsToAnalyze))
-      .putAllExtraProperties(analysisConfig.getAnalysisProperties())
-      // properties sent by client using new API were merged in getAnalysisConfig()
+      .putAllExtraProperties(analysisProperties)
+      // properties sent by client using new API were merged above
       // but this line is important for backward compatibility for clients directly triggering analysis
       .putAllExtraProperties(extraProperties)
       .addActiveRules(analysisConfig.getActiveRules().stream().map(r -> {
@@ -560,6 +564,7 @@ public class AnalysisService {
     Map<String, String> extraProperties, long startTime, boolean enableTracking, boolean shouldFetchServerIssues) {
     var analysisEngine = engineCache.getOrCreateAnalysisEngine(configurationScopeId);
     var analysisConfig = getAnalysisConfigForEngine(configurationScopeId, filePathsToAnalyze, extraProperties);
+
     LOG.info("Triggering analysis with configuration: {}", analysisConfig);
     if (!analysisConfig.inputFiles().iterator().hasNext()) {
       LOG.error("No file to analyze");
