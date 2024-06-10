@@ -22,6 +22,7 @@ package mediumtest.analysis;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
@@ -31,6 +32,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeAut
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidCloseFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.UpdateStandaloneRulesConfigurationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 
@@ -184,5 +187,38 @@ class AnalysisTriggeringMediumTests {
       .hasEntrySatisfying(fileUri, issues -> assertThat(issues)
         .extracting(RaisedIssueDto::getPrimaryMessage)
         .containsExactly("Replace \"pom.version\" with \"project.version\"."));
+  }
+
+  @Test
+  void it_should_analyze_open_files_when_enabling_rule(@TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+      + "<project>\n"
+      + "  <modelVersion>4.0.0</modelVersion>\n"
+      + "  <groupId>com.foo</groupId>\n"
+      + "  <artifactId>My_Project</artifactId>\n"
+      + "</project>");
+    var fileUri = filePath.toUri();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .build(client);
+    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
+    var publishedIssues = getPublishedIssues(client, null, CONFIG_SCOPE_ID);
+    assertThat(publishedIssues)
+      .containsOnlyKeys(fileUri)
+      .hasEntrySatisfying(fileUri, issues -> assertThat(issues).isEmpty());
+    reset(client);
+
+    backend.getRulesService().updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("xml:S3420", new StandaloneRuleConfigDto(true, Map.of()))));
+
+    publishedIssues = getPublishedIssues(client, null, CONFIG_SCOPE_ID);
+    assertThat(publishedIssues)
+      .containsOnlyKeys(fileUri)
+      .hasEntrySatisfying(fileUri, issues -> assertThat(issues)
+        .extracting(RaisedIssueDto::getPrimaryMessage)
+        .containsExactly("Update this \"artifactId\" to match the provided regular expression: '[a-z][a-z-0-9]+'"));
   }
 }
