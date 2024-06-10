@@ -50,6 +50,7 @@ import mediumtest.fixtures.storage.StorageFixture;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
+import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintCancelChecker;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
@@ -568,6 +569,7 @@ public class SonarLintBackendFixture {
     private final Map<String, List<ClientFileDto>> initialFilesByConfigScope;
     Map<String, Map<URI, List<RaisedIssueDto>>> raisedIssuesByScopeId = new HashMap<>();
     Map<String, Map<URI, List<RaisedHotspotDto>>> raisedHotspotsByScopeId = new HashMap<>();
+    Map<String, Map<String, String>> inferredAnalysisPropertiesByScopeId = new HashMap<>();
 
     public FakeSonarLintRpcClient(Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId, boolean printLogsToStdOut,
       Map<String, String> matchedBranchPerScopeId, Map<String, Path> baseDirsByConfigScope, Map<String, List<ClientFileDto>> initialFilesByConfigScope) {
@@ -753,6 +755,15 @@ public class SonarLintBackendFixture {
     @Override
     public void raiseHotspots(String configurationScopeId, Map<URI, List<RaisedHotspotDto>> issuesByFileUri, boolean isIntermediatePublication, @org.jetbrains.annotations.Nullable UUID analysisId) {
       raisedHotspotsByScopeId.put(configurationScopeId, issuesByFileUri);
+    }
+
+    @Override
+    public Map<String, String> getInferredAnalysisProperties(String configurationScopeId) throws ConfigScopeNotFoundException {
+      return inferredAnalysisPropertiesByScopeId.getOrDefault(configurationScopeId, new HashMap<>());
+    }
+
+    public void setInferredAnalysisProperties(String configurationScopeId, Map<String, String> inferredAnalysisProperties) {
+      inferredAnalysisPropertiesByScopeId.put(configurationScopeId, inferredAnalysisProperties);
     }
 
     public Map<URI, List<RaisedIssueDto>> getRaisedIssuesForScopeId(String configurationScopeId) {

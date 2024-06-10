@@ -86,6 +86,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnal
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidDetectSecretParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidRaiseIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.FileEditDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetInferredAnalysisPropertiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.QuickFixDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueFlowDto;
@@ -138,13 +139,15 @@ public class AnalysisService {
   private final ClientFileSystemService fileSystemService;
   private final FileExclusionService fileExclusionService;
   private final ApplicationEventPublisher eventPublisher;
+  private final UserAnalysisPropertiesRepository userAnalysisPropertiesRepository;
   private final boolean isDataflowBugDetectionEnabled;
   private final Map<String, Boolean> analysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
 
   public AnalysisService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
     StorageService storageService, PluginsService pluginsService, RulesService rulesService, RulesRepository rulesRepository,
     ConnectionConfigurationRepository connectionConfigurationRepository, InitializeParams initializeParams, NodeJsService nodeJsService, AnalysisEngineCache engineCache,
-    ClientFileSystemService fileSystemService, FileExclusionService fileExclusionService, ApplicationEventPublisher eventPublisher) {
+    ClientFileSystemService fileSystemService, FileExclusionService fileExclusionService, ApplicationEventPublisher eventPublisher,
+    UserAnalysisPropertiesRepository clientAnalysisPropertiesRepository) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
@@ -160,6 +163,7 @@ public class AnalysisService {
     this.fileSystemService = fileSystemService;
     this.fileExclusionService = fileExclusionService;
     this.eventPublisher = eventPublisher;
+    this.userAnalysisPropertiesRepository = clientAnalysisPropertiesRepository;
   }
 
   public List<String> getSupportedFilePatterns(String configScopeId) {
@@ -223,21 +227,31 @@ public class AnalysisService {
   public GetAnalysisConfigResponse getAnalysisConfig(String configScopeId) {
     var bindingOpt = configurationRepository.getEffectiveBinding(configScopeId);
     var activeNodeJs = nodeJsService.getActiveNodeJs();
-
+    var userAnalysisProperties = userAnalysisPropertiesRepository.getUserProperties(configScopeId);
     var nodeJsDetailsDto = activeNodeJs == null ? null : new NodeJsDetailsDto(activeNodeJs.getPath(), activeNodeJs.getVersion().toString());
-    return bindingOpt.map(binding -> new GetAnalysisConfigResponse(buildConnectedActiveRules(binding),
-      storageService.binding(binding).analyzerConfiguration().read().getSettings().getAll(), nodeJsDetailsDto,
-      Set.copyOf(pluginsService.getConnectedPluginPaths(binding.getConnectionId()))))
-      .orElseGet(() -> new GetAnalysisConfigResponse(buildStandaloneActiveRules(), Map.of(), nodeJsDetailsDto, Set.copyOf(pluginsService.getEmbeddedPluginPaths())));
+    return bindingOpt.map(binding -> {
+        var serverProperties = storageService.binding(binding).analyzerConfiguration().read().getSettings().getAll();
+        var analysisProperties = new HashMap<>(serverProperties);
+        analysisProperties.putAll(userAnalysisProperties);
+        return new GetAnalysisConfigResponse(buildConnectedActiveRules(binding), analysisProperties, nodeJsDetailsDto,
+          Set.copyOf(pluginsService.getConnectedPluginPaths(binding.getConnectionId())));
+      })
+      .orElseGet(() -> new GetAnalysisConfigResponse(buildStandaloneActiveRules(), userAnalysisProperties, nodeJsDetailsDto,
+        Set.copyOf(pluginsService.getEmbeddedPluginPaths())));
   }
 
   public AnalysisConfiguration getAnalysisConfigForEngine(String configScopeId, List<URI> filePathsToAnalyze, Map<String, String> extraProperties) {
     var analysisConfig = getAnalysisConfig(configScopeId);
+    var analysisProperties = analysisConfig.getAnalysisProperties();
+    var inferredAnalysisProperties = client.getInferredAnalysisProperties(new GetInferredAnalysisPropertiesParams(configScopeId)).join().getProperties();
+    analysisProperties.putAll(inferredAnalysisProperties);
     var baseDir = fileSystemService.getBaseDir(configScopeId);
     var actualBaseDir = baseDir == null ? findCommonPrefix(filePathsToAnalyze) : baseDir;
     return AnalysisConfiguration.builder()
       .addInputFiles(toInputFiles(configScopeId, filePathsToAnalyze))
-      .putAllExtraProperties(analysisConfig.getAnalysisProperties())
+      .putAllExtraProperties(analysisProperties)
+      // properties sent by client using new API were merged above
+      // but this line is important for backward compatibility for clients directly triggering analysis
       .putAllExtraProperties(extraProperties)
       .addActiveRules(analysisConfig.getActiveRules().stream().map(r -> {
         var ar = new org.sonarsource.sonarlint.core.analysis.api.ActiveRule(r.getRuleKey(), r.getLanguageKey());
@@ -247,6 +261,10 @@ public class AnalysisService {
       }).collect(toList()))
       .setBaseDir(actualBaseDir)
       .build();
+  }
+
+  public void setUserAnalysisProperties(String configScopeId, Map<String, String> properties) {
+    userAnalysisPropertiesRepository.setUserProperties(configScopeId, properties);
   }
 
   private static Path findCommonPrefix(List<URI> uris) {
@@ -546,6 +564,7 @@ public class AnalysisService {
     Map<String, String> extraProperties, long startTime, boolean enableTracking, boolean shouldFetchServerIssues) {
     var analysisEngine = engineCache.getOrCreateAnalysisEngine(configurationScopeId);
     var analysisConfig = getAnalysisConfigForEngine(configurationScopeId, filePathsToAnalyze, extraProperties);
+
     LOG.info("Triggering analysis with configuration: {}", analysisConfig);
     if (!analysisConfig.inputFiles().iterator().hasNext()) {
       LOG.error("No file to analyze");
