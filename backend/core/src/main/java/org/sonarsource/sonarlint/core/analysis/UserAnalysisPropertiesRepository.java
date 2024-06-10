@@ -20,6 +20,7 @@
 
 package org.sonarsource.sonarlint.core.analysis;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Named;
@@ -31,17 +32,12 @@ public class UserAnalysisPropertiesRepository {
 
   private final Map<String, Map<String, String>> propertiesByConfigScope = new ConcurrentHashMap<>();
 
-  /**
-   * This method returns merged user and inferred properties prioritizing inferred properties values in case of overlap
-   * @param configurationScopeId
-   * @return analysis properties for requested configuration scope ID
-   */
   public Map<String, String> getUserProperties(String configurationScopeId) {
-    return propertiesByConfigScope.getOrDefault(configurationScopeId, new ConcurrentHashMap<>());
+    return propertiesByConfigScope.getOrDefault(configurationScopeId, new HashMap<>());
   }
 
   public void setUserProperties(String configurationScopeId, Map<String, String> extraProperties) {
-    propertiesByConfigScope.put(configurationScopeId, new ConcurrentHashMap<>(extraProperties));
+    propertiesByConfigScope.put(configurationScopeId, new HashMap<>(extraProperties));
   }
 
 }
