@@ -227,10 +227,7 @@ public class AnalysisService {
   public GetAnalysisConfigResponse getAnalysisConfig(String configScopeId) {
     var bindingOpt = configurationRepository.getEffectiveBinding(configScopeId);
     var activeNodeJs = nodeJsService.getActiveNodeJs();
-    var inferredClientProperties = client.getInferredAnalysisProperties(new GetInferredAnalysisPropertiesParams(configScopeId)).join().getProperties();
     var userAnalysisProperties = userAnalysisPropertiesRepository.getUserProperties(configScopeId);
-    userAnalysisProperties.putAll(inferredClientProperties);
-
     var nodeJsDetailsDto = activeNodeJs == null ? null : new NodeJsDetailsDto(activeNodeJs.getPath(), activeNodeJs.getVersion().toString());
     return bindingOpt.map(binding -> {
         var serverProperties = storageService.binding(binding).analyzerConfiguration().read().getSettings().getAll();

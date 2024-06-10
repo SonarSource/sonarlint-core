@@ -47,7 +47,7 @@ public interface AnalysisRpcService {
   CompletableFuture<GetGlobalConfigurationResponse> getGlobalConnectedConfiguration(GetGlobalConnectedConfigurationParams params);
 
   /**
-   * @since 10.3 this method returns not only server analyser properties, but also client properties if provided
+   * @since 10.3 this method returns not only server analyser properties, but also user properties provided by client
    */
   @JsonRequest
   CompletableFuture<GetAnalysisConfigResponse> getAnalysisConfig(GetAnalysisConfigParams params);

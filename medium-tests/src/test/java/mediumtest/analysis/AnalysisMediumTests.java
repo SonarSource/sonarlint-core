@@ -517,12 +517,10 @@ class AnalysisMediumTests {
     backend.getAnalysisService().didSetUserAnalysisProperties(
       new DidChangeAnalysisPropertiesParams(CONFIG_SCOPE_ID, Map.of("key1", "user-value1", "key2", "user-value2"))
     );
-    client.setInferredAnalysisProperties(CONFIG_SCOPE_ID, Map.of("key2", "inferred-value2", "key3", "inferred-value3"));
 
     var analysisProperties = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).join().getAnalysisProperties();
 
-    assertThat(analysisProperties).containsEntry("key1", "user-value1")
-      .containsEntry("key2", "inferred-value2").containsEntry("key3", "inferred-value3");
+    assertThat(analysisProperties).containsEntry("key1", "user-value1").containsEntry("key2", "user-value2");
   }
 
   private static Path createFile(Path folderPath, String fileName, String content) {
