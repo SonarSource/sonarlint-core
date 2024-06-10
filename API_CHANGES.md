@@ -7,6 +7,11 @@
 
 
 ## New features
+* Add a method to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient` to allow backend to request inferred analysis properties from the client before every analysis. It's important because properties may change depending on files being analysed.
+  * `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#getInferredAnalysisProperties` to request inferred properties
+* Add a method to the `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService` to let the client notify the backend with user defined analysis properties
+  * `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#didSetUserAnalysisProperties` to set user defined properties
+* For analysis, both user-defined and inferred properties will be merged. If the same property is inferred by the client and provided by the user - the inferred value will be used for analysis.
 
 ### Open Issue in IDE
 
