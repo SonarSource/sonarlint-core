@@ -308,10 +308,5 @@ class SloopLauncherTests {
     public void didChangeAnalysisReadiness(Set<String> configurationScopeIds, boolean areReadyForAnalysis) {
 
     }
-
-    @Override
-    public Map<String, String> getInferredAnalysisProperties(String configurationScopeId) throws ConfigScopeNotFoundException {
-      return Map.of();
-    }
   }
 }

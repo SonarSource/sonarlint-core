@@ -27,28 +27,21 @@ import javax.inject.Singleton;
 
 @Named
 @Singleton
-public class ClientAnalysisPropertiesRepository {
+public class UserAnalysisPropertiesRepository {
 
-  Map<String, Map<String, String>> userPropertiesByConfigScope = new ConcurrentHashMap<>();
-  Map<String, Map<String, String>> inferredPropertiesByConfigScope = new ConcurrentHashMap<>();
+  private final Map<String, Map<String, String>> propertiesByConfigScope = new ConcurrentHashMap<>();
 
   /**
    * This method returns merged user and inferred properties prioritizing inferred properties values in case of overlap
    * @param configurationScopeId
    * @return analysis properties for requested configuration scope ID
    */
-  public Map<String, String> getProperties(String configurationScopeId) {
-    var properties = userPropertiesByConfigScope.getOrDefault(configurationScopeId, new ConcurrentHashMap<>());
-    properties.putAll(inferredPropertiesByConfigScope.getOrDefault(configurationScopeId, new ConcurrentHashMap<>()));
-    return properties;
+  public Map<String, String> getUserProperties(String configurationScopeId) {
+    return propertiesByConfigScope.getOrDefault(configurationScopeId, new ConcurrentHashMap<>());
   }
 
   public void setUserProperties(String configurationScopeId, Map<String, String> extraProperties) {
-    userPropertiesByConfigScope.put(configurationScopeId, new ConcurrentHashMap<>(extraProperties));
-  }
-
-  public void setInferredProperties(String configurationScopeId, Map<String, String> extraProperties) {
-    inferredPropertiesByConfigScope.put(configurationScopeId, new ConcurrentHashMap<>(extraProperties));
+    propertiesByConfigScope.put(configurationScopeId, new ConcurrentHashMap<>(extraProperties));
   }
 
 }

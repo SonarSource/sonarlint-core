@@ -139,7 +139,7 @@ public class AnalysisService {
   private final ClientFileSystemService fileSystemService;
   private final FileExclusionService fileExclusionService;
   private final ApplicationEventPublisher eventPublisher;
-  private final ClientAnalysisPropertiesRepository clientAnalysisPropertiesRepository;
+  private final UserAnalysisPropertiesRepository userAnalysisPropertiesRepository;
   private final boolean isDataflowBugDetectionEnabled;
   private final Map<String, Boolean> analysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
 
@@ -147,7 +147,7 @@ public class AnalysisService {
     StorageService storageService, PluginsService pluginsService, RulesService rulesService, RulesRepository rulesRepository,
     ConnectionConfigurationRepository connectionConfigurationRepository, InitializeParams initializeParams, NodeJsService nodeJsService, AnalysisEngineCache engineCache,
     ClientFileSystemService fileSystemService, FileExclusionService fileExclusionService, ApplicationEventPublisher eventPublisher,
-    ClientAnalysisPropertiesRepository clientAnalysisPropertiesRepository) {
+    UserAnalysisPropertiesRepository clientAnalysisPropertiesRepository) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
@@ -163,7 +163,7 @@ public class AnalysisService {
     this.fileSystemService = fileSystemService;
     this.fileExclusionService = fileExclusionService;
     this.eventPublisher = eventPublisher;
-    this.clientAnalysisPropertiesRepository = clientAnalysisPropertiesRepository;
+    this.userAnalysisPropertiesRepository = clientAnalysisPropertiesRepository;
   }
 
   public List<String> getSupportedFilePatterns(String configScopeId) {
@@ -228,18 +228,18 @@ public class AnalysisService {
     var bindingOpt = configurationRepository.getEffectiveBinding(configScopeId);
     var activeNodeJs = nodeJsService.getActiveNodeJs();
     var inferredClientProperties = client.getInferredAnalysisProperties(new GetInferredAnalysisPropertiesParams(configScopeId)).join().getProperties();
-    clientAnalysisPropertiesRepository.setInferredProperties(configScopeId, inferredClientProperties);
-    var clientAnalysisProperties = clientAnalysisPropertiesRepository.getProperties(configScopeId);
+    var userAnalysisProperties = userAnalysisPropertiesRepository.getUserProperties(configScopeId);
+    userAnalysisProperties.putAll(inferredClientProperties);
 
     var nodeJsDetailsDto = activeNodeJs == null ? null : new NodeJsDetailsDto(activeNodeJs.getPath(), activeNodeJs.getVersion().toString());
     return bindingOpt.map(binding -> {
         var serverProperties = storageService.binding(binding).analyzerConfiguration().read().getSettings().getAll();
-        var analysisProperties = new ConcurrentHashMap<>(serverProperties);
-        analysisProperties.putAll(clientAnalysisProperties);
+        var analysisProperties = new HashMap<>(serverProperties);
+        analysisProperties.putAll(userAnalysisProperties);
         return new GetAnalysisConfigResponse(buildConnectedActiveRules(binding), analysisProperties, nodeJsDetailsDto,
           Set.copyOf(pluginsService.getConnectedPluginPaths(binding.getConnectionId())));
       })
-      .orElseGet(() -> new GetAnalysisConfigResponse(buildStandaloneActiveRules(), clientAnalysisProperties, nodeJsDetailsDto,
+      .orElseGet(() -> new GetAnalysisConfigResponse(buildStandaloneActiveRules(), userAnalysisProperties, nodeJsDetailsDto,
         Set.copyOf(pluginsService.getEmbeddedPluginPaths())));
   }
 
@@ -264,11 +264,7 @@ public class AnalysisService {
   }
 
   public void setUserAnalysisProperties(String configScopeId, Map<String, String> properties) {
-    clientAnalysisPropertiesRepository.setUserProperties(configScopeId, properties);
-  }
-
-  public Map<String, String> getClientAnalysisProperties(String configScopeId) {
-    return clientAnalysisPropertiesRepository.getProperties(configScopeId);
+    userAnalysisPropertiesRepository.setUserProperties(configScopeId, properties);
   }
 
   private static Path findCommonPrefix(List<URI> uris) {

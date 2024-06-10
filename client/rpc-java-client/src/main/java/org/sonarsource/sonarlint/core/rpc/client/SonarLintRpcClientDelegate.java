@@ -199,5 +199,7 @@ public interface SonarLintRpcClientDelegate {
   default void promoteExtraEnabledLanguagesInConnectedMode(String configurationScopeId, Set<Language> languagesToPromote) {
   }
 
-  Map<String, String> getInferredAnalysisProperties(String configurationScopeId) throws ConfigScopeNotFoundException;
+  default Map<String, String> getInferredAnalysisProperties(String configurationScopeId) throws ConfigScopeNotFoundException {
+    return Map.of();
+  }
 }
