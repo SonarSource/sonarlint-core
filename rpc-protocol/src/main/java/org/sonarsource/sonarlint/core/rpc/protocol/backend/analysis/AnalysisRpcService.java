@@ -104,4 +104,40 @@ public interface AnalysisRpcService {
    */
   @JsonNotification
   void didChangeAutomaticAnalysisSetting(DidChangeAutomaticAnalysisSettingParams params);
+
+  /**
+   * Analyze all files in the project. User file exclusions and .gitignore will be respected.
+   * @param params configuration scope ID, flag to report only hotspots
+   * Issues will be reported to the client via
+   * {@link SonarLintRpcClient#raiseIssues(RaiseIssuesParams)} and {@link SonarLintRpcClient#raiseHotspots(RaiseHotspotsParams)}
+   */
+  @JsonNotification
+  void analyzeFullProject(AnalyzeFullProjectParams params);
+
+  /**
+   * Analyze all files in the provided list. User file exclusions and .gitignore will be respected.
+   * @param params configuration scope ID, list of files to analyse
+   * Issues will be reported to the client via
+   * {@link SonarLintRpcClient#raiseIssues(RaiseIssuesParams)} and {@link SonarLintRpcClient#raiseHotspots(RaiseHotspotsParams)}
+   */
+  @JsonNotification
+  void analyzeFileList(AnalyzeFileListParams params);
+
+  /**
+   * Analyze all files that were reported by the client as opened. User file exclusions and .gitignore will be respected.
+   * @param params configuration scope ID
+   * Issues will be reported to the client via
+   * {@link SonarLintRpcClient#raiseIssues(RaiseIssuesParams)} and {@link SonarLintRpcClient#raiseHotspots(RaiseHotspotsParams)}
+   */
+  @JsonNotification
+  void analyzeOpenFiles(AnalyzeOpenFilesParams params);
+
+  /**
+   * Analyze all files that were created/modified and tracked by git since the last commit. User file exclusions and .gitignore will be respected.
+   * @param params configuration scope ID, list of files to analyse
+   * Issues will be reported to the client via
+   * {@link SonarLintRpcClient#raiseIssues(RaiseIssuesParams)} and {@link SonarLintRpcClient#raiseHotspots(RaiseHotspotsParams)}
+   */
+  @JsonNotification
+  void analyzeVCSChangedFiles(AnalyzeVCSChangedFilesParams params);
 }

@@ -32,9 +32,13 @@ import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFileListParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFullProjectParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeOpenFilesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeVCSChangedFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeAutomaticAnalysisSettingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeClientNodeJsPathParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeAnalysisPropertiesParams;
@@ -81,7 +85,7 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
   @Override
   public CompletableFuture<GetAnalysisConfigResponse> getAnalysisConfig(GetAnalysisConfigParams params) {
     return requestAsync(
-      cancelChecker -> getBean(AnalysisService.class).getAnalysisConfig(params.getConfigScopeId()), params.getConfigScopeId());
+      cancelChecker -> getBean(AnalysisService.class).getAnalysisConfig(params.getConfigScopeId(), false), params.getConfigScopeId());
   }
 
   @Override
@@ -117,7 +121,7 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
     return requestAsync(cancelChecker -> {
       var analysisResults = getBean(AnalysisService.class)
         .analyze(cancelChecker, params.getConfigurationScopeId(), params.getAnalysisId(), params.getFilesToAnalyze(),
-          params.getExtraProperties(), params.getStartTime(), false, false).join();
+          params.getExtraProperties(), params.getStartTime(), false, false, false).join();
       return generateAnalyzeFilesResponse(analysisResults);
     }, configurationScopeId);
   }
@@ -128,7 +132,7 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
     return requestAsync(cancelChecker -> {
       var analysisResults = getBean(AnalysisService.class)
         .analyze(cancelChecker, params.getConfigurationScopeId(), params.getAnalysisId(), params.getFilesToAnalyze(), params.getExtraProperties(), params.getStartTime(),
-          true, params.isShouldFetchServerIssues()).join();
+          true, params.isShouldFetchServerIssues(), false).join();
       return generateAnalyzeFilesResponse(analysisResults);
     }, configurationScopeId);
   }
@@ -138,8 +142,29 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
     notify(() -> getBean(AnalysisService.class).setUserAnalysisProperties(params.getConfigurationScopeId(), params.getProperties()));
   }
 
+  @Override
   public void didChangeAutomaticAnalysisSetting(DidChangeAutomaticAnalysisSettingParams params) {
     notify(() -> getBean(AnalysisService.class).didChangeAutomaticAnalysisSetting(params.isEnabled()));
+  }
+
+  @Override
+  public void analyzeFullProject(AnalyzeFullProjectParams params) {
+    notify(() -> getBean(AnalysisService.class).analyzeFullProject(params.getConfigScopeId(), params.isHotspotsOnly()));
+  }
+
+  @Override
+  public void analyzeFileList(AnalyzeFileListParams params) {
+    notify(() -> getBean(AnalysisService.class).analyzeFileList(params.getConfigScopeId(), params.getFilesToAnalyze()));
+  }
+
+  @Override
+  public void analyzeOpenFiles(AnalyzeOpenFilesParams params) {
+    notify(() -> getBean(AnalysisService.class).analyzeOpenFiles(params.getConfigScopeId()));
+  }
+
+  @Override
+  public void analyzeVCSChangedFiles(AnalyzeVCSChangedFilesParams params) {
+    notify(() -> getBean(AnalysisService.class).analyzeVCSChangedFiles(params.getConfigScopeId()));
   }
 
   private static AnalyzeFilesResponse generateAnalyzeFilesResponse(AnalysisResults analysisResults) {

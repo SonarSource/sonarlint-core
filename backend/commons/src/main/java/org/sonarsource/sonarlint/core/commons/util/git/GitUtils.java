@@ -17,30 +17,49 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons.util.gitblame;
+package org.sonarsource.sonarlint.core.commons.util.git;
 
+import java.net.URI;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
+import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.RawTextComparator;
 import org.sonar.scm.git.blame.RepositoryBlameCommand;
 import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
-import org.sonarsource.sonarlint.core.commons.util.GitUtils;
 
 import static java.util.Optional.ofNullable;
 
-public class GitBlameUtils {
+public class GitUtils {
 
-  private GitBlameUtils() {
+  private GitUtils() {
     // Utility class
   }
 
-  public static SonarLintBlameResult blameWithFilesGitCommand(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths) {
-    return blameWithFilesGitCommand(projectBaseDir, projectBaseRelativeFilePaths, null);
+  public static SonarLintBlameResult blameWithFilesGitCommand(Path baseDir, Set<Path> gitRelativePath) {
+    return blameWithFilesGitCommand(baseDir, gitRelativePath, null);
+  }
+
+  public static List<URI> getVSCChangedFiles(@Nullable Path baseDir) {
+    if (baseDir == null) {
+      return List.of();
+    }
+    try {
+      var repo = buildGitRepository(baseDir);
+      var git = new Git(repo);
+      var status = git.status().call();
+      var uncommittedChanges = status.getUncommittedChanges();
+      return uncommittedChanges.stream()
+        .map(file -> baseDir.resolve(file).toUri())
+        .collect(Collectors.toList());
+    } catch (GitAPIException | IllegalStateException e) {
+      return List.of();
+    }
   }
 
   public static SonarLintBlameResult blameWithFilesGitCommand(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, @Nullable UnaryOperator<String> fileContentProvider) {

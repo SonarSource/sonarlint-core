@@ -21,6 +21,11 @@ package org.sonarsource.sonarlint.core.commons;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.UnaryOperator;
+import java.util.stream.IntStream;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
@@ -37,10 +42,14 @@ import org.sonarsource.sonarlint.core.commons.util.GitUtils;
 
 import static java.util.function.Predicate.not;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.jgit.util.FileUtils.RECURSIVE;
+import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.blameWithFilesGitCommand;
+import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.getVSCChangedFiles;
+import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
 import static org.eclipse.jgit.lib.Constants.GITIGNORE_FILENAME;
-import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.addFileToGitIgnoreAndCommit;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createFile;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRepository;
+import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.modifyFile;
 
 class GitUtilsTest {
 
@@ -57,8 +66,90 @@ class GitUtilsTest {
   }
 
   @AfterEach
-  public void cleanup() {
-    FileUtils.deleteQuietly(projectDirPath.toFile());
+  public void cleanup() throws IOException {
+    FileUtils.delete(projectDirPath.toFile(), RECURSIVE);
+  }
+
+  @Test
+  void it_should_blame_file() throws IOException, GitAPIException {
+    createFile(projectDirPath, "fileA", "line1", "line2", "line3");
+    var c1 = commit(git, "fileA");
+
+    var sonarLintBlameResult = blameWithFilesGitCommand(projectDirPath, Set.of(Path.of("fileA")));
+    assertThat(IntStream.of(1, 2, 3)
+      .mapToObj(lineNumber -> sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(lineNumber))))
+      .map(Optional::get)
+      .allMatch(date -> date.equals(c1));
+  }
+
+  @Test
+  void it_should_blame_with_given_contents_within_inner_dir() throws IOException, GitAPIException {
+    var deepFilePath = Path.of("innerDir").resolve("fileA").toString();
+    createFile(projectDirPath, deepFilePath, "SonarQube", "SonarCloud", "SonarLint");
+    var c1 = commit(git, deepFilePath);
+    var content = String.join(System.lineSeparator(), "SonarQube", "Cloud", "SonarLint", "SonarSolution") + System.lineSeparator();
+
+    UnaryOperator<String> fileContentProvider = path -> deepFilePath.equals(path) ? content : null;
+    var sonarLintBlameResult = blameWithFilesGitCommand(projectDirPath, Set.of(Path.of(deepFilePath)), fileContentProvider);
+    assertThat(IntStream.of(1, 2, 3, 4)
+      .mapToObj(lineNumber -> sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of(deepFilePath), List.of(lineNumber))))
+      .map(dateOpt -> dateOpt.orElse(null))
+      .containsExactly(c1, null, c1, null);
+  }
+
+  @Test
+  void it_should_blame_file_within_inner_dir() throws IOException, GitAPIException {
+    var deepFilePath = Path.of("innerDir").resolve("fileA").toString();
+
+    createFile(projectDirPath, deepFilePath, "line1", "line2", "line3");
+    var c1 = commit(git, deepFilePath);
+
+    var sonarLintBlameResult = blameWithFilesGitCommand(projectDirPath, Set.of(Path.of(deepFilePath)));
+    var latestChangeDate = sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of(deepFilePath), List.of(1, 2, 3));
+    assertThat(latestChangeDate).isPresent().contains(c1);
+  }
+
+  @Test
+  void it_should_blame_project_files_when_project_base_is_sub_folder_of_git_repo() throws IOException, GitAPIException {
+    projectDirPath = projectDirPath.resolve("subFolder");
+
+    createFile(projectDirPath, "fileA", "line1", "line2", "line3");
+    var c1 = commit(git, git.getRepository().getWorkTree().toPath().relativize(projectDirPath).resolve("fileA").toString());
+
+    var sonarLintBlameResult = blameWithFilesGitCommand(projectDirPath, Set.of(Path.of("fileA")));
+    assertThat(IntStream.of(1, 2, 3)
+      .mapToObj(lineNumber -> sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(lineNumber))))
+      .map(Optional::get)
+      .allMatch(date -> date.equals(c1));
+  }
+
+  @Test
+  void it_should_get_uncommitted_files_ignoring_untracked_ones() throws GitAPIException, IOException {
+    var fileAName = "fileA";
+    var fileBName = "fileB";
+    var fileCName = "fileC";
+    var fileAUri = projectDirPath.resolve(fileAName).toUri();
+    var fileBUri = projectDirPath.resolve(fileBName).toUri();
+    createFile(projectDirPath, fileAName, "line1", "line2", "line3");
+    commit(git, fileAName);
+    modifyFile(projectDirPath.resolve(fileAName), "line1", "line2", "line3", "line4");
+    createFile(projectDirPath, fileBName, "line1", "line2", "line3");
+    git.add().addFilepattern(fileBName).call();
+    createFile(projectDirPath, fileCName, "line1", "line2", "line3");
+
+    var changedFiles = getVSCChangedFiles(projectDirPath);
+
+    assertThat(changedFiles).hasSize(2).contains(fileAUri).contains(fileBUri);
+  }
+
+  @Test
+  void it_should_return_empty_list_if_base_dir_not_resolved() {
+    assertThat(getVSCChangedFiles(null)).isEmpty();
+  }
+
+  @Test
+  void it_should_return_empty_list_on_git_exception(@TempDir Path nonGitDir) {
+    assertThat(getVSCChangedFiles(nonGitDir)).isEmpty();
   }
 
   @Test
