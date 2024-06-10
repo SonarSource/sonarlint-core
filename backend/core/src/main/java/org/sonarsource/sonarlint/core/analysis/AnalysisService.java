@@ -86,7 +86,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnal
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidDetectSecretParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidRaiseIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.FileEditDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetInferredAnalysisPropertiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.QuickFixDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueFlowDto;
