@@ -94,24 +94,4 @@ public interface AnalysisRpcService {
   @JsonNotification
   void didSetUserAnalysisProperties(DidChangeAnalysisPropertiesParams params);
 
-  /**
-   *  Inform the backend that analysis properties inferred by SonarLint has changed.
-   *  Example of such properties: sonar.java config, path to compile commands for CFamily analysis.
-   *  The backend will take the provided set of properties as new inferred configuration, and previous inferred values will be cleared.
-   *  This method should be used in case when all inferred properties were computed to set them all as an initial or completely new configuration
-   * @param params configuration scope ID, additional properties and new values for existing ones
-   */
-  @JsonNotification
-  void didSetInferredAnalysisProperties(DidChangeAnalysisPropertiesParams params);
-
-  /**
-   *  Inform the backend that analysis properties inferred by SonarLint has changed.
-   *  Example of such properties: sonar.java config, path to compile commands for CFamily analysis.
-   *  The backend will update the configuration with the provided values, but previously provided properties will be kept.
-   *  This method should be used in case when only some properties has changed and need to be updated.
-   * @param params configuration scope ID, new properties for this scope
-   */
-  @JsonNotification
-  void didUpdateInferredAnalysisProperties(DidChangeAnalysisPropertiesParams params);
-
 }

@@ -47,11 +47,6 @@ public class ClientAnalysisPropertiesRepository {
     userPropertiesByConfigScope.put(configurationScopeId, new ConcurrentHashMap<>(extraProperties));
   }
 
-  public void setOrUpdateInferredProperties(String configurationScopeId, Map<String, String> extraProperties) {
-    inferredPropertiesByConfigScope.computeIfAbsent(configurationScopeId, k -> new ConcurrentHashMap<>());
-    inferredPropertiesByConfigScope.get(configurationScopeId).putAll(extraProperties);
-  }
-
   public void setInferredProperties(String configurationScopeId, Map<String, String> extraProperties) {
     inferredPropertiesByConfigScope.put(configurationScopeId, new ConcurrentHashMap<>(extraProperties));
   }

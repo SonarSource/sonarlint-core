@@ -86,6 +86,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnal
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidDetectSecretParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidRaiseIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.FileEditDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetInferredAnalysisPropertiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.QuickFixDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueFlowDto;
@@ -226,6 +227,8 @@ public class AnalysisService {
   public GetAnalysisConfigResponse getAnalysisConfig(String configScopeId) {
     var bindingOpt = configurationRepository.getEffectiveBinding(configScopeId);
     var activeNodeJs = nodeJsService.getActiveNodeJs();
+    var inferredClientProperties = client.getInferredAnalysisProperties(new GetInferredAnalysisPropertiesParams(configScopeId)).join().getProperties();
+    clientAnalysisPropertiesRepository.setInferredProperties(configScopeId, inferredClientProperties);
     var clientAnalysisProperties = clientAnalysisPropertiesRepository.getProperties(configScopeId);
 
     var nodeJsDetailsDto = activeNodeJs == null ? null : new NodeJsDetailsDto(activeNodeJs.getPath(), activeNodeJs.getVersion().toString());
@@ -262,14 +265,6 @@ public class AnalysisService {
 
   public void setUserAnalysisProperties(String configScopeId, Map<String, String> properties) {
     clientAnalysisPropertiesRepository.setUserProperties(configScopeId, properties);
-  }
-
-  public void setInferredAnalysisProperties(String configScopeId, Map<String, String> properties) {
-    clientAnalysisPropertiesRepository.setInferredProperties(configScopeId, properties);
-  }
-
-  public void setOrUpdateInferredAnalysisProperties(String configScopeId, Map<String, String> properties) {
-    clientAnalysisPropertiesRepository.setOrUpdateInferredProperties(configScopeId, properties);
   }
 
   public Map<String, String> getClientAnalysisProperties(String configScopeId) {

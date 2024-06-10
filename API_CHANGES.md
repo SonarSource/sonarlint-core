@@ -3,11 +3,11 @@
 ## Breaking changes
 
 ## New features
-* Add a set of methods to `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService` the service to let the client notify the backend with analysis properties - inferred by SonarLint and defined by the user
+* Add a method to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient` to allow backend to request inferred analysis properties from the client before every analysis. It's important because properties may change depends on files being analysed and to spare clients from implementing listeners of configuration change.
+  * `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#getInferredAnalysisProperties` to request inferred properties
+* Add a method to the `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService` to let the client notify the backend with analysis properties - inferred by SonarLint and defined by the user
   * `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#didSetUserAnalysisProperties` to set user defined properties
-  * `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#didSetInferredAnalysisProperties` to set inferred properties
-  * `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#didUpdateInferredAnalysisProperties` to update inferred properties
-  * For analysis, both user-defined and inferred properties will be merged. In case if same property is inferred by SonarLint and provided by the user - the inferred value will be used for analysis
+* For analysis, both user-defined and inferred properties will be merged. In case if same property is inferred by SonarLint and provided by the user - the inferred value will be used for analysis
 
 ### Open Issue in IDE
 

@@ -37,26 +37,11 @@ class ClientAnalysisPropertiesServiceTests {
   }
 
   @Test
-  void it_should_override_only_provided_inferred_properties() {
-    var properties = underTest.getProperties(CONFIG_SCOPE_ID);
-    assertThat(properties).isEmpty();
-
-    underTest.setOrUpdateInferredProperties(CONFIG_SCOPE_ID, Map.of("key1", "value1", "key2", "value2"));
-    properties = underTest.getProperties(CONFIG_SCOPE_ID);
-    assertThat(properties).hasSize(2).containsEntry("key1", "value1").containsEntry("key2", "value2");
-
-    underTest.setOrUpdateInferredProperties(CONFIG_SCOPE_ID, Map.of("key2", "new-value2", "key3", "new-value3"));
-
-    properties = underTest.getProperties(CONFIG_SCOPE_ID);
-    assertThat(properties).hasSize(3).containsEntry("key1", "value1").containsEntry("key2", "new-value2").containsEntry("key3", "new-value3");
-  }
-
-  @Test
   void it_should_remove_previous_config_and_set_provided_inferred_properties() {
     var properties = underTest.getProperties(CONFIG_SCOPE_ID);
     assertThat(properties).isEmpty();
 
-    underTest.setOrUpdateInferredProperties(CONFIG_SCOPE_ID, Map.of("key1", "value1", "key2", "value2"));
+    underTest.setInferredProperties(CONFIG_SCOPE_ID, Map.of("key1", "value1", "key2", "value2"));
     properties = underTest.getProperties(CONFIG_SCOPE_ID);
     assertThat(properties).hasSize(2).containsEntry("key1", "value1").containsEntry("key2", "value2");
 
@@ -71,8 +56,8 @@ class ClientAnalysisPropertiesServiceTests {
     var properties = underTest.getProperties(CONFIG_SCOPE_ID);
     assertThat(properties).isEmpty();
 
-    underTest.setOrUpdateInferredProperties(CONFIG_SCOPE_ID, Map.of("key1", "value1", "key2", "value2"));
-    underTest.setOrUpdateInferredProperties(ANOTHER_CONFIG_SCOPE_ID, Map.of("key1", "value1"));
+    underTest.setInferredProperties(CONFIG_SCOPE_ID, Map.of("key1", "value1", "key2", "value2"));
+    underTest.setInferredProperties(ANOTHER_CONFIG_SCOPE_ID, Map.of("key1", "value1"));
     properties = underTest.getProperties(CONFIG_SCOPE_ID);
     assertThat(properties).hasSize(2).containsEntry("key1", "value1").containsEntry("key2", "value2");
 

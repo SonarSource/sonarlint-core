@@ -137,16 +137,6 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
     notify(() -> getBean(AnalysisService.class).setUserAnalysisProperties(params.getConfigurationScopeId(), params.getProperties()));
   }
 
-  @Override
-  public void didSetInferredAnalysisProperties(DidChangeAnalysisPropertiesParams params) {
-    notify(() -> getBean(AnalysisService.class).setInferredAnalysisProperties(params.getConfigurationScopeId(), params.getProperties()));
-  }
-
-  @Override
-  public void didUpdateInferredAnalysisProperties(DidChangeAnalysisPropertiesParams params) {
-    notify(() -> getBean(AnalysisService.class).setOrUpdateInferredAnalysisProperties(params.getConfigurationScopeId(), params.getProperties()));
-  }
-
   private static AnalyzeFilesResponse generateAnalyzeFilesResponse(AnalysisResults analysisResults) {
     Set<URI> failedAnalysisFiles = analysisResults
       .failedAnalysisFiles().stream()

@@ -513,22 +513,16 @@ class AnalysisMediumTests {
   @Test
   void should_save_and_return_client_analysis_settings() {
     var client = newFakeClient().build();
-    backend = newBackend()
-      .build(client);
+    backend = newBackend().build(client);
     backend.getAnalysisService().didSetUserAnalysisProperties(
-      new DidChangeAnalysisPropertiesParams(CONFIG_SCOPE_ID, Map.of("key1", "value1"))
+      new DidChangeAnalysisPropertiesParams(CONFIG_SCOPE_ID, Map.of("key1", "user-value1", "key2", "user-value2"))
     );
-    backend.getAnalysisService().didSetInferredAnalysisProperties(
-      new DidChangeAnalysisPropertiesParams(CONFIG_SCOPE_ID, Map.of("key2", "value2"))
-    );
-    backend.getAnalysisService().didUpdateInferredAnalysisProperties(
-      new DidChangeAnalysisPropertiesParams(CONFIG_SCOPE_ID, Map.of("key2", "new-value2", "key3", "value3"))
-    );
+    client.setInferredAnalysisProperties(CONFIG_SCOPE_ID, Map.of("key2", "inferred-value2", "key3", "inferred-value3"));
 
     var analysisProperties = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).join().getAnalysisProperties();
 
-    assertThat(analysisProperties).containsEntry("key1", "value1")
-      .containsEntry("key2", "new-value2").containsEntry("key3", "value3");
+    assertThat(analysisProperties).containsEntry("key1", "user-value1")
+      .containsEntry("key2", "inferred-value2").containsEntry("key3", "inferred-value3");
   }
 
   private static Path createFile(Path folderPath, String fileName, String content) {
