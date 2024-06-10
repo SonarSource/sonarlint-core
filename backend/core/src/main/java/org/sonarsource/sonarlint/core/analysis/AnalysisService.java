@@ -101,6 +101,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
 import org.sonarsource.sonarlint.core.rules.RulesService;
+import org.sonarsource.sonarlint.core.rules.StandaloneRulesConfigurationChanged;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.AnalyzerConfigurationSynchronized;
@@ -519,6 +520,16 @@ public class AnalysisService {
   @EventListener
   public void onFileOpened(FileOpenedEvent event) {
     triggerAnalysis(event.getConfigurationScopeId(), List.of(event.getFileUri()));
+  }
+
+  @EventListener
+  public void onStandaloneRulesConfigurationChanged(StandaloneRulesConfigurationChanged event) {
+    // we could trigger an analysis only if rules were enabled
+    // if no rules were enabled (only disabled), we could trigger only a new reporting, removing issues of disabled rules
+    openFilesRepository.getOpenFilesByConfigScopeId()
+      .entrySet()
+      .stream().filter(entry -> configurationRepository.getEffectiveBinding(entry.getKey()).isEmpty())
+      .forEach(entry -> triggerAnalysis(entry.getKey(), entry.getValue()));
   }
 
   private void sendModuleEvents(List<ClientFile> filesToProcess, ModuleFileEvent.Type type) {
