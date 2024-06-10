@@ -46,6 +46,9 @@ public interface AnalysisRpcService {
   @JsonRequest
   CompletableFuture<GetGlobalConfigurationResponse> getGlobalConnectedConfiguration(GetGlobalConnectedConfigurationParams params);
 
+  /**
+   * @since 10.3 this method returns not only server analyser properties, but also user properties provided by client
+   */
   @JsonRequest
   CompletableFuture<GetAnalysisConfigResponse> getAnalysisConfig(GetAnalysisConfigParams params);
 
@@ -82,4 +85,13 @@ public interface AnalysisRpcService {
    */
   @JsonRequest
   CompletableFuture<AnalyzeFilesResponse> analyzeFilesAndTrack(AnalyzeFilesAndTrackParams params);
+
+  /**
+   *  Inform the backend that user settings analysis properties has changed.
+   *  The backend will take the provided set of properties as new user configuration, and previous user values will be cleared.
+   * @param params configuration scope ID, new properties for this scope
+   */
+  @JsonNotification
+  void didSetUserAnalysisProperties(DidChangeAnalysisPropertiesParams params);
+
 }
