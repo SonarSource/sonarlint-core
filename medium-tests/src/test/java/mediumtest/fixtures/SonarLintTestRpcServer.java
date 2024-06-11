@@ -35,6 +35,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.ConfigurationR
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.UserTokenRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.FileRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.GripRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.IssueRpcService;
@@ -148,6 +149,11 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
   @Override
   public TaintVulnerabilityTrackingRpcService getTaintVulnerabilityTrackingService() {
     return serverUsingRpc.getTaintVulnerabilityTrackingService();
+  }
+
+  @Override
+  public GripRpcService getGripService() {
+    return serverUsingRpc.getGripService();
   }
 
 
