@@ -69,11 +69,23 @@ class ApacheHttpClientAdapter implements HttpClient {
   }
 
   @Override
+  public Response postWithBearer(String url, String contentType, String body) {
+    return waitFor(postAsyncWithBearer(url, contentType, body));
+  }
+
+  @Override
   public CompletableFuture<Response> postAsync(String url, String contentType, String body) {
     var request = SimpleRequestBuilder.post(url)
       .setBody(body, ContentType.parse(contentType))
       .build();
     return executeAsync(request);
+  }
+
+  private CompletableFuture<Response> postAsyncWithBearer(String url, String contentType, String body) {
+    var request = SimpleRequestBuilder.post(url)
+      .setBody(body, ContentType.parse(contentType))
+      .build();
+    return executeAsyncWithBearer(request);
   }
 
   @Override
@@ -247,6 +259,17 @@ class ApacheHttpClientAdapter implements HttpClient {
     try {
       if (usernameOrToken != null) {
         httpRequest.setHeader("Authorization", basic(usernameOrToken, Objects.requireNonNullElse(password, "")));
+      }
+      return new CompletableFutureWrappingFuture(httpRequest);
+    } catch (Exception e) {
+      throw new IllegalStateException("Unable to execute request: " + e.getMessage(), e);
+    }
+  }
+
+  private CompletableFuture<Response> executeAsyncWithBearer(SimpleHttpRequest httpRequest) {
+    try {
+      if (usernameOrToken != null) {
+        httpRequest.setHeader("Authorization", String.format("Bearer %s", usernameOrToken));
       }
       return new CompletableFutureWrappingFuture(httpRequest);
     } catch (Exception e) {

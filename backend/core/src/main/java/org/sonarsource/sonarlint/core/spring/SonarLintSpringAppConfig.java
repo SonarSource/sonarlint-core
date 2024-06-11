@@ -60,6 +60,7 @@ import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.file.ServerFilePathsProvider;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.fs.FileExclusionService;
+import org.sonarsource.sonarlint.core.grip.GripService;
 import org.sonarsource.sonarlint.core.hotspot.HotspotService;
 import org.sonarsource.sonarlint.core.http.AskClientCertificatePredicate;
 import org.sonarsource.sonarlint.core.http.ClientProxyCredentialsProvider;
@@ -175,7 +176,8 @@ import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_S
   SharedConnectedModeSettingsProvider.class,
   AnalysisEngineCache.class,
   PromotionService.class,
-  KnownFindingsStorageService.class
+  KnownFindingsStorageService.class,
+  GripService.class
 })
 public class SonarLintSpringAppConfig {
 
