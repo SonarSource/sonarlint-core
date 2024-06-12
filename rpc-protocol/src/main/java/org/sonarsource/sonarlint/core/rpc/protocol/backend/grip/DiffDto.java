@@ -19,24 +19,26 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.grip;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
+public class DiffDto {
+  private final String before;
+  private final LineRangeDto beforeLineRangeInDocument;
+  private final String after;
 
-public class SuggestFixResponse {
-  private final String text;
-  private final SuggestedFixDto suggestedFix;
-
-  public SuggestFixResponse(String text, @Nullable SuggestedFixDto suggestedFix) {
-    this.text = text;
-    this.suggestedFix = suggestedFix;
+  public DiffDto(String before, String after, LineRangeDto beforeLineRangeInDocument) {
+    this.before = before;
+    this.after = after;
+    this.beforeLineRangeInDocument = beforeLineRangeInDocument;
   }
 
-  public String getText() {
-    return text;
+  public String getBefore() {
+    return before;
   }
 
-  @CheckForNull
-  public SuggestedFixDto getSuggestedFix() {
-    return suggestedFix;
+  public String getAfter() {
+    return after;
+  }
+
+  public LineRangeDto getBeforeLineRangeInDocument() {
+    return beforeLineRangeInDocument;
   }
 }

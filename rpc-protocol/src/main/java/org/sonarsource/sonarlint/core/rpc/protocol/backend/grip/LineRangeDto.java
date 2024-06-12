@@ -19,24 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.grip;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
+public class LineRangeDto {
+  // inclusive
+  private final int start;
+  // inclusive
+  private final int end;
 
-public class SuggestFixResponse {
-  private final String text;
-  private final SuggestedFixDto suggestedFix;
-
-  public SuggestFixResponse(String text, @Nullable SuggestedFixDto suggestedFix) {
-    this.text = text;
-    this.suggestedFix = suggestedFix;
+  public LineRangeDto(int start, int end) {
+    this.start = start;
+    this.end = end;
   }
 
-  public String getText() {
-    return text;
+  public int getStart() {
+    return start;
   }
 
-  @CheckForNull
-  public SuggestedFixDto getSuggestedFix() {
-    return suggestedFix;
+  public int getEnd() {
+    return end;
   }
 }

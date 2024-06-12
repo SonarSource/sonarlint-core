@@ -33,7 +33,6 @@ class GripRpcServiceDelegate extends AbstractRpcServiceDelegate implements GripR
 
   @Override
   public CompletableFuture<SuggestFixResponse> suggestFix(SuggestFixParams params) {
-    return requestAsync(
-      cancelChecker -> new SuggestFixResponse(getBean(GripService.class).suggestFix(params)));
+    return requestAsync(cancelChecker -> getBean(GripService.class).suggestFix(params));
   }
 }
