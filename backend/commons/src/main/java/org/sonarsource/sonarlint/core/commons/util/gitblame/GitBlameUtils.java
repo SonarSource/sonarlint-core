@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.commons.util.gitblame;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.function.UnaryOperator;
@@ -28,11 +27,9 @@ import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.RawTextComparator;
-import org.eclipse.jgit.lib.ObjectReader;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.sonar.scm.git.blame.RepositoryBlameCommand;
 import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
+import org.sonarsource.sonarlint.core.commons.util.GitUtils;
 
 import static java.util.Optional.ofNullable;
 
@@ -47,7 +44,7 @@ public class GitBlameUtils {
   }
 
   public static SonarLintBlameResult blameWithFilesGitCommand(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, @Nullable UnaryOperator<String> fileContentProvider) {
-    var gitRepo = buildGitRepository(projectBaseDir);
+    var gitRepo = GitUtils.buildGitRepository(projectBaseDir);
 
     var gitRepoRelativeProjectBaseDir = gitRepo.getWorkTree().toPath().relativize(projectBaseDir);
 
@@ -77,25 +74,6 @@ public class GitBlameUtils {
       var platformBasedPath = Path.of(unixPath).toString();
       return provider.apply(platformBasedPath);
     };
-  }
-
-  private static Repository buildGitRepository(Path basedir) {
-    try {
-      var repositoryBuilder = new RepositoryBuilder()
-        .findGitDir(basedir.toFile());
-      if (ofNullable(repositoryBuilder.getGitDir()).isEmpty()) {
-        throw new GitRepoNotFoundException(basedir.toString());
-      }
-
-      var repository = repositoryBuilder.build();
-      try (ObjectReader objReader = repository.getObjectDatabase().newReader()) {
-        // SONARSCGIT-2 Force initialization of shallow commits to avoid later concurrent modification issue
-        objReader.getShallowCommits();
-        return repository;
-      }
-    } catch (IOException e) {
-      throw new IllegalStateException("Unable to open Git repository", e);
-    }
   }
 
 }

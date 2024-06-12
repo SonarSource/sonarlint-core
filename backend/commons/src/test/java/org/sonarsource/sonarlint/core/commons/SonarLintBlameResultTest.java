@@ -51,7 +51,7 @@ class SonarLintBlameResultTest {
   private Path projectDir;
 
   @BeforeEach
-  public void prepare() throws IOException {
+  public void prepare() throws IOException, GitAPIException {
     git = createRepository(projectDir);
   }
 

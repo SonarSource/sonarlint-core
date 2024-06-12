@@ -63,6 +63,7 @@ import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.commons.util.GitUtils;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
@@ -257,7 +258,7 @@ public class AnalysisService {
     var baseDir = fileSystemService.getBaseDir(configScopeId);
     var actualBaseDir = baseDir == null ? findCommonPrefix(filePathsToAnalyze) : baseDir;
     return AnalysisConfiguration.builder()
-      .addInputFiles(toInputFiles(configScopeId, filePathsToAnalyze))
+      .addInputFiles(toInputFiles(configScopeId, actualBaseDir, filePathsToAnalyze))
       .putAllExtraProperties(analysisProperties)
       // properties sent by client using new API were merged above
       // but this line is important for backward compatibility for clients directly triggering analysis
@@ -703,9 +704,12 @@ public class AnalysisService {
     return new TextRangeDto(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset());
   }
 
-  private List<ClientInputFile> toInputFiles(String configScopeId, List<URI> fileUrisToAnalyze) {
+  private List<ClientInputFile> toInputFiles(String configScopeId, Path actualBaseDir, List<URI> fileUrisToAnalyze) {
+    var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(actualBaseDir);
+
     return fileUrisToAnalyze.stream()
       .filter(not(fileExclusionService::isExcluded))
+      .filter(not(sonarLintGitIgnore::isFileIgnored))
       .map(uri -> toInputFile(configScopeId, uri))
       .filter(Objects::nonNull)
       .collect(toList());
