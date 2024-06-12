@@ -54,6 +54,7 @@ import org.sonarsource.sonarlint.core.analysis.sonarapi.MultivalueProperty;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
+import org.sonarsource.sonarlint.core.commons.GitUtils;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.Version;
@@ -256,6 +257,7 @@ public class AnalysisService {
     analysisProperties.putAll(inferredAnalysisProperties);
     var baseDir = fileSystemService.getBaseDir(configScopeId);
     var actualBaseDir = baseDir == null ? findCommonPrefix(filePathsToAnalyze) : baseDir;
+    filePathsToAnalyze = GitUtils.filterOutIgnoredFiles(actualBaseDir, filePathsToAnalyze);
     return AnalysisConfiguration.builder()
       .addInputFiles(toInputFiles(configScopeId, filePathsToAnalyze))
       .putAllExtraProperties(analysisProperties)

@@ -41,7 +41,7 @@ public class GitBlameUtils {
     return blameWithFilesGitCommand(repo, gitRelativePath);
   }
 
-  private static Repository buildRepository(Path basedir) {
+  static Repository buildRepository(Path basedir) {
     try {
       var repo = getVerifiedRepositoryBuilder(basedir).build();
       try (ObjectReader objReader = repo.getObjectDatabase().newReader()) {
