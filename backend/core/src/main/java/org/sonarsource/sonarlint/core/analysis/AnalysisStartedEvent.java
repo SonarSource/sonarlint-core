@@ -19,11 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.analysis;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
@@ -61,5 +63,22 @@ public class AnalysisStartedEvent {
 
   public boolean isTrackingEnabled() {
     return enableTracking;
+  }
+
+  public UnaryOperator<String> getFileContentProvider() {
+    return path -> files.stream()
+      .filter(ClientInputFile::isDirty)
+      .filter(clientInputFile -> clientInputFile.relativePath().equals(path))
+      .findFirst()
+      .map(AnalysisStartedEvent::getClientInputFileContent)
+      .orElse(null);
+  }
+
+  private static String getClientInputFileContent(ClientInputFile clientInputFile) {
+    try {
+      return clientInputFile.contents();
+    } catch (IOException e) {
+      return "";
+    }
   }
 }

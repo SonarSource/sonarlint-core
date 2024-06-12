@@ -29,6 +29,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.util.SystemReader;
 
@@ -45,6 +46,14 @@ public class GitUtils {
   }
 
   public static Date commit(Git git, String... paths) throws GitAPIException {
+    return commitObject(git, paths).getCommitterIdent().getWhen();
+  }
+
+  public static String commitHash(Git git, String... paths) throws GitAPIException {
+    return commitObject(git, paths).getName();
+  }
+
+  public static RevCommit commitObject(Git git, String... paths) throws GitAPIException {
     if (paths.length > 0) {
       var add = git.add();
       for (String p : paths) {
@@ -52,8 +61,7 @@ public class GitUtils {
       }
       add.call();
     }
-    var commit = git.commit().setCommitter("joe", "email@email.com").setMessage("msg").call();
-    return commit.getCommitterIdent().getWhen();
+    return git.commit().setCommitter("joe", "email@email.com").setMessage("msg").call();
   }
 
   public static Date commitAtDate(Git git, Instant commitDate, String... paths) throws GitAPIException {

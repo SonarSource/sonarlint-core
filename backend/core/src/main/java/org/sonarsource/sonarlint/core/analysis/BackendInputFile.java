@@ -25,7 +25,6 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.jetbrains.annotations.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
@@ -83,5 +82,10 @@ public class BackendInputFile implements ClientInputFile {
   @Override
   public SonarLanguage language() {
     return clientFile.getDetectedLanguage();
+  }
+
+  @Override
+  public boolean isDirty() {
+    return clientFile.isDirty();
   }
 }

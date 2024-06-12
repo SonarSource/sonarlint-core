@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.analysis.AnalysisFinishedEvent;
@@ -97,7 +98,7 @@ public class TrackingService {
   public void onAnalysisStarted(AnalysisStartedEvent event) {
     if (event.isTrackingEnabled()) {
       var configurationScopeId = event.getConfigurationScopeId();
-      var matchingSession = startMatchingSession(configurationScopeId, event.getFileRelativePaths());
+      var matchingSession = startMatchingSession(configurationScopeId, event.getFileRelativePaths(), event.getFileContentProvider());
       matchingSessionByAnalysisId.put(event.getAnalysisId(), matchingSession);
       reportingService.resetFindingsForFiles(configurationScopeId, event.getFileUris());
     }
@@ -248,22 +249,22 @@ public class TrackingService {
       trackedIssue.getCleanCodeAttribute(), trackedIssue.getFileUri());
   }
 
-  private MatchingSession startMatchingSession(String configurationScopeId, Set<Path> fileRelativePaths) {
+  private MatchingSession startMatchingSession(String configurationScopeId, Set<Path> fileRelativePaths, UnaryOperator<String> fileContentProvider) {
     var knownFindingsStore = knownFindingsStorageService.get();
     var issuesByRelativePath = fileRelativePaths.stream()
       .collect(toMap(Function.identity(), relativePath -> knownFindingsStore.loadIssuesForFile(configurationScopeId, relativePath)));
     var hotspotsByRelativePath = fileRelativePaths.stream()
       .collect(toMap(Function.identity(), relativePath -> knownFindingsStore.loadSecurityHotspotsForFile(configurationScopeId, relativePath)));
-    var introductionDateProvider = getIntroductionDateProvider(configurationScopeId, fileRelativePaths);
+    var introductionDateProvider = getIntroductionDateProvider(configurationScopeId, fileRelativePaths, fileContentProvider);
     var previousFindings = new KnownFindings(issuesByRelativePath, hotspotsByRelativePath);
     return new MatchingSession(previousFindings, introductionDateProvider);
   }
 
-  private IntroductionDateProvider getIntroductionDateProvider(String configurationScopeId, Set<Path> fileRelativePaths) {
+  private IntroductionDateProvider getIntroductionDateProvider(String configurationScopeId, Set<Path> fileRelativePaths, UnaryOperator<String> fileContentProvider) {
     var baseDir = getBaseDir(configurationScopeId);
     if (baseDir != null) {
       try {
-        var sonarLintBlameResult = GitBlameUtils.blameWithFilesGitCommand(baseDir, fileRelativePaths);
+        var sonarLintBlameResult = GitBlameUtils.blameWithFilesGitCommand(baseDir, fileRelativePaths, fileContentProvider);
         return (filePath, lineNumbers) -> determineIntroductionDate(filePath, lineNumbers, sonarLintBlameResult);
       } catch (Exception e) {
         LOG.error("Cannot access blame info for " + configurationScopeId, e);

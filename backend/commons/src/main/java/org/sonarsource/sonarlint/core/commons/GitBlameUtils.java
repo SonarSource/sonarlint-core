@@ -22,7 +22,9 @@ package org.sonarsource.sonarlint.core.commons;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.RawTextComparator;
@@ -31,15 +33,17 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.sonar.scm.git.blame.RepositoryBlameCommand;
 
+import static java.util.Optional.ofNullable;
+
 public class GitBlameUtils {
 
   private GitBlameUtils() {
     // Utility class
   }
 
-  public static SonarLintBlameResult blameWithFilesGitCommand(Path baseDir, Set<Path> gitRelativePath) {
+  public static SonarLintBlameResult blameWithFilesGitCommand(Path baseDir, Set<Path> gitRelativePath, @Nullable UnaryOperator<String> fileContentProvider) {
     var repo = buildRepository(baseDir);
-    return blameWithFilesGitCommand(repo, gitRelativePath);
+    return blameWithFilesGitCommand(repo, gitRelativePath, fileContentProvider);
   }
 
   private static Repository buildRepository(Path basedir) {
@@ -57,7 +61,7 @@ public class GitBlameUtils {
 
   private static RepositoryBuilder getVerifiedRepositoryBuilder(Path basedir) {
     var unixStyleBasedir = convertToUnixPath(basedir);
-    RepositoryBuilder builder = new RepositoryBuilder()
+    var builder = new RepositoryBuilder()
       .findGitDir(unixStyleBasedir.toFile())
       .setMustExist(true);
 
@@ -67,12 +71,14 @@ public class GitBlameUtils {
     return builder;
   }
 
-  private static SonarLintBlameResult blameWithFilesGitCommand(Repository repo, Set<Path> gitRelativePath) {
+  private static SonarLintBlameResult blameWithFilesGitCommand(Repository repo, Set<Path> gitRelativePath, @Nullable UnaryOperator<String> fileContentProvider) {
     var pathStrings = gitRelativePath.stream().map(Path::toString).map(FilenameUtils::separatorsToUnix).collect(Collectors.toSet());
-    RepositoryBlameCommand blameCommand = new RepositoryBlameCommand(repo)
+    var blameCommand = new RepositoryBlameCommand(repo)
       .setTextComparator(RawTextComparator.WS_IGNORE_ALL)
       .setMultithreading(true)
       .setFilePaths(pathStrings);
+    ofNullable(fileContentProvider)
+      .ifPresent(blameCommand::setFileContentProvider);
     try {
       var blameResult = blameCommand.call();
       return new SonarLintBlameResult(blameResult);

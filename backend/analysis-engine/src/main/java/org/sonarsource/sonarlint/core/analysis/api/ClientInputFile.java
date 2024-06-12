@@ -86,4 +86,7 @@ public interface ClientInputFile {
    */
   URI uri();
 
+  default boolean isDirty() {
+    return false;
+  }
 }
