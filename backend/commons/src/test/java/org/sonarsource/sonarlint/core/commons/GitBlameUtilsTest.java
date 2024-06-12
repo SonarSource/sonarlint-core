@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.util.FileUtils;
@@ -30,10 +31,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonar.scm.git.blame.BlameResult;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
 import static org.eclipse.jgit.util.FileUtils.RECURSIVE;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
+import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commitHash;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createFile;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRepository;
 
@@ -58,12 +62,26 @@ class GitBlameUtilsTest {
     createFile(projectDir, "fileA", "line1", "line2", "line3");
     var c1 = commit(git, "fileA");
 
-    var sonarLintBlameResult = GitBlameUtils.blameWithFilesGitCommand(projectDir, Set.of(Path.of("fileA")));
+    var sonarLintBlameResult = GitBlameUtils.blameWithFilesGitCommand(projectDir, Set.of(Path.of("fileA")), null);
     var blameResult = sonarLintBlameResult.getBlameResult();
     assertThat(blameResult.getFileBlameByPath()).hasSize(1);
     assertThat(blameResult.getFileBlameByPath().get("fileA").getCommitDates())
       .hasSize(3)
       .allMatch(date -> date.equals(c1));
+  }
+
+  @Test
+  void it_should_blame_with_given_contents() throws IOException, GitAPIException {
+    createFile(projectDir, "fileA", "SonarQube", "SonarCloud", "SonarLint");
+    var c1 = commitHash(git, "fileA");
+    var content = String.join(System.lineSeparator(), "SonarQube", "Cloud", "SonarLint", "SonarSolution") + System.lineSeparator();
+
+    UnaryOperator<String> fileContentProvider = path -> "fileA".equals(path) ? content : null;
+    var sonarLintBlameResult = GitBlameUtils.blameWithFilesGitCommand(projectDir, Set.of(Path.of("fileA")), fileContentProvider);
+    sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(3));
+    var blameResult = sonarLintBlameResult.getBlameResult();
+    assertThat(blameResult.getFileBlames()).extracting(BlameResult.FileBlame::getPath, BlameResult.FileBlame::getCommitHashes)
+      .containsOnly(tuple("fileA", new String[]{c1, null, c1, null}));
   }
 
   @Test
@@ -73,7 +91,7 @@ class GitBlameUtilsTest {
     createFile(projectDir, deepFilePath, "line1", "line2", "line3");
     var c1 = commit(git, deepFilePath);
 
-    var sonarLintBlameResult = GitBlameUtils.blameWithFilesGitCommand(projectDir, Set.of(Path.of(deepFilePath)));
+    var sonarLintBlameResult = GitBlameUtils.blameWithFilesGitCommand(projectDir, Set.of(Path.of(deepFilePath)), null);
     var latestChangeDate = sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of(deepFilePath), List.of(1, 2));
     assertThat(latestChangeDate).isPresent().contains(c1);
   }

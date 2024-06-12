@@ -263,6 +263,36 @@ class IssueTrackingMediumTests {
   }
 
   @Test
+  void it_should_use_git_blame_to_set_introduction_date_for_git_repos_for_given_content(@TempDir Path baseDir) throws IOException, GitAPIException {
+    var repository = createRepository(baseDir);
+    String committedFileContent = "package sonar;\n" +
+      "public interface Foobar\n" +
+      "{}";
+    var filePath = createFile(baseDir, "Foobar.java",
+      committedFileContent);
+    commit(repository, filePath.getFileName().toString());
+    var fileUri = filePath.toUri();
+    String unsavedFileContent = "package sonar;\n" +
+      "public interface Foobar\n" +
+      "//TODO introduce new issue\n" +
+      "{}";
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, unsavedFileContent, null)))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .build(client);
+
+    Instant analysisTime = Instant.now();
+    var issues = analyzeFileAndGetAllIssues(fileUri, client);
+
+    assertThat(issues)
+      .extracting(raisedIssueDto -> raisedIssueDto.getIntroductionDate().isAfter(analysisTime), raisedIssueDto -> raisedIssueDto.getTextRange().getStartLine())
+      .containsExactlyInAnyOrder(tuple(false, 1), tuple(true, 3));
+  }
+
+  @Test
   void it_should_track_issue_secondary_locations(@TempDir Path baseDir) {
     var ideFilePath = "Foo.java";
     var filePath = createFile(baseDir, ideFilePath,
