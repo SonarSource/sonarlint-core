@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.commons.testutils;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,6 +30,7 @@ import java.util.Date;
 import org.apache.commons.io.FilenameUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
@@ -39,10 +42,33 @@ public class GitUtils {
     // Utils class
   }
 
-  public static Git createRepository(Path worktree) throws IOException {
+  public static Git createRepository(Path worktree) throws GitAPIException, IOException {
     var repo = FileRepositoryBuilder.create(worktree.resolve(".git").toFile());
     repo.create();
-    return new Git(repo);
+    var git = new Git(repo);
+    createEmptyGitIgnoreFile(git);
+    return git;
+  }
+
+  private static void createEmptyGitIgnoreFile(Git git) throws GitAPIException, IOException {
+    var gitIgnoreFile = getGitIgnoreFile(git);
+    if (gitIgnoreFile.createNewFile()) {
+      git.add().addFilepattern(Constants.GITIGNORE_FILENAME);
+      git.commit().setMessage("Add empty .gitignore").call();
+    }
+  }
+
+  public static void addFileToGitIgnoreAndCommit(Git git, String filePath) throws IOException, GitAPIException {
+    var gitIgnoreFile = getGitIgnoreFile(git);
+    // Append the file path to the .gitignore file
+    try (var writer = new FileWriter(gitIgnoreFile, true)) {
+      writer.write("\n" + filePath + "\n");
+    }
+    commit(git, gitIgnoreFile.getPath());
+  }
+
+  private static File getGitIgnoreFile(Git git) {
+    return new File(git.getRepository().getDirectory().getParent(), Constants.GITIGNORE_FILENAME);
   }
 
   public static Date commit(Git git, String... paths) throws GitAPIException {
