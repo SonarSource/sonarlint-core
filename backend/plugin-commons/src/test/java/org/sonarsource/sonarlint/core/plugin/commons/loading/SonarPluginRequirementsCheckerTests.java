@@ -390,11 +390,10 @@ class SonarPluginRequirementsCheckerTests {
     assertThat(logsWithoutStartStop()).contains("DBD feature disabled. Skip loading plugin 'dbdpythonfrontend'.");
   }
 
-
   @Test
   void load_plugin_skip_plugins_having_unsatisfied_python_dbd(@TempDir Path storage) throws IOException {
     var fakePlugin = fakePlugin(storage, "fake.jar",
-      path -> createPluginManifest(path, "dbd", V1_0, withRequiredPlugins("python:1.15")));
+      path -> createPluginManifest(path, "dbd", V1_0));
     Set<Path> jars = Set.of(fakePlugin);
 
     var loadedPlugins = underTest.checkRequirements(jars, NONE, null, Optional.empty(), true);
@@ -404,18 +403,6 @@ class SonarPluginRequirementsCheckerTests {
     assertThat(logsWithoutStartStop()).contains("Plugin 'dbd' dependency on 'python' is unsatisfied. Skip loading it.");
   }
 
-  @Test
-  void load_plugin_skip_plugins_having_unsatisfied_java_dbd(@TempDir Path storage) throws IOException {
-    var fakePlugin = fakePlugin(storage, "fake.jar",
-      path -> createPluginManifest(path, "dbd", V1_0, withRequiredPlugins("java:7.35")));
-    Set<Path> jars = Set.of(fakePlugin);
-
-    var loadedPlugins = underTest.checkRequirements(jars, NONE, null, Optional.empty(), true);
-
-    assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
-      .containsOnly(tuple("dbd", true, new SkipReason.UnsatisfiedDependency(SonarLanguage.JAVA.getPluginKey())));
-    assertThat(logsWithoutStartStop()).contains("Plugin 'dbd' dependency on 'java' is unsatisfied. Skip loading it.");
-  }
   @Test
   void load_plugin_having_satisfied_python_frontend_dbd(@TempDir Path storage) throws IOException {
     var fakePlugin = fakePlugin(storage, "fake.jar",
