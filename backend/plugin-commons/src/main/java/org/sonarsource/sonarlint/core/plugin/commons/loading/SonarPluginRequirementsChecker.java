@@ -173,9 +173,17 @@ public class SonarPluginRequirementsChecker {
     if (basePluginKey != null && checkForPluginSkipped(currentResultsByKey.get(basePluginKey))) {
       return processUnsatisfiedDependency(currentResult.getPlugin(), basePluginKey);
     }
-    if (DataflowBugDetection.PLUGIN_ALLOW_LIST.contains(plugin.getKey()) && !enableDataflowBugDetection) {
+    if (DataflowBugDetection.PLUGIN_ALLOW_LIST.contains(plugin.getKey())) {
+      // Workaround for SLCORE-667
+      // dbd and dbdpythonfrontend require Python to be working
+      if (!enableDataflowBugDetection) {
         LOG.debug("DBD feature disabled. Skip loading plugin '{}'.", plugin.getName());
         return new PluginRequirementsCheckResult(plugin, SkipReason.UnsupportedFeature.INSTANCE);
+      }
+      var pythonPluginResult = currentResultsByKey.get(SonarLanguage.PYTHON.getPluginKey());
+      if (checkForPluginSkipped(pythonPluginResult)) {
+        return processUnsatisfiedDependency(currentResult.getPlugin(), SonarLanguage.PYTHON.getPluginKey());
+      }
     }
     return currentResult;
   }
