@@ -104,4 +104,17 @@ public interface AnalysisRpcService {
    */
   @JsonNotification
   void didChangeAutomaticAnalysisSetting(DidChangeAutomaticAnalysisSettingParams params);
+
+  @JsonNotification
+  void analyzeFullProject(AnalyzeFullProjectParams params);
+
+  // TODO find better name
+  @JsonNotification
+  void analyzeFileList(AnalyzeFileListParams params);
+
+  @JsonNotification
+  void analyzeOpenFiles(AnalyzeOpenFilesParams params);
+
+  @JsonNotification
+  void analyzeVCSChangedFile(AnalyzeVCSChangedFileParams params);
 }

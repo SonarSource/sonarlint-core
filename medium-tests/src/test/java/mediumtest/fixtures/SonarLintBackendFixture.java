@@ -788,7 +788,7 @@ public class SonarLintBackendFixture {
     }
 
     public Map<URI, List<RaisedIssueDto>> getRaisedIssuesForScopeId(String configurationScopeId) {
-      return raisedIssuesByScopeId.get(configurationScopeId);
+      return raisedIssuesByScopeId.getOrDefault(configurationScopeId, Map.of());
     }
 
     public Map<URI, List<RaisedHotspotDto>> getRaisedHotspotsForScopeId(String configurationScopeId) {
