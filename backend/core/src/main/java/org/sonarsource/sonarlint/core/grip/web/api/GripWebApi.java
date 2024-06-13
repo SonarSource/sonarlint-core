@@ -36,7 +36,7 @@ public class GripWebApi {
 
   public SuggestFixResponsePayload suggestFix(SuggestFixParams params, String fileContent) {
     var requestBody = serializeRequestBody(params, fileContent);
-    try (var response = httpClientProvider.getHttpClientWithPreemptiveAuth(params.getAuthenticationToken()).postWithBearer(getServiceUrl() + "api/suggest", "application/json",
+    try (var response = httpClientProvider.getHttpClientWithPreemptiveAuth(params.getAuthenticationToken()).postWithBearer(getServiceUrl() + "api/suggest/", "application/json",
       requestBody)) {
       return deserializeResponseBody(response.bodyAsString());
     }
