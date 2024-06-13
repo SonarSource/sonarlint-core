@@ -58,7 +58,7 @@ class GripMediumTests {
     + "  }\n"
     + "}", new TextRangeDto(6, 6, 6, 10), "Remove this misleading \"TUTU\" label.", "java:S1219");
 
-  private static final Issue CURRENT_ISSUE = JAVA_S1481_UNUSED_VARIABLE;
+  private static final Issue CURRENT_ISSUE = JAVA_S1219_NON_CASE_LABELS_IN_SWITCH;
 
   // @RegisterExtension
   // static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();

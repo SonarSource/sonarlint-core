@@ -23,12 +23,18 @@ import java.util.List;
 
 public class SuggestedFixDto {
   private final List<DiffDto> diffs;
+  private final String explanation;
 
-  public SuggestedFixDto(List<DiffDto> diffs) {
+  public SuggestedFixDto(List<DiffDto> diffs, String explanation) {
     this.diffs = diffs;
+    this.explanation = explanation;
   }
 
   public List<DiffDto> getDiffs() {
     return diffs;
+  }
+
+  public String getExplanation() {
+    return explanation;
   }
 }
