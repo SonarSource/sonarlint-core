@@ -55,13 +55,16 @@ public class GripService {
     var fileContent = clientFile.getContent();
     var response = gripWebApi.suggestFix(params, fileContent);
     var responseMessage = response.choices.get(response.choices.size() - 1).message.content;
-    var diff = parseDiff(responseMessage);
-    var snippetLineRange = locateSnippet(fileContent, diff.before);
+    var fixResponse = parseResponse(responseMessage);
     SuggestedFixDto suggestedFix = null;
-    // if no match, we could probably search better
-    if (snippetLineRange != null) {
-      var originalSnippet = fileContent.lines().skip(snippetLineRange.start - 1L).limit(snippetLineRange.size()).collect(Collectors.joining("\n"));
-      suggestedFix = new SuggestedFixDto(List.of(new DiffDto(originalSnippet, diff.after, new LineRangeDto(snippetLineRange.start, snippetLineRange.end))));
+    if (fixResponse.snippets.size() >= 2) {
+      var snippetLineRange = locateSnippet(fileContent, fixResponse.snippets.get(0));
+      // if no match, we could probably search better
+      if (snippetLineRange != null) {
+        var originalSnippet = fileContent.lines().skip(snippetLineRange.start - 1L).limit(snippetLineRange.size()).collect(Collectors.joining("\n"));
+        suggestedFix = new SuggestedFixDto(List.of(new DiffDto(originalSnippet, fixResponse.snippets.get(1), new LineRangeDto(snippetLineRange.start, snippetLineRange.end))),
+          fixResponse.explanation);
+      }
     }
     return new SuggestFixResponse(responseMessage, suggestedFix);
   }
@@ -99,49 +102,47 @@ public class GripService {
     return snippetStartLineInFile == -1 ? null : new LineRange(snippetStartLineInFile, currentFileLineIndex - 1);
   }
 
-  private static Diff parseDiff(String content) {
+  private static GripResponse parseResponse(String content) {
     var lines = content.lines().collect(Collectors.toCollection(ArrayList::new));
     if (lines.isEmpty()) {
-      return new Diff("", "");
+      return new GripResponse(List.of(), "");
     }
-    var relevantLinesForDiff = new ArrayList<String>();
+    var snippets = new ArrayList<String>();
+    var inSnippet = false;
+    StringBuilder currentSnippet = null;
+    var freeText = new StringBuilder();
+    var currentLineSeparator = "";
     for (String line : lines) {
-      if (!line.startsWith("```") && !line.startsWith("---") && !line.startsWith("+++") && !line.startsWith("@@")) {
-        relevantLinesForDiff.add(line);
-      }
-    }
-    var previousContent = new StringBuilder();
-    var newContent = new StringBuilder();
-    var previousContentLineSeparator = "";
-    var newContentLineSeparator = "";
-    for (String relevantLine : relevantLinesForDiff) {
-      if (relevantLine.startsWith("-")) {
-        previousContent.append(previousContentLineSeparator);
-        previousContent.append(relevantLine.substring(1));
-        previousContentLineSeparator = "\n";
-      } else if (relevantLine.startsWith("+")) {
-        newContent.append(newContentLineSeparator);
-        newContent.append(relevantLine.substring(1));
-        newContentLineSeparator = "\n";
+      if (line.startsWith("```")) {
+        if (inSnippet) {
+          snippets.add(currentSnippet.toString());
+          inSnippet = false;
+          currentSnippet = null;
+        } else {
+          inSnippet = true;
+          currentSnippet = new StringBuilder();
+        }
+        currentLineSeparator = "";
+      } else if (inSnippet) {
+        currentSnippet.append(currentLineSeparator).append(line);
+        currentLineSeparator = "\n";
       } else {
-        previousContent.append(previousContentLineSeparator);
-        previousContent.append(relevantLine);
-        previousContentLineSeparator = "\n";
-        newContent.append(newContentLineSeparator);
-        newContent.append(relevantLine);
-        newContentLineSeparator = "\n";
+        if (!line.trim().equals("\n") && !line.trim().isEmpty()) {
+          freeText.append(currentLineSeparator).append(line);
+          currentLineSeparator = "\n";
+        }
       }
     }
-    return new Diff(previousContent.toString(), newContent.toString());
+    return new GripResponse(snippets, freeText.toString());
   }
 
-  private static class Diff {
-    private final String before;
-    private final String after;
+  private static class GripResponse {
+    private final List<String> snippets;
+    private final String explanation;
 
-    private Diff(String before, String after) {
-      this.before = before;
-      this.after = after;
+    private GripResponse(List<String> snippets, String explanation) {
+      this.snippets = snippets;
+      this.explanation = explanation;
     }
   }
 
