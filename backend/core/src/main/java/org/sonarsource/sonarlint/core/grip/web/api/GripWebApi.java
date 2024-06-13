@@ -55,6 +55,6 @@ public class GripWebApi {
   }
 
   private static String getServiceUrl() {
-    return System.getProperty("sonarlint.grip.url", "http://localhost:8080/");
+    return System.getProperty("sonarlint.grip.url", "https://beta.sonar-grip-dev.io/");
   }
 }
