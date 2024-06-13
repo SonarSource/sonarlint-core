@@ -116,5 +116,5 @@ public interface AnalysisRpcService {
   void analyzeOpenFiles(AnalyzeOpenFilesParams params);
 
   @JsonNotification
-  void analyzeVCSChangedFile(AnalyzeVCSChangedFileParams params);
+  void analyzeVCSChangedFiles(AnalyzeVCSChangedFilesParams params);
 }

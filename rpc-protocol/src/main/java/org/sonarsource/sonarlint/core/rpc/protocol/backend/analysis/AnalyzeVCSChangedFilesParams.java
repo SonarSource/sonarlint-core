@@ -19,10 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis;
 
-public class AnalyzeVCSChangedFileParams {
+public class AnalyzeVCSChangedFilesParams {
   private final String configScopeId;
 
-  public AnalyzeVCSChangedFileParams(String configScopeId) {
+  public AnalyzeVCSChangedFilesParams(String configScopeId) {
     this.configScopeId = configScopeId;
   }
 

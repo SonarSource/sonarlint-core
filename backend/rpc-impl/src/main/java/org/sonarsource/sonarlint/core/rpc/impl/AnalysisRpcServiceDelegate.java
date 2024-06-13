@@ -38,7 +38,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFiles
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFullProjectParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeOpenFilesParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeVCSChangedFileParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeVCSChangedFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeAutomaticAnalysisSettingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeClientNodeJsPathParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeAnalysisPropertiesParams;
@@ -163,7 +163,7 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
   }
 
   @Override
-  public void analyzeVCSChangedFile(AnalyzeVCSChangedFileParams params) {
+  public void analyzeVCSChangedFiles(AnalyzeVCSChangedFilesParams params) {
     notify(() -> getBean(AnalysisService.class).analyzeVCSChangedFiles(params.getConfigScopeId()));
   }
 
