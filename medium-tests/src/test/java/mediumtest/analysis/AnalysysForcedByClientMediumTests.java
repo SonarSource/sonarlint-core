@@ -51,7 +51,7 @@ import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.modifyFi
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static testutils.AnalysisUtils.createFile;
 
-class AnalysysForcedByClientMediumTests {
+class AnalysisForcedByClientMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
   private SonarLintTestRpcServer backend;
@@ -114,7 +114,7 @@ class AnalysysForcedByClientMediumTests {
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri2));
 
     backend.getAnalysisService().analyzeOpenFiles(new AnalyzeOpenFilesParams(CONFIG_SCOPE_ID));
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).hasSize(2));
+    await().during(500, TimeUnit.MILLISECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).hasSize(2));
 
     var raisedIssues = client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID);
     assertThat(raisedIssues).hasSize(2);
@@ -151,7 +151,7 @@ class AnalysysForcedByClientMediumTests {
       .build(client);
 
     backend.getAnalysisService().analyzeVCSChangedFiles(new AnalyzeVCSChangedFilesParams(CONFIG_SCOPE_ID));
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).hasSize(2));
+    await().during(500, TimeUnit.MILLISECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).hasSize(2));
 
     var raisedIssues = client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID);
     assertThat(raisedIssues).hasSize(2);
