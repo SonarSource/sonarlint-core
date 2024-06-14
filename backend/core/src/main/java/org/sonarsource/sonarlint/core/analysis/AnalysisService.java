@@ -359,8 +359,8 @@ public class AnalysisService {
   }
 
   private boolean shouldIncludeRuleForAnalysis(String connectionId, SonarLintRuleDefinition ruleDefinition, boolean hotspotsOnly) {
-    return (!hotspotsOnly && !ruleDefinition.getType().equals(RuleType.SECURITY_HOTSPOT)) ||
-      (hotspotEnabled && permitsHotspotTracking(connectionId));
+    var isHotspot = ruleDefinition.getType().equals(RuleType.SECURITY_HOTSPOT);
+    return (!isHotspot && !hotspotsOnly) || (isHotspot && hotspotEnabled && permitsHotspotTracking(connectionId));
   }
 
   public boolean permitsHotspotTracking(String connectionId) {

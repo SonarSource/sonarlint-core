@@ -21,21 +21,26 @@ package mediumtest.analysis;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import mediumtest.fixtures.ServerFixture;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
-import org.eclipse.jgit.api.Git;
+import org.assertj.core.api.Assertions;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFileListParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFullProjectParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeOpenFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeVCSChangedFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 
+import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
@@ -43,17 +48,22 @@ import static org.awaitility.Awaitility.await;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRepository;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.modifyFile;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static testutils.AnalysisUtils.createFile;
 
 class AnalysysForcedByClientMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
   private SonarLintTestRpcServer backend;
+  private ServerFixture.Server serverWithHotspots;
 
   @AfterEach
   void stop() {
     if (backend != null) {
       backend.shutdown();
+    }
+    if (serverWithHotspots != null) {
+      serverWithHotspots.shutdown();
     }
   }
 
@@ -75,10 +85,10 @@ class AnalysysForcedByClientMediumTests {
       .build(client);
 
     backend.getAnalysisService().analyzeFileList(
-        new AnalyzeFileListParams(CONFIG_SCOPE_ID, List.of(fileUri1, fileUri2)));
+      new AnalyzeFileListParams(CONFIG_SCOPE_ID, List.of(fileUri1, fileUri2)));
     await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).hasSize(2));
 
-    var raisedIssues = client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID);
+    var raisedIssues = client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID);
     assertThat(raisedIssues).hasSize(2);
   }
 
@@ -106,7 +116,7 @@ class AnalysysForcedByClientMediumTests {
     backend.getAnalysisService().analyzeOpenFiles(new AnalyzeOpenFilesParams(CONFIG_SCOPE_ID));
     await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).hasSize(2));
 
-    var raisedIssues = client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID);
+    var raisedIssues = client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID);
     assertThat(raisedIssues).hasSize(2);
   }
 
@@ -143,8 +153,108 @@ class AnalysysForcedByClientMediumTests {
     backend.getAnalysisService().analyzeVCSChangedFiles(new AnalyzeVCSChangedFilesParams(CONFIG_SCOPE_ID));
     await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).hasSize(2));
 
-    var raisedIssues = client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID);
+    var raisedIssues = client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID);
     assertThat(raisedIssues).hasSize(2);
+  }
+
+  @Test
+  void should_run_forced_full_project_analysis_only_for_hotspots(@TempDir Path baseDir) {
+    var fileFoo = createFile(baseDir, "Foo.java", "public class Foo {\n" +
+      "\n" +
+      "  void foo() {\n" +
+      "    String password = \"blue\";\n" +
+      "  }\n" +
+      "}\n");
+    var fileBar = createFile(baseDir, "Bar.java", "");
+    var fileFooUri = fileFoo.toUri();
+    var fileBarUri = fileBar.toUri();
+
+    var connectionId = "connectionId";
+    var branchName = "branchName";
+    var projectKey = "projectKey";
+    serverWithHotspots = newSonarQubeServer("10.4")
+      .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java")
+        .withActiveRule("java:S2068", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
+      .withProject(projectKey,
+        project -> project
+          .withQualityProfile("qpKey")
+          .withBranch(branchName))
+      .withPlugin(TestPlugin.JAVA)
+      .start();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
+        new ClientFileDto(fileFooUri, baseDir.relativize(fileFoo), CONFIG_SCOPE_ID, false, null, fileFoo, null, null),
+        new ClientFileDto(fileBarUri, baseDir.relativize(fileBar), CONFIG_SCOPE_ID, false, null, fileBar, null, null)))
+      .build();
+    backend = newBackend()
+      .withFullSynchronization()
+      .withSecurityHotspotsEnabled()
+      .withSonarQubeConnection(connectionId, serverWithHotspots)
+      .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
+      .withExtraEnabledLanguagesInConnectedMode(JAVA)
+      .build(client);
+    await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> Assertions.assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
+
+    backend.getAnalysisService().analyzeFullProject(new AnalyzeFullProjectParams(CONFIG_SCOPE_ID, true));
+    await().during(500, TimeUnit.MILLISECONDS).untilAsserted(() ->
+      assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).hasSize(0));
+    await().during(500, TimeUnit.MILLISECONDS).untilAsserted(() ->
+      assertThat(client.getRaisedHotspotsForScopeIdAsList(CONFIG_SCOPE_ID)).hasSize(1));
+
+    var raisedHotspots = client.getRaisedHotspotsForScopeId(CONFIG_SCOPE_ID).get(fileFooUri);
+    assertThat(raisedHotspots).hasSize(1);
+  }
+
+  @Test
+  void should_run_forced_full_project_analysis_for_all_findings(@TempDir Path baseDir) {
+    var fileFoo = createFile(baseDir, "Foo.java", "public class Foo {\n" +
+      "\n" +
+      "  void foo() {\n" +
+      "    String password = \"blue\";\n" +
+      "  }\n" +
+      "}\n");
+    var fileBar = createFile(baseDir, "Bar.java", "");
+    var fileFooUri = fileFoo.toUri();
+    var fileBarUri = fileBar.toUri();
+
+    var connectionId = "connectionId";
+    var branchName = "branchName";
+    var projectKey = "projectKey";
+    serverWithHotspots = newSonarQubeServer("10.4")
+      .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java")
+        .withActiveRule("java:S2068", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR))
+        .withActiveRule("java:S1220", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
+      .withProject(projectKey,
+        project -> project
+          .withQualityProfile("qpKey")
+          .withBranch(branchName))
+      .withPlugin(TestPlugin.JAVA)
+      .start();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
+        new ClientFileDto(fileFooUri, baseDir.relativize(fileFoo), CONFIG_SCOPE_ID, false, null, fileFoo, null, null),
+        new ClientFileDto(fileBarUri, baseDir.relativize(fileBar), CONFIG_SCOPE_ID, false, null, fileBar, null, null)))
+      .build();
+    backend = newBackend()
+      .withFullSynchronization()
+      .withSecurityHotspotsEnabled()
+      .withSonarQubeConnection(connectionId, serverWithHotspots)
+      .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
+      .withExtraEnabledLanguagesInConnectedMode(JAVA)
+      .build(client);
+    await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> Assertions.assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
+
+
+    backend.getAnalysisService().analyzeFullProject(new AnalyzeFullProjectParams(CONFIG_SCOPE_ID, false));
+    await().during(500, TimeUnit.MILLISECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).hasSize(2));
+    await().during(500, TimeUnit.MILLISECONDS).untilAsserted(() -> assertThat(client.getRaisedHotspotsForScopeIdAsList(CONFIG_SCOPE_ID)).hasSize(1));
+
+    var raisedIssuesForFoo = client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID).get(fileFooUri);
+    var raisedIssuesForBar = client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID).get(fileBarUri);
+    var raisedHotspotsForFoo = client.getRaisedHotspotsForScopeId(CONFIG_SCOPE_ID).get(fileFooUri);
+    assertThat(raisedIssuesForFoo).hasSize(1);
+    assertThat(raisedIssuesForBar).hasSize(1);
+    assertThat(raisedHotspotsForFoo).hasSize(1);
   }
 
 }
