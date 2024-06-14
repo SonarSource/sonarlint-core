@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.grip.web.api;
 import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import java.net.URI;
 import org.sonarsource.sonarlint.core.grip.web.api.payload.SuggestFixRequestPayload;
 import org.sonarsource.sonarlint.core.grip.web.api.payload.SuggestFixResponsePayload;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
@@ -36,7 +37,8 @@ public class GripWebApi {
 
   public SuggestFixResponsePayload suggestFix(SuggestFixParams params, String fileContent) {
     var requestBody = serializeRequestBody(params, fileContent);
-    try (var response = httpClientProvider.getHttpClientWithPreemptiveAuth(params.getAuthenticationToken()).postWithBearer(getServiceUrl() + "api/suggest/", "application/json",
+    try (var response = httpClientProvider.getHttpClientWithPreemptiveAuth(params.getAuthenticationToken()).postWithBearer(
+      ensureTrailingSlash(params.getServiceURI()) + "api/suggest/", "application/json",
       requestBody)) {
       return deserializeResponseBody(response.bodyAsString());
     }
@@ -54,7 +56,8 @@ public class GripWebApi {
     return new Gson().fromJson(body, SuggestFixResponsePayload.class);
   }
 
-  private static String getServiceUrl() {
-    return System.getProperty("sonarlint.grip.url", "https://beta.sonar-grip-dev.io/");
+  private static String ensureTrailingSlash(URI uri) {
+    var uriString = uri.toString();
+    return uriString.endsWith("/") ? uriString : (uriString + "/");
   }
 }
