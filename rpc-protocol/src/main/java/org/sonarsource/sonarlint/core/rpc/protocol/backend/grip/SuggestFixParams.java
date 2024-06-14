@@ -23,6 +23,7 @@ import java.net.URI;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 
 public class SuggestFixParams {
+  private final URI serviceURI;
   private final String authenticationToken;
   private final String configurationScopeId;
   private final URI fileUri;
@@ -30,13 +31,18 @@ public class SuggestFixParams {
   private final TextRangeDto issueRange;
   private final String ruleKey;
 
-  public SuggestFixParams(String authenticationToken, String configurationScopeId, URI fileUri, String issueMessage, TextRangeDto issueRange, String ruleKey) {
+  public SuggestFixParams(URI serviceURI, String authenticationToken, String configurationScopeId, URI fileUri, String issueMessage, TextRangeDto issueRange, String ruleKey) {
+    this.serviceURI = serviceURI;
     this.authenticationToken = authenticationToken;
     this.configurationScopeId = configurationScopeId;
     this.fileUri = fileUri;
     this.issueMessage = issueMessage;
     this.issueRange = issueRange;
     this.ruleKey = ruleKey;
+  }
+
+  public URI getServiceURI() {
+    return serviceURI;
   }
 
   public String getAuthenticationToken() {

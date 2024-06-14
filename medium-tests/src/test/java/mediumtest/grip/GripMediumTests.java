@@ -19,6 +19,7 @@
  */
 package mediumtest.grip;
 
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -105,7 +106,7 @@ class GripMediumTests {
       .build(client);
 
     var response = backend.getGripService()
-      .suggestFix(new SuggestFixParams("token", CONFIG_SCOPE_ID, filePath.toUri(), CURRENT_ISSUE.message, CURRENT_ISSUE.textRange, CURRENT_ISSUE.ruleKey))
+      .suggestFix(new SuggestFixParams(URI.create("https://localhost:8080/"), "token", CONFIG_SCOPE_ID, filePath.toUri(), CURRENT_ISSUE.message, CURRENT_ISSUE.textRange, CURRENT_ISSUE.ruleKey))
       .join();
 
     assertThat(response.getText()).isEqualTo("Hello, world!");
