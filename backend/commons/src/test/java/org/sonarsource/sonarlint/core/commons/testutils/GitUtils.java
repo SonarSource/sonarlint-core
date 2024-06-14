@@ -60,7 +60,7 @@ public class GitUtils {
     if (paths.length > 0) {
       var add = git.add();
       for (String p : paths) {
-        add.addFilepattern(p);
+        add.addFilepattern(FilenameUtils.separatorsToUnix(p));
       }
       add.call();
     }

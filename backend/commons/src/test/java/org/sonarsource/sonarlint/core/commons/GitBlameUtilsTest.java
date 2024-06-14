@@ -29,12 +29,10 @@ import org.eclipse.jgit.util.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.io.TempDir;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.jgit.util.FileUtils.RECURSIVE;
-import static org.junit.jupiter.api.condition.OS.WINDOWS;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createFile;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRepository;
@@ -69,14 +67,14 @@ class GitBlameUtilsTest {
   }
 
   @Test
-  @EnabledOnOs(WINDOWS)
-  void it_should_blame_file_with_windows_paths() throws IOException, GitAPIException {
-    var windowsStylePath = "windir\\fileA";
-    createFile(projectDir, windowsStylePath, "line1", "line2", "line3");
-    var c1 = commit(git, windowsStylePath);
+  void it_should_blame_file_within_inner_dir() throws IOException, GitAPIException {
+    var deepFilePath = Path.of("innerDir").resolve("fileA").toString();
 
-    var sonarLintBlameResult = GitBlameUtils.blameWithFilesGitCommand(projectDir, Set.of(Path.of(windowsStylePath)));
-    var latestChangeDate = sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of(windowsStylePath), List.of(1, 2));
+    createFile(projectDir, deepFilePath, "line1", "line2", "line3");
+    var c1 = commit(git, deepFilePath);
+
+    var sonarLintBlameResult = GitBlameUtils.blameWithFilesGitCommand(projectDir, Set.of(Path.of(deepFilePath)));
+    var latestChangeDate = sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of(deepFilePath), List.of(1, 2));
     assertThat(latestChangeDate).isPresent().contains(c1);
   }
 }
