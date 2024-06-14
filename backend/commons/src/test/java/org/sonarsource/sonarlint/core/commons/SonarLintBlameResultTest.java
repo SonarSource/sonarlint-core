@@ -45,41 +45,39 @@ import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.modifyFi
 
 class SonarLintBlameResultTest {
 
-  @TempDir
-  private static Path baseDir;
   private Git git;
-  private Path gitDirPath;
+  @TempDir
+  private Path projectDir;
 
   @BeforeEach
   public void prepare() throws IOException {
-    gitDirPath = baseDir.resolve("gitDir");
-    git = createRepository(gitDirPath);
+    git = createRepository(projectDir);
   }
 
   @AfterEach
   public void cleanup() throws IOException {
-    FileUtils.delete(gitDirPath.toFile(), RECURSIVE);
+    FileUtils.delete(projectDir.toFile(), RECURSIVE);
   }
 
   @Test
   void it_should_return_correct_latest_changed_date_for_file_lines() throws IOException, GitAPIException, InterruptedException {
-    createFile(gitDirPath, "fileA", "line1", "line2", "line3");
+    createFile(projectDir, "fileA", "line1", "line2", "line3");
     var c1 = commit(git, "fileA");
 
     // Wait for one second to achieve different commit time
     TimeUnit.MILLISECONDS.sleep(10);
-    appendFile(gitDirPath.resolve("fileA"), "new line 4");
+    appendFile(projectDir.resolve("fileA"), "new line 4");
     var c2 = commit(git, "fileA");
 
     // Wait for one second to achieve different commit time
     TimeUnit.MILLISECONDS.sleep(10);
-    createFile(gitDirPath, "fileB", "line1", "line2", "line3");
+    createFile(projectDir, "fileB", "line1", "line2", "line3");
     var c3 = commit(git, "fileB");
 
-    createFile(gitDirPath, "fileC", "line1", "line2", "line3");
+    createFile(projectDir, "fileC", "line1", "line2", "line3");
     commit(git, "fileC");
 
-    var results = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA"), Path.of("fileB")));
+    var results = GitBlameUtils.blameWithFilesGitCommand(projectDir, Set.of(Path.of("fileA"), Path.of("fileB")));
 
     assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(1, 2))).isPresent().contains(c1);
     assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(2, 3))).isPresent().contains(c1);
@@ -90,38 +88,38 @@ class SonarLintBlameResultTest {
 
   @Test
   void it_should_handle_all_line_modified() throws IOException, GitAPIException {
-    createFile(gitDirPath, "fileA", "line1", "line2", "line3");
+    createFile(projectDir, "fileA", "line1", "line2", "line3");
     var c1 = commit(git, "fileA");
 
-    var results = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA")));
+    var results = GitBlameUtils.blameWithFilesGitCommand(projectDir, Set.of(Path.of("fileA")));
     assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(1, 2, 3))).isPresent().contains(c1);
 
-    modifyFile(gitDirPath.resolve("fileA"), "new line1", "new line2", "new line3");
+    modifyFile(projectDir.resolve("fileA"), "new line1", "new line2", "new line3");
 
-    results = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA")));
+    results = GitBlameUtils.blameWithFilesGitCommand(projectDir, Set.of(Path.of("fileA")));
     assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(1, 2, 3))).isEmpty();
   }
 
   @Test
   void it_should_handle_end_of_line_modified() throws IOException, GitAPIException {
-    createFile(gitDirPath, "fileA", "line1", "line2");
+    createFile(projectDir, "fileA", "line1", "line2");
     var c1 = commit(git, "fileA");
 
-    var results = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA")));
+    var results = GitBlameUtils.blameWithFilesGitCommand(projectDir, Set.of(Path.of("fileA")));
     assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(1, 2))).isPresent().contains(c1);
 
-    appendFile(gitDirPath.resolve("fileA"), "new line3", "new line4");
+    appendFile(projectDir.resolve("fileA"), "new line3", "new line4");
 
-    results = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA")));
+    results = GitBlameUtils.blameWithFilesGitCommand(projectDir, Set.of(Path.of("fileA")));
     assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(1, 2, 3))).isEmpty();
   }
 
   @Test
   void it_should_handle_dodgy_input() throws IOException, GitAPIException {
-    createFile(gitDirPath, "fileA", "line1", "line2", "line3");
+    createFile(projectDir, "fileA", "line1", "line2", "line3");
     var c1 = commit(git, "fileA");
 
-    var results = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA"), Path.of("fileB")));
+    var results = GitBlameUtils.blameWithFilesGitCommand(projectDir, Set.of(Path.of("fileA"), Path.of("fileB")));
 
     assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"),
       IntStream.rangeClosed(1, 100).boxed().collect(Collectors.toList()))).isPresent().contains(c1);
@@ -131,13 +129,26 @@ class SonarLintBlameResultTest {
 
   @Test
   void it_should_raise_exception_if_wrong_line_numbering_provided() throws IOException, GitAPIException {
-    createFile(gitDirPath, "fileA", "line1", "line2", "line3");
+    createFile(projectDir, "fileA", "line1", "line2", "line3");
     commit(git, "fileA");
 
     var fileA = Path.of("fileA");
-    var results = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(fileA));
+    var results = GitBlameUtils.blameWithFilesGitCommand(projectDir, Set.of(fileA));
     var invalidLineNumbers = List.of(0, 1, 2);
     assertThrows(IllegalArgumentException.class, () -> results.getLatestChangeDateForLinesInFile(fileA, invalidLineNumbers));
+  }
+
+  @Test
+  void it_should_handle_windows_paths() throws IOException, GitAPIException {
+    var windowsStylePath = "windir\\fileA";
+    createFile(projectDir, windowsStylePath, "line1", "line2", "line3");
+    var c1 = commit(git, windowsStylePath);
+
+    var results = GitBlameUtils.blameWithFilesGitCommand(projectDir, Set.of(Path.of(windowsStylePath)));
+    assertThat(results.getLatestChangeDateForLinesInFile(
+      Path.of(windowsStylePath),
+      IntStream.rangeClosed(1, 100).boxed().collect(Collectors.toList())))
+      .isPresent().contains(c1);
   }
 
 }

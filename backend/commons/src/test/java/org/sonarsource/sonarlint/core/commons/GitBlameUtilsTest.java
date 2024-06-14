@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.commons;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -38,32 +39,41 @@ import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRe
 
 class GitBlameUtilsTest {
 
-  @TempDir
-  private static Path baseDir;
   private Git git;
-  private Path gitDirPath;
+  @TempDir
+  private Path projectDir;
 
   @BeforeEach
   public void prepare() throws IOException {
-    gitDirPath = baseDir.resolve("gitDir");
-    git = createRepository(gitDirPath);
+    git = createRepository(projectDir);
   }
 
   @AfterEach
   public void cleanup() throws IOException {
-    FileUtils.delete(gitDirPath.toFile(), RECURSIVE);
+    FileUtils.delete(projectDir.toFile(), RECURSIVE);
   }
 
   @Test
   void it_should_blame_file() throws IOException, GitAPIException {
-    createFile(gitDirPath, "fileA", "line1", "line2", "line3");
+    createFile(projectDir, "fileA", "line1", "line2", "line3");
     var c1 = commit(git, "fileA");
 
-    var sonarLintBlameResult = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA")));
+    var sonarLintBlameResult = GitBlameUtils.blameWithFilesGitCommand(projectDir, Set.of(Path.of("fileA")));
     var blameResult = sonarLintBlameResult.getBlameResult();
     assertThat(blameResult.getFileBlameByPath()).hasSize(1);
     assertThat(blameResult.getFileBlameByPath().get("fileA").getCommitDates())
       .hasSize(3)
       .allMatch(date -> date.equals(c1));
+  }
+
+  @Test
+  void it_should_blame_file_with_windows_paths() throws IOException, GitAPIException {
+    var windowsStylePath = "windir\\fileA";
+    createFile(projectDir, windowsStylePath, "line1", "line2", "line3");
+    var c1 = commit(git, windowsStylePath);
+
+    var sonarLintBlameResult = GitBlameUtils.blameWithFilesGitCommand(projectDir, Set.of(Path.of(windowsStylePath)));
+    var latestChangeDate = sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of(windowsStylePath), List.of(1, 2));
+    assertThat(latestChangeDate).isPresent().contains(c1);
   }
 }
