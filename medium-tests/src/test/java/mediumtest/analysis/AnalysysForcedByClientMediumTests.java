@@ -197,12 +197,18 @@ class AnalysisForcedByClientMediumTests {
 
     backend.getAnalysisService().analyzeFullProject(new AnalyzeFullProjectParams(CONFIG_SCOPE_ID, true));
     await().during(500, TimeUnit.MILLISECONDS).untilAsserted(() ->
-      assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).hasSize(0));
+      assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty());
     await().during(500, TimeUnit.MILLISECONDS).untilAsserted(() ->
       assertThat(client.getRaisedHotspotsForScopeIdAsList(CONFIG_SCOPE_ID)).hasSize(1));
 
-    var raisedHotspots = client.getRaisedHotspotsForScopeId(CONFIG_SCOPE_ID).get(fileFooUri);
-    assertThat(raisedHotspots).hasSize(1);
+    var raisedIssuesForFoo = client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID).get(fileFooUri);
+    var raisedIssuesForBar = client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID).get(fileBarUri);
+    var raisedHotspotsForFoo = client.getRaisedHotspotsForScopeId(CONFIG_SCOPE_ID).get(fileFooUri);
+    var raisedHotspotsForBar = client.getRaisedHotspotsForScopeId(CONFIG_SCOPE_ID).get(fileBarUri);
+    assertThat(raisedIssuesForFoo).isEmpty();
+    assertThat(raisedIssuesForBar).isEmpty();
+    assertThat(raisedHotspotsForFoo).hasSize(1);
+    assertThat(raisedHotspotsForBar).isEmpty();
   }
 
   @Test
@@ -252,9 +258,11 @@ class AnalysisForcedByClientMediumTests {
     var raisedIssuesForFoo = client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID).get(fileFooUri);
     var raisedIssuesForBar = client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID).get(fileBarUri);
     var raisedHotspotsForFoo = client.getRaisedHotspotsForScopeId(CONFIG_SCOPE_ID).get(fileFooUri);
+    var raisedHotspotsForBar = client.getRaisedHotspotsForScopeId(CONFIG_SCOPE_ID).get(fileBarUri);
     assertThat(raisedIssuesForFoo).hasSize(1);
     assertThat(raisedIssuesForBar).hasSize(1);
     assertThat(raisedHotspotsForFoo).hasSize(1);
+    assertThat(raisedHotspotsForBar).isEmpty();
   }
 
 }
