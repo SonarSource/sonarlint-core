@@ -118,7 +118,7 @@ class ClientFileExclusionsMediumTests {
   }
 
   @Test
-  void it_should_not_exclude_client_defined_file_exclusion_in_standalone_mode(@TempDir Path baseDir) {
+  void it_should_not_exclude_client_defined_file_exclusion_in_connected_mode(@TempDir Path baseDir) {
     var ideFilePath = "Foo.java";
     var filePath = createFile(baseDir, ideFilePath,
       "// FIXME foo bar\n" +

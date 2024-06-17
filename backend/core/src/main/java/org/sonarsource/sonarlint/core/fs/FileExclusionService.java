@@ -193,8 +193,8 @@ public class FileExclusionService {
       return files;
     }
 
-    Set<String> fileExclusionsGlobPatterns = getClientFileExclusionPatterns(configurationScopeId);
-    List<PathMatcher> matchers = parseGlobPatterns(fileExclusionsGlobPatterns);
+    var fileExclusionsGlobPatterns = getClientFileExclusionPatterns(configurationScopeId);
+    var matchers = parseGlobPatterns(fileExclusionsGlobPatterns);
     Predicate<URI> fileExclusionFilter = uri -> matchers.stream().noneMatch(matcher -> matcher.matches(Paths.get(uri)));
 
     return files.stream()

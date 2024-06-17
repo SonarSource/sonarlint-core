@@ -20,12 +20,11 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.client.analysis;
 
 import java.util.Set;
-import javax.annotation.Nullable;
 
 public class GetFileExclusionsResponse {
   private final Set<String> fileExclusionPatterns;
 
-  public GetFileExclusionsResponse(@Nullable Set<String> fileExclusionPatterns) {
+  public GetFileExclusionsResponse(Set<String> fileExclusionPatterns) {
     this.fileExclusionPatterns = fileExclusionPatterns;
   }
 
