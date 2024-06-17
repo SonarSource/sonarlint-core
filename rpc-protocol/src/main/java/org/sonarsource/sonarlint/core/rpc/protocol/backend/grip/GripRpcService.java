@@ -30,4 +30,10 @@ public interface GripRpcService {
    */
   @JsonRequest
   CompletableFuture<SuggestFixResponse> suggestFix(SuggestFixParams params);
+
+  /**
+   * Lets users provide feedback about the fix suggestion.
+   */
+  @JsonRequest
+  CompletableFuture<Void> provideFeedback(ProvideFeedbackParams params);
 }

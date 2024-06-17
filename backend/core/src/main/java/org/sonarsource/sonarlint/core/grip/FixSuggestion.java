@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,33 +17,43 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.grip;
+package org.sonarsource.sonarlint.core.grip;
 
 import java.util.UUID;
-import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
-public class SuggestFixResponse {
+public class FixSuggestion {
   private final UUID correlationId;
-  private final String text;
-  private final SuggestedFixDto suggestedFix;
+  private final String ruleKey;
+  private final long responseTime;
+  private final String before;
+  private final String after;
 
-  public SuggestFixResponse(UUID correlationId, String text, @Nullable SuggestedFixDto suggestedFix) {
+  public FixSuggestion(UUID correlationId, String ruleKey, long responseTime, @Nullable String before, @Nullable String after) {
     this.correlationId = correlationId;
-    this.text = text;
-    this.suggestedFix = suggestedFix;
+    this.ruleKey = ruleKey;
+    this.responseTime = responseTime;
+    this.before = before;
+    this.after = after;
   }
 
   public UUID getCorrelationId() {
     return correlationId;
   }
 
-  public String getText() {
-    return text;
+  public String getRuleKey() {
+    return ruleKey;
   }
 
-  @CheckForNull
-  public SuggestedFixDto getSuggestedFix() {
-    return suggestedFix;
+  public long getResponseTime() {
+    return responseTime;
+  }
+
+  public String getBefore() {
+    return before;
+  }
+
+  public String getAfter() {
+    return after;
   }
 }

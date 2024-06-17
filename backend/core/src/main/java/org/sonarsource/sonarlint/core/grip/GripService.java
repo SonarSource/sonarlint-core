@@ -20,8 +20,11 @@
 package org.sonarsource.sonarlint.core.grip;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.inject.Named;
@@ -31,6 +34,7 @@ import org.sonarsource.sonarlint.core.grip.web.api.GripWebApi;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.DiffDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.LineRangeDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.ProvideFeedbackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestFixParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestFixResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestedFixDto;
@@ -40,6 +44,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestedFixDto;
 public class GripService {
   private final GripWebApi gripWebApi;
   private final ClientFileSystemService fileSystemService;
+  private final Map<UUID, FixSuggestion> pastSuggestionsById = new HashMap<>();
 
   public GripService(HttpClientProvider httpClientProvider, ClientFileSystemService fileSystemService) {
     this.gripWebApi = new GripWebApi(httpClientProvider);
@@ -53,9 +58,10 @@ public class GripService {
       throw new IllegalStateException("Cannot find the file with URI: " + fileUri);
     }
     var fileContent = clientFile.getContent();
+    var startTime = System.currentTimeMillis();
     var response = gripWebApi.suggestFix(params, fileContent);
-    var responseMessage = response.choices.get(response.choices.size() - 1).message.content;
-    var fixResponse = parseResponse(responseMessage);
+    var fixResponse = parseResponse(response.getContent());
+    var endTime = System.currentTimeMillis();
     SuggestedFixDto suggestedFix = null;
     if (fixResponse.snippets.size() >= 2) {
       var snippetLineRange = locateSnippet(fileContent, fixResponse.snippets.get(0));
@@ -66,7 +72,10 @@ public class GripService {
           fixResponse.explanation);
       }
     }
-    return new SuggestFixResponse(responseMessage, suggestedFix);
+    pastSuggestionsById.put(response.getCorrelationId(),
+      new FixSuggestion(response.getCorrelationId(), params.getRuleKey(), endTime - startTime, fixResponse.snippets.isEmpty() ? null : fixResponse.snippets.get(0),
+        fixResponse.snippets.size() <= 1 ? null : fixResponse.snippets.get(1)));
+    return new SuggestFixResponse(response.getCorrelationId(), response.getContent(), suggestedFix);
   }
 
   /**
@@ -134,6 +143,15 @@ public class GripService {
       }
     }
     return new GripResponse(snippets, freeText.toString());
+  }
+
+  public void provideFeedback(ProvideFeedbackParams params) {
+    var correlationId = params.getCorrelationId();
+    var pastSuggestion = pastSuggestionsById.get(correlationId);
+    if (pastSuggestion == null) {
+      throw new IllegalArgumentException("Cannot find previous suggestion with ID=" + correlationId);
+    }
+    gripWebApi.provideFeedback(params, pastSuggestion);
   }
 
   private static class GripResponse {

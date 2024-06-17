@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.grip.GripService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.GripRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.ProvideFeedbackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestFixParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestFixResponse;
 
@@ -34,5 +35,10 @@ class GripRpcServiceDelegate extends AbstractRpcServiceDelegate implements GripR
   @Override
   public CompletableFuture<SuggestFixResponse> suggestFix(SuggestFixParams params) {
     return requestAsync(cancelChecker -> getBean(GripService.class).suggestFix(params));
+  }
+
+  @Override
+  public CompletableFuture<Void> provideFeedback(ProvideFeedbackParams params) {
+    return runAsync(cancelChecker -> getBean(GripService.class).provideFeedback(params), null);
   }
 }

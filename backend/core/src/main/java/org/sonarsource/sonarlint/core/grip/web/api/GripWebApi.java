@@ -23,32 +23,55 @@ import com.google.gson.FieldNamingPolicy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.net.URI;
+import java.util.UUID;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.grip.FixSuggestion;
+import org.sonarsource.sonarlint.core.grip.web.api.payload.ProvideFeedbackRequestPayload;
 import org.sonarsource.sonarlint.core.grip.web.api.payload.SuggestFixRequestPayload;
 import org.sonarsource.sonarlint.core.grip.web.api.payload.SuggestFixResponsePayload;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.ProvideFeedbackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestFixParams;
 
 public class GripWebApi {
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final HttpClientProvider httpClientProvider;
 
   public GripWebApi(HttpClientProvider httpClientProvider) {
     this.httpClientProvider = httpClientProvider;
   }
 
-  public SuggestFixResponsePayload suggestFix(SuggestFixParams params, String fileContent) {
-    var requestBody = serializeRequestBody(params, fileContent);
+  public SuggestFixResponse suggestFix(SuggestFixParams params, String fileContent) {
+    var requestBody = serializeFixRequestBody(params, fileContent);
+    LOG.info("Requesting suggestion from GRIP service: {}", requestBody);
     try (var response = httpClientProvider.getHttpClientWithPreemptiveAuth(params.getAuthenticationToken()).postWithBearer(
       ensureTrailingSlash(params.getServiceURI()) + "api/suggest/", "application/json",
       requestBody)) {
-      return deserializeResponseBody(response.bodyAsString());
+      var responseBody = deserializeResponseBody(response.bodyAsString());
+      return new SuggestFixResponse(UUID.fromString(response.header("X-Correlation-Id")), responseBody.choices.get(responseBody.choices.size() - 1).message.content);
     }
   }
 
-  private static String serializeRequestBody(SuggestFixParams params, String fileContent) {
+  public void provideFeedback(ProvideFeedbackParams params, FixSuggestion fixSuggestion) {
+    var requestBody = serializeFeedbackRequestBody(params, fixSuggestion);
+    try (var ignored = httpClientProvider.getHttpClientWithPreemptiveAuth(params.getAuthenticationToken()).postWithBearer(
+      ensureTrailingSlash(params.getServiceURI()) + "api/feedback/", "application/json",
+      requestBody)) {
+    }
+  }
+
+  private static String serializeFixRequestBody(SuggestFixParams params, String fileContent) {
     var issueRange = params.getIssueRange();
     var textRangePayload = new SuggestFixRequestPayload.TextRangePayload(issueRange.getStartLine(), issueRange.getStartLineOffset(), issueRange.getEndLine(),
       issueRange.getEndLineOffset());
     var requestPayload = new SuggestFixRequestPayload(fileContent, params.getIssueMessage(), params.getRuleKey(), textRangePayload);
+    return new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create().toJson(requestPayload);
+  }
+
+  private static String serializeFeedbackRequestBody(ProvideFeedbackParams params, FixSuggestion fixSuggestion) {
+    var rating = params.getRating();
+    var requestPayload = new ProvideFeedbackRequestPayload(fixSuggestion.getRuleKey(), params.isAccepted(), rating == null ? null : rating.name(), params.getComment(),
+      new ProvideFeedbackRequestPayload.ContextPayload(params.getCorrelationId(), fixSuggestion.getResponseTime(), fixSuggestion.getBefore(), fixSuggestion.getAfter()));
     return new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create().toJson(requestPayload);
   }
 

@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.commons.testutils;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import mockwebserver3.Dispatcher;
@@ -104,6 +105,10 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
 
   public String url(String path) {
     return server.url(path).toString();
+  }
+
+  public URI uri() {
+    return server.url("").uri();
   }
 
   public void addResponseFromResource(String path, String responseResourcePath) {
