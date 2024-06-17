@@ -19,31 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.grip;
 
-import java.util.UUID;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
-
-public class SuggestFixResponse {
-  private final UUID correlationId;
-  private final String text;
-  private final SuggestedFixDto suggestedFix;
-
-  public SuggestFixResponse(UUID correlationId, String text, @Nullable SuggestedFixDto suggestedFix) {
-    this.correlationId = correlationId;
-    this.text = text;
-    this.suggestedFix = suggestedFix;
-  }
-
-  public UUID getCorrelationId() {
-    return correlationId;
-  }
-
-  public String getText() {
-    return text;
-  }
-
-  @CheckForNull
-  public SuggestedFixDto getSuggestedFix() {
-    return suggestedFix;
-  }
+public enum FeedbackRating {
+  BAD, OK, VERY_GOOD
 }

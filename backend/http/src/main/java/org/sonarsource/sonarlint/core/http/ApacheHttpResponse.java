@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.http;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
+import org.apache.hc.core5.http.ProtocolException;
 
 class ApacheHttpResponse implements HttpClient.Response {
 
@@ -36,6 +37,15 @@ class ApacheHttpResponse implements HttpClient.Response {
   @Override
   public int code() {
     return response.getCode();
+  }
+
+  @Override
+  public String header(String name) {
+    try {
+      return response.getHeader(name).getValue();
+    } catch (ProtocolException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override

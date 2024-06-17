@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,33 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.grip;
+package org.sonarsource.sonarlint.core.grip.web.api;
 
 import java.util.UUID;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
 
 public class SuggestFixResponse {
   private final UUID correlationId;
-  private final String text;
-  private final SuggestedFixDto suggestedFix;
+  private final String content;
 
-  public SuggestFixResponse(UUID correlationId, String text, @Nullable SuggestedFixDto suggestedFix) {
+  public SuggestFixResponse(UUID correlationId, String content) {
     this.correlationId = correlationId;
-    this.text = text;
-    this.suggestedFix = suggestedFix;
+    this.content = content;
   }
 
   public UUID getCorrelationId() {
     return correlationId;
   }
 
-  public String getText() {
-    return text;
-  }
-
-  @CheckForNull
-  public SuggestedFixDto getSuggestedFix() {
-    return suggestedFix;
+  public String getContent() {
+    return content;
   }
 }

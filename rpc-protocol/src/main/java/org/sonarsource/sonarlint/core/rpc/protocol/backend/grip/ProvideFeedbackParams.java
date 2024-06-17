@@ -19,31 +19,47 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.grip;
 
+import java.net.URI;
 import java.util.UUID;
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
 
-public class SuggestFixResponse {
+public class ProvideFeedbackParams {
+  private final URI serviceURI;
+  private final String authenticationToken;
   private final UUID correlationId;
-  private final String text;
-  private final SuggestedFixDto suggestedFix;
+  private final boolean accepted;
+  private final FeedbackRating rating;
+  private final String comment;
 
-  public SuggestFixResponse(UUID correlationId, String text, @Nullable SuggestedFixDto suggestedFix) {
+  public ProvideFeedbackParams(URI serviceURI, String authenticationToken, UUID correlationId, boolean accepted, FeedbackRating rating, String comment) {
+    this.serviceURI = serviceURI;
+    this.authenticationToken = authenticationToken;
     this.correlationId = correlationId;
-    this.text = text;
-    this.suggestedFix = suggestedFix;
+    this.accepted = accepted;
+    this.rating = rating;
+    this.comment = comment;
+  }
+
+  public URI getServiceURI() {
+    return serviceURI;
+  }
+
+  public String getAuthenticationToken() {
+    return authenticationToken;
   }
 
   public UUID getCorrelationId() {
     return correlationId;
   }
 
-  public String getText() {
-    return text;
+  public boolean isAccepted() {
+    return accepted;
   }
 
-  @CheckForNull
-  public SuggestedFixDto getSuggestedFix() {
-    return suggestedFix;
+  public FeedbackRating getRating() {
+    return rating;
+  }
+
+  public String getComment() {
+    return comment;
   }
 }

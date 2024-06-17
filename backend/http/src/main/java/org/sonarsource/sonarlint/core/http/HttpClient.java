@@ -35,6 +35,7 @@ public interface HttpClient {
   interface Response extends Closeable {
 
     int code();
+    String header(String name);
 
     default boolean isSuccessful() {
       return code() >= 200 && code() < 300;
