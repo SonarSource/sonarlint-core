@@ -518,7 +518,7 @@ public class AnalysisService {
     updatedFileUrisByConfigScope.forEach((configScopeId, fileUris) -> {
       var openFileUris = openFilesRepository.getOpenFilesAmong(configScopeId, fileUris);
       if (!openFileUris.isEmpty()) {
-        triggerAnalysis(configScopeId, openFileUris, false);
+        triggerAnalysis(configScopeId, openFileUris);
       }
     });
 
@@ -526,7 +526,7 @@ public class AnalysisService {
 
   @EventListener
   public void onFileOpened(FileOpenedEvent event) {
-    triggerAnalysis(event.getConfigurationScopeId(), List.of(event.getFileUri()), false);
+    triggerAnalysis(event.getConfigurationScopeId(), List.of(event.getFileUri()));
   }
 
   @EventListener
@@ -536,7 +536,7 @@ public class AnalysisService {
     openFilesRepository.getOpenFilesByConfigScopeId()
       .entrySet()
       .stream().filter(entry -> configurationRepository.getEffectiveBinding(entry.getKey()).isEmpty())
-      .forEach(entry -> triggerAnalysis(entry.getKey(), entry.getValue(), false));
+      .forEach(entry -> triggerAnalysis(entry.getKey(), entry.getValue()));
   }
 
   private void sendModuleEvents(List<ClientFile> filesToProcess, ModuleFileEvent.Type type) {
@@ -743,32 +743,38 @@ public class AnalysisService {
 
   public void analyzeFullProject(String configScopeId, boolean hotspotsOnly) {
     var files = clientFileSystemService.getFiles(configScopeId);
-    triggerAnalysis(configScopeId, files.stream().map(ClientFile::getUri).collect(Collectors.toList()), hotspotsOnly);
+    triggerForcedAnalysis(configScopeId, files.stream().map(ClientFile::getUri).collect(Collectors.toList()), hotspotsOnly);
   }
 
   public void analyzeFileList(String configScopeId, List<URI> filesToAnalyze) {
-    triggerAnalysis(configScopeId, filesToAnalyze, false);
+    triggerForcedAnalysis(configScopeId, filesToAnalyze, false);
   }
 
   public void analyzeOpenFiles(String configScopeId) {
     var openFiles = openFilesRepository.getOpenFilesForConfigScope(configScopeId);
-    triggerAnalysis(configScopeId, openFiles, false);
+    triggerForcedAnalysis(configScopeId, openFiles, false);
   }
 
   public void analyzeVCSChangedFiles(String configScopeId) {
     var changedFiles = GitUtils.getVSCChangedFiles(clientFileSystemService.getBaseDir(configScopeId));
-    triggerAnalysis(configScopeId, changedFiles, false);
+    triggerForcedAnalysis(configScopeId, changedFiles, false);
   }
 
   private void triggerAnalysisForOpenFiles() {
     openFilesRepository.getOpenFilesByConfigScopeId()
-      .forEach((configurationScopeId, files) -> triggerAnalysis(configurationScopeId, files, false));
+      .forEach((configurationScopeId, files) -> triggerForcedAnalysis(configurationScopeId, files, false));
   }
 
-  private void triggerAnalysis(String configurationScopeId, List<URI> files, boolean hotspotsOnly) {
+  private void triggerForcedAnalysis(String configurationScopeId, List<URI> files, boolean hotspotsOnly) {
+    if (shouldTriggerAutomaticAnalysis(configurationScopeId)) {
+      analyze(new SonarLintCancelMonitor(), configurationScopeId, UUID.randomUUID(), files, Map.of(), System.currentTimeMillis(), true, true, hotspotsOnly);
+    }
+  }
+
+  private void triggerAnalysis(String configurationScopeId, List<URI> files) {
     if (shouldTriggerAutomaticAnalysis(configurationScopeId)) {
       List<URI> filteredFiles = fileExclusionService.filterOutClientExcludedFiles(configurationScopeId, files);
-      analyze(new SonarLintCancelMonitor(), configurationScopeId, UUID.randomUUID(), filteredFiles, Map.of(), System.currentTimeMillis(), true, true, hotspotsOnly);
+      analyze(new SonarLintCancelMonitor(), configurationScopeId, UUID.randomUUID(), filteredFiles, Map.of(), System.currentTimeMillis(), true, true, false);
     }
   }
 
