@@ -35,8 +35,9 @@ import static org.eclipse.jgit.util.FileUtils.RECURSIVE;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createFile;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRepository;
+import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.modifyFile;
 
-class GitBlameUtilsTest {
+class GitUtilsTest {
 
   @TempDir
   private static Path baseDir;
@@ -59,11 +60,30 @@ class GitBlameUtilsTest {
     createFile(gitDirPath, "fileA", "line1", "line2", "line3");
     var c1 = commit(git, "fileA");
 
-    var sonarLintBlameResult = GitBlameUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA")));
+    var sonarLintBlameResult = GitUtils.blameWithFilesGitCommand(git.getRepository(), Set.of(Path.of("fileA")));
     var blameResult = sonarLintBlameResult.getBlameResult();
     assertThat(blameResult.getFileBlameByPath()).hasSize(1);
     assertThat(blameResult.getFileBlameByPath().get("fileA").getCommitDates())
       .hasSize(3)
       .allMatch(date -> date.equals(c1));
+  }
+
+  @Test
+  void it_should_get_uncommitted_files_ignoring_untracked_ones() throws GitAPIException, IOException {
+    var fileAName = "fileA";
+    var fileBName = "fileB";
+    var fileCName = "fileC";
+    var fileAUri = gitDirPath.resolve(fileAName).toUri();
+    var fileBUri = gitDirPath.resolve(fileBName).toUri();
+    createFile(gitDirPath, fileAName, "line1", "line2", "line3");
+    commit(git, fileAName);
+    modifyFile(gitDirPath.resolve(fileAName), "line1", "line2", "line3", "line4");
+    createFile(gitDirPath, fileBName, "line1", "line2", "line3");
+    git.add().addFilepattern(fileBName).call();
+    createFile(gitDirPath, fileCName, "line1", "line2", "line3");
+
+    var changedFiles = GitUtils.getVSCChangedFiles(gitDirPath);
+
+    assertThat(changedFiles).hasSize(2).contains(fileAUri).contains(fileBUri);
   }
 }

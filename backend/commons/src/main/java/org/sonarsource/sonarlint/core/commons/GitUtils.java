@@ -20,9 +20,13 @@
 package org.sonarsource.sonarlint.core.commons;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.RawTextComparator;
 import org.eclipse.jgit.lib.ObjectReader;
@@ -30,10 +34,27 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.sonar.scm.git.blame.RepositoryBlameCommand;
 
-public class GitBlameUtils {
+public class GitUtils {
 
-  private GitBlameUtils() {
+  private GitUtils() {
     // Utility class
+  }
+
+  public static List<URI> getVSCChangedFiles(@Nullable Path baseDir) {
+    if (baseDir == null) {
+      return List.of();
+    }
+    var repo = buildRepository(baseDir);
+    var git = new Git(repo);
+    try {
+      var status = git.status().call();
+      var uncommittedChanges = status.getUncommittedChanges();
+      return uncommittedChanges.stream()
+        .map(file -> baseDir.resolve(file).toUri())
+        .collect(Collectors.toList());
+    } catch (GitAPIException e) {
+      return List.of();
+    }
   }
 
   public static SonarLintBlameResult blameWithFilesGitCommand(Path baseDir, Set<Path> gitRelativePath) {

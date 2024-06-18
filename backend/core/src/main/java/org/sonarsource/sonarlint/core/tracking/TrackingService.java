@@ -35,7 +35,7 @@ import org.sonarsource.sonarlint.core.analysis.AnalysisFinishedEvent;
 import org.sonarsource.sonarlint.core.analysis.AnalysisStartedEvent;
 import org.sonarsource.sonarlint.core.analysis.RawIssueDetectedEvent;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
-import org.sonarsource.sonarlint.core.commons.GitBlameUtils;
+import org.sonarsource.sonarlint.core.commons.GitUtils;
 import org.sonarsource.sonarlint.core.commons.KnownFinding;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -263,7 +263,7 @@ public class TrackingService {
     var baseDir = getBaseDir(configurationScopeId);
     if (baseDir != null) {
       try {
-        var sonarLintBlameResult = GitBlameUtils.blameWithFilesGitCommand(baseDir, fileRelativePaths);
+        var sonarLintBlameResult = GitUtils.blameWithFilesGitCommand(baseDir, fileRelativePaths);
         return (filePath, lineNumbers) -> determineIntroductionDate(filePath, lineNumbers, sonarLintBlameResult);
       } catch (Exception e) {
         LOG.error("Cannot access blame info for " + configurationScopeId, e);
