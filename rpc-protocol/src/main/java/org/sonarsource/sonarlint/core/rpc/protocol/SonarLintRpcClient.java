@@ -33,6 +33,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnalysisReadinessParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidRaiseIssueParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetFileExclusionsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetFileExclusionsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSuggestionFoundParams;
@@ -319,4 +321,11 @@ public interface SonarLintRpcClient {
    */
   @JsonRequest
   CompletableFuture<GetInferredAnalysisPropertiesResponse> getInferredAnalysisProperties(GetInferredAnalysisPropertiesParams params);
+
+  /**
+   * Returns the file exclusion patterns in glob format.
+   * Can be empty set if there is no exclusion
+   */
+  @JsonRequest
+  CompletableFuture<GetFileExclusionsResponse> getFileExclusions(GetFileExclusionsParams params);
 }

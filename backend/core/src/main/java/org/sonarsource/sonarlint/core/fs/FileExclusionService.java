@@ -20,11 +20,18 @@
 package org.sonarsource.sonarlint.core.fs;
 
 import java.net.URI;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.sonar.api.CoreProperties;
@@ -36,8 +43,11 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
+import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.FileStatusDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetFileExclusionsParams;
 import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
 import org.sonarsource.sonarlint.core.serverconnection.IssueStorePaths;
 import org.sonarsource.sonarlint.core.serverconnection.SonarServerSettingsChangedEvent;
@@ -46,6 +56,7 @@ import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.event.EventListener;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 public class FileExclusionService {
@@ -65,17 +76,19 @@ public class FileExclusionService {
   private final StorageService storageService;
   private final PathTranslationService pathTranslationService;
   private final ClientFileSystemService clientFileSystemService;
+  private final SonarLintRpcClient client;
 
   private final SmartCancelableLoadingCache<URI, Boolean> serverExclusionByUriCache =
     new SmartCancelableLoadingCache<>("sonarlint-file-exclusions", this::computeIfExcluded, (key, oldValue, newValue) -> {
     });
 
   public FileExclusionService(ConfigurationRepository configRepo, StorageService storageService, PathTranslationService pathTranslationService,
-    ClientFileSystemService clientFileSystemService) {
+    ClientFileSystemService clientFileSystemService, SonarLintRpcClient client) {
     this.configRepo = configRepo;
     this.storageService = storageService;
     this.pathTranslationService = pathTranslationService;
     this.clientFileSystemService = clientFileSystemService;
+    this.client = client;
   }
 
   public boolean computeIfExcluded(URI fileUri, SonarLintCancelMonitor cancelMonitor) {
@@ -124,7 +137,7 @@ public class FileExclusionService {
     if (event.getNewConfig().isBound()) {
       var connectionId = requireNonNull(event.getNewConfig().getConnectionId());
       var projectKey = requireNonNull(event.getNewConfig().getSonarProjectKey());
-      // do not recompute exclusions if storage does not yey contain settings (will be done by onFileExclusionSettingsChanged later)
+      // do not recompute exclusions if storage does not yet contain settings (will be done by onFileExclusionSettingsChanged later)
       if (storageService.getStorageFacade().connection(connectionId).project(projectKey).analyzerConfiguration().isValid()) {
         LOG.debug("Binding changed for config scope '{}', recompute file exclusions...", event.getConfigScopeId());
         clientFileSystemService.getFiles(event.getConfigScopeId()).forEach(f -> serverExclusionByUriCache.refreshAsync(f.getUri()));
@@ -172,5 +185,49 @@ public class FileExclusionService {
 
   public boolean isExcluded(URI fileUri) {
     return Boolean.TRUE.equals(serverExclusionByUriCache.get(fileUri));
+  }
+
+  public List<URI> filterOutClientExcludedFiles(String configurationScopeId, List<URI> files) {
+    if (isConnectedMode(configurationScopeId)) {
+      // client-defined file exclusions only apply in standalone mode
+      return files;
+    }
+
+    var fileExclusionsGlobPatterns = getClientFileExclusionPatterns(configurationScopeId);
+    var matchers = parseGlobPatterns(fileExclusionsGlobPatterns);
+    Predicate<URI> fileExclusionFilter = uri -> matchers.stream().noneMatch(matcher -> matcher.matches(Paths.get(uri)));
+
+    return files.stream()
+      .filter(fileExclusionFilter)
+      .collect(toList());
+  }
+
+  private boolean isConnectedMode(String configurationScopeId) {
+    return Optional.ofNullable(configRepo.getBindingConfiguration(configurationScopeId))
+      .map(BindingConfiguration::isBound)
+      .orElse(false);
+  }
+
+  private Set<String> getClientFileExclusionPatterns(String configurationScopeId) {
+    try {
+      return client.getFileExclusions(new GetFileExclusionsParams(configurationScopeId)).join().getFileExclusionPatterns();
+    } catch (Exception e) {
+      LOG.error("Error when requesting the file exclusions", e);
+      return Collections.emptySet();
+    }
+  }
+
+  private static List<PathMatcher> parseGlobPatterns(Set<String> globPatterns) {
+    var fs = FileSystems.getDefault();
+
+    List<PathMatcher> parsedMatchers = new ArrayList<>(globPatterns.size());
+    for (String pattern : globPatterns) {
+      try {
+        parsedMatchers.add(fs.getPathMatcher("glob:" + pattern));
+      } catch (Exception e) {
+        // ignore invalid patterns, simply skip them
+      }
+    }
+    return parsedMatchers;
   }
 }

@@ -249,7 +249,6 @@ public class AnalysisService {
   }
 
   public AnalysisConfiguration getAnalysisConfigForEngine(String configScopeId, List<URI> filePathsToAnalyze, Map<String, String> extraProperties) {
-    // TODO check local exclusions
     var analysisConfig = getAnalysisConfig(configScopeId);
     var analysisProperties = analysisConfig.getAnalysisProperties();
     var inferredAnalysisProperties = client.getInferredAnalysisProperties(new GetInferredAnalysisPropertiesParams(configScopeId)).join().getProperties();
@@ -743,7 +742,8 @@ public class AnalysisService {
 
   private void triggerAnalysis(String configurationScopeId, List<URI> files) {
     if (shouldTriggerAutomaticAnalysis(configurationScopeId)) {
-      analyze(new SonarLintCancelMonitor(), configurationScopeId, UUID.randomUUID(), files, Map.of(), System.currentTimeMillis(), true, true);
+      List<URI> filteredFiles = fileExclusionService.filterOutClientExcludedFiles(configurationScopeId, files);
+      analyze(new SonarLintCancelMonitor(), configurationScopeId, UUID.randomUUID(), filteredFiles, Map.of(), System.currentTimeMillis(), true, true);
     }
   }
 

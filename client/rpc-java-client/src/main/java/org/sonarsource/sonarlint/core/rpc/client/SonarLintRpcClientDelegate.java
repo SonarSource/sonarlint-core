@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.rpc.client;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -201,5 +202,9 @@ public interface SonarLintRpcClientDelegate {
 
   default Map<String, String> getInferredAnalysisProperties(String configurationScopeId) throws ConfigScopeNotFoundException {
     return Map.of();
+  }
+
+  default Set<String> getFileExclusions(String configurationScopeId) throws ConfigScopeNotFoundException {
+    return Collections.emptySet();
   }
 }

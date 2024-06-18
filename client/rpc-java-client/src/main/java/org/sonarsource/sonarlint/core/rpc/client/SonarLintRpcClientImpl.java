@@ -41,6 +41,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidDetectSecr
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidRaiseIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetInferredAnalysisPropertiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetInferredAnalysisPropertiesResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetFileExclusionsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetFileExclusionsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSuggestionFoundParams;
@@ -385,6 +387,17 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
     return requestAsync(cancelChecker -> {
       try {
         return new GetInferredAnalysisPropertiesResponse(delegate.getInferredAnalysisProperties(params.getConfigurationScopeId()));
+      } catch (ConfigScopeNotFoundException e) {
+        throw configScopeNotFoundError(params.getConfigurationScopeId());
+      }
+    });
+  }
+
+  @Override
+  public CompletableFuture<GetFileExclusionsResponse> getFileExclusions(GetFileExclusionsParams params) {
+    return requestAsync(cancelChecker -> {
+      try {
+        return new GetFileExclusionsResponse(delegate.getFileExclusions(params.getConfigurationScopeId()));
       } catch (ConfigScopeNotFoundException e) {
         throw configScopeNotFoundError(params.getConfigurationScopeId());
       }
