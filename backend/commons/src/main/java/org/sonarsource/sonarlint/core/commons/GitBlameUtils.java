@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.io.FilenameUtils;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.RawTextComparator;
 import org.eclipse.jgit.lib.ObjectReader;
@@ -55,8 +56,9 @@ public class GitBlameUtils {
   }
 
   private static RepositoryBuilder getVerifiedRepositoryBuilder(Path basedir) {
+    var unixStyleBasedir = convertToUnixPath(basedir);
     RepositoryBuilder builder = new RepositoryBuilder()
-      .findGitDir(basedir.toFile())
+      .findGitDir(unixStyleBasedir.toFile())
       .setMustExist(true);
 
     if (builder.getGitDir() == null) {
@@ -65,8 +67,8 @@ public class GitBlameUtils {
     return builder;
   }
 
-  static SonarLintBlameResult blameWithFilesGitCommand(Repository repo, Set<Path> gitRelativePath) {
-    var pathStrings = gitRelativePath.stream().map(Path::toString).collect(Collectors.toSet());
+  private static SonarLintBlameResult blameWithFilesGitCommand(Repository repo, Set<Path> gitRelativePath) {
+    var pathStrings = gitRelativePath.stream().map(Path::toString).map(FilenameUtils::separatorsToUnix).collect(Collectors.toSet());
     RepositoryBlameCommand blameCommand = new RepositoryBlameCommand(repo)
       .setTextComparator(RawTextComparator.WS_IGNORE_ALL)
       .setMultithreading(true)
@@ -77,5 +79,9 @@ public class GitBlameUtils {
     } catch (GitAPIException e) {
       throw new IllegalStateException("Failed to blame repository files", e);
     }
+  }
+
+  private static Path convertToUnixPath(Path basedir) {
+    return Path.of(FilenameUtils.separatorsToUnix(basedir.toString()));
   }
 }

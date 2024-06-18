@@ -25,6 +25,10 @@
       <artifactId>org.eclipse.jgit</artifactId>
       <version>${jgit.version}</version>
     </dependency>
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+    </dependency>
     <!-- unit tests -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>

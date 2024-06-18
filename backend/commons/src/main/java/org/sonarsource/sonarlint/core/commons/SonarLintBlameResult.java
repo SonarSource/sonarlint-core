@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Optional;
 import javax.annotation.Nullable;
+import org.apache.commons.io.FilenameUtils;
 import org.sonar.scm.git.blame.BlameResult;
 
 import static java.util.Objects.isNull;
@@ -44,7 +45,7 @@ public class SonarLintBlameResult {
   public Optional<Date> getLatestChangeDateForLinesInFile(Path filePath, Collection<Integer> lineNumbers) {
     validateLineNumbersArgument(lineNumbers);
     var fileBlameByPath = blameResult.getFileBlameByPath();
-    var blameForFile = fileBlameByPath.get(filePath.toString());
+    var blameForFile = fileBlameByPath.get(FilenameUtils.separatorsToUnix(filePath.toString()));
     if (blameForFile == null) {
       return Optional.empty();
     }

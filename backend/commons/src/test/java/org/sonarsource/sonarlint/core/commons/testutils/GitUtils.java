@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.Date;
+import org.apache.commons.io.FilenameUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.PersonIdent;
@@ -47,7 +48,7 @@ public class GitUtils {
     if (paths.length > 0) {
       var add = git.add();
       for (String p : paths) {
-        add.addFilepattern(p);
+        add.addFilepattern(FilenameUtils.separatorsToUnix(p));
       }
       add.call();
     }
@@ -59,7 +60,7 @@ public class GitUtils {
     if (paths.length > 0) {
       var add = git.add();
       for (String p : paths) {
-        add.addFilepattern(p);
+        add.addFilepattern(FilenameUtils.separatorsToUnix(p));
       }
       add.call();
     }
