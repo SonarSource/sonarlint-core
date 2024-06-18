@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Medium Tests
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,20 +17,34 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package testutils;
+package org.sonarsource.sonarlint.core.rpc.protocol.adapter;
 
-import org.junit.jupiter.api.extension.AfterEachCallback;
-import org.junit.jupiter.api.extension.BeforeEachCallback;
-import org.junit.jupiter.api.extension.ExtensionContext;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
+import java.time.OffsetDateTime;
+import javax.annotation.Nullable;
 
-public class LogTestStartAndEnd implements BeforeEachCallback, AfterEachCallback {
+public class OffsetDateTimeAdapter extends TypeAdapter<OffsetDateTime> {
+
   @Override
-  public void beforeEach(ExtensionContext extensionContext) {
-    extensionContext.getTestMethod().ifPresent(method -> System.out.printf(">>> Before test %s%n", method.getName()));
+  public void write(JsonWriter out, @Nullable OffsetDateTime value) throws IOException {
+    if (value == null) {
+      out.nullValue();
+    } else {
+      out.value(value.toString());
+    }
   }
 
   @Override
-  public void afterEach(ExtensionContext extensionContext) {
-    extensionContext.getTestMethod().ifPresent(method -> System.out.printf("<<< After test %s%n", method.getName()));
+  public OffsetDateTime read(JsonReader in) throws IOException {
+    var peek = in.peek();
+    if (peek == JsonToken.NULL) {
+      in.nextNull();
+      return null;
+    }
+    return OffsetDateTime.parse(in.nextString());
   }
 }

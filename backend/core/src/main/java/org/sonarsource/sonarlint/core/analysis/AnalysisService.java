@@ -827,7 +827,7 @@ public class AnalysisService {
     scheduledAnalysisExecutor.submit(() -> {
       if (shouldTriggerAutomaticAnalysis(configurationScopeId)) {
         List<URI> filteredFiles = fileExclusionService.filterOutClientExcludedFiles(configurationScopeId, files);
-        analyze(new SonarLintCancelMonitor(), configurationScopeId, UUID.randomUUID(), filteredFiles, Map.of(), System.currentTimeMillis(), true, true, false);
+      analyze(new SonarLintCancelMonitor(), configurationScopeId, UUID.randomUUID(), filteredFiles, Map.of(), System.currentTimeMillis(), true, true, false);
       }
     });
   }

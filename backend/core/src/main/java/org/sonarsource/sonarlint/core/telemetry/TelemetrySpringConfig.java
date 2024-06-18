@@ -49,4 +49,9 @@ public class TelemetrySpringConfig {
     return System.getProperty(PROPERTY_TELEMETRY_ENDPOINT, TELEMETRY_ENDPOINT);
   }
 
+  @Bean(name = "initializeParams")
+  InitializeParams provideInitializeParams(InitializeParams params) {
+    return params;
+  }
+
 }

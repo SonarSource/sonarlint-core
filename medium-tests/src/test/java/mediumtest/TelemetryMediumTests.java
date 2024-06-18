@@ -20,6 +20,7 @@
 package mediumtest;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import java.time.OffsetDateTime;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.SonarLintTestRpcServer;
@@ -31,6 +32,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.OpenHotspotInBrowserParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryMigrationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddQuickFixAppliedForRuleParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddReportedRulesParams;
@@ -55,6 +58,7 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.telemetry.TelemetrySpringConfig.PROPERTY_TELEMETRY_ENDPOINT;
 
@@ -171,7 +175,7 @@ class TelemetryMediumTests {
     assertThat(backend.telemetryFilePath()).isNotEmptyFile();
 
     // Emulate another process has disabled telemetry
-    var telemetryLocalStorageManager = new TelemetryLocalStorageManager(backend.telemetryFilePath());
+    var telemetryLocalStorageManager = new TelemetryLocalStorageManager(backend.telemetryFilePath(), mock(InitializeParams.class));
     telemetryLocalStorageManager.tryUpdateAtomically(data -> data.setEnabled(false));
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isFalse();
@@ -417,6 +421,16 @@ class TelemetryMediumTests {
 
     backend.getTelemetryService().addedAutomaticBindings();
     await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"autoAddedBindingsCount\":1"));
+  }
+
+  @Test
+  void it_should_apply_telemetry_migration() throws ExecutionException, InterruptedException {
+    backend = newBackend()
+      .withTelemetryMigration(new TelemetryMigrationDto(OffsetDateTime.now(), 42, false))
+      .withTelemetryEnabled()
+      .build();
+
+    assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isFalse();
   }
 
   private void setupClientAndBackend() {

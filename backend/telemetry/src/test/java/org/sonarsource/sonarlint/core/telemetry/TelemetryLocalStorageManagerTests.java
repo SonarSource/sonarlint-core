@@ -46,12 +46,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryMigrationDto;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class TelemetryLocalStorageManagerTests {
 
@@ -65,7 +69,7 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void test_default_data() {
-    var storage = new TelemetryLocalStorageManager(filePath);
+    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
 
     var data = storage.tryRead();
     assertThat(filePath).doesNotExist();
@@ -83,7 +87,7 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void should_update_data() {
-    var storage = new TelemetryLocalStorageManager(filePath);
+    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
 
     storage.tryRead();
     assertThat(filePath).doesNotExist();
@@ -99,7 +103,7 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void should_fix_invalid_installTime() {
-    var storage = new TelemetryLocalStorageManager(filePath);
+    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
 
     storage.tryUpdateAtomically(data -> {
       data.setInstallTime(null);
@@ -114,7 +118,7 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void should_fix_invalid_numDays() {
-    var storage = new TelemetryLocalStorageManager(filePath);
+    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
 
     var tenDaysAgo = OffsetDateTime.now().minusDays(10);
 
@@ -132,7 +136,7 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void should_fix_dates_in_future() {
-    var storage = new TelemetryLocalStorageManager(filePath);
+    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
 
     storage.tryUpdateAtomically(data -> {
       data.setInstallTime(OffsetDateTime.now().plusDays(5));
@@ -149,7 +153,7 @@ class TelemetryLocalStorageManagerTests {
   @Test
   void should_not_crash_when_cannot_read_storage(@TempDir Path temp) {
     InternalDebug.setEnabled(false);
-    assertThatCode(() -> new TelemetryLocalStorageManager(temp).tryRead())
+    assertThatCode(() -> new TelemetryLocalStorageManager(temp, mock(InitializeParams.class)).tryRead())
       .doesNotThrowAnyException();
 
   }
@@ -157,13 +161,13 @@ class TelemetryLocalStorageManagerTests {
   @Test
   void should_not_crash_when_cannot_write_storage(@TempDir Path temp) {
     InternalDebug.setEnabled(false);
-    assertThatCode(() -> new TelemetryLocalStorageManager(temp).tryUpdateAtomically(d -> {}))
+    assertThatCode(() -> new TelemetryLocalStorageManager(temp, mock(InitializeParams.class)).tryUpdateAtomically(d -> {}))
       .doesNotThrowAnyException();
   }
 
   @Test
   void supportConcurrentUpdates() {
-    var storage = new TelemetryLocalStorageManager(filePath);
+    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
     // Put some data to avoid migration
     storage.tryUpdateAtomically(data -> {
       data.setInstallTime(OffsetDateTime.now().minus(50, ChronoUnit.DAYS));
@@ -202,7 +206,7 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void should_increment_open_hotspot_in_browser() {
-    var storage = new TelemetryLocalStorageManager(filePath);
+    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
 
     storage.tryUpdateAtomically(TelemetryLocalStorage::incrementOpenHotspotInBrowserCount);
     storage.tryUpdateAtomically(TelemetryLocalStorage::incrementOpenHotspotInBrowserCount);
@@ -213,7 +217,7 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void should_increment_hotspot_status_changed() {
-    var storage = new TelemetryLocalStorageManager(filePath);
+    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
 
     storage.tryUpdateAtomically(TelemetryLocalStorage::incrementHotspotStatusChangedCount);
     storage.tryUpdateAtomically(TelemetryLocalStorage::incrementHotspotStatusChangedCount);
@@ -225,7 +229,7 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void should_increment_issue_status_changed() {
-    var storage = new TelemetryLocalStorageManager(filePath);
+    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
 
     storage.tryUpdateAtomically(telemetryLocalStorage -> telemetryLocalStorage.addIssueStatusChanged("ruleKey1"));
     storage.tryUpdateAtomically(telemetryLocalStorage -> telemetryLocalStorage.addIssueStatusChanged("ruleKey2"));
@@ -237,7 +241,7 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void tryUpdateAtomically_should_not_crash_if_too_many_read_write_requests() {
-    var storageManager = new TelemetryLocalStorageManager(filePath);
+    var storageManager = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
 
     Runnable read = storageManager::lastUploadTime;
     Runnable write = () -> storageManager.tryUpdateAtomically(TelemetryLocalStorage::incrementShowIssueRequestCount);
@@ -255,7 +259,7 @@ class TelemetryLocalStorageManagerTests {
 
   @Test
   void tryRead_should_be_aware_of_file_deletion() {
-    var storageManager = new TelemetryLocalStorageManager(filePath);
+    var storageManager = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
 
     assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isZero();
 
@@ -274,7 +278,7 @@ class TelemetryLocalStorageManagerTests {
   @Test
   @DisabledOnOs(OS.WINDOWS)
   void tryRead_should_be_aware_of_file_modification() throws IOException {
-    var storageManager = new TelemetryLocalStorageManager(filePath);
+    var storageManager = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
 
     assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isZero();
 
@@ -309,8 +313,26 @@ class TelemetryLocalStorageManagerTests {
     writeToLocalStorageFile(new byte[0]);
     assertThat(filePath.toFile()).isEmpty();
 
-    var storageManager = new TelemetryLocalStorageManager(filePath);
+    var storageManager = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
     assertThat(storageManager.isEnabled()).isTrue();
     assertThat(storageManager.tryRead().numUseDays()).isZero();
+  }
+
+  @Test
+  void should_migrate_telemetry() {
+    var initializeParams = mock(InitializeParams.class);
+    var expectedInstallTime = OffsetDateTime.now();
+    when(initializeParams.getTelemetryMigration()).thenReturn(new TelemetryMigrationDto(expectedInstallTime, 42, false));
+
+    var storageManager = new TelemetryLocalStorageManager(filePath, initializeParams);
+
+    var localStorage = storageManager.tryRead();
+    var actualInstallTime = localStorage.installTime();
+    var numUseDays = localStorage.numUseDays();
+    var enabled = localStorage.enabled();
+
+    assertThat(enabled).isFalse();
+    assertThat(numUseDays).isEqualTo(42);
+    assertThat(actualInstallTime).isEqualTo(expectedInstallTime);
   }
 }

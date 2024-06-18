@@ -24,6 +24,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
@@ -35,6 +36,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherServerOrLocalHo
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherServerOrLocalIssueAdapterFactory;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherTypeAdapter;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.InstantTypeAdapter;
+import org.sonarsource.sonarlint.core.rpc.protocol.adapter.OffsetDateTimeAdapter;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.PathTypeAdapter;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.UriTypeAdapter;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.UuidTypeAdapter;
@@ -59,6 +61,7 @@ public class SonarLintLauncherBuilder<T> extends Launcher.Builder<T> {
 
           .registerTypeAdapterFactory(new MessageTypeAdapter.Factory(this))
           .registerTypeHierarchyAdapter(Path.class, new PathTypeAdapter())
+          .registerTypeHierarchyAdapter(OffsetDateTime.class, new OffsetDateTimeAdapter())
           .registerTypeHierarchyAdapter(Instant.class, new InstantTypeAdapter())
           .registerTypeHierarchyAdapter(UUID.class, new UuidTypeAdapter())
           .registerTypeHierarchyAdapter(URI.class, new UriTypeAdapter())

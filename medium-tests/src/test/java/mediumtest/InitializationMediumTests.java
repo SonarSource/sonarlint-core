@@ -58,7 +58,7 @@ class InitializationMediumTests {
         HttpConfigurationDto.defaultConfig(), null, featureFlags,
         Path.of("unused"), Path.of("unused"),
         emptySet(), emptyMap(), emptySet(), emptySet(), emptySet(),
-        emptyList(), emptyList(), "home", emptyMap(), false, null, false));
+        emptyList(), emptyList(), "home", emptyMap(), false, null, false, null));
 
     assertThat(future)
       .failsWithin(Duration.ofSeconds(1))
