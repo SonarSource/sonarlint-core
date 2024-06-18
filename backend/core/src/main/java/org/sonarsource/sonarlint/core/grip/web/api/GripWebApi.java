@@ -54,6 +54,7 @@ public class GripWebApi {
 
   public void provideFeedback(ProvideFeedbackParams params, FixSuggestion fixSuggestion) {
     var requestBody = serializeFeedbackRequestBody(params, fixSuggestion);
+    LOG.info("Providing feedback to GRIP service: {}", requestBody);
     try (var ignored = httpClientProvider.getHttpClientWithPreemptiveAuth(params.getAuthenticationToken()).postWithBearer(
       ensureTrailingSlash(params.getServiceURI()) + "api/feedback/", "application/json",
       requestBody)) {
