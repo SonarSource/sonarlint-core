@@ -19,23 +19,28 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.grip;
 
-import com.google.gson.annotations.JsonAdapter;
-import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherFixSuggestionAdapterFactory;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
+import java.util.UUID;
 
-public class SuggestFixResponse {
-  @JsonAdapter(EitherFixSuggestionAdapterFactory.class)
-  private final Either<SuggestionError, SuggestionDto> result;
+public class SuggestionDto {
+  private final UUID correlationId;
+  private final String rawApiResponse;
+  private final SuggestedFixDto suggestedFix;
 
-  public SuggestFixResponse(SuggestionError error) {
-    this.result = Either.forLeft(error);
+  public SuggestionDto(UUID correlationId, String rawApiResponse, SuggestedFixDto suggestedFix) {
+    this.correlationId = correlationId;
+    this.rawApiResponse = rawApiResponse;
+    this.suggestedFix = suggestedFix;
   }
 
-  public SuggestFixResponse(SuggestionDto suggestion) {
-    this.result = Either.forRight(suggestion);
+  public UUID getCorrelationId() {
+    return correlationId;
   }
 
-  public Either<SuggestionError, SuggestionDto> getResult() {
-    return result;
+  public String getRawApiResponse() {
+    return rawApiResponse;
+  }
+
+  public SuggestedFixDto getSuggestedFix() {
+    return suggestedFix;
   }
 }

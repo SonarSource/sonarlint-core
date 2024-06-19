@@ -82,7 +82,7 @@ class GripMediumTests {
     + "  }\n"
     + "}", new TextRangeDto(13, 4, 13, 13), "Replace this use of System.out by a logger.", "java:S106");
 
-  private static final Issue CURRENT_ISSUE = JAVA_S106_SYSTEM_OUT;
+  private static final Issue CURRENT_ISSUE = JAVA_S1219_NON_CASE_LABELS_IN_SWITCH;
 
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
@@ -133,7 +133,7 @@ class GripMediumTests {
         CURRENT_ISSUE.ruleKey))
       .join();
 
-    assertThat(response.getText()).isEqualTo("Hello, world!");
+    assertThat(response.getResult().getRight().getRawApiResponse()).isEqualTo("Hello, world!");
     // var recordedRequest = mockServer.takeRequest();
     // assertThat(recordedRequest.getHeader("Authorization")).isEqualTo("Basic dG9rZW46");
     // assertThat(recordedRequest.getBody().readString(Charset.defaultCharset())).isEqualTo("{\"source_code\":\"content\",\"message\":\"message\",\"rule_key\":\"rule:key\",\"text_range\":{\"start_line\":1,\"start_offset\":2,\"end_line\":3,\"end_offset\":4}}");
@@ -177,7 +177,8 @@ class GripMediumTests {
       .join();
     mockServer.takeRequest();
 
-    backend.getGripService().provideFeedback(new ProvideFeedbackParams(mockServer.uri(), "token", response.getCorrelationId(), true, FeedbackRating.BAD, "comment")).join();
+    backend.getGripService()
+      .provideFeedback(new ProvideFeedbackParams(mockServer.uri(), "token", response.getResult().getRight().getCorrelationId(), true, FeedbackRating.BAD, "comment")).join();
     var recordedRequest = mockServer.takeRequest();
     assertThat(recordedRequest.getHeader("Authorization")).isEqualTo("Bearer token");
     assertThat(recordedRequest.getBody().readString(Charset.defaultCharset())).startsWith(
