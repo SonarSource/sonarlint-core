@@ -413,7 +413,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
             sonarUserHome.resolve("storage"),
             sonarUserHome.resolve("work"),
             emptySet(),
-            connectedModeEmbeddedPluginPathsByKey, languages, emptySet(),
+            connectedModeEmbeddedPluginPathsByKey, languages, emptySet(), emptySet(),
             List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), emptyList(),
             sonarUserHome.toString(),
             Map.of(), false, null))

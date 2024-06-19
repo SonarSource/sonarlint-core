@@ -58,7 +58,7 @@ public class IssueSynchronizationService {
   public void syncServerIssuesForProject(ServerApi serverApi, String connectionId, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
     var storage = storageService.getStorageFacade().connection(connectionId);
     var serverVersion = getSonarServerVersion(serverApi, storage, cancelMonitor);
-    var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
+    var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedModeForAnalysis().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
       .collect(Collectors.toCollection(LinkedHashSet::new));
     var issuesUpdater = new ServerIssueUpdater(storage, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
     if (IssueApi.supportIssuePull(serverApi.isSonarCloud(), serverVersion)) {
@@ -82,7 +82,7 @@ public class IssueSynchronizationService {
   private void downloadServerIssuesForProject(String connectionId, ServerApi serverApi, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
     var storage = storageService.getStorageFacade().connection(connectionId);
     var serverVersion = getSonarServerVersion(serverApi, storage, cancelMonitor);
-    var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
+    var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedModeForAnalysis().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
       .collect(Collectors.toCollection(LinkedHashSet::new));
     var issuesUpdater = new ServerIssueUpdater(storage, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
     issuesUpdater.update(serverApi, projectKey, branchName, serverApi.isSonarCloud(), serverVersion, cancelMonitor);
@@ -97,7 +97,7 @@ public class IssueSynchronizationService {
     SonarLintCancelMonitor cancelMonitor) {
     var storage = storageService.getStorageFacade().connection(connectionId);
     var serverVersion = getSonarServerVersion(serverApi, storage, cancelMonitor);
-    var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
+    var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedModeForAnalysis().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
       .collect(Collectors.toCollection(LinkedHashSet::new));
     var issuesUpdater = new ServerIssueUpdater(storage, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
     issuesUpdater.updateFileIssues(serverApi, projectKey, serverFileRelativePath, branchName, serverApi.isSonarCloud(), serverVersion, cancelMonitor);

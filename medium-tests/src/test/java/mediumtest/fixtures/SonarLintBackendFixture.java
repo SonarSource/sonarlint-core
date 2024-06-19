@@ -125,6 +125,7 @@ public class SonarLintBackendFixture {
     private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey = new HashMap<>();
     private final Set<Language> enabledLanguages = new HashSet<>();
     private final Set<Language> extraEnabledLanguagesInConnectedMode = new HashSet<>();
+    private final Set<Language> disableAnalysisForLanguages = new HashSet<>();
     private boolean startEmbeddedServer;
     private boolean manageSmartNotifications;
     private boolean areSecurityHotspotsEnabled;
@@ -313,6 +314,11 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintBackendBuilder withDisabledLanguage(Language language) {
+      this.disableAnalysisForLanguages.add(language);
+      return this;
+    }
+
     public SonarLintBackendBuilder withExtraEnabledLanguagesInConnectedMode(Language language) {
       this.extraEnabledLanguagesInConnectedMode.add(language);
       return this;
@@ -439,7 +445,7 @@ public class SonarLintBackendFixture {
             sonarCloudAlternativeEnvironment,
             featureFlags,
             storageRoot, workDir, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
-            enabledLanguages, extraEnabledLanguagesInConnectedMode, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
+            enabledLanguages, extraEnabledLanguagesInConnectedMode, disableAnalysisForLanguages, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
             standaloneConfigByKey, isFocusOnNewCode, new LanguageSpecificRequirements(clientNodeJsPath, null)))
           .get();
         sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));

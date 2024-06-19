@@ -42,6 +42,7 @@ public class InitializeParams {
   private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey;
   private final Set<Language> enabledLanguagesInStandaloneMode;
   private final Set<Language> extraEnabledLanguagesInConnectedMode;
+  private final Set<Language> disableAnalysisForLanguages;
   private final List<SonarQubeConnectionConfigurationDto> sonarQubeConnections;
   private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections;
   private final String sonarlintUserHome;
@@ -67,6 +68,7 @@ public class InitializeParams {
     @Nullable Map<String, Path> connectedModeEmbeddedPluginPathsByKey,
     @Nullable Set<Language> enabledLanguagesInStandaloneMode,
     @Nullable Set<Language> extraEnabledLanguagesInConnectedMode,
+    Set<Language> disableAnalysisForLanguages,
     @Nullable List<SonarQubeConnectionConfigurationDto> sonarQubeConnections,
     @Nullable List<SonarCloudConnectionConfigurationDto> sonarCloudConnections,
     @Nullable String sonarlintUserHome,
@@ -84,6 +86,7 @@ public class InitializeParams {
     this.connectedModeEmbeddedPluginPathsByKey = connectedModeEmbeddedPluginPathsByKey;
     this.enabledLanguagesInStandaloneMode = enabledLanguagesInStandaloneMode;
     this.extraEnabledLanguagesInConnectedMode = extraEnabledLanguagesInConnectedMode;
+    this.disableAnalysisForLanguages = disableAnalysisForLanguages;
     this.sonarQubeConnections = sonarQubeConnections;
     this.sonarCloudConnections = sonarCloudConnections;
     this.sonarlintUserHome = sonarlintUserHome;
@@ -162,5 +165,9 @@ public class InitializeParams {
   @Nullable
   public LanguageSpecificRequirements getLanguageSpecificRequirements() {
     return languageSpecificRequirements;
+  }
+
+  public Set<Language> getDisableAnalysisForLanguages() {
+    return disableAnalysisForLanguages;
   }
 }

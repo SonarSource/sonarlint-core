@@ -91,7 +91,7 @@ public class TaintSynchronizationService {
     var storage = storageService.getStorageFacade().connection(connectionId);
     var serverInfoSynchronizer = new ServerInfoSynchronizer(storage);
     var serverVersion = serverInfoSynchronizer.readOrSynchronizeServerInfo(serverApi, cancelMonitor).getVersion();
-    var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
+    var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedModeForAnalysis().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
       .collect(Collectors.toCollection(LinkedHashSet::new));
     var issuesUpdater = new ServerIssueUpdater(storage, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
     if (IssueApi.supportIssuePull(serverApi.isSonarCloud(), serverVersion)) {

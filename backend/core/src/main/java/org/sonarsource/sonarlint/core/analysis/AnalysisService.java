@@ -167,10 +167,10 @@ public class AnalysisService {
     Set<SonarLanguage> enabledLanguages;
     Map<String, String> analysisSettings;
     if (effectiveBinding.isEmpty()) {
-      enabledLanguages = languageSupportRepository.getEnabledLanguagesInStandaloneMode();
+      enabledLanguages = languageSupportRepository.getEnabledLanguagesInStandaloneModeForAnalysis();
       analysisSettings = Collections.emptyMap();
     } else {
-      enabledLanguages = languageSupportRepository.getEnabledLanguagesInConnectedMode();
+      enabledLanguages = languageSupportRepository.getEnabledLanguagesInConnectedModeForAnalysis();
       analysisSettings = storageService.binding(effectiveBinding.get())
         .analyzerConfiguration().read().getSettings().getAll();
     }
@@ -199,7 +199,7 @@ public class AnalysisService {
   }
 
   public GetGlobalConfigurationResponse getGlobalStandaloneConfiguration() {
-    var enabledLanguages = languageSupportRepository.getEnabledLanguagesInStandaloneMode();
+    var enabledLanguages = languageSupportRepository.getEnabledLanguagesInStandaloneModeForAnalysis();
     var pluginPaths = pluginsService.getEmbeddedPluginPaths();
     var activeNodeJs = nodeJsService.getActiveNodeJs();
     var nodeJsDetailsDto = activeNodeJs == null ? null : new NodeJsDetailsDto(activeNodeJs.getPath(), activeNodeJs.getVersion().toString());
@@ -207,7 +207,7 @@ public class AnalysisService {
   }
 
   public GetGlobalConfigurationResponse getGlobalConnectedConfiguration(String connectionId) {
-    var enabledLanguages = languageSupportRepository.getEnabledLanguagesInConnectedMode();
+    var enabledLanguages = languageSupportRepository.getEnabledLanguagesInConnectedModeForAnalysis();
     var pluginPaths = pluginsService.getConnectedPluginPaths(connectionId);
     var activeNodeJs = nodeJsService.getActiveNodeJs();
     var nodeJsDetailsDto = activeNodeJs == null ? null : new NodeJsDetailsDto(activeNodeJs.getPath(), activeNodeJs.getVersion().toString());
@@ -267,7 +267,7 @@ public class AnalysisService {
     var ruleSetByLanguageKey = analyzerConfig.getRuleSetByLanguageKey();
     var result = new ArrayList<ActiveRuleDto>();
     ruleSetByLanguageKey.entrySet()
-      .stream().filter(e -> SonarLanguage.forKey(e.getKey()).filter(l -> languageSupportRepository.getEnabledLanguagesInConnectedMode().contains(l)).isPresent())
+      .stream().filter(e -> SonarLanguage.forKey(e.getKey()).filter(l -> languageSupportRepository.getEnabledLanguagesInConnectedModeForAnalysis().contains(l)).isPresent())
       .forEach(e -> {
         var languageKey = e.getKey();
         var ruleSet = e.getValue();

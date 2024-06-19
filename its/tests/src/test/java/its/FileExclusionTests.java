@@ -115,7 +115,7 @@ class FileExclusionTests extends AbstractConnectedTests {
           new InitializeParams(IT_CLIENT_INFO,
             IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(), null, featureFlags, sonarUserHome.resolve("storage"),
             sonarUserHome.resolve("work"),
-            Collections.emptySet(), Collections.emptyMap(), enabledLanguages, Collections.emptySet(),
+            Collections.emptySet(), Collections.emptyMap(), enabledLanguages, Collections.emptySet(), Collections.emptySet(),
             List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)),
             Collections.emptyList(),
             sonarUserHome.toString(),

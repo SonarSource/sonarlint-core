@@ -77,7 +77,7 @@ public class PluginsService {
   public LoadedPlugins getEmbeddedPlugins() {
     var loadedEmbeddedPlugins = pluginsRepository.getLoadedEmbeddedPlugins();
     if (loadedEmbeddedPlugins == null) {
-      var result = loadPlugins(languageSupportRepository.getEnabledLanguagesInStandaloneMode(), embeddedPluginPaths, enableDataflowBugDetection);
+      var result = loadPlugins(languageSupportRepository.getAllEnabledLanguagesInStandaloneMode(), embeddedPluginPaths, enableDataflowBugDetection);
       loadedEmbeddedPlugins = result.getLoadedPlugins();
       pluginsRepository.setLoadedEmbeddedPlugins(loadedEmbeddedPlugins);
       skippedPluginsRepository.setSkippedEmbeddedPlugins(getSkippedPlugins(result));
@@ -107,7 +107,7 @@ public class PluginsService {
   private PluginsLoadResult loadPlugins(String connectionId) {
     var pluginPaths = getPluginPathsForConnection(connectionId);
 
-    return loadPlugins(languageSupportRepository.getEnabledLanguagesInConnectedMode(), pluginPaths, enableDataflowBugDetection);
+    return loadPlugins(languageSupportRepository.getAllEnabledLanguagesInConnectedMode(), pluginPaths, enableDataflowBugDetection);
   }
 
   private Set<Path> getPluginPathsForConnection(String connectionId) {

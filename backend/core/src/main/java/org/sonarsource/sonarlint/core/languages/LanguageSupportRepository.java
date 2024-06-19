@@ -33,15 +33,18 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 @Named
 @Singleton
 public class LanguageSupportRepository {
-  private static final EnumSet<SonarLanguage> LANGUAGES_RAISING_TAINT_VULNERABILITIES = EnumSet.of(SonarLanguage.CS, SonarLanguage.JAVA, SonarLanguage.JS, SonarLanguage.TS, SonarLanguage.PHP, SonarLanguage.PYTHON);
+  private static final EnumSet<SonarLanguage> LANGUAGES_RAISING_TAINT_VULNERABILITIES =
+    EnumSet.of(SonarLanguage.CS, SonarLanguage.JAVA, SonarLanguage.JS, SonarLanguage.TS, SonarLanguage.PHP, SonarLanguage.PYTHON);
   private final EnumSet<SonarLanguage> enabledLanguagesInStandaloneMode;
   private final EnumSet<SonarLanguage> enabledLanguagesInConnectedMode;
+  private final EnumSet<SonarLanguage> disableAnalysisForLanguages;
 
   public LanguageSupportRepository(InitializeParams params) {
     this.enabledLanguagesInStandaloneMode = toEnumSet(
       adaptLanguage(params.getEnabledLanguagesInStandaloneMode()), SonarLanguage.class);
     this.enabledLanguagesInConnectedMode = EnumSet.copyOf(this.enabledLanguagesInStandaloneMode);
     this.enabledLanguagesInConnectedMode.addAll(adaptLanguage(params.getExtraEnabledLanguagesInConnectedMode()));
+    this.disableAnalysisForLanguages = EnumSet.copyOf(adaptLanguage(params.getDisableAnalysisForLanguages()));
   }
 
   @NotNull
@@ -53,12 +56,26 @@ public class LanguageSupportRepository {
     return collection.isEmpty() ? EnumSet.noneOf(clazz) : EnumSet.copyOf(collection);
   }
 
-  public Set<SonarLanguage> getEnabledLanguagesInStandaloneMode() {
+  public Set<SonarLanguage> getEnabledLanguagesInStandaloneModeForAnalysis() {
+    return getAnalysisOnlyLanguages(enabledLanguagesInStandaloneMode);
+  }
+
+  public Set<SonarLanguage> getEnabledLanguagesInConnectedModeForAnalysis() {
+    return getAnalysisOnlyLanguages(enabledLanguagesInConnectedMode);
+  }
+
+  public Set<SonarLanguage> getAllEnabledLanguagesInStandaloneMode() {
     return enabledLanguagesInStandaloneMode;
   }
 
-  public Set<SonarLanguage> getEnabledLanguagesInConnectedMode() {
+  public Set<SonarLanguage> getAllEnabledLanguagesInConnectedMode() {
     return enabledLanguagesInConnectedMode;
+  }
+
+  private EnumSet<SonarLanguage> getAnalysisOnlyLanguages(EnumSet<SonarLanguage> enabledLanguages) {
+    var languagesForAnalysis = EnumSet.copyOf(enabledLanguages);
+    languagesForAnalysis.removeAll(disableAnalysisForLanguages);
+    return languagesForAnalysis;
   }
 
   public boolean areTaintVulnerabilitiesSupported() {

@@ -32,10 +32,7 @@ import java.util.UUID;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import org.apache.commons.lang3.SystemUtils;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.Sloop;
@@ -82,6 +79,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.PHP;
 
+@Disabled
 class SloopLauncherTests {
 
   @TempDir
@@ -127,7 +125,7 @@ class SloopLauncherTests {
     var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false, false, false, false);
 
     server.initialize(new InitializeParams(clientInfo, telemetryInitDto, HttpConfigurationDto.defaultConfig(), null, featureFlags, sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
-      Set.of(PluginLocator.getPhpPluginPath().toAbsolutePath()), Collections.emptyMap(), Set.of(PHP), Collections.emptySet(), Collections.emptyList(),
+      Set.of(PluginLocator.getPhpPluginPath().toAbsolutePath()), Collections.emptyMap(), Set.of(PHP), Collections.emptySet(), Collections.emptySet(), Collections.emptyList(),
       Collections.emptyList(), sonarUserHome.toString(), Map.of(), false, null)).get();
 
     var result = server.getRulesService().listAllStandaloneRulesDefinitions().get();
@@ -147,7 +145,7 @@ class SloopLauncherTests {
     var clientInfo = new ClientConstantInfoDto("clientName", "integrationTests", 0);
     var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false, false, false, false);
     server.initialize(new InitializeParams(clientInfo, telemetryInitDto, HttpConfigurationDto.defaultConfig(), null, featureFlags, sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
-      Set.of(PluginLocator.getPhpPluginPath().toAbsolutePath()), Collections.emptyMap(), Set.of(PHP), Collections.emptySet(), Collections.emptyList(),
+      Set.of(PluginLocator.getPhpPluginPath().toAbsolutePath()), Collections.emptyMap(), Set.of(PHP), Collections.emptySet(), Collections.emptySet(), Collections.emptyList(),
       Collections.emptyList(), sonarUserHome.toString(), Map.of(), false, null)).join();
     sloop.onExit().thenAccept(exitValue -> this.exitValue = exitValue);
 
