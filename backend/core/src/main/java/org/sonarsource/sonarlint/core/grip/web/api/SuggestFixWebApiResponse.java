@@ -21,11 +21,11 @@ package org.sonarsource.sonarlint.core.grip.web.api;
 
 import java.util.UUID;
 
-public class SuggestFixResponse {
+public class SuggestFixWebApiResponse {
   private final UUID correlationId;
   private final String content;
 
-  public SuggestFixResponse(UUID correlationId, String content) {
+  public SuggestFixWebApiResponse(UUID correlationId, String content) {
     this.correlationId = correlationId;
     this.content = content;
   }

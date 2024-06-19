@@ -17,25 +17,21 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.grip;
+package org.sonarsource.sonarlint.core.rpc.protocol.adapter;
 
-import com.google.gson.annotations.JsonAdapter;
-import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherFixSuggestionAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import org.eclipse.lsp4j.jsonrpc.json.adapters.EitherTypeAdapter;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestionError;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 
-public class SuggestFixResponse {
-  @JsonAdapter(EitherFixSuggestionAdapterFactory.class)
-  private final Either<SuggestionError, SuggestionDto> result;
+public class EitherFixSuggestionAdapterFactory extends CustomEitherAdapterFactory<SuggestionError, SuggestionDto> {
 
-  public SuggestFixResponse(SuggestionError error) {
-    this.result = Either.forLeft(error);
+  private static final TypeToken<Either<SuggestionError, SuggestionDto>> ELEMENT_TYPE = new TypeToken<>() {
+  };
+
+  public EitherFixSuggestionAdapterFactory() {
+    super(ELEMENT_TYPE, SuggestionError.class, SuggestionDto.class, new EitherTypeAdapter.PropertyChecker("message"));
   }
 
-  public SuggestFixResponse(SuggestionDto suggestion) {
-    this.result = Either.forRight(suggestion);
-  }
-
-  public Either<SuggestionError, SuggestionDto> getResult() {
-    return result;
-  }
 }

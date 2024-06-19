@@ -19,23 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.grip;
 
-import com.google.gson.annotations.JsonAdapter;
-import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherFixSuggestionAdapterFactory;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
+public class SuggestionError {
+  private final String message;
 
-public class SuggestFixResponse {
-  @JsonAdapter(EitherFixSuggestionAdapterFactory.class)
-  private final Either<SuggestionError, SuggestionDto> result;
-
-  public SuggestFixResponse(SuggestionError error) {
-    this.result = Either.forLeft(error);
+  public SuggestionError(String message) {
+    this.message = message;
   }
 
-  public SuggestFixResponse(SuggestionDto suggestion) {
-    this.result = Either.forRight(suggestion);
-  }
-
-  public Either<SuggestionError, SuggestionDto> getResult() {
-    return result;
+  public String getMessage() {
+    return message;
   }
 }

@@ -31,6 +31,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.grip.web.api.GripWebApi;
+import org.sonarsource.sonarlint.core.grip.web.api.SuggestFixWebApiResponse;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.DiffDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.LineRangeDto;
@@ -38,6 +39,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.ProvideFeedbackP
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestFixParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestFixResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestedFixDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestionError;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 
 @Named
 @Singleton
@@ -59,23 +63,27 @@ public class GripService {
     }
     var fileContent = clientFile.getContent();
     var startTime = System.currentTimeMillis();
-    var response = gripWebApi.suggestFix(params, fileContent);
-    var fixResponse = parseResponse(response.getContent());
-    var endTime = System.currentTimeMillis();
-    SuggestedFixDto suggestedFix = null;
-    if (fixResponse.snippets.size() >= 2) {
-      var snippetLineRange = locateSnippet(fileContent, fixResponse.snippets.get(0));
-      // if no match, we could probably search better
-      if (snippetLineRange != null) {
-        var originalSnippet = fileContent.lines().skip(snippetLineRange.start - 1L).limit(snippetLineRange.size()).collect(Collectors.joining("\n"));
-        suggestedFix = new SuggestedFixDto(List.of(new DiffDto(originalSnippet, fixResponse.snippets.get(1), new LineRangeDto(snippetLineRange.start, snippetLineRange.end))),
-          fixResponse.explanation);
-      }
+    var webApiResponse = gripWebApi.suggestFix(params, fileContent);
+    if (webApiResponse.isLeft()) {
+      return new SuggestFixResponse(new SuggestionError(webApiResponse.getLeft()));
     }
-    pastSuggestionsById.put(response.getCorrelationId(),
-      new FixSuggestion(response.getCorrelationId(), params.getRuleKey(), endTime - startTime, fixResponse.snippets.isEmpty() ? null : fixResponse.snippets.get(0),
-        fixResponse.snippets.size() <= 1 ? null : fixResponse.snippets.get(1)));
-    return new SuggestFixResponse(response.getCorrelationId(), response.getContent(), suggestedFix);
+    var apiResponse = webApiResponse.getRight();
+    var fixResponse = parseResponse(apiResponse);
+    if (fixResponse.isLeft()) {
+      return new SuggestFixResponse(new SuggestionError(fixResponse.getLeft()));
+    }
+    var fix = fixResponse.getRight();
+    var endTime = System.currentTimeMillis();
+    var snippetLineRange = locateSnippet(fileContent, fix.snippets.get(0));
+    // if no match, we could probably search better by being even more lenient
+    if (snippetLineRange == null) {
+      return new SuggestFixResponse(new SuggestionError("An error occurred: not able to locate the code to fix in the original source code"));
+    }
+    var originalSnippet = fileContent.lines().skip(snippetLineRange.start - 1L).limit(snippetLineRange.size()).collect(Collectors.joining("\n"));
+    var suggestedFix = new SuggestedFixDto(List.of(new DiffDto(originalSnippet, fix.snippets.get(1), new LineRangeDto(snippetLineRange.start, snippetLineRange.end))),
+      fix.explanation);
+    pastSuggestionsById.put(fix.id, new FixSuggestion(fix.id, params.getRuleKey(), endTime - startTime, fix.snippets.get(0), fix.snippets.get(1)));
+    return new SuggestFixResponse(new SuggestionDto(fix.id, fix.rawResponse, suggestedFix));
   }
 
   /**
@@ -111,10 +119,11 @@ public class GripService {
     return snippetStartLineInFile == -1 ? null : new LineRange(snippetStartLineInFile, currentFileLineIndex - 1);
   }
 
-  private static GripResponse parseResponse(String content) {
+  private static Either<String, GripResponse> parseResponse(SuggestFixWebApiResponse response) {
+    var content = response.getContent();
     var lines = content.lines().collect(Collectors.toCollection(ArrayList::new));
     if (lines.isEmpty()) {
-      return new GripResponse(List.of(), "");
+      return Either.forLeft("Unexpected response received from the suggestion service: empty content");
     }
     var snippets = new ArrayList<String>();
     var inSnippet = false;
@@ -127,6 +136,7 @@ public class GripService {
           snippets.add(currentSnippet.toString());
           inSnippet = false;
           currentSnippet = null;
+          freeText = new StringBuilder();
         } else {
           inSnippet = true;
           currentSnippet = new StringBuilder();
@@ -142,7 +152,10 @@ public class GripService {
         }
       }
     }
-    return new GripResponse(snippets, freeText.toString());
+    if (snippets.size() < 2) {
+      return Either.forLeft("Unexpected response received from the suggestion service: no before and after");
+    }
+    return Either.forRight(new GripResponse(response.getCorrelationId(), content, snippets, freeText.toString()));
   }
 
   public void provideFeedback(ProvideFeedbackParams params) {
@@ -155,10 +168,14 @@ public class GripService {
   }
 
   private static class GripResponse {
+    private final UUID id;
+    private final String rawResponse;
     private final List<String> snippets;
     private final String explanation;
 
-    private GripResponse(List<String> snippets, String explanation) {
+    private GripResponse(UUID id, String rawResponse, List<String> snippets, String explanation) {
+      this.id = id;
+      this.rawResponse = rawResponse;
       this.snippets = snippets;
       this.explanation = explanation;
     }
