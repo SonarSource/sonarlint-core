@@ -25,13 +25,12 @@ import com.google.gson.GsonBuilder;
 import java.net.URI;
 import java.util.UUID;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.grip.FixSuggestion;
+import org.sonarsource.sonarlint.core.grip.suggest.FixSuggestion;
 import org.sonarsource.sonarlint.core.grip.web.api.payload.ProvideFeedbackRequestPayload;
 import org.sonarsource.sonarlint.core.grip.web.api.payload.SuggestFixRequestPayload;
 import org.sonarsource.sonarlint.core.grip.web.api.payload.SuggestFixResponsePayload;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.ProvideFeedbackParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestFixParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 
 public class GripWebApi {
@@ -42,11 +41,12 @@ public class GripWebApi {
     this.httpClientProvider = httpClientProvider;
   }
 
-  public Either<String, SuggestFixWebApiResponse> suggestFix(SuggestFixParams params, String fileContent) {
-    var requestBody = serializeFixRequestBody(params, fileContent);
+  public Either<String, SuggestFixWebApiResponse> suggestFix(SuggestFixWebApiRequest request, String fileContent) {
+    var startTime = System.currentTimeMillis();
+    var requestBody = serializeFixRequestBody(request, fileContent);
     LOG.info("Requesting suggestion from GRIP service: {}", requestBody);
-    try (var response = httpClientProvider.getHttpClientWithPreemptiveAuth(params.getAuthenticationToken()).postWithBearer(
-      ensureTrailingSlash(params.getServiceURI()) + "api/suggest/", "application/json",
+    try (var response = httpClientProvider.getHttpClientWithPreemptiveAuth(request.getAuthenticationToken()).postWithBearer(
+      ensureTrailingSlash(request.getServiceURI()) + "api/suggest/", "application/json",
       requestBody)) {
       var code = response.code();
       var responseBodyString = response.bodyAsString();
@@ -54,8 +54,10 @@ public class GripWebApi {
         try {
           LOG.info("Received response from the GRIP service: {}", responseBodyString);
           var responseBody = deserializeResponseBody(responseBodyString);
+          var endTime = System.currentTimeMillis();
           return Either.forRight(
-            new SuggestFixWebApiResponse(UUID.fromString(response.header("X-Correlation-Id")), responseBody.choices.get(responseBody.choices.size() - 1).message.content));
+            new SuggestFixWebApiResponse(UUID.fromString(response.header("X-Correlation-Id")), responseBody.choices.get(responseBody.choices.size() - 1).message.content,
+              endTime - startTime));
         } catch (Exception e) {
           LOG.error("Unexpected response received from the suggestion service", e);
           return Either.forLeft("Unexpected response received from the suggestion service");
@@ -79,11 +81,11 @@ public class GripWebApi {
     }
   }
 
-  private static String serializeFixRequestBody(SuggestFixParams params, String fileContent) {
-    var issueRange = params.getIssueRange();
+  private static String serializeFixRequestBody(SuggestFixWebApiRequest request, String fileContent) {
+    var issueRange = request.getIssueRange();
     var textRangePayload = new SuggestFixRequestPayload.TextRangePayload(issueRange.getStartLine(), issueRange.getStartLineOffset(), issueRange.getEndLine(),
       issueRange.getEndLineOffset());
-    var requestPayload = new SuggestFixRequestPayload(fileContent, params.getIssueMessage(), params.getRuleKey(), textRangePayload);
+    var requestPayload = new SuggestFixRequestPayload(fileContent, request.getIssueMessage(), request.getRuleKey(), textRangePayload);
     return new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create().toJson(requestPayload);
   }
 

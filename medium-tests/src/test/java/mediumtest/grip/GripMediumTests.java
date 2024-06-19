@@ -129,7 +129,7 @@ class GripMediumTests {
       .build(client);
 
     var response = backend.getGripService()
-      .suggestFix(new SuggestFixParams(URI.create("http://localhost:8080/"), "token", CONFIG_SCOPE_ID, filePath.toUri(), CURRENT_ISSUE.message, CURRENT_ISSUE.textRange,
+      .suggestFix(new SuggestFixParams(URI.create("http://localhost:8080/"), "token", "prompt", CONFIG_SCOPE_ID, filePath.toUri(), CURRENT_ISSUE.message, CURRENT_ISSUE.textRange,
         CURRENT_ISSUE.ruleKey))
       .join();
 
@@ -173,7 +173,8 @@ class GripMediumTests {
       .build(client);
 
     var response = backend.getGripService()
-      .suggestFix(new SuggestFixParams(mockServer.uri(), "token", CONFIG_SCOPE_ID, filePath.toUri(), CURRENT_ISSUE.message, CURRENT_ISSUE.textRange, CURRENT_ISSUE.ruleKey))
+      .suggestFix(
+        new SuggestFixParams(mockServer.uri(), "token", "prompt", CONFIG_SCOPE_ID, filePath.toUri(), CURRENT_ISSUE.message, CURRENT_ISSUE.textRange, CURRENT_ISSUE.ruleKey))
       .join();
     mockServer.takeRequest();
 
