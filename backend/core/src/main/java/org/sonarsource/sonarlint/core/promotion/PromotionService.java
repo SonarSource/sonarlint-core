@@ -49,8 +49,13 @@ public class PromotionService {
   @EventListener
   public void onAnalysisFinished(AnalysisFinishedEvent event) {
     var configurationScopeId = event.getConfigurationScopeId();
+    var detectedLanguages = event.getDetectedLanguages();
+    promoteExtraEnabledLanguages(detectedLanguages, configurationScopeId);
+  }
+
+  public void promoteExtraEnabledLanguages(Set<SonarLanguage> detectedLanguages, String configurationScopeId) {
     if (isStandalone(configurationScopeId)) {
-      var languagesToPromote = getLanguagesToPromote(event.getDetectedLanguages());
+      var languagesToPromote = getLanguagesToPromote(detectedLanguages);
       if (!languagesToPromote.isEmpty()) {
         client.promoteExtraEnabledLanguagesInConnectedMode(new PromoteExtraEnabledLanguagesInConnectedModeParams(configurationScopeId, languagesToPromote));
       }

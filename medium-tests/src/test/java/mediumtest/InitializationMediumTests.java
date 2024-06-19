@@ -57,7 +57,7 @@ class InitializationMediumTests {
       .initialize(new InitializeParams(new ClientConstantInfoDto("name", "productKey", 0), telemetryInitDto,
         HttpConfigurationDto.defaultConfig(), null, featureFlags,
         Path.of("unused"), Path.of("unused"),
-        emptySet(), emptyMap(), emptySet(), emptySet(),
+        emptySet(), emptyMap(), emptySet(), emptySet(), emptySet(),
         emptyList(), emptyList(), "home", emptyMap(), false, null));
 
     assertThat(future)
