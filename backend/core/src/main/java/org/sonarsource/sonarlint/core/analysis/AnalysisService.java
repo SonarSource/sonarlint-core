@@ -43,6 +43,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
+import org.sonarsource.sonarlint.core.analysis.api.ActiveRule;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
@@ -72,6 +73,7 @@ import org.sonarsource.sonarlint.core.fs.FileSystemUpdatedEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.nodejs.InstalledNodeJs;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
+import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsNotifierService;
 import org.sonarsource.sonarlint.core.progress.RpcProgressMonitor;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
@@ -137,6 +139,7 @@ public class AnalysisService {
   private final AnalysisEngineCache engineCache;
   private final ClientFileSystemService fileSystemService;
   private final FileExclusionService fileExclusionService;
+  private final SkippedPluginsNotifierService skippedPluginsNotifierService;
   private final ApplicationEventPublisher eventPublisher;
   private final boolean isDataflowBugDetectionEnabled;
   private final Map<String, Boolean> analysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
@@ -144,7 +147,7 @@ public class AnalysisService {
   public AnalysisService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
     StorageService storageService, PluginsService pluginsService, RulesService rulesService, RulesRepository rulesRepository,
     ConnectionConfigurationRepository connectionConfigurationRepository, InitializeParams initializeParams, NodeJsService nodeJsService, AnalysisEngineCache engineCache,
-    ClientFileSystemService fileSystemService, FileExclusionService fileExclusionService, ApplicationEventPublisher eventPublisher) {
+    ClientFileSystemService fileSystemService, FileExclusionService fileExclusionService, SkippedPluginsNotifierService skippedPluginsNotifierService, ApplicationEventPublisher eventPublisher) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
@@ -159,6 +162,7 @@ public class AnalysisService {
     this.engineCache = engineCache;
     this.fileSystemService = fileSystemService;
     this.fileExclusionService = fileExclusionService;
+    this.skippedPluginsNotifierService = skippedPluginsNotifierService;
     this.eventPublisher = eventPublisher;
   }
 
@@ -239,14 +243,26 @@ public class AnalysisService {
       .addInputFiles(toInputFiles(configScopeId, filePathsToAnalyze))
       .putAllExtraProperties(analysisConfig.getAnalysisProperties())
       .putAllExtraProperties(extraProperties)
-      .addActiveRules(analysisConfig.getActiveRules().stream().map(r -> {
-        var ar = new org.sonarsource.sonarlint.core.analysis.api.ActiveRule(r.getRuleKey(), r.getLanguageKey());
-        ar.setParams(r.getParams());
-        ar.setTemplateRuleKey(r.getTemplateRuleKey());
-        return ar;
-      }).collect(toList()))
+      .addActiveRules(buildActiveRulesForAnalysisConfig(analysisConfig))
       .setBaseDir(actualBaseDir)
       .build();
+  }
+
+  private List<ActiveRule> buildActiveRulesForAnalysisConfig(GetAnalysisConfigResponse analysisConfig) {
+    var disabledLanguagesForAnalysis = languageSupportRepository.getDisabledLanguagesForAnalysis();
+    return analysisConfig.getActiveRules().stream()
+      .filter(r -> isRuleEnabledForAnalysis(r, disabledLanguagesForAnalysis))
+      .map(r -> {
+      var ar = new ActiveRule(r.getRuleKey(), r.getLanguageKey());
+      ar.setParams(r.getParams());
+      ar.setTemplateRuleKey(r.getTemplateRuleKey());
+      return ar;
+    }).collect(toList());
+  }
+
+  private static Boolean isRuleEnabledForAnalysis(ActiveRuleDto r, Set<SonarLanguage> disabledLanguagesForAnalysis) {
+    var languageByLanguageKey = SonarLanguage.getLanguageByLanguageKey(r.getLanguageKey());
+    return !languageByLanguageKey.map(disabledLanguagesForAnalysis::contains).orElse(false);
   }
 
   private static Path findCommonPrefix(List<URI> uris) {
@@ -552,6 +568,18 @@ public class AnalysisService {
       return CompletableFuture.completedFuture(new AnalysisResults());
     }
     var ruleDetailsCache = new ConcurrentHashMap<String, RuleDetailsForAnalysis>();
+
+    if (analysisConfig.activeRules().isEmpty()) {
+      LOG.info("No active rules. Skipping analysis");
+      //todo check for skipped server plugins as well
+      if (!pluginsService.getSkippedEmbeddedPlugins().isEmpty()) {
+        var languages = pluginsService.getSkippedEmbeddedPlugins().stream()
+          .map(skippedPlugin -> SonarLanguage.getLanguagesByPluginKey(skippedPlugin.getKey()))
+          .flatMap(Set::stream).collect(Collectors.toUnmodifiableSet());
+        skippedPluginsNotifierService.notifyClientOfSkippedPlugins(configurationScopeId, languages, pluginsService.getSkippedEmbeddedPlugins());
+      }
+      return CompletableFuture.completedFuture(new AnalysisResults());
+    }
 
     cancelMonitor.checkCanceled();
     var raisedIssues = new ArrayList<RawIssue>();

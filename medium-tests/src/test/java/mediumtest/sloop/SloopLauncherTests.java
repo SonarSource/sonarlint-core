@@ -127,7 +127,7 @@ class SloopLauncherTests {
     var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false, false, false, false);
 
     server.initialize(new InitializeParams(clientInfo, telemetryInitDto, HttpConfigurationDto.defaultConfig(), null, featureFlags, sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
-      Set.of(PluginLocator.getPhpPluginPath().toAbsolutePath()), Collections.emptyMap(), Set.of(PHP), Collections.emptySet(), Collections.emptyList(),
+      Set.of(PluginLocator.getPhpPluginPath().toAbsolutePath()), Collections.emptyMap(), Set.of(PHP), Collections.emptySet(), Collections.emptySet(), Collections.emptyList(),
       Collections.emptyList(), sonarUserHome.toString(), Map.of(), false, null)).get();
 
     var result = server.getRulesService().listAllStandaloneRulesDefinitions().get();
@@ -147,7 +147,7 @@ class SloopLauncherTests {
     var clientInfo = new ClientConstantInfoDto("clientName", "integrationTests", 0);
     var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false, false, false, false);
     server.initialize(new InitializeParams(clientInfo, telemetryInitDto, HttpConfigurationDto.defaultConfig(), null, featureFlags, sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
-      Set.of(PluginLocator.getPhpPluginPath().toAbsolutePath()), Collections.emptyMap(), Set.of(PHP), Collections.emptySet(), Collections.emptyList(),
+      Set.of(PluginLocator.getPhpPluginPath().toAbsolutePath()), Collections.emptyMap(), Set.of(PHP), Collections.emptySet(), Collections.emptySet(), Collections.emptyList(),
       Collections.emptyList(), sonarUserHome.toString(), Map.of(), false, null)).join();
     sloop.onExit().thenAccept(exitValue -> this.exitValue = exitValue);
 
