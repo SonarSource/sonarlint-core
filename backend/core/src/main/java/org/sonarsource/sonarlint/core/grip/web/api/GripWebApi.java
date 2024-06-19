@@ -85,7 +85,7 @@ public class GripWebApi {
     var issueRange = request.getIssueRange();
     var textRangePayload = new SuggestFixRequestPayload.TextRangePayload(issueRange.getStartLine(), issueRange.getStartLineOffset(), issueRange.getEndLine(),
       issueRange.getEndLineOffset());
-    var requestPayload = new SuggestFixRequestPayload(fileContent, request.getIssueMessage(), request.getRuleKey(), textRangePayload);
+    var requestPayload = new SuggestFixRequestPayload(request.getPromptId(), fileContent, request.getIssueMessage(), request.getRuleKey(), textRangePayload);
     return new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create().toJson(requestPayload);
   }
 
