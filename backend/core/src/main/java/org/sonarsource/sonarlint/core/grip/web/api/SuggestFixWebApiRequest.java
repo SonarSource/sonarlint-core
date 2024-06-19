@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,28 +17,25 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.grip;
+package org.sonarsource.sonarlint.core.grip.web.api;
 
 import java.net.URI;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 
-public class SuggestFixParams {
+public class SuggestFixWebApiRequest {
   private final URI serviceURI;
   private final String authenticationToken;
   private final String promptId;
-  private final String configurationScopeId;
-  private final URI fileUri;
+  private final String fileContent;
   private final String issueMessage;
   private final TextRangeDto issueRange;
   private final String ruleKey;
 
-  public SuggestFixParams(URI serviceURI, String authenticationToken, String promptId, String configurationScopeId, URI fileUri, String issueMessage, TextRangeDto issueRange,
-    String ruleKey) {
+  public SuggestFixWebApiRequest(URI serviceURI, String authenticationToken, String promptId, String fileContent, String issueMessage, TextRangeDto issueRange, String ruleKey) {
     this.serviceURI = serviceURI;
     this.authenticationToken = authenticationToken;
     this.promptId = promptId;
-    this.configurationScopeId = configurationScopeId;
-    this.fileUri = fileUri;
+    this.fileContent = fileContent;
     this.issueMessage = issueMessage;
     this.issueRange = issueRange;
     this.ruleKey = ruleKey;
@@ -56,12 +53,8 @@ public class SuggestFixParams {
     return promptId;
   }
 
-  public String getConfigurationScopeId() {
-    return configurationScopeId;
-  }
-
-  public URI getFileUri() {
-    return fileUri;
+  public String getFileContent() {
+    return fileContent;
   }
 
   public String getIssueMessage() {

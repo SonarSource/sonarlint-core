@@ -17,30 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.grip.web.api;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.grip.suggest.parsing;
 
-import java.util.UUID;
-
-public class SuggestFixWebApiResponse {
-  private final UUID correlationId;
-  private final String content;
-  private final long requestDuration;
-
-  public SuggestFixWebApiResponse(UUID correlationId, String content, long requestDuration) {
-    this.correlationId = correlationId;
-    this.content = content;
-    this.requestDuration = requestDuration;
-  }
-
-  public UUID getCorrelationId() {
-    return correlationId;
-  }
-
-  public String getContent() {
-    return content;
-  }
-
-  public long getRequestDuration() {
-    return requestDuration;
-  }
-}
+import javax.annotation.ParametersAreNonnullByDefault;

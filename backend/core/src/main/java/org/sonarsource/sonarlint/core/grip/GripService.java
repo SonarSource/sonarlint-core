@@ -19,29 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.grip;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import javax.annotation.CheckForNull;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
+import org.sonarsource.sonarlint.core.grip.suggest.FixSuggestion;
+import org.sonarsource.sonarlint.core.grip.suggest.parsing.BeforeAfterParser;
 import org.sonarsource.sonarlint.core.grip.web.api.GripWebApi;
-import org.sonarsource.sonarlint.core.grip.web.api.SuggestFixWebApiResponse;
+import org.sonarsource.sonarlint.core.grip.web.api.SuggestFixWebApiRequest;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.DiffDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.LineRangeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.ProvideFeedbackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestFixParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestFixResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestedFixDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestionError;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 
 @Named
 @Singleton
@@ -62,100 +55,20 @@ public class GripService {
       throw new IllegalStateException("Cannot find the file with URI: " + fileUri);
     }
     var fileContent = clientFile.getContent();
-    var startTime = System.currentTimeMillis();
-    var webApiResponse = gripWebApi.suggestFix(params, fileContent);
+    var request = new SuggestFixWebApiRequest(params.getServiceURI(), params.getAuthenticationToken(), params.getPromptId(), fileContent, params.getIssueMessage(),
+      params.getIssueRange(), params.getRuleKey());
+    var webApiResponse = gripWebApi.suggestFix(request, fileContent);
     if (webApiResponse.isLeft()) {
       return new SuggestFixResponse(new SuggestionError(webApiResponse.getLeft()));
     }
     var apiResponse = webApiResponse.getRight();
-    var fixResponse = parseResponse(apiResponse);
-    if (fixResponse.isLeft()) {
-      return new SuggestFixResponse(new SuggestionError(fixResponse.getLeft()));
+    var parsedSuggestion = new BeforeAfterParser().parse(request, apiResponse);
+    if (parsedSuggestion.isLeft()) {
+      return new SuggestFixResponse(new SuggestionError(parsedSuggestion.getLeft()));
     }
-    var fix = fixResponse.getRight();
-    var endTime = System.currentTimeMillis();
-    var snippetLineRange = locateSnippet(fileContent, fix.snippets.get(0));
-    // if no match, we could probably search better by being even more lenient
-    if (snippetLineRange == null) {
-      return new SuggestFixResponse(new SuggestionError("An error occurred: not able to locate the code to fix in the original source code"));
-    }
-    var originalSnippet = fileContent.lines().skip(snippetLineRange.start - 1L).limit(snippetLineRange.size()).collect(Collectors.joining("\n"));
-    var suggestedFix = new SuggestedFixDto(List.of(new DiffDto(originalSnippet, fix.snippets.get(1), new LineRangeDto(snippetLineRange.start, snippetLineRange.end))),
-      fix.explanation);
-    pastSuggestionsById.put(fix.id, new FixSuggestion(fix.id, params.getRuleKey(), endTime - startTime, fix.snippets.get(0), fix.snippets.get(1)));
-    return new SuggestFixResponse(new SuggestionDto(fix.id, fix.rawResponse, suggestedFix));
-  }
-
-  /**
-   * The implementation is lenient and accepts differences with the case or spacing.
-   * With the default temperature (which seems to be high (1?)), I observed frequent discrepancies between the original code and the diff returned by the API:
-   * <ul>
-   *   <li>different case, sometimes in the middle of a word</li>
-   *   <li>different spacing</li>
-   *   <li>completely random words appearing in the middle of the diff. Locating snippets with such anomalies is not supported at the moment.
-   *   If the need arises, we could introduce a scoring system and locate the snippet based on the highest score)</li>
-   * </ul>
-   * It seems much more consistent when using a lower temperature value, so we might get rid of this lenient implementation and instead trust the response from the API.
-   */
-  @CheckForNull
-  private static LineRange locateSnippet(String originalFileContent, String snippetFromApi) {
-    var fileLines = originalFileContent.lines().collect(Collectors.toCollection(ArrayList::new));
-    var snippetLines = snippetFromApi.lines().collect(Collectors.toCollection(ArrayList::new));
-    var snippetStartLineInFile = -1;
-    var currentFileLineIndex = 1;
-    while (!snippetLines.isEmpty() && !fileLines.isEmpty()) {
-      var nextFileLine = fileLines.remove(0);
-      var nextSnippetLine = snippetLines.remove(0);
-      if (nextSnippetLine.trim().toLowerCase(Locale.getDefault()).equals(nextFileLine.trim().toLowerCase(Locale.getDefault()))) {
-        if (snippetStartLineInFile == -1) {
-          snippetStartLineInFile = currentFileLineIndex;
-        }
-      } else {
-        snippetLines = snippetFromApi.lines().collect(Collectors.toCollection(ArrayList::new));
-        snippetStartLineInFile = -1;
-      }
-      currentFileLineIndex++;
-    }
-    return snippetStartLineInFile == -1 ? null : new LineRange(snippetStartLineInFile, currentFileLineIndex - 1);
-  }
-
-  private static Either<String, GripResponse> parseResponse(SuggestFixWebApiResponse response) {
-    var content = response.getContent();
-    var lines = content.lines().collect(Collectors.toCollection(ArrayList::new));
-    if (lines.isEmpty()) {
-      return Either.forLeft("Unexpected response received from the suggestion service: empty content");
-    }
-    var snippets = new ArrayList<String>();
-    var inSnippet = false;
-    StringBuilder currentSnippet = null;
-    var freeText = new StringBuilder();
-    var currentLineSeparator = "";
-    for (String line : lines) {
-      if (line.startsWith("```")) {
-        if (inSnippet) {
-          snippets.add(currentSnippet.toString());
-          inSnippet = false;
-          currentSnippet = null;
-          freeText = new StringBuilder();
-        } else {
-          inSnippet = true;
-          currentSnippet = new StringBuilder();
-        }
-        currentLineSeparator = "";
-      } else if (inSnippet) {
-        currentSnippet.append(currentLineSeparator).append(line);
-        currentLineSeparator = "\n";
-      } else {
-        if (!line.trim().equals("\n") && !line.trim().isEmpty()) {
-          freeText.append(currentLineSeparator).append(line);
-          currentLineSeparator = "\n";
-        }
-      }
-    }
-    if (snippets.size() < 2) {
-      return Either.forLeft("Unexpected response received from the suggestion service: no before and after");
-    }
-    return Either.forRight(new GripResponse(response.getCorrelationId(), content, snippets, freeText.toString()));
+    var suggestion = parsedSuggestion.getRight();
+    pastSuggestionsById.put(suggestion.getCorrelationId(), suggestion);
+    return new SuggestFixResponse(new SuggestionDto(suggestion.getCorrelationId(), suggestion.getApiRawText(), suggestion.getFix()));
   }
 
   public void provideFeedback(ProvideFeedbackParams params) {
@@ -165,34 +78,5 @@ public class GripService {
       throw new IllegalArgumentException("Cannot find previous suggestion with ID=" + correlationId);
     }
     gripWebApi.provideFeedback(params, pastSuggestion);
-  }
-
-  private static class GripResponse {
-    private final UUID id;
-    private final String rawResponse;
-    private final List<String> snippets;
-    private final String explanation;
-
-    private GripResponse(UUID id, String rawResponse, List<String> snippets, String explanation) {
-      this.id = id;
-      this.rawResponse = rawResponse;
-      this.snippets = snippets;
-      this.explanation = explanation;
-    }
-  }
-
-  // 1-based
-  private static class LineRange {
-    private final int start;
-    private final int end;
-
-    private LineRange(int start, int end) {
-      this.start = start;
-      this.end = end;
-    }
-
-    private int size() {
-      return end - start + 1;
-    }
   }
 }

@@ -17,28 +17,30 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.grip;
+package org.sonarsource.sonarlint.core.grip.suggest;
 
 import java.util.UUID;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.grip.web.api.SuggestFixWebApiResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestedFixDto;
 
 public class FixSuggestion {
-  private final UUID correlationId;
+  private final SuggestFixWebApiResponse apiResponse;
   private final String ruleKey;
-  private final long responseTime;
+  private final SuggestedFixDto suggestedFix;
   private final String before;
   private final String after;
 
-  public FixSuggestion(UUID correlationId, String ruleKey, long responseTime, @Nullable String before, @Nullable String after) {
-    this.correlationId = correlationId;
+  public FixSuggestion(SuggestFixWebApiResponse apiResponse, String ruleKey, SuggestedFixDto suggestedFix, @Nullable String before, @Nullable String after) {
+    this.apiResponse = apiResponse;
     this.ruleKey = ruleKey;
-    this.responseTime = responseTime;
+    this.suggestedFix = suggestedFix;
     this.before = before;
     this.after = after;
   }
 
   public UUID getCorrelationId() {
-    return correlationId;
+    return apiResponse.getCorrelationId();
   }
 
   public String getRuleKey() {
@@ -46,7 +48,11 @@ public class FixSuggestion {
   }
 
   public long getResponseTime() {
-    return responseTime;
+    return apiResponse.getRequestDuration();
+  }
+
+  public SuggestedFixDto getFix() {
+    return suggestedFix;
   }
 
   public String getBefore() {
@@ -55,5 +61,9 @@ public class FixSuggestion {
 
   public String getAfter() {
     return after;
+  }
+
+  public String getApiRawText() {
+    return apiResponse.getContent();
   }
 }
