@@ -27,6 +27,7 @@ import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.grip.suggest.FixSuggestion;
 import org.sonarsource.sonarlint.core.grip.suggest.parsing.BeforeAfterParser;
+import org.sonarsource.sonarlint.core.grip.suggest.parsing.JsonDiffParser;
 import org.sonarsource.sonarlint.core.grip.suggest.parsing.GripSuggestionParser;
 import org.sonarsource.sonarlint.core.grip.web.api.GripWebApi;
 import org.sonarsource.sonarlint.core.grip.web.api.SuggestFixWebApiRequest;
@@ -42,7 +43,10 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestionError;
 public class GripService {
   private final GripWebApi gripWebApi;
   private final ClientFileSystemService fileSystemService;
-  private final Map<String, GripSuggestionParser> parsersByPromptId = Map.of("openai.generic.20240614", new BeforeAfterParser());
+  private final Map<String, GripSuggestionParser> parsersByPromptId = Map.of(
+    "openai.generic.20240614", new BeforeAfterParser(),
+    "openai.json-diff.20240619", new JsonDiffParser()
+    );
   private final Map<UUID, FixSuggestion> pastSuggestionsById = new HashMap<>();
 
   public GripService(HttpClientProvider httpClientProvider, ClientFileSystemService fileSystemService) {

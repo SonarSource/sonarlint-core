@@ -82,7 +82,9 @@ class GripMediumTests {
     + "  }\n"
     + "}", new TextRangeDto(13, 4, 13, 13), "Replace this use of System.out by a logger.", "java:S106");
 
-  private static final Issue CURRENT_ISSUE = JAVA_S1219_NON_CASE_LABELS_IN_SWITCH;
+  private static final Issue CURRENT_ISSUE = JAVA_S106_SYSTEM_OUT;
+//  public static final String PROMPT_ID = "openai.generic.20240614";
+  public static final String PROMPT_ID = "openai.json-diff.20240619";
 
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
@@ -129,7 +131,7 @@ class GripMediumTests {
       .build(client);
 
     var response = backend.getGripService()
-      .suggestFix(new SuggestFixParams(URI.create("http://localhost:8080/"), "token", "prompt", CONFIG_SCOPE_ID, filePath.toUri(), CURRENT_ISSUE.message, CURRENT_ISSUE.textRange,
+      .suggestFix(new SuggestFixParams(URI.create("http://localhost:8080/"), "token", PROMPT_ID, CONFIG_SCOPE_ID, filePath.toUri(), CURRENT_ISSUE.message, CURRENT_ISSUE.textRange,
         CURRENT_ISSUE.ruleKey))
       .join();
 
@@ -183,8 +185,7 @@ class GripMediumTests {
     var recordedRequest = mockServer.takeRequest();
     assertThat(recordedRequest.getHeader("Authorization")).isEqualTo("Bearer token");
     assertThat(recordedRequest.getBody().readString(Charset.defaultCharset())).startsWith(
-      "{\"rule_key\":\"java:S106\",\"fix_accepted\":true,\"rating\":\"BAD\",\"comments\":\"comment\",\"context\":{\"correlation_id\":\"" + correlationId + "\",\"response_time\":")
-      .endsWith(",\"before\":\"before\",\"after\":\"after\"}}");
+      "{\"rule_key\":\"java:S106\",\"fix_accepted\":true,\"rating\":\"BAD\",\"comments\":\"comment\",\"context\":{\"correlation_id\":\"" + correlationId + "\",\"response_time\":");
   }
 
   private static class Issue {

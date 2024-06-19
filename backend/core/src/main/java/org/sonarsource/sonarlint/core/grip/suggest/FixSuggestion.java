@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.grip.suggest;
 
 import java.util.UUID;
-import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.grip.web.api.SuggestFixWebApiResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestedFixDto;
 
@@ -28,15 +27,11 @@ public class FixSuggestion {
   private final SuggestFixWebApiResponse apiResponse;
   private final String ruleKey;
   private final SuggestedFixDto suggestedFix;
-  private final String before;
-  private final String after;
 
-  public FixSuggestion(SuggestFixWebApiResponse apiResponse, String ruleKey, SuggestedFixDto suggestedFix, @Nullable String before, @Nullable String after) {
+  public FixSuggestion(SuggestFixWebApiResponse apiResponse, String ruleKey, SuggestedFixDto suggestedFix) {
     this.apiResponse = apiResponse;
     this.ruleKey = ruleKey;
     this.suggestedFix = suggestedFix;
-    this.before = before;
-    this.after = after;
   }
 
   public UUID getCorrelationId() {
@@ -53,14 +48,6 @@ public class FixSuggestion {
 
   public SuggestedFixDto getFix() {
     return suggestedFix;
-  }
-
-  public String getBefore() {
-    return before;
-  }
-
-  public String getAfter() {
-    return after;
   }
 
   public String getApiRawText() {

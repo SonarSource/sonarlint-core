@@ -27,6 +27,7 @@ public class SuggestFixRequestPayload {
   private TextRangePayload textRange;
 
   public SuggestFixRequestPayload(String promptVersion, String sourceCode, String message, String ruleKey, TextRangePayload textRange) {
+    this.promptVersion = promptVersion;
     this.sourceCode = sourceCode;
     this.message = message;
     this.ruleKey = ruleKey;
