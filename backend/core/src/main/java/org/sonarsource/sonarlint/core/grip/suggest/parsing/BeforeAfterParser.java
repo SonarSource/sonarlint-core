@@ -49,7 +49,7 @@ public class BeforeAfterParser implements GripSuggestionParser {
     var originalSnippet = fileContent.lines().skip(snippetLineRange.start - 1L).limit(snippetLineRange.size()).collect(Collectors.joining("\n"));
     var suggestedFix = new SuggestedFixDto(List.of(new DiffDto(originalSnippet, fix.snippets.get(1), new LineRangeDto(snippetLineRange.start, snippetLineRange.end))),
       fix.explanation);
-    return Either.forRight(new FixSuggestion(webApiResponse, request.getRuleKey(), suggestedFix, fix.snippets.get(0), fix.snippets.get(1)));
+    return Either.forRight(new FixSuggestion(webApiResponse, request.getRuleKey(), suggestedFix));
   }
 
   /**
