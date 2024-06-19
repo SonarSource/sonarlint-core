@@ -20,12 +20,13 @@
 package org.sonarsource.sonarlint.core.grip.web.api.payload;
 
 public class SuggestFixRequestPayload {
+  private String promptVersion;
   private String sourceCode;
   private String message;
   private String ruleKey;
   private TextRangePayload textRange;
 
-  public SuggestFixRequestPayload(String sourceCode, String message, String ruleKey, TextRangePayload textRange) {
+  public SuggestFixRequestPayload(String promptVersion, String sourceCode, String message, String ruleKey, TextRangePayload textRange) {
     this.sourceCode = sourceCode;
     this.message = message;
     this.ruleKey = ruleKey;

@@ -27,6 +27,7 @@ import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.grip.suggest.FixSuggestion;
 import org.sonarsource.sonarlint.core.grip.suggest.parsing.BeforeAfterParser;
+import org.sonarsource.sonarlint.core.grip.suggest.parsing.GripSuggestionParser;
 import org.sonarsource.sonarlint.core.grip.web.api.GripWebApi;
 import org.sonarsource.sonarlint.core.grip.web.api.SuggestFixWebApiRequest;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
@@ -41,6 +42,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestionError;
 public class GripService {
   private final GripWebApi gripWebApi;
   private final ClientFileSystemService fileSystemService;
+  private final Map<String, GripSuggestionParser> parsersByPromptId = Map.of("openai.generic.20240614", new BeforeAfterParser());
   private final Map<UUID, FixSuggestion> pastSuggestionsById = new HashMap<>();
 
   public GripService(HttpClientProvider httpClientProvider, ClientFileSystemService fileSystemService) {
@@ -62,7 +64,11 @@ public class GripService {
       return new SuggestFixResponse(new SuggestionError(webApiResponse.getLeft()));
     }
     var apiResponse = webApiResponse.getRight();
-    var parsedSuggestion = new BeforeAfterParser().parse(request, apiResponse);
+    var parser = parsersByPromptId.get(params.getPromptId());
+    if (parser == null) {
+      return new SuggestFixResponse(new SuggestionError("The requested prompt does not exist"));
+    }
+    var parsedSuggestion = parser.parse(request, apiResponse);
     if (parsedSuggestion.isLeft()) {
       return new SuggestFixResponse(new SuggestionError(parsedSuggestion.getLeft()));
     }
