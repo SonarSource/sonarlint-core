@@ -34,10 +34,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.sonar.api.utils.System2;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingPluginParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ProgressEndNotification;
@@ -506,6 +508,80 @@ class AnalysisMediumTests {
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
     verify(client, times(0)).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
+  }
+
+
+  @Test
+  void it_should_skip_analysis_and_keep_rules_if_disabled_language_for_analysis(@TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "pom.xml",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        + "<project>\n"
+        + "  <modelVersion>4.0.0</modelVersion>\n"
+        + "  <groupId>com.foo</groupId>\n"
+        + "  <artifactId>bar</artifactId>\n"
+        + "  <version>${pom.version}</version>\n"
+        + "</project>");
+    var fileUri = filePath.toUri();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .withDisabledLanguagesForAnalysis(Language.XML)
+      .build(client);
+    var analysisId = UUID.randomUUID();
+
+    var result = backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), false, System.currentTimeMillis())).join();
+
+    assertThat(result.getFailedAnalysisFiles()).isEmpty();
+    assertThat(result.getRawIssues()).isEmpty();
+    verify(client, never()).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), any());
+
+    var allRules = backend.getRulesService().listAllStandaloneRulesDefinitions().join();
+    assertThat(allRules.getRulesByKey().keySet())
+      .isNotEmpty()
+      .allMatch(key -> key.startsWith("xml:"));
+    var ruleDetails = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(CONFIG_SCOPE_ID, "xml:S103", null)).join();
+    assertThat(ruleDetails.details().getName()).isEqualTo("Lines should not be too long");
+  }
+
+  @Test
+  void it_should_skip_analysis_only_for_disabled_language(@TempDir Path baseDir) {
+    var xmlFilePath = createFile(baseDir, "pom.xml",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        + "<project>\n"
+        + "  <modelVersion>4.0.0</modelVersion>\n"
+        + "  <groupId>com.foo</groupId>\n"
+        + "  <artifactId>bar</artifactId>\n"
+        + "  <version>${pom.version}</version>\n"
+        + "</project>");
+    var xmlFileUri = xmlFilePath.toUri();
+    var javaFilePath = createFile(baseDir, "Main.java",
+      "public class Main {}");
+    var javaFileUri = javaFilePath.toUri();
+
+    var xmlClientFile = new ClientFileDto(xmlFileUri, baseDir.relativize(xmlFilePath), CONFIG_SCOPE_ID, false, null, xmlFilePath, null, null);
+    var javaClientFile = new ClientFileDto(javaFileUri, baseDir.relativize(javaFilePath), CONFIG_SCOPE_ID, false, null, javaFilePath, null, null);
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(xmlClientFile, javaClientFile))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .withDisabledLanguagesForAnalysis(Language.XML)
+      .build(client);
+    var analysisId = UUID.randomUUID();
+
+    var result = backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(xmlFileUri, javaFileUri), Map.of(), false, System.currentTimeMillis())).join();
+
+    assertThat(result.getFailedAnalysisFiles()).isEmpty();
+    assertThat(result.getRawIssues())
+      .hasSize(2)
+      .allMatch(rawIssueDto -> rawIssueDto.getRuleKey().startsWith("java:"));
   }
 
   private static Path createFile(Path folderPath, String fileName, String content) {

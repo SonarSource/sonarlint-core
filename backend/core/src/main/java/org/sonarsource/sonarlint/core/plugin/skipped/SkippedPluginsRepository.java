@@ -41,8 +41,8 @@ public class SkippedPluginsRepository {
     return skippedEmbeddedPlugins;
   }
 
-  public List<SkippedPlugin> getSkippedPlugins(String configurationScopeId) {
-    return skippedPluginsByConnectionId.get(configurationScopeId);
+  public List<SkippedPlugin> getSkippedPlugins(String connectionId) {
+    return skippedPluginsByConnectionId.get(connectionId);
   }
 
   public void setSkippedPlugins(String connectionId, List<SkippedPlugin> skippedPlugins) {
