@@ -169,7 +169,7 @@ public class PluginsService {
     return skippedPluginsRepository.getSkippedEmbeddedPlugins();
   }
 
-  public List<SkippedPlugin> getSkippedPlugins(String configScopeId){
-    return skippedPluginsRepository.getSkippedPlugins(configScopeId);
+  public List<SkippedPlugin> getSkippedPlugins(String connectionId){
+    return skippedPluginsRepository.getSkippedPlugins(connectionId);
   }
 }
