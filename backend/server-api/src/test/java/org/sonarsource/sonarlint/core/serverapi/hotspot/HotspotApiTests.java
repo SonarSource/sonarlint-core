@@ -28,16 +28,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
-import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
-import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
@@ -337,30 +334,4 @@ class HotspotApiTests {
       .contains("Error while fetching security hotspots, the component 'component:path' is missing");
   }
 
-  @Test
-  void sonar_cloud_should_permit_tracking_hotspots() {
-    var hotspotApi = new HotspotApi(new ServerApiHelper(new EndpointParams("https://sonarcloud.io", true, "org"), HttpClientProvider.forTesting().getHttpClient()));
-
-    var permitsTracking = hotspotApi.permitsTracking(() -> Version.create("1.0"));
-
-    assertThat(permitsTracking).isTrue();
-  }
-
-  @Test
-  void sonar_qube_prior_to_9_7_should_not_permit_tracking_hotspots() {
-    var hotspotApi = new HotspotApi(new ServerApiHelper(new EndpointParams("http://my.sonar.qube", false, null), HttpClientProvider.forTesting().getHttpClient()));
-
-    var permitsTracking = hotspotApi.permitsTracking(() -> Version.create("9.6.0"));
-
-    assertThat(permitsTracking).isFalse();
-  }
-
-  @Test
-  void sonar_qube_9_7_plus_should_permit_tracking_hotspots() {
-    var hotspotApi = new HotspotApi(new ServerApiHelper(new EndpointParams("http://my.sonar.qube", false, null), HttpClientProvider.forTesting().getHttpClient()));
-
-    var permitsTracking = hotspotApi.permitsTracking(() -> Version.create("9.7.0"));
-
-    assertThat(permitsTracking).isTrue();
-  }
 }

@@ -43,12 +43,8 @@ public class ServerHotspotUpdater {
   }
 
   public void updateAll(HotspotApi hotspotApi, String projectKey, String branchName, Supplier<Version> serverVersionSupplier, SonarLintCancelMonitor cancelMonitor) {
-    if (hotspotApi.permitsTracking(serverVersionSupplier)) {
-      var projectHotspots = hotspotApi.getAll(projectKey, branchName, cancelMonitor);
-      storage.project(projectKey).findings().replaceAllHotspotsOfBranch(branchName, projectHotspots);
-    } else {
-      LOG.info("Skip downloading hotspots from server, not supported");
-    }
+    var projectHotspots = hotspotApi.getAll(projectKey, branchName, cancelMonitor);
+    storage.project(projectKey).findings().replaceAllHotspotsOfBranch(branchName, projectHotspots);
   }
 
   public void updateForFile(HotspotApi hotspotApi, String projectKey, Path serverFilePath, String branchName, Supplier<Version> serverVersionSupplier,
@@ -57,12 +53,8 @@ public class ServerHotspotUpdater {
       LOG.debug("Skip downloading file hotspots on SonarQube 10.1+");
       return;
     }
-    if (hotspotApi.permitsTracking(serverVersionSupplier)) {
-      var fileHotspots = hotspotApi.getFromFile(projectKey, serverFilePath, branchName, cancelMonitor);
-      storage.project(projectKey).findings().replaceAllHotspotsOfFile(branchName, serverFilePath, fileHotspots);
-    } else {
-      LOG.info("Skip downloading hotspots for file, not supported");
-    }
+    var fileHotspots = hotspotApi.getFromFile(projectKey, serverFilePath, branchName, cancelMonitor);
+    storage.project(projectKey).findings().replaceAllHotspotsOfFile(branchName, serverFilePath, fileHotspots);
   }
 
   public void sync(HotspotApi hotspotApi, String projectKey, String branchName, Set<SonarLanguage> enabledLanguages, SonarLintCancelMonitor cancelMonitor) {

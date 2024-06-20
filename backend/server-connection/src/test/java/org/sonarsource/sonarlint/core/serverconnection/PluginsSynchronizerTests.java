@@ -66,7 +66,7 @@ class PluginsSynchronizerTests {
   @Test
   void should_not_synchronize_sonar_text_post_103(@TempDir Path dest) {
     mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": [" +
-      "{\"key\": \"text\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-text-plugin-1.2.3.4.jar\", \"sonarLintSupported\": true}," +
+      "{\"key\": \"text\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-text-plugin-2.3.4.5.jar\", \"sonarLintSupported\": true}," +
       "{\"key\": \"textenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-text-enterprise-plugin-5.6.7.8.jar\", \"sonarLintSupported\": true}" +
       "]}");
     mockServer.addStringResponse("/api/plugins/download?plugin=text", "content-text");
@@ -76,7 +76,7 @@ class PluginsSynchronizerTests {
     underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), true, new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
-    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-text-plugin-1.2.3.4.jar")).exists();
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-text-plugin-2.3.4.5.jar")).exists();
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-text-enterprise-plugin-5.6.7.8.jar")).exists();
   }
 

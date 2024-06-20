@@ -34,15 +34,15 @@ class PluginsMinVersionsTests {
 
   @Test
   void getMinimumVersion() {
-    assertThat(underTest.getMinimumVersion("java")).isEqualTo("5.13.1.18282");
+    assertThat(underTest.getMinimumVersion("java")).isEqualTo("7.16.0.30901");
     assertThat(underTest.getMinimumVersion("unknown")).isNull();
   }
 
   @Test
   void isVersionSupported() {
-    assertThat(underTest.isVersionSupported("java", "5.13.1.18282")).isTrue();
-    assertThat(underTest.isVersionSupported("java", "5.13.1.18282-SNAPSHOT")).isTrue();
-    assertThat(underTest.isVersionSupported("java", "5.13.0.18197")).isFalse();
+    assertThat(underTest.isVersionSupported("java", "7.16.0.30901")).isTrue();
+    assertThat(underTest.isVersionSupported("java", "7.16.0.30901-SNAPSHOT")).isTrue();
+    assertThat(underTest.isVersionSupported("java", "7.16.0.20901")).isFalse();
     assertThat(underTest.isVersionSupported("unknown", "4.0")).isTrue();
   }
 }

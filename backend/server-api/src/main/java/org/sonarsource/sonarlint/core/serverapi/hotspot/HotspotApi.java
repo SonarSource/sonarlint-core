@@ -70,14 +70,6 @@ public class HotspotApi {
     this.helper = helper;
   }
 
-  public boolean permitsTracking(Supplier<Version> serverVersion) {
-    return permitsTracking(helper.isSonarCloud(), serverVersion);
-  }
-
-  public static boolean permitsTracking(boolean isSonarCloud, Supplier<Version> serverVersion) {
-    return isSonarCloud || serverVersion.get().compareToIgnoreQualifier(TRACKING_COMPATIBLE_MIN_SQ_VERSION) >= 0;
-  }
-
   public void changeStatus(String hotspotKey, HotspotReviewStatus status, SonarLintCancelMonitor cancelMonitor) {
     var isReviewed = status.isReviewed();
     var webApiStatus = isReviewed ? "REVIEWED" : "TO_REVIEW";

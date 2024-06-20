@@ -23,7 +23,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
+import org.sonar.api.SonarEdition;
+import org.sonar.api.SonarProduct;
+import org.sonar.api.SonarQubeSide;
+import org.sonar.api.SonarRuntime;
+import org.sonar.api.server.rule.RuleDescriptionSection;
 import org.sonar.api.server.rule.RulesDefinition;
+import org.sonar.api.utils.Version;
 import org.sonarsource.analyzer.commons.RuleMetadataLoader;
 
 /**
@@ -44,7 +50,7 @@ public class MyJavaRulesDefinition implements RulesDefinition {
   public void define(Context context) {
     NewRepository repository = context.createRepository(REPOSITORY_KEY, "java").setName("MyCompany Custom Repository");
 
-    RuleMetadataLoader ruleMetadataLoader = new RuleMetadataLoader(RESOURCE_BASE_PATH);
+    RuleMetadataLoader ruleMetadataLoader = new RuleMetadataLoader(RESOURCE_BASE_PATH, getSonarLintRuntime(Version.parse("10.3-SNAPSHOT")));
 
     ruleMetadataLoader.addRulesByAnnotatedClass(repository, new ArrayList<>(RulesList.getChecks()));
 
@@ -55,6 +61,31 @@ public class MyJavaRulesDefinition implements RulesDefinition {
       .setMarkdownDescription("  = Title\n  * one\n* two");
 
     repository.done();
+  }
+
+  private static SonarRuntime getSonarLintRuntime(Version version) {
+    return new SonarRuntime() {
+
+      @Override
+      public Version getApiVersion() {
+        return version;
+      }
+
+      @Override
+      public SonarProduct getProduct() {
+        return SonarProduct.SONARLINT;
+      }
+
+      @Override
+      public SonarQubeSide getSonarQubeSide() {
+        return null;
+      }
+
+      @Override
+      public SonarEdition getEdition() {
+        return null;
+      }
+    };
   }
 
   private static void setTemplates(NewRepository repository) {

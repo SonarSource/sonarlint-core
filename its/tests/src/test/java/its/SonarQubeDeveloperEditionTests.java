@@ -362,7 +362,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    @OnlyOnSonarQube(from = "9.2")
+    @OnlyOnSonarQube(from = "9.9")
     void shouldRaiseIssuesOnACloudFormationProject() {
       var configScopeId = "shouldRaiseIssuesOnACloudFormationProject";
       var projectKey = "sample-cloudformation";
@@ -379,7 +379,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    @OnlyOnSonarQube(from = "9.2")
+    @OnlyOnSonarQube(from = "9.9")
     void shouldRaiseIssuesOnADockerProject() {
       var configScopeId = "shouldRaiseIssuesOnADockerProject";
       var projectKey = "sample-docker";
@@ -396,7 +396,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    @OnlyOnSonarQube(from = "9.2")
+    @OnlyOnSonarQube(from = "9.9")
     void shouldRaiseIssuesOnAKubernetesProject() {
       var configScopeId = "shouldRaiseIssuesOnAKubernetesProject";
       var projectKey = "sample-kubernetes";
@@ -413,7 +413,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    @OnlyOnSonarQube(from = "9.2")
+    @OnlyOnSonarQube(from = "9.9")
     void shouldRaiseIssuesOnATerraformProject() {
       var configScopeId = "shouldRaiseIssuesOnATerraformProject";
       var projectKey = "sample-terraform";
@@ -649,7 +649,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   class ServerSentEvents {
 
     @Test
-    @OnlyOnSonarQube(from = "9.4")
+    @OnlyOnSonarQube(from = "9.9")
     void shouldUpdateQualityProfileInLocalStorageWhenProfileChangedOnServer() {
       var configScopeId = "shouldUpdateQualityProfileInLocalStorageWhenProfileChangedOnServer";
       var projectKey = "projectKey-sse";
@@ -672,7 +672,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    @OnlyOnSonarQube(from = "9.6")
+    @OnlyOnSonarQube(from = "9.9")
     void shouldUpdateIssueInLocalStorageWhenIssueResolvedOnServer() {
       var configScopeId = "shouldUpdateIssueInLocalStorageWhenIssueResolvedOnServer";
       var projectKey = "projectKey-sse2";
@@ -715,7 +715,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       provisionProject(ORCHESTRATOR, projectKey, "Sample Xoo");
       ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/xoo-sonarlint.xml"));
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "xoo", "SonarLint IT Xoo");
-      // Use the pattern of long living branches in SQ 7.9, else we only have issues on changed files
+      // Use the pattern of long living branches in SQ 9.9, else we only have issues on changed files
 
       // main branch
       analyzeProject("sample-xoo-v1", projectKey);
@@ -738,12 +738,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         .get().getMatchedSonarProjectBranch())
         .isEqualTo(short_branch));
 
-      // Starting from SQ 8.1, concept of short vs long living branch has been removed
-      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(8, 1)) {
-        await().untilAsserted(() -> assertThat(allBranchNamesForProject).contains(MAIN_BRANCH_NAME, short_branch, long_branch));
-      } else {
-        await().untilAsserted(() -> assertThat(allBranchNamesForProject).contains(MAIN_BRANCH_NAME, long_branch));
-      }
+      await().untilAsserted(() -> assertThat(allBranchNamesForProject).contains(MAIN_BRANCH_NAME, short_branch, long_branch));
     }
 
     @Test
@@ -758,11 +753,9 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       analyzeProject(projectKey, projectKey);
       analyzeProject(projectKey, projectKey, "sonar.branch.name", featureBranch);
 
-      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
-        var issuesBranch = adminWsClient.issues().search(new SearchRequest().setBranch(featureBranch).setComponentKeys(List.of(projectKey)));
-        var issue_s1172 = issuesBranch.getIssuesList().stream().filter(issue -> issue.getRule().equals(ruleKey_s1172)).findFirst().orElseThrow();
-        adminWsClient.issues().doTransition(new DoTransitionRequest().setIssue(issue_s1172.getKey()).setTransition("falsepositive"));
-      }
+      var issuesBranch = adminWsClient.issues().search(new SearchRequest().setBranch(featureBranch).setComponentKeys(List.of(projectKey)));
+      var issue_s1172 = issuesBranch.getIssuesList().stream().filter(issue -> issue.getRule().equals(ruleKey_s1172)).findFirst().orElseThrow();
+      adminWsClient.issues().doTransition(new DoTransitionRequest().setIssue(issue_s1172.getKey()).setTransition("falsepositive"));
 
       openBoundConfigurationScope(configScopeId, projectKey, true);
       waitForAnalysisToBeReady(configScopeId);
@@ -779,13 +772,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var fooIssuesMainBranch = issuesOnMainBranch.get(Path.of("src/main/java/foo/Foo.java"));
       assertThat(fooIssuesMainBranch).hasSize(3);
-      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
-        // On main branch, all issues were matched and no issues are resolved
-        assertThat(fooIssuesMainBranch.stream().filter(Either::isLeft).count()).isEqualTo(3);
-        assertThat(fooIssuesMainBranch.stream().filter(issue -> issue.getLeft().isResolved()).count()).isZero();
-      } else {
-        assertThat(fooIssuesMainBranch.stream().filter(Either::isRight).count()).isEqualTo(3);
-      }
+      assertThat(fooIssuesMainBranch.stream().filter(Either::isLeft).count()).isEqualTo(3);
+      assertThat(fooIssuesMainBranch.stream().filter(issue -> issue.getLeft().isResolved()).count()).isZero();
 
       didSynchronizeConfigurationScopes.clear();
       matchedBranchNameForProject = featureBranch;
@@ -800,13 +788,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var fooIssuesFeatureBranch = issuesOnFeatureBranch.get(Path.of("src/main/java/foo/Foo.java"));
       assertThat(fooIssuesFeatureBranch).hasSize(3);
-      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
-        // On feature branch, all issues were matched and one issue is resolved
-        assertThat(fooIssuesFeatureBranch.stream().filter(Either::isLeft).count()).isEqualTo(3);
-        assertThat(fooIssuesFeatureBranch.stream().filter(issue -> issue.getLeft().isResolved()).count()).isEqualTo(1);
-      } else {
-        assertThat(fooIssuesFeatureBranch.stream().filter(Either::isRight).count()).isEqualTo(3);
-      }
+      assertThat(fooIssuesFeatureBranch.stream().filter(Either::isLeft).count()).isEqualTo(3);
+      assertThat(fooIssuesFeatureBranch.stream().filter(issue -> issue.getLeft().isResolved()).count()).isEqualTo(1);
     }
   }
 
@@ -853,11 +836,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       assertThat(taintVulnerability.getSeverity()).isEqualTo(org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.MAJOR);
 
       assertThat(taintVulnerability.getType()).isEqualTo(org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.VULNERABILITY);
-      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
-        assertThat(taintVulnerability.getRuleDescriptionContextKey()).isEqualTo("java_se");
-      } else {
-        assertThat(taintVulnerability.getRuleDescriptionContextKey()).isNull();
-      }
+      assertThat(taintVulnerability.getRuleDescriptionContextKey()).isEqualTo("java_se");
       if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 2)) {
         assertThat(taintVulnerability.getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.COMPLETE);
         assertThat(taintVulnerability.getImpacts()).containsExactly(entry(SoftwareQuality.SECURITY, ImpactSeverity.HIGH));
@@ -874,7 +853,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     @Test
-    @OnlyOnSonarQube(from = "9.6")
+    @OnlyOnSonarQube(from = "9.9")
     void shouldUpdateTaintVulnerabilityInLocalStorageWhenChangedOnServer() throws ExecutionException, InterruptedException {
       openBoundConfigurationScope(CONFIG_SCOPE_ID, PROJECT_KEY_JAVA_TAINT, true);
       waitForAnalysisToBeReady(CONFIG_SCOPE_ID);
@@ -1006,7 +985,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     @Test
     // SonarQube should support opening security hotspots
-    @OnlyOnSonarQube(from = "8.6")
+    @OnlyOnSonarQube(from = "9.9")
     @Disabled
     void shouldShowHotspotWhenOpenedFromSonarQube() throws InvalidProtocolBufferException {
       var configScopeId = "shouldShowHotspotWhenOpenedFromSonarQube";
@@ -1068,18 +1047,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var rawIssues = analyzeFile(configScopeId, PROJECT_KEY_JAVA_HOTSPOT, "src/main/java/foo/Foo.java", "sonar.java.binaries",
         new File("projects/sample-java-hotspot/target/classes").getAbsolutePath());
 
-      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
-        assertThat(rawIssues)
-          .extracting(RawIssueDto::getRuleKey, RawIssueDto::getType)
-          .containsExactly(tuple(javaRuleKey(ORCHESTRATOR, "S4792"), RuleType.SECURITY_HOTSPOT));
-      } else {
-        // no hotspot detection when connected to SQ < 9.7
-        assertThat(rawIssues).isEmpty();
-      }
+      assertThat(rawIssues)
+        .extracting(RawIssueDto::getRuleKey, RawIssueDto::getType)
+        .containsExactly(tuple("java:S4792", RuleType.SECURITY_HOTSPOT));
     }
 
     @Test
-    @OnlyOnSonarQube(from = "9.7")
+    @OnlyOnSonarQube(from = "9.9")
     void loadHotspotRuleDescription() throws Exception {
       var configScopeId = "loadHotspotRuleDescription";
       openBoundConfigurationScope(configScopeId, PROJECT_KEY_JAVA_HOTSPOT, true);
@@ -1106,22 +1080,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var matchWithServerSecurityHotspotsResponse = backend.getSecurityHotspotMatchingService()
         .matchWithServerSecurityHotspots(new MatchWithServerSecurityHotspotsParams(configScopeId, clientTrackedHotspotsByServerRelativePath, true)).get();
       assertThat(matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByIdeRelativePath()).hasSize(2);
-      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 7)) {
-        var fooSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByIdeRelativePath().get(Path.of("src/main/java/foo/Foo.java"));
-        assertThat(fooSecurityHotspots).hasSize(1);
-        assertThat(fooSecurityHotspots.get(0).isLeft()).isTrue();
-        assertThat(fooSecurityHotspots.get(0).getLeft().getStatus()).isEqualTo(HotspotStatus.TO_REVIEW);
-        var barSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByIdeRelativePath().get(Path.of("src/main/java/bar/Bar.java"));
-        assertThat(barSecurityHotspots).hasSize(1);
-        assertThat(barSecurityHotspots.get(0).isRight()).isTrue();
-      } else {
-        var fooSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByIdeRelativePath().get(Path.of("src/main/java/foo/Foo.java"));
-        assertThat(fooSecurityHotspots).hasSize(1);
-        assertThat(fooSecurityHotspots.get(0).isRight()).isTrue();
-        var barSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByIdeRelativePath().get(Path.of("src/main/java/bar/Bar.java"));
-        assertThat(barSecurityHotspots).hasSize(1);
-        assertThat(barSecurityHotspots.get(0).isRight()).isTrue();
-      }
+      var fooSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByIdeRelativePath().get(Path.of("src/main/java/foo/Foo.java"));
+      assertThat(fooSecurityHotspots).hasSize(1);
+      assertThat(fooSecurityHotspots.get(0).isLeft()).isTrue();
+      assertThat(fooSecurityHotspots.get(0).getLeft().getStatus()).isEqualTo(HotspotStatus.TO_REVIEW);
+      var barSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByIdeRelativePath().get(Path.of("src/main/java/bar/Bar.java"));
+      assertThat(barSecurityHotspots).hasSize(1);
+      assertThat(barSecurityHotspots.get(0).isRight()).isTrue();
 
     }
   }
@@ -1183,13 +1148,12 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var ruleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId,
         javaRuleKey("S106"), null)).get();
       var ruleDescription = ruleDetailsResponse.details().getDescription();
-      if (ORCHESTRATOR.getServer().version().isGreaterThan(9, 5)) {
+      if (ORCHESTRATOR.getServer().version().isGreaterThan(10, 1)) {
         var ruleTabs = ruleDescription.getRight().getTabs();
         assertThat(ruleTabs.get(ruleTabs.size() - 1).getContent().getLeft().getHtmlContent()).contains(expected);
       } else {
         // no description sections at that time
         assertThat(ruleDescription.isRight()).isFalse();
-
       }
     }
 
@@ -1226,33 +1190,27 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var activeRuleDetailsResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, "javasecurity:S2083", null)).get();
 
       var description = activeRuleDetailsResponse.details().getDescription();
-
       var serverVersion = ORCHESTRATOR.getServer().version();
-      if (!serverVersion.isGreaterThanOrEquals(9, 5)) {
-        // no description sections at that time
-        assertThat(description.isRight()).isFalse();
-      } else {
-        var extendedDescription = description.getRight();
-        assertThat(extendedDescription.getIntroductionHtmlContent()).isNull();
-        var link = serverVersion.isGreaterThanOrEquals(10, 4) ? "OWASP - <a href=..." : "<a href=\"https:/...";
-        assertThat(extendedDescription.getTabs())
-          .flatExtracting(this::extractTabContent)
-          .containsExactly(
-            "Why is this an issue?",
-            "<p>Path injections occur when an application us...",
-            "How can I fix it?",
-            "--> Java SE (java_se)",
-            "    <p>The following code is vulnerable to path inj...",
-            "--> Others (others)",
-            "    <h4>How can I fix it in another component or fr...",
-            "More Info",
-            "<h3>Standards</h3>\n"
-              + "<ul>\n"
-              + "  <li> " + link);
+      var extendedDescription = description.getRight();
+      assertThat(extendedDescription.getIntroductionHtmlContent()).isNull();
+      var link = serverVersion.isGreaterThanOrEquals(10, 4) ? "OWASP - <a href=..." : "<a href=\"https:/...";
+      assertThat(extendedDescription.getTabs())
+        .flatExtracting(this::extractTabContent)
+        .containsExactly(
+          "Why is this an issue?",
+          "<p>Path injections occur when an application us...",
+          "How can I fix it?",
+          "--> Java SE (java_se)",
+          "    <p>The following code is vulnerable to path inj...",
+          "--> Others (others)",
+          "    <h4>How can I fix it in another component or fr...",
+          "More Info",
+          "<h3>Standards</h3>\n"
+            + "<ul>\n"
+            + "  <li> " + link);
 
-        var howToFixTab = extendedDescription.getTabs().get(1);
-        assertThat(howToFixTab.getContent().getRight().getDefaultContextKey()).isEqualTo("others");
-      }
+      var howToFixTab = extendedDescription.getTabs().get(1);
+      assertThat(howToFixTab.getContent().getRight().getDefaultContextKey()).isEqualTo("others");
     }
 
     @Test
@@ -1268,45 +1226,40 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var description = activeRuleDetailsResponse.details().getDescription();
 
-      if (!ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
-        // no description sections at that time
-        assertThat(description.isRight()).isFalse();
-      } else {
-        var extendedDescription = description.getRight();
-        assertThat(extendedDescription.getIntroductionHtmlContent())
-          .isEqualTo("<p>This vulnerability makes it possible to temporarily execute JavaScript code in the context of the application, granting access to the session of\n"
-            + "the victim. This is possible because user-provided data, such as URL parameters, are copied into the HTML body of the HTTP response that is sent back\n"
-            + "to the user.</p>");
-        var iterator = extendedDescription.getTabs().iterator();
-        iterator.next();
-        assertThat(extendedDescription.getTabs())
-          .flatExtracting(this::extractTabContent)
-          .containsExactly(
-            "Why is this an issue?",
-            "<p>Reflected cross-site scripting (XSS) occurs ...",
-            "How can I fix it?",
-            "--> JSP (jsp)",
-            "    <p>The following code is vulnerable to cross-si...",
-            "--> Servlet (servlet)",
-            "    <p>The following code is vulnerable to cross-si...",
-            "--> Spring (spring)",
-            "    <p>The following code is vulnerable to cross-si...",
-            "--> Thymeleaf (thymeleaf)",
-            "    <p>The following code is vulnerable to cross-si...",
-            "--> Others (others)",
-            "    <h4>How can I fix it in another component or fr...",
-            "More Info",
-            "<h3>Documentation</h3>\n"
-              + "<ul>\n"
-              + "  <li> <a href=\"htt...");
+      var extendedDescription = description.getRight();
+      assertThat(extendedDescription.getIntroductionHtmlContent())
+        .isEqualTo("<p>This vulnerability makes it possible to temporarily execute JavaScript code in the context of the application, granting access to the session of\n"
+          + "the victim. This is possible because user-provided data, such as URL parameters, are copied into the HTML body of the HTTP response that is sent back\n"
+          + "to the user.</p>");
+      var iterator = extendedDescription.getTabs().iterator();
+      iterator.next();
+      assertThat(extendedDescription.getTabs())
+        .flatExtracting(this::extractTabContent)
+        .containsExactly(
+          "Why is this an issue?",
+          "<p>Reflected cross-site scripting (XSS) occurs ...",
+          "How can I fix it?",
+          "--> JSP (jsp)",
+          "    <p>The following code is vulnerable to cross-si...",
+          "--> Servlet (servlet)",
+          "    <p>The following code is vulnerable to cross-si...",
+          "--> Spring (spring)",
+          "    <p>The following code is vulnerable to cross-si...",
+          "--> Thymeleaf (thymeleaf)",
+          "    <p>The following code is vulnerable to cross-si...",
+          "--> Others (others)",
+          "    <h4>How can I fix it in another component or fr...",
+          "More Info",
+          "<h3>Documentation</h3>\n"
+            + "<ul>\n"
+            + "  <li> <a href=\"htt...");
 
-        var howToFixTab = extendedDescription.getTabs().get(1);
-        assertThat(howToFixTab.getContent().getRight().getDefaultContextKey()).isEqualTo("spring");
-      }
+      var howToFixTab = extendedDescription.getTabs().get(1);
+      assertThat(howToFixTab.getContent().getRight().getDefaultContextKey()).isEqualTo("spring");
     }
 
     @Test
-    @OnlyOnSonarQube(from = "9.7")
+    @OnlyOnSonarQube(from = "9.9")
     void shouldEmulateDescriptionSectionsForHotspotRules() throws ExecutionException, InterruptedException {
       var configScopeId = "shouldEmulateDescriptionSectionsForHotspotRules";
       var projectKey = "sample-java-hotspot-new-backend";
@@ -1316,7 +1269,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       waitForAnalysisToBeReady(configScopeId);
 
       var activeRuleDetailsResponse = backend.getRulesService()
-        .getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, javaRuleKey(ORCHESTRATOR, "S4792"), null))
+        .getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, "java:S4792", null))
         .get();
 
       var extendedDescription = activeRuleDetailsResponse.details().getDescription().getRight();
@@ -1399,8 +1352,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   }
 
   private String javaRuleKey(String key) {
-    // Starting from SonarJava 6.0 (embedded in SQ 8.2), rule repository has been changed
-    return javaRuleKey(ORCHESTRATOR, key);
+    return "java:" + key;
   }
 
   private void setSettingsMultiValue(@Nullable String moduleKey, String key, String value) {

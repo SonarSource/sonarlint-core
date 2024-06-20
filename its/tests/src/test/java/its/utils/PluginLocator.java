@@ -26,7 +26,7 @@ import java.util.Map;
 public class PluginLocator {
 
   public static Path getCppPluginPath() {
-    return getPluginPath("sonar-cfamily-plugin-6.32.0.44918.jar");
+    return getPluginPath("sonar-cfamily-plugin-6.41.2.69583.jar");
   }
 
   public static Path getGoPluginPath() {

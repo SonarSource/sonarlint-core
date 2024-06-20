@@ -93,24 +93,8 @@ class ConnectedHotspotMediumTests {
   }
 
   @Test
-  void should_not_locally_detect_hotspots_when_connected_to_a_server_not_permitting_hotspot_tracking(@TempDir Path baseDir) throws Exception {
-    createStorageAndEngine("9.6");
-    var inputFile = prepareJavaInputFile(baseDir);
-
-    final List<RawIssue> issues = new ArrayList<>();
-    engine.analyze(AnalysisConfiguration.builder()
-      .setBaseDir(baseDir)
-      .addInputFile(inputFile)
-      .setModuleKey("key")
-      .build(),
-      new StoreIssueListener(issues), null, null, CONFIG_SCOPE_ID);
-
-    assertThat(issues).isEmpty();
-  }
-
-  @Test
-  void should_locally_detect_hotspots_when_connected_to_sonarqube_9_7_plus(@TempDir Path baseDir) throws Exception {
-    createStorageAndEngine("9.7");
+  void should_locally_detect_hotspots_when_connected_to_sonarqube_9_9_plus(@TempDir Path baseDir) throws Exception {
+    createStorageAndEngine("9.9");
     var inputFile = prepareJavaInputFile(baseDir);
 
     final List<RawIssue> issues = new ArrayList<>();

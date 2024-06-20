@@ -98,7 +98,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
 import org.sonarsource.sonarlint.core.rules.RulesService;
-import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.AnalyzerConfigurationSynchronized;
@@ -344,20 +343,17 @@ public class AnalysisService {
   }
 
   private boolean shouldIncludeRuleForAnalysis(String connectionId, SonarLintRuleDefinition ruleDefinition) {
-    return !ruleDefinition.getType().equals(RuleType.SECURITY_HOTSPOT) ||
-      (hotspotEnabled && permitsHotspotTracking(connectionId));
+    return !ruleDefinition.getType().equals(RuleType.SECURITY_HOTSPOT) || (hotspotEnabled && isHotspotTrackingPossible(connectionId));
   }
 
-  public boolean permitsHotspotTracking(String connectionId) {
+  public boolean isHotspotTrackingPossible(String connectionId) {
     var connection = connectionConfigurationRepository.getConnectionById(connectionId);
     if (connection == null) {
       // Connection is gone
       return false;
     }
     // when storage is not present, consider hotspots should not be detected
-    return storageService.connection(connectionId).serverInfo().read()
-      .map(serverInfo -> HotspotApi.permitsTracking(connection.getKind() == ConnectionKind.SONARCLOUD, serverInfo::getVersion))
-      .orElse(false);
+    return storageService.connection(connectionId).serverInfo().read().isPresent();
   }
 
   public boolean supportsSecretAnalysis(String connectionId) {

@@ -50,7 +50,6 @@ import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
-import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Components;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
@@ -255,6 +254,7 @@ public class ServerFixture {
         protected final Collection<ServerHotspot> hotspots = new ArrayList<>();
         protected final Collection<ServerIssue> issues = new ArrayList<>();
         private final Collection<ServerIssue> taintIssues = new ArrayList<>();
+        private final Collection<String> noHotspotsForFiles = new ArrayList<>();
         protected final Map<String, ServerSourceFileBuilder> sourceFileByComponentKey = new HashMap<>();
 
         public ServerProjectBranchBuilder withHotspot(String hotspotKey) {
@@ -294,6 +294,11 @@ public class ServerFixture {
         public ServerProjectBranchBuilder withTaintIssue(String issueKey, String ruleKey, String message, String author, String filePath,
           String status, String resolution, Instant introductionDate, TextRange textRange, RuleType ruleType) {
           this.taintIssues.add(new ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, introductionDate, textRange, ruleType));
+          return this;
+        }
+
+        public ServerProjectBranchBuilder withNoHotspotsForFile(String filePath) {
+          this.noHotspotsForFiles.add(filePath);
           return this;
         }
 
@@ -702,6 +707,8 @@ public class ServerFixture {
               .collect(toList()))
             .setPaging(Common.Paging.newBuilder().setTotal(allMessages.size()).build())
             .addAllHotspots(allMessages).build()))));
+        branch.noHotspotsForFiles.forEach(filePath -> mockServer.stubFor(get("/api/hotspots/search.protobuf?projectKey=" + projectKey + "&files=" + urlEncode(filePath) + branchParameter + "&ps=500&p=1")
+          .willReturn(aResponse().withResponseBody(protobufBody(Hotspots.SearchWsResponse.newBuilder().build())))));
       }));
     }
 
@@ -858,7 +865,7 @@ public class ServerFixture {
     }
 
     private void registerIssuesApiResponses() {
-      if (version != null && version.satisfiesMinRequirement(IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL)) {
+      if (version != null) {
         registerApiIssuesPullResponses();
         registerApiIssuesPullTaintResponses();
       } else {

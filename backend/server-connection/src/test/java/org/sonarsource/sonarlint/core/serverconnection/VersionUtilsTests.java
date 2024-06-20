@@ -49,8 +49,9 @@ class VersionUtilsTests {
 
   @Test
   void grace_period_should_be_true_if_connected_during_grace_period() {
-    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(getMinimalSupportedVersion())).isTrue();
-    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(Version.create(getMinimalSupportedVersion().getName() + ".1"))).isTrue();
+    // read isVersionSupportedDuringGracePeriod javadoc
+    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(getMinimalSupportedVersion())).isFalse();
+    assertThat(VersionUtils.isVersionSupportedDuringGracePeriod(Version.create(getMinimalSupportedVersion().getName() + ".1"))).isFalse();
   }
 
 }

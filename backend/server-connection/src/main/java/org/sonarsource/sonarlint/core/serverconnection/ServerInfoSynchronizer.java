@@ -39,7 +39,8 @@ public class ServerInfoSynchronizer {
 
   public void synchronize(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
     var serverStatus = serverApi.system().getStatus(cancelMonitor);
-    ServerVersionAndStatusChecker.checkServerUpAndSupported(serverStatus);
+    var serverVersionAndStatusChecker = new ServerVersionAndStatusChecker(serverApi);
+    serverVersionAndStatusChecker.checkVersionAndStatus(cancelMonitor);
     storage.serverInfo().store(serverStatus);
   }
 }

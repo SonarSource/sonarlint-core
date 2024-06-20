@@ -80,61 +80,55 @@
                 <artifactItem>
                   <groupId>org.sonarsource.java</groupId>
                   <artifactId>sonar-java-plugin</artifactId>
-                  <version>5.13.1.18282</version>
+                  <version>7.16.0.30901</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.sonarsource.javascript</groupId>
                   <artifactId>sonar-javascript-plugin</artifactId>
-                  <version>5.2.1.7778</version>
-                  <type>jar</type>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.sonarsource.typescript</groupId>
-                  <artifactId>sonar-typescript-plugin</artifactId>
-                  <version>1.9.0.3766</version>
+                  <version>9.13.0.20537</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.sonarsource.php</groupId>
                   <artifactId>sonar-php-plugin</artifactId>
-                  <version>3.2.0.4868</version>
+                  <version>3.27.1.9352</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.sonarsource.python</groupId>
                   <artifactId>sonar-python-plugin</artifactId>
-                  <version>1.14.0.3086</version>
+                  <version>3.24.1.11916</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
-                  <groupId>org.sonarsource.slang</groupId>
+                  <groupId>org.sonarsource.kotlin</groupId>
                   <artifactId>sonar-kotlin-plugin</artifactId>
-                  <version>1.5.0.315</version>
+                  <version>2.12.0.1956</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.sonarsource.slang</groupId>
                   <artifactId>sonar-ruby-plugin</artifactId>
-                  <version>1.5.0.315</version>
+                  <version>1.11.0.3905</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.sonarsource.slang</groupId>
                   <artifactId>sonar-scala-plugin</artifactId>
-                  <version>1.5.0.315</version>
+                  <version>1.11.0.3905</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.sonarsource.html</groupId>
                   <artifactId>sonar-html-plugin</artifactId>
-                  <version>3.1.0.1615</version>
+                  <version>3.7.1.3306</version>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
                   <groupId>org.sonarsource.xml</groupId>
                   <artifactId>sonar-xml-plugin</artifactId>
-                  <version>2.0.1.2020</version>
+                  <version>2.7.0.3820</version>
                   <type>jar</type>
                 </artifactItem>
               </artifactItems>
@@ -174,55 +168,55 @@
                     <artifactItem>
                       <groupId>com.sonarsource.abap</groupId>
                       <artifactId>sonar-abap-plugin</artifactId>
-                      <version>3.8.0.2034</version>
+                      <version>3.11.0.4030</version>
                       <type>jar</type>
                     </artifactItem>
                     <artifactItem>
                       <groupId>com.sonarsource.cpp</groupId>
                       <artifactId>sonar-cfamily-plugin</artifactId>
-                      <version>6.3.0.11371</version>
+                      <version>6.41.2.69583</version>
                       <type>jar</type>
                     </artifactItem>
                     <artifactItem>
                       <groupId>com.sonarsource.cobol</groupId>
                       <artifactId>sonar-cobol-plugin</artifactId>
-                      <version>4.4.0.3403</version>
+                      <version>5.2.1.7644</version>
                       <type>jar</type>
                     </artifactItem>
                     <artifactItem>
                       <groupId>com.sonarsource.pli</groupId>
                       <artifactId>sonar-pli-plugin</artifactId>
-                      <version>1.10.0.1880</version>
+                      <version>1.12.0.3443</version>
                       <type>jar</type>
                     </artifactItem>
                     <artifactItem>
                       <groupId>com.sonarsource.plsql</groupId>
                       <artifactId>sonar-plsql-plugin</artifactId>
-                      <version>3.4.1.2576</version>
+                      <version>3.8.0.4948</version>
                       <type>jar</type>
                     </artifactItem>
                     <artifactItem>
                       <groupId>com.sonarsource.rpg</groupId>
                       <artifactId>sonar-rpg-plugin</artifactId>
-                      <version>2.3.0.1187</version>
+                      <version>3.3.0.3147</version>
                       <type>jar</type>
                     </artifactItem>
                     <artifactItem>
                       <groupId>com.sonarsource.swift</groupId>
                       <artifactId>sonar-swift-plugin</artifactId>
-                      <version>4.1.0.3087</version>
+                      <version>4.8.0.5759</version>
                       <type>jar</type>
                     </artifactItem>
                     <artifactItem>
                       <groupId>com.sonarsource.slang</groupId>
                       <artifactId>sonar-apex-plugin</artifactId>
-                      <version>1.5.0.315</version>
+                      <version>1.11.0.3905</version>
                       <type>jar</type>
                     </artifactItem>
                     <artifactItem>
                       <groupId>com.sonarsource.tsql</groupId>
                       <artifactId>sonar-tsql-plugin</artifactId>
-                      <version>1.4.0.3334</version>
+                      <version>1.7.0.5449</version>
                       <type>jar</type>
                     </artifactItem>
                   </artifactItems>

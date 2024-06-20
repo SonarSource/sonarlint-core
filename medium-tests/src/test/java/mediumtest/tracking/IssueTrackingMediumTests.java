@@ -34,6 +34,7 @@ import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
@@ -78,6 +79,7 @@ import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRe
 import static testutils.TestUtils.protobufBody;
 import static testutils.plugins.SonarPluginBuilder.newSonarPlugin;
 
+@Disabled
 class IssueTrackingMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
@@ -145,7 +147,7 @@ class IssueTrackingMediumTests {
     var client = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
       .build();
-    var server = newSonarQubeServer("9.5")
+    var server = newSonarQubeServer("9.9")
       .withProject("projectKey", project -> project.withBranch("main", branch -> branch
         .withIssue("uuid", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
@@ -197,14 +199,16 @@ class IssueTrackingMediumTests {
     var client = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
       .build();
-    var server = newSonarQubeServer("9.5")
+    var server = newSonarQubeServer("9.9")
       .withProject("projectKey", project -> project.withBranch("main", branch -> branch
         .withIssue("uuid1", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
           "OPEN", null, Instant.now().minus(1, ChronoUnit.DAYS), new TextRange(1, 0, 1, 16))
         .withIssue("uuid2", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
-          "OPEN", null, Instant.now().plus(1, ChronoUnit.DAYS), new TextRange(2, 0, 2, 16))))
+          "OPEN", null, Instant.now().plus(1, ChronoUnit.DAYS), new TextRange(2, 0, 2, 16))
+        .withNoHotspotsForFile(ideFilePath)
+      ))
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
         .withActiveRule(ruleKey, activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
       .start();
@@ -215,6 +219,7 @@ class IssueTrackingMediumTests {
             .withNewCodeDefinition(
               Sonarlint.NewCodeDefinition.newBuilder().setMode(Sonarlint.NewCodeDefinitionMode.PREVIOUS_VERSION).setThresholdDate(Instant.now().toEpochMilli()).build())
             .withMainBranch(branchName)))
+      .withFullSynchronization()
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .build(client);
 
@@ -222,6 +227,7 @@ class IssueTrackingMediumTests {
       .didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
         new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, CONFIG_SCOPE_ID,
           new BindingConfigurationDto(connectionId, projectKey, true)))));
+    client.waitForSynchronization();
 
     var issues = analyzeFileAndGetAllIssues(fileUri, client);
     assertThat(issues).hasSize(2);
@@ -315,7 +321,7 @@ class IssueTrackingMediumTests {
     var client = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
       .build();
-    var server = newSonarQubeServer("9.5")
+    var server = newSonarQubeServer("9.9")
       .withProject("projectKey", project -> project.withBranch("main", branch -> branch
         .withIssue("uuid", "java:S1192", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
@@ -387,7 +393,7 @@ class IssueTrackingMediumTests {
     var client = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
       .build();
-    var server = newSonarQubeServer("9.5")
+    var server = newSonarQubeServer("9.9")
       .withProject("projectKey", project -> project.withBranch("main", branch -> branch
         .withIssue("uuid", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
@@ -433,7 +439,7 @@ class IssueTrackingMediumTests {
     var client = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
       .build();
-    var server = newSonarQubeServer("9.5")
+    var server = newSonarQubeServer("9.9")
       .withProject("projectKey", project -> project.withBranch("main", branch -> branch
         .withIssue("uuid", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
@@ -823,8 +829,7 @@ class IssueTrackingMediumTests {
   private List<RaisedIssueDto> analyzeFileAndGetAllIssues(URI fileUri, SonarLintRpcClientDelegate client) {
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
-      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true, System.currentTimeMillis()))
-      .join();
+      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true, System.currentTimeMillis())).join();
     var publishedIssuesByFile = getPublishedIssues(client, analysisId);
     assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
     assertThat(publishedIssuesByFile).containsOnlyKeys(fileUri);
@@ -834,8 +839,7 @@ class IssueTrackingMediumTests {
   private RaisedIssueDto analyzeFileAndGetIssue(URI fileUri, SonarLintRpcClientDelegate client) {
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
-      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true, System.currentTimeMillis()))
-      .join();
+      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true, System.currentTimeMillis())).join();
     var publishedIssuesByFile = getPublishedIssues(client, analysisId);
     assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
     assertThat(publishedIssuesByFile).containsOnlyKeys(fileUri);

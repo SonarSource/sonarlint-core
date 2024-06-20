@@ -44,7 +44,7 @@ class RuleDetailsMediumTests {
 
   @Test
   void it_should_return_details_from_embedded_secrets_rules_when_sonarqube_less_than_9_9() {
-    var server = newSonarQubeServer("9.8")
+    var server = newSonarQubeServer("9.9")
       .withProject("projectKey",
         project -> project.withBranch("branchName"))
       .start();

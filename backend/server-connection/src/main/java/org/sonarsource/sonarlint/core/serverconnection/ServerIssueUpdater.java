@@ -28,7 +28,6 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.serverconnection.storage.UpdateSummary;
@@ -52,7 +51,7 @@ public class ServerIssueUpdater {
   }
 
   public void update(ServerApi serverApi, String projectKey, String branchName, boolean isSonarCloud, Version serverVersion, SonarLintCancelMonitor cancelMonitor) {
-    if (IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
+    if (!isSonarCloud) {
       sync(serverApi, projectKey, branchName, issueDownloader.getEnabledLanguages(), cancelMonitor);
     } else {
       var issues = issueDownloader.downloadFromBatch(serverApi, projectKey, branchName, cancelMonitor);
@@ -91,30 +90,24 @@ public class ServerIssueUpdater {
     return new UpdateSummary<>(deletedTaintVulnerabilityIds, addedTaintVulnerabilities, updatedTaintVulnerabilities);
   }
 
-  public void updateFileIssues(ServerApi serverApi, ProjectBinding projectBinding, Path ideFilePath, String branchName, boolean isSonarCloud,
-    Version serverVersion, SonarLintCancelMonitor cancelMonitor) {
-    var serverFilePath = IssueStorePaths.idePathToServerPath(projectBinding, ideFilePath);
-    if (serverFilePath == null) {
-      return;
+  public void updateFileIssuesIfNeeded(ServerApi serverApi, String projectKey, Path serverFileRelativePath, String branchName, SonarLintCancelMonitor cancelMonitor) {
+    if (serverApi.isSonarCloud()) {
+      updateFileIssues(serverApi, projectKey, serverFileRelativePath, branchName, cancelMonitor);
+    } else {
+      LOG.debug("Skip downloading file issues on SonarQube ");
     }
-    updateFileIssues(serverApi, projectBinding.projectKey(), serverFilePath, branchName, isSonarCloud, serverVersion, cancelMonitor);
   }
 
-  public void updateFileIssues(ServerApi serverApi, String projectKey, Path serverFileRelativePath, String branchName, boolean isSonarCloud, Version serverVersion,
-    SonarLintCancelMonitor cancelMonitor) {
+  public void updateFileIssues(ServerApi serverApi, String projectKey, Path serverFileRelativePath, String branchName, SonarLintCancelMonitor cancelMonitor) {
     var fileKey = IssueStorePaths.componentKey(projectKey, serverFileRelativePath);
-    if (!IssueApi.supportIssuePull(isSonarCloud, serverVersion)) {
-      List<ServerIssue<?>> issues = new ArrayList<>();
-      try {
-        issues.addAll(issueDownloader.downloadFromBatch(serverApi, fileKey, branchName, cancelMonitor));
-      } catch (Exception e) {
-        // null as cause so that it doesn't get wrapped
-        throw new DownloadException("Failed to update file issues: " + e.getMessage(), null);
-      }
-      storage.project(projectKey).findings().replaceAllIssuesOfFile(branchName, serverFileRelativePath, issues);
-    } else {
-      LOG.debug("Skip downloading file issues on SonarQube " + IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL + "+");
+    List<ServerIssue<?>> issues = new ArrayList<>();
+    try {
+      issues.addAll(issueDownloader.downloadFromBatch(serverApi, fileKey, branchName, cancelMonitor));
+    } catch (Exception e) {
+      // null as cause so that it doesn't get wrapped
+      throw new DownloadException("Failed to update file issues: " + e.getMessage(), null);
     }
+    storage.project(projectKey).findings().replaceAllIssuesOfFile(branchName, serverFileRelativePath, issues);
   }
 
   public UpdateSummary<ServerTaintIssue> downloadProjectTaints(ServerApi serverApi, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {

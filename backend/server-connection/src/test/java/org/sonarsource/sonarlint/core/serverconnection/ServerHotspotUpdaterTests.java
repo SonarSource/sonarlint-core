@@ -29,7 +29,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
-import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
@@ -37,12 +36,10 @@ import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ServerHotspotFixtures.aServerHotspot;
 
@@ -67,27 +64,6 @@ class ServerHotspotUpdaterTests {
     when(storage.project(PROJECT_KEY)).thenReturn(projectStorage);
     when(projectStorage.findings()).thenReturn(issueStore);
     updater = new ServerHotspotUpdater(storage, hotspotDownloader);
-  }
-
-  @Test
-  void should_not_update_all_hotspots_when_not_supported() {
-    when(hotspotApi.permitsTracking(any())).thenReturn(false);
-
-    updater.updateAll(hotspotApi, PROJECT_KEY, "branch", () -> null, new SonarLintCancelMonitor());
-
-    verifyNoInteractions(issueStore);
-    assertThat(logTester.logs(LogOutput.Level.INFO)).contains("Skip downloading hotspots from server, not supported");
-  }
-
-  @Test
-  void should_update_all_hotspots() {
-    when(hotspotApi.permitsTracking(any())).thenReturn(true);
-    var hotspots = List.of(aServerHotspot());
-    when(hotspotApi.getAll(eq(PROJECT_KEY), eq("branch"), any())).thenReturn(hotspots);
-
-    updater.updateAll(hotspotApi, PROJECT_KEY, "branch", () -> null, new SonarLintCancelMonitor());
-
-    verify(issueStore).replaceAllHotspotsOfBranch("branch", hotspots);
   }
 
   @Test

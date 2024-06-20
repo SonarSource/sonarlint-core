@@ -81,7 +81,7 @@ class HotspotLocalDetectionSupportMediumTests {
 
     assertThat(checkResponse)
       .extracting(CheckLocalDetectionSupportedResponse::isSupported, CheckLocalDetectionSupportedResponse::getReason)
-      .containsExactly(false, "The project is not bound, please bind it to SonarQube 9.7+ or SonarCloud");
+      .containsExactly(false, "The project is not bound, please bind it to SonarQube 9.9+ or SonarCloud");
   }
 
   @Test
@@ -106,25 +106,15 @@ class HotspotLocalDetectionSupportMediumTests {
 
     assertThat(checkResponse)
       .extracting(CheckLocalDetectionSupportedResponse::isSupported, CheckLocalDetectionSupportedResponse::getReason)
-      .containsExactly(false, "Security Hotspots detection is disabled with this version of SonarQube, please bind it to SonarQube 9.7+ or SonarCloud");
+      .containsExactly(false, "Security Hotspots detection is disabled since storage is not available");
   }
 
   @Test
-  void it_should_not_support_local_detection_when_connected_to_sonarqube_9_6_and_older() {
-    bindToSonarQube("configScopeId", "9.6");
+  void it_should_support_local_detection_when_connected_to_sonarqube_9_9_plus() {
+    var configScopeId = "configScopeId";
+    bindToSonarQube(configScopeId, "9.9");
 
-    var checkResponse = checkLocalDetectionSupported("configScopeId");
-
-    assertThat(checkResponse)
-      .extracting(CheckLocalDetectionSupportedResponse::isSupported, CheckLocalDetectionSupportedResponse::getReason)
-      .containsExactly(false, "Security Hotspots detection is disabled with this version of SonarQube, please bind it to SonarQube 9.7+ or SonarCloud");
-  }
-
-  @Test
-  void it_should_support_local_detection_when_connected_to_sonarqube_9_7_plus() {
-    bindToSonarQube("configScopeId", "9.7");
-
-    var checkResponse = checkLocalDetectionSupported("configScopeId");
+    var checkResponse = checkLocalDetectionSupported(configScopeId);
 
     assertThat(checkResponse)
       .extracting(CheckLocalDetectionSupportedResponse::isSupported, CheckLocalDetectionSupportedResponse::getReason)
