@@ -46,7 +46,11 @@ public interface LogOutput {
   }
 
   enum Level {
-    ERROR, WARN, INFO, DEBUG, TRACE;
+    OFF, ERROR, WARN, INFO, DEBUG, TRACE;
+
+    public boolean isEnabledForLevel(Level targetLevel) {
+      return this.ordinal() >= targetLevel.ordinal();
+    }
   }
 
   static String stackTraceToString(Throwable t) {
