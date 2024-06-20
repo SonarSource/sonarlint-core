@@ -25,6 +25,7 @@ public class SuggestFixResponsePayload {
   public List<ChoicePayload> choices;
 
   public static class ChoicePayload {
+    public String finishReason;
     public MessagePayload message;
   }
 

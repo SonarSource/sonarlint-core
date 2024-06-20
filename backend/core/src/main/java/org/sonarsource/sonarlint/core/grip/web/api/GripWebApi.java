@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.grip.web.api;
 
 import com.google.gson.FieldNamingPolicy;
-import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import java.net.URI;
 import java.util.UUID;
@@ -55,8 +54,12 @@ public class GripWebApi {
           LOG.info("Received response from the GRIP service: {}", responseBodyString);
           var responseBody = deserializeResponseBody(responseBodyString);
           var endTime = System.currentTimeMillis();
+          var lastChoice = responseBody.choices.get(responseBody.choices.size() - 1);
+          if (!lastChoice.finishReason.equals("stop")) {
+            return Either.forLeft("The suggestion service could not provide a full response. Reason: " + lastChoice.finishReason);
+          }
           return Either.forRight(
-            new SuggestFixWebApiResponse(UUID.fromString(response.header("X-Correlation-Id")), responseBody.choices.get(responseBody.choices.size() - 1).message.content,
+            new SuggestFixWebApiResponse(UUID.fromString(response.header("X-Correlation-Id")), lastChoice.message.content,
               endTime - startTime));
         } catch (Exception e) {
           LOG.error("Unexpected response received from the suggestion service", e);
@@ -97,7 +100,7 @@ public class GripWebApi {
   }
 
   private static SuggestFixResponsePayload deserializeResponseBody(String body) {
-    return new Gson().fromJson(body, SuggestFixResponsePayload.class);
+    return new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create().fromJson(body, SuggestFixResponsePayload.class);
   }
 
   private static String ensureTrailingSlash(URI uri) {
