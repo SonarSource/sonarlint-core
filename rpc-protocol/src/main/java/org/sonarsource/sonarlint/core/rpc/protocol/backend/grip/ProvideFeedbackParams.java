@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.grip;
 
 import java.net.URI;
 import java.util.UUID;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 
 public class ProvideFeedbackParams {
   private final URI serviceURI;
@@ -30,7 +32,7 @@ public class ProvideFeedbackParams {
   private final FeedbackRating rating;
   private final String comment;
 
-  public ProvideFeedbackParams(URI serviceURI, String authenticationToken, UUID correlationId, boolean accepted, FeedbackRating rating, String comment) {
+  public ProvideFeedbackParams(URI serviceURI, String authenticationToken, UUID correlationId, boolean accepted, @Nullable FeedbackRating rating, @Nullable String comment) {
     this.serviceURI = serviceURI;
     this.authenticationToken = authenticationToken;
     this.correlationId = correlationId;
@@ -55,10 +57,12 @@ public class ProvideFeedbackParams {
     return accepted;
   }
 
+  @CheckForNull
   public FeedbackRating getRating() {
     return rating;
   }
 
+  @CheckForNull
   public String getComment() {
     return comment;
   }
