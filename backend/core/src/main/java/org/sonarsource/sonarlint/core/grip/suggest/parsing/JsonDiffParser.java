@@ -74,7 +74,8 @@ public class JsonDiffParser implements GripSuggestionParser {
       beforeLastLine = lineNumber;
       if (fragments.length > 1) {
         var line = fragments[1];
-        beforeSnippet.append(lineSeparator).append(line);
+        var actualLine = line.startsWith(" ") ? line.substring(1) : line;
+        beforeSnippet.append(lineSeparator).append(actualLine);
         lineSeparator = "\n";
       }
     }
@@ -89,7 +90,8 @@ public class JsonDiffParser implements GripSuggestionParser {
         var fragments = lineAfter.split(":", 2);
         if (fragments.length > 1) {
           var line = fragments[1];
-          afterSnippet.append(lineSeparator).append(line);
+          var actualLine = line.startsWith(" ") ? line.substring(1) : line;
+          afterSnippet.append(lineSeparator).append(actualLine);
           lineSeparator = "\n";
         }
       }
