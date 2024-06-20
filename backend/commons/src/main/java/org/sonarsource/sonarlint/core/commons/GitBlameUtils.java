@@ -41,12 +41,44 @@ public class GitBlameUtils {
     // Utility class
   }
 
-  public static SonarLintBlameResult blameWithFilesGitCommand(Path baseDir, Set<Path> gitRelativePath, @Nullable UnaryOperator<String> fileContentProvider) {
-    var repo = buildRepository(baseDir);
-    return blameWithFilesGitCommand(repo, gitRelativePath, fileContentProvider);
+  public static SonarLintBlameResult blameWithFilesGitCommand(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths) {
+    return blameWithFilesGitCommand(projectBaseDir, projectBaseRelativeFilePaths, null);
   }
 
-  private static Repository buildRepository(Path basedir) {
+  public static SonarLintBlameResult blameWithFilesGitCommand(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, @Nullable UnaryOperator<String> fileContentProvider) {
+    var gitRepo = buildGitRepository(projectBaseDir);
+
+    var gitRepoRelativeProjectBaseDir = gitRepo.getWorkTree().toPath().relativize(projectBaseDir);
+
+    var gitRepoRelativeFilePaths = projectBaseRelativeFilePaths.stream()
+      .map(gitRepoRelativeProjectBaseDir::resolve)
+      .map(Path::toString)
+      .map(FilenameUtils::separatorsToUnix)
+      .collect(Collectors.toSet());
+
+    var blameCommand = new RepositoryBlameCommand(gitRepo)
+      .setTextComparator(RawTextComparator.WS_IGNORE_ALL)
+      .setMultithreading(true)
+      .setFilePaths(gitRepoRelativeFilePaths);
+    ofNullable(fileContentProvider)
+      .ifPresent(provider -> blameCommand.setFileContentProvider(adaptToPlatformBasedPath(provider)));
+
+    try {
+      var blameResult = blameCommand.call();
+      return new SonarLintBlameResult(blameResult, gitRepoRelativeProjectBaseDir);
+    } catch (GitAPIException e) {
+      throw new IllegalStateException("Failed to blame repository files", e);
+    }
+  }
+
+  private static UnaryOperator<String> adaptToPlatformBasedPath(UnaryOperator<String> provider) {
+    return unixPath -> {
+      var platformBasedPath = Path.of(unixPath).toString();
+      return provider.apply(platformBasedPath);
+    };
+  }
+
+  private static Repository buildGitRepository(Path basedir) {
     try {
       var repo = getVerifiedRepositoryBuilder(basedir).build();
       try (ObjectReader objReader = repo.getObjectDatabase().newReader()) {
@@ -60,34 +92,13 @@ public class GitBlameUtils {
   }
 
   private static RepositoryBuilder getVerifiedRepositoryBuilder(Path basedir) {
-    var unixStyleBasedir = convertToUnixPath(basedir);
     var builder = new RepositoryBuilder()
-      .findGitDir(unixStyleBasedir.toFile())
+      .findGitDir(basedir.toFile())
       .setMustExist(true);
 
     if (builder.getGitDir() == null) {
       throw new IllegalStateException("Not inside a Git work tree: " + basedir);
     }
     return builder;
-  }
-
-  private static SonarLintBlameResult blameWithFilesGitCommand(Repository repo, Set<Path> gitRelativePath, @Nullable UnaryOperator<String> fileContentProvider) {
-    var pathStrings = gitRelativePath.stream().map(Path::toString).map(FilenameUtils::separatorsToUnix).collect(Collectors.toSet());
-    var blameCommand = new RepositoryBlameCommand(repo)
-      .setTextComparator(RawTextComparator.WS_IGNORE_ALL)
-      .setMultithreading(true)
-      .setFilePaths(pathStrings);
-    ofNullable(fileContentProvider)
-      .ifPresent(blameCommand::setFileContentProvider);
-    try {
-      var blameResult = blameCommand.call();
-      return new SonarLintBlameResult(blameResult);
-    } catch (GitAPIException e) {
-      throw new IllegalStateException("Failed to blame repository files", e);
-    }
-  }
-
-  private static Path convertToUnixPath(Path basedir) {
-    return Path.of(FilenameUtils.separatorsToUnix(basedir.toString()));
   }
 }
