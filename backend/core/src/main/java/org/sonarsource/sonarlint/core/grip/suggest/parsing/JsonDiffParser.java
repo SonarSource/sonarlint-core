@@ -34,6 +34,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 
 public class JsonDiffParser implements GripSuggestionParser {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+
   @Override
   public Either<String, FixSuggestion> parse(SuggestFixWebApiRequest request, SuggestFixWebApiResponse webApiResponse) {
     ResponsePayload suggestFixResponsePayload;
@@ -71,21 +72,27 @@ public class JsonDiffParser implements GripSuggestionParser {
         beforeFirstLine = lineNumber;
       }
       beforeLastLine = lineNumber;
-      var line = fragments[1];
-      beforeSnippet.append(lineSeparator).append(line);
-      lineSeparator = "\n";
+      if (fragments.length > 1) {
+        var line = fragments[1];
+        beforeSnippet.append(lineSeparator).append(line);
+        lineSeparator = "\n";
+      }
+    }
+    if (beforeFirstLine == -1 || beforeFirstLine > beforeLastLine) {
+      throw new IllegalStateException("Provided line numbers are invalid");
     }
 
     var afterSnippet = new StringBuilder();
     lineSeparator = "";
-    for (String lineAfter : fix.after) {
-      var fragments = lineAfter.split(":", 2);
-      var line = fragments[1];
-      afterSnippet.append(lineSeparator).append(line);
-      lineSeparator = "\n";
-    }
-    if (beforeFirstLine == -1 || beforeFirstLine > beforeLastLine) {
-      throw new IllegalStateException("Provided line numbers are invalid");
+    if (fix.after != null && !fix.after.isEmpty()) {
+      for (String lineAfter : fix.after) {
+        var fragments = lineAfter.split(":", 2);
+        if (fragments.length > 1) {
+          var line = fragments[1];
+          afterSnippet.append(lineSeparator).append(line);
+          lineSeparator = "\n";
+        }
+      }
     }
     return new DiffDto(beforeSnippet.toString(), afterSnippet.toString(), new LineRangeDto(beforeFirstLine, beforeLastLine));
   }
