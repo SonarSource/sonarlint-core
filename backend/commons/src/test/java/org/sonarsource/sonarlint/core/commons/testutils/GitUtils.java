@@ -49,10 +49,6 @@ public class GitUtils {
     return commitObject(git, paths).getCommitterIdent().getWhen();
   }
 
-  public static String commitHash(Git git, String... paths) throws GitAPIException {
-    return commitObject(git, paths).getName();
-  }
-
   public static RevCommit commitObject(Git git, String... paths) throws GitAPIException {
     if (paths.length > 0) {
       var add = git.add();

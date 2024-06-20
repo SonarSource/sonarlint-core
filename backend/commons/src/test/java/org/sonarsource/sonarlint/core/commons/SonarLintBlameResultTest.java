@@ -150,5 +150,4 @@ class SonarLintBlameResultTest {
       IntStream.rangeClosed(1, 100).boxed().collect(Collectors.toList())))
       .isPresent().contains(c1);
   }
-
 }
