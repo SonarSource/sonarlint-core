@@ -23,11 +23,9 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -43,7 +41,6 @@ import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.analysis.api.ActiveRule;
@@ -54,7 +51,6 @@ import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.analysis.command.NotifyModuleEventCommand;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.LanguageDetection;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.MultivalueProperty;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
@@ -77,10 +73,7 @@ import org.sonarsource.sonarlint.core.fs.FileSystemUpdatedEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.nodejs.InstalledNodeJs;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
-import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsNotifierService;
 import org.sonarsource.sonarlint.core.progress.RpcProgressMonitor;
-import org.sonarsource.sonarlint.core.promotion.PromotionService;
-import org.sonarsource.sonarlint.core.reporting.FindingReportingService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
@@ -115,7 +108,6 @@ import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
-import static java.util.Locale.ENGLISH;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.groupingBy;
@@ -146,10 +138,6 @@ public class AnalysisService {
   private final AnalysisEngineCache engineCache;
   private final ClientFileSystemService fileSystemService;
   private final FileExclusionService fileExclusionService;
-  private final SkippedPluginsNotifierService skippedPluginsNotifierService;
-  private final FindingReportingService findingReportingService;
-  private final ClientFileSystemService clientFileSystemService;
-  private final PromotionService promotionService;
   private final ApplicationEventPublisher eventPublisher;
   private final boolean isDataflowBugDetectionEnabled;
   private final Map<String, Boolean> analysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
@@ -158,8 +146,7 @@ public class AnalysisService {
     StorageService storageService, PluginsService pluginsService, RulesService rulesService, RulesRepository rulesRepository,
     ConnectionConfigurationRepository connectionConfigurationRepository, InitializeParams initializeParams, NodeJsService nodeJsService,
     AnalysisEngineCache engineCache, ClientFileSystemService fileSystemService, FileExclusionService fileExclusionService,
-    SkippedPluginsNotifierService skippedPluginsNotifierService, FindingReportingService findingReportingService,
-    ClientFileSystemService clientFileSystemService, PromotionService promotionService, ApplicationEventPublisher eventPublisher) {
+    ApplicationEventPublisher eventPublisher) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
@@ -174,10 +161,6 @@ public class AnalysisService {
     this.engineCache = engineCache;
     this.fileSystemService = fileSystemService;
     this.fileExclusionService = fileExclusionService;
-    this.skippedPluginsNotifierService = skippedPluginsNotifierService;
-    this.findingReportingService = findingReportingService;
-    this.clientFileSystemService = clientFileSystemService;
-    this.promotionService = promotionService;
     this.eventPublisher = eventPublisher;
   }
 
@@ -584,14 +567,6 @@ public class AnalysisService {
     }
     var ruleDetailsCache = new ConcurrentHashMap<String, RuleDetailsForAnalysis>();
 
-    if (analysisConfig.activeRules().isEmpty()) {
-      LOG.info("No active rules found. Analysis not executed.");
-      promoteExtraEnabledLanguages(filePathsToAnalyze, configurationScopeId);
-      notifySkippedPluginsIfAny(configurationScopeId);
-      reportNoIssuesFound(configurationScopeId, analysisId, filePathsToAnalyze);
-      return CompletableFuture.completedFuture(new AnalysisResults());
-    }
-
     cancelMonitor.checkCanceled();
     var raisedIssues = new ArrayList<RawIssue>();
     eventPublisher.publishEvent(new AnalysisStartedEvent(configurationScopeId, analysisId, analysisConfig.inputFiles(), enableTracking));
@@ -613,44 +588,6 @@ public class AnalysisService {
           LOG.error("Error during analysis", error);
         }
       });
-  }
-
-  private void promoteExtraEnabledLanguages(List<URI> filePathsToAnalyze, String configurationScopeId) {
-    var detectedLanguages = EnumSet.noneOf(SonarLanguage.class);
-    for (URI fileUri : filePathsToAnalyze) {
-      var clientFile = clientFileSystemService.getClientFile(fileUri);
-      var detectedLanguage = clientFile != null ? clientFile.getDetectedLanguage() : null;
-      if (detectedLanguage == null) {
-        var extension = FilenameUtils.getExtension(Path.of(fileUri).toString());
-        var optionalSonarLanguage = Arrays.stream(SonarLanguage.values())
-          .filter(sonarLanguage -> {
-            var extensions = Arrays.stream(sonarLanguage.getDefaultFileSuffixes()).map(LanguageDetection::sanitizeExtension).collect(toList());
-            return extensions.contains(extension.toLowerCase(ENGLISH));
-          }).findFirst();
-        optionalSonarLanguage.ifPresent(detectedLanguages::add);
-      } else {
-        detectedLanguages.add(detectedLanguage);
-      }
-    }
-
-    promotionService.promoteExtraEnabledLanguages(detectedLanguages, configurationScopeId);
-  }
-
-  private void reportNoIssuesFound(String configurationScopeId, UUID analysisId, List<URI> filePathsToAnalyze) {
-    findingReportingService.resetFindingsForFiles(configurationScopeId, new HashSet<>(filePathsToAnalyze));
-    findingReportingService.reportTrackedFindings(configurationScopeId, analysisId, filePathsToAnalyze.stream().collect(Collectors.toMap(Path::of, u -> List.of())), Map.of());
-  }
-
-  private void notifySkippedPluginsIfAny(String configurationScopeId) {
-    var bindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
-    var skippedPlugins = bindingOpt.isPresent() ? pluginsService.getSkippedPlugins(bindingOpt.get().getConnectionId()) :
-      pluginsService.getSkippedEmbeddedPlugins();
-    if (!skippedPlugins.isEmpty()) {
-      var languages = skippedPlugins.stream()
-        .map(skippedPlugin -> SonarLanguage.getLanguagesByPluginKey(skippedPlugin.getKey()))
-        .flatMap(Set::stream).collect(Collectors.toUnmodifiableSet());
-      skippedPluginsNotifierService.notifyClientOfSkippedPlugins(configurationScopeId, languages, skippedPlugins);
-    }
   }
 
   private static void logSummary(ArrayList<RawIssue> rawIssues, long analysisDuration) {
