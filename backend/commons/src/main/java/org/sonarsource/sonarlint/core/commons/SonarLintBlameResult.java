@@ -32,24 +32,31 @@ import static java.util.Objects.isNull;
 public class SonarLintBlameResult {
 
   private final BlameResult blameResult;
+  private final Path gitRepoRelativeProjectBaseDir;
 
-  public SonarLintBlameResult(BlameResult blameResult) {
+  public SonarLintBlameResult(BlameResult blameResult, Path gitRepoRelativeProjectBaseDir) {
     this.blameResult = blameResult;
+    this.gitRepoRelativeProjectBaseDir = gitRepoRelativeProjectBaseDir;
   }
 
   /**
-   * @param filePath A path relative to the Git repository root
+   * @param projectDirRelativeFilePath A path relative to the Git repository root
    * @param lineNumbers Line numbers for which to check the latest change date. Numbering starts from `1`!
    * @return The latest changed date or an empty optional if the date couldn't be determined or any of the lines is modified
    */
-  public Optional<Date> getLatestChangeDateForLinesInFile(Path filePath, Collection<Integer> lineNumbers) {
+  public Optional<Date> getLatestChangeDateForLinesInFile(Path projectDirRelativeFilePath, Collection<Integer> lineNumbers) {
     validateLineNumbersArgument(lineNumbers);
     var fileBlameByPath = blameResult.getFileBlameByPath();
-    var blameForFile = fileBlameByPath.get(FilenameUtils.separatorsToUnix(filePath.toString()));
-    if (blameForFile == null) {
-      return Optional.empty();
-    }
 
+    return Optional.of(projectDirRelativeFilePath.toString())
+      .map(gitRepoRelativeProjectBaseDir::resolve)
+      .map(Path::toString)
+      .map(FilenameUtils::separatorsToUnix)
+      .map(fileBlameByPath::get)
+      .map(fileBlame -> getTheLatestChange(fileBlame, lineNumbers));
+  }
+
+  private static Date getTheLatestChange(BlameResult.FileBlame blameForFile, Collection<Integer> lineNumbers) {
     Date latestDate = null;
     for (var lineNumber : lineNumbers) {
       if (lineNumber > blameForFile.lines()) {
@@ -57,11 +64,11 @@ public class SonarLintBlameResult {
       }
       var dateForLine = blameForFile.getCommitDates()[lineNumber - 1];
       if (isLineModified(dateForLine)) {
-        return Optional.empty();
+        return null;
       }
       latestDate = isNull(latestDate) || latestDate.before(dateForLine) ? dateForLine : latestDate;
     }
-    return Optional.ofNullable(latestDate);
+    return latestDate;
   }
 
   private static void validateLineNumbersArgument(Collection<Integer> lineNumbers) {
@@ -73,9 +80,5 @@ public class SonarLintBlameResult {
 
   private static boolean isLineModified(@Nullable Date dateForLine) {
     return dateForLine == null;
-  }
-
-  public BlameResult getBlameResult() {
-    return blameResult;
   }
 }
