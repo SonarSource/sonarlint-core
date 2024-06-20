@@ -21,11 +21,23 @@ package org.slf4j;
 
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
+import static org.sonarsource.sonarlint.core.commons.log.LogOutput.Level;
+
 /**
  * A slf4j logger that delegates all logs to a sonar API logger. 
  */
 public class LoggerAdapter implements Logger {
-  private static final SonarLintLogger SONAR_LOGGER = SonarLintLogger.get();
+  private final Level loggerLevel;
+  private final SonarLintLogger sonarLogger;
+
+  public LoggerAdapter(SonarLintLogger sonarLogger) {
+    this(sonarLogger, Level.DEBUG);
+  }
+
+  public LoggerAdapter(SonarLintLogger sonarLogger, Level loggerLevel) {
+    this.sonarLogger = sonarLogger;
+    this.loggerLevel = loggerLevel;
+  }
 
   @Override
   public String getName() {
@@ -34,39 +46,47 @@ public class LoggerAdapter implements Logger {
 
   @Override
   public boolean isTraceEnabled() {
-    return false;
+    return loggerLevel.isEnabledForLevel(Level.TRACE);
   }
 
   @Override
   public void trace(String msg) {
-    SONAR_LOGGER.trace(msg);
+    if (isTraceEnabled()) {
+      sonarLogger.trace(msg);
+    }
   }
 
   @Override
   public void trace(String format, Object arg) {
-    SONAR_LOGGER.trace(format, arg);
+    if (isTraceEnabled()) {
+      sonarLogger.trace(format, arg);
+    }
   }
 
   @Override
   public void trace(String format, Object arg1, Object arg2) {
-    SONAR_LOGGER.trace(format, arg1, arg2);
-
+    if (isTraceEnabled()) {
+      sonarLogger.trace(format, arg1, arg2);
+    }
   }
 
   @Override
   public void trace(String format, Object[] argArray) {
-    SONAR_LOGGER.trace(format, argArray);
-
+    if (isTraceEnabled()) {
+      sonarLogger.trace(format, argArray);
+    }
   }
 
   @Override
   public void trace(String msg, Throwable t) {
-    SONAR_LOGGER.trace(msg, t);
+    if (isTraceEnabled()) {
+      sonarLogger.trace(msg, t);
+    }
   }
 
   @Override
   public boolean isTraceEnabled(Marker marker) {
-    return false;
+    return isTraceEnabled();
   }
 
   @Override
@@ -96,39 +116,47 @@ public class LoggerAdapter implements Logger {
 
   @Override
   public boolean isDebugEnabled() {
-    return true;
+    return loggerLevel.isEnabledForLevel(Level.DEBUG);
   }
 
   @Override
   public void debug(String msg) {
-    SONAR_LOGGER.debug(msg);
+    if (isDebugEnabled()) {
+      sonarLogger.debug(msg);
+    }
   }
 
   @Override
   public void debug(String format, Object arg) {
-    SONAR_LOGGER.debug(format, arg);
+    if (isDebugEnabled()) {
+      sonarLogger.debug(format, arg);
+    }
   }
 
   @Override
   public void debug(String format, Object arg1, Object arg2) {
-    SONAR_LOGGER.debug(format, arg1, arg2);
-
+    if (isDebugEnabled()) {
+      sonarLogger.debug(format, arg1, arg2);
+    }
   }
 
   @Override
   public void debug(String format, Object[] argArray) {
-    SONAR_LOGGER.debug(format, argArray);
-
+    if (isDebugEnabled()) {
+      sonarLogger.debug(format, argArray);
+    }
   }
 
   @Override
   public void debug(String msg, Throwable t) {
-    SONAR_LOGGER.debug(msg);
+    if (isDebugEnabled()) {
+      sonarLogger.debug(msg);
+    }
   }
 
   @Override
   public boolean isDebugEnabled(Marker marker) {
-    return true;
+    return isDebugEnabled();
   }
 
   @Override
@@ -158,39 +186,47 @@ public class LoggerAdapter implements Logger {
 
   @Override
   public boolean isInfoEnabled() {
-    return true;
+    return loggerLevel.isEnabledForLevel(Level.INFO);
   }
 
   @Override
   public void info(String msg) {
-    SONAR_LOGGER.info(msg);
+    if (isInfoEnabled()) {
+      sonarLogger.info(msg);
+    }
   }
 
   @Override
   public void info(String format, Object arg) {
-    SONAR_LOGGER.info(format, arg);
+    if (isInfoEnabled()) {
+      sonarLogger.info(format, arg);
+    }
   }
 
   @Override
   public void info(String format, Object arg1, Object arg2) {
-    SONAR_LOGGER.info(format, arg1, arg2);
-
+    if (isInfoEnabled()) {
+      sonarLogger.info(format, arg1, arg2);
+    }
   }
 
   @Override
   public void info(String format, Object[] argArray) {
-    SONAR_LOGGER.info(format, argArray);
-
+    if (isInfoEnabled()) {
+      sonarLogger.info(format, argArray);
+    }
   }
 
   @Override
   public void info(String msg, Throwable t) {
-    SONAR_LOGGER.info(msg);
+    if (isInfoEnabled()) {
+      sonarLogger.info(msg);
+    }
   }
 
   @Override
   public boolean isInfoEnabled(Marker marker) {
-    return true;
+    return isInfoEnabled();
   }
 
   @Override
@@ -220,39 +256,47 @@ public class LoggerAdapter implements Logger {
 
   @Override
   public boolean isWarnEnabled() {
-    return true;
+    return loggerLevel.isEnabledForLevel(Level.WARN);
   }
 
   @Override
   public void warn(String msg) {
-    SONAR_LOGGER.warn(msg);
+    if (isWarnEnabled()) {
+      sonarLogger.warn(msg);
+    }
   }
 
   @Override
   public void warn(String format, Object arg) {
-    SONAR_LOGGER.warn(format, arg);
+    if (isWarnEnabled()) {
+      sonarLogger.warn(format, arg);
+    }
   }
 
   @Override
   public void warn(String format, Object arg1, Object arg2) {
-    SONAR_LOGGER.warn(format, arg1, arg2);
-
+    if (isWarnEnabled()) {
+      sonarLogger.warn(format, arg1, arg2);
+    }
   }
 
   @Override
   public void warn(String format, Object[] argArray) {
-    SONAR_LOGGER.warn(format, argArray);
-
+    if (isWarnEnabled()) {
+      sonarLogger.warn(format, argArray);
+    }
   }
 
   @Override
   public void warn(String msg, Throwable t) {
-    SONAR_LOGGER.warn(msg, t);
+    if (isWarnEnabled()) {
+      sonarLogger.warn(msg, t);
+    }
   }
 
   @Override
   public boolean isWarnEnabled(Marker marker) {
-    return true;
+    return isWarnEnabled();
   }
 
   @Override
@@ -277,45 +321,52 @@ public class LoggerAdapter implements Logger {
 
   @Override
   public void warn(Marker marker, String msg, Throwable t) {
-    warn(msg, t);
-
+    warn(msg);
   }
 
   @Override
   public boolean isErrorEnabled() {
-    return true;
+    return loggerLevel.isEnabledForLevel(Level.ERROR);
   }
 
   @Override
   public void error(String msg) {
-    SONAR_LOGGER.error(msg);
+    if (isErrorEnabled()) {
+      sonarLogger.error(msg);
+    }
   }
 
   @Override
   public void error(String format, Object arg) {
-    SONAR_LOGGER.error(format, arg);
+    if (isErrorEnabled()) {
+      sonarLogger.error(format, arg);
+    }
   }
 
   @Override
   public void error(String format, Object arg1, Object arg2) {
-    SONAR_LOGGER.error(format, arg1, arg2);
-
+    if (isErrorEnabled()) {
+      sonarLogger.error(format, arg1, arg2);
+    }
   }
 
   @Override
   public void error(String format, Object[] argArray) {
-    SONAR_LOGGER.error(format, argArray);
-
+    if (isErrorEnabled()) {
+      sonarLogger.error(format, argArray);
+    }
   }
 
   @Override
   public void error(String msg, Throwable t) {
-    SONAR_LOGGER.error(msg);
+    if (isErrorEnabled()) {
+      sonarLogger.error(msg);
+    }
   }
 
   @Override
   public boolean isErrorEnabled(Marker marker) {
-    return true;
+    return isErrorEnabled();
   }
 
   @Override
