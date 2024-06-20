@@ -164,12 +164,4 @@ public class PluginsService {
   public List<Path> getConnectedPluginPaths(String connectionId) {
     return List.copyOf(getPluginPathsForConnection(connectionId));
   }
-
-  public List<SkippedPlugin> getSkippedEmbeddedPlugins(){
-    return skippedPluginsRepository.getSkippedEmbeddedPlugins();
-  }
-
-  public List<SkippedPlugin> getSkippedPlugins(String connectionId){
-    return skippedPluginsRepository.getSkippedPlugins(connectionId);
-  }
 }

@@ -61,7 +61,7 @@ public class SkippedPluginsNotifierService {
     notifyClientOfSkippedPlugins(configurationScopeId, detectedLanguages, skippedPlugins);
   }
 
-  public void notifyClientOfSkippedPlugins(String configurationScopeId, Set<SonarLanguage> detectedLanguages, List<SkippedPlugin> skippedPlugins) {
+  private void notifyClientOfSkippedPlugins(String configurationScopeId, Set<SonarLanguage> detectedLanguages, List<SkippedPlugin> skippedPlugins) {
     detectedLanguages.stream().filter(Objects::nonNull)
       .forEach(sonarLanguage -> skippedPlugins.stream().filter(p -> p.getKey().equals(sonarLanguage.getPluginKey()))
         .findFirst()
