@@ -164,8 +164,8 @@ public class JsonDiffParser implements GripSuggestionParser {
     if (stringDiffs != null && !stringDiffs.isEmpty()) {
       for (String lineAfter : stringDiffs) {
         var fragments = lineAfter.split(":", 2);
-        var lineNumber = Integer.parseInt(fragments[0]);
         if (fragments.length > 1) {
+          var lineNumber = Integer.parseInt(fragments[0]);
           var line = fragments[1];
           var actualLine = line.startsWith(" ") ? line.substring(1) : line;
           lines.add(new DiffLine(lineNumber, actualLine));
