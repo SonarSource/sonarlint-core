@@ -20,28 +20,31 @@
 package org.sonarsource.sonarlint.core.grip.web.api.payload;
 
 import java.util.UUID;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestionReviewStatus;
 
 public class ProvideFeedbackRequestPayload {
   private final String ruleKey;
-  private final boolean fixAccepted;
+  private final SuggestionReviewStatus reviewStatus;
   private final String rating;
   private final String comments;
   private final ContextPayload context;
 
-  public ProvideFeedbackRequestPayload(String ruleKey, boolean accepted, String rating, String comment, ContextPayload context) {
+  public ProvideFeedbackRequestPayload(String ruleKey, SuggestionReviewStatus reviewStatus, String rating, String comment, ContextPayload context) {
     this.ruleKey = ruleKey;
-    this.fixAccepted = accepted;
+    this.reviewStatus = reviewStatus;
     this.rating = rating;
     this.comments = comment;
     this.context = context;
   }
 
   public static class ContextPayload {
+    private final String promptVersion;
     private final UUID correlationId;
     private final long responseTime;
     private final String response;
 
-    public ContextPayload(UUID correlationId, long responseTime, String response) {
+    public ContextPayload(String promptVersion, UUID correlationId, long responseTime, String response) {
+      this.promptVersion = promptVersion;
       this.correlationId = correlationId;
       this.responseTime = responseTime;
       this.response = response;
