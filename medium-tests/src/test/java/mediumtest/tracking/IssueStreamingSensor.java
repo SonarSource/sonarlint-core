@@ -28,7 +28,7 @@ public class IssueStreamingSensor implements Sensor {
 
   @Override
   public void describe(SensorDescriptor descriptor) {
-
+    // no implementation needed for the current tests
   }
 
   @Override
