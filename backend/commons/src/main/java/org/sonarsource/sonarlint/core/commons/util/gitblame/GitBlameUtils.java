@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons;
+package org.sonarsource.sonarlint.core.commons.util.gitblame;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -32,6 +32,7 @@ import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.sonar.scm.git.blame.RepositoryBlameCommand;
+import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
 
 import static java.util.Optional.ofNullable;
 
@@ -80,25 +81,21 @@ public class GitBlameUtils {
 
   private static Repository buildGitRepository(Path basedir) {
     try {
-      var repo = getVerifiedRepositoryBuilder(basedir).build();
-      try (ObjectReader objReader = repo.getObjectDatabase().newReader()) {
+      var repositoryBuilder = new RepositoryBuilder()
+        .findGitDir(basedir.toFile());
+      if (ofNullable(repositoryBuilder.getGitDir()).isEmpty()) {
+        throw new GitRepoNotFoundException(basedir.toString());
+      }
+
+      var repository = repositoryBuilder.build();
+      try (ObjectReader objReader = repository.getObjectDatabase().newReader()) {
         // SONARSCGIT-2 Force initialization of shallow commits to avoid later concurrent modification issue
         objReader.getShallowCommits();
-        return repo;
+        return repository;
       }
     } catch (IOException e) {
       throw new IllegalStateException("Unable to open Git repository", e);
     }
   }
 
-  private static RepositoryBuilder getVerifiedRepositoryBuilder(Path basedir) {
-    var builder = new RepositoryBuilder()
-      .findGitDir(basedir.toFile())
-      .setMustExist(true);
-
-    if (builder.getGitDir() == null) {
-      throw new IllegalStateException("Not inside a Git work tree: " + basedir);
-    }
-    return builder;
-  }
 }
