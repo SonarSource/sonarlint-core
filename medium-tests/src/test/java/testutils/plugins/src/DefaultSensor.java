@@ -26,11 +26,12 @@ import org.sonar.api.batch.sensor.SensorDescriptor;
 public class DefaultSensor implements Sensor {
   @Override
   public void describe(SensorDescriptor descriptor) {
+    // no implementation needed for the current tests
 
   }
 
   @Override
   public void execute(SensorContext context) {
-
+    // no implementation needed for the current tests
   }
 }

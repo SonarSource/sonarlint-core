@@ -24,6 +24,6 @@ import org.sonar.api.server.rule.RulesDefinition;
 public class DefaultRulesDefinition implements RulesDefinition {
   @Override
   public void define(Context context) {
-
+    // no implementation needed for the current tests
   }
 }
