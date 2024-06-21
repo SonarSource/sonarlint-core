@@ -48,6 +48,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.Configur
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
@@ -57,6 +58,7 @@ import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static mediumtest.fixtures.ClientLogFixtures.verifyClientLog;
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
@@ -126,6 +128,8 @@ class IssueTrackingMediumTests {
         "}");
     var secondAnalysisPublishedIssues = analyzeFileAndGetAllIssuesOfRule(fileUri, client, ruleKey);
     assertThat(secondAnalysisPublishedIssues).hasSize(2);
+
+    verifyClientLog(client, LogLevel.INFO, String.format("Git Repository not found for %s. The path %s is not in a Git repository", CONFIG_SCOPE_ID, baseDir));
   }
 
   @Test
