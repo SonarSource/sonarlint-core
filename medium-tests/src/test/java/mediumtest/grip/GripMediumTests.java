@@ -33,6 +33,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.FeedbackRating;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.ProvideFeedbackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestFixParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestionReviewStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import testutils.MockWebServerExtensionWithProtobuf;
@@ -181,7 +182,7 @@ class GripMediumTests {
     mockServer.takeRequest();
 
     backend.getGripService()
-      .provideFeedback(new ProvideFeedbackParams(mockServer.uri(), "token", response.getResult().getRight().getCorrelationId(), true, FeedbackRating.BAD, "comment")).join();
+      .provideFeedback(new ProvideFeedbackParams(mockServer.uri(), "token", "prompt", response.getResult().getRight().getCorrelationId(), SuggestionReviewStatus.ACCEPTED, FeedbackRating.BAD, "comment")).join();
     var recordedRequest = mockServer.takeRequest();
     assertThat(recordedRequest.getHeader("Authorization")).isEqualTo("Bearer token");
     assertThat(recordedRequest.getBody().readString(Charset.defaultCharset())).startsWith(

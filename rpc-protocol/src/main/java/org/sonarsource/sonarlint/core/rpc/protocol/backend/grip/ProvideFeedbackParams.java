@@ -27,16 +27,19 @@ import javax.annotation.Nullable;
 public class ProvideFeedbackParams {
   private final URI serviceURI;
   private final String authenticationToken;
+  private final String promptId;
   private final UUID correlationId;
-  private final boolean accepted;
+  private final SuggestionReviewStatus reviewStatus;
   private final FeedbackRating rating;
   private final String comment;
 
-  public ProvideFeedbackParams(URI serviceURI, String authenticationToken, UUID correlationId, boolean accepted, @Nullable FeedbackRating rating, @Nullable String comment) {
+  public ProvideFeedbackParams(URI serviceURI, String authenticationToken, String promptId, UUID correlationId, SuggestionReviewStatus reviewStatus,
+    @Nullable FeedbackRating rating, @Nullable String comment) {
     this.serviceURI = serviceURI;
     this.authenticationToken = authenticationToken;
+    this.promptId = promptId;
     this.correlationId = correlationId;
-    this.accepted = accepted;
+    this.reviewStatus = reviewStatus;
     this.rating = rating;
     this.comment = comment;
   }
@@ -49,12 +52,16 @@ public class ProvideFeedbackParams {
     return authenticationToken;
   }
 
+  public String getPromptId() {
+    return promptId;
+  }
+
   public UUID getCorrelationId() {
     return correlationId;
   }
 
-  public boolean isAccepted() {
-    return accepted;
+  public SuggestionReviewStatus getReviewStatus() {
+    return reviewStatus;
   }
 
   @CheckForNull
