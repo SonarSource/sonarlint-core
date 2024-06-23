@@ -63,8 +63,14 @@ public class PreviouslyRaisedFindingsRepository {
     return previouslyRaisedHotspotsByScopeId.getOrDefault(scopeId, Map.of());
   }
 
-  public void resetFindingsForFiles(String configurationScopeId, Set<URI> files) {
-    replaceIssuesForFiles(configurationScopeId, files.stream().collect(Collectors.toMap(Function.identity(), e -> new ArrayList<>())));
-    replaceHotspotsForFiles(configurationScopeId, files.stream().collect(Collectors.toMap(Function.identity(), e -> new ArrayList<>())));
+  public void resetFindingsCache(String scopeId, Set<URI> files) {
+    resetCacheForFindings(scopeId, files, previouslyRaisedIssuesByScopeId);
+    resetCacheForFindings(scopeId, files, previouslyRaisedHotspotsByScopeId);
   }
+
+  private static <F extends RaisedFindingDto> void resetCacheForFindings(String scopeId, Set<URI> files, Map<String, Map<URI, List<F>>> cache) {
+    Map<URI, List<F>> blankCache = files.stream().collect(Collectors.toMap(Function.identity(), e -> new ArrayList<>()));
+    cache.compute(scopeId, (file, issues) -> blankCache);
+  }
+
 }

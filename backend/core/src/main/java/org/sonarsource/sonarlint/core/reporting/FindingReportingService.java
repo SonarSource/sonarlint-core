@@ -77,7 +77,7 @@ public class FindingReportingService {
       resetFindingsForFile(issuesPerFileUri, fileUri);
       resetFindingsForFile(securityHotspotsPerFileUri, fileUri);
     });
-    previouslyRaisedFindingsRepository.resetFindingsForFiles(configurationScopeId, files);
+    previouslyRaisedFindingsRepository.resetFindingsCache(configurationScopeId, files);
   }
 
   private static void resetFindingsForFile(Map<URI, Collection<TrackedIssue>> findingsMap, URI fileUri) {
