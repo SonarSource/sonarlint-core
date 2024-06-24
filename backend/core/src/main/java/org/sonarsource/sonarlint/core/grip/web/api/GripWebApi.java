@@ -55,8 +55,8 @@ public class GripWebApi {
           var responseBody = deserializeResponseBody(responseBodyString);
           var endTime = System.currentTimeMillis();
           var lastChoice = responseBody.choices.get(responseBody.choices.size() - 1);
-          if (!lastChoice.finishReason.equals("stop")) {
-            return Either.forLeft("The suggestion service could not provide a full response. Reason: " + lastChoice.finishReason);
+          if (!"stop".equals(lastChoice.finishReason)) {
+            return Either.forLeft("The suggestion service could not provide a full response. Reason: " + describeFinishReason(lastChoice.finishReason));
           }
           return Either.forRight(
             new SuggestFixWebApiResponse(UUID.fromString(response.header("X-Correlation-Id")), lastChoice.message.content,
@@ -72,6 +72,21 @@ public class GripWebApi {
     } catch (Exception e) {
       LOG.error("Error requesting suggestions from the GRIP service", e);
       return Either.forLeft("Error requesting suggestions from the GRIP service. See logs for more details");
+    }
+  }
+
+  private static String describeFinishReason(String finishReason) {
+    switch (finishReason) {
+      case "length":
+        return "Reached the max number of tokens specified in the request";
+      case "content_filter":
+        return "Content was flagged";
+      case "tool_calls":
+        return "A tool was called";
+      case "function_call":
+        return "A function was called";
+      default:
+        return "Unknown";
     }
   }
 
