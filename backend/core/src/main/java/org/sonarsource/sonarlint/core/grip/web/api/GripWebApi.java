@@ -109,9 +109,9 @@ public class GripWebApi {
 
   private static String serializeFeedbackRequestBody(ProvideFeedbackParams params, FixSuggestion fixSuggestion) {
     var rating = params.getRating();
-    var requestPayload = new ProvideFeedbackRequestPayload(fixSuggestion.getRuleKey(), params.getReviewStatus(), rating == null ? null : rating.name(),
-      params.getComment(),
-      new ProvideFeedbackRequestPayload.ContextPayload(params.getPromptId(), params.getCorrelationId(), fixSuggestion.getResponseTime(), fixSuggestion.getApiRawText()));
+    var requestPayload = new ProvideFeedbackRequestPayload(fixSuggestion.getRuleKey(), params.getReviewStatus(), rating == null ? null : rating.name(), params.getComment(),
+      new ProvideFeedbackRequestPayload.ContextPayload(params.getPromptId(), params.getCorrelationId(), System.getProperty("user.name"), fixSuggestion.getResponseTime(),
+        fixSuggestion.getApiRawText()));
     return new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).create().toJson(requestPayload);
   }
 

@@ -40,12 +40,14 @@ public class ProvideFeedbackRequestPayload {
   public static class ContextPayload {
     private final String promptVersion;
     private final UUID correlationId;
+    private final String username;
     private final long responseTime;
     private final String response;
 
-    public ContextPayload(String promptVersion, UUID correlationId, long responseTime, String response) {
+    public ContextPayload(String promptVersion, UUID correlationId, String username, long responseTime, String response) {
       this.promptVersion = promptVersion;
       this.correlationId = correlationId;
+      this.username = username;
       this.responseTime = responseTime;
       this.response = response;
     }

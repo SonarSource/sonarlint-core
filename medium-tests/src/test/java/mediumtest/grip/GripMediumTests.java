@@ -24,7 +24,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
-import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -86,6 +85,7 @@ class GripMediumTests {
   private static final Issue CURRENT_ISSUE = JAVA_S106_SYSTEM_OUT;
 //  public static final String PROMPT_ID = "openai.generic.20240614";
   public static final String PROMPT_ID = "openai.json-diff.20240619";
+  public static final URI SERVICE_URI = URI.create("http://localhost:8080/");
 
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
@@ -132,7 +132,7 @@ class GripMediumTests {
       .build(client);
 
     var response = backend.getGripService()
-      .suggestFix(new SuggestFixParams(URI.create("http://localhost:8080/"), "token", PROMPT_ID, CONFIG_SCOPE_ID, filePath.toUri(), CURRENT_ISSUE.message, CURRENT_ISSUE.textRange,
+      .suggestFix(new SuggestFixParams(SERVICE_URI, "token", PROMPT_ID, CONFIG_SCOPE_ID, filePath.toUri(), CURRENT_ISSUE.message, CURRENT_ISSUE.textRange,
         CURRENT_ISSUE.ruleKey))
       .join();
 
@@ -145,27 +145,27 @@ class GripMediumTests {
   @Test
   void should_provide_a_feedback(@TempDir Path tempDir) {
     var correlationId = UUID.randomUUID();
-    mockServer.addResponse("/api/suggest/", new MockResponse().setBody("{\n" +
-      " \"id\": \"chatcmpl-123\",\n" +
-      " \"object\": \"chat.completion\",\n" +
-      " \"created\": 1677652288,\n" +
-      " \"model\": \"gpt-3.5-turbo-0125\",\n" +
-      " \"system_fingerprint\": \"fp_44709d6fcb\",\n" +
-      " \"choices\": [{\n" +
-      " \"index\": 0,\n" +
-      " \"message\": {\n" +
-      " \"role\": \"assistant\",\n" +
-      " \"content\": \"```\nbefore\n```\n```\nafter\n```explanation\"\n" +
-      " },\n" +
-      " \"logprobs\": null,\n" +
-      " \"finish_reason\": \"stop\"\n" +
-      " }],\n" +
-      " \"usage\": {\n" +
-      " \"prompt_tokens\": 9,\n" +
-      " \"completion_tokens\": 12,\n" +
-      " \"total_tokens\": 21\n" +
-      " }\n" +
-      "}").setHeader("X-Correlation-Id", correlationId));
+//    mockServer.addResponse("/api/suggest/", new MockResponse().setBody("{\n" +
+//      " \"id\": \"chatcmpl-123\",\n" +
+//      " \"object\": \"chat.completion\",\n" +
+//      " \"created\": 1677652288,\n" +
+//      " \"model\": \"gpt-3.5-turbo-0125\",\n" +
+//      " \"system_fingerprint\": \"fp_44709d6fcb\",\n" +
+//      " \"choices\": [{\n" +
+//      " \"index\": 0,\n" +
+//      " \"message\": {\n" +
+//      " \"role\": \"assistant\",\n" +
+//      " \"content\": \"```\nbefore\n```\n```\nafter\n```explanation\"\n" +
+//      " },\n" +
+//      " \"logprobs\": null,\n" +
+//      " \"finish_reason\": \"stop\"\n" +
+//      " }],\n" +
+//      " \"usage\": {\n" +
+//      " \"prompt_tokens\": 9,\n" +
+//      " \"completion_tokens\": 12,\n" +
+//      " \"total_tokens\": 21\n" +
+//      " }\n" +
+//      "}").setHeader("X-Correlation-Id", correlationId));
     var filePath = tempDir.resolve("file");
     var client = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, tempDir,
@@ -177,9 +177,9 @@ class GripMediumTests {
 
     var response = backend.getGripService()
       .suggestFix(
-        new SuggestFixParams(mockServer.uri(), "token", "prompt", CONFIG_SCOPE_ID, filePath.toUri(), CURRENT_ISSUE.message, CURRENT_ISSUE.textRange, CURRENT_ISSUE.ruleKey))
+        new SuggestFixParams(SERVICE_URI, "token", PROMPT_ID, CONFIG_SCOPE_ID, filePath.toUri(), CURRENT_ISSUE.message, CURRENT_ISSUE.textRange, CURRENT_ISSUE.ruleKey))
       .join();
-    mockServer.takeRequest();
+//    mockServer.takeRequest();
 
     backend.getGripService()
       .provideFeedback(new ProvideFeedbackParams(mockServer.uri(), "token", "prompt", response.getResult().getRight().getCorrelationId(), SuggestionReviewStatus.ACCEPTED, FeedbackRating.BAD, "comment")).join();
