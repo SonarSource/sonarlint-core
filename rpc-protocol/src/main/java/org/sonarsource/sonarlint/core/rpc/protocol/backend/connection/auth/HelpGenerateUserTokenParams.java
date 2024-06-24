@@ -22,18 +22,12 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth;
 
 public class HelpGenerateUserTokenParams {
   private final String serverUrl;
-  private final boolean isSonarCloud;
 
-  public HelpGenerateUserTokenParams(String serverUrl, boolean isSonarCloud) {
+  public HelpGenerateUserTokenParams(String serverUrl) {
     this.serverUrl = serverUrl;
-    this.isSonarCloud = isSonarCloud;
   }
 
   public String getServerUrl() {
     return serverUrl;
-  }
-
-  public boolean isSonarCloud() {
-    return isSonarCloud;
   }
 }

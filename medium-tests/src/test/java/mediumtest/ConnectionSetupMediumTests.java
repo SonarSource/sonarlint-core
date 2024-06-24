@@ -66,7 +66,7 @@ class ConnectionSetupMediumTests {
 
     backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarCloudConnection("connectionId").build(fakeClient);
 
-    var futureResponse = backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(scServer.baseUrl(), true));
+    var futureResponse = backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(scServer.baseUrl()));
 
     verify(fakeClient, timeout(3000)).openUrlInBrowser(new URL(scServer.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort())));
 
@@ -90,7 +90,7 @@ class ConnectionSetupMediumTests {
     server = newSonarQubeServer("9.9").start();
     backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", server).build(fakeClient);
 
-    var futureResponse = backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), false));
+    var futureResponse = backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl()));
 
     verify(fakeClient, timeout(3000)).openUrlInBrowser(new URL(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort())));
 
@@ -114,7 +114,7 @@ class ConnectionSetupMediumTests {
     server = newSonarQubeServer("9.9").start();
     backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", server).build(fakeClient);
 
-    backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), false));
+    backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl()));
 
     verify(fakeClient, timeout(3000)).openUrlInBrowser(new URL(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort())));
 
@@ -132,7 +132,7 @@ class ConnectionSetupMediumTests {
     server = newSonarQubeServer("9.9").start();
     backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", server).build(fakeClient);
 
-    backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), false));
+    backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl()));
 
     verify(fakeClient, timeout(3000)).openUrlInBrowser(new URL(server.url("/sonarlint/auth?ideName=ClientName&port=" + backend.getEmbeddedServerPort())));
 
@@ -151,7 +151,7 @@ class ConnectionSetupMediumTests {
     backend = newBackend().withClientName("ClientName").build(fakeClient);
     server = newSonarQubeServer("9.9").start();
 
-    var futureResponse = backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl(), false));
+    var futureResponse = backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl()));
 
     assertThat(futureResponse)
       .succeedsWithin(Duration.ofSeconds(3))

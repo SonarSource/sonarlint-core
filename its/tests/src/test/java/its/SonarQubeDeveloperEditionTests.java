@@ -1049,7 +1049,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       assertThat(rawIssues)
         .extracting(RawIssueDto::getRuleKey, RawIssueDto::getType)
-        .containsExactly(tuple("java:S4792", RuleType.SECURITY_HOTSPOT));
+        .containsExactly(tuple(javaRuleKey("S4792"), RuleType.SECURITY_HOTSPOT));
     }
 
     @Test

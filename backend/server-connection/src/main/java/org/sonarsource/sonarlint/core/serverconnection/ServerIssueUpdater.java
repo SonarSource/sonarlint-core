@@ -50,11 +50,11 @@ public class ServerIssueUpdater {
   }
 
   public void update(ServerApi serverApi, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
-    if (!serverApi.isSonarCloud()) {
-      sync(serverApi, projectKey, branchName, issueDownloader.getEnabledLanguages(), cancelMonitor);
-    } else {
+    if (serverApi.isSonarCloud()) {
       var issues = issueDownloader.downloadFromBatch(serverApi, projectKey, branchName, cancelMonitor);
       storage.project(projectKey).findings().replaceAllIssuesOfBranch(branchName, issues);
+    } else {
+      sync(serverApi, projectKey, branchName, issueDownloader.getEnabledLanguages(), cancelMonitor);
     }
   }
 

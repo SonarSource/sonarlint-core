@@ -20,13 +20,14 @@
   <properties>
     <sonarjava.version>7.16.0.30901</sonarjava.version>
     <analyzer.commons.version>2.11.0.2861</analyzer.commons.version>
+    <sonar.apiVersion>9.14.0.375</sonar.apiVersion>
   </properties>
 
   <dependencies>
     <dependency>
       <groupId>org.sonarsource.api.plugin</groupId>
       <artifactId>sonar-plugin-api</artifactId>
-      <version>9.14.0.375</version>
+      <version>${sonar.apiVersion}</version>
       <scope>provided</scope>
     </dependency>
 
@@ -74,7 +75,7 @@
         <extensions>true</extensions>
         <configuration>
           <pluginClass>org.sonar.samples.java.MyJavaRulesPlugin</pluginClass>
-          <pluginApiMinVersion>9.14.0.375</pluginApiMinVersion>
+          <pluginApiMinVersion>${sonar.apiVersion}</pluginApiMinVersion>
           <pluginKey>custom</pluginKey>
           <sonarLintSupported>true</sonarLintSupported>
           <skipDependenciesPackaging>true</skipDependenciesPackaging>

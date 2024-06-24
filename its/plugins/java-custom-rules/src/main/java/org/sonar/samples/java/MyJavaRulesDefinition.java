@@ -27,7 +27,6 @@ import org.sonar.api.SonarEdition;
 import org.sonar.api.SonarProduct;
 import org.sonar.api.SonarQubeSide;
 import org.sonar.api.SonarRuntime;
-import org.sonar.api.server.rule.RuleDescriptionSection;
 import org.sonar.api.server.rule.RulesDefinition;
 import org.sonar.api.utils.Version;
 import org.sonarsource.analyzer.commons.RuleMetadataLoader;
@@ -50,7 +49,9 @@ public class MyJavaRulesDefinition implements RulesDefinition {
   public void define(Context context) {
     NewRepository repository = context.createRepository(REPOSITORY_KEY, "java").setName("MyCompany Custom Repository");
 
-    RuleMetadataLoader ruleMetadataLoader = new RuleMetadataLoader(RESOURCE_BASE_PATH, getSonarLintRuntime(Version.parse("10.3-SNAPSHOT")));
+    // The runtime version shouldn't matter. The analyzer is supposed to use it to change behavior based on its runtime version.
+    // But normally, they don't do it in the SonarLint context.
+    RuleMetadataLoader ruleMetadataLoader = new RuleMetadataLoader(RESOURCE_BASE_PATH, getSonarLintRuntime(Version.parse("10.3.0")));
 
     ruleMetadataLoader.addRulesByAnnotatedClass(repository, new ArrayList<>(RulesList.getChecks()));
 

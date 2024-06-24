@@ -4,6 +4,9 @@
 * Add new `disabledLanguagesForAnalysis` parameter into `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams`
   * Analysis will be disabled for languages specified `disabledLanguagesForAnalysis` but it will be still possible to consume Rule Descriptions
   * Can be null or empty if clients do not wish to disable analysis for any loaded plugin
+* Remove `isSonarCloud` parameter from `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams`
+  * This value on no longer needed on the backend side.
+
 ## New features
 
 ### Open Issue in IDE

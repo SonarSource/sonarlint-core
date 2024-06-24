@@ -208,7 +208,6 @@ class IssueTrackingMediumTests {
         .withIssue("uuid2", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
           "OPEN", null, Instant.now().plus(1, ChronoUnit.DAYS), new TextRange(2, 0, 2, 16))
-        .withNoHotspotsForFile(ideFilePath)
       ))
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
         .withActiveRule(ruleKey, activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
