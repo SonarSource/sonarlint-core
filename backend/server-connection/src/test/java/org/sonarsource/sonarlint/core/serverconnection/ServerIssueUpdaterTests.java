@@ -29,7 +29,6 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -81,8 +80,9 @@ class ServerIssueUpdaterTests {
     List<ServerIssue<?>> issues = Collections.singletonList(issue);
     var cancelMonitor = new SonarLintCancelMonitor();
     when(downloader.downloadFromBatch(serverApi, "module:file", null, cancelMonitor)).thenReturn(issues);
+    when(serverApi.isSonarCloud()).thenReturn(true);
 
-    updater.update(serverApi, projectBinding.projectKey(), "branch", true, Version.create("99.9"), cancelMonitor);
+    updater.update(serverApi, projectBinding.projectKey(), "branch", cancelMonitor);
 
     verify(issueStore).replaceAllIssuesOfBranch(eq("branch"), anyList());
   }
@@ -97,7 +97,7 @@ class ServerIssueUpdaterTests {
     var cancelMonitor = new SonarLintCancelMonitor();
     when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", lastSync, cancelMonitor)).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
 
-    updater.update(serverApi, projectBinding.projectKey(), "master", false, Version.create("9.9"), cancelMonitor);
+    updater.update(serverApi, projectBinding.projectKey(), "master", cancelMonitor);
 
     verify(issueStore).mergeIssues(eq("master"), anyList(), anySet(), eq(queryTimestamp), anySet());
   }
@@ -115,7 +115,7 @@ class ServerIssueUpdaterTests {
     var cancelMonitor = new SonarLintCancelMonitor();
     when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", lastSync, cancelMonitor)).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
 
-    updater.update(serverApi, projectBinding.projectKey(), "master", false, Version.create("9.9"), cancelMonitor);
+    updater.update(serverApi, projectBinding.projectKey(), "master", cancelMonitor);
 
     verify(issueStore).mergeIssues(eq("master"), anyList(), anySet(), eq(queryTimestamp), anySet());
   }
@@ -132,7 +132,7 @@ class ServerIssueUpdaterTests {
     when(downloader.getEnabledLanguages()).thenReturn(Set.of(SonarLanguage.C));
     var cancelMonitor = new SonarLintCancelMonitor();
     when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty(), cancelMonitor)).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
-    updater.update(serverApi, projectBinding.projectKey(), "master", false, Version.create("9.9"), cancelMonitor);
+    updater.update(serverApi, projectBinding.projectKey(), "master", cancelMonitor);
     verify(downloader).downloadFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty(), cancelMonitor);
   }
 
@@ -148,7 +148,7 @@ class ServerIssueUpdaterTests {
     when(downloader.getEnabledLanguages()).thenReturn(Set.of(SonarLanguage.C));
     var cancelMonitor = new SonarLintCancelMonitor();
     when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty(), cancelMonitor)).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
-    updater.update(serverApi, projectBinding.projectKey(), "master", false, Version.create("9.9"), cancelMonitor);
+    updater.update(serverApi, projectBinding.projectKey(), "master", cancelMonitor);
     verify(downloader).downloadFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty(), cancelMonitor);
   }
 
@@ -164,7 +164,7 @@ class ServerIssueUpdaterTests {
     when(downloader.getEnabledLanguages()).thenReturn(Set.of(SonarLanguage.C, SonarLanguage.GO));
     var cancelMonitor = new SonarLintCancelMonitor();
     when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", lastSync, cancelMonitor)).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
-    updater.update(serverApi, projectBinding.projectKey(), "master", false, Version.create("9.9"), cancelMonitor);
+    updater.update(serverApi, projectBinding.projectKey(), "master", cancelMonitor);
     verify(downloader).downloadFromPull(serverApi, projectBinding.projectKey(), "master", lastSync, cancelMonitor);
   }
 

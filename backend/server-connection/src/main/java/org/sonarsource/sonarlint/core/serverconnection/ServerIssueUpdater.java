@@ -23,7 +23,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -50,8 +49,8 @@ public class ServerIssueUpdater {
     this.taintIssueDownloader = taintIssueDownloader;
   }
 
-  public void update(ServerApi serverApi, String projectKey, String branchName, boolean isSonarCloud, Version serverVersion, SonarLintCancelMonitor cancelMonitor) {
-    if (!isSonarCloud) {
+  public void update(ServerApi serverApi, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
+    if (!serverApi.isSonarCloud()) {
       sync(serverApi, projectKey, branchName, issueDownloader.getEnabledLanguages(), cancelMonitor);
     } else {
       var issues = issueDownloader.downloadFromBatch(serverApi, projectKey, branchName, cancelMonitor);

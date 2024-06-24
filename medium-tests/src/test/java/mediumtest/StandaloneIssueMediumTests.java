@@ -269,7 +269,7 @@ class StandaloneIssueMediumTests {
 
   }
 
-  @Disabled
+  @Disabled("https://sonarsource.atlassian.net/browse/SLCORE-873")
   @Test
   void simpleJavaScriptInYamlFile() throws Exception {
     String content = "Resources:\n" +

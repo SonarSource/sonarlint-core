@@ -79,7 +79,6 @@ import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRe
 import static testutils.TestUtils.protobufBody;
 import static testutils.plugins.SonarPluginBuilder.newSonarPlugin;
 
-@Disabled
 class IssueTrackingMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
@@ -130,6 +129,7 @@ class IssueTrackingMediumTests {
     assertThat(secondAnalysisPublishedIssues).hasSize(2);
   }
 
+  @Disabled("https://sonarsource.atlassian.net/browse/SLCORE-873")
   @Test
   void it_should_raise_tracked_and_untracked_issues_after_match_with_server_issues(@TempDir Path baseDir) {
     var ideFilePath = "Foo.java";
@@ -181,6 +181,7 @@ class IssueTrackingMediumTests {
     assertThat(secondAnalysisPublishedIssues).hasSize(2);
   }
 
+  @Disabled("https://sonarsource.atlassian.net/browse/SLCORE-873")
   @Test
   void it_should_use_server_new_code_definition_for_server_issues_and_set_true_for_unmatched_issues(@TempDir Path baseDir) {
     var ideFilePath = "Foo.java";
@@ -298,6 +299,7 @@ class IssueTrackingMediumTests {
       .containsExactlyInAnyOrder(tuple(false, 1), tuple(true, 3));
   }
 
+  @Disabled("https://sonarsource.atlassian.net/browse/SLCORE-873")
   @Test
   void it_should_track_issue_secondary_locations(@TempDir Path baseDir) {
     var ideFilePath = "Foo.java";
@@ -376,6 +378,7 @@ class IssueTrackingMediumTests {
     assertThat(textRange3.getEndLineOffset()).isEqualTo(21);
   }
 
+  @Disabled("https://sonarsource.atlassian.net/browse/SLCORE-873")
   @Test
   void it_should_track_line_level_server_issue_on_same_line(@TempDir Path baseDir) {
     var ideFilePath = "Foo.java";
@@ -422,6 +425,7 @@ class IssueTrackingMediumTests {
       .containsExactly(ruleKey, message, IssueSeverity.BLOCKER, RuleType.BUG, "uuid", Instant.ofEpochMilli(123456789L), 1, 0, 1, 16);
   }
 
+  @Disabled("https://sonarsource.atlassian.net/browse/SLCORE-873")
   @Test
   void it_should_track_line_level_server_issue_on_different_line(@TempDir Path baseDir) {
     var ideFilePath = "Foo.java";

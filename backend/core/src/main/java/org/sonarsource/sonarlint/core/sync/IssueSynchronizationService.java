@@ -26,15 +26,12 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.Binding;
-import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
 import org.sonarsource.sonarlint.core.serverconnection.IssueDownloader;
-import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.ServerIssueUpdater;
 import org.sonarsource.sonarlint.core.serverconnection.TaintIssueDownloader;
 import org.sonarsource.sonarlint.core.storage.StorageService;
@@ -67,11 +64,6 @@ public class IssueSynchronizationService {
     }
   }
 
-  private static Version getSonarServerVersion(ServerApi serverApi, ConnectionStorage storage, SonarLintCancelMonitor cancelMonitor) {
-    var serverInfoSynchronizer = new ServerInfoSynchronizer(storage);
-    return serverInfoSynchronizer.readOrSynchronizeServerInfo(serverApi, cancelMonitor).getVersion();
-  }
-
   public void fetchProjectIssues(Binding binding, String activeBranch, SonarLintCancelMonitor cancelMonitor) {
     serverApiProvider.getServerApi(binding.getConnectionId())
       .ifPresent(serverApi -> downloadServerIssuesForProject(binding.getConnectionId(), serverApi, binding.getSonarProjectKey(), activeBranch, cancelMonitor));
@@ -79,11 +71,10 @@ public class IssueSynchronizationService {
 
   private void downloadServerIssuesForProject(String connectionId, ServerApi serverApi, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
     var storage = storageService.getStorageFacade().connection(connectionId);
-    var serverVersion = getSonarServerVersion(serverApi, storage, cancelMonitor);
     var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
       .collect(Collectors.toCollection(LinkedHashSet::new));
     var issuesUpdater = new ServerIssueUpdater(storage, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
-    issuesUpdater.update(serverApi, projectKey, branchName, serverApi.isSonarCloud(), serverVersion, cancelMonitor);
+    issuesUpdater.update(serverApi, projectKey, branchName, cancelMonitor);
   }
 
   public void fetchFileIssues(Binding binding, Path serverFileRelativePath, String activeBranch, SonarLintCancelMonitor cancelMonitor) {
