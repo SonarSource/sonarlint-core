@@ -35,7 +35,6 @@ import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.Transition;
-import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -58,8 +57,6 @@ import static org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils.toSon
 
 public class IssueApi {
 
-  public static final Version MIN_SQ_VERSION_SUPPORTING_PULL = Version.create("9.6");
-
   private static final Map<IssueStatus, Transition> transitionByStatus = Map.of(
     IssueStatus.ACCEPT, Transition.ACCEPT,
     IssueStatus.WONT_FIX, Transition.WONT_FIX,
@@ -73,10 +70,6 @@ public class IssueApi {
 
   public IssueApi(ServerApiHelper serverApiHelper) {
     this.serverApiHelper = serverApiHelper;
-  }
-
-  public static boolean supportIssuePull(boolean isSonarCloud, Version serverVersion) {
-    return !isSonarCloud && serverVersion.compareToIgnoreQualifier(IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL) >= 0;
   }
 
   /**

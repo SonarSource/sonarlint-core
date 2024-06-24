@@ -54,9 +54,6 @@ import static org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils.toSon
 public class HotspotApi {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  // the rule key is returned only on SQ, since 9.7
-  // without that info, hotspot tracking is almost impossible
-  public static final Version TRACKING_COMPATIBLE_MIN_SQ_VERSION = Version.create("9.7");
   public static final Version MIN_SQ_VERSION_SUPPORTING_PULL = Version.create("10.1");
 
   private static final String HOTSPOTS_SEARCH_API_URL = "/api/hotspots/search.protobuf";
@@ -68,14 +65,6 @@ public class HotspotApi {
 
   public HotspotApi(ServerApiHelper helper) {
     this.helper = helper;
-  }
-
-  public boolean permitsTracking(Supplier<Version> serverVersion) {
-    return permitsTracking(helper.isSonarCloud(), serverVersion);
-  }
-
-  public static boolean permitsTracking(boolean isSonarCloud, Supplier<Version> serverVersion) {
-    return isSonarCloud || serverVersion.get().compareToIgnoreQualifier(TRACKING_COMPATIBLE_MIN_SQ_VERSION) >= 0;
   }
 
   public void changeStatus(String hotspotKey, HotspotReviewStatus status, SonarLintCancelMonitor cancelMonitor) {

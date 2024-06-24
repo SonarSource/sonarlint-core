@@ -380,7 +380,7 @@ class SonarPluginRequirementsCheckerTests {
   @Test
   void load_plugin_skip_plugins_having_unsatisfied_python_frontend_dbd(@TempDir Path storage) throws IOException {
     var fakePlugin = fakePlugin(storage, "fake.jar",
-      path -> createPluginManifest(path, "dbdpythonfrontend", V1_0));
+      path -> createPluginManifest(path, "dbdpythonfrontend", "1.15"));
     Set<Path> jars = Set.of(fakePlugin);
 
     var loadedPlugins = underTest.checkRequirements(jars, NONE, null, Optional.empty(), false);
@@ -393,7 +393,7 @@ class SonarPluginRequirementsCheckerTests {
   @Test
   void load_plugin_skip_plugins_having_unsatisfied_python_dbd(@TempDir Path storage) throws IOException {
     var fakePlugin = fakePlugin(storage, "fake.jar",
-      path -> createPluginManifest(path, "dbd", V1_0));
+      path -> createPluginManifest(path, "dbd", "1.15"));
     Set<Path> jars = Set.of(fakePlugin);
 
     var loadedPlugins = underTest.checkRequirements(jars, NONE, null, Optional.empty(), true);
@@ -406,9 +406,9 @@ class SonarPluginRequirementsCheckerTests {
   @Test
   void load_plugin_having_satisfied_python_frontend_dbd(@TempDir Path storage) throws IOException {
     var fakePlugin = fakePlugin(storage, "fake.jar",
-      path -> createPluginManifest(path, "dbdpythonfrontend", V1_0));
+      path -> createPluginManifest(path, "dbdpythonfrontend", "1.15"));
     var fakePythonPlugin = fakePlugin(storage, "python.jar",
-      path -> createPluginManifest(path, SonarLanguage.PYTHON.getPluginKey(), "1.15"));
+      path -> createPluginManifest(path, SonarLanguage.PYTHON.getPluginKey(), "3.25"));
     Set<Path> jars = Set.of(fakePlugin, fakePythonPlugin);
 
     var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.PYTHON), null, Optional.empty(), true);
@@ -423,9 +423,9 @@ class SonarPluginRequirementsCheckerTests {
   @Test
   void load_plugin_having_satisfied_python_dbd(@TempDir Path storage) throws IOException {
     var fakePlugin = fakePlugin(storage, "fake.jar",
-      path -> createPluginManifest(path, "dbd", V1_0));
+      path -> createPluginManifest(path, "dbd", "1.15"));
     var fakePythonPlugin = fakePlugin(storage, "python.jar",
-      path -> createPluginManifest(path, SonarLanguage.PYTHON.getPluginKey(), "1.15"));
+      path -> createPluginManifest(path, SonarLanguage.PYTHON.getPluginKey(), "3.25"));
     Set<Path> jars = Set.of(fakePlugin, fakePythonPlugin);
 
     var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.PYTHON), null, Optional.empty(), true);
@@ -440,9 +440,9 @@ class SonarPluginRequirementsCheckerTests {
   @Test
   void load_plugin_having_satisfied_python_dbd_but_no_feature_flag(@TempDir Path storage) throws IOException {
     var fakePlugin = fakePlugin(storage, "fake.jar",
-      path -> createPluginManifest(path, "dbd", V1_0));
+      path -> createPluginManifest(path, "dbd", "1.15"));
     var fakePythonPlugin = fakePlugin(storage, "python.jar",
-      path -> createPluginManifest(path, SonarLanguage.PYTHON.getPluginKey(), "1.15"));
+      path -> createPluginManifest(path, SonarLanguage.PYTHON.getPluginKey(), "3.25"));
     Set<Path> jars = Set.of(fakePlugin, fakePythonPlugin);
 
     var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.PYTHON), null, Optional.empty(), false);

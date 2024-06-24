@@ -26,13 +26,17 @@ import org.sonarsource.sonarlint.core.commons.Version;
 public class VersionUtils {
 
   private static final Version CURRENT_LTS = Version.create("9.9");
-  private static final Version MINIMAL_SUPPORTED_VERSION = Version.create("7.9");
+  private static final Version MINIMAL_SUPPORTED_VERSION = Version.create("9.9");
   private static final String VERSION_REGEX = ".*?(\\d+\\.\\d+(?:\\.\\d+)*).*";
   private static final Pattern JAR_VERSION_PATTERN = Pattern.compile(VERSION_REGEX);
 
   private VersionUtils() {
   }
 
+  /**
+   * Right now since minimal supported version is equal to current LTS (9.9) this method will always return false.
+   * But it's important to keep it for the future when next LTS will be released, and we will have a grace period again.
+   */
   public static boolean isVersionSupportedDuringGracePeriod(Version currentVersion) {
     return currentVersion.compareTo(CURRENT_LTS) < 0 &&
       currentVersion.compareToIgnoreQualifier(MINIMAL_SUPPORTED_VERSION) >= 0;

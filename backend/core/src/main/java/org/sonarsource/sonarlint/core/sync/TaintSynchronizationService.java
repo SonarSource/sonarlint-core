@@ -32,9 +32,7 @@ import org.sonarsource.sonarlint.core.event.TaintVulnerabilitiesSynchronizedEven
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverconnection.IssueDownloader;
-import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.ServerIssueUpdater;
 import org.sonarsource.sonarlint.core.serverconnection.TaintIssueDownloader;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
@@ -89,16 +87,14 @@ public class TaintSynchronizationService {
   private UpdateSummary<ServerTaintIssue> updateServerTaintIssuesForProject(String connectionId, ServerApi serverApi, String projectKey,
     String branchName, SonarLintCancelMonitor cancelMonitor) {
     var storage = storageService.getStorageFacade().connection(connectionId);
-    var serverInfoSynchronizer = new ServerInfoSynchronizer(storage);
-    var serverVersion = serverInfoSynchronizer.readOrSynchronizeServerInfo(serverApi, cancelMonitor).getVersion();
     var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
       .collect(Collectors.toCollection(LinkedHashSet::new));
     var issuesUpdater = new ServerIssueUpdater(storage, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
-    if (IssueApi.supportIssuePull(serverApi.isSonarCloud(), serverVersion)) {
+    if (serverApi.isSonarCloud()) {
+      return issuesUpdater.downloadProjectTaints(serverApi, projectKey, branchName, cancelMonitor);
+    } else {
       LOG.info("[SYNC] Synchronizing taint issues for project '{}' on branch '{}'", projectKey, branchName);
       return issuesUpdater.syncTaints(serverApi, projectKey, branchName, enabledLanguagesToSync, cancelMonitor);
-    } else {
-      return issuesUpdater.downloadProjectTaints(serverApi, projectKey, branchName, cancelMonitor);
     }
   }
 

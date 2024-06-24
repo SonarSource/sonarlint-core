@@ -22,18 +22,21 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth;
 
 public class HelpGenerateUserTokenParams {
   private final String serverUrl;
-  private final boolean isSonarCloud;
 
+  public HelpGenerateUserTokenParams(String serverUrl) {
+    this.serverUrl = serverUrl;
+  }
+
+  /**
+   *
+   * @deprecated isSonarCloud param not used anymore since both SonarCloud and minimal supported SonarQube (9.9) supports automatic token generation
+   */
+  @Deprecated(since = "10.3")
   public HelpGenerateUserTokenParams(String serverUrl, boolean isSonarCloud) {
     this.serverUrl = serverUrl;
-    this.isSonarCloud = isSonarCloud;
   }
 
   public String getServerUrl() {
     return serverUrl;
-  }
-
-  public boolean isSonarCloud() {
-    return isSonarCloud;
   }
 }

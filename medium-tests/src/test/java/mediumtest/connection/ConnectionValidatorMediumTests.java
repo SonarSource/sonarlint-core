@@ -64,7 +64,7 @@ class ConnectionValidatorMediumTests {
   @Test
   void testConnection_ok() {
     serverMock.stubFor(get("/api/system/status")
-      .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"7.9\",\"status\": \"UP\"}")));
+      .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}")));
     serverMock.stubFor(get("/api/authentication/validate?format=json")
       .willReturn(aResponse().withBody("{\"valid\": true}")));
 
@@ -76,7 +76,7 @@ class ConnectionValidatorMediumTests {
   @Test
   void testConnectionOrganizationNotFound() {
     serverMock.stubFor(get("/api/system/status")
-      .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"7.9\",\"status\": \"UP\"}")));
+      .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}")));
     serverMock.stubFor(get("/api/authentication/validate?format=json")
       .willReturn(aResponse().withBody("{\"valid\": true}")));
     serverMock.stubFor(get("/api/organizations/search.protobuf?organizations=myOrg&ps=500&p=1")
@@ -91,7 +91,7 @@ class ConnectionValidatorMediumTests {
   @Test
   void testConnection_ok_with_org() {
     serverMock.stubFor(get("/api/system/status")
-      .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"7.9\",\"status\": \"UP\"}")));
+      .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}")));
     serverMock.stubFor(get("/api/authentication/validate?format=json")
       .willReturn(aResponse().withBody("{\"valid\": true}")));
     serverMock.stubFor(get("/api/organizations/search.protobuf?organizations=myOrg&ps=500&p=1")
@@ -112,7 +112,7 @@ class ConnectionValidatorMediumTests {
   @Test
   void testConnection_ok_without_org() {
     serverMock.stubFor(get("/api/system/status")
-      .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"7.9\",\"status\": \"UP\"}")));
+      .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}")));
     serverMock.stubFor(get("/api/authentication/validate?format=json")
       .willReturn(aResponse().withBody("{\"valid\": true}")));
     var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarCloudConnectionDto(null, Either.forLeft(new TokenDto(null))))).join();
@@ -128,7 +128,7 @@ class ConnectionValidatorMediumTests {
     var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarQubeConnectionDto(serverMock.baseUrl(), Either.forLeft(new TokenDto(null))))).join();
 
     assertThat(response.isSuccess()).isFalse();
-    assertThat(response.getMessage()).isEqualTo("SonarQube server has version 6.7. Version should be greater or equal to 7.9");
+    assertThat(response.getMessage()).isEqualTo("SonarQube server has version 6.7. Version should be greater or equal to 9.9");
   }
 
   @Test

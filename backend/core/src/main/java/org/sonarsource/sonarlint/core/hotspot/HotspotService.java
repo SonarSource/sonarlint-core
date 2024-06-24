@@ -43,20 +43,16 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
-import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
-
-import static org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi.TRACKING_COMPATIBLE_MIN_SQ_VERSION;
 
 @Named
 @Singleton
 public class HotspotService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final String NO_BINDING_REASON = "The project is not bound, please bind it to SonarQube 9.7+ or SonarCloud";
-  private static final String UNSUPPORTED_SONARQUBE_REASON = "Security Hotspots detection is disabled with this version of SonarQube, " +
-    "please bind it to SonarQube 9.7+ or SonarCloud";
+  private static final String NO_BINDING_REASON = "The project is not bound, please bind it to SonarQube 9.9+ or SonarCloud";
+  private static final String UNSUPPORTED_SONARQUBE_REASON = "Security Hotspots detection is disabled since storage is not available";
 
   private static final String REVIEW_STATUS_UPDATE_PERMISSION_MISSING_REASON = "Changing a hotspot's status requires the 'Administer Security Hotspot' permission.";
   private final SonarLintRpcClient client;
@@ -117,8 +113,7 @@ public class HotspotService {
         connectionId);
       throw new ResponseErrorException(error);
     }
-
-    var supported = isLocalDetectionSupported(connection.getKind() == ConnectionKind.SONARCLOUD, effectiveBinding.get().getConnectionId());
+    var supported = isLocalDetectionSupported(connection.getKind() == ConnectionKind.SONARCLOUD, connectionId);
     return new CheckLocalDetectionSupportedResponse(supported, supported ? null : UNSUPPORTED_SONARQUBE_REASON);
   }
 
@@ -165,11 +160,7 @@ public class HotspotService {
   }
 
   private boolean isLocalDetectionSupported(boolean isSonarCloud, String connectionId) {
-    return isSonarCloud ||
-      storageService.connection(connectionId).serverInfo().read()
-        .map(StoredServerInfo::getVersion)
-        .map(version -> version.compareToIgnoreQualifier(TRACKING_COMPATIBLE_MIN_SQ_VERSION) >= 0)
-        .orElse(false);
+    return isSonarCloud || storageService.connection(connectionId).serverInfo().read().isPresent();
   }
 
   static String buildHotspotUrl(String projectKey, String branch, String hotspotKey, EndpointParams endpointParams) {

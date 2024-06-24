@@ -28,30 +28,39 @@ import org.sonarsource.sonarlint.core.serverapi.system.SystemApi;
 
 public class ServerVersionAndStatusChecker {
 
-  private static final String MIN_SQ_VERSION = "7.9";
+  private static final String MIN_SQ_VERSION = "9.9";
   private final SystemApi systemApi;
+  private final boolean isSonarCloud;
 
   public ServerVersionAndStatusChecker(ServerApi serverApi) {
     this.systemApi = serverApi.system();
+    this.isSonarCloud = serverApi.isSonarCloud();
   }
 
   /**
-   * Checks SonarQube version against the minimum version supported by the library
+   * Checks SonarQube availability status and version against the minimum version supported by the core
+   * or only server availability status for SonarCloud
    *
-   * @return ServerInfos
    * @throws UnsupportedServerException if version &lt; minimum supported version
    * @throws IllegalStateException      If server is not ready
    */
-  public ServerInfo checkVersionAndStatus(SonarLintCancelMonitor cancelMonitor) {
+  public void checkVersionAndStatus(SonarLintCancelMonitor cancelMonitor) {
     var serverStatus = systemApi.getStatus(cancelMonitor);
-    checkServerUpAndSupported(serverStatus);
-    return serverStatus;
+    if (isSonarCloud) {
+      checkServerUp(serverStatus);
+    } else {
+      checkServerUpAndSupported(serverStatus);
+    }
   }
 
-  public static void checkServerUpAndSupported(ServerInfo serverInfo) {
+  private static void checkServerUp(ServerInfo serverInfo) {
     if (!serverInfo.isUp()) {
       throw new IllegalStateException(serverNotReady(serverInfo));
     }
+  }
+
+  private static void checkServerUpAndSupported(ServerInfo serverInfo) {
+    checkServerUp(serverInfo);
     var serverVersion = Version.create(serverInfo.getVersion());
     if (serverVersion.compareToIgnoreQualifier(Version.create(MIN_SQ_VERSION)) < 0) {
       throw new UnsupportedServerException(unsupportedVersion(serverInfo, MIN_SQ_VERSION));

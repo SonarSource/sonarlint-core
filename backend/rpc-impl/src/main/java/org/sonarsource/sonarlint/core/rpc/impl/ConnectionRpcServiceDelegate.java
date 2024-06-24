@@ -63,7 +63,7 @@ class ConnectionRpcServiceDelegate extends AbstractRpcServiceDelegate implements
 
   @Override
   public CompletableFuture<HelpGenerateUserTokenResponse> helpGenerateUserToken(HelpGenerateUserTokenParams params) {
-    return requestAsync(cancelMonitor -> getBean(ConnectionService.class).helpGenerateUserToken(params.getServerUrl(), params.isSonarCloud(), cancelMonitor));
+    return requestAsync(cancelMonitor -> getBean(ConnectionService.class).helpGenerateUserToken(params.getServerUrl(), cancelMonitor));
   }
 
   @Override

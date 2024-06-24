@@ -184,8 +184,8 @@ public class ConnectionService {
     return developersApi.isSupported(cancelMonitor);
   }
 
-  public HelpGenerateUserTokenResponse helpGenerateUserToken(String serverUrl, boolean isSonarCloud, SonarLintCancelMonitor cancelMonitor) {
-    return tokenGeneratorHelper.helpGenerateUserToken(serverUrl, isSonarCloud, cancelMonitor);
+  public HelpGenerateUserTokenResponse helpGenerateUserToken(String serverUrl, SonarLintCancelMonitor cancelMonitor) {
+    return tokenGeneratorHelper.helpGenerateUserToken(serverUrl, cancelMonitor);
   }
 
   public List<SonarProjectDto> getAllProjects(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection, SonarLintCancelMonitor cancelMonitor) {

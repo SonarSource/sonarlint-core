@@ -4,6 +4,8 @@
 * Add new `disabledLanguagesForAnalysis` parameter into `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams`
   * Analysis will be disabled for languages specified `disabledLanguagesForAnalysis` but it will be still possible to consume Rule Descriptions
   * Can be null or empty if clients do not wish to disable analysis for any loaded plugin
+
+
 ## New features
 
 ### Open Issue in IDE
@@ -14,6 +16,8 @@
   * Common methods of both connection types are added to the `AssistCreatingConnectionParams` class to provide users simplicity
 
 ## Deprecation
+* Deprecate `isSonarCloud` parameter from `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams`
+  * This value on no longer needed on the backend side.
 
 * `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams.getServerUrl` is only meaningful for SQ
   connections. Use `getConnection().getLeft().getServerUrl()` instead to get the `serverUrl` of a SQ connection

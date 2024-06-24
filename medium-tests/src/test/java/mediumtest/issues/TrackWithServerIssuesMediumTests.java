@@ -164,33 +164,6 @@ class TrackWithServerIssuesMediumTests {
   }
 
   @Test
-  void it_should_track_with_a_server_only_issue_when_fetching_from_legacy_server_requested() {
-    var introductionDate = Instant.now();
-    server = newSonarQubeServer("9.5").withProject("projectKey",
-        project -> project.withBranch("main",
-          branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, introductionDate, new TextRange(1, 2, 3, 4))))
-      .start();
-    var client = newFakeClient().build();
-    backend = newBackend()
-      .withSonarQubeConnection("connectionId", server, storage -> storage.withServerVersion("9.5")
-        .withProject("projectKey", project -> project.withMainBranch("main")))
-      .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
-      .build(client);
-
-    var response = trackWithServerIssues(new TrackWithServerIssuesParams(CONFIG_SCOPE_ID,
-      Map.of(Path.of("file/path"),
-        List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "rule:key", "message"))),
-      true));
-
-    assertThat(response)
-      .succeedsWithin(Duration.ofSeconds(20))
-      .satisfies(result -> assertThat(result.getIssuesByIdeRelativePath())
-        .hasEntrySatisfying(Path.of("file/path"), issues -> assertThat(issues).usingRecursiveComparison().ignoringFields("lsp4jEither.left.id")
-          .isEqualTo(
-            List.of(Either.forLeft(new ServerMatchedIssueDto(null, "issueKey", introductionDate.toEpochMilli(), false, null, BUG, true))))));
-  }
-
-  @Test
   void it_should_translate_paths_before_matching() {
     var serverFilePath = "server/file/path";
     var ideFilePath = "ide/file/path";
@@ -226,7 +199,7 @@ class TrackWithServerIssuesMediumTests {
 
   @Test
   void it_should_download_all_issues_at_once_when_tracking_issues_from_more_than_10_files() {
-    server = newSonarQubeServer("9.5").withProject("projectKey",
+    server = newSonarQubeServer("9.9").withProject("projectKey",
         project -> project.withBranch("main",
           branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, Instant.now(), new TextRange(1, 2, 3, 4))))
       .start();
@@ -245,7 +218,7 @@ class TrackWithServerIssuesMediumTests {
       .succeedsWithin(Duration.ofSeconds(4))
       .satisfies(result -> assertThat(result.getIssuesByIdeRelativePath())
         .hasSize(11));
-    waitAtMost(2, SECONDS).untilAsserted(() -> server.getMockServer().verify(getRequestedFor(urlEqualTo("/batch/issues?key=projectKey&branch=main"))));
+    waitAtMost(2, SECONDS).untilAsserted(() -> server.getMockServer().verify(getRequestedFor(urlEqualTo("/api/issues/pull?projectKey=projectKey&branchName=main"))));
   }
 
   private CompletableFuture<TrackWithServerIssuesResponse> trackWithServerIssues(TrackWithServerIssuesParams params) {

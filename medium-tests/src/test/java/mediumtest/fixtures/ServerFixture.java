@@ -50,7 +50,6 @@ import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
-import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Components;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
@@ -858,7 +857,7 @@ public class ServerFixture {
     }
 
     private void registerIssuesApiResponses() {
-      if (version != null && version.satisfiesMinRequirement(IssueApi.MIN_SQ_VERSION_SUPPORTING_PULL)) {
+      if (version != null) {
         registerApiIssuesPullResponses();
         registerApiIssuesPullTaintResponses();
       } else {

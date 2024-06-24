@@ -65,12 +65,12 @@ class PluginSynchronizationMediumTests {
       .build();
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
-      assertThat(getPluginsStorageFolder()).isDirectoryContaining(path -> path.getFileName().toString().equals("sonar-java-plugin-7.15.0.30507.jar"));
+      assertThat(getPluginsStorageFolder()).isDirectoryContaining(path -> path.getFileName().toString().equals("sonar-java-plugin-7.16.0.30901.jar"));
       assertThat(getPluginReferencesFilePath())
         .exists()
         .extracting(this::readPluginReferences, as(MAP))
         .containsOnly(
-          entry("java", PluginReference.newBuilder().setFilename("sonar-java-plugin-7.15.0.30507.jar").setKey("java").setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH).build()));
+          entry("java", PluginReference.newBuilder().setFilename("sonar-java-plugin-7.16.0.30901.jar").setKey("java").setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH).build()));
     });
   }
 
@@ -110,12 +110,12 @@ class PluginSynchronizationMediumTests {
       .build(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
-      assertThat(getPluginsStorageFolder()).isDirectoryContaining(path -> path.getFileName().toString().equals("sonar-java-plugin-7.15.0.30507.jar"));
+      assertThat(getPluginsStorageFolder()).isDirectoryContaining(path -> path.getFileName().toString().equals("sonar-java-plugin-7.16.0.30901.jar"));
       assertThat(getPluginReferencesFilePath())
         .exists()
         .extracting(this::readPluginReferences, as(MAP))
         .containsOnly(
-          entry("java", PluginReference.newBuilder().setFilename("sonar-java-plugin-7.15.0.30507.jar").setKey("java").setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH).build()));
+          entry("java", PluginReference.newBuilder().setFilename("sonar-java-plugin-7.16.0.30901.jar").setKey("java").setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH).build()));
       assertThat(client.getLogMessages()).contains("[SYNC] Code analyzer 'java' is up-to-date. Skip downloading it.");
     });
   }
@@ -138,7 +138,7 @@ class PluginSynchronizationMediumTests {
       .exists()
       .extracting(this::readPluginReferences, as(MAP))
       .containsOnly(
-        entry("java", PluginReference.newBuilder().setFilename("sonar-java-plugin-7.15.0.30507.jar").setKey("java").setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH).build())));
+        entry("java", PluginReference.newBuilder().setFilename("sonar-java-plugin-7.16.0.30901.jar").setKey("java").setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH).build())));
   }
 
   @Test
@@ -181,7 +181,7 @@ class PluginSynchronizationMediumTests {
       File[] files = getPluginsStorageFolder().toFile().listFiles();
       assertThat(files).hasSize(1);
       assertThat(files[0]).hasName(PluginsStorage.PLUGIN_REFERENCES_PB);
-      assertThat(client.getLogMessages()).contains("[SYNC] Code analyzer 'java' version '5.12.0' is not supported (minimal version is '5.13.1.18282'). Skip downloading it.");
+      assertThat(client.getLogMessages()).contains("[SYNC] Code analyzer 'java' version '5.12.0' is not supported (minimal version is '7.16.0.30901'). Skip downloading it.");
     });
   }
 
