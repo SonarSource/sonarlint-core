@@ -56,6 +56,7 @@ public class PluginsService {
   private final LanguageSupportRepository languageSupportRepository;
   private final StorageService storageService;
   private final Set<Path> embeddedPluginPaths;
+  private final Set<String> disabledPluginKeysForAnalysis;
   private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final NodeJsService nodeJsService;
@@ -72,6 +73,7 @@ public class PluginsService {
     this.enableDataflowBugDetection = params.getFeatureFlags().isEnableDataflowBugDetection();
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.nodeJsService = nodeJsService;
+    this.disabledPluginKeysForAnalysis = params.getDisabledPluginKeysForAnalysis();
   }
 
   public LoadedPlugins getEmbeddedPlugins() {
@@ -144,7 +146,7 @@ public class PluginsService {
 
   private PluginsLoadResult loadPlugins(Set<SonarLanguage> enabledLanguages, Set<Path> pluginPaths, boolean enableDataflowBugDetection) {
     var config = new PluginsLoader.Configuration(pluginPaths, enabledLanguages, enableDataflowBugDetection, nodeJsService.getActiveNodeJsVersion());
-    return new PluginsLoader().load(config);
+    return new PluginsLoader().load(config, disabledPluginKeysForAnalysis);
   }
 
   @EventListener

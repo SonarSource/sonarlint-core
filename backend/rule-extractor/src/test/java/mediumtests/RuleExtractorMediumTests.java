@@ -71,9 +71,9 @@ class RuleExtractorMediumTests {
   void extractAllRules() {
     var enabledLanguages = Set.of(SonarLanguage.values());
     var config = new PluginsLoader.Configuration(allJars, enabledLanguages, false, NODE_VERSION);
-    var result = new PluginsLoader().load(config);
+    var result = new PluginsLoader().load(config, Set.of());
 
-    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, false, false);
+    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getAllPluginInstancesByKeys(), enabledLanguages, false, false);
     if (COMMERCIAL_ENABLED) {
       assertThat(allJars).hasSize(18);
       assertThat(allRules).hasSize(ALL_RULES_COUNT_WITH_COMMERCIAL);
@@ -117,9 +117,9 @@ class RuleExtractorMediumTests {
   void extractAllRules_include_rule_templates() {
     var enabledLanguages = Set.of(SonarLanguage.values());
     var config = new PluginsLoader.Configuration(allJars, enabledLanguages, false, NODE_VERSION);
-    var result = new PluginsLoader().load(config);
+    var result = new PluginsLoader().load(config, Set.of());
 
-    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, true, false);
+    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getAllPluginInstancesByKeys(), enabledLanguages, true, false);
     if (COMMERCIAL_ENABLED) {
       assertThat(allJars).hasSize(18);
       assertThat(allRules).hasSize(ALL_RULES_COUNT_WITH_COMMERCIAL + NON_COMMERCIAL_RULE_TEMPLATES_COUNT + COMMERCIAL_RULE_TEMPLATES_COUNT);
@@ -133,9 +133,9 @@ class RuleExtractorMediumTests {
   void extractAllRules_include_security_hotspots() {
     var enabledLanguages = Set.of(SonarLanguage.values());
     var config = new PluginsLoader.Configuration(allJars, enabledLanguages, false, NODE_VERSION);
-    var result = new PluginsLoader().load(config);
+    var result = new PluginsLoader().load(config, Set.of());
 
-    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, false, true);
+    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getAllPluginInstancesByKeys(), enabledLanguages, false, true);
     if (COMMERCIAL_ENABLED) {
       assertThat(allJars).hasSize(18);
       assertThat(allRules).hasSize(ALL_RULES_COUNT_WITH_COMMERCIAL + NON_COMMERCIAL_SECURITY_HOTSPOTS_COUNT + COMMERCIAL_SECURITY_HOTSPOTS_COUNT);
@@ -159,9 +159,9 @@ class RuleExtractorMediumTests {
       enabledLanguages.add(SonarLanguage.C);
     }
     var config = new PluginsLoader.Configuration(allJars, enabledLanguages, false, NODE_VERSION);
-    var result = new PluginsLoader().load(config);
+    var result = new PluginsLoader().load(config, Set.of());
 
-    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, false, false);
+    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getAllPluginInstancesByKeys(), enabledLanguages, false, false);
 
     assertThat(allRules.stream().map(SonarLintRuleDefinition::getLanguage).distinct()).hasSameElementsAs(enabledLanguages);
 
@@ -171,8 +171,8 @@ class RuleExtractorMediumTests {
   void loadNoRuleIfThereIsNoPlugin() {
     var enabledLanguages = Set.of(SonarLanguage.values());
     var config = new PluginsLoader.Configuration(Set.of(), enabledLanguages, false, NODE_VERSION);
-    var result = new PluginsLoader().load(config);
-    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, false, false);
+    var result = new PluginsLoader().load(config, Set.of());
+    var allRules = new RulesDefinitionExtractor().extractRules(result.getLoadedPlugins().getAllPluginInstancesByKeys(), enabledLanguages, false, false);
 
     assertThat(allRules).isEmpty();
   }

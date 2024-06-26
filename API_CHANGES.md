@@ -1,3 +1,10 @@
+# 10.4 
+
+## Breaking changes
+* Change `disabledLanguagesForAnalysis` parameter of `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams` introduced in 10.3 version to `disabledPluginKeysForAnalysis`
+  * Analysis will be disabled for plugins specified in `disabledPluginKeysForAnalysis` but it will be still possible to consume Rule Descriptions
+  * Can be null or empty if clients do not wish to disable analysis for any loaded plugin
+
 # 10.3
 
 ## Breaking changes

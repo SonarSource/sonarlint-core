@@ -41,7 +41,7 @@ public class AnalysisExtensionInstaller extends ExtensionInstaller {
   }
 
   public AnalysisExtensionInstaller install(ExtensionContainer container, ContainerLifespan lifespan) {
-    super.install(container, loadedPlugins.getPluginInstancesByKeys(),
+    super.install(container, loadedPlugins.getAnalysisPluginInstancesByKeys(),
       (pluginKey, extension) -> lifespan.equals(getSonarLintSideLifespan(extension)) && onlySonarSourceSensor(pluginKey, extension));
     return this;
   }

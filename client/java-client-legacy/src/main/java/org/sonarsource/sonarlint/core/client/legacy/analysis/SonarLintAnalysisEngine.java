@@ -110,7 +110,7 @@ public final class SonarLintAnalysisEngine {
       globalConfigFromRpc.getEnabledLanguages().stream().map(l -> SonarLanguage.valueOf(l.name())).collect(Collectors.toSet()),
       globalConfigFromRpc.isDataflowBugDetectionEnabled(),
       Optional.ofNullable(nodeJsDetails).map(NodeJsDetailsDto::getVersion).map(Version::create));
-    var loadingResult = new PluginsLoader().load(config);
+    var loadingResult = new PluginsLoader().load(config, Set.of());
 
     pluginDetails = loadingResult.getPluginCheckResultByKeys().values().stream()
       .map(c -> new PluginDetails(c.getPlugin().getKey(), c.getPlugin().getName(), c.getPlugin().getVersion().toString(), c.getSkipReason().orElse(null)))
