@@ -11,7 +11,6 @@ env:
   BURGR_PASSWORD: VAULT[development/kv/data/burgr data.cirrus_password]
   SONAR_HOST_URL: VAULT[development/kv/data/next data.url]
   SONAR_TOKEN: VAULT[development/kv/data/next data.token]
-  SLACK_TOKEN: VAULT[development/kv/data/slack data.token]
 
 auto_cancellation: $CIRRUS_BRANCH != $CIRRUS_DEFAULT_BRANCH
 
@@ -93,9 +92,6 @@ build_task:
   cache_script:
     - mvn -B -e -V -Pits dependency:go-offline # populate cache including ITs deps too
   cleanup_before_cache_script: cleanup_maven_repository
-  on_failure:
-    slack_notification_script: |
-      .cirrus/slack-notification.sh
 
 test_linux_task:
   # Run unit tests on Linux with Java 17 and SonarQube analysis on Next
@@ -116,8 +112,6 @@ test_linux_task:
     junit_artifacts:
       path: '**/target/surefire-reports/TEST-*.xml'
       format: junit
-    slack_notification_script: |
-      .cirrus/slack-notification.sh
 
 test_windows_task:
   # Run UTs on Windows (Java 17)
@@ -139,8 +133,6 @@ test_windows_task:
     junit_artifacts:
       path: '**/target/surefire-reports/TEST-*.xml'
       format: junit
-    slack_notification_script: |
-      .cirrus/slack-notification.sh
 
 inspect_orchestrator_cache_task:
   <<: *ONLY_IF_EXCEPT_NIGHTLY
@@ -178,9 +170,6 @@ mend_scan_task:
   always:
     ws_artifacts:
       path: "whitesource/**/*"
-  on_failure:
-    slack_notification_script: |
-      .cirrus/slack-notification.sh
 
 qa_task:
   # Run ITs
@@ -236,8 +225,6 @@ qa_task:
       format: junit
     log_artifacts:
       path: "**/target/**/sonarqube*/logs/*.log"
-    slack_notification_script: |
-      .cirrus/slack-notification.sh
 
 promote_task:
   # Promotion
@@ -261,6 +248,3 @@ promote_task:
   <<: *MAVEN_CACHE_DEFINITION
   script: cirrus_promote_maven
   cleanup_before_cache_script: cleanup_maven_repository
-  on_failure:
-    slack_notification_script: |
-      .cirrus/slack-notification.sh
