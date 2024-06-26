@@ -23,7 +23,8 @@ import com.google.gson.FieldNamingPolicy;
 import com.google.gson.GsonBuilder;
 import java.net.URI;
 import java.util.UUID;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sonarsource.sonarlint.core.grip.suggest.FixSuggestion;
 import org.sonarsource.sonarlint.core.grip.web.api.payload.ProvideFeedbackRequestPayload;
 import org.sonarsource.sonarlint.core.grip.web.api.payload.SuggestFixRequestPayload;
@@ -33,7 +34,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.ProvideFeedbackP
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 
 public class GripWebApi {
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private static final Logger LOG = LoggerFactory.getLogger(GripWebApi.class);
   private final HttpClientProvider httpClientProvider;
 
   public GripWebApi(HttpClientProvider httpClientProvider) {
