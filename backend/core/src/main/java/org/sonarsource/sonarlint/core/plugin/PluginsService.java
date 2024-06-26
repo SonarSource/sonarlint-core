@@ -77,7 +77,7 @@ public class PluginsService {
   public LoadedPlugins getEmbeddedPlugins() {
     var loadedEmbeddedPlugins = pluginsRepository.getLoadedEmbeddedPlugins();
     if (loadedEmbeddedPlugins == null) {
-      var result = loadPlugins(languageSupportRepository.getEnabledLanguagesInStandaloneMode(), embeddedPluginPaths, enableDataflowBugDetection);
+      var result = loadPlugins(languageSupportRepository.getAllEnabledLanguagesInStandaloneMode(), embeddedPluginPaths, enableDataflowBugDetection);
       loadedEmbeddedPlugins = result.getLoadedPlugins();
       pluginsRepository.setLoadedEmbeddedPlugins(loadedEmbeddedPlugins);
       skippedPluginsRepository.setSkippedEmbeddedPlugins(getSkippedPlugins(result));
@@ -93,7 +93,19 @@ public class PluginsService {
       .collect(Collectors.toList());
   }
 
-  public LoadedPlugins getPlugins(String connectionId) {
+  // TODO filter out excluded plugins
+  public LoadedPlugins getPluginsForAnalysis(String connectionId) {
+    var loadedPlugins = pluginsRepository.getLoadedPlugins(connectionId);
+    if (loadedPlugins == null) {
+      var result = loadPlugins(connectionId);
+      loadedPlugins = result.getLoadedPlugins();
+      pluginsRepository.setLoadedPlugins(connectionId, loadedPlugins);
+      skippedPluginsRepository.setSkippedPlugins(connectionId, getSkippedPlugins(result));
+    }
+    return loadedPlugins;
+  }
+
+  public LoadedPlugins getPluginsForRules(String connectionId) {
     var loadedPlugins = pluginsRepository.getLoadedPlugins(connectionId);
     if (loadedPlugins == null) {
       var result = loadPlugins(connectionId);
@@ -107,7 +119,7 @@ public class PluginsService {
   private PluginsLoadResult loadPlugins(String connectionId) {
     var pluginPaths = getPluginPathsForConnection(connectionId);
 
-    return loadPlugins(languageSupportRepository.getEnabledLanguagesInConnectedMode(), pluginPaths, enableDataflowBugDetection);
+    return loadPlugins(languageSupportRepository.getAllEnabledLanguagesInConnectedMode(), pluginPaths, enableDataflowBugDetection);
   }
 
   private Set<Path> getPluginPathsForConnection(String connectionId) {

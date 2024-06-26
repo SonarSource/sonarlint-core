@@ -168,10 +168,10 @@ public class AnalysisService {
     Set<SonarLanguage> enabledLanguages;
     Map<String, String> analysisSettings;
     if (effectiveBinding.isEmpty()) {
-      enabledLanguages = languageSupportRepository.getEnabledLanguagesInStandaloneMode();
+      enabledLanguages = languageSupportRepository.getEnabledLanguagesInStandaloneModeForAnalysis();
       analysisSettings = Collections.emptyMap();
     } else {
-      enabledLanguages = languageSupportRepository.getEnabledLanguagesInConnectedMode();
+      enabledLanguages = languageSupportRepository.getEnabledLanguagesInConnectedModeForAnalysis();
       analysisSettings = storageService.binding(effectiveBinding.get())
         .analyzerConfiguration().read().getSettings().getAll();
     }
@@ -200,7 +200,7 @@ public class AnalysisService {
   }
 
   public GetGlobalConfigurationResponse getGlobalStandaloneConfiguration() {
-    var enabledLanguages = languageSupportRepository.getEnabledLanguagesInStandaloneMode();
+    var enabledLanguages = languageSupportRepository.getEnabledLanguagesInStandaloneModeForAnalysis();
     var pluginPaths = pluginsService.getEmbeddedPluginPaths();
     var activeNodeJs = nodeJsService.getActiveNodeJs();
     var nodeJsDetailsDto = activeNodeJs == null ? null : new NodeJsDetailsDto(activeNodeJs.getPath(), activeNodeJs.getVersion().toString());
@@ -208,7 +208,7 @@ public class AnalysisService {
   }
 
   public GetGlobalConfigurationResponse getGlobalConnectedConfiguration(String connectionId) {
-    var enabledLanguages = languageSupportRepository.getEnabledLanguagesInConnectedMode();
+    var enabledLanguages = languageSupportRepository.getEnabledLanguagesInConnectedModeForAnalysis();
     var pluginPaths = pluginsService.getConnectedPluginPaths(connectionId);
     var activeNodeJs = nodeJsService.getActiveNodeJs();
     var nodeJsDetailsDto = activeNodeJs == null ? null : new NodeJsDetailsDto(activeNodeJs.getPath(), activeNodeJs.getVersion().toString());
@@ -240,15 +240,17 @@ public class AnalysisService {
       .addInputFiles(toInputFiles(configScopeId, filePathsToAnalyze))
       .putAllExtraProperties(analysisConfig.getAnalysisProperties())
       .putAllExtraProperties(extraProperties)
-      .addActiveRules(buildActiveRulesForAnalysisConfig(analysisConfig))
+      .addActiveRules(buildActiveRulesForAnalysisConfig(analysisConfig, configScopeId))
       .setBaseDir(actualBaseDir)
       .build();
   }
 
-  private List<ActiveRule> buildActiveRulesForAnalysisConfig(GetAnalysisConfigResponse analysisConfig) {
-    var disabledLanguagesForAnalysis = languageSupportRepository.getDisabledLanguagesForAnalysis();
+  private List<ActiveRule> buildActiveRulesForAnalysisConfig(GetAnalysisConfigResponse analysisConfig, String configScopeId) {
+    var enabledLanguages = configurationRepository.getEffectiveBinding(configScopeId)
+      .map(binding -> languageSupportRepository.getEnabledLanguagesInConnectedModeForAnalysis())
+      .orElse(languageSupportRepository.getEnabledLanguagesInStandaloneModeForAnalysis());
     return analysisConfig.getActiveRules().stream()
-      .filter(r -> isRuleEnabledForAnalysis(r, disabledLanguagesForAnalysis))
+      .filter(r -> isRuleEnabledForAnalysis(r, enabledLanguages))
       .map(r -> {
       var ar = new ActiveRule(r.getRuleKey(), r.getLanguageKey());
       ar.setParams(r.getParams());
@@ -257,9 +259,9 @@ public class AnalysisService {
     }).collect(toList());
   }
 
-  private static Boolean isRuleEnabledForAnalysis(ActiveRuleDto r, Set<SonarLanguage> disabledLanguagesForAnalysis) {
+  private static Boolean isRuleEnabledForAnalysis(ActiveRuleDto r, Set<SonarLanguage> enabledLanguagesForAnalysis) {
     var languageByLanguageKey = SonarLanguage.getLanguageByLanguageKey(r.getLanguageKey());
-    return !languageByLanguageKey.map(disabledLanguagesForAnalysis::contains).orElse(false);
+    return languageByLanguageKey.map(enabledLanguagesForAnalysis::contains).orElse(false);
   }
 
   private static Path findCommonPrefix(List<URI> uris) {
@@ -280,7 +282,7 @@ public class AnalysisService {
     var ruleSetByLanguageKey = analyzerConfig.getRuleSetByLanguageKey();
     var result = new ArrayList<ActiveRuleDto>();
     ruleSetByLanguageKey.entrySet()
-      .stream().filter(e -> SonarLanguage.forKey(e.getKey()).filter(l -> languageSupportRepository.getEnabledLanguagesInConnectedMode().contains(l)).isPresent())
+      .stream().filter(e -> SonarLanguage.forKey(e.getKey()).filter(l -> languageSupportRepository.getEnabledLanguagesInConnectedModeForAnalysis().contains(l)).isPresent())
       .forEach(e -> {
         var languageKey = e.getKey();
         var ruleSet = e.getValue();

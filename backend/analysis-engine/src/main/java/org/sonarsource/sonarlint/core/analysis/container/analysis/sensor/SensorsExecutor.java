@@ -78,6 +78,7 @@ public class SensorsExecutor {
   }
 
   private void executeSensors(List<ProjectSensor> sensors) {
+    // TODO test that disabled language sensor is not loading
     for (var sensor : sort(sensors)) {
       progress.checkCancel();
       var descriptor = new DefaultSensorDescriptor();

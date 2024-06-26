@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
+import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -50,13 +51,13 @@ public class AnalysisEngineCache {
   private final Map<String, AnalysisEngine> connectedEnginesByConnectionId = new ConcurrentHashMap<>();
 
   public AnalysisEngineCache(ConfigurationRepository configurationRepository, NodeJsService nodeJsService, InitializeParams initializeParams,
-    PluginsService pluginsService, ClientFileSystemService clientFileSystemService) {
+    PluginsService pluginsService, ClientFileSystemService clientFileSystemService, LanguageSupportRepository languageSupportRepository) {
     this.configurationRepository = configurationRepository;
     this.pluginsService = pluginsService;
     this.nodeJsService = nodeJsService;
     this.workDir = initializeParams.getWorkDir();
     this.clientFileSystemService = clientFileSystemService;
-    var shouldSupportCsharp = initializeParams.getEnabledLanguagesInStandaloneMode().contains(Language.CS);
+    var shouldSupportCsharp = languageSupportRepository.getEnabledLanguagesInStandaloneModeForAnalysis().contains(Language.CS);
     var languageSpecificRequirements = initializeParams.getLanguageSpecificRequirements();
     if (shouldSupportCsharp && languageSpecificRequirements != null) {
       var omnisharpRequirements = languageSpecificRequirements.getOmnisharpRequirements();
@@ -75,7 +76,7 @@ public class AnalysisEngineCache {
   }
 
   private synchronized AnalysisEngine getOrCreateConnectedEngine(String connectionId) {
-    return connectedEnginesByConnectionId.computeIfAbsent(connectionId, k -> createEngine(pluginsService.getPlugins(connectionId)));
+    return connectedEnginesByConnectionId.computeIfAbsent(connectionId, k -> createEngine(pluginsService.getPluginsForAnalysis(connectionId)));
   }
 
   private synchronized AnalysisEngine getOrCreateStandaloneEngine() {

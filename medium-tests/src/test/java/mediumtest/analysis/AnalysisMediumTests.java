@@ -127,6 +127,7 @@ class AnalysisMediumTests {
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .withDisabledLanguagesForAnalysis(Language.JAVA)
       .build(client);
     var analysisId = UUID.randomUUID();
 
