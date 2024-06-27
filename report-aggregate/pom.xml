@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.sonarsource.sonarlint.core</groupId>
     <artifactId>sonarlint-core-parent</artifactId>
-    <version>10.4-SNAPSHOT</version>
+    <version>10.3.1-SNAPSHOT</version>
   </parent>
   <artifactId>sonarlint-report-aggregate</artifactId>
   <name>SonarLint Coverage Reports Aggregator</name>
@@ -112,7 +112,7 @@
       <version>${project.version}</version>
     </dependency>
   </dependencies>
-  
+
   <build>
     <plugins>
       <plugin>
