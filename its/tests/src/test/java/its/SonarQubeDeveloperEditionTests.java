@@ -221,7 +221,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
               new SonarQubeConnectionConfigurationDto(CONNECTION_ID_WRONG_CREDENTIALS, ORCHESTRATOR.getServer().getUrl(), false)),
             Collections.emptyList(),
             sonarUserHome.toString(),
-            Map.of(), false, null))
+            Map.of(), false, null, false))
         .get();
     } catch (Exception e) {
       throw new IllegalStateException("Cannot initialize the backend", e);
