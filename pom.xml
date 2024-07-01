@@ -71,7 +71,7 @@
     <jgit.version>6.9.0.202403050737-r</jgit.version>
 
     <!-- Not only used as a plug-in but also as a dependency for 'maven-shade-ext-bnd-transformer' -->
-    <version.shade.plugin>3.4.1</version.shade.plugin>
+    <version.shade.plugin>3.6.0</version.shade.plugin>
 
     <!-- Exclude Maven Shade plug-in dependency as the test is done via the Maven build itself ... -->
     <sonar.coverage.exclusions>buildSrc/maven-shade-ext-bnd-transformer/**</sonar.coverage.exclusions>
