@@ -75,6 +75,7 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
 import static org.sonarsource.sonarlint.core.commons.CleanCodeAttribute.CONVENTIONAL;
@@ -93,19 +94,21 @@ public class RulesService {
   private final StorageService storageService;
   private final SynchronizationService synchronizationService;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
+  private final ApplicationEventPublisher eventPublisher;
   private static final String COULD_NOT_FIND_RULE = "Could not find rule '";
   private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfig = new ConcurrentHashMap<>();
   private FindingReportingService findingReportingService;
 
   @Inject
   public RulesService(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository, StorageService storageService,
-    SynchronizationService synchronizationService, ConnectionConfigurationRepository connectionConfigurationRepository, InitializeParams params) {
-    this(serverApiProvider, configurationRepository, rulesRepository, storageService, synchronizationService, connectionConfigurationRepository,
+    SynchronizationService synchronizationService, ConnectionConfigurationRepository connectionConfigurationRepository, InitializeParams params,
+    ApplicationEventPublisher eventPublisher) {
+    this(serverApiProvider, configurationRepository, rulesRepository, storageService, synchronizationService, connectionConfigurationRepository, eventPublisher,
       params.getStandaloneRuleConfigByKey());
   }
 
   RulesService(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository, StorageService storageService,
-    SynchronizationService synchronizationService, ConnectionConfigurationRepository connectionConfigurationRepository,
+    SynchronizationService synchronizationService, ConnectionConfigurationRepository connectionConfigurationRepository, ApplicationEventPublisher eventPublisher,
     @Nullable Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey) {
     this.serverApiProvider = serverApiProvider;
     this.configurationRepository = configurationRepository;
@@ -113,6 +116,7 @@ public class RulesService {
     this.storageService = storageService;
     this.synchronizationService = synchronizationService;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
+    this.eventPublisher = eventPublisher;
     if (standaloneRuleConfigByKey != null) {
       this.standaloneRuleConfig.putAll(standaloneRuleConfigByKey);
     }
@@ -292,13 +296,10 @@ public class RulesService {
     return new GetStandaloneRuleDescriptionResponse(convert(ruleDefinition), RuleDetailsAdapter.transformDescriptions(ruleDetails, null));
   }
 
-  public void updateStandaloneRulesConfiguration(Map<String, StandaloneRuleConfigDto> ruleConfigByKey) {
-    setStandaloneRuleConfig(ruleConfigByKey);
-  }
-
-  private synchronized void setStandaloneRuleConfig(Map<String, StandaloneRuleConfigDto> standaloneRuleConfig) {
+  public void updateStandaloneRulesConfiguration(Map<String, StandaloneRuleConfigDto> standaloneRuleConfig) {
     this.standaloneRuleConfig.clear();
     this.standaloneRuleConfig.putAll(standaloneRuleConfig);
+    eventPublisher.publishEvent(new StandaloneRulesConfigurationChanged());
   }
 
   public synchronized Map<String, StandaloneRuleConfigDto> getStandaloneRuleConfig() {

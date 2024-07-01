@@ -29,8 +29,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseIssuesParam
 
 @JsonSegment("analysis")
 public interface AnalysisRpcService {
-
-
   /**
    * This is the list of file patterns declared as part of a language by one of the enabled analyzer.
    * Beware that some analyzers may analyze more files that the one matching one of those patterns.
@@ -46,6 +44,9 @@ public interface AnalysisRpcService {
   @JsonRequest
   CompletableFuture<GetGlobalConfigurationResponse> getGlobalConnectedConfiguration(GetGlobalConnectedConfigurationParams params);
 
+  /**
+   * @since 10.3 this method returns not only server analyser properties, but also user properties provided by client
+   */
   @JsonRequest
   CompletableFuture<GetAnalysisConfigResponse> getAnalysisConfig(GetAnalysisConfigParams params);
 
@@ -82,4 +83,25 @@ public interface AnalysisRpcService {
    */
   @JsonRequest
   CompletableFuture<AnalyzeFilesResponse> analyzeFilesAndTrack(AnalyzeFilesAndTrackParams params);
+
+  /**
+   *  Inform the backend that user settings analysis properties has changed.
+   *  The backend will take the provided set of properties as new user configuration, and previous user values will be cleared.
+   * @param params configuration scope ID, new properties for this scope
+   */
+  @JsonNotification
+  void didSetUserAnalysisProperties(DidChangeAnalysisPropertiesParams params);
+
+  /**
+   * Allows to enable or disable automatic analysis.
+   * Automatic analysis happens on the following triggers:
+   * <ul>
+   *   <li>on file open</li>
+   *   <li>on open file content change</li>
+   *   <li>on some server events, e.g. when some rules were enabled</li>
+   * </ul>
+   * When this setting becomes enabled, an automatic analysis of open files will be triggered.
+   */
+  @JsonNotification
+  void didChangeAutomaticAnalysisSetting(DidChangeAutomaticAnalysisSettingParams params);
 }

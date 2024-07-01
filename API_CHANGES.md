@@ -6,7 +6,17 @@
   * Can be null or empty if clients do not wish to disable analysis for any loaded plugin
 
 
+None :)
+
 ## New features
+* Add a method to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient` to allow backend to request inferred analysis properties from the client before every analysis. It's important because properties may change depending on files being analysed.
+  * `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#getInferredAnalysisProperties` to request inferred properties
+* Add a method to the `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService` to let the client notify the backend with user defined analysis properties
+  * `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#didSetUserAnalysisProperties` to set user defined properties
+* For analysis, both user-defined and inferred properties will be merged. If the same property is inferred by the client and provided by the user - the inferred value will be used for analysis.
+* Add a method to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient` to allow the backend to request client-defined file
+  exclusions from the client before every standalone analysis.
+  * `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#getFileExclusions` to request file exclusions
 
 ### Open Issue in IDE
 
@@ -15,12 +25,25 @@
   * This field type is `Either<AssistSonarQubeConnection, AssistSonarCloudConnection>`
   * Common methods of both connection types are added to the `AssistCreatingConnectionParams` class to provide users simplicity
 
+### File events
+
+* Add the `didOpenFile` and `didCloseFile` methods to `org.sonarsource.sonarlint.core.rpc.protocol.backend.file.FileRpcService`.
+  * Clients are supposed to call these methods when a file is opened in the editor or closed.
+
+### Analysis
+
+* Add a new constructor in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams` to let clients provide if automatic analysis is enabled.
+* Add a new `didChangeAutomaticAnalysisSetting` method in `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService`
+  * Clients are expected to call it whenever users change the "enable automatic analysis" setting.
+
 ## Deprecation
 * Deprecate `isSonarCloud` parameter from `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams`
   * This value on no longer needed on the backend side.
 
 * `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams.getServerUrl` is only meaningful for SQ
   connections. Use `getConnection().getLeft().getServerUrl()` instead to get the `serverUrl` of a SQ connection
+
+* The existing constructor in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams` is now deprecated, the newly added constructor should be used instead (see above).
 
 # 10.2
 

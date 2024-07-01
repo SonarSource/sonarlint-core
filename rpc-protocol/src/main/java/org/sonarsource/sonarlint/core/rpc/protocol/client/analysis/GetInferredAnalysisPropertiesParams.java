@@ -17,31 +17,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.file;
+package org.sonarsource.sonarlint.core.rpc.protocol.client.analysis;
 
-import java.util.concurrent.CompletableFuture;
-import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
-import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
-import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
+public class GetInferredAnalysisPropertiesParams {
+  private final String configurationScopeId;
 
-@JsonSegment("file")
-public interface FileRpcService {
+  public GetInferredAnalysisPropertiesParams(String configurationScopeId) {
+    this.configurationScopeId = configurationScopeId;
+  }
 
-  @JsonRequest
-  CompletableFuture<GetFilesStatusResponse> getFilesStatus(GetFilesStatusParams params);
-
-  @JsonNotification
-  void didUpdateFileSystem(DidUpdateFileSystemParams params);
-
-  /**
-   * Should be called by clients when a file has been opened in the editor.
-   */
-  @JsonNotification
-  void didOpenFile(DidOpenFileParams params);
-
-  /**
-   * Should be called by clients when a file has been closed in the editor.
-   */
-  @JsonNotification
-  void didCloseFile(DidCloseFileParams params);
+  public String getConfigurationScopeId() {
+    return configurationScopeId;
+  }
 }

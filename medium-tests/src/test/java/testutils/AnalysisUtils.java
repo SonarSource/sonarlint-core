@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
@@ -33,6 +34,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFiles
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -66,9 +68,9 @@ public class AnalysisUtils {
     return publishedIssues.get(0);
   }
 
-  private static Map<URI, List<RaisedIssueDto>> getPublishedIssues(SonarLintRpcClientDelegate client, UUID analysisId, String scopeId) {
+  public static Map<URI, List<RaisedIssueDto>> getPublishedIssues(SonarLintRpcClientDelegate client, @Nullable UUID analysisId, String scopeId) {
     ArgumentCaptor<Map<URI, List<RaisedIssueDto>>> trackedIssuesCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(client, timeout(300)).raiseIssues(eq(scopeId), trackedIssuesCaptor.capture(), eq(false), eq(analysisId));
+    verify(client, timeout(2000)).raiseIssues(eq(scopeId), trackedIssuesCaptor.capture(), eq(false), analysisId == null ? any() : eq(analysisId));
     return trackedIssuesCaptor.getValue();
   }
 

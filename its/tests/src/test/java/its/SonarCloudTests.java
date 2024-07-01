@@ -175,7 +175,7 @@ class SonarCloudTests extends AbstractConnectedTests {
         new SonarCloudAlternativeEnvironmentDto(SONARCLOUD_STAGING_URL, SONARCLOUD_WEBSOCKETS_STAGING_URL), featureFlags, sonarUserHome.resolve("storage"),
         sonarUserHome.resolve("work"), emptySet(), PluginLocator.getEmbeddedPluginsByKeyForTests(), languages, emptySet(), emptySet(), emptyList(),
         List.of(new SonarCloudConnectionConfigurationDto(CONNECTION_ID, SONARCLOUD_ORGANIZATION, true)), sonarUserHome.toString(),
-        emptyMap(), false, null));
+        emptyMap(), false, null, false));
     randomPositiveInt = new Random().nextInt() & Integer.MAX_VALUE;
 
     adminWsClient = newAdminWsClient();

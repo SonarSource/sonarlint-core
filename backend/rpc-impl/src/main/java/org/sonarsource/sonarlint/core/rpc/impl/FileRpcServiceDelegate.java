@@ -22,6 +22,8 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.fs.FileExclusionService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidCloseFileParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.FileRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.GetFilesStatusParams;
@@ -44,5 +46,15 @@ public class FileRpcServiceDelegate extends AbstractRpcServiceDelegate implement
   @Override
   public void didUpdateFileSystem(DidUpdateFileSystemParams params) {
     notify(() -> getBean(ClientFileSystemService.class).didUpdateFileSystem(params));
+  }
+
+  @Override
+  public void didOpenFile(DidOpenFileParams params) {
+    notify(() -> getBean(ClientFileSystemService.class).didOpenFile(params.getConfigurationScopeId(), params.getFileUri()));
+  }
+
+  @Override
+  public void didCloseFile(DidCloseFileParams params) {
+    notify(() -> getBean(ClientFileSystemService.class).didCloseFile(params.getConfigurationScopeId(), params.getFileUri()));
   }
 }
