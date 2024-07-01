@@ -78,7 +78,7 @@ public class InitializeParams {
     boolean isFocusOnNewCode,
     @Nullable LanguageSpecificRequirements languageSpecificRequirements) {
     this(clientConstantInfo, telemetryConstantAttributes, httpConfiguration, alternativeSonarCloudEnvironment, featureFlags, storageRoot, workDir, embeddedPluginPaths,
-      connectedModeEmbeddedPluginPathsByKey, enabledLanguagesInStandaloneMode, extraEnabledLanguagesInConnectedMode, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome,
+      connectedModeEmbeddedPluginPathsByKey, enabledLanguagesInStandaloneMode, extraEnabledLanguagesInConnectedMode, Set.of(), sonarQubeConnections, sonarCloudConnections, sonarlintUserHome,
       standaloneRuleConfigByKey, isFocusOnNewCode, languageSpecificRequirements, false);
   }
 
