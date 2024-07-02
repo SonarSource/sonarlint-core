@@ -178,7 +178,7 @@ public class ServerEventsService {
   }
 
   private SonarQubeEventStream openStream(String connectionId) {
-    return new SonarQubeEventStream(languageSupportRepository.getEnabledLanguagesInConnectedModeForAnalysis(), connectionId, serverApiProvider,
+    return new SonarQubeEventStream(languageSupportRepository.getEnabledLanguagesInConnectedMode(), connectionId, serverApiProvider,
       e -> eventPublisher.publishEvent(new SonarServerEventReceivedEvent(connectionId, e)));
   }
 

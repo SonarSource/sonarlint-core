@@ -90,7 +90,7 @@ public class GlobalAnalysisContainer extends SpringComponentContainer {
   }
 
   private void declarePluginProperties() {
-    loadedPlugins.getPluginInstancesByKeys().values().forEach(this::declareProperties);
+    loadedPlugins.getAnalysisPluginInstancesByKeys().values().forEach(this::declareProperties);
   }
 
   // Visible for medium tests

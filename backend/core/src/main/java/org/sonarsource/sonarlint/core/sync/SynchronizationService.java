@@ -210,7 +210,7 @@ public class SynchronizationService {
   @NotNull
   public ServerConnection getServerConnection(String connectionId, ServerApi serverApi) {
     return new ServerConnection(storageService.getStorageFacade(), connectionId, serverApi.isSonarCloud(),
-      languageSupportRepository.getAllEnabledLanguagesInConnectedMode(), connectedModeEmbeddedPluginKeys);
+      languageSupportRepository.getEnabledLanguagesInConnectedMode(), connectedModeEmbeddedPluginKeys);
   }
 
   @EventListener

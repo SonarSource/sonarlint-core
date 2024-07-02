@@ -56,6 +56,7 @@ public class PluginsService {
   private final LanguageSupportRepository languageSupportRepository;
   private final StorageService storageService;
   private final Set<Path> embeddedPluginPaths;
+  private final Set<String> disabledPlugins;
   private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final NodeJsService nodeJsService;
@@ -72,12 +73,13 @@ public class PluginsService {
     this.enableDataflowBugDetection = params.getFeatureFlags().isEnableDataflowBugDetection();
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.nodeJsService = nodeJsService;
+    this.disabledPlugins = params.getDisabledPluginKeys();
   }
 
   public LoadedPlugins getEmbeddedPlugins() {
     var loadedEmbeddedPlugins = pluginsRepository.getLoadedEmbeddedPlugins();
     if (loadedEmbeddedPlugins == null) {
-      var result = loadPlugins(languageSupportRepository.getAllEnabledLanguagesInStandaloneMode(), embeddedPluginPaths, enableDataflowBugDetection);
+      var result = loadPlugins(languageSupportRepository.getEnabledLanguagesInStandaloneMode(), embeddedPluginPaths, enableDataflowBugDetection);
       loadedEmbeddedPlugins = result.getLoadedPlugins();
       pluginsRepository.setLoadedEmbeddedPlugins(loadedEmbeddedPlugins);
       skippedPluginsRepository.setSkippedEmbeddedPlugins(getSkippedPlugins(result));
@@ -93,19 +95,7 @@ public class PluginsService {
       .collect(Collectors.toList());
   }
 
-  // TODO filter out excluded plugins
-  public LoadedPlugins getPluginsForAnalysis(String connectionId) {
-    var loadedPlugins = pluginsRepository.getLoadedPlugins(connectionId);
-    if (loadedPlugins == null) {
-      var result = loadPlugins(connectionId);
-      loadedPlugins = result.getLoadedPlugins();
-      pluginsRepository.setLoadedPlugins(connectionId, loadedPlugins);
-      skippedPluginsRepository.setSkippedPlugins(connectionId, getSkippedPlugins(result));
-    }
-    return loadedPlugins;
-  }
-
-  public LoadedPlugins getPluginsForRules(String connectionId) {
+  public LoadedPlugins getPlugins(String connectionId) {
     var loadedPlugins = pluginsRepository.getLoadedPlugins(connectionId);
     if (loadedPlugins == null) {
       var result = loadPlugins(connectionId);
@@ -119,7 +109,7 @@ public class PluginsService {
   private PluginsLoadResult loadPlugins(String connectionId) {
     var pluginPaths = getPluginPathsForConnection(connectionId);
 
-    return loadPlugins(languageSupportRepository.getAllEnabledLanguagesInConnectedMode(), pluginPaths, enableDataflowBugDetection);
+    return loadPlugins(languageSupportRepository.getEnabledLanguagesInConnectedMode(), pluginPaths, enableDataflowBugDetection);
   }
 
   private Set<Path> getPluginPathsForConnection(String connectionId) {
@@ -156,7 +146,7 @@ public class PluginsService {
 
   private PluginsLoadResult loadPlugins(Set<SonarLanguage> enabledLanguages, Set<Path> pluginPaths, boolean enableDataflowBugDetection) {
     var config = new PluginsLoader.Configuration(pluginPaths, enabledLanguages, enableDataflowBugDetection, nodeJsService.getActiveNodeJsVersion());
-    return new PluginsLoader().load(config);
+    return new PluginsLoader().load(config, disabledPlugins);
   }
 
   @EventListener

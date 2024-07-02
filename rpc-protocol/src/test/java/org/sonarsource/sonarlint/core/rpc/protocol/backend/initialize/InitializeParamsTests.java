@@ -35,7 +35,7 @@ class InitializeParamsTests {
     assertNotNull(params.getSonarQubeConnections());
     assertNotNull(params.getSonarCloudConnections());
     assertNotNull(params.getStandaloneRuleConfigByKey());
-    assertNotNull(params.getDisabledLanguagesForAnalysis());
+    assertNotNull(params.getDisabledPluginKeys());
   }
 
 }

@@ -38,14 +38,13 @@ public class LanguageSupportRepository {
     EnumSet.of(SonarLanguage.CS, SonarLanguage.JAVA, SonarLanguage.JS, SonarLanguage.TS, SonarLanguage.PHP, SonarLanguage.PYTHON);
   private final EnumSet<SonarLanguage> enabledLanguagesInStandaloneMode;
   private final EnumSet<SonarLanguage> enabledLanguagesInConnectedMode;
-  private final Set<SonarLanguage> disableAnalysisForLanguages;
 
   public LanguageSupportRepository(InitializeParams params) {
     this.enabledLanguagesInStandaloneMode = toEnumSet(
       adaptLanguage(params.getEnabledLanguagesInStandaloneMode()), SonarLanguage.class);
     this.enabledLanguagesInConnectedMode = EnumSet.copyOf(this.enabledLanguagesInStandaloneMode);
     this.enabledLanguagesInConnectedMode.addAll(adaptLanguage(params.getExtraEnabledLanguagesInConnectedMode()));
-    this.disableAnalysisForLanguages = Set.copyOf(adaptLanguage(params.getDisableAnalysisForLanguages()));
+
   }
 
   @NotNull
@@ -57,27 +56,14 @@ public class LanguageSupportRepository {
     return collection.isEmpty() ? EnumSet.noneOf(clazz) : EnumSet.copyOf(collection);
   }
 
-  public Set<SonarLanguage> getEnabledLanguagesInStandaloneModeForAnalysis() {
-    return getAnalysisOnlyLanguages(enabledLanguagesInStandaloneMode);
-  }
-
-  public Set<SonarLanguage> getEnabledLanguagesInConnectedModeForAnalysis() {
-    return getAnalysisOnlyLanguages(enabledLanguagesInConnectedMode);
-  }
-
-  public Set<SonarLanguage> getAllEnabledLanguagesInStandaloneMode() {
+  public Set<SonarLanguage> getEnabledLanguagesInStandaloneMode() {
     return enabledLanguagesInStandaloneMode;
   }
 
-  public Set<SonarLanguage> getAllEnabledLanguagesInConnectedMode() {
+  public Set<SonarLanguage> getEnabledLanguagesInConnectedMode() {
     return enabledLanguagesInConnectedMode;
   }
 
-  private EnumSet<SonarLanguage> getAnalysisOnlyLanguages(EnumSet<SonarLanguage> enabledLanguages) {
-    var languagesForAnalysis = EnumSet.copyOf(enabledLanguages);
-    languagesForAnalysis.removeAll(disableAnalysisForLanguages);
-    return languagesForAnalysis;
-  }
 
   public boolean areTaintVulnerabilitiesSupported() {
     var intersection = EnumSet.copyOf(LANGUAGES_RAISING_TAINT_VULNERABILITIES);
