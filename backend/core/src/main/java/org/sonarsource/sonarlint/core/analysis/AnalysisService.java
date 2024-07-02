@@ -240,28 +240,14 @@ public class AnalysisService {
       .addInputFiles(toInputFiles(configScopeId, filePathsToAnalyze))
       .putAllExtraProperties(analysisConfig.getAnalysisProperties())
       .putAllExtraProperties(extraProperties)
-      .addActiveRules(buildActiveRulesForAnalysisConfig(analysisConfig, configScopeId))
+      .addActiveRules(analysisConfig.getActiveRules().stream().map(r -> {
+        var ar = new ActiveRule(r.getRuleKey(), r.getLanguageKey());
+        ar.setParams(r.getParams());
+        ar.setTemplateRuleKey(r.getTemplateRuleKey());
+        return ar;
+      }).collect(toList()))
       .setBaseDir(actualBaseDir)
       .build();
-  }
-
-  private List<ActiveRule> buildActiveRulesForAnalysisConfig(GetAnalysisConfigResponse analysisConfig, String configScopeId) {
-    var enabledLanguages = configurationRepository.getEffectiveBinding(configScopeId)
-      .map(binding -> languageSupportRepository.getEnabledLanguagesInConnectedMode())
-      .orElse(languageSupportRepository.getEnabledLanguagesInStandaloneMode());
-    return analysisConfig.getActiveRules().stream()
-      .filter(r -> isRuleEnabledForAnalysis(r, enabledLanguages))
-      .map(r -> {
-      var ar = new ActiveRule(r.getRuleKey(), r.getLanguageKey());
-      ar.setParams(r.getParams());
-      ar.setTemplateRuleKey(r.getTemplateRuleKey());
-      return ar;
-    }).collect(toList());
-  }
-
-  private static Boolean isRuleEnabledForAnalysis(ActiveRuleDto r, Set<SonarLanguage> enabledLanguagesForAnalysis) {
-    var languageByLanguageKey = SonarLanguage.getLanguageByLanguageKey(r.getLanguageKey());
-    return languageByLanguageKey.map(enabledLanguagesForAnalysis::contains).orElse(false);
   }
 
   private static Path findCommonPrefix(List<URI> uris) {

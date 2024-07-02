@@ -559,7 +559,6 @@ class AnalysisMediumTests {
     verify(client, times(0)).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
   }
 
-
   @Test
   void it_should_skip_analysis_and_keep_rules_if_disabled_language_for_analysis(@TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml",
