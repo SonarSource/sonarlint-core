@@ -240,26 +240,14 @@ public class AnalysisService {
       .addInputFiles(toInputFiles(configScopeId, filePathsToAnalyze))
       .putAllExtraProperties(analysisConfig.getAnalysisProperties())
       .putAllExtraProperties(extraProperties)
-      .addActiveRules(buildActiveRulesForAnalysisConfig(analysisConfig))
+      .addActiveRules(analysisConfig.getActiveRules().stream().map(r -> {
+        var ar = new ActiveRule(r.getRuleKey(), r.getLanguageKey());
+        ar.setParams(r.getParams());
+        ar.setTemplateRuleKey(r.getTemplateRuleKey());
+        return ar;
+      }).collect(toList()))
       .setBaseDir(actualBaseDir)
       .build();
-  }
-
-  private List<ActiveRule> buildActiveRulesForAnalysisConfig(GetAnalysisConfigResponse analysisConfig) {
-    var disabledLanguagesForAnalysis = languageSupportRepository.getDisabledLanguagesForAnalysis();
-    return analysisConfig.getActiveRules().stream()
-      .filter(r -> isRuleEnabledForAnalysis(r, disabledLanguagesForAnalysis))
-      .map(r -> {
-      var ar = new ActiveRule(r.getRuleKey(), r.getLanguageKey());
-      ar.setParams(r.getParams());
-      ar.setTemplateRuleKey(r.getTemplateRuleKey());
-      return ar;
-    }).collect(toList());
-  }
-
-  private static Boolean isRuleEnabledForAnalysis(ActiveRuleDto r, Set<SonarLanguage> disabledLanguagesForAnalysis) {
-    var languageByLanguageKey = SonarLanguage.getLanguageByLanguageKey(r.getLanguageKey());
-    return !languageByLanguageKey.map(disabledLanguagesForAnalysis::contains).orElse(false);
   }
 
   private static Path findCommonPrefix(List<URI> uris) {

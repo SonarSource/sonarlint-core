@@ -60,7 +60,7 @@ public class PluginsLoader {
     }
   }
 
-  public PluginsLoadResult load(Configuration configuration) {
+  public PluginsLoadResult load(Configuration configuration, Set<String> disabledPlugins) {
     var javaSpecVersion = Objects.requireNonNull(System2.INSTANCE.property("java.specification.version"), "Missing Java property 'java.specification.version'");
     var pluginCheckResultByKeys = requirementsChecker.checkRequirements(configuration.pluginJarLocations, configuration.enabledLanguages, Version.create(javaSpecVersion),
       configuration.nodeCurrentVersion, configuration.enableDataflowBugDetection);
@@ -71,7 +71,7 @@ public class PluginsLoader {
     var instancesLoader = new PluginInstancesLoader();
     var pluginInstancesByKeys = instancesLoader.instantiatePluginClasses(nonSkippedPlugins);
 
-    return new PluginsLoadResult(new LoadedPlugins(pluginInstancesByKeys, instancesLoader, additionalAllowedPlugins(configuration)),
+    return new PluginsLoadResult(new LoadedPlugins(pluginInstancesByKeys, instancesLoader, additionalAllowedPlugins(configuration), disabledPlugins),
       pluginCheckResultByKeys);
   }
 

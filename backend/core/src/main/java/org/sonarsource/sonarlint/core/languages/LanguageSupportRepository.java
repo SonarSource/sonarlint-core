@@ -34,17 +34,17 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 @Named
 @Singleton
 public class LanguageSupportRepository {
-  private static final EnumSet<SonarLanguage> LANGUAGES_RAISING_TAINT_VULNERABILITIES = EnumSet.of(SonarLanguage.CS, SonarLanguage.JAVA, SonarLanguage.JS, SonarLanguage.TS, SonarLanguage.PHP, SonarLanguage.PYTHON);
+  private static final EnumSet<SonarLanguage> LANGUAGES_RAISING_TAINT_VULNERABILITIES =
+    EnumSet.of(SonarLanguage.CS, SonarLanguage.JAVA, SonarLanguage.JS, SonarLanguage.TS, SonarLanguage.PHP, SonarLanguage.PYTHON);
   private final EnumSet<SonarLanguage> enabledLanguagesInStandaloneMode;
   private final EnumSet<SonarLanguage> enabledLanguagesInConnectedMode;
-  private final EnumSet<SonarLanguage> disabledLanguagesForAnalysis;
 
   public LanguageSupportRepository(InitializeParams params) {
     this.enabledLanguagesInStandaloneMode = toEnumSet(
       adaptLanguage(params.getEnabledLanguagesInStandaloneMode()), SonarLanguage.class);
     this.enabledLanguagesInConnectedMode = EnumSet.copyOf(this.enabledLanguagesInStandaloneMode);
     this.enabledLanguagesInConnectedMode.addAll(adaptLanguage(params.getExtraEnabledLanguagesInConnectedMode()));
-    this.disabledLanguagesForAnalysis = toEnumSet(adaptLanguage(params.getDisabledLanguagesForAnalysis()), SonarLanguage.class);
+
   }
 
   @NotNull
@@ -64,9 +64,6 @@ public class LanguageSupportRepository {
     return enabledLanguagesInConnectedMode;
   }
 
-  public Set<SonarLanguage> getDisabledLanguagesForAnalysis() {
-    return disabledLanguagesForAnalysis;
-  }
 
   public boolean areTaintVulnerabilitiesSupported() {
     var intersection = EnumSet.copyOf(LANGUAGES_RAISING_TAINT_VULNERABILITIES);
