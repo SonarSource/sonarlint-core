@@ -79,7 +79,7 @@ public class GitBlameUtils {
     };
   }
 
-  private static Repository buildGitRepository(Path basedir) {
+  public static Repository buildGitRepository(Path basedir) {
     try {
       var repositoryBuilder = new RepositoryBuilder()
         .findGitDir(basedir.toFile());

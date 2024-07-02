@@ -57,6 +57,7 @@ import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
@@ -71,7 +72,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
@@ -154,7 +154,11 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
       ORCHESTRATOR.getServer().associateProjectToQualityProfile(PROJECT_KEY_JCL, "jcl", "SonarLint IT JCL");
     }
 
-    singlePointOfExitRuleKey = "c:S1005";
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 4)) {
+      singlePointOfExitRuleKey = "c:S1005";
+    } else {
+      singlePointOfExitRuleKey = "c:FunctionSinglePointOfExit";
+    }
   }
 
   @AfterEach
@@ -216,7 +220,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
     @Test
     // New property was introduced in SonarCFamily 6.18 part of SQ 8.8
-    @OnlyOnSonarQube(from = "9.9")
+    @OnlyOnSonarQube(from = "8.8")
     void analysisC_new_prop() {
       start(PROJECT_KEY_C);
 
@@ -409,10 +413,10 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
             sonarUserHome.resolve("storage"),
             sonarUserHome.resolve("work"),
             emptySet(),
-            connectedModeEmbeddedPluginPathsByKey, languages, emptySet(), emptySet(),
+            connectedModeEmbeddedPluginPathsByKey, languages, emptySet(),
             List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), emptyList(),
             sonarUserHome.toString(),
-            Map.of(), false, null, false))
+            Map.of(), false, null))
         .get();
     } catch (Exception e) {
       throw new IllegalStateException("Cannot initialize the backend", e);
