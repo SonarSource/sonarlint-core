@@ -1,4 +1,4 @@
-# 10.4 
+# 10.3.2 
 
 ## Breaking changes
 * Change `disabledLanguagesForAnalysis` parameter of `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams` introduced in 10.3 version to `disabledPluginKeysForAnalysis`

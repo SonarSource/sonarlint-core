@@ -128,7 +128,7 @@ class AnalysisMediumTests {
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .withDisabledLanguagesForAnalysis(SonarLanguage.JAVA.getPluginKey())
+      .withDisabledPluginsForAnalysis(SonarLanguage.JAVA.getPluginKey())
       .build(client);
     var analysisId = UUID.randomUUID();
 
@@ -576,7 +576,7 @@ class AnalysisMediumTests {
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .withDisabledLanguagesForAnalysis(SonarLanguage.XML.getPluginKey())
+      .withDisabledPluginsForAnalysis(SonarLanguage.XML.getPluginKey())
       .build(client);
     var analysisId = UUID.randomUUID();
 
@@ -619,7 +619,7 @@ class AnalysisMediumTests {
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .withDisabledLanguagesForAnalysis(SonarLanguage.XML.getPluginKey())
+      .withDisabledPluginsForAnalysis(SonarLanguage.XML.getPluginKey())
       .build(client);
     var analysisId = UUID.randomUUID();
 
