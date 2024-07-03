@@ -48,14 +48,14 @@ public class RulesExtractionHelper {
 
   public List<SonarLintRuleDefinition> extractEmbeddedRules() {
     logger.debug("Extracting standalone rules metadata");
-    return ruleExtractor.extractRules(pluginsService.getEmbeddedPlugins().getPluginInstancesByKeys(), languageSupportRepository.getEnabledLanguagesInStandaloneMode(), false,
-      false);
+    return ruleExtractor.extractRules(pluginsService.getEmbeddedPlugins().getAllPluginInstancesByKeys(),
+      languageSupportRepository.getEnabledLanguagesInStandaloneMode(), false, false);
   }
 
   public List<SonarLintRuleDefinition> extractRulesForConnection(String connectionId) {
     logger.debug("Extracting rules metadata for connection '{}'", connectionId);
-    return ruleExtractor.extractRules(pluginsService.getPlugins(connectionId).getPluginInstancesByKeys(), languageSupportRepository.getEnabledLanguagesInConnectedMode(), true,
-      enableSecurityHotspots);
+    return ruleExtractor.extractRules(pluginsService.getPlugins(connectionId).getAllPluginInstancesByKeys(),
+      languageSupportRepository.getEnabledLanguagesInConnectedMode(), true, enableSecurityHotspots);
   }
 
 }

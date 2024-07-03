@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.sonar.api.utils.System2;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
@@ -127,6 +128,7 @@ class AnalysisMediumTests {
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .withDisabledPluginsForAnalysis(SonarLanguage.JAVA.getPluginKey())
       .build(client);
     var analysisId = UUID.randomUUID();
 
@@ -557,7 +559,6 @@ class AnalysisMediumTests {
     verify(client, times(0)).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
   }
 
-
   @Test
   void it_should_skip_analysis_and_keep_rules_if_disabled_language_for_analysis(@TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml",
@@ -575,7 +576,7 @@ class AnalysisMediumTests {
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .withDisabledLanguagesForAnalysis(Language.XML)
+      .withDisabledPluginsForAnalysis(SonarLanguage.XML.getPluginKey())
       .build(client);
     var analysisId = UUID.randomUUID();
 
@@ -618,7 +619,7 @@ class AnalysisMediumTests {
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .withDisabledLanguagesForAnalysis(Language.XML)
+      .withDisabledPluginsForAnalysis(SonarLanguage.XML.getPluginKey())
       .build(client);
     var analysisId = UUID.randomUUID();
 

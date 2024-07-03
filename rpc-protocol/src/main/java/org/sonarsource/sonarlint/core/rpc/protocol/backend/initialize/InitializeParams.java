@@ -42,7 +42,7 @@ public class InitializeParams {
   private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey;
   private final Set<Language> enabledLanguagesInStandaloneMode;
   private final Set<Language> extraEnabledLanguagesInConnectedMode;
-  private final Set<Language> disabledLanguagesForAnalysis;
+  private final Set<String> disabledPluginKeysForAnalysis;
   private final List<SonarQubeConnectionConfigurationDto> sonarQubeConnections;
   private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections;
   private final String sonarlintUserHome;
@@ -68,7 +68,7 @@ public class InitializeParams {
     @Nullable Map<String, Path> connectedModeEmbeddedPluginPathsByKey,
     @Nullable Set<Language> enabledLanguagesInStandaloneMode,
     @Nullable Set<Language> extraEnabledLanguagesInConnectedMode,
-    @Nullable Set<Language> disabledLanguagesForAnalysis,
+    @Nullable Set<String> disabledPluginKeysForAnalysis,
     @Nullable List<SonarQubeConnectionConfigurationDto> sonarQubeConnections,
     @Nullable List<SonarCloudConnectionConfigurationDto> sonarCloudConnections,
     @Nullable String sonarlintUserHome,
@@ -86,7 +86,7 @@ public class InitializeParams {
     this.connectedModeEmbeddedPluginPathsByKey = connectedModeEmbeddedPluginPathsByKey;
     this.enabledLanguagesInStandaloneMode = enabledLanguagesInStandaloneMode;
     this.extraEnabledLanguagesInConnectedMode = extraEnabledLanguagesInConnectedMode;
-    this.disabledLanguagesForAnalysis = disabledLanguagesForAnalysis;
+    this.disabledPluginKeysForAnalysis = disabledPluginKeysForAnalysis;
     this.sonarQubeConnections = sonarQubeConnections;
     this.sonarCloudConnections = sonarCloudConnections;
     this.sonarlintUserHome = sonarlintUserHome;
@@ -141,10 +141,6 @@ public class InitializeParams {
     return extraEnabledLanguagesInConnectedMode != null ? extraEnabledLanguagesInConnectedMode : Set.of();
   }
 
-  public Set<Language> getDisabledLanguagesForAnalysis() {
-    return disabledLanguagesForAnalysis != null ? disabledLanguagesForAnalysis : Set.of();
-  }
-
   public List<SonarQubeConnectionConfigurationDto> getSonarQubeConnections() {
     return sonarQubeConnections != null ? sonarQubeConnections : List.of();
   }
@@ -169,5 +165,9 @@ public class InitializeParams {
   @Nullable
   public LanguageSpecificRequirements getLanguageSpecificRequirements() {
     return languageSpecificRequirements;
+  }
+
+  public Set<String> getDisabledPluginKeysForAnalysis() {
+    return disabledPluginKeysForAnalysis != null ? disabledPluginKeysForAnalysis : Set.of();
   }
 }

@@ -107,14 +107,14 @@ public class RuleExtractorCli implements Callable<Integer> {
   }
 
   private List<SonarLintRuleDefinition> loadRulesFromPlugins(PluginsLoader.Configuration config) throws IOException {
-    try (var result = new PluginsLoader().load(config)) {
+    try (var result = new PluginsLoader().load(config, Set.of())) {
       for (var entry : result.getPluginCheckResultByKeys().entrySet()) {
         if (entry.getValue().isSkipped()) {
           System.err.println(entry.getKey() + " was skipped:" + entry.getValue().getSkipReason().get().getClass().getName());
         }
       }
       var extractor = new RulesDefinitionExtractor();
-      return extractor.extractRules(result.getLoadedPlugins().getPluginInstancesByKeys(), enabledLanguages, templates, hotspots);
+      return extractor.extractRules(result.getLoadedPlugins().getAllPluginInstancesByKeys(), enabledLanguages, templates, hotspots);
     }
   }
 

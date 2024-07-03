@@ -71,7 +71,7 @@ class AnalysisExtensionInstallerTests {
 
   @Test
   void install_sonarlintside_extensions_with_default_lifespan_in_analysis_container_for_compatible_plugins() {
-    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin()));
+    when(loadedPlugins.getAnalysisPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin()));
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
 
@@ -80,7 +80,7 @@ class AnalysisExtensionInstallerTests {
 
   @Test
   void install_sonarlintside_extensions_with_single_analysis_lifespan_in_analysis_container_for_compatible_plugins() {
-    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin(FakeSonarLintSingleAnalysisLifespanComponent.class)));
+    when(loadedPlugins.getAnalysisPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin(FakeSonarLintSingleAnalysisLifespanComponent.class)));
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
 
@@ -89,7 +89,7 @@ class AnalysisExtensionInstallerTests {
 
   @Test
   void install_sonarlintside_extensions_with_multiple_analysis_lifespan_in_global_container_for_compatible_plugins() {
-    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin(FakeSonarLintMultipleAnalysisLifespanComponent.class)));
+    when(loadedPlugins.getAnalysisPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin(FakeSonarLintMultipleAnalysisLifespanComponent.class)));
 
     underTest.install(container, ContainerLifespan.INSTANCE);
 
@@ -98,7 +98,7 @@ class AnalysisExtensionInstallerTests {
 
   @Test
   void install_sonarlintside_extensions_with_instance_lifespan_in_global_container_for_compatible_plugins() {
-    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin(FakeSonarLintInstanceLifespanComponent.class)));
+    when(loadedPlugins.getAnalysisPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin(FakeSonarLintInstanceLifespanComponent.class)));
 
     underTest.install(container, ContainerLifespan.INSTANCE);
 
@@ -107,7 +107,7 @@ class AnalysisExtensionInstallerTests {
 
   @Test
   void dont_install_sonarlintside_extensions_with_multiple_analysis_lifespan_in_analysis_container_for_compatible_plugins() {
-    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin(FakeSonarLintMultipleAnalysisLifespanComponent.class)));
+    when(loadedPlugins.getAllPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin(FakeSonarLintMultipleAnalysisLifespanComponent.class)));
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
 
@@ -116,7 +116,7 @@ class AnalysisExtensionInstallerTests {
 
   @Test
   void dont_install_sonarlintside_extensions_with_single_analysis_lifespan_in_global_container_for_compatible_plugins() {
-    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin(FakeSonarLintSingleAnalysisLifespanComponent.class)));
+    when(loadedPlugins.getAllPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin(FakeSonarLintSingleAnalysisLifespanComponent.class)));
 
     underTest.install(container, ContainerLifespan.INSTANCE);
 
@@ -125,7 +125,7 @@ class AnalysisExtensionInstallerTests {
 
   @Test
   void install_sonarlintside_extensions_with_module_lifespan_in_module_container_for_compatible_plugins() {
-    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin(FakeSonarLintModuleLifespanComponent.class)));
+    when(loadedPlugins.getAnalysisPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin(FakeSonarLintModuleLifespanComponent.class)));
 
     underTest.install(container, ContainerLifespan.MODULE);
 
@@ -134,7 +134,7 @@ class AnalysisExtensionInstallerTests {
 
   @Test
   void install_sensors_for_sonarsource_plugins_by_language() {
-    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(JAVA_PLUGIN_KEY, new FakePlugin()));
+    when(loadedPlugins.getAnalysisPluginInstancesByKeys()).thenReturn(Map.of(JAVA_PLUGIN_KEY, new FakePlugin()));
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
 
@@ -143,7 +143,7 @@ class AnalysisExtensionInstallerTests {
 
   @Test
   void install_sensors_for_sonarsource_plugins_by_allowlist() {
-    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(DBD_PLUGIN_KEY, new FakePlugin()));
+    when(loadedPlugins.getAnalysisPluginInstancesByKeys()).thenReturn(Map.of(DBD_PLUGIN_KEY, new FakePlugin()));
     when(loadedPlugins.getAdditionalAllowedPlugins()).thenReturn(Set.of(DBD_PLUGIN_KEY));
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
@@ -153,7 +153,7 @@ class AnalysisExtensionInstallerTests {
 
   @Test
   void dont_install_sensors_for_non_sonarsource_plugins() {
-    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin()));
+    when(loadedPlugins.getAnalysisPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new FakePlugin()));
 
     underTest.install(container, ContainerLifespan.ANALYSIS);
 
@@ -163,7 +163,7 @@ class AnalysisExtensionInstallerTests {
   @Test
   void provide_sonarlint_context_for_plugin_definition() {
     var pluginInstance = new PluginStoringSonarLintPluginApiVersion();
-    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, pluginInstance));
+    when(loadedPlugins.getAnalysisPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, pluginInstance));
 
     underTest = new AnalysisExtensionInstaller(RUNTIME, loadedPlugins, EMPTY_CONFIG);
 
@@ -175,7 +175,7 @@ class AnalysisExtensionInstallerTests {
 
   @Test
   void log_when_plugin_throws() {
-    when(loadedPlugins.getPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new ThrowingPlugin()));
+    when(loadedPlugins.getAnalysisPluginInstancesByKeys()).thenReturn(Map.of(FAKE_PLUGIN_KEY, new ThrowingPlugin()));
 
     underTest = new AnalysisExtensionInstaller(RUNTIME, loadedPlugins, EMPTY_CONFIG);
 
