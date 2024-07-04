@@ -798,7 +798,7 @@ public class AnalysisService {
   }
 
   private void triggerForcedAnalysis(String configurationScopeId, List<URI> files, boolean hotspotsOnly) {
-    if (shouldTriggerAutomaticAnalysis(configurationScopeId)) {
+    if (isReadyForAnalysis(configurationScopeId)) {
       analyze(new SonarLintCancelMonitor(), configurationScopeId, UUID.randomUUID(), files, Map.of(), System.currentTimeMillis(), true, true, hotspotsOnly);
     }
   }
