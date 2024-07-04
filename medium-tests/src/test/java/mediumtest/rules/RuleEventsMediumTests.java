@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 import mediumtest.fixtures.ServerFixture;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
@@ -37,6 +38,8 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
@@ -182,6 +185,78 @@ class RuleEventsMediumTests {
         .isEqualTo(Sonarlint.RuleSet.newBuilder()
           .addRule(Sonarlint.RuleSet.ActiveRule.newBuilder().setRuleKey("java:S0000").setSeverity("INFO").build())
           .addRule(Sonarlint.RuleSet.ActiveRule.newBuilder().setRuleKey("java:S0001").setSeverity("MAJOR").putParams("key1", "value1").build()).build()));
+    }
+
+    @Test
+    void it_should_reanalyze_open_files_on_new_rules_enabled(@TempDir Path baseDir) {
+      var filePath = createFile(baseDir, "Foo.java",
+        "public class Foo {\n" +
+          "\n" +
+          "  void foo() {\n" +
+          "    // TODO foo\n" +
+          "    int i = 0;\n" +
+          "  }\n" +
+          "}\n");
+      var fileUri = filePath.toUri();
+      var connectionId = "connectionId";
+      var branchName = "branchName";
+      var projectKey = "projectKey";
+      var client = newFakeClient()
+        .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath,null, null)))
+        .build();
+      when(client.matchSonarProjectBranch(eq(CONFIG_SCOPE_ID), eq("main"), eq(Set.of("main", branchName)), any())).thenReturn(branchName);
+      var server = newSonarQubeServer()
+        .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java")
+          .withActiveRule("java:S1481", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR))
+        )
+        .withProject(projectKey,
+          project -> project
+            .withQualityProfile("qpKey"))
+        .withPlugin(TestPlugin.JAVA)
+        .start();
+
+      server.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java")
+        .inScenario("Single event")
+        .whenScenarioStateIs(STARTED)
+        .willReturn(okForContentType("text/event-stream", "event: RuleSetChanged\n" +
+          "data: {" +
+          "\"projects\": [\"projectKey\"]," +
+          "\"deactivatedRules\": []," +
+          "\"activatedRules\": [{" +
+          "\"key\": \"java:S1135\"," +
+          "\"language\": \"java\"," +
+          "\"severity\": \"MAJOR\"," +
+          "\"params\": []" +
+          "}]" +
+          "}\n\n")
+          // Add a delay to ensure event will arrive after the first analysis
+          .withFixedDelay(5000))
+        .willSetStateTo("Event delivered"));
+      // avoid later reconnection
+      server.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java")
+        .inScenario("Single event")
+        .whenScenarioStateIs("Event delivered")
+        .willReturn(notFound()));
+      backend = newBackend()
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
+        .withServerSentEventsEnabled()
+        .withFullSynchronization()
+        .withSonarQubeConnection(connectionId, server)
+        .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
+        .build(client);
+
+      backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
+      var raisedIssues = analyzeFileAndGetIssues(fileUri, client);
+      assertThat(raisedIssues).hasSize(1);
+      client.cleanRaisedIssues();
+
+      await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
+      raisedIssues = client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID).get(fileUri);
+
+      assertThat(raisedIssues).hasSize(2);
+      assertThat(raisedIssues.stream().map(RaisedFindingDto::getRuleKey).collect(Collectors.toList()))
+        .containsExactlyInAnyOrder("java:S1135", "java:S1481");
     }
 
     @Test
