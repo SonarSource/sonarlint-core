@@ -75,8 +75,10 @@ public class ClientFile {
   @Nullable
   private String clientProvidedContent;
 
+  private boolean isUserDefined;
+
   public ClientFile(URI uri, String configScopeId, Path relativePath, @Nullable Boolean isTest, @Nullable Charset charset, @Nullable Path fsPath,
-    @Nullable SonarLanguage detectedLanguage) {
+    @Nullable SonarLanguage detectedLanguage, boolean isUserDefined) {
     this.uri = uri;
     this.configScopeId = configScopeId;
     this.relativePath = relativePath;
@@ -84,6 +86,7 @@ public class ClientFile {
     this.charset = charset;
     this.fsPath = fsPath;
     this.detectedLanguage = detectedLanguage;
+    this.isUserDefined = isUserDefined;
   }
 
   public Path getClientRelativePath() {
@@ -157,5 +160,9 @@ public class ClientFile {
   @Override
   public String toString() {
     return uri.toString();
+  }
+
+  public boolean isUserDefined() {
+    return isUserDefined;
   }
 }

@@ -37,6 +37,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParam
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
+import testutils.AnalysisUtils;
 
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
@@ -46,7 +47,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static testutils.AnalysisUtils.createFile;
 import static testutils.AnalysisUtils.getPublishedIssues;
 
 class ClientFileExclusionsMediumTests {
@@ -62,17 +62,10 @@ class ClientFileExclusionsMediumTests {
 
   @Test
   void it_should_not_analyze_excluded_file_on_open(@TempDir Path baseDir) {
-    var filePath = createFile(baseDir, "pom.xml",
-      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        + "<project>\n"
-        + "  <modelVersion>4.0.0</modelVersion>\n"
-        + "  <groupId>com.foo</groupId>\n"
-        + "  <artifactId>bar</artifactId>\n"
-        + "  <version>${pom.version}</version>\n"
-        + "</project>");
+    var filePath = createXmlFile(baseDir);
     var fileUri = filePath.toUri();
     var client = newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .withFileExclusions(CONFIG_SCOPE_ID, Set.of("**/*.xml"))
       .build();
     backend = newBackend()
@@ -87,18 +80,53 @@ class ClientFileExclusionsMediumTests {
 
   @Test
   void it_should_analyze_not_excluded_file_on_open(@TempDir Path baseDir) {
-    var filePath = createFile(baseDir, "pom.xml",
-      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        + "<project>\n"
-        + "  <modelVersion>4.0.0</modelVersion>\n"
-        + "  <groupId>com.foo</groupId>\n"
-        + "  <artifactId>bar</artifactId>\n"
-        + "  <version>${pom.version}</version>\n"
-        + "</project>");
+    var filePath = createXmlFile(baseDir);
     var fileUri = filePath.toUri();
     var client = newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .withFileExclusions(CONFIG_SCOPE_ID, Set.of("**/*.java"))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .build(client);
+
+    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
+
+    var publishedIssues = getPublishedIssues(client, null, CONFIG_SCOPE_ID);
+    assertThat(publishedIssues)
+      .containsOnlyKeys(fileUri)
+      .hasEntrySatisfying(fileUri, issues -> {
+        assertThat(issues)
+          .extracting(RaisedIssueDto::getPrimaryMessage)
+          .containsExactly("Replace \"pom.version\" with \"project.version\".");
+      });
+  }
+
+
+  @Test
+  void it_should_not_analyze_non_user_defined_file_on_open(@TempDir Path baseDir) {
+    var filePath = createXmlFile(baseDir);
+    var fileUri = filePath.toUri();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, false)))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .build(client);
+
+    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
+
+    verify(client, never()).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(false), any());
+  }
+
+  @Test
+  void it_should_analyze_user_defined_file_on_open(@TempDir Path baseDir) {
+    var filePath = createXmlFile(baseDir);
+    var fileUri = filePath.toUri();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
@@ -120,7 +148,7 @@ class ClientFileExclusionsMediumTests {
   @Test
   void it_should_not_exclude_client_defined_file_exclusion_in_connected_mode(@TempDir Path baseDir) {
     var ideFilePath = "Foo.java";
-    var filePath = createFile(baseDir, ideFilePath,
+    var filePath = AnalysisUtils.createFile(baseDir, ideFilePath,
       "// FIXME foo bar\n" +
         "public class Foo {\n" +
         "}");
@@ -132,7 +160,7 @@ class ClientFileExclusionsMediumTests {
 
     var fileUri = filePath.toUri();
     var client = newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .withFileExclusions(CONFIG_SCOPE_ID, Set.of("**/*.java"))
       .build();
     var server = newSonarQubeServer()
@@ -160,5 +188,59 @@ class ClientFileExclusionsMediumTests {
 
     var publishedIssues = getPublishedIssues(client, null, CONFIG_SCOPE_ID);
     assertThat(publishedIssues).isNotEmpty();
+  }
+
+  @Test
+  void it_should_exclude_non_user_defined_files_in_connected_mode(@TempDir Path baseDir) {
+    var ideFilePath = "Foo.java";
+    var filePath = AnalysisUtils.createFile(baseDir, ideFilePath,
+      "// FIXME foo bar\n" +
+        "public class Foo {\n" +
+        "}");
+    var projectKey = "projectKey";
+    var connectionId = "connectionId";
+    var branchName = "main";
+    var ruleKey = "java:S1134";
+    var message = "Take the required action to fix the issue indicated by this comment.";
+
+    var fileUri = filePath.toUri();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, false)))
+      .build();
+    var server = newSonarQubeServer()
+      .withProject("projectKey", project -> project.withBranch("main", branch -> branch
+        .withIssue("uuid", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
+          org.sonarsource.sonarlint.core.commons.RuleType.BUG,
+          "OPEN", null, Instant.ofEpochMilli(123456789L), new TextRange(2, 0, 2, 16))))
+      .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
+        .withActiveRule(ruleKey, activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
+      .start();
+    backend = newBackend()
+      .withSonarQubeConnection(connectionId, server,
+        storage -> storage.withPlugin(TestPlugin.JAVA).withProject(projectKey,
+          project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
+            .withMainBranch(branchName)))
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .build(client);
+
+    backend.getConfigurationService()
+      .didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
+        new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, CONFIG_SCOPE_ID,
+          new BindingConfigurationDto(connectionId, projectKey, true)))));
+
+    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
+
+    verify(client, never()).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(false), any());
+  }
+
+  private static Path createXmlFile(Path baseDir) {
+    return AnalysisUtils.createFile(baseDir, "pom.xml",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        + "<project>\n"
+        + "  <modelVersion>4.0.0</modelVersion>\n"
+        + "  <groupId>com.foo</groupId>\n"
+        + "  <artifactId>bar</artifactId>\n"
+        + "  <version>${pom.version}</version>\n"
+        + "</project>");
   }
 }

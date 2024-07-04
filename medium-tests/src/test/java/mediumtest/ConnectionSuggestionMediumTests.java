@@ -81,7 +81,7 @@ class ConnectionSuggestionMediumTests {
     Files.createDirectory(sonarlintDir);
     var clue = tmp.resolve(".sonarlint/connectedMode.json");
     Files.writeString(clue, "{\"projectKey\": \"" + SLCORE_PROJECT_KEY + "\",\"sonarQubeUri\": \"" + sonarqubeMock.baseUrl() + "\"}", StandardCharsets.UTF_8);
-    var fileDto = new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null);
+    var fileDto = new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null, true);
     var fakeClient = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID,
         List.of(fileDto))
@@ -115,7 +115,7 @@ class ConnectionSuggestionMediumTests {
     var clue = tmp.resolve(".sonarlint/connectedMode.json");
     var content = "{" + projectKeyData + serverData + "}";
     Files.writeString(clue, content, StandardCharsets.UTF_8);
-    var fileDto = new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null);
+    var fileDto = new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null, true);
     var fakeClient = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, List.of(fileDto))
       .build();
@@ -138,7 +138,7 @@ class ConnectionSuggestionMediumTests {
     var clue = tmp.resolve(".sonarlint/connectedMode.json");
     var content = "{" + projectKeyData + serverData + "}";
     Files.writeString(clue, content, StandardCharsets.UTF_8);
-    var fileDto = new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null);
+    var fileDto = new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null, true);
     var fakeClient = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID,
         List.of(fileDto))
@@ -157,7 +157,7 @@ class ConnectionSuggestionMediumTests {
     Files.createDirectory(sonarlintDir);
     var clue = tmp.resolve(".sonarlint/connectedMode.json");
     Files.writeString(clue, "{\"projectKey\": \"" + SLCORE_PROJECT_KEY + "\",\"sonarCloudOrganization\": \"" + ORGANIZATION + "\"}", StandardCharsets.UTF_8);
-    var fileDto = new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null);
+    var fileDto = new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null, true);
     var fakeClient = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID,
         List.of(fileDto))
@@ -190,7 +190,7 @@ class ConnectionSuggestionMediumTests {
     Files.createDirectory(sonarlintDir);
     var clue = tmp.resolve("random/path/.sonarlint/random_name.json");
     Files.writeString(clue, "{\"projectKey\": \"" + SLCORE_PROJECT_KEY + "\",\"sonarQubeUri\": \"" + sonarqubeMock.baseUrl() + "\"}", StandardCharsets.UTF_8);
-    var fileDto = new ClientFileDto(clue.toUri(), Paths.get("random/path/.sonarlint/random_name.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null);
+    var fileDto = new ClientFileDto(clue.toUri(), Paths.get("random/path/.sonarlint/random_name.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null, true);
     var fakeClient = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID,
         List.of(fileDto))
@@ -217,7 +217,7 @@ class ConnectionSuggestionMediumTests {
   void should_suggest_connection_when_initializing_fs_with_scanner_file(@TempDir Path tmp) throws IOException {
     var clue = tmp.resolve("sonar-project.properties");
     Files.writeString(clue, "sonar.host.url=" + sonarqubeMock.baseUrl() + "\nsonar.projectKey=" + SLCORE_PROJECT_KEY, StandardCharsets.UTF_8);
-    var fileDto = new ClientFileDto(clue.toUri(), Paths.get("sonar-project.properties"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null);
+    var fileDto = new ClientFileDto(clue.toUri(), Paths.get("sonar-project.properties"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null, true);
     var fakeClient = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID,
         List.of(fileDto))
@@ -244,7 +244,7 @@ class ConnectionSuggestionMediumTests {
   void should_suggest_sonarcloud_connection_when_initializing_fs_with_scanner_file(@TempDir Path tmp) throws IOException {
     var clue = tmp.resolve(".sonarcloud.properties");
     Files.writeString(clue, "sonar.organization=" + ORGANIZATION + "\nsonar.projectKey=" + SLCORE_PROJECT_KEY, StandardCharsets.UTF_8);
-    var fileDto = new ClientFileDto(clue.toUri(), Paths.get("sonar-project.properties"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null);
+    var fileDto = new ClientFileDto(clue.toUri(), Paths.get("sonar-project.properties"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null, true);
     var fakeClient = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID,
         List.of(fileDto))
@@ -273,7 +273,7 @@ class ConnectionSuggestionMediumTests {
     Files.createDirectory(sonarlintDir);
     var clue = tmp.resolve(".sonarlint/connectedMode.json");
     Files.writeString(clue, "{\"projectKey\": \"" + SLCORE_PROJECT_KEY + "\",\"sonarQubeUri\": \"" + sonarqubeMock.baseUrl() + "\"}", StandardCharsets.UTF_8);
-    var fileDto = new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null);
+    var fileDto = new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null, true);
     var fakeClient = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID,
         List.of(fileDto))
@@ -308,8 +308,8 @@ class ConnectionSuggestionMediumTests {
     Files.writeString(sqClue, "{\"projectKey\": \"" + SLCORE_PROJECT_KEY + "\",\"sonarQubeUri\": \"" + sonarqubeMock.baseUrl() + "\"}", StandardCharsets.UTF_8);
     var scClue = tmp.resolve(".sonarlint/connectedMode2.json");
     Files.writeString(scClue, "{\"projectKey\": \"" + SLCORE_PROJECT_KEY + "\",\"sonarCloudOrganization\": \"" + ORGANIZATION + "\"}", StandardCharsets.UTF_8);
-    var sqFileDto = new ClientFileDto(sqClue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), sqClue, null, null);
-    var scFileDto = new ClientFileDto(scClue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), scClue, null, null);
+    var sqFileDto = new ClientFileDto(sqClue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), sqClue, null, null, true);
+    var scFileDto = new ClientFileDto(scClue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), scClue, null, null, true);
     var fakeClient = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID,
         List.of(sqFileDto, scFileDto))
@@ -350,8 +350,8 @@ class ConnectionSuggestionMediumTests {
     Files.writeString(sqClue, "{\"projectKey\": \"" + SLCORE_PROJECT_KEY + "\",\"sonarQubeUri\": \"" + sonarqubeMock.baseUrl() + "\"}", StandardCharsets.UTF_8);
     var propertyClue = tmp.resolve("sonar-project.properties");
     Files.writeString(propertyClue, "sonar.host.url=https://sonarcloud.io\nsonar.projectKey=", StandardCharsets.UTF_8);
-    var sqFileDto = new ClientFileDto(sqClue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), sqClue, null, null);
-    var scFileDto = new ClientFileDto(propertyClue.toUri(), Paths.get("sonar-project.properties"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), propertyClue, null, null);
+    var sqFileDto = new ClientFileDto(sqClue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), sqClue, null, null, true);
+    var scFileDto = new ClientFileDto(propertyClue.toUri(), Paths.get("sonar-project.properties"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), propertyClue, null, null, true);
     var fakeClient = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID,
         List.of(sqFileDto, scFileDto))
@@ -384,7 +384,7 @@ class ConnectionSuggestionMediumTests {
     Files.createDirectory(sonarlintDir);
     var clue = tmp.resolve(".sonarlint/connectedMode.json");
     Files.writeString(clue, "{\"ProjectKey\": \"" + SLCORE_PROJECT_KEY + "\",\"SonarQubeUri\": \"" + sonarqubeMock.baseUrl() + "\"}", StandardCharsets.UTF_8);
-    var fileDto = new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null);
+    var fileDto = new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null, true);
     var fakeClient = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID,
         List.of(fileDto))
@@ -413,7 +413,7 @@ class ConnectionSuggestionMediumTests {
     Files.createDirectory(sonarlintDir);
     var clue = tmp.resolve(".sonarlint/connectedMode.json");
     Files.writeString(clue, "{\"ProjectKey\": \"" + SLCORE_PROJECT_KEY + "\",\"SonarCloudOrganization\": \"" + ORGANIZATION + "\"}", StandardCharsets.UTF_8);
-    var fileDto = new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null);
+    var fileDto = new ClientFileDto(clue.toUri(), Paths.get(".sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null, true);
     var fakeClient = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID,
         List.of(fileDto))

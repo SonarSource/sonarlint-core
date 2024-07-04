@@ -1,3 +1,19 @@
+# 10.4
+
+## Breaking changes
+
+* Add new `isUserDefined` parameter into `org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto`
+  * User defined files will be included in analysis. Non-user-defined files such as generated or library files will be excluded from
+    analysis.
+
+## New features
+
+* Add a method to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient` to allow the backend to request client-defined file
+  exclusions from the client before every standalone analysis.
+  * `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#getFileExclusions` to request file exclusions
+* Add a field to `org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto` to allow the backend to distinguish non-user-defined
+  files to exclude from analysis
+
 # 10.3.2 
 
 ## Breaking changes
@@ -12,18 +28,12 @@
   * Analysis will be disabled for languages specified `disabledLanguagesForAnalysis` but it will be still possible to consume Rule Descriptions
   * Can be null or empty if clients do not wish to disable analysis for any loaded plugin
 
-
-None :)
-
 ## New features
 * Add a method to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient` to allow backend to request inferred analysis properties from the client before every analysis. It's important because properties may change depending on files being analysed.
   * `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#getInferredAnalysisProperties` to request inferred properties
 * Add a method to the `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService` to let the client notify the backend with user defined analysis properties
   * `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#didSetUserAnalysisProperties` to set user defined properties
 * For analysis, both user-defined and inferred properties will be merged. If the same property is inferred by the client and provided by the user - the inferred value will be used for analysis.
-* Add a method to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient` to allow the backend to request client-defined file
-  exclusions from the client before every standalone analysis.
-  * `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#getFileExclusions` to request file exclusions
 
 ### Open Issue in IDE
 
