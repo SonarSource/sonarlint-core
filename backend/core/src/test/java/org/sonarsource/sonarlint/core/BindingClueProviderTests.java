@@ -214,20 +214,20 @@ class BindingClueProviderTests {
 
   @Test
   void should_not_detect_sonarlint_configuration_file_if_not_json() {
-    var file = new ClientFile(URI.create("/path/to/.sonarlint/connectedMode.txt"), CONFIG_SCOPE_ID, Path.of("/path/to/.sonarlint/connectedMode.txt"), false, null, null, null);
+    var file = new ClientFile(URI.create("/path/to/.sonarlint/connectedMode.txt"), CONFIG_SCOPE_ID, Path.of("/path/to/.sonarlint/connectedMode.txt"), false, null, null, null, true);
 
     assertThat(file.isSonarlintConfigurationFile()).isFalse();
   }
 
   @Test
   void should_not_detect_sonarlint_configuration_file_if_wrong_folder() {
-    var file = new ClientFile(URI.create("/path/to/.sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, Path.of("/path/to/.sonarlint2/connectedMode.json"), false, null, null, null);
+    var file = new ClientFile(URI.create("/path/to/.sonarlint/connectedMode.json"), CONFIG_SCOPE_ID, Path.of("/path/to/.sonarlint2/connectedMode.json"), false, null, null, null, true);
 
     assertThat(file.isSonarlintConfigurationFile()).isFalse();
   }
 
   private ClientFile buildClientFile(String filename, String relativePath, String content) {
-    var file = new ClientFile(URI.create("file://" + relativePath), CONFIG_SCOPE_ID, Paths.get(relativePath), false, null, null, null);
+    var file = new ClientFile(URI.create("file://" + relativePath), CONFIG_SCOPE_ID, Paths.get(relativePath), false, null, null, null, true);
     file.setDirty(content);
     return file;
   }

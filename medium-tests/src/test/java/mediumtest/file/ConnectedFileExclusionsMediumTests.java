@@ -90,13 +90,13 @@ class ConnectedFileExclusionsMediumTests {
       .start();
 
     var mainFile1 = tmp.resolve("foo.xoo");
-    var mainFile1Dto = new ClientFileDto(mainFile1.toUri(), tmp.resolve(mainFile1), CONFIG_SCOPE_ID, false, StandardCharsets.UTF_8.name(), mainFile1, null, null);
+    var mainFile1Dto = new ClientFileDto(mainFile1.toUri(), tmp.resolve(mainFile1), CONFIG_SCOPE_ID, false, StandardCharsets.UTF_8.name(), mainFile1, null, null, true);
     var mainFile2 = tmp.resolve("src/foo2.xoo");
-    var mainFile2Dto = new ClientFileDto(mainFile2.toUri(), tmp.resolve(mainFile2), CONFIG_SCOPE_ID, false, StandardCharsets.UTF_8.name(), mainFile2, null, null);
+    var mainFile2Dto = new ClientFileDto(mainFile2.toUri(), tmp.resolve(mainFile2), CONFIG_SCOPE_ID, false, StandardCharsets.UTF_8.name(), mainFile2, null, null, true);
     var testFile1 = tmp.resolve("fooTest.xoo");
-    var testFile1Dto = new ClientFileDto(testFile1.toUri(), tmp.resolve(testFile1), CONFIG_SCOPE_ID, true, StandardCharsets.UTF_8.name(), testFile1, null, null);
+    var testFile1Dto = new ClientFileDto(testFile1.toUri(), tmp.resolve(testFile1), CONFIG_SCOPE_ID, true, StandardCharsets.UTF_8.name(), testFile1, null, null, true);
     var testFile2 = tmp.resolve("test/foo2Test.xoo");
-    var testFile2Dto = new ClientFileDto(testFile2.toUri(), tmp.resolve(testFile2), CONFIG_SCOPE_ID, true, StandardCharsets.UTF_8.name(), testFile2, null, null);
+    var testFile2Dto = new ClientFileDto(testFile2.toUri(), tmp.resolve(testFile2), CONFIG_SCOPE_ID, true, StandardCharsets.UTF_8.name(), testFile2, null, null, true);
 
     var fakeClient = newFakeClient()
       .printLogsToStdOut()
@@ -210,7 +210,7 @@ class ConnectedFileExclusionsMediumTests {
       .start();
 
     var mainFile1 = tmp.resolve("src/foo1.xoo");
-    var mainFile1Dto = new ClientFileDto(mainFile1.toUri(), tmp.resolve(mainFile1), CONFIG_SCOPE_ID, false, StandardCharsets.UTF_8.name(), mainFile1, null, null);
+    var mainFile1Dto = new ClientFileDto(mainFile1.toUri(), tmp.resolve(mainFile1), CONFIG_SCOPE_ID, false, StandardCharsets.UTF_8.name(), mainFile1, null, null, true);
 
     var fakeClient = newFakeClient()
       .printLogsToStdOut()
@@ -241,7 +241,7 @@ class ConnectedFileExclusionsMediumTests {
       .start();
 
     var mainFile1 = tmp.resolve("src/foo1.xoo");
-    var mainFile1Dto = new ClientFileDto(mainFile1.toUri(), tmp.resolve(mainFile1), CONFIG_SCOPE_ID, false, "wrongCharset", mainFile1, "Toto", null);
+    var mainFile1Dto = new ClientFileDto(mainFile1.toUri(), tmp.resolve(mainFile1), CONFIG_SCOPE_ID, false, "wrongCharset", mainFile1, "Toto", null, true);
 
     var fakeClient = newFakeClient()
       .printLogsToStdOut()

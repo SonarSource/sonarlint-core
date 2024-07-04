@@ -38,9 +38,10 @@ public class ClientFileDto {
   private final String content;
   @Nullable
   private final Language detectedLanguage;
+  private final boolean isUserDefined;
 
   public ClientFileDto(URI uri, Path relativePath, String configScopeId, @Nullable Boolean isTest, @Nullable String charset, @Nullable Path fsPath, @Nullable String content,
-    @Nullable Language detectedLanguage) {
+    @Nullable Language detectedLanguage, boolean isUserDefined) {
     this.uri = uri;
     this.ideRelativePath = relativePath;
     this.configScopeId = configScopeId;
@@ -49,6 +50,7 @@ public class ClientFileDto {
     this.fsPath = fsPath;
     this.content = content;
     this.detectedLanguage = detectedLanguage;
+    this.isUserDefined = isUserDefined;
   }
 
   public URI getUri() {
@@ -84,5 +86,9 @@ public class ClientFileDto {
   @Nullable
   public Language getDetectedLanguage() {
     return detectedLanguage;
+  }
+
+  public boolean isUserDefined() {
+    return isUserDefined;
   }
 }

@@ -36,7 +36,6 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
@@ -49,6 +48,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWit
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
@@ -171,7 +171,7 @@ class TrackWithServerIssuesMediumTests {
     var issueKey = "issueKey";
     server = newSonarQubeServer().withProject("projectKey", project -> project.withFile(serverFilePath)).start();
     var client = newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, List.of(new ClientFileDto(URI.create("file://foo"), Paths.get(ideFilePath), CONFIG_SCOPE_ID, null, null, null, null, null)))
+      .withInitialFs(CONFIG_SCOPE_ID, List.of(new ClientFileDto(URI.create("file://foo"), Paths.get(ideFilePath), CONFIG_SCOPE_ID, null, null, null, null, null, true)))
       .build();
     var serverIssue = aServerIssue(issueKey)
       .withFilePath(serverFilePath)

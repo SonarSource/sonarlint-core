@@ -31,7 +31,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -63,7 +62,6 @@ import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.commons.util.GitUtils;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
@@ -114,6 +112,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.Optional.ofNullable;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
@@ -122,6 +121,7 @@ import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.trimToNull;
 import static org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.LanguageDetection.sanitizeExtension;
+import static org.sonarsource.sonarlint.core.commons.util.GitUtils.createSonarLintGitIgnore;
 import static org.sonarsource.sonarlint.core.commons.util.StringUtils.pluralize;
 
 @Named
@@ -431,7 +431,7 @@ public class AnalysisService {
 
     return filteredActiveRules.stream().map(rd -> {
       Map<String, String> effectiveParams = new HashMap<>(rd.getDefaultParams());
-      Optional.ofNullable(standaloneRuleConfig.get(rd.getKey())).ifPresent(config -> effectiveParams.putAll(config.getParamValueByKey()));
+      ofNullable(standaloneRuleConfig.get(rd.getKey())).ifPresent(config -> effectiveParams.putAll(config.getParamValueByKey()));
       // No template rules in standalone mode
       return new ActiveRuleDto(rd.getKey(), rd.getLanguage().getSonarLanguageKey(), effectiveParams, null);
     }).collect(toList());
@@ -718,14 +718,21 @@ public class AnalysisService {
   }
 
   private List<ClientInputFile> toInputFiles(String configScopeId, Path actualBaseDir, List<URI> fileUrisToAnalyze) {
-    var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(actualBaseDir);
+    var sonarLintGitIgnore = createSonarLintGitIgnore(actualBaseDir);
 
     return fileUrisToAnalyze.stream()
       .filter(not(fileExclusionService::isExcluded))
       .filter(not(sonarLintGitIgnore::isFileIgnored))
+      .filter(userDefinedFilesFilter(configScopeId))
       .map(uri -> toInputFile(configScopeId, uri))
       .filter(Objects::nonNull)
       .collect(toList());
+  }
+
+  private Predicate<URI> userDefinedFilesFilter(String configurationScopeId) {
+    return uri -> ofNullable(fileSystemService.getClientFiles(configurationScopeId, uri))
+      .map(ClientFile::isUserDefined)
+      .orElse(false);
   }
 
   @CheckForNull
