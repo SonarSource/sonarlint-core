@@ -19,27 +19,32 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.grip;
 
-import java.util.concurrent.CompletableFuture;
-import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
-import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
+import com.google.gson.annotations.JsonAdapter;
+import java.util.List;
+import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherFixSuggestionAdapterFactory;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 
-@JsonSegment("grip")
-public interface GripRpcService {
-  /**
-   * Requests a fix suggestion for a specific file and issue.
-   */
-  @JsonRequest
-  CompletableFuture<SuggestFixResponse> suggestFix(SuggestFixParams params);
+public class SuggestFixesResponse {
+  private final List<Result> results;
 
-  /**
-   * Requests a fix suggestion for a specific file and issues.
-   */
-  @JsonRequest
-  CompletableFuture<SuggestFixesResponse> suggestFixes(SuggestFixesParams params);
+  public SuggestFixesResponse(List<Result> results) {
+    this.results = results;
+  }
 
-  /**
-   * Lets users provide feedback about the fix suggestion.
-   */
-  @JsonRequest
-  CompletableFuture<Void> provideFeedback(ProvideFeedbackParams params);
+  public List<Result> getResults() {
+    return results;
+  }
+
+  public static class Result {
+    @JsonAdapter(EitherFixSuggestionAdapterFactory.class)
+    private final Either<SuggestionError, SuggestionDto> suggestions;
+
+    public Result(Either<SuggestionError, SuggestionDto> suggestions) {
+      this.suggestions = suggestions;
+    }
+
+    public Either<SuggestionError, SuggestionDto> getSuggestions() {
+      return suggestions;
+    }
+  }
 }

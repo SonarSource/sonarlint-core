@@ -19,27 +19,28 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.grip;
 
-import java.util.concurrent.CompletableFuture;
-import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
-import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 
-@JsonSegment("grip")
-public interface GripRpcService {
-  /**
-   * Requests a fix suggestion for a specific file and issue.
-   */
-  @JsonRequest
-  CompletableFuture<SuggestFixResponse> suggestFix(SuggestFixParams params);
+public class IssueToFixDto {
+  private final String message;
+  private final TextRangeDto range;
+  private final String ruleKey;
 
-  /**
-   * Requests a fix suggestion for a specific file and issues.
-   */
-  @JsonRequest
-  CompletableFuture<SuggestFixesResponse> suggestFixes(SuggestFixesParams params);
+  public IssueToFixDto(String message, TextRangeDto range, String ruleKey) {
+    this.message = message;
+    this.range = range;
+    this.ruleKey = ruleKey;
+  }
 
-  /**
-   * Lets users provide feedback about the fix suggestion.
-   */
-  @JsonRequest
-  CompletableFuture<Void> provideFeedback(ProvideFeedbackParams params);
+  public String getMessage() {
+    return message;
+  }
+
+  public TextRangeDto getRange() {
+    return range;
+  }
+
+  public String getRuleKey() {
+    return ruleKey;
+  }
 }

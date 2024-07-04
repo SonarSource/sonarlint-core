@@ -24,14 +24,17 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.FeedbackRating;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.IssueToFixDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.ProvideFeedbackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestFixParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestFixesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestionReviewStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
@@ -82,8 +85,27 @@ class GripMediumTests {
     + "  }\n"
     + "}", new TextRangeDto(13, 4, 13, 13), "Replace this use of System.out by a logger.", "java:S106");
 
+  private static final MultiIssue JAVA_S106_SYSTEM_OUT_AND_JAVA_S1219_NON_CASE_LABELS_IN_SWITCH = new MultiIssue("public class Foo {\n"
+    + "  public void foo() {\n"
+    + "    switch (day) {\n"
+    + "      case TOTO:\n"
+    + "      case TATA:\n"
+    + "      TUTU:\n"
+    + "        help();\n"
+    + "        break;\n"
+    + "    }\n"
+    + "  }\n"
+    + "\n"
+    + "  public static void main(String[] args) {\n"
+    + "    System.out.println(\"Hello!\");"
+    + "  }\n"
+    + "}",
+    List.of(new MultiIssue.Issue(new TextRangeDto(13, 4, 13, 13), "Replace this use of System.out by a logger.", "java:S106"),
+      new MultiIssue.Issue(new TextRangeDto(6, 6, 6, 10), "Remove this misleading \"TUTU\" label.", "java:S1219")));
+
   private static final Issue CURRENT_ISSUE = JAVA_S106_SYSTEM_OUT;
-//  public static final String PROMPT_ID = "openai.generic.20240614";
+  private static final MultiIssue CURRENT_MULTI_ISSUE = JAVA_S106_SYSTEM_OUT_AND_JAVA_S1219_NON_CASE_LABELS_IN_SWITCH;
+  // public static final String PROMPT_ID = "openai.generic.20240614";
   public static final String PROMPT_ID = "openai.json-diff.20240619";
   public static final URI SERVICE_URI = URI.create("http://localhost:8080/");
 
@@ -143,29 +165,73 @@ class GripMediumTests {
   }
 
   @Test
+  void should_return_multiple_suggestions_to_the_client(@TempDir Path tempDir) {
+    // System.setProperty("sonarlint.grip.url", mockServer.url(""));
+    // mockServer.addStringResponse("/api/suggest", "{\n" +
+    // " \"id\": \"chatcmpl-123\",\n" +
+    // " \"object\": \"chat.completion\",\n" +
+    // " \"created\": 1677652288,\n" +
+    // " \"model\": \"gpt-3.5-turbo-0125\",\n" +
+    // " \"system_fingerprint\": \"fp_44709d6fcb\",\n" +
+    // " \"choices\": [{\n" +
+    // " \"index\": 0,\n" +
+    // " \"message\": {\n" +
+    // " \"role\": \"assistant\",\n" +
+    // " \"content\": \"Hello, world!\"\n" +
+    // " },\n" +
+    // " \"logprobs\": null,\n" +
+    // " \"finish_reason\": \"stop\"\n" +
+    // " }],\n" +
+    // " \"usage\": {\n" +
+    // " \"prompt_tokens\": 9,\n" +
+    // " \"completion_tokens\": 12,\n" +
+    // " \"total_tokens\": 21\n" +
+    // " }\n" +
+    // "}");
+    var filePath = tempDir.resolve("file");
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, tempDir,
+        List.of(new ClientFileDto(filePath.toUri(), tempDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, null, CURRENT_MULTI_ISSUE.sourceCode, null)))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .build(client);
+
+    var response = backend.getGripService()
+      .suggestFixes(new SuggestFixesParams(SERVICE_URI, "token", PROMPT_ID, CONFIG_SCOPE_ID, filePath.toUri(),
+        CURRENT_MULTI_ISSUE.issues.stream().map(issue -> new IssueToFixDto(issue.message, issue.textRange, issue.ruleKey)).collect(Collectors.toList())))
+      .join();
+
+    assertThat(response.getResults()).hasSize(2);
+    // var recordedRequest = mockServer.takeRequest();
+    // assertThat(recordedRequest.getHeader("Authorization")).isEqualTo("Basic dG9rZW46");
+    // assertThat(recordedRequest.getBody().readString(Charset.defaultCharset())).isEqualTo("{\"source_code\":\"content\",\"message\":\"message\",\"rule_key\":\"rule:key\",\"text_range\":{\"start_line\":1,\"start_offset\":2,\"end_line\":3,\"end_offset\":4}}");
+  }
+
+  @Test
   void should_provide_a_feedback(@TempDir Path tempDir) {
     var correlationId = UUID.randomUUID();
-//    mockServer.addResponse("/api/suggest/", new MockResponse().setBody("{\n" +
-//      " \"id\": \"chatcmpl-123\",\n" +
-//      " \"object\": \"chat.completion\",\n" +
-//      " \"created\": 1677652288,\n" +
-//      " \"model\": \"gpt-3.5-turbo-0125\",\n" +
-//      " \"system_fingerprint\": \"fp_44709d6fcb\",\n" +
-//      " \"choices\": [{\n" +
-//      " \"index\": 0,\n" +
-//      " \"message\": {\n" +
-//      " \"role\": \"assistant\",\n" +
-//      " \"content\": \"```\nbefore\n```\n```\nafter\n```explanation\"\n" +
-//      " },\n" +
-//      " \"logprobs\": null,\n" +
-//      " \"finish_reason\": \"stop\"\n" +
-//      " }],\n" +
-//      " \"usage\": {\n" +
-//      " \"prompt_tokens\": 9,\n" +
-//      " \"completion_tokens\": 12,\n" +
-//      " \"total_tokens\": 21\n" +
-//      " }\n" +
-//      "}").setHeader("X-Correlation-Id", correlationId));
+    // mockServer.addResponse("/api/suggest/", new MockResponse().setBody("{\n" +
+    // " \"id\": \"chatcmpl-123\",\n" +
+    // " \"object\": \"chat.completion\",\n" +
+    // " \"created\": 1677652288,\n" +
+    // " \"model\": \"gpt-3.5-turbo-0125\",\n" +
+    // " \"system_fingerprint\": \"fp_44709d6fcb\",\n" +
+    // " \"choices\": [{\n" +
+    // " \"index\": 0,\n" +
+    // " \"message\": {\n" +
+    // " \"role\": \"assistant\",\n" +
+    // " \"content\": \"```\nbefore\n```\n```\nafter\n```explanation\"\n" +
+    // " },\n" +
+    // " \"logprobs\": null,\n" +
+    // " \"finish_reason\": \"stop\"\n" +
+    // " }],\n" +
+    // " \"usage\": {\n" +
+    // " \"prompt_tokens\": 9,\n" +
+    // " \"completion_tokens\": 12,\n" +
+    // " \"total_tokens\": 21\n" +
+    // " }\n" +
+    // "}").setHeader("X-Correlation-Id", correlationId));
     var filePath = tempDir.resolve("file");
     var client = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, tempDir,
@@ -179,10 +245,12 @@ class GripMediumTests {
       .suggestFix(
         new SuggestFixParams(SERVICE_URI, "token", PROMPT_ID, CONFIG_SCOPE_ID, filePath.toUri(), CURRENT_ISSUE.message, CURRENT_ISSUE.textRange, CURRENT_ISSUE.ruleKey))
       .join();
-//    mockServer.takeRequest();
+    // mockServer.takeRequest();
 
     backend.getGripService()
-      .provideFeedback(new ProvideFeedbackParams(mockServer.uri(), "token", "prompt", response.getResult().getRight().getCorrelationId(), SuggestionReviewStatus.ACCEPTED, FeedbackRating.BAD, "comment")).join();
+      .provideFeedback(new ProvideFeedbackParams(mockServer.uri(), "token", "prompt", response.getResult().getRight().getCorrelationId(), SuggestionReviewStatus.ACCEPTED,
+        FeedbackRating.BAD, "comment"))
+      .join();
     var recordedRequest = mockServer.takeRequest();
     assertThat(recordedRequest.getHeader("Authorization")).isEqualTo("Bearer token");
     assertThat(recordedRequest.getBody().readString(Charset.defaultCharset())).startsWith(
@@ -200,6 +268,28 @@ class GripMediumTests {
       this.textRange = textRange;
       this.message = message;
       this.ruleKey = ruleKey;
+    }
+  }
+
+  private static class MultiIssue {
+    private final String sourceCode;
+    private final List<Issue> issues;
+
+    private MultiIssue(String sourceCode, List<Issue> issues) {
+      this.sourceCode = sourceCode;
+      this.issues = issues;
+    }
+
+    private static class Issue {
+      private final TextRangeDto textRange;
+      private final String message;
+      private final String ruleKey;
+
+      private Issue(TextRangeDto textRange, String message, String ruleKey) {
+        this.textRange = textRange;
+        this.message = message;
+        this.ruleKey = ruleKey;
+      }
     }
   }
 }

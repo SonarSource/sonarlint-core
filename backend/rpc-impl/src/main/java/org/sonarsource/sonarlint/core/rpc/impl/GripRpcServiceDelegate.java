@@ -25,6 +25,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.GripRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.ProvideFeedbackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestFixParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestFixResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestFixesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.grip.SuggestFixesResponse;
 
 class GripRpcServiceDelegate extends AbstractRpcServiceDelegate implements GripRpcService {
 
@@ -35,6 +37,11 @@ class GripRpcServiceDelegate extends AbstractRpcServiceDelegate implements GripR
   @Override
   public CompletableFuture<SuggestFixResponse> suggestFix(SuggestFixParams params) {
     return requestAsync(cancelChecker -> getBean(GripService.class).suggestFix(params));
+  }
+
+  @Override
+  public CompletableFuture<SuggestFixesResponse> suggestFixes(SuggestFixesParams params) {
+    return requestAsync(cancelChecker -> getBean(GripService.class).suggestFixes(params));
   }
 
   @Override
