@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
@@ -43,6 +44,7 @@ import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -75,7 +77,8 @@ class ClientFileExclusionsMediumTests {
 
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
 
-    verify(client, never()).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(false), any());
+    await().pollDelay(1, TimeUnit.SECONDS).atMost(2, TimeUnit.SECONDS)
+      .untilAsserted(() -> verify(client, never()).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(false), any()));
   }
 
   @Test
@@ -118,7 +121,8 @@ class ClientFileExclusionsMediumTests {
 
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
 
-    verify(client, never()).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(false), any());
+    await().pollDelay(1, TimeUnit.SECONDS).atMost(2, TimeUnit.SECONDS)
+      .untilAsserted(() -> verify(client, never()).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(false), any()));
   }
 
   @Test
@@ -230,7 +234,8 @@ class ClientFileExclusionsMediumTests {
 
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
 
-    verify(client, never()).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(false), any());
+    await().pollDelay(1, TimeUnit.SECONDS).atMost(2, TimeUnit.SECONDS)
+      .untilAsserted(() -> verify(client, never()).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(false), any()));
   }
 
   private static Path createXmlFile(Path baseDir) {

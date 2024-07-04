@@ -19,8 +19,27 @@
  */
 package org.sonarsource.sonarlint.core.rules;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
+
 public class StandaloneRulesConfigurationChanged {
-  StandaloneRulesConfigurationChanged() {
-    // no field
+  private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfig;
+
+  StandaloneRulesConfigurationChanged(Map<String, StandaloneRuleConfigDto> standaloneRuleConfig) {
+    this.standaloneRuleConfig = standaloneRuleConfig;
+  }
+
+  public boolean isOnlyDeactivated() {
+    return standaloneRuleConfig.values().stream()
+      .noneMatch(StandaloneRuleConfigDto::isActive);
+  }
+
+  public List<String> getDeactivatedRules() {
+    return standaloneRuleConfig.entrySet().stream()
+      .filter(entry -> !entry.getValue().isActive())
+      .map(Map.Entry::getKey)
+      .collect(Collectors.toList());
   }
 }
