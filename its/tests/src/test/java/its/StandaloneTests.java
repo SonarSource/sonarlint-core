@@ -181,7 +181,7 @@ class StandaloneTests {
     var filePath = Path.of("projects").resolve(baseDir).resolve(filePathStr);
     var fileUri = filePath.toUri();
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(),
-      List.of(new ClientFileDto(fileUri, Path.of(filePathStr), configScopeId, false, null, filePath.toAbsolutePath(), null, null))));
+      List.of(new ClientFileDto(fileUri, Path.of(filePathStr), configScopeId, false, null, filePath.toAbsolutePath(), null, null, true))));
 
     var analyzeResponse = backend.getAnalysisService().analyzeFiles(
       new AnalyzeFilesParams(configScopeId, UUID.randomUUID(), List.of(fileUri), toMap(properties), System.currentTimeMillis())

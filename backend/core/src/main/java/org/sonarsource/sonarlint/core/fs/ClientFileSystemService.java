@@ -79,7 +79,8 @@ public class ClientFileSystemService {
       clientFileDto.isTest(),
       charset,
       clientFileDto.getFsPath(),
-      forcedSonarLanguage);
+      forcedSonarLanguage,
+      clientFileDto.isUserDefined());
     if (clientFileDto.getContent() != null) {
       file.setDirty(clientFileDto.getContent());
     }

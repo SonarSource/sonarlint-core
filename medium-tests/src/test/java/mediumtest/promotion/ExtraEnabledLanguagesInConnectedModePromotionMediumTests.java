@@ -62,7 +62,7 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
     var abapFile = tempDir.resolve("file.abap");
     Files.createFile(abapFile);
     var fakeClient = newFakeClient()
-      .withInitialFs("configScopeId", tempDir, List.of(new ClientFileDto(abapFile.toUri(), tempDir.relativize(abapFile), "configScopeId", false, null, abapFile, null, null)))
+      .withInitialFs("configScopeId", tempDir, List.of(new ClientFileDto(abapFile.toUri(), tempDir.relativize(abapFile), "configScopeId", false, null, abapFile, null, null, true)))
       .build();
     backend = newBackend()
       .withExtraEnabledLanguagesInConnectedMode(Language.ABAP)
@@ -81,7 +81,7 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
     var abapFile = tempDir.resolve("file.abap");
     Files.createFile(abapFile);
     var fakeClient = newFakeClient()
-      .withInitialFs("configScopeId", tempDir, List.of(new ClientFileDto(abapFile.toUri(), tempDir.relativize(abapFile), "configScopeId", false, null, abapFile, null, null)))
+      .withInitialFs("configScopeId", tempDir, List.of(new ClientFileDto(abapFile.toUri(), tempDir.relativize(abapFile), "configScopeId", false, null, abapFile, null, null, true)))
       .build();
     backend = newBackend()
       .withExtraEnabledLanguagesInConnectedMode(Language.ABAP)
@@ -101,7 +101,7 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
     var abapFile = tempDir.resolve("file.abap");
     Files.createFile(abapFile);
     var fakeClient = newFakeClient()
-      .withInitialFs("configScopeId", tempDir, List.of(new ClientFileDto(abapFile.toUri(), tempDir.relativize(abapFile), "configScopeId", false, null, abapFile, null, null)))
+      .withInitialFs("configScopeId", tempDir, List.of(new ClientFileDto(abapFile.toUri(), tempDir.relativize(abapFile), "configScopeId", false, null, abapFile, null, null, true)))
       .build();
     backend = newBackend()
       .withEnabledLanguageInStandaloneMode(Language.ABAP)
@@ -120,7 +120,7 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
     var randomFile = tempDir.resolve("file.abc");
     Files.createFile(randomFile);
     var fakeClient = newFakeClient()
-      .withInitialFs("configScopeId", tempDir, List.of(new ClientFileDto(randomFile.toUri(), tempDir.relativize(randomFile), "configScopeId", false, null, randomFile, null, null)))
+      .withInitialFs("configScopeId", tempDir, List.of(new ClientFileDto(randomFile.toUri(), tempDir.relativize(randomFile), "configScopeId", false, null, randomFile, null, null, true)))
       .build();
     backend = newBackend()
       .withUnboundConfigScope("configScopeId")
