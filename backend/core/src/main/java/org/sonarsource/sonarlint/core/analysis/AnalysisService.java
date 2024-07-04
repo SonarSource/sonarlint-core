@@ -525,11 +525,20 @@ public class AnalysisService {
 
   @EventListener
   public void onStandaloneRulesConfigurationChanged(StandaloneRulesConfigurationChanged event) {
-    // we could trigger an analysis only if rules were enabled
-    // if no rules were enabled (only disabled), we could trigger only a new reporting, removing issues of disabled rules
-    // https://sonarsource.atlassian.net/browse/SLCORE-884
-    Predicate<Map.Entry<String, List<URI>>> configScopeFilter = entry -> configurationRepository.getEffectiveBinding(entry.getKey()).isEmpty();
-    reanalyseOpenFiles(configScopeFilter);
+    if (event.isOnlyDeactivated()) {
+      // if no rules were enabled (only disabled), trigger only a new reporting, removing issues of disabled rules
+      configurationRepository.getConfigScopeIds().stream()
+        .filter(this::isStandalone)
+        .forEach(configScopeId -> rulesService.updateAndReportFindings(configScopeId, event.getDeactivatedRules()));
+    } else {
+      // trigger an analysis if any rule was enabled
+      Predicate<Map.Entry<String, List<URI>>> configScopeFilter = entry -> isStandalone(entry.getKey());
+      reanalyseOpenFiles(configScopeFilter);
+    }
+  }
+
+  private boolean isStandalone(String configScopeId) {
+    return configurationRepository.getEffectiveBinding(configScopeId).isEmpty();
   }
 
   @EventListener

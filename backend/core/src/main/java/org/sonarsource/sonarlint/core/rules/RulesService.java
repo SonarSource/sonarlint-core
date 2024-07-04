@@ -59,9 +59,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDefinitionD
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleParamDefinitionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleParamType;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamDefinition;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamType;
@@ -299,7 +297,7 @@ public class RulesService {
   public void updateStandaloneRulesConfiguration(Map<String, StandaloneRuleConfigDto> standaloneRuleConfig) {
     this.standaloneRuleConfig.clear();
     this.standaloneRuleConfig.putAll(standaloneRuleConfig);
-    eventPublisher.publishEvent(new StandaloneRulesConfigurationChanged());
+    eventPublisher.publishEvent(new StandaloneRulesConfigurationChanged(standaloneRuleConfig));
   }
 
   public synchronized Map<String, StandaloneRuleConfigDto> getStandaloneRuleConfig() {
@@ -327,33 +325,19 @@ public class RulesService {
       configurationRepository.getAllBoundScopes().stream()
         .filter(scope -> connectionId.equals(scope.getConnectionId()) && changedProjectKeys.contains(scope.getSonarProjectKey()))
         .map(BoundScope::getConfigScopeId)
-        .forEach(scopeId -> findingReportingService.updateAndReportFindings(scopeId,
-          hotspot -> raisedHotspotUpdater(hotspot, event),
-          issue -> raisedIssueUpdater(issue, event)));
+        .forEach(scopeId -> updateAndReportFindings(scopeId, event.getDeactivatedRules()));
     }
   }
 
-  @CheckForNull
-  public static RaisedIssueDto raisedIssueUpdater(RaisedIssueDto raisedIssue, RuleSetChangedEvent event) {
-    var finding = raisedFindingUpdater(raisedIssue, event);
-    if (finding instanceof RaisedIssueDto) {
-      return ((RaisedIssueDto) finding);
-    }
-    return null;
+  public void updateAndReportFindings(String scopeId, List<String> deactivatedRules) {
+    findingReportingService.updateAndReportFindings(scopeId,
+      hotspot -> raisedFindingUpdater(hotspot, deactivatedRules),
+      issue -> raisedFindingUpdater(issue, deactivatedRules)
+    );
   }
 
   @CheckForNull
-  public static RaisedHotspotDto raisedHotspotUpdater(RaisedHotspotDto raisedHotspot, RuleSetChangedEvent event) {
-    var finding = raisedFindingUpdater(raisedHotspot, event);
-    if (finding instanceof RaisedHotspotDto) {
-      return ((RaisedHotspotDto) finding);
-    }
-    return null;
-  }
-
-  @CheckForNull
-  private static RaisedFindingDto raisedFindingUpdater(RaisedFindingDto raisedFinding, RuleSetChangedEvent event) {
-    var deactivatedRules = event.getDeactivatedRules();
+  private static <T extends RaisedFindingDto> T raisedFindingUpdater(T raisedFinding, List<String> deactivatedRules) {
     if (deactivatedRules.contains(raisedFinding.getRuleKey())) {
       return null;
     }
