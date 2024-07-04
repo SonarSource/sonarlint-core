@@ -100,6 +100,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
+import org.sonarsource.sonarlint.core.rules.NewRulesActivatedOnServer;
 import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
 import org.sonarsource.sonarlint.core.rules.RulesService;
 import org.sonarsource.sonarlint.core.rules.StandaloneRulesConfigurationChanged;
@@ -526,9 +527,21 @@ public class AnalysisService {
   public void onStandaloneRulesConfigurationChanged(StandaloneRulesConfigurationChanged event) {
     // we could trigger an analysis only if rules were enabled
     // if no rules were enabled (only disabled), we could trigger only a new reporting, removing issues of disabled rules
+    // https://sonarsource.atlassian.net/browse/SLCORE-884
+    Predicate<Map.Entry<String, List<URI>>> configScopeFilter = entry -> configurationRepository.getEffectiveBinding(entry.getKey()).isEmpty();
+    reanalyseOpenFiles(configScopeFilter);
+  }
+
+  @EventListener
+  public void onNewRulesActivatedOnServer(NewRulesActivatedOnServer event) {
+    Predicate<Map.Entry<String, List<URI>>> configScopeFilter = entry -> configurationRepository.getEffectiveBinding(entry.getKey()).isPresent();
+    reanalyseOpenFiles(configScopeFilter);
+  }
+
+  private void reanalyseOpenFiles(Predicate<Map.Entry<String, List<URI>>> configScopeFilter) {
     openFilesRepository.getOpenFilesByConfigScopeId()
       .entrySet()
-      .stream().filter(entry -> configurationRepository.getEffectiveBinding(entry.getKey()).isEmpty())
+      .stream().filter(configScopeFilter)
       .forEach(entry -> triggerAnalysis(entry.getKey(), entry.getValue()));
   }
 
