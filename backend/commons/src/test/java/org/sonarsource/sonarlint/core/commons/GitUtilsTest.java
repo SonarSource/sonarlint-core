@@ -43,6 +43,7 @@ import org.sonarsource.sonarlint.core.commons.util.GitUtils;
 import static java.util.function.Predicate.not;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.jgit.util.FileUtils.RECURSIVE;
+import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.addFileToGitIgnoreAndCommit;
 import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.blameWithFilesGitCommand;
 import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.getVSCChangedFiles;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
@@ -67,7 +68,7 @@ class GitUtilsTest {
 
   @AfterEach
   public void cleanup() throws IOException {
-    FileUtils.delete(projectDirPath.toFile(), RECURSIVE);
+    org.eclipse.jgit.util.FileUtils.delete(projectDirPath.toFile(), RECURSIVE);
   }
 
   @Test

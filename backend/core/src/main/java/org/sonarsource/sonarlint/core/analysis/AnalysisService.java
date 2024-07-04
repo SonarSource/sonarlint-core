@@ -54,7 +54,6 @@ import org.sonarsource.sonarlint.core.analysis.sonarapi.MultivalueProperty;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
-import org.sonarsource.sonarlint.core.commons.util.git.GitUtils;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.Version;
@@ -124,6 +123,7 @@ import static org.apache.commons.lang3.StringUtils.trimToNull;
 import static org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.LanguageDetection.sanitizeExtension;
 import static org.sonarsource.sonarlint.core.commons.util.GitUtils.createSonarLintGitIgnore;
 import static org.sonarsource.sonarlint.core.commons.util.StringUtils.pluralize;
+import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.getVSCChangedFiles;
 
 @Named
 @Singleton
@@ -788,7 +788,7 @@ public class AnalysisService {
   }
 
   public void analyzeVCSChangedFiles(String configScopeId) {
-    var changedFiles = GitUtils.getVSCChangedFiles(clientFileSystemService.getBaseDir(configScopeId));
+    var changedFiles = getVSCChangedFiles(clientFileSystemService.getBaseDir(configScopeId));
     triggerForcedAnalysis(configScopeId, changedFiles, false);
   }
 

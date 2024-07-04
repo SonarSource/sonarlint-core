@@ -34,6 +34,7 @@ import org.sonar.scm.git.blame.RepositoryBlameCommand;
 import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
 
 import static java.util.Optional.ofNullable;
+import static org.sonarsource.sonarlint.core.commons.util.GitUtils.buildGitRepository;
 
 public class GitUtils {
 
@@ -63,7 +64,7 @@ public class GitUtils {
   }
 
   public static SonarLintBlameResult blameWithFilesGitCommand(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, @Nullable UnaryOperator<String> fileContentProvider) {
-    var gitRepo = GitUtils.buildGitRepository(projectBaseDir);
+    var gitRepo = buildGitRepository(projectBaseDir);
 
     var gitRepoRelativeProjectBaseDir = gitRepo.getWorkTree().toPath().relativize(projectBaseDir);
 

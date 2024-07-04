@@ -29,7 +29,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.sonarsource.sonarlint.core.commons.SonarLintGitIgnore;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.util.gitblame.GitRepoNotFoundException;
+import org.sonarsource.sonarlint.core.commons.util.git.GitRepoNotFoundException;
 
 import static java.util.Optional.ofNullable;
 import static org.eclipse.jgit.lib.Constants.GITIGNORE_FILENAME;
