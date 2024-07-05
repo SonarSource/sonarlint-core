@@ -532,8 +532,7 @@ public class AnalysisService {
         .forEach(configScopeId -> rulesService.updateAndReportFindings(configScopeId, event.getDeactivatedRules()));
     } else {
       // trigger an analysis if any rule was enabled
-      Predicate<Map.Entry<String, List<URI>>> configScopeFilter = entry -> isStandalone(entry.getKey());
-      reanalyseOpenFiles(configScopeFilter);
+      reanalyseOpenFiles(this::isStandalone);
     }
   }
 
@@ -543,14 +542,13 @@ public class AnalysisService {
 
   @EventListener
   public void onNewRulesActivatedOnServer(NewRulesActivatedOnServer event) {
-    Predicate<Map.Entry<String, List<URI>>> configScopeFilter = entry -> configurationRepository.getEffectiveBinding(entry.getKey()).isPresent();
-    reanalyseOpenFiles(configScopeFilter);
+    reanalyseOpenFiles(not(this::isStandalone));
   }
 
-  private void reanalyseOpenFiles(Predicate<Map.Entry<String, List<URI>>> configScopeFilter) {
+  private void reanalyseOpenFiles(Predicate<String> configScopeFilter) {
     openFilesRepository.getOpenFilesByConfigScopeId()
       .entrySet()
-      .stream().filter(configScopeFilter)
+      .stream().filter(entry -> configScopeFilter.test(entry.getKey()))
       .forEach(entry -> triggerAnalysis(entry.getKey(), entry.getValue()));
   }
 
@@ -587,6 +585,7 @@ public class AnalysisService {
       }
     });
     if (!scopeIdsThatBecameReady.isEmpty()) {
+      reanalyseOpenFiles(scopeIdsThatBecameReady::contains);
       client.didChangeAnalysisReadiness(new DidChangeAnalysisReadinessParams(scopeIdsThatBecameReady, true));
     }
   }
