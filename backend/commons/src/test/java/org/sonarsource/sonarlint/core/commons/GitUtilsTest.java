@@ -29,6 +29,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.jupiter.api.AfterEach;
@@ -135,9 +136,10 @@ class GitUtilsTest {
     var uncommittedTrackedFileUri = projectDirPath.resolve(uncommittedTrackedFile).toUri();
     var uncommittedUntrackedFileUri = projectDirPath.resolve(uncommittedUntrackedFile).toUri();
 
-    // git status doesn't show this file
-    createFile(projectDirPath, "folder/folderFile", "line1", "line2", "line3");
-    git.add().addFilepattern("folder/folderFile").call();
+    var folderFile = Path.of("folder").resolve("folderFile");
+    var string = FilenameUtils.separatorsToUnix(folderFile.toString());
+    createFile(projectDirPath, string, "line1", "line2", "line3");
+    git.add().setUpdate(true).addFilepattern(string).call();
 
     createFile(projectDirPath, committedFile, "line1", "line2", "line3");
     commit(git, committedFile);
@@ -153,11 +155,12 @@ class GitUtilsTest {
 
     var changedFiles = getVSCChangedFiles(projectDirPath);
 
-    assertThat(changedFiles).hasSize(3)
+    assertThat(changedFiles).hasSize(4)
       .doesNotContain(committedFileUri)
       .contains(committedAndModifiedFileUri)
       .contains(uncommittedTrackedFileUri)
-      .contains(uncommittedUntrackedFileUri);
+      .contains(uncommittedUntrackedFileUri)
+      .contains(projectDirPath.resolve(folderFile).toUri());
   }
 
   @Test
