@@ -62,7 +62,6 @@ import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.commons.util.git.GitUtils;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
@@ -251,7 +250,7 @@ public class AnalysisService {
       return new GetAnalysisConfigResponse(buildConnectedActiveRules(binding, hotspotsOnly), analysisProperties, nodeJsDetailsDto,
         Set.copyOf(pluginsService.getConnectedPluginPaths(binding.getConnectionId())));
     })
-      .orElseGet(() -> new GetAnalysisConfigResponse(buildStandaloneActiveRules(hotspotsOnly), userAnalysisProperties, nodeJsDetailsDto,
+      .orElseGet(() -> new GetAnalysisConfigResponse(buildStandaloneActiveRules(), userAnalysisProperties, nodeJsDetailsDto,
         Set.copyOf(pluginsService.getEmbeddedPluginPaths())));
   }
 
@@ -413,7 +412,7 @@ public class AnalysisService {
     }
   }
 
-  private List<ActiveRuleDto> buildStandaloneActiveRules(boolean hotspotsOnly) {
+  private List<ActiveRuleDto> buildStandaloneActiveRules() {
     var standaloneRuleConfig = rulesService.getStandaloneRuleConfig();
     Set<String> excludedRules = standaloneRuleConfig.entrySet().stream().filter(not(e -> e.getValue().isActive())).map(Map.Entry::getKey).collect(toSet());
     Set<String> includedRules = standaloneRuleConfig.entrySet().stream().filter(e -> e.getValue().isActive())
@@ -804,6 +803,7 @@ public class AnalysisService {
       analyze(new SonarLintCancelMonitor(), configurationScopeId, analysisId, files, Map.of(), System.currentTimeMillis(), true, true, hotspotsOnly);
       return analysisId;
     }
+    LOG.debug("Skipping analysis for configuration scope {}. Not ready for analysis", configurationScopeId);
     return null;
   }
 

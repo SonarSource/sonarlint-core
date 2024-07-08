@@ -271,7 +271,7 @@ class AnalysisForcedByClientMediumTests {
   }
 
   @Test
-  void should_not_check_file_exclustions_for_forced_analysis(@TempDir Path baseDir) {
+  void should_not_check_file_exclusions_for_forced_analysis(@TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml",
       "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         + "<project>\n"
