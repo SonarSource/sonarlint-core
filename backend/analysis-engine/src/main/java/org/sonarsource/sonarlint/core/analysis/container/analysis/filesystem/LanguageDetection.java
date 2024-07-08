@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem;
 
+import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -60,10 +61,31 @@ public class LanguageDetection {
   }
 
   @CheckForNull
+  public SonarLanguage language(Path inputFile) {
+    SonarLanguage detectedLanguage = null;
+    for (Entry<SonarLanguage, String[]> languagePatterns : extensionsByLanguage.entrySet()) {
+      if (isCandidateForLanguage(inputFile.getFileName().toString(), languagePatterns.getValue())) {
+        if (detectedLanguage == null) {
+          detectedLanguage = languagePatterns.getKey();
+        } else {
+          // Language was already forced by another pattern
+          throw MessageException.of(MessageFormat.format("Language of file \"{0}\" can not be decided as the file extension matches both {1} and {2}",
+            inputFile.toUri(), getDetails(detectedLanguage), getDetails(languagePatterns.getKey())));
+        }
+      }
+    }
+    if (detectedLanguage != null) {
+      LOG.debug("Language of file \"{}\" is detected to be \"{}\"", inputFile.toUri(), detectedLanguage);
+      return detectedLanguage;
+    }
+    return null;
+  }
+
+  @CheckForNull
   public SonarLanguage language(InputFile inputFile) {
     SonarLanguage detectedLanguage = null;
     for (Entry<SonarLanguage, String[]> languagePatterns : extensionsByLanguage.entrySet()) {
-      if (isCandidateForLanguage(inputFile, languagePatterns.getValue())) {
+      if (isCandidateForLanguage(inputFile.filename(), languagePatterns.getValue())) {
         if (detectedLanguage == null) {
           detectedLanguage = languagePatterns.getKey();
         } else {
@@ -80,9 +102,9 @@ public class LanguageDetection {
     return null;
   }
 
-  private static boolean isCandidateForLanguage(InputFile inputFile, String[] extensions) {
+  private static boolean isCandidateForLanguage(String fileName, String[] extensions) {
     for (String extension : extensions) {
-      if (inputFile.filename().toLowerCase(Locale.ENGLISH).endsWith("." + extension)) {
+      if (fileName.toLowerCase(Locale.ENGLISH).endsWith("." + extension)) {
         return true;
       }
     }

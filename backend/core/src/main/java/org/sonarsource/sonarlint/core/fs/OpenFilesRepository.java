@@ -55,6 +55,6 @@ public class OpenFilesRepository {
   }
 
   public List<URI> getOpenFilesForConfigScope(String configurationScopeId) {
-    return openFilesByConfigScopeId.get(configurationScopeId);
+    return openFilesByConfigScopeId.getOrDefault(configurationScopeId, List.of());
   }
 }

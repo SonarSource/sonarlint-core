@@ -50,6 +50,8 @@ import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.analysis.command.NotifyModuleEventCommand;
+import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.LanguageDetection;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.MultivalueProperty;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
@@ -131,6 +133,7 @@ public class AnalysisService {
   private static final Version SECRET_ANALYSIS_MIN_SQ_VERSION = Version.create("9.9");
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private static final String PATH_TO_COMPILE_COMMANDS = "pathToCompileCommands";
 
   private final SonarLintRpcClient client;
   private final ConfigurationRepository configurationRepository;
@@ -193,6 +196,7 @@ public class AnalysisService {
         .analyzerConfiguration().read().getSettings().getAll();
     }
     // TODO merge client side analysis settings
+
     return getPatterns(enabledLanguages, analysisSettings);
   }
 
@@ -278,7 +282,34 @@ public class AnalysisService {
   }
 
   public void setUserAnalysisProperties(String configScopeId, Map<String, String> properties) {
+    boolean reAnalyseCAndCppFiles = shouldReAnalyseCFiles(configScopeId, properties);
     userAnalysisPropertiesRepository.setUserProperties(configScopeId, properties);
+    if (reAnalyseCAndCppFiles) {
+      var settings = configurationRepository.getEffectiveBinding(configScopeId)
+        .map(effectiveBinding -> storageService.binding(effectiveBinding)
+          .analyzerConfiguration().read().getSettings().getAll())
+        .orElseGet(Map::of);
+      var languageDetection = new LanguageDetection(new MapSettings(settings).asConfig());
+      var openFiles = openFilesRepository.getOpenFilesForConfigScope(configScopeId);
+      var openCOrCppFiles = openFiles.stream()
+        .filter(file -> {
+          var detectedLanguage = languageDetection.language(Path.of(file));
+          return detectedLanguage == SonarLanguage.C || detectedLanguage == SonarLanguage.CPP;
+        })
+        .collect(toList());
+      if (!openFiles.isEmpty()) {
+        triggerAnalysis(configScopeId, openCOrCppFiles);
+      }
+    }
+  }
+
+  private boolean shouldReAnalyseCFiles(String configScopeId, Map<String, String> newProperties) {
+    if (newProperties.get(PATH_TO_COMPILE_COMMANDS) == null) {
+      return false;
+    }
+    var oldProperties = userAnalysisPropertiesRepository.getUserProperties(configScopeId);
+    var oldPathToCompileCommands = oldProperties.get(PATH_TO_COMPILE_COMMANDS);
+    return !newProperties.get(PATH_TO_COMPILE_COMMANDS).equals(oldPathToCompileCommands);
   }
 
   private static Path findCommonPrefix(List<URI> uris) {
