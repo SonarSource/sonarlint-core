@@ -62,6 +62,7 @@ import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.commons.util.git.GitUtils;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
@@ -423,7 +424,7 @@ public class AnalysisService {
     var filteredActiveRules = new ArrayList<SonarLintRuleDefinition>();
 
     var allRulesDefinitions = rulesRepository.getEmbeddedRules().stream()
-      .filter(rule -> !hotspotsOnly || !rule.getType().equals(RuleType.SECURITY_HOTSPOT))
+      .filter(rule -> !rule.getType().equals(RuleType.SECURITY_HOTSPOT))
       .collect(toList());
 
     filteredActiveRules.addAll(allRulesDefinitions.stream()
@@ -773,23 +774,23 @@ public class AnalysisService {
     }
   }
 
-  public void analyzeFullProject(String configScopeId, boolean hotspotsOnly) {
+  public UUID analyzeFullProject(String configScopeId, boolean hotspotsOnly) {
     var files = clientFileSystemService.getFiles(configScopeId);
-    triggerForcedAnalysis(configScopeId, files.stream().map(ClientFile::getUri).collect(Collectors.toList()), hotspotsOnly);
+    return triggerForcedAnalysis(configScopeId, files.stream().map(ClientFile::getUri).collect(Collectors.toList()), hotspotsOnly);
   }
 
-  public void analyzeFileList(String configScopeId, List<URI> filesToAnalyze) {
-    triggerForcedAnalysis(configScopeId, filesToAnalyze, false);
+  public UUID analyzeFileList(String configScopeId, List<URI> filesToAnalyze) {
+    return triggerForcedAnalysis(configScopeId, filesToAnalyze, false);
   }
 
-  public void analyzeOpenFiles(String configScopeId) {
+  public UUID analyzeOpenFiles(String configScopeId) {
     var openFiles = openFilesRepository.getOpenFilesForConfigScope(configScopeId);
-    triggerForcedAnalysis(configScopeId, openFiles, false);
+    return triggerForcedAnalysis(configScopeId, openFiles, false);
   }
 
-  public void analyzeVCSChangedFiles(String configScopeId) {
+  public UUID analyzeVCSChangedFiles(String configScopeId) {
     var changedFiles = getVSCChangedFiles(clientFileSystemService.getBaseDir(configScopeId));
-    triggerForcedAnalysis(configScopeId, changedFiles, false);
+    return triggerForcedAnalysis(configScopeId, changedFiles, false);
   }
 
   private void triggerAnalysisForOpenFiles() {
@@ -797,10 +798,13 @@ public class AnalysisService {
       .forEach((configurationScopeId, files) -> triggerForcedAnalysis(configurationScopeId, files, false));
   }
 
-  private void triggerForcedAnalysis(String configurationScopeId, List<URI> files, boolean hotspotsOnly) {
+  private UUID triggerForcedAnalysis(String configurationScopeId, List<URI> files, boolean hotspotsOnly) {
     if (isReadyForAnalysis(configurationScopeId)) {
-      analyze(new SonarLintCancelMonitor(), configurationScopeId, UUID.randomUUID(), files, Map.of(), System.currentTimeMillis(), true, true, hotspotsOnly);
+      var analysisId = UUID.randomUUID();
+      analyze(new SonarLintCancelMonitor(), configurationScopeId, analysisId, files, Map.of(), System.currentTimeMillis(), true, true, hotspotsOnly);
+      return analysisId;
     }
+    return null;
   }
 
   private void triggerAnalysis(String configurationScopeId, List<URI> files) {

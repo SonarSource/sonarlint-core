@@ -19,24 +19,39 @@
  */
 package org.sonarsource.sonarlint.core.commons.util.git;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.RawTextComparator;
+import org.eclipse.jgit.ignore.IgnoreNode;
+import org.eclipse.jgit.lib.ObjectReader;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.sonar.scm.git.blame.RepositoryBlameCommand;
 import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
+import org.sonarsource.sonarlint.core.commons.SonarLintGitIgnore;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 import static java.util.Optional.ofNullable;
-import static org.sonarsource.sonarlint.core.commons.util.GitUtils.buildGitRepository;
+import static org.eclipse.jgit.lib.Constants.GITIGNORE_FILENAME;
 
 public class GitUtils {
+
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
+
 
   private GitUtils() {
     // Utility class
@@ -59,6 +74,7 @@ public class GitUtils {
         .map(file -> baseDir.resolve(file).toUri())
         .collect(Collectors.toList());
     } catch (GitAPIException | IllegalStateException e) {
+      LOG.debug("Git repository access error: ", e);
       return List.of();
     }
   }
@@ -87,6 +103,54 @@ public class GitUtils {
     } catch (GitAPIException e) {
       throw new IllegalStateException("Failed to blame repository files", e);
     }
+  }
+
+  public static Repository buildGitRepository(Path basedir) {
+    try {
+      var repositoryBuilder = new RepositoryBuilder()
+        .findGitDir(basedir.toFile());
+      if (ofNullable(repositoryBuilder.getGitDir()).isEmpty()) {
+        throw new GitRepoNotFoundException(basedir.toString());
+      }
+
+      var repository = repositoryBuilder.build();
+      try (ObjectReader objReader = repository.getObjectDatabase().newReader()) {
+        // SONARSCGIT-2 Force initialization of shallow commits to avoid later concurrent modification issue
+        objReader.getShallowCommits();
+        return repository;
+      }
+    } catch (IOException e) {
+      throw new IllegalStateException("Unable to open Git repository", e);
+    }
+  }
+
+  /**
+   * Assumes the supplied {@param baseDir} or some of its parents is a git repository.
+   * If error occurs during parsing .gitignore file then an ignore node with no rules is created -> Files checked against this node will be considered as not ignored.
+   */
+  public static SonarLintGitIgnore createSonarLintGitIgnore(Path baseDir) {
+    try {
+      var gitRepo = buildGitRepository(baseDir);
+      var gitRepoRelativeProjectBaseDir = gitRepo.getWorkTree().toPath().relativize(baseDir);
+      var ignoreNode = buildIgnoreNode(gitRepo);
+      return new SonarLintGitIgnore(ignoreNode, gitRepoRelativeProjectBaseDir);
+    } catch (GitRepoNotFoundException e) {
+      LOG.info("Git Repository not found for {}. The path {} is not in a Git repository", baseDir, e.getPath());
+    }
+    return new SonarLintGitIgnore(new IgnoreNode(), baseDir);
+  }
+
+  private static IgnoreNode buildIgnoreNode(Repository repository) {
+    var rootDir = repository.getWorkTree();
+    var gitIgnoreFile = new File(rootDir, GITIGNORE_FILENAME);
+    var ignoreNode = new IgnoreNode();
+    try (var inputStream = new FileInputStream(gitIgnoreFile)) {
+      ignoreNode.parse(inputStream);
+    } catch (Exception e) {
+      LOG.warn("Error occurred while reading .gitignore file: ", e);
+      LOG.warn("Building empty ignore node with no rules. Files checked against this node will be considered as not ignored.");
+    }
+    return ignoreNode;
   }
 
   private static UnaryOperator<String> adaptToPlatformBasedPath(UnaryOperator<String> provider) {

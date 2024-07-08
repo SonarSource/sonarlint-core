@@ -37,6 +37,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFiles
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFullProjectParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.ForceAnalyzeResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeOpenFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeVCSChangedFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeAutomaticAnalysisSettingParams;
@@ -148,23 +149,29 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
   }
 
   @Override
-  public void analyzeFullProject(AnalyzeFullProjectParams params) {
-    notify(() -> getBean(AnalysisService.class).analyzeFullProject(params.getConfigScopeId(), params.isHotspotsOnly()));
+  public CompletableFuture<ForceAnalyzeResponse> analyzeFullProject(AnalyzeFullProjectParams params) {
+    return requestAsync(
+      cancelChecker -> new ForceAnalyzeResponse(getBean(AnalysisService.class)
+        .analyzeFullProject(params.getConfigScopeId(), params.isHotspotsOnly())));
   }
 
   @Override
-  public void analyzeFileList(AnalyzeFileListParams params) {
-    notify(() -> getBean(AnalysisService.class).analyzeFileList(params.getConfigScopeId(), params.getFilesToAnalyze()));
+  public CompletableFuture<ForceAnalyzeResponse> analyzeFileList(AnalyzeFileListParams params) {
+    return requestAsync(
+      cancelChecker -> new ForceAnalyzeResponse(getBean(AnalysisService.class)
+        .analyzeFileList(params.getConfigScopeId(), params.getFilesToAnalyze())));
   }
 
   @Override
-  public void analyzeOpenFiles(AnalyzeOpenFilesParams params) {
-    notify(() -> getBean(AnalysisService.class).analyzeOpenFiles(params.getConfigScopeId()));
+  public CompletableFuture<ForceAnalyzeResponse> analyzeOpenFiles(AnalyzeOpenFilesParams params) {
+    return requestAsync(
+      cancelChecker -> new ForceAnalyzeResponse(getBean(AnalysisService.class).analyzeOpenFiles(params.getConfigScopeId())));
   }
 
   @Override
-  public void analyzeVCSChangedFiles(AnalyzeVCSChangedFilesParams params) {
-    notify(() -> getBean(AnalysisService.class).analyzeVCSChangedFiles(params.getConfigScopeId()));
+  public CompletableFuture<ForceAnalyzeResponse> analyzeVCSChangedFiles(AnalyzeVCSChangedFilesParams params) {
+    return requestAsync(
+      cancelChecker -> new ForceAnalyzeResponse(getBean(AnalysisService.class).analyzeVCSChangedFiles(params.getConfigScopeId())));
   }
 
   private static AnalyzeFilesResponse generateAnalyzeFilesResponse(AnalysisResults analysisResults) {
