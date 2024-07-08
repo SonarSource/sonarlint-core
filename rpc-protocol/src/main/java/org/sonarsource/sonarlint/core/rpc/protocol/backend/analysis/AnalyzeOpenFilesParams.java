@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Commons
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,16 +17,17 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons.util.gitblame;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis;
 
-public class GitRepoNotFoundException extends IllegalStateException {
-  private final String path;
+public class AnalyzeOpenFilesParams {
 
-  public GitRepoNotFoundException(String path) {
-    this.path = path;
+  private final String configScopeId;
+
+  public AnalyzeOpenFilesParams(String configScopeId) {
+    this.configScopeId = configScopeId;
   }
 
-  public String getPath() {
-    return path;
+  public String getConfigScopeId() {
+    return configScopeId;
   }
 }
