@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem;
 
+import java.net.URI;
 import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.Arrays;
@@ -62,41 +63,29 @@ public class LanguageDetection {
 
   @CheckForNull
   public SonarLanguage language(Path inputFile) {
-    SonarLanguage detectedLanguage = null;
-    for (Entry<SonarLanguage, String[]> languagePatterns : extensionsByLanguage.entrySet()) {
-      if (isCandidateForLanguage(inputFile.getFileName().toString(), languagePatterns.getValue())) {
-        if (detectedLanguage == null) {
-          detectedLanguage = languagePatterns.getKey();
-        } else {
-          // Language was already forced by another pattern
-          throw MessageException.of(MessageFormat.format("Language of file \"{0}\" can not be decided as the file extension matches both {1} and {2}",
-            inputFile.toUri(), getDetails(detectedLanguage), getDetails(languagePatterns.getKey())));
-        }
-      }
-    }
-    if (detectedLanguage != null) {
-      LOG.debug("Language of file \"{}\" is detected to be \"{}\"", inputFile.toUri(), detectedLanguage);
-      return detectedLanguage;
-    }
-    return null;
+    return detectLanguage(inputFile.getFileName().toString(), inputFile.toUri());
   }
 
   @CheckForNull
   public SonarLanguage language(InputFile inputFile) {
+    return detectLanguage(inputFile.filename(), inputFile.uri());
+  }
+
+  private SonarLanguage detectLanguage(String fileName, URI fileUri) {
     SonarLanguage detectedLanguage = null;
     for (Entry<SonarLanguage, String[]> languagePatterns : extensionsByLanguage.entrySet()) {
-      if (isCandidateForLanguage(inputFile.filename(), languagePatterns.getValue())) {
+      if (isCandidateForLanguage(fileName, languagePatterns.getValue())) {
         if (detectedLanguage == null) {
           detectedLanguage = languagePatterns.getKey();
         } else {
           // Language was already forced by another pattern
           throw MessageException.of(MessageFormat.format("Language of file \"{0}\" can not be decided as the file extension matches both {1} and {2}",
-            inputFile.uri(), getDetails(detectedLanguage), getDetails(languagePatterns.getKey())));
+            fileUri, getDetails(detectedLanguage), getDetails(languagePatterns.getKey())));
         }
       }
     }
     if (detectedLanguage != null) {
-      LOG.debug("Language of file \"{}\" is detected to be \"{}\"", inputFile.uri(), detectedLanguage);
+      LOG.debug("Language of file \"{}\" is detected to be \"{}\"", fileUri, detectedLanguage);
       return detectedLanguage;
     }
     return null;
