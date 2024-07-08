@@ -17,19 +17,31 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons.util;
+package org.sonarsource.sonarlint.core.commons.util.git;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Set;
+import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import javax.annotation.Nullable;
+import org.apache.commons.io.FilenameUtils;
+import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.diff.RawTextComparator;
 import org.eclipse.jgit.ignore.IgnoreNode;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
+import org.sonar.scm.git.blame.RepositoryBlameCommand;
+import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
 import org.sonarsource.sonarlint.core.commons.SonarLintGitIgnore;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.util.gitblame.GitRepoNotFoundException;
 
 import static java.util.Optional.ofNullable;
 import static org.eclipse.jgit.lib.Constants.GITIGNORE_FILENAME;
@@ -38,8 +50,58 @@ public class GitUtils {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
+
   private GitUtils() {
     // Utility class
+  }
+
+  public static SonarLintBlameResult blameWithFilesGitCommand(Path baseDir, Set<Path> gitRelativePath) {
+    return blameWithFilesGitCommand(baseDir, gitRelativePath, null);
+  }
+
+  public static List<URI> getVSCChangedFiles(@Nullable Path baseDir) {
+    if (baseDir == null) {
+      return List.of();
+    }
+    try {
+      var repo = buildGitRepository(baseDir);
+      var git = new Git(repo);
+      var status = git.status().call();
+      var uncommitted = status.getUncommittedChanges().stream();
+      var untracked = status.getUntracked().stream().filter(f -> !f.equals(GITIGNORE_FILENAME));
+      return Stream.concat(uncommitted, untracked)
+        .map(file -> baseDir.resolve(file).toUri())
+        .collect(Collectors.toList());
+    } catch (GitAPIException | IllegalStateException e) {
+      LOG.debug("Git repository access error: ", e);
+      return List.of();
+    }
+  }
+
+  public static SonarLintBlameResult blameWithFilesGitCommand(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, @Nullable UnaryOperator<String> fileContentProvider) {
+    var gitRepo = buildGitRepository(projectBaseDir);
+
+    var gitRepoRelativeProjectBaseDir = gitRepo.getWorkTree().toPath().relativize(projectBaseDir);
+
+    var gitRepoRelativeFilePaths = projectBaseRelativeFilePaths.stream()
+      .map(gitRepoRelativeProjectBaseDir::resolve)
+      .map(Path::toString)
+      .map(FilenameUtils::separatorsToUnix)
+      .collect(Collectors.toSet());
+
+    var blameCommand = new RepositoryBlameCommand(gitRepo)
+      .setTextComparator(RawTextComparator.WS_IGNORE_ALL)
+      .setMultithreading(true)
+      .setFilePaths(gitRepoRelativeFilePaths);
+    ofNullable(fileContentProvider)
+      .ifPresent(provider -> blameCommand.setFileContentProvider(adaptToPlatformBasedPath(provider)));
+
+    try {
+      var blameResult = blameCommand.call();
+      return new SonarLintBlameResult(blameResult, gitRepoRelativeProjectBaseDir);
+    } catch (GitAPIException e) {
+      throw new IllegalStateException("Failed to blame repository files", e);
+    }
   }
 
   public static Repository buildGitRepository(Path basedir) {
@@ -89,4 +151,12 @@ public class GitUtils {
     }
     return ignoreNode;
   }
+
+  private static UnaryOperator<String> adaptToPlatformBasedPath(UnaryOperator<String> provider) {
+    return unixPath -> {
+      var platformBasedPath = Path.of(unixPath).toString();
+      return provider.apply(platformBasedPath);
+    };
+  }
+
 }

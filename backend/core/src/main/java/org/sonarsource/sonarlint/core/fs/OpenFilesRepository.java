@@ -53,4 +53,8 @@ public class OpenFilesRepository {
   public Map<String, List<URI>> getOpenFilesByConfigScopeId() {
     return openFilesByConfigScopeId;
   }
+
+  public List<URI> getOpenFilesForConfigScope(String configurationScopeId) {
+    return openFilesByConfigScopeId.get(configurationScopeId);
+  }
 }

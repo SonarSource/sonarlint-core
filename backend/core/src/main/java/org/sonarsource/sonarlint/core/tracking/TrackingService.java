@@ -41,7 +41,7 @@ import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.util.gitblame.GitRepoNotFoundException;
+import org.sonarsource.sonarlint.core.commons.util.git.GitRepoNotFoundException;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.reporting.FindingReportingService;
@@ -64,7 +64,7 @@ import org.springframework.context.event.EventListener;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
-import static org.sonarsource.sonarlint.core.commons.util.gitblame.GitBlameUtils.blameWithFilesGitCommand;
+import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.blameWithFilesGitCommand;
 
 public class TrackingService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
