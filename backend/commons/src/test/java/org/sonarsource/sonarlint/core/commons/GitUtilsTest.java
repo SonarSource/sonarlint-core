@@ -125,22 +125,39 @@ class GitUtilsTest {
   }
 
   @Test
-  void it_should_get_uncommitted_files_ignoring_untracked_ones() throws GitAPIException, IOException {
-    var fileAName = "fileA";
-    var fileBName = "fileB";
-    var fileCName = "fileC";
-    var fileAUri = projectDirPath.resolve(fileAName).toUri();
-    var fileBUri = projectDirPath.resolve(fileBName).toUri();
-    createFile(projectDirPath, fileAName, "line1", "line2", "line3");
-    commit(git, fileAName);
-    modifyFile(projectDirPath.resolve(fileAName), "line1", "line2", "line3", "line4");
-    createFile(projectDirPath, fileBName, "line1", "line2", "line3");
-    git.add().addFilepattern(fileBName).call();
-    createFile(projectDirPath, fileCName, "line1", "line2", "line3");
+  void it_should_get_uncommitted_files_including_untracked_ones() throws GitAPIException, IOException {
+    var committedFile = "committedFile";
+    var committedAndModifiedFile = "committedAndModifiedFile";
+    var uncommittedTrackedFile = "uncommittedTrackedFile";
+    var uncommittedUntrackedFile = "uncommittedUntrackedFile";
+    var committedFileUri = projectDirPath.resolve(committedFile).toUri();
+    var committedAndModifiedFileUri = projectDirPath.resolve(committedAndModifiedFile).toUri();
+    var uncommittedTrackedFileUri = projectDirPath.resolve(uncommittedTrackedFile).toUri();
+    var uncommittedUntrackedFileUri = projectDirPath.resolve(uncommittedUntrackedFile).toUri();
+
+    // git status doesn't show this file
+    createFile(projectDirPath, "folder/folderFile", "line1", "line2", "line3");
+    git.add().addFilepattern("folder/folderFile").call();
+
+    createFile(projectDirPath, committedFile, "line1", "line2", "line3");
+    commit(git, committedFile);
+
+    createFile(projectDirPath, committedAndModifiedFile, "line1", "line2", "line3");
+    commit(git, committedAndModifiedFile);
+    modifyFile(projectDirPath.resolve(committedAndModifiedFile), "line1", "line2", "line3", "line4");
+
+    createFile(projectDirPath, uncommittedTrackedFile, "line1", "line2", "line3");
+    git.add().addFilepattern(uncommittedTrackedFile).call();
+
+    createFile(projectDirPath, uncommittedUntrackedFile, "line1", "line2", "line3");
 
     var changedFiles = getVSCChangedFiles(projectDirPath);
 
-    assertThat(changedFiles).hasSize(2).contains(fileAUri).contains(fileBUri);
+    assertThat(changedFiles).hasSize(3)
+      .doesNotContain(committedFileUri)
+      .contains(committedAndModifiedFileUri)
+      .contains(uncommittedTrackedFileUri)
+      .contains(uncommittedUntrackedFileUri);
   }
 
   @Test

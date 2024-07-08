@@ -69,8 +69,9 @@ public class GitUtils {
       var repo = buildGitRepository(baseDir);
       var git = new Git(repo);
       var status = git.status().call();
-      var uncommittedChanges = status.getUncommittedChanges();
-      return uncommittedChanges.stream()
+      var uncommitted = status.getUncommittedChanges().stream();
+      var untracked = status.getUntracked().stream().filter(f -> !f.equals(GITIGNORE_FILENAME));
+      return Stream.concat(uncommitted, untracked)
         .map(file -> baseDir.resolve(file).toUri())
         .collect(Collectors.toList());
     } catch (GitAPIException | IllegalStateException e) {
