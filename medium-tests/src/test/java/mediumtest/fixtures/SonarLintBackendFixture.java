@@ -417,7 +417,6 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-
     public SonarLintBackendBuilder withAutomaticAnalysisEnabled(boolean enabled) {
       this.automaticAnalysisEnabled = enabled;
       return this;
@@ -794,11 +793,21 @@ public class SonarLintBackendFixture {
     }
 
     public Map<URI, List<RaisedIssueDto>> getRaisedIssuesForScopeId(String configurationScopeId) {
-      return raisedIssuesByScopeId.get(configurationScopeId);
+      return raisedIssuesByScopeId.getOrDefault(configurationScopeId, Map.of());
+    }
+
+    public List<RaisedIssueDto> getRaisedIssuesForScopeIdAsList(String configurationScopeId) {
+      return raisedIssuesByScopeId.getOrDefault(configurationScopeId, Map.of()).values().stream().flatMap(Collection::stream)
+        .collect(Collectors.toList());
     }
 
     public Map<URI, List<RaisedHotspotDto>> getRaisedHotspotsForScopeId(String configurationScopeId) {
-      return raisedHotspotsByScopeId.get(configurationScopeId);
+      return raisedHotspotsByScopeId.getOrDefault(configurationScopeId, Map.of());
+    }
+
+    public List<RaisedHotspotDto> getRaisedHotspotsForScopeIdAsList(String configurationScopeId) {
+      return raisedHotspotsByScopeId.getOrDefault(configurationScopeId, Map.of()).values().stream().flatMap(Collection::stream)
+        .collect(Collectors.toList());
     }
 
     public void cleanRaisedIssues() {
