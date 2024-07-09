@@ -315,7 +315,7 @@ public interface SonarLintRpcClient {
 
   /**
    *  Called before every analysis to update the backend with analysis properties inferred by the client.
-   *  Example of such properties: sonar.java.* configurations, path to compile commands for CFamily analysis.
+   *  Example of such properties: sonar.java.* configurations
    *  @param params configuration scope ID
    *  @return inferred analysis properties
    */

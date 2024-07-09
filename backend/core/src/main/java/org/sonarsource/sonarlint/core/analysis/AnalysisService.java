@@ -35,6 +35,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
@@ -62,6 +64,7 @@ import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
@@ -155,6 +158,8 @@ public class AnalysisService {
   private final OpenFilesRepository openFilesRepository;
   private final ClientFileSystemService clientFileSystemService;
   private boolean automaticAnalysisEnabled;
+  private final ExecutorServiceShutdownWatchable<ScheduledExecutorService> scheduledAnalysisExecutor = new ExecutorServiceShutdownWatchable<>(
+    Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "SonarLint Analysis Executor")));
 
   public AnalysisService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
     StorageService storageService, PluginsService pluginsService, RulesService rulesService, RulesRepository rulesRepository,
@@ -291,9 +296,12 @@ public class AnalysisService {
         .orElseGet(Map::of);
       var languageDetection = new LanguageDetection(new MapSettings(settings).asConfig());
       var openFiles = openFilesRepository.getOpenFilesForConfigScope(configScopeId);
+
       var openCOrCppFiles = openFiles.stream()
         .filter(file -> {
-          var detectedLanguage = languageDetection.language(Path.of(file));
+          var clientFile = fileSystemService.getClientFile(file);
+          var clientForcedLanguage = clientFile != null ? clientFile.getDetectedLanguage(): null;
+          var detectedLanguage = clientForcedLanguage != null ? clientForcedLanguage: languageDetection.language(file);
           return detectedLanguage == SonarLanguage.C || detectedLanguage == SonarLanguage.CPP;
         })
         .collect(toList());
@@ -831,18 +839,22 @@ public class AnalysisService {
   private UUID triggerForcedAnalysis(String configurationScopeId, List<URI> files, boolean hotspotsOnly) {
     if (isReadyForAnalysis(configurationScopeId)) {
       var analysisId = UUID.randomUUID();
-      analyze(new SonarLintCancelMonitor(), configurationScopeId, analysisId, files, Map.of(), System.currentTimeMillis(), true, true, hotspotsOnly);
-      return analysisId;
+      scheduledAnalysisExecutor.submit(() -> {
+        analyze(new SonarLintCancelMonitor(), configurationScopeId, analysisId, files, Map.of(), System.currentTimeMillis(), true, true, hotspotsOnly);
+        return analysisId;
+      });
     }
     LOG.debug("Skipping analysis for configuration scope {}. Not ready for analysis", configurationScopeId);
     return null;
   }
 
   private void triggerAnalysis(String configurationScopeId, List<URI> files) {
-    if (shouldTriggerAutomaticAnalysis(configurationScopeId)) {
-      List<URI> filteredFiles = fileExclusionService.filterOutClientExcludedFiles(configurationScopeId, files);
-      analyze(new SonarLintCancelMonitor(), configurationScopeId, UUID.randomUUID(), filteredFiles, Map.of(), System.currentTimeMillis(), true, true, false);
-    }
+    scheduledAnalysisExecutor.submit(() -> {
+      if (shouldTriggerAutomaticAnalysis(configurationScopeId)) {
+        List<URI> filteredFiles = fileExclusionService.filterOutClientExcludedFiles(configurationScopeId, files);
+        analyze(new SonarLintCancelMonitor(), configurationScopeId, UUID.randomUUID(), filteredFiles, Map.of(), System.currentTimeMillis(), true, true, false);
+      }
+    });
   }
 
   private boolean shouldTriggerAutomaticAnalysis(String configurationScopeId) {

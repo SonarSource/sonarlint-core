@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem;
 
 import java.net.URI;
-import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -62,8 +61,9 @@ public class LanguageDetection {
   }
 
   @CheckForNull
-  public SonarLanguage language(Path inputFile) {
-    return detectLanguage(inputFile.getFileName().toString(), inputFile.toUri());
+  public SonarLanguage language(URI inputFile) {
+    var fileName = getFileName(inputFile);
+    return detectLanguage(fileName, inputFile);
   }
 
   @CheckForNull
@@ -108,5 +108,10 @@ public class LanguageDetection {
 
   public static String sanitizeExtension(String suffix) {
     return StringUtils.lowerCase(StringUtils.removeStart(suffix, "."));
+  }
+
+  public static String getFileName(URI uri) {
+    var filePath = uri.getPath();
+    return filePath.substring(filePath.lastIndexOf('/') + 1);
   }
 }

@@ -108,7 +108,7 @@ public interface AnalysisRpcService {
   /**
    * Analyze all files in the project. User file exclusions and .gitignore will be respected.
    * @param params configuration scope ID, flag to report only hotspots
-   * @return analysis ID
+   * @return analysis ID or null if not ready for analysis
    * Issues will be reported to the client via
    * {@link SonarLintRpcClient#raiseIssues(RaiseIssuesParams)} and {@link SonarLintRpcClient#raiseHotspots(RaiseHotspotsParams)}
    */
@@ -118,7 +118,7 @@ public interface AnalysisRpcService {
   /**
    * Analyze all files in the provided list. User file exclusions and .gitignore will be respected.
    * @param params configuration scope ID, list of files to analyse
-   * @return analysis ID
+   * @return analysis ID or null if not ready for analysis
    * Issues will be reported to the client via
    * {@link SonarLintRpcClient#raiseIssues(RaiseIssuesParams)} and {@link SonarLintRpcClient#raiseHotspots(RaiseHotspotsParams)}
    */
@@ -128,7 +128,7 @@ public interface AnalysisRpcService {
   /**
    * Analyze all files that were reported by the client as opened. User file exclusions and .gitignore will be respected.
    * @param params configuration scope ID
-   * @return analysis ID
+   * @return analysis ID or null if not ready for analysis
    * Issues will be reported to the client via
    * {@link SonarLintRpcClient#raiseIssues(RaiseIssuesParams)} and {@link SonarLintRpcClient#raiseHotspots(RaiseHotspotsParams)}
    */
@@ -138,7 +138,7 @@ public interface AnalysisRpcService {
   /**
    * Analyze all files that were created/modified and tracked by git since the last commit. User file exclusions and .gitignore will be respected.
    * @param params configuration scope ID, list of files to analyse
-   * @return analysis ID
+   * @return analysis ID or null if not ready for analysis
    * Issues will be reported to the client via
    * {@link SonarLintRpcClient#raiseIssues(RaiseIssuesParams)} and {@link SonarLintRpcClient#raiseHotspots(RaiseHotspotsParams)}
    */

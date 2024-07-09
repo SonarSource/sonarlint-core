@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis;
 
 import java.util.UUID;
+import javax.annotation.CheckForNull;
 
 public class ForceAnalyzeResponse {
   UUID analysisId;
@@ -28,6 +29,7 @@ public class ForceAnalyzeResponse {
     this.analysisId = analysisId;
   }
 
+  @CheckForNull
   public UUID getAnalysisId() {
     return analysisId;
   }
