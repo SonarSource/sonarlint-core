@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.analysis;
 
+import com.google.common.util.concurrent.MoreExecutors;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -37,9 +38,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
+import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
@@ -833,5 +836,12 @@ public class AnalysisService {
   private boolean shouldTriggerAutomaticAnalysis(String configurationScopeId) {
     // in the future, if analysis is not ready, we should make it happen later when it becomes ready
     return automaticAnalysisEnabled && isReadyForAnalysis(configurationScopeId);
+  }
+
+  @PreDestroy
+  public void shutdown() {
+    if (!MoreExecutors.shutdownAndAwaitTermination(scheduledAnalysisExecutor, 1, TimeUnit.SECONDS)) {
+      LOG.warn("Unable to stop scheduled analysis executor service in a timely manner");
+    }
   }
 }

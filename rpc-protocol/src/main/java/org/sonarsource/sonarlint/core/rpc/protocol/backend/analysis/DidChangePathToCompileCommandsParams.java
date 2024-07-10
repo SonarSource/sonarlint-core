@@ -36,6 +36,7 @@ public class DidChangePathToCompileCommandsParams {
   public String getPathToCompileCommands() {
     return pathToCompileCommands;
   }
+
   public String getConfigurationScopeId() {
     return configurationScopeId;
   }
