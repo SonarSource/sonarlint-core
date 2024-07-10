@@ -93,6 +93,14 @@ public interface AnalysisRpcService {
   void didSetUserAnalysisProperties(DidChangeAnalysisPropertiesParams params);
 
   /**
+   * Inform the backend that path to compile commands has changed.
+   * The backend will trigger the analysis for all open files after updating the setting value.
+   * @param params configuration scope ID, path to compile commands
+   */
+  @JsonNotification
+  void didChangePathToCompileCommands(DidChangePathToCompileCommandsParams params);
+
+  /**
    * Allows to enable or disable automatic analysis.
    * Automatic analysis happens on the following triggers:
    * <ul>

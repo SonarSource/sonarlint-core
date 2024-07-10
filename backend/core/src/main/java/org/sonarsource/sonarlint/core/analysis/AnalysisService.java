@@ -52,8 +52,6 @@ import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.analysis.command.NotifyModuleEventCommand;
-import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.LanguageDetection;
-import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.MultivalueProperty;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
@@ -64,7 +62,6 @@ import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
@@ -136,7 +133,6 @@ public class AnalysisService {
   private static final Version SECRET_ANALYSIS_MIN_SQ_VERSION = Version.create("9.9");
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final String PATH_TO_COMPILE_COMMANDS = "pathToCompileCommands";
 
   private final SonarLintRpcClient client;
   private final ConfigurationRepository configurationRepository;
@@ -158,8 +154,8 @@ public class AnalysisService {
   private final OpenFilesRepository openFilesRepository;
   private final ClientFileSystemService clientFileSystemService;
   private boolean automaticAnalysisEnabled;
-  private final ExecutorServiceShutdownWatchable<ScheduledExecutorService> scheduledAnalysisExecutor = new ExecutorServiceShutdownWatchable<>(
-    Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "SonarLint Analysis Executor")));
+  private final ScheduledExecutorService scheduledAnalysisExecutor =
+    Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "SonarLint Analysis Executor"));
 
   public AnalysisService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
     StorageService storageService, PluginsService pluginsService, RulesService rulesService, RulesRepository rulesRepository,
@@ -201,7 +197,6 @@ public class AnalysisService {
         .analyzerConfiguration().read().getSettings().getAll();
     }
     // TODO merge client side analysis settings
-
     return getPatterns(enabledLanguages, analysisSettings);
   }
 
@@ -287,37 +282,15 @@ public class AnalysisService {
   }
 
   public void setUserAnalysisProperties(String configScopeId, Map<String, String> properties) {
-    boolean reAnalyseCAndCppFiles = shouldReAnalyseCFiles(configScopeId, properties);
     userAnalysisPropertiesRepository.setUserProperties(configScopeId, properties);
-    if (reAnalyseCAndCppFiles) {
-      var settings = configurationRepository.getEffectiveBinding(configScopeId)
-        .map(effectiveBinding -> storageService.binding(effectiveBinding)
-          .analyzerConfiguration().read().getSettings().getAll())
-        .orElseGet(Map::of);
-      var languageDetection = new LanguageDetection(new MapSettings(settings).asConfig());
-      var openFiles = openFilesRepository.getOpenFilesForConfigScope(configScopeId);
-
-      var openCOrCppFiles = openFiles.stream()
-        .filter(file -> {
-          var clientFile = fileSystemService.getClientFile(file);
-          var clientForcedLanguage = clientFile != null ? clientFile.getDetectedLanguage(): null;
-          var detectedLanguage = clientForcedLanguage != null ? clientForcedLanguage: languageDetection.language(file);
-          return detectedLanguage == SonarLanguage.C || detectedLanguage == SonarLanguage.CPP;
-        })
-        .collect(toList());
-      if (!openFiles.isEmpty()) {
-        triggerAnalysis(configScopeId, openCOrCppFiles);
-      }
-    }
   }
 
-  private boolean shouldReAnalyseCFiles(String configScopeId, Map<String, String> newProperties) {
-    if (newProperties.get(PATH_TO_COMPILE_COMMANDS) == null) {
-      return false;
+  public void didChangePathToCompileCommands(String configScopeId, String pathToCompileCommands) {
+    userAnalysisPropertiesRepository.setOrUpdatePathToCompileCommands(configScopeId, pathToCompileCommands);
+    var openFiles = openFilesRepository.getOpenFilesForConfigScope(configScopeId);
+    if (!openFiles.isEmpty()) {
+      triggerAnalysis(configScopeId, openFiles);
     }
-    var oldProperties = userAnalysisPropertiesRepository.getUserProperties(configScopeId);
-    var oldPathToCompileCommands = oldProperties.get(PATH_TO_COMPILE_COMMANDS);
-    return !newProperties.get(PATH_TO_COMPILE_COMMANDS).equals(oldPathToCompileCommands);
   }
 
   private static Path findCommonPrefix(List<URI> uris) {

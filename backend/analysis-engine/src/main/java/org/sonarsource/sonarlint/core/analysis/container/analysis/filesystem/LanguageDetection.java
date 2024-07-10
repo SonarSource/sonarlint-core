@@ -61,12 +61,6 @@ public class LanguageDetection {
   }
 
   @CheckForNull
-  public SonarLanguage language(URI inputFile) {
-    var fileName = getFileName(inputFile);
-    return detectLanguage(fileName, inputFile);
-  }
-
-  @CheckForNull
   public SonarLanguage language(InputFile inputFile) {
     return detectLanguage(inputFile.filename(), inputFile.uri());
   }
@@ -110,8 +104,4 @@ public class LanguageDetection {
     return StringUtils.lowerCase(StringUtils.removeStart(suffix, "."));
   }
 
-  public static String getFileName(URI uri) {
-    var filePath = uri.getPath();
-    return filePath.substring(filePath.lastIndexOf('/') + 1);
-  }
 }
