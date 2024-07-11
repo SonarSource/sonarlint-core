@@ -19,15 +19,21 @@
  */
 package mediumtest.analysis;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import javax.annotation.Nullable;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
+import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -35,6 +41,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.sonar.api.utils.System2;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
@@ -47,6 +54,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParam
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingPluginParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ProgressEndNotification;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
@@ -59,11 +67,13 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
+import testutils.OnDiskTestClientInputFile;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.refEq;
@@ -77,6 +87,8 @@ class AnalysisMediumTests {
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
   private SonarLintTestRpcServer backend;
   private String javaVersion;
+  private static final boolean COMMERCIAL_ENABLED = System.getProperty("commercial") != null;
+
 
   @BeforeEach
   public void setUp() {
@@ -650,25 +662,52 @@ class AnalysisMediumTests {
   }
 
   @Test
-  void should_trigger_analysis_on_path_to_compile_command_change(@TempDir Path baseDir) {
-    var cppFilePath = createFile(baseDir, "file.cpp", "");
-    var cppFileUri = cppFilePath.toUri();
+  void should_trigger_analysis_on_path_to_compile_command_change(@TempDir Path baseDir) throws IOException {
+    assumeTrue(COMMERCIAL_ENABLED);
+    var cFile = prepareInputFile("foo.c", "#import \"foo.h\"\n", false, StandardCharsets.UTF_8, SonarLanguage.C, baseDir);
+    var cFilePath = baseDir.resolve("foo.c");
+    var buildWrapperContent = "{\"version\":0,\"captures\":[" +
+      "{" +
+      "\"compiler\": \"clang\"," +
+      "\"executable\": \"compiler\"," +
+      "\"stdout\": \"#define __STDC_VERSION__ 201112L\n\"," +
+      "\"stderr\": \"\"" +
+      "}," +
+      "{" +
+      "\"compiler\": \"clang\"," +
+      "\"executable\": \"compiler\"," +
+      "\"stdout\": \"#define __cplusplus 201703L\n\"," +
+      "\"stderr\": \"\"" +
+      "}," +
+      "{\"compiler\":\"clang\",\"cwd\":\"" +
+      baseDir.toString().replace("\\", "\\\\") +
+      "\",\"executable\":\"compiler\",\"cmd\":[\"cc\",\"foo.c\"]}]}";
+    var cFileUri = cFile.uri();
     var client = newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(cppFileUri, baseDir.relativize(cppFilePath), CONFIG_SCOPE_ID, false, null, cppFilePath, null, null, true)))
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(cFileUri, baseDir.relativize(cFilePath), CONFIG_SCOPE_ID, false, null, cFilePath, null, null, true)))
       .build();
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.CFAMILY)
       .build(client);
-    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, cppFileUri));
+    backend.getAnalysisService().didSetUserAnalysisProperties(new DidChangeAnalysisPropertiesParams(CONFIG_SCOPE_ID, Map.of("sonar.cfamily.build-wrapper-content", buildWrapperContent)));
+    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, cFileUri));
     client.cleanRaisedIssues();
 
     backend.getAnalysisService().didChangePathToCompileCommands(new DidChangePathToCompileCommandsParams(CONFIG_SCOPE_ID, "/path"));
 
     var analysisConfigResponse = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).join();
     await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(analysisConfigResponse.getAnalysisProperties()).containsEntry("sonar.cfamily.compile-commands", "/path"));
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
-    assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).containsOnlyKeys(cppFileUri);
+    await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
+    assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).containsOnlyKeys(cFileUri);
+    assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID).get(cFileUri)).hasSize(1);
+  }
+
+  private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding,
+    @Nullable SonarLanguage language, Path baseDir) throws IOException {
+    final var file = new File(baseDir.toFile(), relativePath);
+    FileUtils.write(file, content, encoding);
+    return new OnDiskTestClientInputFile(file.toPath(), relativePath, isTest, encoding, language);
   }
 
   private static Path createFile(Path folderPath, String fileName, String content) {
