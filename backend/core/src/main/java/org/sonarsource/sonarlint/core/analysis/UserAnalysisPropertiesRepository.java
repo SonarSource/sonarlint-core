@@ -30,14 +30,25 @@ import javax.inject.Singleton;
 @Singleton
 public class UserAnalysisPropertiesRepository {
 
+  private static final String PATH_TO_COMPILE_COMMANDS = "pathToCompileCommands";
+  private static final Map<String, String> pathToCompileCommandsByConfigScope = new ConcurrentHashMap<>();
   private final Map<String, Map<String, String>> propertiesByConfigScope = new ConcurrentHashMap<>();
 
   public Map<String, String> getUserProperties(String configurationScopeId) {
-    return propertiesByConfigScope.getOrDefault(configurationScopeId, new HashMap<>());
+    var properties = propertiesByConfigScope.getOrDefault(configurationScopeId, new HashMap<>());
+    var pathToCompileCommands = pathToCompileCommandsByConfigScope.get(configurationScopeId);
+    if (pathToCompileCommands == null) {
+      return properties;
+    }
+    properties.put(PATH_TO_COMPILE_COMMANDS, pathToCompileCommands);
+    return properties;
   }
 
   public void setUserProperties(String configurationScopeId, Map<String, String> extraProperties) {
     propertiesByConfigScope.put(configurationScopeId, new HashMap<>(extraProperties));
   }
 
+  public void setOrUpdatePathToCompileCommands(String configurationScopeId, String value) {
+    pathToCompileCommandsByConfigScope.put(configurationScopeId, value);
+  }
 }

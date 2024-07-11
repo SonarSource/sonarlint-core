@@ -37,6 +37,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFiles
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFullProjectParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangePathToCompileCommandsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.ForceAnalyzeResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeOpenFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeVCSChangedFilesParams;
@@ -141,6 +142,11 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
   @Override
   public void didSetUserAnalysisProperties(DidChangeAnalysisPropertiesParams params) {
     notify(() -> getBean(AnalysisService.class).setUserAnalysisProperties(params.getConfigurationScopeId(), params.getProperties()));
+  }
+
+  @Override
+  public void didChangePathToCompileCommands(DidChangePathToCompileCommandsParams params) {
+    notify(() -> getBean(AnalysisService.class).didChangePathToCompileCommands(params.getConfigurationScopeId(), params.getPathToCompileCommands()));
   }
 
   @Override

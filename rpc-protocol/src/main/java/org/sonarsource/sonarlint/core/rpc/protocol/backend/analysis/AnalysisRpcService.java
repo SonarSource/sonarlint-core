@@ -93,6 +93,14 @@ public interface AnalysisRpcService {
   void didSetUserAnalysisProperties(DidChangeAnalysisPropertiesParams params);
 
   /**
+   * Inform the backend that path to compile commands has changed.
+   * The backend will trigger the analysis for all open files after updating the setting value.
+   * @param params configuration scope ID, path to compile commands
+   */
+  @JsonNotification
+  void didChangePathToCompileCommands(DidChangePathToCompileCommandsParams params);
+
+  /**
    * Allows to enable or disable automatic analysis.
    * Automatic analysis happens on the following triggers:
    * <ul>
@@ -108,7 +116,7 @@ public interface AnalysisRpcService {
   /**
    * Analyze all files in the project. User file exclusions and .gitignore will be respected.
    * @param params configuration scope ID, flag to report only hotspots
-   * @return analysis ID
+   * @return analysis ID or null if not ready for analysis
    * Issues will be reported to the client via
    * {@link SonarLintRpcClient#raiseIssues(RaiseIssuesParams)} and {@link SonarLintRpcClient#raiseHotspots(RaiseHotspotsParams)}
    */
@@ -118,7 +126,7 @@ public interface AnalysisRpcService {
   /**
    * Analyze all files in the provided list. User file exclusions and .gitignore will be respected.
    * @param params configuration scope ID, list of files to analyse
-   * @return analysis ID
+   * @return analysis ID or null if not ready for analysis
    * Issues will be reported to the client via
    * {@link SonarLintRpcClient#raiseIssues(RaiseIssuesParams)} and {@link SonarLintRpcClient#raiseHotspots(RaiseHotspotsParams)}
    */
@@ -128,7 +136,7 @@ public interface AnalysisRpcService {
   /**
    * Analyze all files that were reported by the client as opened. User file exclusions and .gitignore will be respected.
    * @param params configuration scope ID
-   * @return analysis ID
+   * @return analysis ID or null if not ready for analysis
    * Issues will be reported to the client via
    * {@link SonarLintRpcClient#raiseIssues(RaiseIssuesParams)} and {@link SonarLintRpcClient#raiseHotspots(RaiseHotspotsParams)}
    */
@@ -138,7 +146,7 @@ public interface AnalysisRpcService {
   /**
    * Analyze all files that were created/modified and tracked by git since the last commit. User file exclusions and .gitignore will be respected.
    * @param params configuration scope ID, list of files to analyse
-   * @return analysis ID
+   * @return analysis ID or null if not ready for analysis
    * Issues will be reported to the client via
    * {@link SonarLintRpcClient#raiseIssues(RaiseIssuesParams)} and {@link SonarLintRpcClient#raiseHotspots(RaiseHotspotsParams)}
    */

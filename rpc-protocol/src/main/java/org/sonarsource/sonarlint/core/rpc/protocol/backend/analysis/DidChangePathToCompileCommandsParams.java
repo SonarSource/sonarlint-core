@@ -19,18 +19,25 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis;
 
-import java.util.UUID;
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 
-public class ForceAnalyzeResponse {
-  UUID analysisId;
+public class DidChangePathToCompileCommandsParams {
 
-  public ForceAnalyzeResponse(UUID analysisId) {
-    this.analysisId = analysisId;
+  private final String configurationScopeId;
+  private final String pathToCompileCommands;
+
+  public DidChangePathToCompileCommandsParams(String configScopeId, @Nullable String pathToCompileCommands) {
+    this.configurationScopeId = configScopeId;
+    this.pathToCompileCommands = pathToCompileCommands;
   }
 
   @CheckForNull
-  public UUID getAnalysisId() {
-    return analysisId;
+  public String getPathToCompileCommands() {
+    return pathToCompileCommands;
+  }
+
+  public String getConfigurationScopeId() {
+    return configurationScopeId;
   }
 }
