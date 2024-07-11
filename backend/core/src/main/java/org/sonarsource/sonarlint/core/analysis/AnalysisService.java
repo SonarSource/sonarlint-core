@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.analysis;
 
+import com.google.common.util.concurrent.MoreExecutors;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,9 +36,13 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
+import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.StringUtils;
@@ -152,6 +157,8 @@ public class AnalysisService {
   private final OpenFilesRepository openFilesRepository;
   private final ClientFileSystemService clientFileSystemService;
   private boolean automaticAnalysisEnabled;
+  private final ScheduledExecutorService scheduledAnalysisExecutor =
+    Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "SonarLint Analysis Executor"));
 
   public AnalysisService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
     StorageService storageService, PluginsService pluginsService, RulesService rulesService, RulesRepository rulesRepository,
@@ -279,6 +286,14 @@ public class AnalysisService {
 
   public void setUserAnalysisProperties(String configScopeId, Map<String, String> properties) {
     userAnalysisPropertiesRepository.setUserProperties(configScopeId, properties);
+  }
+
+  public void didChangePathToCompileCommands(String configScopeId, String pathToCompileCommands) {
+    userAnalysisPropertiesRepository.setOrUpdatePathToCompileCommands(configScopeId, pathToCompileCommands);
+    var openFiles = openFilesRepository.getOpenFilesForConfigScope(configScopeId);
+    if (!openFiles.isEmpty()) {
+      triggerAnalysis(configScopeId, openFiles);
+    }
   }
 
   private static Path findCommonPrefix(List<URI> uris) {
@@ -799,22 +814,33 @@ public class AnalysisService {
   private UUID triggerForcedAnalysis(String configurationScopeId, List<URI> files, boolean hotspotsOnly) {
     if (isReadyForAnalysis(configurationScopeId)) {
       var analysisId = UUID.randomUUID();
-      analyze(new SonarLintCancelMonitor(), configurationScopeId, analysisId, files, Map.of(), System.currentTimeMillis(), true, true, hotspotsOnly);
-      return analysisId;
+      scheduledAnalysisExecutor.submit(() -> {
+        analyze(new SonarLintCancelMonitor(), configurationScopeId, analysisId, files, Map.of(), System.currentTimeMillis(), true, true, hotspotsOnly);
+        return analysisId;
+      });
     }
     LOG.debug("Skipping analysis for configuration scope {}. Not ready for analysis", configurationScopeId);
     return null;
   }
 
   private void triggerAnalysis(String configurationScopeId, List<URI> files) {
-    if (shouldTriggerAutomaticAnalysis(configurationScopeId)) {
-      List<URI> filteredFiles = fileExclusionService.filterOutClientExcludedFiles(configurationScopeId, files);
-      analyze(new SonarLintCancelMonitor(), configurationScopeId, UUID.randomUUID(), filteredFiles, Map.of(), System.currentTimeMillis(), true, true, false);
-    }
+    scheduledAnalysisExecutor.submit(() -> {
+      if (shouldTriggerAutomaticAnalysis(configurationScopeId)) {
+        List<URI> filteredFiles = fileExclusionService.filterOutClientExcludedFiles(configurationScopeId, files);
+        analyze(new SonarLintCancelMonitor(), configurationScopeId, UUID.randomUUID(), filteredFiles, Map.of(), System.currentTimeMillis(), true, true, false);
+      }
+    });
   }
 
   private boolean shouldTriggerAutomaticAnalysis(String configurationScopeId) {
     // in the future, if analysis is not ready, we should make it happen later when it becomes ready
     return automaticAnalysisEnabled && isReadyForAnalysis(configurationScopeId);
+  }
+
+  @PreDestroy
+  public void shutdown() {
+    if (!MoreExecutors.shutdownAndAwaitTermination(scheduledAnalysisExecutor, 1, TimeUnit.SECONDS)) {
+      LOG.warn("Unable to stop scheduled analysis executor service in a timely manner");
+    }
   }
 }

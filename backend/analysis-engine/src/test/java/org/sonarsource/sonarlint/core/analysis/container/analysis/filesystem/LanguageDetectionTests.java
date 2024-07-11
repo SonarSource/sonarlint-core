@@ -44,7 +44,7 @@ class LanguageDetectionTests {
   private Path basedir;
 
   @Test
-  void test_sanitizeExtension() throws Exception {
+  void test_sanitizeExtension() {
     assertThat(LanguageDetection.sanitizeExtension(".cbl")).isEqualTo("cbl");
     assertThat(LanguageDetection.sanitizeExtension(".CBL")).isEqualTo("cbl");
     assertThat(LanguageDetection.sanitizeExtension("CBL")).isEqualTo("cbl");
@@ -142,7 +142,7 @@ class LanguageDetectionTests {
       .contains("XML: xhtml");
   }
 
-  private InputFile newInputFile(String path) throws IOException {
+  private InputFile newInputFile(String path) {
     return new TestInputFileBuilder(path).setBaseDir(basedir).build();
   }
 
