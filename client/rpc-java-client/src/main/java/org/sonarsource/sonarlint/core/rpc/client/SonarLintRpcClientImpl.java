@@ -386,7 +386,7 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   public CompletableFuture<GetInferredAnalysisPropertiesResponse> getInferredAnalysisProperties(GetInferredAnalysisPropertiesParams params) {
     return requestAsync(cancelChecker -> {
       try {
-        return new GetInferredAnalysisPropertiesResponse(delegate.getInferredAnalysisProperties(params.getConfigurationScopeId()));
+        return new GetInferredAnalysisPropertiesResponse(delegate.getInferredAnalysisProperties(params.getConfigurationScopeId(), params.getFilePathsToAnalyze()));
       } catch (ConfigScopeNotFoundException e) {
         throw configScopeNotFoundError(params.getConfigurationScopeId());
       }
