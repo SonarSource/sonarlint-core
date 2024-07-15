@@ -30,7 +30,7 @@ import javax.inject.Singleton;
 @Singleton
 public class UserAnalysisPropertiesRepository {
 
-  private static final String PATH_TO_COMPILE_COMMANDS_ANALYSER_PROPERTY = "sonar.cfamily.compile-commands";
+  private static final String PATH_TO_COMPILE_COMMANDS_ANALYZER_PROPERTY = "sonar.cfamily.compile-commands";
   private static final Map<String, String> pathToCompileCommandsByConfigScope = new ConcurrentHashMap<>();
   private final Map<String, Map<String, String>> propertiesByConfigScope = new ConcurrentHashMap<>();
 
@@ -40,7 +40,7 @@ public class UserAnalysisPropertiesRepository {
     if (pathToCompileCommands == null) {
       return properties;
     }
-    properties.put(PATH_TO_COMPILE_COMMANDS_ANALYSER_PROPERTY, pathToCompileCommands);
+    properties.put(PATH_TO_COMPILE_COMMANDS_ANALYZER_PROPERTY, pathToCompileCommands);
     return properties;
   }
 
