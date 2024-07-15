@@ -24,18 +24,18 @@ import java.util.List;
 
 public class GetInferredAnalysisPropertiesParams {
   private final String configurationScopeId;
-  private final List<URI> filePathsToAnalyze;
+  private final List<URI> filesToAnalyze;
 
   public GetInferredAnalysisPropertiesParams(String configurationScopeId, List<URI> filePathsToAnalyze) {
     this.configurationScopeId = configurationScopeId;
-    this.filePathsToAnalyze = filePathsToAnalyze;
+    this.filesToAnalyze = filePathsToAnalyze;
   }
 
   public String getConfigurationScopeId() {
     return configurationScopeId;
   }
 
-  public List<URI> getFilePathsToAnalyze() {
-    return filePathsToAnalyze;
+  public List<URI> getFilesToAnalyze() {
+    return filesToAnalyze;
   }
 }
