@@ -103,7 +103,7 @@ public class ServerFixture {
     private final ServerKind serverKind;
     @Nullable
     private final String organizationKey;
-    private final String version;
+    private String version;
     private final Map<String, ServerProjectBuilder> projectByProjectKey = new HashMap<>();
     private final Map<String, ServerQualityProfileBuilder> qualityProfilesByKey = new HashMap<>();
     private final Map<String, ServerPluginBuilder> pluginsByKey = new HashMap<>();
@@ -155,6 +155,11 @@ public class ServerFixture {
     public ServerBuilder withPlugin(String pluginKey, UnaryOperator<ServerPluginBuilder> pluginBuilder) {
       var builder = new ServerPluginBuilder();
       this.pluginsByKey.put(pluginKey, pluginBuilder.apply(builder));
+      return this;
+    }
+
+    public ServerBuilder withVersion(String version) {
+      this.version = version;
       return this;
     }
 
@@ -582,30 +587,36 @@ public class ServerFixture {
     }
 
     private void registerQualityProfilesApiResponses() {
-      projectsByProjectKey.forEach((projectKey, project) -> mockServer.stubFor(get("/api/qualityprofiles/search.protobuf?project=" + projectKey)
-        .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Qualityprofiles.SearchWsResponse.newBuilder().addAllProfiles(
-          project.qualityProfileKeys.stream().map(qualityProfileKey -> {
-            var qualityProfile = qualityProfilesByKey.get(qualityProfileKey);
-            return Qualityprofiles.SearchWsResponse.QualityProfile.newBuilder()
-              .setKey(qualityProfileKey)
-              .setLanguage(qualityProfile.languageKey)
-              .setLanguageName(qualityProfile.languageKey)
-              .setName("Quality Profile")
-              .setRulesUpdatedAt(Instant.now().toString())
-              .setUserUpdatedAt(Instant.now().toString())
-              .setIsDefault(true)
-              .setActiveRuleCount(qualityProfile.activeRulesByKey.size())
-              .build();
-          }).collect(toList())).build())))));
+      projectsByProjectKey.forEach((projectKey, project) -> {
+        var urlBuilder = new StringBuilder("/api/qualityprofiles/search.protobuf?project=" + projectKey);
+        if (organizationKey != null) {
+          urlBuilder.append("&organization=").append(organizationKey);
+        }
+        mockServer.stubFor(get(urlBuilder.toString())
+          .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Qualityprofiles.SearchWsResponse.newBuilder().addAllProfiles(
+            project.qualityProfileKeys.stream().map(qualityProfileKey -> {
+              var qualityProfile = qualityProfilesByKey.get(qualityProfileKey);
+              return Qualityprofiles.SearchWsResponse.QualityProfile.newBuilder()
+                .setKey(qualityProfileKey)
+                .setLanguage(qualityProfile.languageKey)
+                .setLanguageName(qualityProfile.languageKey)
+                .setName("Quality Profile")
+                .setRulesUpdatedAt(Instant.now().toString())
+                .setUserUpdatedAt(Instant.now().toString())
+                .setIsDefault(true)
+                .setActiveRuleCount(qualityProfile.activeRulesByKey.size())
+                .build();
+            }).collect(toList())).build()))));
+      });
     }
 
     private void registerRulesApiResponses() {
       qualityProfilesByKey.forEach((qualityProfileKey, qualityProfile) -> {
-        var url = "/api/rules/search.protobuf?qprofile=";
+        var url = "/api/rules/search.protobuf?qprofile=" + qualityProfileKey;
         if (serverKind == ServerKind.SONARCLOUD) {
           url += "&organization=" + organizationKey;
         }
-        url += qualityProfileKey + "&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY,SECURITY_HOTSPOT&s=key&ps=500&p=1";
+        url += "&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY,SECURITY_HOTSPOT&s=key&ps=500&p=1";
         mockServer.stubFor(get(url)
           .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Rules.SearchResponse.newBuilder()
             .addAllRules(qualityProfile.activeRulesByKey.entrySet().stream().map(entry -> Rules.Rule.newBuilder()

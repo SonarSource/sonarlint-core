@@ -146,7 +146,7 @@ public class IssueMatchingService {
   private void refreshServerIssues(SonarLintCancelMonitor cancelMonitor, Binding binding, String activeBranch,
     Map<Path, List<ClientTrackedFindingDto>> clientTrackedIssuesByIdeRelativePath, FilePathTranslation translation) {
     var serverFileRelativePaths = clientTrackedIssuesByIdeRelativePath.keySet()
-      .stream().map(translation::serverToIdePath).collect(Collectors.toSet());
+      .stream().map(translation::ideToServerPath).collect(Collectors.toSet());
     var downloadAllIssuesAtOnce = serverFileRelativePaths.size() > FETCH_ALL_ISSUES_THRESHOLD;
     var fetchTasks = new LinkedList<CompletableFuture<?>>();
     if (downloadAllIssuesAtOnce) {

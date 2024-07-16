@@ -29,7 +29,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -60,6 +62,7 @@ import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static mediumtest.fixtures.ClientLogFixtures.verifyClientLog;
+import static mediumtest.fixtures.ServerFixture.newSonarCloudServer;
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
@@ -68,6 +71,7 @@ import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.api.InstanceOfAssertFactories.INSTANT;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -714,6 +718,55 @@ class IssueTrackingMediumTests {
   }
 
   @Test
+  void it_should_submit_server_path_to_sc_web_api(@TempDir Path baseDir) {
+    var folder = createFolder(baseDir, "local/path/prefix");
+    var filePath = createFile(baseDir, folder.resolve("pom.xml").toString(),
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        + "<project>\n"
+        + "  <modelVersion>4.0.0</modelVersion>\n"
+        + "  <groupId>com.foo</groupId>\n"
+        + "  <artifactId>bar</artifactId>\n"
+        + "  <version>${pom.version}</version>\n"
+        + "</project>");
+    var fileUri = filePath.toUri();
+    var orgKey = "myOrganization";
+    var connectionId = "connectionId";
+    var projectKey = "projectKey";
+    var server = newSonarCloudServer(orgKey)
+      .withProject(projectKey, project -> project
+        .withFile("server/path/prefix/pom.xml")
+          .withQualityProfile("qp")
+      )
+      .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("xml")
+        .withActiveRule("xml:S3421", rule -> rule.withSeverity(IssueSeverity.MAJOR)))
+      .withVersion("8.0.0.55884")
+      .start();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
+      .build();
+    backend = newBackend()
+      .withSonarCloudConnection(connectionId, orgKey, true,
+        storage -> storage.withPlugin(TestPlugin.XML))
+      .withFullSynchronization()
+      .withSonarCloudUrl(server.baseUrl())
+      .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .build(client);
+
+    backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID,
+      new BindingConfigurationDto(connectionId, projectKey, true)));
+    client.waitForSynchronization();
+
+    backend.getAnalysisService().analyzeFilesAndTrack(
+      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), true, System.currentTimeMillis())).join();
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
+
+    var requests = server.getMockServer().getServeEvents().getRequests();
+    assertThat(requests).extracting("request.url")
+      .contains("/batch/issues?key=projectKey%3Aserver%2Fpath%2Fprefix%2Fpom.xml&branch=main");
+  }
+
+  @Test
   void it_should_stream_issues(@TempDir Path baseDir) throws IOException, GitAPIException {
     var repository = createRepository(baseDir);
     var filePath = createFile(baseDir, "Foo.java", "a");
@@ -845,6 +898,10 @@ class IssueTrackingMediumTests {
 
   private RaisedIssueDto analyzeFileAndGetIssue(URI fileUri, SonarLintRpcClientDelegate client) {
     var analysisId = UUID.randomUUID();
+    return analyzeFileAndGetIssue(fileUri, client, analysisId);
+  }
+
+  private RaisedIssueDto analyzeFileAndGetIssue(URI fileUri, SonarLintRpcClientDelegate client, @Nullable UUID analysisId) {
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
       new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true, System.currentTimeMillis())).join();
     var publishedIssuesByFile = getPublishedIssues(client, analysisId);
@@ -880,6 +937,17 @@ class IssueTrackingMediumTests {
       throw new RuntimeException(e);
     }
     return filePath;
+  }
+
+  private static Path createFolder(Path baseDir, String folderPath) {
+    var path = baseDir.resolve(folderPath);
+    try {
+      Files.createDirectories(path);
+      return path;
+    } catch (IOException e) {
+      System.out.println("Couldn't create folder " + path);
+    }
+    return null;
   }
 
   private static void changeFileContent(Path folderPath, String fileName, String content) {

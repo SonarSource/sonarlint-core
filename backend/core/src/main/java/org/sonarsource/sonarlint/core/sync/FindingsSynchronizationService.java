@@ -68,7 +68,7 @@ public class FindingsSynchronizationService {
 
   private void refreshServerIssues(SonarLintCancelMonitor cancelMonitor, Binding binding, String activeBranch,
     Set<Path> pathsInvolved, FilePathTranslation translation) {
-    var serverFileRelativePaths = pathsInvolved.stream().map(translation::serverToIdePath).collect(Collectors.toSet());
+    var serverFileRelativePaths = pathsInvolved.stream().map(translation::ideToServerPath).collect(Collectors.toSet());
     var downloadAllIssuesAtOnce = serverFileRelativePaths.size() > FETCH_ALL_ISSUES_THRESHOLD;
     var fetchTasks = new LinkedList<CompletableFuture<?>>();
     if (downloadAllIssuesAtOnce) {
