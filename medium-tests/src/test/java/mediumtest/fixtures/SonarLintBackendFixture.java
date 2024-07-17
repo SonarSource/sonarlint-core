@@ -784,7 +784,7 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public Map<String, String> getInferredAnalysisProperties(String configurationScopeId) throws ConfigScopeNotFoundException {
+    public Map<String, String> getInferredAnalysisProperties(String configurationScopeId, List<URI> filePathsToAnalyze) throws ConfigScopeNotFoundException {
       return inferredAnalysisPropertiesByScopeId.getOrDefault(configurationScopeId, new HashMap<>());
     }
 

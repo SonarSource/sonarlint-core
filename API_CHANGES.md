@@ -3,8 +3,8 @@
 ## Breaking changes
 
 * Add new `isUserDefined` parameter into `org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto`
-  * User defined files will be included in analysis. Non-user-defined files such as generated or library files will be excluded from
-    analysis.
+  * User-defined files will be included in the analysis. Non-user-defined files such as generated or library files will be excluded from
+    analysis when analysis is triggered by the backend. If the analysis was forced by the client, exclusions are not respected.
 
 ## New features
 
@@ -13,6 +13,22 @@
   * `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#getFileExclusions` to request file exclusions
 * Add a field to `org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto` to allow the backend to distinguish non-user-defined
   files to exclude from analysis
+
+### File events
+
+* Add the `didOpenFile` and `didCloseFile` methods to `org.sonarsource.sonarlint.core.rpc.protocol.backend.file.FileRpcService`.
+  * Clients are supposed to call these methods when a file is opened in the editor or closed.
+
+### Analysis
+
+* Add a new constructor in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams` to let clients provide if automatic analysis is enabled.
+* Add a new `didChangeAutomaticAnalysisSetting` method in `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService`
+  * Clients are expected to call it whenever users change the "enable automatic analysis" setting.
+* Add new methods to `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService` to force analysis
+  * `analyzeFullProject` forces analysis all files of the project that was provided to backend by method `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#listFiles`
+  * `analyzeFileList` forces analysis for the provided set of files
+  * `analyzeOpenFiles` forces analysis of all files that were reported as opened using `org.sonarsource.sonarlint.core.rpc.protocol.backend.file.FileRpcService#didOpenFile`
+  * `analyzeVCSChangedFiles` forces analysis of modified and not committed files
 
 # 10.3.2 
 
@@ -41,17 +57,6 @@
   * It allows clients to get parameters to create either SonarQube or SonarCloud connection
   * This field type is `Either<AssistSonarQubeConnection, AssistSonarCloudConnection>`
   * Common methods of both connection types are added to the `AssistCreatingConnectionParams` class to provide users simplicity
-
-### File events
-
-* Add the `didOpenFile` and `didCloseFile` methods to `org.sonarsource.sonarlint.core.rpc.protocol.backend.file.FileRpcService`.
-  * Clients are supposed to call these methods when a file is opened in the editor or closed.
-
-### Analysis
-
-* Add a new constructor in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams` to let clients provide if automatic analysis is enabled.
-* Add a new `didChangeAutomaticAnalysisSetting` method in `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService`
-  * Clients are expected to call it whenever users change the "enable automatic analysis" setting.
 
 ## Deprecation
 * Deprecate `isSonarCloud` parameter from `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams`
