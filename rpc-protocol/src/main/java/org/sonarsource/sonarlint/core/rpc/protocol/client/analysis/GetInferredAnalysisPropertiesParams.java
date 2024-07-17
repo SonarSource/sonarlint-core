@@ -19,14 +19,23 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.client.analysis;
 
+import java.net.URI;
+import java.util.List;
+
 public class GetInferredAnalysisPropertiesParams {
   private final String configurationScopeId;
+  private final List<URI> filesToAnalyze;
 
-  public GetInferredAnalysisPropertiesParams(String configurationScopeId) {
+  public GetInferredAnalysisPropertiesParams(String configurationScopeId, List<URI> filePathsToAnalyze) {
     this.configurationScopeId = configurationScopeId;
+    this.filesToAnalyze = filePathsToAnalyze;
   }
 
   public String getConfigurationScopeId() {
     return configurationScopeId;
+  }
+
+  public List<URI> getFilesToAnalyze() {
+    return filesToAnalyze;
   }
 }
