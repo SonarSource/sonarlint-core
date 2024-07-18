@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
@@ -87,9 +88,9 @@ class IssueTrackingMediumTests {
   private SonarLintTestRpcServer backend;
 
   @AfterEach
-  void stop() {
+  void stop() throws ExecutionException, InterruptedException {
     if (backend != null) {
-      backend.shutdown();
+      backend.shutdown().get();
     }
   }
 

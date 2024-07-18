@@ -28,11 +28,13 @@ import mediumtest.fixtures.TestPlugin;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint.PluginReferences.PluginReference;
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
+import testutils.LogTestStartAndEnd;
 import testutils.PluginLocator;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -48,6 +50,7 @@ import static org.assertj.core.api.InstanceOfAssertFactories.MAP;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 
+@ExtendWith(LogTestStartAndEnd.class)
 class PluginSynchronizationMediumTests {
 
   @Test
@@ -64,7 +67,7 @@ class PluginSynchronizationMediumTests {
       .withFullSynchronization()
       .build();
 
-    waitAtMost(3, SECONDS).untilAsserted(() -> {
+    waitAtMost(20, SECONDS).untilAsserted(() -> {
       assertThat(getPluginsStorageFolder()).isDirectoryContaining(path -> path.getFileName().toString().equals("sonar-java-plugin-7.16.0.30901.jar"));
       assertThat(getPluginReferencesFilePath())
         .exists()

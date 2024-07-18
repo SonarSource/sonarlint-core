@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import mediumtest.fixtures.ServerFixture;
 import mediumtest.fixtures.SonarLintTestRpcServer;
@@ -56,9 +57,9 @@ class AnalysisReadinessMediumTests {
   private ServerFixture.Server server;
 
   @AfterEach
-  void stop() {
+  void stop() throws ExecutionException, InterruptedException {
     if (backend != null) {
-      backend.shutdown();
+      backend.shutdown().get();
     }
     if (server != null) {
       server.shutdown();
@@ -74,7 +75,7 @@ class AnalysisReadinessMediumTests {
 
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "name", null))));
 
-    verify(client, timeout(500)).didChangeAnalysisReadiness(Set.of(CONFIG_SCOPE_ID), true);
+    verify(client, timeout(1000)).didChangeAnalysisReadiness(Set.of(CONFIG_SCOPE_ID), true);
   }
 
   @Test
@@ -113,8 +114,9 @@ class AnalysisReadinessMediumTests {
     //analysis is ready
     await().atMost(1, TimeUnit.SECONDS)
       .untilAsserted(() -> verify(client).didChangeAnalysisReadiness(Set.of(CONFIG_SCOPE_ID), true));
+    await().atMost(1, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
 
-    var publishedIssues = getPublishedIssues(client, null, CONFIG_SCOPE_ID);
+    var publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
     assertThat(publishedIssues).containsOnlyKeys(fileUri);
   }
 

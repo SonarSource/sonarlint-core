@@ -60,20 +60,27 @@ public class PluginsStorage {
   }
 
   public void store(ServerPlugin plugin, InputStream pluginBinary) {
-    try {
-      FileUtils.copyInputStreamToFile(pluginBinary, rootPath.resolve(plugin.getFilename()).toFile());
-      var reference = adapt(plugin);
-      rwLock.write(() -> {
-        var references = Files.exists(pluginReferencesFilePath) ? ProtobufFileUtil.readFile(pluginReferencesFilePath, Sonarlint.PluginReferences.parser())
+    rwLock.write(() -> {
+      try {
+        var pluginPath = rootPath.resolve(plugin.getFilename());
+        FileUtils.copyInputStreamToFile(pluginBinary, pluginPath.toFile());
+        LOG.debug("Storing plugin to {} with file size {} bytes", pluginPath.toAbsolutePath(), Files.size(pluginPath));
+        var pluginFile = pluginPath.toFile();
+        LOG.debug("Plugin file created: {}", pluginFile.exists());
+        LOG.debug("Written plugin file size {} bytes", Files.size(pluginPath));
+        var reference = adapt(plugin);
+        var references = Files.exists(pluginReferencesFilePath)
+          ? ProtobufFileUtil.readFile(pluginReferencesFilePath, Sonarlint.PluginReferences.parser())
           : Sonarlint.PluginReferences.newBuilder().build();
         var currentReferences = Sonarlint.PluginReferences.newBuilder(references);
         currentReferences.putPluginsByKey(plugin.getKey(), reference);
         ProtobufFileUtil.writeToFile(currentReferences.build(), pluginReferencesFilePath);
-      });
-    } catch (IOException e) {
-      // XXX should we stop the whole sync ? just continue and log ?
-      throw new StorageException("Cannot save plugin " + plugin.getFilename() + " in " + rootPath, e);
-    }
+        LOG.debug("Plugin file {} created: {}", pluginReferencesFilePath, pluginReferencesFilePath.toFile().exists());
+      } catch (IOException e) {
+        // XXX should we stop the whole sync ? just continue and log ?
+        throw new StorageException("Cannot save plugin " + plugin.getFilename() + " in " + rootPath, e);
+      }
+    });
   }
 
   public List<StoredPlugin> getStoredPlugins() {
@@ -109,8 +116,12 @@ public class PluginsStorage {
   }
 
   public void cleanUp() {
-    getUnknownFiles()
-      .forEach(FileUtils::deleteQuietly);
+    rwLock.write(() -> {
+      var unknownFiles = getUnknownFiles();
+      LOG.debug("Cleanup of the plugin storage in folder {}, {} unknown files", rootPath, unknownFiles.size());
+      unknownFiles.forEach(f -> LOG.debug(f.getAbsolutePath()));
+      unknownFiles.forEach(FileUtils::deleteQuietly);
+    });
   }
 
   private List<File> getUnknownFiles() {
@@ -118,11 +129,17 @@ public class PluginsStorage {
       return Collections.emptyList();
     }
     var knownPluginsPaths = getStoredPlugins().stream().map(StoredPlugin::getJarPath).collect(Collectors.toSet());
+    LOG.debug("Known plugin paths: {}", knownPluginsPaths);
     try (Stream<Path> pathsInDir = Files.list(rootPath)) {
-      return pathsInDir.filter(p -> !p.equals(pluginReferencesFilePath))
+      var paths = pathsInDir.collect(Collectors.toList());
+      LOG.debug("Paths in dir: {}", paths);
+      var unknownFiles = paths.stream()
+        .filter(p -> !p.equals(pluginReferencesFilePath))
         .filter(p -> !knownPluginsPaths.contains(p))
         .map(Path::toFile)
         .collect(Collectors.toList());
+      LOG.debug("Unknown files: {}", unknownFiles);
+      return unknownFiles;
     } catch (Exception e) {
       LOG.error("Cannot list files in '{}'", rootPath, e);
       return Collections.emptyList();
