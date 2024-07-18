@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import mediumtest.fixtures.ServerFixture;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
+import org.checkerframework.checker.units.qual.C;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
