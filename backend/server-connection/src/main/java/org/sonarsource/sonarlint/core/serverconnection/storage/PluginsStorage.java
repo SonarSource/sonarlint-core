@@ -76,6 +76,8 @@ public class PluginsStorage {
     } catch (IOException e) {
       // XXX should we stop the whole sync ? just continue and log ?
       throw new StorageException("Cannot save plugin " + plugin.getFilename() + " in " + rootPath, e);
+    } catch (Exception e) {
+      LOG.debug("Cannot save plugin " + plugin.getFilename() + " in " + rootPath, e);
     }
   }
 
