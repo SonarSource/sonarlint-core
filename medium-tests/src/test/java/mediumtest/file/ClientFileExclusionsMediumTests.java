@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
@@ -56,9 +57,9 @@ class ClientFileExclusionsMediumTests {
   private SonarLintTestRpcServer backend;
 
   @AfterEach
-  void stop() {
+  void stop() throws ExecutionException, InterruptedException {
     if (backend != null) {
-      backend.shutdown();
+      backend.shutdown().get();
     }
   }
 
@@ -96,7 +97,7 @@ class ClientFileExclusionsMediumTests {
 
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
 
-    var publishedIssues = getPublishedIssues(client, null, CONFIG_SCOPE_ID);
+    var publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
     assertThat(publishedIssues)
       .containsOnlyKeys(fileUri)
       .hasEntrySatisfying(fileUri, issues -> {
@@ -139,7 +140,7 @@ class ClientFileExclusionsMediumTests {
 
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
 
-    var publishedIssues = getPublishedIssues(client, null, CONFIG_SCOPE_ID);
+    var publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
     assertThat(publishedIssues)
       .containsOnlyKeys(fileUri)
       .hasEntrySatisfying(fileUri, issues -> {
@@ -190,7 +191,7 @@ class ClientFileExclusionsMediumTests {
 
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
 
-    var publishedIssues = getPublishedIssues(client, null, CONFIG_SCOPE_ID);
+    var publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
     assertThat(publishedIssues).isNotEmpty();
   }
 

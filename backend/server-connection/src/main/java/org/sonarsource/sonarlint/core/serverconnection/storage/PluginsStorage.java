@@ -61,7 +61,9 @@ public class PluginsStorage {
 
   public void store(ServerPlugin plugin, InputStream pluginBinary) {
     try {
-      FileUtils.copyInputStreamToFile(pluginBinary, rootPath.resolve(plugin.getFilename()).toFile());
+      var pluginPath = rootPath.resolve(plugin.getFilename());
+      createPluginDirectoryIfNeeded();
+      writePluginFile(pluginBinary, pluginPath, 1);
       var reference = adapt(plugin);
       rwLock.write(() -> {
         var references = Files.exists(pluginReferencesFilePath) ? ProtobufFileUtil.readFile(pluginReferencesFilePath, Sonarlint.PluginReferences.parser())
@@ -73,6 +75,21 @@ public class PluginsStorage {
     } catch (IOException e) {
       // XXX should we stop the whole sync ? just continue and log ?
       throw new StorageException("Cannot save plugin " + plugin.getFilename() + " in " + rootPath, e);
+    }
+  }
+
+  private static void writePluginFile(InputStream pluginBinary, Path pluginPath, int attempts) throws IOException {
+    try (var out = Files.newOutputStream(pluginPath)) {
+      out.write(pluginBinary.readAllBytes());
+      var pluginFileCanRead = pluginPath.toFile().canRead();
+      LOG.debug("Stored plugin to {}", pluginPath.toAbsolutePath());
+      LOG.debug("Plugin file readable: {}", pluginFileCanRead);
+      if (pluginFileCanRead && attempts < 5) {
+        LOG.debug("Retrying plugin file write. Attempt {}", attempts);
+        writePluginFile(pluginBinary, pluginPath, attempts + 1);
+      }
+    } catch (IOException e) {
+      throw new StorageException("Cannot save plugin " + pluginPath.toAbsolutePath() + " in " + pluginPath, e);
     }
   }
 
@@ -131,7 +148,7 @@ public class PluginsStorage {
 
   public void storeNoPlugins() {
     if (!Files.exists(pluginReferencesFilePath)) {
-      createPluginDirectory();
+      createPluginDirectoryIfNeeded();
       rwLock.write(() -> {
         var references = Sonarlint.PluginReferences.newBuilder().build();
         ProtobufFileUtil.writeToFile(references, pluginReferencesFilePath);
@@ -139,9 +156,12 @@ public class PluginsStorage {
     }
   }
 
-  private void createPluginDirectory() {
+  private void createPluginDirectoryIfNeeded() {
+    if (Files.exists(rootPath)) {
+      return;
+    }
     try {
-      Files.createDirectories(pluginReferencesFilePath.getParent());
+      Files.createDirectories(rootPath);
     } catch (IOException e) {
       throw new StorageException(String.format("Cannot create plugin file directory: %s", rootPath), e);
     }

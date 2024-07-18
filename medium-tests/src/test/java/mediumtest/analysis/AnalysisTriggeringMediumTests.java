@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
@@ -56,9 +57,9 @@ class AnalysisTriggeringMediumTests {
   private SonarLintTestRpcServer backend;
 
   @AfterEach
-  void stop() {
+  void stop() throws ExecutionException, InterruptedException {
     if (backend != null) {
-      backend.shutdown();
+      backend.shutdown().get();
     }
   }
 
@@ -83,7 +84,7 @@ class AnalysisTriggeringMediumTests {
 
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
 
-    var publishedIssues = getPublishedIssues(client, null, CONFIG_SCOPE_ID);
+    var publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
     assertThat(publishedIssues)
       .containsOnlyKeys(fileUri)
       .hasEntrySatisfying(fileUri, issues -> {
@@ -105,7 +106,7 @@ class AnalysisTriggeringMediumTests {
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .build(client);
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
-    var publishedIssues = getPublishedIssues(client, null, CONFIG_SCOPE_ID);
+    var publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
     assertThat(publishedIssues)
       .containsOnlyKeys(fileUri)
       .hasEntrySatisfying(fileUri, issues -> assertThat(issues).isEmpty());
@@ -121,7 +122,7 @@ class AnalysisTriggeringMediumTests {
           + "  <version>${pom.version}</version>\n"
           + "</project>", null, true))));
 
-    publishedIssues = getPublishedIssues(client, null, CONFIG_SCOPE_ID);
+    publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
     assertThat(publishedIssues)
       .containsOnlyKeys(fileUri)
       .hasEntrySatisfying(fileUri, issues -> assertThat(issues)
@@ -141,7 +142,7 @@ class AnalysisTriggeringMediumTests {
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .build(client);
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
-    var publishedIssues = getPublishedIssues(client, null, CONFIG_SCOPE_ID);
+    var publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
     assertThat(publishedIssues)
       .containsOnlyKeys(fileUri)
       .hasEntrySatisfying(fileUri, issues -> assertThat(issues).isEmpty());
@@ -183,7 +184,7 @@ class AnalysisTriggeringMediumTests {
 
     backend.getAnalysisService().didChangeAutomaticAnalysisSetting(new DidChangeAutomaticAnalysisSettingParams(true));
 
-    var publishedIssues = getPublishedIssues(client, null, CONFIG_SCOPE_ID);
+    var publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
     assertThat(publishedIssues)
       .containsOnlyKeys(fileUri)
       .hasEntrySatisfying(fileUri, issues -> assertThat(issues)
@@ -208,7 +209,7 @@ class AnalysisTriggeringMediumTests {
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .build(client);
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
-    var publishedIssues = getPublishedIssues(client, null, CONFIG_SCOPE_ID);
+    var publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
     assertThat(publishedIssues)
       .containsOnlyKeys(fileUri)
       .hasEntrySatisfying(fileUri, issues -> assertThat(issues).isEmpty());
@@ -216,7 +217,7 @@ class AnalysisTriggeringMediumTests {
 
     backend.getRulesService().updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("xml:S3420", new StandaloneRuleConfigDto(true, Map.of()))));
 
-    publishedIssues = getPublishedIssues(client, null, CONFIG_SCOPE_ID);
+    publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
     assertThat(publishedIssues)
       .containsOnlyKeys(fileUri)
       .hasEntrySatisfying(fileUri, issues -> assertThat(issues)
@@ -242,7 +243,7 @@ class AnalysisTriggeringMediumTests {
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .build(client);
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
-    var publishedIssues = getPublishedIssues(client, null, CONFIG_SCOPE_ID);
+    var publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
     assertThat(publishedIssues)
       .containsOnlyKeys(fileUri)
       .hasEntrySatisfying(fileUri, issues -> assertThat(issues).extracting(RaisedFindingDto::getRuleKey).containsOnly("xml:S3421"));
@@ -254,7 +255,7 @@ class AnalysisTriggeringMediumTests {
     verify(client, never()).log(any());
 
     //issues related to the disabled rule has been removed and reported
-    publishedIssues = getPublishedIssues(client, null, CONFIG_SCOPE_ID);
+    publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
     assertThat(publishedIssues)
       .containsOnlyKeys(fileUri)
       .hasEntrySatisfying(fileUri, issues -> assertThat(issues).isEmpty());

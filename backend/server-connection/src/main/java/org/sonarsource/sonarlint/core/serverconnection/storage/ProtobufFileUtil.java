@@ -39,8 +39,16 @@ public class ProtobufFileUtil {
   }
 
   public static void writeToFile(Message message, Path toFile) {
+    if (!toFile.getParent().toFile().exists()) {
+      try {
+        Files.createDirectories(toFile.getParent());
+      } catch (IOException e) {
+        throw new StorageException("Unable to write protocol buffer data to file " + toFile, e);
+      }
+    }
     try (var out = Files.newOutputStream(toFile)) {
       message.writeTo(out);
+      out.flush();
     } catch (IOException e) {
       throw new StorageException("Unable to write protocol buffer data to file " + toFile, e);
     }

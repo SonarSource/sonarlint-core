@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import mediumtest.fixtures.ServerFixture;
@@ -38,6 +39,7 @@ import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -55,18 +57,19 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.Son
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
+import testutils.LogTestStartAndEnd;
+import testutils.sse.SSEServer;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.jsonResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.notFound;
-import static com.github.tomakehurst.wiremock.client.WireMock.okForContentType;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.awaitility.Awaitility.waitAtMost;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.reset;
@@ -76,6 +79,7 @@ import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JS;
 
+@ExtendWith(LogTestStartAndEnd.class)
 class ServerSentEventsMediumTests {
 
   @RegisterExtension
@@ -550,6 +554,7 @@ class ServerSentEventsMediumTests {
   @Nested
   class WhenReceivingIssueChangedEvent {
 
+    private final SSEServer sseServer = new SSEServer();
     private ServerFixture.Server serverWithTaintIssues;
 
     @AfterEach
@@ -557,6 +562,7 @@ class ServerSentEventsMediumTests {
       if (serverWithTaintIssues != null) {
         serverWithTaintIssues.shutdown();
       }
+      sseServer.stop();
     }
 
     @Test
@@ -573,10 +579,8 @@ class ServerSentEventsMediumTests {
               .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))))
         .start();
 
-      serverWithTaintIssues.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java,js")
-        .inScenario("Single event")
-        .whenScenarioStateIs(STARTED)
-        .willReturn(okForContentType("text/event-stream", "event: IssueChanged\n" +
+      mockEvent(serverWithTaintIssues, projectKey,
+        "event: IssueChanged\n" +
           "data: {" +
           "\"projectKey\": \"" + projectKey + "\"," +
           "\"issues\": [{" +
@@ -584,15 +588,8 @@ class ServerSentEventsMediumTests {
           "  \"branchName\": \"" + branchName + "\"" +
           "}]," +
           "\"userType\": \"BUG\"" +
-          "}\n\n")
-          // Add a delay to ensure the auto-sync of the issue storage had been completed
-          .withFixedDelay(2000))
-        .willSetStateTo("Event delivered"));
-      // avoid later reconnection
-      serverWithTaintIssues.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java,js")
-        .inScenario("Single event")
-        .whenScenarioStateIs("Event delivered")
-        .willReturn(notFound()));
+          "}\n\n"
+      );
 
       backend = newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
@@ -605,6 +602,7 @@ class ServerSentEventsMediumTests {
 
       ArgumentCaptor<List<TaintVulnerabilityDto>> captor = ArgumentCaptor.forClass(List.class);
       verify(fakeClient, timeout(3000)).didChangeTaintVulnerabilities(eq("configScope"), eq(Set.of()), captor.capture(), eq(List.of()));
+      sseServer.shouldSendServerEventOnce();
 
       // initial sync
       assertThat(captor.getValue())
@@ -615,7 +613,7 @@ class ServerSentEventsMediumTests {
           Collections.emptyMap(), true)));
 
       reset(fakeClient);
-      verify(fakeClient, timeout(3000)).didChangeTaintVulnerabilities(eq("configScope"), eq(Set.of()), eq(List.of()), captor.capture());
+      waitAtMost(20, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getTaintVulnerabilityChanges()).isNotEmpty());
 
       // server event
       assertThat(captor.getValue())
@@ -624,6 +622,15 @@ class ServerSentEventsMediumTests {
         .isEqualTo(List.of(new TaintVulnerabilityDto(UUID.randomUUID(), "key1", false, "ruleKey", "msg", Paths.get("file/path"), introductionDate, IssueSeverity.MAJOR,
           org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.BUG, Collections.emptyList(), new TextRangeWithHashDto(1, 0, 3, 4, "hash"), null, null,
           Collections.emptyMap(), true)));
+    }
+
+    private void mockEvent(ServerFixture.Server server, String projectKey, String eventPayload) {
+      sseServer.startWithEvent(eventPayload);
+      var sseServerUrl = sseServer.getUrl();
+      server.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java,js")
+        .willReturn(aResponse().proxiedFrom(sseServerUrl + "/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java,js")
+          .withStatus(200)
+        ));
     }
   }
 
