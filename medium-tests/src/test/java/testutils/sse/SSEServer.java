@@ -28,6 +28,7 @@ public class SSEServer {
   public static final int DEFAULT_PORT = 54321;
   private Tomcat tomcat;
   private SSEServlet sseServlet;
+  private boolean started = false;
 
   public void startWithEvent(String payload) {
     try {
@@ -41,6 +42,7 @@ public class SSEServer {
       // needed to start the endpoint
       tomcat.getConnector();
       tomcat.start();
+      started = true;
     } catch (LifecycleException e) {
       throw new IllegalStateException(e);
     }
@@ -50,9 +52,14 @@ public class SSEServer {
     try {
       tomcat.stop();
       tomcat.destroy();
+      started = false;
     } catch (LifecycleException e) {
       throw new IllegalStateException(e);
     }
+  }
+
+  public boolean isStarted() {
+    return started;
   }
 
   public String getUrl() {

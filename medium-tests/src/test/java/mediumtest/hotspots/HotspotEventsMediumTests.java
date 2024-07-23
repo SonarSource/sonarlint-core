@@ -19,6 +19,7 @@
  */
 package mediumtest.hotspots;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,6 +47,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
+import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 import testutils.LogTestStartAndEnd;
 import testutils.sse.SSEServer;
 
@@ -76,11 +79,15 @@ class HotspotEventsMediumTests {
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
+    if (backend != null) {
+      backend.shutdown().get();
+    }
     if (serverWithHotspots != null) {
       serverWithHotspots.shutdown();
     }
-    sseServer.stop();
+    if (sseServer.isStarted()) {
+      sseServer.stop();
+    }
   }
 
   @Nested
@@ -381,6 +388,20 @@ class HotspotEventsMediumTests {
       var raisedHotspot = raisedHotspots.get(0);
       assertThat(raisedHotspot.getServerKey()).isEqualTo(serverHotspotKey);
       assertThat(raisedHotspot.getStatus()).isEqualTo(HotspotStatus.SAFE);
+    }
+
+    @Test
+    void should_test_file_creation(@TempDir Path tempDir) throws IOException {
+      var pluginPath = tempDir.resolve("file.zip");
+      ProtobufFileUtil.writeToFile(Sonarlint.PluginReferences.newBuilder().build(), pluginPath);
+
+      var pluginFile = new File(pluginPath.toUri());
+      var canonicalPath = pluginFile.getCanonicalPath();
+      var pluginFileCanRead = pluginFile.canRead();
+
+      assertThat(pluginFileCanRead).isTrue();
+      assertThat(pluginFile).exists();
+      assertThat(canonicalPath).isEqualTo(pluginFile.getCanonicalPath());
     }
   }
 
