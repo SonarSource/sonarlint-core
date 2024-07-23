@@ -53,14 +53,16 @@ public class EmbeddedServer {
   private final GeneratedUserTokenHandler generatedUserTokenHandler;
   private final ShowHotspotRequestHandler showHotspotRequestHandler;
   private final ShowIssueRequestHandler showIssueRequestHandler;
+  private final ShowFixSuggestionRequestHandler showFixSuggestionRequestHandler;
 
   public EmbeddedServer(InitializeParams params, StatusRequestHandler statusRequestHandler, GeneratedUserTokenHandler generatedUserTokenHandler,
-    ShowHotspotRequestHandler showHotspotRequestHandler, ShowIssueRequestHandler showIssueRequestHandler) {
+    ShowHotspotRequestHandler showHotspotRequestHandler, ShowIssueRequestHandler showIssueRequestHandler, ShowFixSuggestionRequestHandler showFixSuggestionRequestHandler) {
     this.enabled = params.getFeatureFlags().shouldManageLocalServer();
     this.statusRequestHandler = statusRequestHandler;
     this.generatedUserTokenHandler = generatedUserTokenHandler;
     this.showHotspotRequestHandler = showHotspotRequestHandler;
     this.showIssueRequestHandler = showIssueRequestHandler;
+    this.showFixSuggestionRequestHandler = showFixSuggestionRequestHandler;
   }
 
   @PostConstruct
@@ -90,6 +92,7 @@ public class EmbeddedServer {
           .register("/sonarlint/api/token", generatedUserTokenHandler)
           .register("/sonarlint/api/hotspots/show", showHotspotRequestHandler)
           .register("/sonarlint/api/issues/show", showIssueRequestHandler)
+          .register("/sonarlint/api/fix/show", showFixSuggestionRequestHandler)
           .create();
         startedServer.start();
         port = triedPort;

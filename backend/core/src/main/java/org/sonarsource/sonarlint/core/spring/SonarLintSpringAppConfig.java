@@ -54,6 +54,7 @@ import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRep
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.embedded.server.GeneratedUserTokenHandler;
 import org.sonarsource.sonarlint.core.embedded.server.RequestHandlerBindingAssistant;
+import org.sonarsource.sonarlint.core.embedded.server.ShowFixSuggestionRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.ShowHotspotRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.ShowIssueRequestHandler;
 import org.sonarsource.sonarlint.core.embedded.server.StatusRequestHandler;
@@ -145,6 +146,7 @@ import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_S
   AwaitingUserTokenFutureRepository.class,
   ShowHotspotRequestHandler.class,
   ShowIssueRequestHandler.class,
+  ShowFixSuggestionRequestHandler.class,
   BindingSuggestionProvider.class,
   ConnectionSuggestionProvider.class,
   BindingClueProvider.class,
