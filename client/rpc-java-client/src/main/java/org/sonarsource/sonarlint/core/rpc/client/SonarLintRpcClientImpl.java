@@ -220,6 +220,11 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
   }
 
   @Override
+  public void showFixSuggestion() {
+    notify(delegate::showFixSuggestion);
+  }
+
+  @Override
   public CompletableFuture<AssistCreatingConnectionResponse> assistCreatingConnection(AssistCreatingConnectionParams params) {
     return requestAsync(cancelChecker -> delegate.assistCreatingConnection(params, new SonarLintCancelChecker(cancelChecker)));
   }

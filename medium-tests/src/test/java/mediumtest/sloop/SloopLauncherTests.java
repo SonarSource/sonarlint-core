@@ -223,6 +223,11 @@ class SloopLauncherTests {
     }
 
     @Override
+    public void showFixSuggestion() {
+
+    }
+
+    @Override
     public AssistCreatingConnectionResponse assistCreatingConnection(AssistCreatingConnectionParams params, SonarLintCancelChecker cancelChecker) throws CancellationException {
       throw new CancellationException();
     }

@@ -143,7 +143,7 @@ class ShowIssueRequestHandlerTests {
     var telemetryService = mock(TelemetryService.class);
     var showIssueRequestHandler = getShowIssueRequestHandler(telemetryService, "comp", "snippet");
 
-    showIssueRequestHandler.handle(request,response, context);
+    showIssueRequestHandler.handle(request, response, context);
 
     verify(telemetryService).showIssueRequestReceived();
     verifyNoMoreInteractions(telemetryService);
@@ -151,8 +151,8 @@ class ShowIssueRequestHandlerTests {
 
   @Test
   void should_extract_query_from_sq_request_without_token() throws ProtocolException {
-    SonarCloudActiveEnvironment sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
-    ShowIssueRequestHandler showIssueRequestHandler = new ShowIssueRequestHandler(null, null, null, null, null, sonarCloudActiveEnvironment);
+    var sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
+    var showIssueRequestHandler = new ShowIssueRequestHandler(null, null, null, null, null, sonarCloudActiveEnvironment);
     var issueQuery = showIssueRequestHandler.extractQuery(new BasicClassicHttpRequest("GET", "/sonarlint/api/issues/show" +
       "?server=https%3A%2F%2Fnext.sonarqube.com%2Fsonarqube" +
       "&project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
@@ -168,8 +168,8 @@ class ShowIssueRequestHandlerTests {
 
   @Test
   void should_extract_query_from_sq_request_with_token() throws ProtocolException {
-    SonarCloudActiveEnvironment sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
-    ShowIssueRequestHandler showIssueRequestHandler = new ShowIssueRequestHandler(null, null, null, null, null, sonarCloudActiveEnvironment);
+    var sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
+    var showIssueRequestHandler = new ShowIssueRequestHandler(null, null, null, null, null, sonarCloudActiveEnvironment);
     var issueQuery = showIssueRequestHandler.extractQuery(new BasicClassicHttpRequest("GET", "/sonarlint/api/issues/show" +
       "?server=https%3A%2F%2Fnext.sonarqube.com%2Fsonarqube" +
       "&project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
@@ -186,9 +186,9 @@ class ShowIssueRequestHandlerTests {
 
   @Test
   void should_extract_query_from_sc_request_without_token() throws ProtocolException {
-    SonarCloudActiveEnvironment sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
-    ShowIssueRequestHandler showIssueRequestHandler = new ShowIssueRequestHandler(null, null, null, null, null, sonarCloudActiveEnvironment);
-    BasicClassicHttpRequest request = new BasicClassicHttpRequest("GET", "/sonarlint/api/issues/show" +
+    var sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
+    var showIssueRequestHandler = new ShowIssueRequestHandler(null, null, null, null, null, sonarCloudActiveEnvironment);
+    var request = new BasicClassicHttpRequest("GET", "/sonarlint/api/issues/show" +
       "?project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
       "&issue=AX2VL6pgAvx3iwyNtLyr" +
       "&organizationKey=sample-organization");
@@ -204,9 +204,9 @@ class ShowIssueRequestHandlerTests {
 
   @Test
   void should_extract_query_from_sc_request_with_token() throws ProtocolException {
-    SonarCloudActiveEnvironment sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
-    ShowIssueRequestHandler showIssueRequestHandler = new ShowIssueRequestHandler(null, null, null, null, null, sonarCloudActiveEnvironment);
-    BasicClassicHttpRequest request = new BasicClassicHttpRequest("GET", "/sonarlint/api/issues/show" +
+    var sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
+    var showIssueRequestHandler = new ShowIssueRequestHandler(null, null, null, null, null, sonarCloudActiveEnvironment);
+    var request = new BasicClassicHttpRequest("GET", "/sonarlint/api/issues/show" +
       "?project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
       "&issue=AX2VL6pgAvx3iwyNtLyr&tokenName=abc" +
       "&organizationKey=sample-organization" +
