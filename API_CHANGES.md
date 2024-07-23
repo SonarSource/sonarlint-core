@@ -1,3 +1,10 @@
+# 10.4
+
+## Breaking changes
+
+* Introduce a new parameter in the constructor of `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto`: `shouldOpenFixSuggestion`.
+  * This flag lets clients completely disable the opening a fix suggestion in the IDE, which can be useful if the feature is not yet available in the client.
+
 # 10.3.2 
 
 ## Breaking changes
