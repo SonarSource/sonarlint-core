@@ -35,11 +35,11 @@ public class FeatureFlagsDto {
   private final boolean enableDataflowBugDetection;
   private final boolean shouldManageFullSynchronization;
   private final boolean enableTelemetry;
-  private final boolean shouldOpenFixSuggestion;
+  private final boolean canOpenFixSuggestion;
 
   public FeatureFlagsDto(boolean shouldManageSmartNotifications, boolean taintVulnerabilitiesEnabled, boolean shouldSynchronizeProjects, boolean shouldManageLocalServer,
     boolean enableSecurityHotspots, boolean shouldManageServerSentEvents, boolean enableDataflowBugDetection, boolean shouldManageFullSynchronization, boolean enableTelemetry,
-    boolean shouldOpenFixSuggestion) {
+    boolean canOpenFixSuggestion) {
     this.shouldManageSmartNotifications = shouldManageSmartNotifications;
     this.taintVulnerabilitiesEnabled = taintVulnerabilitiesEnabled;
     this.shouldSynchronizeProjects = shouldSynchronizeProjects;
@@ -49,7 +49,7 @@ public class FeatureFlagsDto {
     this.enableDataflowBugDetection = enableDataflowBugDetection;
     this.shouldManageFullSynchronization = shouldManageFullSynchronization;
     this.enableTelemetry = enableTelemetry;
-    this.shouldOpenFixSuggestion = shouldOpenFixSuggestion;
+    this.canOpenFixSuggestion = canOpenFixSuggestion;
   }
 
   public boolean shouldManageSmartNotifications() {
@@ -93,8 +93,8 @@ public class FeatureFlagsDto {
     return enableTelemetry;
   }
 
-  public boolean shouldOpenFixSuggestion() {
-    return shouldOpenFixSuggestion;
+  public boolean canOpenFixSuggestion() {
+    return canOpenFixSuggestion;
   }
 
 }

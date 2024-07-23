@@ -135,7 +135,7 @@ public class SonarLintBackendFixture {
     private boolean shouldManageFullSynchronization;
     private boolean taintVulnerabilitiesEnabled = true;
     private boolean telemetryEnabled;
-    private boolean shouldOpenFixSuggestion;
+    private boolean canOpenFixSuggestion;
     private boolean manageServerSentEvents;
     private String userAgent = USER_AGENT_FOR_TESTS;
     private String clientName = "SonarLint Backend Fixture";
@@ -424,7 +424,7 @@ public class SonarLintBackendFixture {
     }
 
     public SonarLintBackendBuilder withOpenFixSuggestion() {
-      this.shouldOpenFixSuggestion = true;
+      this.canOpenFixSuggestion = true;
       return this;
     }
 
@@ -443,7 +443,7 @@ public class SonarLintBackendFixture {
           "1.2.3", "4.5.6", emptyMap());
         var clientInfo = new ClientConstantInfoDto(clientName, userAgent, 0);
         var featureFlags = new FeatureFlagsDto(manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, startEmbeddedServer, areSecurityHotspotsEnabled,
-          manageServerSentEvents, enableDataflowBugDetection, shouldManageFullSynchronization, telemetryEnabled, shouldOpenFixSuggestion);
+          manageServerSentEvents, enableDataflowBugDetection, shouldManageFullSynchronization, telemetryEnabled, canOpenFixSuggestion);
 
         SonarCloudAlternativeEnvironmentDto sonarCloudAlternativeEnvironment = null;
         if (sonarCloudUrl != null || sonarCloudWebSocketsUrl != null) {
