@@ -133,6 +133,12 @@ public interface SonarLintRpcClient {
   void showIssue(ShowIssueParams params);
 
   /**
+   * Sends a notification to the client to show a fix suggestion for a specific issue in the IDE
+   */
+  @JsonNotification
+  void showFixSuggestion();
+
+  /**
    * Can be triggered by the backend when trying to handle a feature that needs a connection, e.g. open hotspot.
    *
    * @return the response to this connection creation assist request, that contains the new connection. The client can cancel the request if the user stops the creation process.

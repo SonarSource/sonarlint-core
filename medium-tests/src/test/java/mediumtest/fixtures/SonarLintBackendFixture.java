@@ -631,6 +631,10 @@ public class SonarLintBackendFixture {
     }
 
     @Override
+    public void showFixSuggestion() {
+    }
+
+    @Override
     public AssistCreatingConnectionResponse assistCreatingConnection(AssistCreatingConnectionParams params, SonarLintCancelChecker cancelChecker) {
       throw new CancellationException("Not stubbed in medium tests");
     }

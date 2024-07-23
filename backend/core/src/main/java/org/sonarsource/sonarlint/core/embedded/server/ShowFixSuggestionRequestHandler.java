@@ -20,11 +20,13 @@
 package org.sonarsource.sonarlint.core.embedded.server;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.gson.Gson;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -36,17 +38,21 @@ import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.HttpStatus;
 import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.http.NameValuePair;
+import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.ProtocolException;
 import org.apache.hc.core5.http.io.HttpRequestHandler;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.net.URIBuilder;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarCloudConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarQubeConnectionParams;
@@ -68,20 +74,22 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 @Named
 @Singleton
-public class ShowIssueRequestHandler implements HttpRequestHandler {
+public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
+
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final SonarLintRpcClient client;
-  private final ServerApiProvider serverApiProvider;
   private final TelemetryService telemetryService;
+  private final boolean canOpenFixSuggestion;
   private final RequestHandlerBindingAssistant requestHandlerBindingAssistant;
   private final PathTranslationService pathTranslationService;
   private final String sonarCloudUrl;
 
-  public ShowIssueRequestHandler(SonarLintRpcClient client, ServerApiProvider serverApiProvider, TelemetryService telemetryService,
+  public ShowFixSuggestionRequestHandler(SonarLintRpcClient client, TelemetryService telemetryService, InitializeParams params,
     RequestHandlerBindingAssistant requestHandlerBindingAssistant, PathTranslationService pathTranslationService, SonarCloudActiveEnvironment sonarCloudActiveEnvironment) {
     this.client = client;
-    this.serverApiProvider = serverApiProvider;
     this.telemetryService = telemetryService;
+    this.canOpenFixSuggestion = params.getFeatureFlags().canOpenFixSuggestion();
     this.requestHandlerBindingAssistant = requestHandlerBindingAssistant;
     this.pathTranslationService = pathTranslationService;
     this.sonarCloudUrl = sonarCloudActiveEnvironment.getUri().toString();
@@ -89,22 +97,21 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
 
   @Override
   public void handle(ClassicHttpRequest request, ClassicHttpResponse response, HttpContext context) throws HttpException, IOException {
-    var showIssueQuery = extractQuery(request);
-    if (!Method.GET.isSame(request.getMethod()) || !showIssueQuery.isValid()) {
+    var showFixSuggestionQuery = extractQuery(request);
+    if (canOpenFixSuggestion && (!Method.POST.isSame(request.getMethod()) || !showFixSuggestionQuery.isValid())) {
       response.setCode(HttpStatus.SC_BAD_REQUEST);
       return;
     }
-    telemetryService.showIssueRequestReceived();
+    // TODO: Telemetry
 
-    AssistCreatingConnectionParams serverConnectionParams = createAssistServerConnectionParams(showIssueQuery);
+    AssistCreatingConnectionParams serverConnectionParams = createAssistServerConnectionParams(showFixSuggestionQuery);
 
     requestHandlerBindingAssistant.assistConnectionAndBindingIfNeededAsync(
       serverConnectionParams,
-      showIssueQuery.projectKey,
+      showFixSuggestionQuery.projectKey,
       (connectionId, configScopeId, cancelMonitor) -> {
         if (configScopeId != null) {
-          showIssueForScope(connectionId, configScopeId, showIssueQuery.issueKey, showIssueQuery.projectKey, showIssueQuery.branch,
-            showIssueQuery.pullRequest, cancelMonitor);
+          showFixSuggestionForScope(connectionId, configScopeId, showFixSuggestionQuery.issueKey, showFixSuggestionQuery.projectKey, showFixSuggestionQuery.branch, cancelMonitor);
         }
       });
 
@@ -112,7 +119,7 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
     response.setEntity(new StringEntity("OK"));
   }
 
-  private static AssistCreatingConnectionParams createAssistServerConnectionParams(ShowIssueQuery query) {
+  private static AssistCreatingConnectionParams createAssistServerConnectionParams(ShowFixSuggestionQuery query) {
     String tokenName = query.getTokenName();
     String tokenValue = query.getTokenValue();
     return query.isSonarCloud ?
@@ -127,66 +134,13 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
       .orElse(false);
   }
 
-  private void showIssueForScope(String connectionId, String configScopeId, String issueKey, String projectKey,
-    String branch, @Nullable String pullRequest, SonarLintCancelMonitor cancelMonitor) {
-    var issueDetailsOpt = tryFetchIssue(connectionId, issueKey, projectKey, branch, pullRequest, cancelMonitor);
-    if (issueDetailsOpt.isPresent()) {
-      pathTranslationService.getOrComputePathTranslation(configScopeId)
-        .ifPresent(translation -> client.showIssue(getShowIssueParams(issueDetailsOpt.get(), connectionId, configScopeId, branch, pullRequest, translation, cancelMonitor)));
-    } else {
-      client.showMessage(new ShowMessageParams(MessageType.ERROR, "Could not show the issue. See logs for more details"));
-    }
+  private void showFixSuggestionForScope(String connectionId, String configScopeId, String issueKey, String projectKey,
+    String branch, SonarLintCancelMonitor cancelMonitor) {
+    pathTranslationService.getOrComputePathTranslation(configScopeId).ifPresent(translation -> client.showFixSuggestion());
   }
 
   @VisibleForTesting
-  ShowIssueParams getShowIssueParams(IssueApi.ServerIssueDetails issueDetails, String connectionId,
-    String configScopeId, String branch, @Nullable String pullRequest, FilePathTranslation translation, SonarLintCancelMonitor cancelMonitor) {
-    var flowLocations = issueDetails.flowList.stream().map(flow -> {
-      var locations = flow.getLocationsList().stream().map(location -> {
-        var locationComponent = issueDetails.componentsList.stream().filter(component -> component.getKey().equals(location.getComponent())).findFirst();
-        var filePath = locationComponent.map(Issues.Component::getPath).orElse("");
-        var locationTextRange = location.getTextRange();
-        var codeSnippet = tryFetchCodeSnippet(connectionId, locationComponent.map(Issues.Component::getKey).orElse(""), locationTextRange, branch, pullRequest, cancelMonitor);
-        var locationTextRangeDto = new TextRangeDto(locationTextRange.getStartLine(), locationTextRange.getStartOffset(),
-          locationTextRange.getEndLine(), locationTextRange.getEndOffset());
-        return new LocationDto(locationTextRangeDto, location.getMsg(), translation.serverToIdePath(Paths.get(filePath)), codeSnippet.orElse(""));
-      }).collect(Collectors.toList());
-      return new FlowDto(locations);
-    }).collect(Collectors.toList());
-
-    var textRange = issueDetails.textRange;
-    var textRangeDto = new TextRangeDto(textRange.getStartLine(), textRange.getStartOffset(), textRange.getEndLine(),
-      textRange.getEndOffset());
-
-    var isTaint = isIssueTaint(issueDetails.ruleKey);
-
-    return new ShowIssueParams(configScopeId, new IssueDetailsDto(textRangeDto, issueDetails.ruleKey, issueDetails.key, translation.serverToIdePath(issueDetails.path),
-      branch, pullRequest, issueDetails.message, issueDetails.creationDate, issueDetails.codeSnippet, isTaint,
-      flowLocations));
-  }
-
-  static boolean isIssueTaint(String ruleKey) {
-    return RulesApi.TAINT_REPOS.stream().anyMatch(ruleKey::startsWith);
-  }
-
-  private Optional<IssueApi.ServerIssueDetails> tryFetchIssue(String connectionId, String issueKey, String projectKey, String branch, @Nullable String pullRequest,
-    SonarLintCancelMonitor cancelMonitor) {
-    var serverApi = serverApiProvider.getServerApiOrThrow(connectionId);
-    return serverApi.issue().fetchServerIssue(issueKey, projectKey, branch, pullRequest, cancelMonitor);
-  }
-
-  private Optional<String> tryFetchCodeSnippet(String connectionId, String fileKey, Common.TextRange textRange, String branch, @Nullable String pullRequest,
-    SonarLintCancelMonitor cancelMonitor) {
-    var serverApi = serverApiProvider.getServerApi(connectionId);
-    if (serverApi.isEmpty() || fileKey.isEmpty()) {
-      // should not happen since we found the connection just before, improve the design ?
-      return Optional.empty();
-    }
-    return serverApi.get().issue().getCodeSnippet(fileKey, textRange, branch, pullRequest, cancelMonitor);
-  }
-
-  @VisibleForTesting
-  ShowIssueQuery extractQuery(ClassicHttpRequest request) throws ProtocolException {
+  ShowFixSuggestionQuery extractQuery(ClassicHttpRequest request) throws HttpException, IOException {
     var params = new HashMap<String, String>();
     try {
       new URIBuilder(request.getUri(), StandardCharsets.UTF_8)
@@ -195,20 +149,31 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
     } catch (URISyntaxException e) {
       // Ignored
     }
+    var payload = extractAndValidatePayload(request);
     boolean isSonarCloud = isSonarCloud(request);
     String serverUrl = isSonarCloud ? sonarCloudUrl : params.get("server");
-    return new ShowIssueQuery(serverUrl, params.get("project"), params.get("issue"), params.get("branch"),
-      params.get("pullRequest"), params.get("tokenName"), params.get("tokenValue"), params.get("organizationKey"), isSonarCloud);
+    return new ShowFixSuggestionQuery(serverUrl, params.get("project"), params.get("issue"), params.get("branch"),
+      params.get("tokenName"), params.get("tokenValue"), params.get("organizationKey"), isSonarCloud, payload);
+  }
+
+  private static FixSuggestionPayload extractAndValidatePayload(ClassicHttpRequest request) throws IOException, ParseException {
+    var requestEntityString = EntityUtils.toString(request.getEntity(), "UTF-8");
+    FixSuggestionPayload payload = null;
+    try {
+      payload = new Gson().fromJson(requestEntityString, FixSuggestionPayload.class);
+    } catch (Exception e) {
+      // will be converted to HTTP response later
+      LOG.error("Could not deserialize fix suggestion payload", e);
+    }
+    return payload;
   }
 
   @VisibleForTesting
-  public static class ShowIssueQuery {
+  public static class ShowFixSuggestionQuery {
     private final String serverUrl;
     private final String projectKey;
     private final String issueKey;
     private final String branch;
-    @Nullable
-    private final String pullRequest;
     @Nullable
     private final String tokenName;
     @Nullable
@@ -216,32 +181,27 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
     @Nullable
     private final String organizationKey;
     private final boolean isSonarCloud;
+    private final FixSuggestionPayload fixSuggestion;
 
-    public ShowIssueQuery(@Nullable String serverUrl, String projectKey, String issueKey, String branch, @Nullable String pullRequest,
-      @Nullable String tokenName, @Nullable String tokenValue, @Nullable String organizationKey, boolean isSonarCloud) {
+    public ShowFixSuggestionQuery(@Nullable String serverUrl, String projectKey, String issueKey, String branch,
+      @Nullable String tokenName, @Nullable String tokenValue, @Nullable String organizationKey, boolean isSonarCloud,
+      FixSuggestionPayload fixSuggestion) {
       this.serverUrl = serverUrl;
       this.projectKey = projectKey;
       this.issueKey = issueKey;
       this.branch = branch;
-      this.pullRequest = pullRequest;
       this.tokenName = tokenName;
       this.tokenValue = tokenValue;
       this.organizationKey = organizationKey;
       this.isSonarCloud = isSonarCloud;
+      this.fixSuggestion = fixSuggestion;
     }
 
     public boolean isValid() {
       return isNotBlank(projectKey) && isNotBlank(issueKey) && isNotBlank(branch)
         && (isSonarCloud || isNotBlank(serverUrl))
         && (!isSonarCloud || isNotBlank(organizationKey))
-        && isPullRequestParamValid() && isTokenValid();
-    }
-
-    public boolean isPullRequestParamValid() {
-      if (pullRequest != null) {
-        return isNotEmpty(pullRequest);
-      }
-      return true;
+        && fixSuggestion.isValid() && isTokenValid();
     }
 
     /**
@@ -277,11 +237,6 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
     }
 
     @Nullable
-    public String getPullRequest() {
-      return pullRequest;
-    }
-
-    @Nullable
     public String getTokenName() {
       return tokenName;
     }
@@ -289,6 +244,115 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
     @Nullable
     public String getTokenValue() {
       return tokenValue;
+    }
+
+    public FixSuggestionPayload getFixSuggestion() {
+      return fixSuggestion;
+    }
+  }
+
+  @VisibleForTesting
+  public static class FixSuggestionPayload {
+    // TODO: Attribute names will be modified to align with SC/SQ
+    private final FileEditPayload fileEdit;
+    private final String suggestionId;
+    private final String explanation;
+
+    public FixSuggestionPayload(FileEditPayload fileEdit, String suggestionId, String explanation) {
+      this.fileEdit = fileEdit;
+      this.suggestionId = suggestionId;
+      this.explanation = explanation;
+    }
+
+    public boolean isValid() {
+      return fileEdit.isValid() && !suggestionId.isBlank();
+    }
+
+    public FileEditPayload getFileEdit() {
+      return fileEdit;
+    }
+
+    public String getSuggestionId() {
+      return suggestionId;
+    }
+
+    public String getExplanation() {
+      return explanation;
+    }
+  }
+
+  @VisibleForTesting
+  public static class FileEditPayload {
+    private final List<ChangesPayload> changes;
+    private final String path;
+
+    public FileEditPayload(List<ChangesPayload> changes, String path) {
+      this.changes = changes;
+      this.path = path;
+    }
+
+    public boolean isValid() {
+      return !path.isBlank() && changes.stream().allMatch(ChangesPayload::isValid);
+    }
+
+    public List<ChangesPayload> getChanges() {
+      return changes;
+    }
+
+    public String getPath() {
+      return path;
+    }
+  }
+
+  @VisibleForTesting
+  public static class ChangesPayload {
+    private final TextRangePayload beforeLineRange;
+    private final String before;
+    private final String after;
+
+    public ChangesPayload(TextRangePayload beforeLineRange, String before, String after) {
+      this.beforeLineRange = beforeLineRange;
+      this.before = before;
+      this.after = after;
+    }
+
+    public boolean isValid() {
+      return beforeLineRange.isValid();
+    }
+
+    public TextRangePayload getBeforeLineRange() {
+      return beforeLineRange;
+    }
+
+    public String getBefore() {
+      return before;
+    }
+
+    public String getAfter() {
+      return after;
+    }
+  }
+
+  @VisibleForTesting
+  public static class TextRangePayload {
+    private final int startLine;
+    private final int endLine;
+
+    public TextRangePayload(int startLine, int endLine) {
+      this.startLine = startLine;
+      this.endLine = endLine;
+    }
+
+    public boolean isValid() {
+      return startLine >= 0 && endLine >= 0 && startLine <= endLine;
+    }
+
+    public int getStartLine() {
+      return startLine;
+    }
+
+    public int getEndLine() {
+      return endLine;
     }
   }
 
