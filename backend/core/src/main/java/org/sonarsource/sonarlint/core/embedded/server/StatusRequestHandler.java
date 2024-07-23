@@ -47,11 +47,13 @@ public class StatusRequestHandler implements HttpRequestHandler {
   private final SonarLintRpcClient client;
   private final ConnectionConfigurationRepository repository;
   private final ClientConstantInfoDto clientInfo;
+  private final boolean canOpenFixSuggestion;
 
   public StatusRequestHandler(SonarLintRpcClient client, ConnectionConfigurationRepository repository, InitializeParams params) {
     this.client = client;
     this.repository = repository;
     this.clientInfo = params.getClientConstantInfo();
+    this.canOpenFixSuggestion = params.getFeatureFlags().canOpenFixSuggestion();
   }
 
   @Override
@@ -67,8 +69,9 @@ public class StatusRequestHandler implements HttpRequestHandler {
       .orElse(false);
 
     var description = getDescription(trustedServer);
+    var capabilities = new CapabilitiesResponse(canOpenFixSuggestion);
     // We need a token when the requesting server is not a trusted one (in order to automatically create a connection).
-    response.setEntity(new StringEntity(new Gson().toJson(new StatusResponse(clientInfo.getName(), description, !trustedServer)), ContentType.APPLICATION_JSON));
+    response.setEntity(new StringEntity(new Gson().toJson(new StatusResponse(clientInfo.getName(), description, !trustedServer, capabilities)), ContentType.APPLICATION_JSON));
 
   }
 
@@ -91,11 +94,23 @@ public class StatusRequestHandler implements HttpRequestHandler {
     private final String description;
     @Expose
     private final boolean needsToken;
+    @Expose
+    private final CapabilitiesResponse capabilities;
 
-    public StatusResponse(String ideName, String description, boolean needsToken) {
+    public StatusResponse(String ideName, String description, boolean needsToken, CapabilitiesResponse capabilities) {
       this.ideName = ideName;
       this.description = description;
       this.needsToken = needsToken;
+      this.capabilities = capabilities;
+    }
+  }
+
+  private static class CapabilitiesResponse {
+    @Expose
+    private final boolean canOpenFixSuggestion;
+
+    public CapabilitiesResponse(boolean canOpenFixSuggestion) {
+      this.canOpenFixSuggestion = canOpenFixSuggestion;
     }
   }
 }
