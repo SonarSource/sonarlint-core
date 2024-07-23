@@ -131,7 +131,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   private static PrintWriter getMessageTracer() {
     if ("true".equals(System.getProperty("sonarlint.debug.rpc"))) {
       try {
-        return new PrintWriter(Paths.get(System.getProperty("user.home")).resolve(".sonarlint").resolve("rpc_session.log").toFile(), StandardCharsets.UTF_8);
+        return new PrintWriter(Paths.get(System.getProperty("user.home")).resolve(".sonarlint").resolve("rpc_backend_session.log").toFile(), StandardCharsets.UTF_8);
       } catch (IOException e) {
         System.err.println("Cannot write rpc debug logs file");
         e.printStackTrace();

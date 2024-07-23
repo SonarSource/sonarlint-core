@@ -20,8 +20,12 @@
 package org.sonarsource.sonarlint.core.rpc.client;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -61,10 +65,23 @@ public class ClientJsonRpcLauncher implements Closeable {
       .setExecutorService(messageReaderExecutor)
       .wrapMessages(m -> new SingleThreadedMessageConsumer(m, messageWriterExecutor,
         ex -> client.logClientSideError("Error consuming RPC message", ex)))
+      .traceMessages(getMessageTracer())
       .create();
 
     this.serverProxy = clientLauncher.getRemoteProxy();
     this.future = clientLauncher.startListening();
+  }
+
+  private static PrintWriter getMessageTracer() {
+    if ("true".equals(System.getProperty("sonarlint.debug.rpc"))) {
+      try {
+        return new PrintWriter(Paths.get(System.getProperty("user.home")).resolve(".sonarlint").resolve("rpc_client_session.log").toFile(), StandardCharsets.UTF_8);
+      } catch (IOException e) {
+        System.err.println("Cannot write rpc debug logs file");
+        e.printStackTrace();
+      }
+    }
+    return null;
   }
 
   public SonarLintRpcServer getServerProxy() {
