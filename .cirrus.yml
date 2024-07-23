@@ -107,7 +107,7 @@ test_windows_task:
   script:
     - source cirrus-env QA
     - source set_maven_build_version $BUILD_NUMBER
-    - mvn -B -e -V verify -Dcommercial -Dmaven.test.redirectTestOutputToFile=false -Dtest=IssueEventsMediumTests -Dsurefire.failIfNoSpecifiedTests=false
+    - mvn -B -e -V verify -Dcommercial -Dmaven.test.redirectTestOutputToFile=false -Dtest=HotspotEventsMediumTests -Dsurefire.failIfNoSpecifiedTests=false
   cleanup_before_cache_script: cleanup_maven_repository
   on_failure:
     junit_artifacts:
