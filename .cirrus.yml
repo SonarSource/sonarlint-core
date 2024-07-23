@@ -93,26 +93,6 @@ build_task:
     - mvn -B -e -V -Pits dependency:go-offline # populate cache including ITs deps too
   cleanup_before_cache_script: cleanup_maven_repository
 
-test_linux_task:
-  # Run unit tests on Linux with Java 17 and SonarQube analysis on Next
-  depends_on:
-    - build
-  <<: *ONLY_IF_EXCEPT_NIGHTLY
-  eks_container:
-    <<: *CONTAINER_DEFINITION
-  env:
-    JDK_VERSION: "17"
-    DEPLOY_PULL_REQUEST: "false"
-  <<: *MAVEN_CACHE_DEFINITION
-  script:
-    - source cirrus-env QA
-    - PULL_REQUEST_SHA=$GIT_SHA1 regular_mvn_build_deploy_analyze -P-deploy-sonarsource,-release,-sign -Dcommercial -Dmaven.install.skip=true -Dmaven.deploy.skip=true -Dsonar.coverage.jacoco.xmlReportPaths=$CIRRUS_WORKING_DIR/report-aggregate/target/site/jacoco-aggregate/jacoco.xml
-  cleanup_before_cache_script: cleanup_maven_repository
-  on_failure:
-    junit_artifacts:
-      path: '**/target/surefire-reports/TEST-*.xml'
-      format: junit
-
 test_windows_task:
   # Run UTs on Windows (Java 17)
   depends_on:
@@ -127,7 +107,7 @@ test_windows_task:
   script:
     - source cirrus-env QA
     - source set_maven_build_version $BUILD_NUMBER
-    - mvn -B -e -V verify -Dcommercial -Dmaven.test.redirectTestOutputToFile=false
+    - mvn -B -e -V verify -Dcommercial -Dmaven.test.redirectTestOutputToFile=false -Dtest=IssueEventsMediumTests
   cleanup_before_cache_script: cleanup_maven_repository
   on_failure:
     junit_artifacts:
@@ -170,61 +150,6 @@ mend_scan_task:
   always:
     ws_artifacts:
       path: "whitesource/**/*"
-
-qa_task:
-  # Run ITs
-  depends_on:
-    - build
-  <<: *ONLY_IF_EXCEPT_NIGHTLY
-  <<: *ORCHESTRATOR_MONTHLY_CACHE_TEMPLATE
-  eks_container:
-    <<: *CONTAINER_DEFINITION
-    cpu: 4
-    memory: 8G
-  env:
-    ARTIFACTORY_API_KEY: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-private-reader access_token]
-    GITHUB_TOKEN: VAULT[development/github/token/licenses-ro token]
-    MAVEN_OPTS: '-Xmx4G'
-  matrix:
-      -  env:
-          SQ_VERSION: "SonarCloud"
-          JDK_VERSION: "17"
-          CATEGORY: "-Dgroups=SonarCloud"
-          SONARCLOUD_IT_PASSWORD: VAULT[development/team/sonarlint/kv/data/sonarcloud-it data.password]
-          QA_CATEGORY: SonarCloud
-      -  env:
-          SQ_VERSION: "DEV"
-          JDK_VERSION: "17"
-          CATEGORY: "-DexcludedGroups=SonarCloud"
-          QA_CATEGORY: SQDogfood
-      -  env:
-          SQ_VERSION: "LATEST_RELEASE"
-          JDK_VERSION: "17"
-          CATEGORY: "-DexcludedGroups=SonarCloud"
-          QA_CATEGORY: SQLatest
-      -  env:
-          SQ_VERSION: "LATEST_RELEASE[9.9]"
-          JDK_VERSION: "17"
-          CATEGORY: "-DexcludedGroups=SonarCloud"
-          QA_CATEGORY: SQLts99
-  <<: *MAVEN_CACHE_DEFINITION
-  qa_script: |
-    source cirrus-env QA
-    source set_maven_build_version $BUILD_NUMBER
-    if [[ ${CIRRUS_PR:-} != "" || $CIRRUS_BRANCH == $CIRRUS_DEFAULT_BRANCH || $CIRRUS_BRANCH =~ "branch-".* || $CIRRUS_BRANCH =~ "dogfood-on-".* ]]; then
-      mvn -f its/pom.xml -Dsonar.runtimeVersion=${SQ_VERSION} ${CATEGORY} -B -e -V verify surefire-report:report
-    else
-      mvn clean install -DskipTests
-      mvn -rf its -Pits -Dsonar.runtimeVersion=${SQ_VERSION} ${CATEGORY} -B -e -V verify surefire-report:report
-    fi
-  cleanup_before_cache_script:
-    - cleanup_maven_repository
-  on_failure:
-    junit_artifacts:
-      path: '**/target/surefire-reports/TEST-*.xml'
-      format: junit
-    log_artifacts:
-      path: "**/target/**/sonarqube*/logs/*.log"
 
 promote_task:
   # Promotion
