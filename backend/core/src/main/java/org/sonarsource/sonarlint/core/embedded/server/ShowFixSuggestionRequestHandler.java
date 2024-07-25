@@ -45,28 +45,19 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.net.URIBuilder;
-import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarCloudConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarQubeConnectionParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueDetailsDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.FlowDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.LocationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
-import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
-import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
-import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
-import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.ChangesDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.FileEditDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.FixSuggestionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.LineRangeDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.ShowFixSuggestionParams;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -98,7 +89,7 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
   @Override
   public void handle(ClassicHttpRequest request, ClassicHttpResponse response, HttpContext context) throws HttpException, IOException {
     var showFixSuggestionQuery = extractQuery(request);
-    if (canOpenFixSuggestion && (!Method.POST.isSame(request.getMethod()) || !showFixSuggestionQuery.isValid())) {
+    if (!canOpenFixSuggestion || !Method.POST.isSame(request.getMethod()) || !showFixSuggestionQuery.isValid()) {
       response.setCode(HttpStatus.SC_BAD_REQUEST);
       return;
     }
@@ -111,7 +102,7 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
       showFixSuggestionQuery.projectKey,
       (connectionId, configScopeId, cancelMonitor) -> {
         if (configScopeId != null) {
-          showFixSuggestionForScope(connectionId, configScopeId, showFixSuggestionQuery.issueKey, showFixSuggestionQuery.projectKey, showFixSuggestionQuery.branch, cancelMonitor);
+          showFixSuggestionForScope(configScopeId, showFixSuggestionQuery.issueKey, showFixSuggestionQuery.branch, showFixSuggestionQuery.fixSuggestion);
         }
       });
 
@@ -134,9 +125,23 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
       .orElse(false);
   }
 
-  private void showFixSuggestionForScope(String connectionId, String configScopeId, String issueKey, String projectKey,
-    String branch, SonarLintCancelMonitor cancelMonitor) {
-    pathTranslationService.getOrComputePathTranslation(configScopeId).ifPresent(translation -> client.showFixSuggestion());
+  private void showFixSuggestionForScope(String configScopeId, String issueKey, String branch, FixSuggestionPayload fixSuggestion) {
+    pathTranslationService.getOrComputePathTranslation(configScopeId).ifPresent(translation -> {
+      var fixSuggestionDto = new FixSuggestionDto(
+        fixSuggestion.suggestionId,
+        fixSuggestion.getExplanation(),
+        new FileEditDto(
+          translation.serverToIdePath(Paths.get(fixSuggestion.fileEdit.path)),
+          fixSuggestion.fileEdit.changes.stream().map(c ->
+            new ChangesDto(
+              new LineRangeDto(c.beforeLineRange.startLine, c.beforeLineRange.endLine),
+              c.before,
+              c.after)
+          ).collect(Collectors.toList())
+        )
+      );
+      client.showFixSuggestion(new ShowFixSuggestionParams(configScopeId, issueKey, branch, fixSuggestionDto));
+    });
   }
 
   @VisibleForTesting
