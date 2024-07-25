@@ -40,6 +40,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreat
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.ConnectionSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.FixSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordAuthenticationResponse;
@@ -108,7 +109,7 @@ public interface SonarLintRpcClientDelegate {
   /**
    * Sends a notification to the client to show a fix suggestion for a specific issue in the IDE
    */
-  void showFixSuggestion();
+  void showFixSuggestion(String configurationScopeId, String issueKey, String branch, FixSuggestionDto fixSuggestion);
 
   /**
    * Can be triggered by the backend when trying to handle a feature that needs a connection, e.g. open hotspot.

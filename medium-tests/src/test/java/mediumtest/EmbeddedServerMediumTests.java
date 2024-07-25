@@ -54,7 +54,7 @@ class EmbeddedServerMediumTests {
 
     assertThat(response)
       .extracting(HttpResponse::statusCode, HttpResponse::body)
-      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"\",\"needsToken\":true}");
+      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"\",\"needsToken\":true,\"capabilities\":{\"canOpenFixSuggestion\":false}}");
   }
 
   @Test
@@ -72,7 +72,7 @@ class EmbeddedServerMediumTests {
 
     assertThat(response)
       .extracting(HttpResponse::statusCode, HttpResponse::body)
-      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"\",\"needsToken\":true}");
+      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"\",\"needsToken\":true,\"capabilities\":{\"canOpenFixSuggestion\":false}}");
   }
 
   @Test
@@ -90,7 +90,7 @@ class EmbeddedServerMediumTests {
 
     assertThat(response)
       .extracting(HttpResponse::statusCode, HttpResponse::body)
-      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"WorkspaceTitle\",\"needsToken\":false}");
+      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"WorkspaceTitle\",\"needsToken\":false,\"capabilities\":{\"canOpenFixSuggestion\":false}}");
   }
 
   @Test

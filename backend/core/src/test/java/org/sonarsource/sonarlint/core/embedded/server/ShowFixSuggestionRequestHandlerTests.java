@@ -22,15 +22,11 @@ package org.sonarsource.sonarlint.core.embedded.server;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
-import java.util.Optional;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.Method;
-import org.apache.hc.core5.http.ProtocolException;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.message.BasicClassicHttpRequest;
 import org.apache.hc.core5.http.protocol.HttpContext;
@@ -38,26 +34,17 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
-import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
-import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
-import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
-import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.usertoken.UserTokenService;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -123,7 +110,7 @@ class ShowFixSuggestionRequestHandlerTests {
     assertThat(showFixSuggestionQuery.getFixSuggestion().getFileEdit().getPath()).isEqualTo("src/main/java/Main.java");
     assertThat(showFixSuggestionQuery.getFixSuggestion().getFileEdit().getChanges().get(0).getBefore()).isEmpty();
     assertThat(showFixSuggestionQuery.getFixSuggestion().getFileEdit().getChanges().get(0).getAfter()).isEqualTo("var fix = 1;");
-    assertThat(showFixSuggestionQuery.getFixSuggestion().getFileEdit().getChanges().get(0).getBeforeLineRange().getStartLine()).isEqualTo(0);
+    assertThat(showFixSuggestionQuery.getFixSuggestion().getFileEdit().getChanges().get(0).getBeforeLineRange().getStartLine()).isZero();
     assertThat(showFixSuggestionQuery.getFixSuggestion().getFileEdit().getChanges().get(0).getBeforeLineRange().getEndLine()).isEqualTo(1);
   }
 
@@ -168,7 +155,7 @@ class ShowFixSuggestionRequestHandlerTests {
     assertThat(showFixSuggestionQuery.getFixSuggestion().getFileEdit().getPath()).isEqualTo("src/main/java/Main.java");
     assertThat(showFixSuggestionQuery.getFixSuggestion().getFileEdit().getChanges().get(0).getBefore()).isEmpty();
     assertThat(showFixSuggestionQuery.getFixSuggestion().getFileEdit().getChanges().get(0).getAfter()).isEqualTo("var fix = 1;");
-    assertThat(showFixSuggestionQuery.getFixSuggestion().getFileEdit().getChanges().get(0).getBeforeLineRange().getStartLine()).isEqualTo(0);
+    assertThat(showFixSuggestionQuery.getFixSuggestion().getFileEdit().getChanges().get(0).getBeforeLineRange().getStartLine()).isZero();
     assertThat(showFixSuggestionQuery.getFixSuggestion().getFileEdit().getChanges().get(0).getBeforeLineRange().getEndLine()).isEqualTo(1);
   }
 

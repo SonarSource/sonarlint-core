@@ -42,6 +42,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredenti
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SuggestConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.event.DidReceiveServerHotspotEvent;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.ShowFixSuggestionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetBaseDirParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.GetBaseDirResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fs.ListFilesParams;
@@ -129,10 +130,10 @@ public interface SonarLintRpcClient {
   void showIssue(ShowIssueParams params);
 
   /**
-   * Sends a notification to the client to show a fix suggestion for a specific issue in the IDE
+   * Sends a notification to the client to show a fix suggestion (specific by {@link ShowFixSuggestionParams}) for a specific issue in the IDE
    */
   @JsonNotification
-  void showFixSuggestion();
+  void showFixSuggestion(ShowFixSuggestionParams params);
 
   /**
    * Can be triggered by the backend when trying to handle a feature that needs a connection, e.g. open hotspot.
