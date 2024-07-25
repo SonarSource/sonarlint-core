@@ -210,7 +210,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     backend = clientLauncher.getServerProxy();
     try {
       var languages = Set.of(JAVA, GO, PHP, JS, PYTHON, HTML, RUBY, KOTLIN, SCALA, XML, COBOL, CLOUDFORMATION, DOCKER, KUBERNETES, TERRAFORM);
-      var featureFlags = new FeatureFlagsDto(true, true, true, true, true, true, true, true, false);
+      var featureFlags = new FeatureFlagsDto(true, true, true, true, true, true, true, true, false, true);
       backend.initialize(
           new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(), null, featureFlags,
             sonarUserHome.resolve("storage"),

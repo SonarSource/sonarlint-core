@@ -96,7 +96,7 @@ class StandaloneTests {
     try {
       // The global-extension-plugin reuses the cobol plugin key to be whitelisted
       var languages = Set.of(COBOL);
-      var featureFlags = new FeatureFlagsDto(true, true, true, false, true, true, false, true, false);
+      var featureFlags = new FeatureFlagsDto(true, true, true, false, true, true, false, true, false, false);
       System.out.println("Before backend initialize");
       backend.initialize(
         new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(), null, featureFlags,
