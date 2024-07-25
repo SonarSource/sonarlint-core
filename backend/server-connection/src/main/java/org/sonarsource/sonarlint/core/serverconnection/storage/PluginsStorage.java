@@ -61,9 +61,10 @@ public class PluginsStorage {
 
   public void store(ServerPlugin plugin, InputStream pluginBinary) {
     try {
-      var pluginPath = rootPath.resolve(plugin.getFilename());
-      createPluginDirectoryIfNeeded();
-      writePluginFile(pluginBinary, pluginPath, 1);
+//      var pluginPath = rootPath.resolve(plugin.getFilename());
+//      createPluginDirectoryIfNeeded();
+//      writePluginFile(pluginBinary, pluginPath, 1);
+      FileUtils.copyInputStreamToFile(pluginBinary, rootPath.resolve(plugin.getFilename()).toFile());
       var reference = adapt(plugin);
       rwLock.write(() -> {
         var references = Files.exists(pluginReferencesFilePath) ? ProtobufFileUtil.readFile(pluginReferencesFilePath, Sonarlint.PluginReferences.parser())
@@ -148,7 +149,7 @@ public class PluginsStorage {
 
   public void storeNoPlugins() {
     if (!Files.exists(pluginReferencesFilePath)) {
-      createPluginDirectoryIfNeeded();
+      createPluginDirectory();
       rwLock.write(() -> {
         var references = Sonarlint.PluginReferences.newBuilder().build();
         ProtobufFileUtil.writeToFile(references, pluginReferencesFilePath);
@@ -156,14 +157,23 @@ public class PluginsStorage {
     }
   }
 
-  private void createPluginDirectoryIfNeeded() {
-    if (Files.exists(rootPath)) {
-      return;
-    }
+
+  private void createPluginDirectory() {
     try {
-      Files.createDirectories(rootPath);
+      Files.createDirectories(pluginReferencesFilePath.getParent());
     } catch (IOException e) {
       throw new StorageException(String.format("Cannot create plugin file directory: %s", rootPath), e);
     }
   }
+
+//  private void createPluginDirectoryIfNeeded() {
+//    if (Files.exists(rootPath)) {
+//      return;
+//    }
+//    try {
+//      Files.createDirectories(rootPath);
+//    } catch (IOException e) {
+//      throw new StorageException(String.format("Cannot create plugin file directory: %s", rootPath), e);
+//    }
+//  }
 }
