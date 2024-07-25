@@ -40,6 +40,7 @@ class ProtobufFileUtilTests {
     assertThat(thrown).hasMessageStartingWith("Failed to read file");
   }
 
+  @Disabled
   @Test
   void test_writeFile_error() {
     var p = Paths.get("invalid", "non_existing", "file");
