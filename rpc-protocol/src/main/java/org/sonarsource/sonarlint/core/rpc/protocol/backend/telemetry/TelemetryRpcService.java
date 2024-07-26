@@ -28,6 +28,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddQuickFixA
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddReportedRulesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDoneOnSingleLanguageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificationsClickedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
 
 @JsonSegment("telemetry")
@@ -77,6 +78,9 @@ public interface TelemetryRpcService {
 
   @JsonNotification
   void helpAndFeedbackLinkClicked(HelpAndFeedbackClickedParams params);
+
+  @JsonNotification
+  void fixSuggestionResolved(FixSuggestionResolvedParams params);
 
   @JsonNotification
   void addedManualBindings();

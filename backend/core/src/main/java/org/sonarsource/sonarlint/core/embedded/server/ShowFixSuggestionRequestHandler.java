@@ -58,6 +58,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.FileEditDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.FixSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.LineRangeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.ShowFixSuggestionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionReceivedParams;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -93,7 +94,7 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
       response.setCode(HttpStatus.SC_BAD_REQUEST);
       return;
     }
-    // TODO: Telemetry
+    telemetryService.fixSuggestionReceived(new FixSuggestionReceivedParams(showFixSuggestionQuery.getFixSuggestion().suggestionId));
 
     AssistCreatingConnectionParams serverConnectionParams = createAssistServerConnectionParams(showFixSuggestionQuery);
 
@@ -156,7 +157,7 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
     }
     var payload = extractAndValidatePayload(request);
     boolean isSonarCloud = isSonarCloud(request);
-    String serverUrl = isSonarCloud ? sonarCloudUrl : params.get("server");
+    var serverUrl = isSonarCloud ? sonarCloudUrl : params.get("server");
     return new ShowFixSuggestionQuery(serverUrl, params.get("project"), params.get("issue"), params.get("branch"),
       params.get("tokenName"), params.get("tokenValue"), params.get("organizationKey"), isSonarCloud, payload);
   }
@@ -258,7 +259,6 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
 
   @VisibleForTesting
   public static class FixSuggestionPayload {
-    // TODO: Attribute names will be modified to align with SC/SQ
     private final FileEditPayload fileEdit;
     private final String suggestionId;
     private final String explanation;

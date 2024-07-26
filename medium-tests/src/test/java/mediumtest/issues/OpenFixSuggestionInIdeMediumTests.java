@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -31,12 +33,12 @@ import mediumtest.fixtures.ServerFixture;
 import mediumtest.fixtures.SonarLintBackendFixture;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
@@ -104,7 +106,6 @@ class OpenFixSuggestionInIdeMediumTests {
   }
 
   @Test
-  @Disabled
   void it_should_update_the_telemetry_on_show_issue() throws Exception {
     var fakeClient = newFakeClient().build();
     backend = newBackend()
@@ -117,7 +118,7 @@ class OpenFixSuggestionInIdeMediumTests {
 
     assertThat(backend.telemetryFilePath())
       .content().asBase64Decoded().asString()
-      .contains("\"showIssueRequestsCount\":0");
+      .contains("\"fixSuggestionReceivedCounter\":{}");
 
     var statusCode = executeOpenFixSuggestionRequestWithoutToken(FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
 
@@ -125,7 +126,7 @@ class OpenFixSuggestionInIdeMediumTests {
     await().atMost(2, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(backend.telemetryFilePath())
         .content().asBase64Decoded().asString()
-        .contains("\"showIssueRequestsCount\":1"));
+        .contains("\"fixSuggestionReceivedCounter\":{\"eb93b2b4-f7b0-4b5c-9460-50893968c264\":{\"fixSuggestionReceivedCount\":1}}"));
   }
 
   @Test
@@ -145,11 +146,13 @@ class OpenFixSuggestionInIdeMediumTests {
     ArgumentCaptor<FixSuggestionDto> captor = ArgumentCaptor.captor();
     verify(fakeClient, timeout(2000)).showFixSuggestion(eq(CONFIG_SCOPE_ID), eq(ISSUE_KEY), eq(BRANCH_NAME), captor.capture());
 
+    var pathTranslation = new FilePathTranslation(Path.of("ide"), Path.of("home"));
+
     var fixSuggestion = captor.getValue();
     assertThat(fixSuggestion).isNotNull();
     assertThat(fixSuggestion.suggestionId()).isEqualTo("eb93b2b4-f7b0-4b5c-9460-50893968c264");
     assertThat(fixSuggestion.explanation()).isEqualTo("Modifying the variable name is good");
-    assertThat(fixSuggestion.fileEdit().path().toString()).contains("src/main/java/Main.java");
+    assertThat(fixSuggestion.fileEdit().path().toString()).contains(pathTranslation.serverToIdePath(Paths.get("src/main/java/Main.java")).toString());
     assertThat(fixSuggestion.fileEdit().changes()).hasSize(1);
     var change = fixSuggestion.fileEdit().changes().get(0);
     assertThat(change.before()).isEmpty();

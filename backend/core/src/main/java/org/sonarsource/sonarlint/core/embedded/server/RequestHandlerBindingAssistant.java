@@ -85,10 +85,12 @@ public class RequestHandlerBindingAssistant {
 
   private void assistConnectionAndBindingIfNeeded(AssistCreatingConnectionParams connectionParams, String projectKey,
     Callback callback, SonarLintCancelMonitor cancelMonitor) {
-    String serverUrl = getServerUrl(connectionParams);
+    var serverUrl = getServerUrl(connectionParams);
     LOG.debug("Assist connection and binding if needed for project {} and server {}", projectKey, serverUrl);
     try {
-      var connectionsMatchingOrigin = connectionConfigurationRepository.findByUrl(serverUrl);
+      var connectionsMatchingOrigin = connectionParams.getConnectionParams().isLeft() ?
+        connectionConfigurationRepository.findByUrl(serverUrl) :
+        connectionConfigurationRepository.findByOrganization(connectionParams.getConnectionParams().getRight().getOrganizationKey());
       if (connectionsMatchingOrigin.isEmpty()) {
         startFullBindingProcess();
         try {

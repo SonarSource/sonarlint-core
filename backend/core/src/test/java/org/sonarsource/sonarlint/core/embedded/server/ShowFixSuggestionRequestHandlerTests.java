@@ -29,8 +29,8 @@ import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.message.BasicClassicHttpRequest;
+import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.http.protocol.HttpContext;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
@@ -45,6 +45,7 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.usertoken.UserTokenService;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -53,20 +54,37 @@ import static org.mockito.Mockito.when;
 class ShowFixSuggestionRequestHandlerTests {
 
   @Test
-  // TODO: Enable when telemetry is done
-  @Disabled
   void should_trigger_telemetry() throws URISyntaxException, HttpException, IOException {
     var request = mock(ClassicHttpRequest.class);
-    when(request.getUri()).thenReturn(URI.create("http://localhost:8000/issue?project=pk&issue=ik&branch=b&server=s"));
-    when(request.getMethod()).thenReturn(Method.GET.name());
+    when(request.getUri()).thenReturn(URI.create("/sonarlint/api/fix/show" +
+      "?project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
+      "&issue=AX2VL6pgAvx3iwyNtLyr&branch=branch" +
+      "&organizationKey=sample-organization"));
+    when(request.getMethod()).thenReturn(Method.POST.name());
+    when(request.getHeader("Origin")).thenReturn(new BasicHeader("Origin", SonarCloudActiveEnvironment.PRODUCTION_URI));
+    when(request.getEntity()).thenReturn(new StringEntity("{\n" +
+      "\"fileEdit\": {\n" +
+      "\"path\": \"src/main/java/Main.java\",\n" +
+      "\"changes\": [{\n" +
+      "\"beforeLineRange\": {\n" +
+      "\"startLine\": 0,\n" +
+      "\"endLine\": 1\n" +
+      "},\n" +
+      "\"before\": \"\",\n" +
+      "\"after\": \"var fix = 1;\"\n" +
+      "}]\n" +
+      "},\n" +
+      "\"suggestionId\": \"eb93b2b4-f7b0-4b5c-9460-50893968c264\",\n" +
+      "\"explanation\": \"Modifying the variable name is good\"\n" +
+      "}\n"));
     var response = mock(ClassicHttpResponse.class);
     var context = mock(HttpContext.class);
     var telemetryService = mock(TelemetryService.class);
-    var showFixSuggestionRequestHandler = getShowFixSuggestionRequestHandler();
+    var showFixSuggestionRequestHandler = getShowFixSuggestionRequestHandler(telemetryService);
 
     showFixSuggestionRequestHandler.handle(request, response, context);
 
-    verify(telemetryService).showIssueRequestReceived();
+    verify(telemetryService).fixSuggestionReceived(any());
     verifyNoMoreInteractions(telemetryService);
   }
 
@@ -80,7 +98,7 @@ class ShowFixSuggestionRequestHandlerTests {
     var showFixSuggestionRequestHandler = new ShowFixSuggestionRequestHandler(null, null, initializeParams, null, null, sonarCloudActiveEnvironment);
     var request = new BasicClassicHttpRequest("POST", "/sonarlint/api/fix/show" +
       "?project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
-      "&issue=AX2VL6pgAvx3iwyNtLyr" +
+      "&issue=AX2VL6pgAvx3iwyNtLyr&branch=branch" +
       "&organizationKey=sample-organization");
     request.addHeader("Origin", SonarCloudActiveEnvironment.PRODUCTION_URI);
     request.setEntity(new StringEntity("{\n" +
@@ -103,6 +121,7 @@ class ShowFixSuggestionRequestHandlerTests {
     assertThat(showFixSuggestionQuery.getProjectKey()).isEqualTo("org.sonarsource.sonarlint.core:sonarlint-core-parent");
     assertThat(showFixSuggestionQuery.getIssueKey()).isEqualTo("AX2VL6pgAvx3iwyNtLyr");
     assertThat(showFixSuggestionQuery.getOrganizationKey()).isEqualTo("sample-organization");
+    assertThat(showFixSuggestionQuery.getBranch()).isEqualTo("branch");
     assertThat(showFixSuggestionQuery.getTokenName()).isNull();
     assertThat(showFixSuggestionQuery.getTokenValue()).isNull();
     assertThat(showFixSuggestionQuery.getFixSuggestion().getSuggestionId()).isEqualTo("eb93b2b4-f7b0-4b5c-9460-50893968c264");
@@ -182,8 +201,7 @@ class ShowFixSuggestionRequestHandlerTests {
     );
   }
 
-  private static ShowFixSuggestionRequestHandler getShowFixSuggestionRequestHandler() {
-    var telemetryService = mock(TelemetryService.class);
+  private static ShowFixSuggestionRequestHandler getShowFixSuggestionRequestHandler(TelemetryService telemetryService) {
     var repository = mock(ConnectionConfigurationRepository.class);
     var configurationRepository = mock(ConfigurationRepository.class);
     var bindingSuggestionProvider = mock(BindingSuggestionProvider.class);
@@ -191,7 +209,10 @@ class ShowFixSuggestionRequestHandlerTests {
     var sonarLintClient = mock(SonarLintRpcClient.class);
     var pathTranslationService = mock(PathTranslationService.class);
     var userTokenService = mock(UserTokenService.class);
+    var featureFlagsDto = mock(FeatureFlagsDto.class);
+    when(featureFlagsDto.canOpenFixSuggestion()).thenReturn(true);
     var initializeParams = mock(InitializeParams.class);
+    when(initializeParams.getFeatureFlags()).thenReturn(featureFlagsDto);
     SonarCloudActiveEnvironment sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
 
     return new ShowFixSuggestionRequestHandler(sonarLintClient, telemetryService, initializeParams,

@@ -30,6 +30,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.stubbing.Answer;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 
 import static java.util.Collections.emptyMap;
@@ -212,6 +213,8 @@ class TelemetryManagerTests {
       data.incrementOpenHotspotInBrowserCount();
       data.incrementShowHotspotRequestCount();
       data.incrementShowIssueRequestCount();
+      data.incrementFixSuggestionReceivedCount("suggestionId");
+      data.fixSuggestionResolved("suggestionId", FixSuggestionStatus.ACCEPTED, 0);
       data.incrementTaintVulnerabilitiesInvestigatedLocallyCount();
       data.incrementTaintVulnerabilitiesInvestigatedRemotelyCount();
       data.setLastUploadTime(LocalDateTime.now().minusDays(2));
@@ -230,6 +233,8 @@ class TelemetryManagerTests {
     assertThat(reloaded.taintVulnerabilitiesInvestigatedRemotelyCount()).isZero();
     assertThat(reloaded.hotspotStatusChangedCount()).isZero();
     assertThat(reloaded.getShowIssueRequestsCount()).isZero();
+    assertThat(reloaded.getFixSuggestionReceivedCounter()).isEmpty();
+    assertThat(reloaded.getFixSuggestionResolved()).isEmpty();
     assertThat(reloaded.openHotspotInBrowserCount()).isZero();
     assertThat(reloaded.getHelpAndFeedbackLinkClickedCounter()).isEmpty();
   }
