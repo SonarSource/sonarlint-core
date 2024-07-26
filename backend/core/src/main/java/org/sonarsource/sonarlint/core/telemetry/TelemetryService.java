@@ -38,6 +38,8 @@ import org.sonarsource.sonarlint.core.event.ServerIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.GetStatusResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionReceivedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.springframework.context.event.EventListener;
@@ -159,6 +161,14 @@ public class TelemetryService {
 
   public void helpAndFeedbackLinkClicked(HelpAndFeedbackClickedParams params) {
     updateTelemetry(localStorage -> localStorage.helpAndFeedbackLinkClicked(params.getItemId()));
+  }
+
+  public void fixSuggestionReceived(FixSuggestionReceivedParams params) {
+    updateTelemetry(localStorage -> localStorage.incrementFixSuggestionReceivedCount(params.getSuggestionId()));
+  }
+
+  public void fixSuggestionResolved(FixSuggestionResolvedParams params) {
+    updateTelemetry(localStorage -> localStorage.fixSuggestionResolved(params.getSuggestionId(), params.getStatus(), params.getSnippetIndex()));
   }
 
   public void smartNotificationsReceived(String eventType) {

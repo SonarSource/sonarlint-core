@@ -104,6 +104,12 @@ public class TelemetryPayload {
   @SerializedName("help_and_feedback")
   private final TelemetryHelpAndFeedbackPayload helpAndFeedbackPayload;
 
+  @SerializedName("fix_suggestion_received")
+  private final TelemetryFixSuggestionReceivedPayload fixSuggestionReceivedPayload;
+
+  @SerializedName("fix_suggestion_resolved")
+  private final TelemetryFixSuggestionResolvedPayload fixSuggestionResolvedPayload;
+
   @SerializedName("cayc")
   private final CleanAsYouCodePayload cleanAsYouCodePayload;
 
@@ -116,7 +122,8 @@ public class TelemetryPayload {
     boolean connectedMode, boolean connectedModeSonarcloud, OffsetDateTime systemTime, OffsetDateTime installTime, String os, String jre, @Nullable String nodejs,
     TelemetryAnalyzerPerformancePayload[] analyses, TelemetryNotificationsPayload notifications, ShowHotspotPayload showHotspotPayload,
     ShowIssuePayload showIssuePayload, TaintVulnerabilitiesPayload taintVulnerabilitiesPayload, TelemetryRulesPayload telemetryRulesPayload, HotspotPayload hotspotPayload,
-    IssuePayload issuePayload, TelemetryHelpAndFeedbackPayload helpAndFeedbackPayload, CleanAsYouCodePayload cleanAsYouCodePayload,
+    IssuePayload issuePayload, TelemetryHelpAndFeedbackPayload helpAndFeedbackPayload, TelemetryFixSuggestionReceivedPayload fixSuggestionReceivedPayload,
+    TelemetryFixSuggestionResolvedPayload fixSuggestionResolvedPayload, CleanAsYouCodePayload cleanAsYouCodePayload,
     ShareConnectedModePayload shareConnectedModePayload,
     Map<String, Object> additionalAttributes) {
     this.daysSinceInstallation = daysSinceInstallation;
@@ -142,6 +149,8 @@ public class TelemetryPayload {
     this.hotspotPayload = hotspotPayload;
     this.issuePayload = issuePayload;
     this.helpAndFeedbackPayload = helpAndFeedbackPayload;
+    this.fixSuggestionReceivedPayload = fixSuggestionReceivedPayload;
+    this.fixSuggestionResolvedPayload = fixSuggestionResolvedPayload;
     this.cleanAsYouCodePayload = cleanAsYouCodePayload;
     this.shareConnectedModePayload = shareConnectedModePayload;
     this.additionalAttributes = additionalAttributes;
@@ -197,6 +206,14 @@ public class TelemetryPayload {
 
   public TelemetryHelpAndFeedbackPayload helpAndFeedbackPayload() {
     return helpAndFeedbackPayload;
+  }
+
+  public TelemetryFixSuggestionReceivedPayload fixSuggestionReceivedPayload() {
+    return fixSuggestionReceivedPayload;
+  }
+
+  public TelemetryFixSuggestionResolvedPayload fixSuggestionResolvedPayload() {
+    return fixSuggestionResolvedPayload;
   }
 
   public CleanAsYouCodePayload cleanAsYouCodePayload() {

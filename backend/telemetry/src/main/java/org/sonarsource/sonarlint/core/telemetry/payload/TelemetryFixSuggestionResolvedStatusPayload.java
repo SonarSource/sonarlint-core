@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - Telemetry
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,27 +17,22 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
+package org.sonarsource.sonarlint.core.telemetry.payload;
 
+import com.google.gson.annotations.SerializedName;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 
-public class AnalysisDoneOnSingleLanguageParams {
-  @Nullable
-  private final Language language;
-  private final int analysisTimeMs;
+public class TelemetryFixSuggestionResolvedStatusPayload {
 
-  public AnalysisDoneOnSingleLanguageParams(@Nullable Language language, int analysisTimeMs) {
-    this.language = language;
-    this.analysisTimeMs = analysisTimeMs;
+  @SerializedName("status")
+  private final String status;
+
+  @SerializedName("snippet_index")
+  private final Integer snippetIndex;
+
+  public TelemetryFixSuggestionResolvedStatusPayload(String status, @Nullable Integer snippetIndex) {
+    this.status = status;
+    this.snippetIndex = snippetIndex;
   }
 
-  @Nullable
-  public Language getLanguage() {
-    return language;
-  }
-
-  public int getAnalysisTimeMs() {
-    return analysisTimeMs;
-  }
 }

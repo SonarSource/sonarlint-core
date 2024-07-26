@@ -20,24 +20,29 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
 
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 
-public class AnalysisDoneOnSingleLanguageParams {
+public class FixSuggestionResolvedParams {
+  private final String suggestionId;
+  private final FixSuggestionStatus status;
   @Nullable
-  private final Language language;
-  private final int analysisTimeMs;
+  private final Integer snippetIndex;
 
-  public AnalysisDoneOnSingleLanguageParams(@Nullable Language language, int analysisTimeMs) {
-    this.language = language;
-    this.analysisTimeMs = analysisTimeMs;
+  public FixSuggestionResolvedParams(String suggestionId, FixSuggestionStatus status, @Nullable Integer snippetIndex) {
+    this.suggestionId = suggestionId;
+    this.status = status;
+    this.snippetIndex = snippetIndex;
+  }
+
+  public String getSuggestionId() {
+    return suggestionId;
+  }
+
+  public FixSuggestionStatus getStatus() {
+    return status;
   }
 
   @Nullable
-  public Language getLanguage() {
-    return language;
-  }
-
-  public int getAnalysisTimeMs() {
-    return analysisTimeMs;
+  public Integer getSnippetIndex() {
+    return snippetIndex;
   }
 }

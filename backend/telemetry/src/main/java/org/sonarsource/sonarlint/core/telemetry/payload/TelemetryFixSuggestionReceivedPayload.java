@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - Telemetry
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,27 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
+package org.sonarsource.sonarlint.core.telemetry.payload;
 
-import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
+import com.google.gson.annotations.SerializedName;
+import java.util.HashMap;
+import java.util.Map;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryFixSuggestionReceivedCounter;
 
-public class AnalysisDoneOnSingleLanguageParams {
-  @Nullable
-  private final Language language;
-  private final int analysisTimeMs;
+public class TelemetryFixSuggestionReceivedPayload {
 
-  public AnalysisDoneOnSingleLanguageParams(@Nullable Language language, int analysisTimeMs) {
-    this.language = language;
-    this.analysisTimeMs = analysisTimeMs;
+  @SerializedName("count_by_fix_suggestion_id")
+  private final Map<String, Integer> counters;
+
+  public TelemetryFixSuggestionReceivedPayload(Map<String, TelemetryFixSuggestionReceivedCounter> counters) {
+    this.counters = new HashMap<>();
+    counters.forEach((link, count) -> this.counters.put(link, count.getFixSuggestionReceivedCount()));
   }
 
-  @Nullable
-  public Language getLanguage() {
-    return language;
-  }
-
-  public int getAnalysisTimeMs() {
-    return analysisTimeMs;
+  public Map<String, Integer> getCounters() {
+    return counters;
   }
 }
