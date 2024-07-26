@@ -27,9 +27,12 @@ import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryFixSuggestionReceivedCounter;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryHelpAndFeedbackCounter;
 import org.sonarsource.sonarlint.core.telemetry.payload.cayc.CleanAsYouCodePayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.cayc.NewCodeFocusPayload;
@@ -62,6 +65,16 @@ class TelemetryPayloadTests {
     helpAndFeedbackCounter.put("faq", new TelemetryHelpAndFeedbackCounter(4));
     helpAndFeedbackCounter.put("docs", new TelemetryHelpAndFeedbackCounter(5));
     var helpAndFeedbackPayload = new TelemetryHelpAndFeedbackPayload(helpAndFeedbackCounter);
+    Map<String, TelemetryFixSuggestionReceivedCounter> showFixSuggestionReceived = new LinkedHashMap<>();
+    showFixSuggestionReceived.put("suggestionId", new TelemetryFixSuggestionReceivedCounter(1));
+    showFixSuggestionReceived.put("suggestionId2", new TelemetryFixSuggestionReceivedCounter(3));
+    var showFixSuggestionReceivedPayload = new TelemetryFixSuggestionReceivedPayload(showFixSuggestionReceived);
+    Map<String, List<TelemetryFixSuggestionResolvedStatusPayload>> showFixSuggestionResolved = new LinkedHashMap<>();
+    List<TelemetryFixSuggestionResolvedStatusPayload> showFixSuggestionResolvedStatus = new LinkedList<>();
+    showFixSuggestionResolvedStatus.add(new TelemetryFixSuggestionResolvedStatusPayload("ACCEPTED", 0));
+    showFixSuggestionResolvedStatus.add(new TelemetryFixSuggestionResolvedStatusPayload("DECLINED", 1));
+    showFixSuggestionResolved.put("suggestionId", showFixSuggestionResolvedStatus);
+    var showFixSuggestionResolvedPayload = new TelemetryFixSuggestionResolvedPayload(showFixSuggestionResolved);
     Map<String, Object> additionalProps = new LinkedHashMap<>();
     additionalProps.put("aString", "stringValue");
     additionalProps.put("aBool", false);
@@ -73,8 +86,8 @@ class TelemetryPayloadTests {
     var cleanAsYouCodePayload = new CleanAsYouCodePayload(new NewCodeFocusPayload(true, 2));
     var m = new TelemetryPayload(4, 15, "SLI", "2.4", "Pycharm 3.2", "platform", "architecture",
       true, true, systemTime, installTime, "Windows 10", "1.8.0", "10.5.2", perf,
-      notifPayload, showHotspotPayload, showIssuePayload, taintVulnerabilitiesPayload, rulesPayload, hotspotPayload, issuePayload, helpAndFeedbackPayload, cleanAsYouCodePayload,
-      sharedConnectedModePayload, additionalProps);
+      notifPayload, showHotspotPayload, showIssuePayload, taintVulnerabilitiesPayload, rulesPayload, hotspotPayload, issuePayload, helpAndFeedbackPayload,
+      showFixSuggestionReceivedPayload, showFixSuggestionResolvedPayload, cleanAsYouCodePayload, sharedConnectedModePayload, additionalProps);
     var s = m.toJson();
 
     assertThat(s).isEqualTo("{\"days_since_installation\":4,"
@@ -100,6 +113,8 @@ class TelemetryPayloadTests {
       + "\"hotspot\":{\"open_in_browser_count\":5,\"status_changed_count\":3},"
       + "\"issue\":{\"status_changed_rule_keys\":[\"java:S123\"],\"status_changed_count\":1},"
       + "\"help_and_feedback\":{\"count_by_link\":{\"docs\":5,\"faq\":4}},"
+      + "\"fix_suggestion_received\":{\"count_by_fix_suggestion_id\":{\"suggestionId2\":3,\"suggestionId\":1}},"
+      + "\"fix_suggestion_resolved\":{\"status_by_suggestion_id\":{\"suggestionId\":[{\"status\":\"ACCEPTED\",\"snippet_index\":0},{\"status\":\"DECLINED\",\"snippet_index\":1}]}},"
       + "\"cayc\":{\"new_code_focus\":{\"enabled\":true,\"changes\":2}},"
       + "\"shared_connected_mode\":{\"manual_bindings_count\":3,\"imported_bindings_count\":2,\"auto_bindings_count\":1,\"exported_connected_mode_count\":4},"
       + "\"aString\":\"stringValue\","
@@ -121,6 +136,8 @@ class TelemetryPayloadTests {
     assertThat(m.notifications().disabled()).isTrue();
     assertThat(m.notifications().counters()).containsOnlyKeys("QUALITY_GATE", "NEW_ISSUES");
     assertThat(m.helpAndFeedbackPayload().getCounters()).containsOnlyKeys("docs", "faq");
+    assertThat(m.fixSuggestionReceivedPayload().getCounters()).containsOnlyKeys("suggestionId", "suggestionId2");
+    assertThat(m.fixSuggestionResolvedPayload().getStatus()).containsOnlyKeys("suggestionId");
     assertThat(m.cleanAsYouCodePayload().getNewCodePayload())
       .extracting(NewCodeFocusPayload::isEnabled, NewCodeFocusPayload::getChanges)
       .containsExactly(true, 2);

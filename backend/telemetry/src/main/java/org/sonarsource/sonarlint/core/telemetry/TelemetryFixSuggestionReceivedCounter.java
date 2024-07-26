@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - Telemetry
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,27 +17,23 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
+package org.sonarsource.sonarlint.core.telemetry;
 
-import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
+public class TelemetryFixSuggestionReceivedCounter {
+  private int fixSuggestionReceivedCount;
 
-public class AnalysisDoneOnSingleLanguageParams {
-  @Nullable
-  private final Language language;
-  private final int analysisTimeMs;
-
-  public AnalysisDoneOnSingleLanguageParams(@Nullable Language language, int analysisTimeMs) {
-    this.language = language;
-    this.analysisTimeMs = analysisTimeMs;
+  public TelemetryFixSuggestionReceivedCounter() {
   }
 
-  @Nullable
-  public Language getLanguage() {
-    return language;
+  public TelemetryFixSuggestionReceivedCounter(int fixSuggestionReceivedCount) {
+    this.fixSuggestionReceivedCount = fixSuggestionReceivedCount;
   }
 
-  public int getAnalysisTimeMs() {
-    return analysisTimeMs;
+  public int getFixSuggestionReceivedCount() {
+    return fixSuggestionReceivedCount;
+  }
+
+  public void incrementFixSuggestionReceivedCount() {
+    this.fixSuggestionReceivedCount++;
   }
 }

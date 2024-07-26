@@ -108,8 +108,11 @@ public interface SonarLintRpcClientDelegate {
 
   /**
    * Sends a notification to the client to show a fix suggestion for a specific issue in the IDE
+   * The fix is only on a single files, but it may contain different locations
    */
-  void showFixSuggestion(String configurationScopeId, String issueKey, String branch, FixSuggestionDto fixSuggestion);
+  default void showFixSuggestion(String configurationScopeId, String issueKey, String branch, FixSuggestionDto fixSuggestion) {
+
+  }
 
   /**
    * Can be triggered by the backend when trying to handle a feature that needs a connection, e.g. open hotspot.

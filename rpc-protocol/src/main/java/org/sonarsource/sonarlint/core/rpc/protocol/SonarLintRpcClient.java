@@ -133,7 +133,9 @@ public interface SonarLintRpcClient {
    * Sends a notification to the client to show a fix suggestion (specific by {@link ShowFixSuggestionParams}) for a specific issue in the IDE
    */
   @JsonNotification
-  void showFixSuggestion(ShowFixSuggestionParams params);
+  default void showFixSuggestion(ShowFixSuggestionParams params) {
+
+  }
 
   /**
    * Can be triggered by the backend when trying to handle a feature that needs a connection, e.g. open hotspot.

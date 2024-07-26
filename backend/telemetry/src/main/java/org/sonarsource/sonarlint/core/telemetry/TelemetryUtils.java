@@ -25,11 +25,14 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryAnalyzerPerformancePayload;
+import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryFixSuggestionResolvedPayload;
+import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryFixSuggestionResolvedStatusPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryNotificationsCounterPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryNotificationsPayload;
 
@@ -83,6 +86,15 @@ class TelemetryUtils {
   private static Map<String, TelemetryNotificationsCounterPayload> toNotifPayload(Map<String, TelemetryNotificationsCounter> notifications) {
     return notifications.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
       e -> new TelemetryNotificationsCounterPayload(e.getValue().getDevNotificationsCount(), e.getValue().getDevNotificationsClicked())));
+  }
+
+  static TelemetryFixSuggestionResolvedPayload toFixSuggestionResolvedPayload(
+    Map<String, List<TelemetryFixSuggestionResolvedStatus>> fixSuggestionResolved
+  ) {
+    return new TelemetryFixSuggestionResolvedPayload(fixSuggestionResolved.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
+      e -> e.getValue().stream().map(
+        l -> new TelemetryFixSuggestionResolvedStatusPayload(l.getFixSuggestionResolvedStatus().toString(), l.getFixSuggestionResolvedSnippetIndex())
+    ).collect(Collectors.toList()))));
   }
 
   /**
