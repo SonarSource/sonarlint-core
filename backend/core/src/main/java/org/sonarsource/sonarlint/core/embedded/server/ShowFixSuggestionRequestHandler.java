@@ -46,6 +46,7 @@ import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.net.URIBuilder;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
+import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -58,6 +59,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.FileEditDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.FixSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.LineRangeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.ShowFixSuggestionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionReceivedParams;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
@@ -72,15 +75,18 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
 
   private final SonarLintRpcClient client;
   private final TelemetryService telemetryService;
+  private final SonarProjectBranchTrackingService branchTrackingService;
   private final boolean canOpenFixSuggestion;
   private final RequestHandlerBindingAssistant requestHandlerBindingAssistant;
   private final PathTranslationService pathTranslationService;
   private final String sonarCloudUrl;
 
-  public ShowFixSuggestionRequestHandler(SonarLintRpcClient client, TelemetryService telemetryService, InitializeParams params,
-    RequestHandlerBindingAssistant requestHandlerBindingAssistant, PathTranslationService pathTranslationService, SonarCloudActiveEnvironment sonarCloudActiveEnvironment) {
+  public ShowFixSuggestionRequestHandler(SonarLintRpcClient client, TelemetryService telemetryService, SonarProjectBranchTrackingService branchTrackingService,
+    InitializeParams params, RequestHandlerBindingAssistant requestHandlerBindingAssistant,
+    PathTranslationService pathTranslationService, SonarCloudActiveEnvironment sonarCloudActiveEnvironment) {
     this.client = client;
     this.telemetryService = telemetryService;
+    this.branchTrackingService = branchTrackingService;
     this.canOpenFixSuggestion = params.getFeatureFlags().canOpenFixSuggestion();
     this.requestHandlerBindingAssistant = requestHandlerBindingAssistant;
     this.pathTranslationService = pathTranslationService;
@@ -103,6 +109,12 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
       showFixSuggestionQuery.projectKey,
       (connectionId, configScopeId, cancelMonitor) -> {
         if (configScopeId != null) {
+          if (branchTrackingService.getMatchedSonarProjectBranch(configScopeId) != null &&
+            !branchTrackingService.getMatchedSonarProjectBranch(configScopeId).equals(showFixSuggestionQuery.branch)) {
+            client.showMessage(new ShowMessageParams(MessageType.ERROR, "Attempted to show a fix suggestion for a different branch than the one currently checked out." +
+              "\nPlease check out the correct branch and try again."));
+            return;
+          }
           showFixSuggestionForScope(configScopeId, showFixSuggestionQuery.issueKey, showFixSuggestionQuery.fixSuggestion);
         }
       });
