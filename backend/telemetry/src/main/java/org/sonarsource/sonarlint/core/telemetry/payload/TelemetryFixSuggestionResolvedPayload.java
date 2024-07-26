@@ -25,7 +25,7 @@ import java.util.Map;
 
 public class TelemetryFixSuggestionResolvedPayload {
 
-  @SerializedName("status_by_suggestion_id")
+  @SerializedName("opened_fix_status_by_suggestion_id")
   private final Map<String, List<TelemetryFixSuggestionResolvedStatusPayload>> status;
 
   public TelemetryFixSuggestionResolvedPayload(Map<String, List<TelemetryFixSuggestionResolvedStatusPayload>> status) {
