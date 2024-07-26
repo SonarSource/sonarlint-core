@@ -110,7 +110,7 @@ public interface SonarLintRpcClientDelegate {
    * Sends a notification to the client to show a fix suggestion for a specific issue in the IDE
    * The fix is only on a single files, but it may contain different locations
    */
-  default void showFixSuggestion(String configurationScopeId, String issueKey, String branch, FixSuggestionDto fixSuggestion) {
+  default void showFixSuggestion(String configurationScopeId, String issueKey, FixSuggestionDto fixSuggestion) {
 
   }
 

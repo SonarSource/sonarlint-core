@@ -24,16 +24,16 @@ import java.util.List;
 
 public class FileEditDto {
 
-  private final Path path;
+  private final Path idePath;
   private final List<ChangesDto> changes;
 
-  public FileEditDto(Path path, List<ChangesDto> changes) {
-    this.path = path;
+  public FileEditDto(Path idePath, List<ChangesDto> changes) {
+    this.idePath = idePath;
     this.changes = changes;
   }
 
-  public Path path() {
-    return path;
+  public Path idePath() {
+    return idePath;
   }
 
   public List<ChangesDto> changes() {

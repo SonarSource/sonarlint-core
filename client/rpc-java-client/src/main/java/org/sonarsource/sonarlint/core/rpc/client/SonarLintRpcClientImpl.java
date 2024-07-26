@@ -222,7 +222,7 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   @Override
   public void showFixSuggestion(ShowFixSuggestionParams params) {
-    notify(() -> delegate.showFixSuggestion(params.getConfigurationScopeId(), params.getIssueKey(), params.getBranch(), params.getFixSuggestion()));
+    notify(() -> delegate.showFixSuggestion(params.getConfigurationScopeId(), params.getIssueKey(), params.getFixSuggestion()));
   }
 
   @Override

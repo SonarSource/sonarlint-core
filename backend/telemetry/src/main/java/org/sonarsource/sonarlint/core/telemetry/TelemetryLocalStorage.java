@@ -299,6 +299,7 @@ public class TelemetryLocalStorage {
   }
 
   public void fixSuggestionResolved(String suggestionId, FixSuggestionStatus status, @Nullable Integer snippetIndex) {
+    markSonarLintAsUsedToday();
     this.fixSuggestionResolved.computeIfAbsent(suggestionId, k -> new ArrayList<>()).add(new TelemetryFixSuggestionResolvedStatus(status, snippetIndex));
   }
 

@@ -144,7 +144,7 @@ class OpenFixSuggestionInIdeMediumTests {
     assertThat(statusCode).isEqualTo(200);
 
     ArgumentCaptor<FixSuggestionDto> captor = ArgumentCaptor.captor();
-    verify(fakeClient, timeout(2000)).showFixSuggestion(eq(CONFIG_SCOPE_ID), eq(ISSUE_KEY), eq(BRANCH_NAME), captor.capture());
+    verify(fakeClient, timeout(2000)).showFixSuggestion(eq(CONFIG_SCOPE_ID), eq(ISSUE_KEY), captor.capture());
 
     var pathTranslation = new FilePathTranslation(Path.of("ide"), Path.of("home"));
 
@@ -152,7 +152,7 @@ class OpenFixSuggestionInIdeMediumTests {
     assertThat(fixSuggestion).isNotNull();
     assertThat(fixSuggestion.suggestionId()).isEqualTo("eb93b2b4-f7b0-4b5c-9460-50893968c264");
     assertThat(fixSuggestion.explanation()).isEqualTo("Modifying the variable name is good");
-    assertThat(fixSuggestion.fileEdit().path().toString()).contains(pathTranslation.serverToIdePath(Paths.get("src/main/java/Main.java")).toString());
+    assertThat(fixSuggestion.fileEdit().idePath().toString()).contains(pathTranslation.serverToIdePath(Paths.get("src/main/java/Main.java")).toString());
     assertThat(fixSuggestion.fileEdit().changes()).hasSize(1);
     var change = fixSuggestion.fileEdit().changes().get(0);
     assertThat(change.before()).isEmpty();
@@ -177,7 +177,7 @@ class OpenFixSuggestionInIdeMediumTests {
     var statusCode = executeOpenFixSuggestionRequestWithoutToken(FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
     assertThat(statusCode).isEqualTo(200);
 
-    verify(fakeClient, timeout(2000)).showFixSuggestion(eq(CONFIG_SCOPE_ID), eq(ISSUE_KEY), eq(BRANCH_NAME), any());
+    verify(fakeClient, timeout(2000)).showFixSuggestion(eq(CONFIG_SCOPE_ID), eq(ISSUE_KEY), any());
     verify(fakeClient, never()).showMessage(any(), any());
   }
 
@@ -217,7 +217,7 @@ class OpenFixSuggestionInIdeMediumTests {
     var statusCode = executeOpenFixSuggestionRequestWithoutToken(FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
 
     assertThat(statusCode).isEqualTo(200);
-    verify(fakeClient, timeout(2000)).showFixSuggestion(any(), any(), any(), any());
+    verify(fakeClient, timeout(2000)).showFixSuggestion(any(), any(), any());
     verify(fakeClient, never()).showMessage(any(), any());
   }
 
@@ -237,7 +237,7 @@ class OpenFixSuggestionInIdeMediumTests {
     var statusCode = executeOpenFixSuggestionRequestWithToken(FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY, "token-name", "token-value");
     assertThat(statusCode).isEqualTo(200);
 
-    verify(fakeClient, timeout(2000)).showFixSuggestion(eq(CONFIG_SCOPE_ID), eq(ISSUE_KEY), eq(BRANCH_NAME), any());
+    verify(fakeClient, timeout(2000)).showFixSuggestion(eq(CONFIG_SCOPE_ID), eq(ISSUE_KEY), any());
     verify(fakeClient, never()).showMessage(any(), any());
 
     ArgumentCaptor<AssistCreatingConnectionParams> captor = ArgumentCaptor.captor();

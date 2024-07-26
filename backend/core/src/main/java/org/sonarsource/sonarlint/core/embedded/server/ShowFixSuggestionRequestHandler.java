@@ -103,7 +103,7 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
       showFixSuggestionQuery.projectKey,
       (connectionId, configScopeId, cancelMonitor) -> {
         if (configScopeId != null) {
-          showFixSuggestionForScope(configScopeId, showFixSuggestionQuery.issueKey, showFixSuggestionQuery.branch, showFixSuggestionQuery.fixSuggestion);
+          showFixSuggestionForScope(configScopeId, showFixSuggestionQuery.issueKey, showFixSuggestionQuery.fixSuggestion);
         }
       });
 
@@ -126,7 +126,7 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
       .orElse(false);
   }
 
-  private void showFixSuggestionForScope(String configScopeId, String issueKey, String branch, FixSuggestionPayload fixSuggestion) {
+  private void showFixSuggestionForScope(String configScopeId, String issueKey, FixSuggestionPayload fixSuggestion) {
     pathTranslationService.getOrComputePathTranslation(configScopeId).ifPresent(translation -> {
       var fixSuggestionDto = new FixSuggestionDto(
         fixSuggestion.suggestionId,
@@ -141,7 +141,7 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
           ).collect(Collectors.toList())
         )
       );
-      client.showFixSuggestion(new ShowFixSuggestionParams(configScopeId, issueKey, branch, fixSuggestionDto));
+      client.showFixSuggestion(new ShowFixSuggestionParams(configScopeId, issueKey, fixSuggestionDto));
     });
   }
 
