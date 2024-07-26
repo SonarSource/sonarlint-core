@@ -23,13 +23,11 @@ public class ShowFixSuggestionParams {
 
   private final String configurationScopeId;
   private final String issueKey;
-  private final String branch;
   private final FixSuggestionDto fixSuggestion;
 
-  public ShowFixSuggestionParams(String configurationScopeId, String issueKey, String branch, FixSuggestionDto fixSuggestion) {
+  public ShowFixSuggestionParams(String configurationScopeId, String issueKey, FixSuggestionDto fixSuggestion) {
     this.configurationScopeId = configurationScopeId;
     this.issueKey = issueKey;
-    this.branch = branch;
     this.fixSuggestion = fixSuggestion;
   }
 
@@ -39,10 +37,6 @@ public class ShowFixSuggestionParams {
 
   public String getIssueKey() {
     return issueKey;
-  }
-
-  public String getBranch() {
-    return branch;
   }
 
   public FixSuggestionDto getFixSuggestion() {
