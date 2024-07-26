@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpException;
@@ -31,27 +32,69 @@ import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.message.BasicClassicHttpRequest;
 import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.http.protocol.HttpContext;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
+import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
+import org.sonarsource.sonarlint.core.commons.BoundScope;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.usertoken.UserTokenService;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment.PRODUCTION_URI;
 
 class ShowFixSuggestionRequestHandlerTests {
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester(true);
+  private ConnectionConfigurationRepository connectionConfigurationRepository;
+  private ConfigurationRepository configurationRepository;
+  private SonarLintRpcClient sonarLintRpcClient;
+  private FeatureFlagsDto featureFlagsDto;
+  private InitializeParams initializeParams;
+  private SonarProjectBranchTrackingService sonarProjectBranchTrackingService;
+  private ShowFixSuggestionRequestHandler showFixSuggestionRequestHandler;
+  private TelemetryService telemetryService;
+
+  @BeforeEach
+  void setup() {
+    connectionConfigurationRepository = mock(ConnectionConfigurationRepository.class);
+    configurationRepository = mock(ConfigurationRepository.class);
+    BindingSuggestionProvider bindingSuggestionProvider = mock(BindingSuggestionProvider.class);
+    BindingCandidatesFinder bindingCandidatesFinder = mock(BindingCandidatesFinder.class);
+    sonarLintRpcClient = mock(SonarLintRpcClient.class);
+    PathTranslationService pathTranslationService = mock(PathTranslationService.class);
+    UserTokenService userTokenService = mock(UserTokenService.class);
+    featureFlagsDto = mock(FeatureFlagsDto.class);
+    when(featureFlagsDto.canOpenFixSuggestion()).thenReturn(true);
+    initializeParams = mock(InitializeParams.class);
+    sonarProjectBranchTrackingService = mock(SonarProjectBranchTrackingService.class);
+    when(initializeParams.getFeatureFlags()).thenReturn(featureFlagsDto);
+    SonarCloudActiveEnvironment sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
+    telemetryService = mock(TelemetryService.class);
+
+    showFixSuggestionRequestHandler = new ShowFixSuggestionRequestHandler(sonarLintRpcClient, telemetryService, sonarProjectBranchTrackingService, initializeParams,
+      new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintRpcClient, connectionConfigurationRepository, configurationRepository, userTokenService, sonarCloudActiveEnvironment), pathTranslationService, sonarCloudActiveEnvironment);
+  }
 
   @Test
   void should_trigger_telemetry() throws URISyntaxException, HttpException, IOException {
@@ -61,7 +104,7 @@ class ShowFixSuggestionRequestHandlerTests {
       "&issue=AX2VL6pgAvx3iwyNtLyr&branch=branch" +
       "&organizationKey=sample-organization"));
     when(request.getMethod()).thenReturn(Method.POST.name());
-    when(request.getHeader("Origin")).thenReturn(new BasicHeader("Origin", SonarCloudActiveEnvironment.PRODUCTION_URI));
+    when(request.getHeader("Origin")).thenReturn(new BasicHeader("Origin", PRODUCTION_URI));
     when(request.getEntity()).thenReturn(new StringEntity("{\n" +
       "\"fileEdit\": {\n" +
       "\"path\": \"src/main/java/Main.java\",\n" +
@@ -79,8 +122,6 @@ class ShowFixSuggestionRequestHandlerTests {
       "}\n"));
     var response = mock(ClassicHttpResponse.class);
     var context = mock(HttpContext.class);
-    var telemetryService = mock(TelemetryService.class);
-    var showFixSuggestionRequestHandler = getShowFixSuggestionRequestHandler(telemetryService);
 
     showFixSuggestionRequestHandler.handle(request, response, context);
 
@@ -90,17 +131,13 @@ class ShowFixSuggestionRequestHandlerTests {
 
   @Test
   void should_extract_query_from_sc_request_without_token() throws HttpException, IOException {
-    var sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
-    var featureFlagsDto = mock(FeatureFlagsDto.class);
     when(featureFlagsDto.canOpenFixSuggestion()).thenReturn(true);
-    var initializeParams = mock(InitializeParams.class);
     when(initializeParams.getFeatureFlags()).thenReturn(featureFlagsDto);
-    var showFixSuggestionRequestHandler = new ShowFixSuggestionRequestHandler(null, null, initializeParams, null, null, sonarCloudActiveEnvironment);
     var request = new BasicClassicHttpRequest("POST", "/sonarlint/api/fix/show" +
       "?project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
       "&issue=AX2VL6pgAvx3iwyNtLyr&branch=branch" +
       "&organizationKey=sample-organization");
-    request.addHeader("Origin", SonarCloudActiveEnvironment.PRODUCTION_URI);
+    request.addHeader("Origin", PRODUCTION_URI);
     request.setEntity(new StringEntity("{\n" +
       "\"fileEdit\": {\n" +
       "\"path\": \"src/main/java/Main.java\",\n" +
@@ -135,18 +172,14 @@ class ShowFixSuggestionRequestHandlerTests {
 
   @Test
   void should_extract_query_from_sc_request_with_token() throws HttpException, IOException {
-    var sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
-    var featureFlagsDto = mock(FeatureFlagsDto.class);
     when(featureFlagsDto.canOpenFixSuggestion()).thenReturn(true);
-    var initializeParams = mock(InitializeParams.class);
     when(initializeParams.getFeatureFlags()).thenReturn(featureFlagsDto);
-    var showFixSuggestionRequestHandler = new ShowFixSuggestionRequestHandler(null, null, initializeParams, null, null, sonarCloudActiveEnvironment);
     var request = new BasicClassicHttpRequest("POST", "/sonarlint/api/fix/show" +
       "?project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
       "&issue=AX2VL6pgAvx3iwyNtLyr&tokenName=abc" +
       "&organizationKey=sample-organization" +
       "&tokenValue=123");
-    request.addHeader("Origin", SonarCloudActiveEnvironment.PRODUCTION_URI);
+    request.addHeader("Origin", PRODUCTION_URI);
     request.setEntity(new StringEntity("{\n" +
       "\"fileEdit\": {\n" +
       "\"path\": \"src/main/java/Main.java\",\n" +
@@ -186,6 +219,47 @@ class ShowFixSuggestionRequestHandlerTests {
       , generateFixSuggestionPayload()).isValid()).isFalse();
   }
 
+  @Test
+  void should_cancel_flow_when_branch_does_not_match() throws HttpException, IOException {
+    var request = new BasicClassicHttpRequest("POST", "/sonarlint/api/fix/show" +
+      "?project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
+      "&issue=AX2VL6pgAvx3iwyNtLyr&branch=branch" +
+      "&organizationKey=sample-organization");
+    request.addHeader("Origin", PRODUCTION_URI);
+    request.setEntity(new StringEntity("{\n" +
+      "\"fileEdit\": {\n" +
+      "\"path\": \"src/main/java/Main.java\",\n" +
+      "\"changes\": [{\n" +
+      "\"beforeLineRange\": {\n" +
+      "\"startLine\": 0,\n" +
+      "\"endLine\": 1\n" +
+      "},\n" +
+      "\"before\": \"\",\n" +
+      "\"after\": \"var fix = 1;\"\n" +
+      "}]\n" +
+      "},\n" +
+      "\"suggestionId\": \"eb93b2b4-f7b0-4b5c-9460-50893968c264\",\n" +
+      "\"explanation\": \"Modifying the variable name is good\"\n" +
+      "}\n"));
+    var response = mock(ClassicHttpResponse.class);
+    var context = mock(HttpContext.class);
+
+    when(connectionConfigurationRepository.findByOrganization(any())).thenReturn(List.of(
+      new SonarCloudConnectionConfiguration(PRODUCTION_URI, "name", "organizationKey", false)));
+    when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope", "connectionId", "projectKey")));
+    when(sonarProjectBranchTrackingService.getMatchedSonarProjectBranch(any())).thenReturn("branch");
+    when(sonarProjectBranchTrackingService.getMatchedSonarProjectBranch(any())).thenReturn("anotherBranch");
+
+    showFixSuggestionRequestHandler.handle(request, response, context);
+    var showMessageArgumentCaptor = ArgumentCaptor.forClass(ShowMessageParams.class);
+
+    await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> verify(sonarLintRpcClient).showMessage(showMessageArgumentCaptor.capture()));
+    assertThat(showMessageArgumentCaptor.getValue().getType()).isEqualTo(MessageType.ERROR);
+    assertThat(showMessageArgumentCaptor.getValue().getText()).isEqualTo("Attempted to show a fix suggestion for a different branch than the one currently checked out." +
+      "\nPlease check out the correct branch and try again.");
+    verifyNoMoreInteractions(sonarLintRpcClient);
+  }
+
   private static ShowFixSuggestionRequestHandler.FixSuggestionPayload generateFixSuggestionPayload() {
     return new ShowFixSuggestionRequestHandler.FixSuggestionPayload(
       new ShowFixSuggestionRequestHandler.FileEditPayload(
@@ -201,21 +275,4 @@ class ShowFixSuggestionRequestHandlerTests {
     );
   }
 
-  private static ShowFixSuggestionRequestHandler getShowFixSuggestionRequestHandler(TelemetryService telemetryService) {
-    var repository = mock(ConnectionConfigurationRepository.class);
-    var configurationRepository = mock(ConfigurationRepository.class);
-    var bindingSuggestionProvider = mock(BindingSuggestionProvider.class);
-    var bindingCandidatesFinder = mock(BindingCandidatesFinder.class);
-    var sonarLintClient = mock(SonarLintRpcClient.class);
-    var pathTranslationService = mock(PathTranslationService.class);
-    var userTokenService = mock(UserTokenService.class);
-    var featureFlagsDto = mock(FeatureFlagsDto.class);
-    when(featureFlagsDto.canOpenFixSuggestion()).thenReturn(true);
-    var initializeParams = mock(InitializeParams.class);
-    when(initializeParams.getFeatureFlags()).thenReturn(featureFlagsDto);
-    SonarCloudActiveEnvironment sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
-
-    return new ShowFixSuggestionRequestHandler(sonarLintClient, telemetryService, initializeParams,
-      new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintClient, repository, configurationRepository, userTokenService, sonarCloudActiveEnvironment), pathTranslationService, sonarCloudActiveEnvironment);
-  }
 }
