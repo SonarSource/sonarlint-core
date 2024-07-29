@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 import mediumtest.fixtures.SonarLintTestRpcServer;
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.sonar.api.utils.System2;
@@ -65,6 +67,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
+import testutils.LogTestStartAndEnd;
 import testutils.OnDiskTestClientInputFile;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
@@ -80,6 +83,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+@ExtendWith(LogTestStartAndEnd.class)
 class AnalysisMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
@@ -94,10 +98,10 @@ class AnalysisMediumTests {
   }
 
   @AfterEach
-  void stop() {
+  void stop() throws ExecutionException, InterruptedException {
     System2.INSTANCE.setProperty("java.specification.version", javaVersion);
     if (backend != null) {
-      backend.shutdown();
+      backend.shutdown().get();
     }
   }
 
@@ -272,7 +276,7 @@ class AnalysisMediumTests {
     var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
-    verify(client).didDetectSecret(CONFIG_SCOPE_ID);
+    verify(client, timeout(1000)).didDetectSecret(CONFIG_SCOPE_ID);
   }
 
   @Test

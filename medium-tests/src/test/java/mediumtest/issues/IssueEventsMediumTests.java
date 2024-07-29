@@ -32,6 +32,7 @@ import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonar.scanner.protocol.Constants;
@@ -41,11 +42,11 @@ import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
+import testutils.LogTestStartAndEnd;
+import testutils.sse.SSEServer;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.notFound;
-import static com.github.tomakehurst.wiremock.client.WireMock.okForContentType;
-import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
@@ -61,12 +62,12 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JS;
 import static testutils.AnalysisUtils.analyzeFileAndGetIssue;
 import static testutils.AnalysisUtils.createFile;
 
+@ExtendWith(LogTestStartAndEnd.class)
 class IssueEventsMediumTests {
 
   @RegisterExtension
   static SonarLintLogTester logTester = new SonarLintLogTester();
-  private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
-
+  private static final SSEServer sseServer = new SSEServer();
   private SonarLintTestRpcServer backend;
   private ServerFixture.Server serverWithIssues;
 
@@ -75,35 +76,43 @@ class IssueEventsMediumTests {
     if (serverWithIssues != null) {
       serverWithIssues.shutdown();
     }
-    backend.shutdown().get();
+    sseServer.stop();
+    if (backend != null) {
+      backend.shutdown().get();
+    }
   }
 
   @Nested
   class WhenReceivingIssueChangedEvent {
+    private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
+
     @Test
     void it_should_update_issue_in_storage_with_new_resolution() {
+      var projectKey = "projectKey";
       var server = newSonarQubeServer("10.0")
-        .withProject("projectKey",
+        .withProject(projectKey,
           project -> project.withBranch("branchName"))
         .start();
-      mockEvent(server, "projectKey", "event: IssueChanged\n" +
-        "data: {" +
-        "\"projectKey\": \"projectKey\"," +
-        "\"issues\": [{" +
-        "  \"issueKey\": \"key1\"," +
-        "  \"branchName\": \"branchName\"" +
-        "}]," +
-        "\"resolved\": true" +
-        "}\n\n");
+      mockEvent(server, projectKey, "java",
+        "event: IssueChanged\n" +
+          "data: {" +
+          "\"projectKey\": \"projectKey\"," +
+          "\"issues\": [{" +
+          "  \"issueKey\": \"key1\"," +
+          "  \"branchName\": \"branchName\"" +
+          "}]," +
+          "\"resolved\": true" +
+          "}\n\n");
       backend = newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", server,
-          storage -> storage.withProject("projectKey", project -> project.withMainBranch("branchName", branch -> branch.withIssue(aServerIssue("key1").open()))))
-        .withBoundConfigScope("configScope", "connectionId", "projectKey")
+          storage -> storage.withProject(projectKey, project -> project.withMainBranch("branchName", branch -> branch.withIssue(aServerIssue("key1").open()))))
+        .withBoundConfigScope("configScope", "connectionId", projectKey)
         .build();
+      sseServer.shouldSendServerEventOnce();
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readIssues("connectionId", "projectKey", "branchName", "file/path"))
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readIssues("connectionId", projectKey, "branchName", "file/path"))
         .extracting(ServerIssue::getKey, ServerIssue::isResolved)
         .containsOnly(tuple("key1", true)));
     }
@@ -114,15 +123,16 @@ class IssueEventsMediumTests {
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
         .start();
-      mockEvent(server, "projectKey", "event: IssueChanged\n" +
-        "data: {" +
-        "\"projectKey\": \"projectKey\"," +
-        "\"issues\": [{" +
-        "  \"issueKey\": \"key1\"," +
-        "  \"branchName\": \"branchName\"" +
-        "}]," +
-        "\"userSeverity\": \"CRITICAL\"" +
-        "}\n\n");
+      mockEvent(server, "projectKey", "java",
+        "event: IssueChanged\n" +
+          "data: {" +
+          "\"projectKey\": \"projectKey\"," +
+          "\"issues\": [{" +
+          "  \"issueKey\": \"key1\"," +
+          "  \"branchName\": \"branchName\"" +
+          "}]," +
+          "\"userSeverity\": \"CRITICAL\"" +
+          "}\n\n");
       backend = newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -131,6 +141,7 @@ class IssueEventsMediumTests {
             project -> project.withMainBranch("branchName", branch -> branch.withIssue(aServerIssue("key1").withSeverity(IssueSeverity.INFO)))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build();
+      sseServer.shouldSendServerEventOnce();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readIssues("connectionId", "projectKey", "branchName", "file/path"))
         .extracting(ServerIssue::getKey, ServerIssue::getUserSeverity)
@@ -143,15 +154,16 @@ class IssueEventsMediumTests {
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
         .start();
-      mockEvent(server, "projectKey", "event: IssueChanged\n" +
-        "data: {" +
-        "\"projectKey\": \"projectKey\"," +
-        "\"issues\": [{" +
-        "  \"issueKey\": \"key1\"," +
-        "  \"branchName\": \"branchName\"" +
-        "}]," +
-        "\"userType\": \"BUG\"" +
-        "}\n\n");
+      mockEvent(server, "projectKey", "java",
+        "event: IssueChanged\n" +
+          "data: {" +
+          "\"projectKey\": \"projectKey\"," +
+          "\"issues\": [{" +
+          "  \"issueKey\": \"key1\"," +
+          "  \"branchName\": \"branchName\"" +
+          "}]," +
+          "\"userType\": \"BUG\"" +
+          "}\n\n");
       backend = newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -160,6 +172,7 @@ class IssueEventsMediumTests {
             project -> project.withMainBranch("branchName", branch -> branch.withIssue(aServerIssue("key1").withType(RuleType.VULNERABILITY)))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build();
+      sseServer.shouldSendServerEventOnce();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readIssues("connectionId", "projectKey", "branchName", "file/path"))
         .extracting(ServerIssue::getKey, ServerIssue::getType)
@@ -196,10 +209,8 @@ class IssueEventsMediumTests {
         .withPlugin(TestPlugin.JAVA)
         .start();
 
-      serverWithIssues.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java,js")
-        .inScenario("Single event")
-        .whenScenarioStateIs(STARTED)
-        .willReturn(okForContentType("text/event-stream", "event: IssueChanged\n" +
+      mockEvent(serverWithIssues, projectKey, "java,js",
+        "event: IssueChanged\n" +
           "data: {" +
           "\"projectKey\": \"" + projectKey + "\"," +
           "\"issues\": [{" +
@@ -207,15 +218,9 @@ class IssueEventsMediumTests {
           "  \"branchName\": \"" + branchName + "\"" +
           "}]," +
           "\"userType\": \"BUG\"" +
-          "}\n\n")
-          // Add a delay to ensure event will arrive after the first analysis
-          .withFixedDelay(5000))
-        .willSetStateTo("Event delivered"));
-      // avoid later reconnection
-      serverWithIssues.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java,js")
-        .inScenario("Single event")
-        .whenScenarioStateIs("Event delivered")
-        .willReturn(notFound()));
+          "}\n\n"
+      );
+
       backend = newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -228,6 +233,7 @@ class IssueEventsMediumTests {
       await().atMost(Duration.ofMinutes(2)).untilAsserted(() -> assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
       analyzeFileAndGetIssue(fileUri, client, backend, CONFIG_SCOPE_ID);
       client.cleanRaisedIssues();
+      sseServer.shouldSendServerEventOnce();
 
       await().atMost(Duration.ofMinutes(1)).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
       var raisedIssues = client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID).get(fileUri);
@@ -267,10 +273,8 @@ class IssueEventsMediumTests {
         .withPlugin(TestPlugin.JAVA)
         .start();
 
-      serverWithIssues.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java,js")
-        .inScenario("Single event")
-        .whenScenarioStateIs(STARTED)
-        .willReturn(okForContentType("text/event-stream", "event: IssueChanged\n" +
+      mockEvent(serverWithIssues, projectKey, "java,js",
+        "event: IssueChanged\n" +
           "data: {" +
           "\"projectKey\": \"" + projectKey + "\"," +
           "\"issues\": [{" +
@@ -278,15 +282,8 @@ class IssueEventsMediumTests {
           "  \"branchName\": \"" + branchName + "\"" +
           "}]," +
           "\"resolved\": \"true\"" +
-          "}\n\n")
-          // Add a delay to ensure event will arrive after the first analysis
-          .withFixedDelay(5000))
-        .willSetStateTo("Event delivered"));
-      // avoid later reconnection
-      serverWithIssues.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java,js")
-        .inScenario("Single event")
-        .whenScenarioStateIs("Event delivered")
-        .willReturn(notFound()));
+          "}\n\n"
+      );
       backend = newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -299,6 +296,7 @@ class IssueEventsMediumTests {
       await().atMost(Duration.ofMinutes(2)).untilAsserted(() -> assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
       analyzeFileAndGetIssue(fileUri, client, backend, CONFIG_SCOPE_ID);
       client.cleanRaisedIssues();
+      sseServer.shouldSendServerEventOnce();
 
       await().atMost(Duration.ofMinutes(1)).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
       var raisedIssues = client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID).get(fileUri);
@@ -339,10 +337,8 @@ class IssueEventsMediumTests {
         .withPlugin(TestPlugin.JAVA)
         .start();
 
-      serverWithIssues.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java,js")
-        .inScenario("Single event")
-        .whenScenarioStateIs(STARTED)
-        .willReturn(okForContentType("text/event-stream", "event: IssueChanged\n" +
+      mockEvent(serverWithIssues, projectKey, "java,js",
+        "event: IssueChanged\n" +
           "data: {" +
           "\"projectKey\": \"" + projectKey + "\"," +
           "\"issues\": [{" +
@@ -350,15 +346,8 @@ class IssueEventsMediumTests {
           "  \"branchName\": \"" + branchName + "\"" +
           "}]," +
           "\"userSeverity\": \"MINOR\"" +
-          "}\n\n")
-          // Add a delay to ensure event will arrive after the first analysis
-          .withFixedDelay(5000))
-        .willSetStateTo("Event delivered"));
-      // avoid later reconnection
-      serverWithIssues.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java,js")
-        .inScenario("Single event")
-        .whenScenarioStateIs("Event delivered")
-        .willReturn(notFound()));
+          "}\n\n"
+      );
       backend = newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -371,6 +360,7 @@ class IssueEventsMediumTests {
       await().atMost(Duration.ofMinutes(2)).untilAsserted(() -> assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
       analyzeFileAndGetIssue(fileUri, client, backend, CONFIG_SCOPE_ID);
       client.cleanRaisedIssues();
+      sseServer.shouldSendServerEventOnce();
 
       await().atMost(Duration.ofMinutes(1)).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
       var raisedIssues = client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID).get(fileUri);
@@ -387,16 +377,12 @@ class IssueEventsMediumTests {
     return backend.getIssueStorageService().connection(connectionId).project(projectKey).findings().load(branchName, Path.of(filePath));
   }
 
-  private static void mockEvent(ServerFixture.Server server, String projectKey, String eventPayload) {
-    server.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java")
-      .inScenario("Single event")
-      .whenScenarioStateIs(STARTED)
-      .willReturn(okForContentType("text/event-stream", eventPayload))
-      .willSetStateTo("Event delivered"));
-    // avoid later reconnection
-    server.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java")
-      .inScenario("Single event")
-      .whenScenarioStateIs("Event delivered")
-      .willReturn(notFound()));
+  private void mockEvent(ServerFixture.Server server, String projectKey, String languages, String eventPayload) {
+    sseServer.startWithEvent(eventPayload);
+    var sseServerUrl = sseServer.getUrl();
+    server.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=" + languages)
+      .willReturn(aResponse().proxiedFrom(sseServerUrl + "/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=" + languages)
+        .withStatus(200)
+      ));
   }
 }

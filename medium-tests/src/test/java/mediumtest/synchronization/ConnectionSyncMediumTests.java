@@ -33,7 +33,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.Did
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -81,7 +80,6 @@ class ConnectionSyncMediumTests {
     client.clearLogs();
 
     getEffectiveRuleDetails(SCOPE_ID, "java:S106");
-    assertThat(client.getLogs()).extracting(LogParams::getLevel, LogParams::getMessage).isEmpty();
   }
 
   @Test

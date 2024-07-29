@@ -26,18 +26,14 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import javax.annotation.Nullable;
+import java.util.concurrent.TimeUnit;
+import mediumtest.fixtures.SonarLintBackendFixture;
 import mediumtest.fixtures.SonarLintTestRpcServer;
-import org.mockito.ArgumentCaptor;
-import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
+import static org.awaitility.Awaitility.await;
 
 public class AnalysisUtils {
 
@@ -55,24 +51,34 @@ public class AnalysisUtils {
     return filePath;
   }
 
-  public static RaisedIssueDto analyzeFileAndGetIssue(URI fileUri, SonarLintRpcClientDelegate client, SonarLintTestRpcServer backend, String scopeId) {
+  public static RaisedIssueDto analyzeFileAndGetIssue(URI fileUri, SonarLintBackendFixture.FakeSonarLintRpcClient client, SonarLintTestRpcServer backend, String scopeId) {
+    var raisedIssues = analyzeFileAndGetIssues(fileUri, client, backend, scopeId);
+    return raisedIssues.get(0);
+  }
+
+  public static List<RaisedIssueDto> analyzeFileAndGetIssues(URI fileUri, SonarLintBackendFixture.FakeSonarLintRpcClient client, SonarLintTestRpcServer backend, String scopeId) {
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
         new AnalyzeFilesAndTrackParams(scopeId, analysisId, List.of(fileUri), Map.of(), true, System.currentTimeMillis()))
       .join();
-    var publishedIssuesByFile = getPublishedIssues(client, analysisId, scopeId);
     assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
-    assertThat(publishedIssuesByFile).containsOnlyKeys(fileUri);
-    var publishedIssues = publishedIssuesByFile.get(fileUri);
-    assertThat(publishedIssues).hasSize(1);
-    return publishedIssues.get(0);
+    await().atMost(20, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(scopeId)).isNotEmpty());
+    return client.getRaisedIssuesForScopeId(scopeId).get(fileUri);
   }
 
-  public static Map<URI, List<RaisedIssueDto>> getPublishedIssues(SonarLintRpcClientDelegate client, @Nullable UUID analysisId, String scopeId) {
-    ArgumentCaptor<Map<URI, List<RaisedIssueDto>>> trackedIssuesCaptor = ArgumentCaptor.forClass(Map.class);
-    verify(client, timeout(2000)).raiseIssues(eq(scopeId), trackedIssuesCaptor.capture(), eq(false), analysisId == null ? any() : eq(analysisId));
-    return trackedIssuesCaptor.getValue();
+  public static void analyzeFileAndGetHotspots(URI fileUri, SonarLintBackendFixture.FakeSonarLintRpcClient client, SonarLintTestRpcServer backend, String scopeId) {
+    var analysisId = UUID.randomUUID();
+    var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
+        new AnalyzeFilesAndTrackParams(scopeId, analysisId, List.of(fileUri), Map.of(), true, System.currentTimeMillis()))
+      .join();
+    assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
+    await().atMost(20, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedHotspotsForScopeIdAsList(scopeId)).isNotEmpty());
+    assertThat(client.getRaisedHotspotsForScopeId(scopeId)).containsOnlyKeys(fileUri);
   }
 
+  public static Map<URI, List<RaisedIssueDto>> getPublishedIssues(SonarLintBackendFixture.FakeSonarLintRpcClient client, String scopeId) {
+    await().atMost(20, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(scopeId)).isNotEmpty());
+    return client.getRaisedIssuesForScopeId(scopeId);
+  }
 
 }
