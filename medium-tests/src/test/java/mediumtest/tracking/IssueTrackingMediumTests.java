@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -91,9 +92,9 @@ class IssueTrackingMediumTests {
   private SonarLintTestRpcServer backend;
 
   @AfterEach
-  void stop() {
+  void stop() throws ExecutionException, InterruptedException {
     if (backend != null) {
-      backend.shutdown();
+      backend.shutdown().get();
     }
   }
 
@@ -742,7 +743,7 @@ class IssueTrackingMediumTests {
       .withVersion("8.0.0.55884")
       .start();
     var client = newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null)))
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
     backend = newBackend()
       .withSonarCloudConnection(connectionId, orgKey, true,

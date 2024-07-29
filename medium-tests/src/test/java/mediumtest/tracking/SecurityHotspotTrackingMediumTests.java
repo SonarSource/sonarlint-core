@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
@@ -62,9 +63,9 @@ class SecurityHotspotTrackingMediumTests {
   private SonarLintTestRpcServer backend;
 
   @AfterEach
-  void stop() {
+  void stop() throws ExecutionException, InterruptedException {
     if (backend != null) {
-      backend.shutdown();
+      backend.shutdown().get();
     }
   }
 
