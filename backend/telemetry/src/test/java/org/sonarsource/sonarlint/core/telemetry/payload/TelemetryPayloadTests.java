@@ -27,12 +27,12 @@ import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryFixSuggestionReceivedCounter;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryHelpAndFeedbackCounter;
 import org.sonarsource.sonarlint.core.telemetry.payload.cayc.CleanAsYouCodePayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.cayc.NewCodeFocusPayload;
@@ -65,16 +65,7 @@ class TelemetryPayloadTests {
     helpAndFeedbackCounter.put("faq", new TelemetryHelpAndFeedbackCounter(4));
     helpAndFeedbackCounter.put("docs", new TelemetryHelpAndFeedbackCounter(5));
     var helpAndFeedbackPayload = new TelemetryHelpAndFeedbackPayload(helpAndFeedbackCounter);
-    Map<String, TelemetryFixSuggestionReceivedCounter> showFixSuggestionReceived = new LinkedHashMap<>();
-    showFixSuggestionReceived.put("suggestionId", new TelemetryFixSuggestionReceivedCounter(1));
-    showFixSuggestionReceived.put("suggestionId2", new TelemetryFixSuggestionReceivedCounter(3));
-    var showFixSuggestionReceivedPayload = new TelemetryFixSuggestionReceivedPayload(showFixSuggestionReceived);
-    Map<String, List<TelemetryFixSuggestionResolvedStatusPayload>> showFixSuggestionResolved = new LinkedHashMap<>();
-    List<TelemetryFixSuggestionResolvedStatusPayload> showFixSuggestionResolvedStatus = new LinkedList<>();
-    showFixSuggestionResolvedStatus.add(new TelemetryFixSuggestionResolvedStatusPayload("ACCEPTED", 0));
-    showFixSuggestionResolvedStatus.add(new TelemetryFixSuggestionResolvedStatusPayload("DECLINED", 1));
-    showFixSuggestionResolved.put("suggestionId", showFixSuggestionResolvedStatus);
-    var showFixSuggestionResolvedPayload = new TelemetryFixSuggestionResolvedPayload(showFixSuggestionResolved);
+    var aiFixSuggestionsPayload = getTelemetryFixSuggestionPayloads();
     Map<String, Object> additionalProps = new LinkedHashMap<>();
     additionalProps.put("aString", "stringValue");
     additionalProps.put("aBool", false);
@@ -87,7 +78,7 @@ class TelemetryPayloadTests {
     var m = new TelemetryPayload(4, 15, "SLI", "2.4", "Pycharm 3.2", "platform", "architecture",
       true, true, systemTime, installTime, "Windows 10", "1.8.0", "10.5.2", perf,
       notifPayload, showHotspotPayload, showIssuePayload, taintVulnerabilitiesPayload, rulesPayload, hotspotPayload, issuePayload, helpAndFeedbackPayload,
-      showFixSuggestionReceivedPayload, showFixSuggestionResolvedPayload, cleanAsYouCodePayload, sharedConnectedModePayload, additionalProps);
+      aiFixSuggestionsPayload, cleanAsYouCodePayload, sharedConnectedModePayload, additionalProps);
     var s = m.toJson();
 
     assertThat(s).isEqualTo("{\"days_since_installation\":4,"
@@ -113,8 +104,7 @@ class TelemetryPayloadTests {
       + "\"hotspot\":{\"open_in_browser_count\":5,\"status_changed_count\":3},"
       + "\"issue\":{\"status_changed_rule_keys\":[\"java:S123\"],\"status_changed_count\":1},"
       + "\"help_and_feedback\":{\"count_by_link\":{\"docs\":5,\"faq\":4}},"
-      + "\"fix_suggestion_received\":{\"count_by_fix_suggestion_id\":{\"suggestionId2\":3,\"suggestionId\":1}},"
-      + "\"fix_suggestion_resolved\":{\"opened_fix_status_by_suggestion_id\":{\"suggestionId\":[{\"status\":\"ACCEPTED\",\"snippet_index\":0},{\"status\":\"DECLINED\",\"snippet_index\":1}]}},"
+      + "\"ai_fix_suggestions\":[{\"suggestion_id\":\"suggestionId1\",\"count_ai_suggestions\":1,\"opened_from\":\"SONARCLOUD\",\"snippets\":[{\"status\":\"ACCEPTED\",\"snippet_index\":0},{\"status\":\"DECLINED\",\"snippet_index\":1}]},{\"suggestion_id\":\"suggestionId2\",\"count_ai_suggestions\":2,\"opened_from\":\"SONARCLOUD\",\"snippets\":[{\"status\":\"ACCEPTED\"}]}],"
       + "\"cayc\":{\"new_code_focus\":{\"enabled\":true,\"changes\":2}},"
       + "\"shared_connected_mode\":{\"manual_bindings_count\":3,\"imported_bindings_count\":2,\"auto_bindings_count\":1,\"exported_connected_mode_count\":4},"
       + "\"aString\":\"stringValue\","
@@ -122,22 +112,14 @@ class TelemetryPayloadTests {
       + "\"aNumber\":1.5,"
       + "\"sub\":{\"aSubNumber\":2}}");
 
-    assertThat(m.daysOfUse()).isEqualTo(15);
-    assertThat(m.daysSinceInstallation()).isEqualTo(4);
-    assertThat(m.product()).isEqualTo("SLI");
-    assertThat(m.version()).isEqualTo("2.4");
     assertThat(m.connectedMode()).isTrue();
     assertThat(m.analyses()).hasSize(1);
-    assertThat(m.os()).isEqualTo("Windows 10");
-    assertThat(m.jre()).isEqualTo("1.8.0");
-    assertThat(m.nodejs()).isEqualTo("10.5.2");
     assertThat(m.connectedModeSonarcloud()).isTrue();
     assertThat(m.systemTime()).isEqualTo(systemTime);
     assertThat(m.notifications().disabled()).isTrue();
     assertThat(m.notifications().counters()).containsOnlyKeys("QUALITY_GATE", "NEW_ISSUES");
     assertThat(m.helpAndFeedbackPayload().getCounters()).containsOnlyKeys("docs", "faq");
-    assertThat(m.fixSuggestionReceivedPayload().getCounters()).containsOnlyKeys("suggestionId", "suggestionId2");
-    assertThat(m.fixSuggestionResolvedPayload().getStatus()).containsOnlyKeys("suggestionId");
+    assertThat(m.getAiFixSuggestionsPayload()).hasSize(2);
     assertThat(m.cleanAsYouCodePayload().getNewCodePayload())
       .extracting(NewCodeFocusPayload::isEnabled, NewCodeFocusPayload::getChanges)
       .containsExactly(true, 2);
@@ -150,18 +132,48 @@ class TelemetryPayloadTests {
     assertThat(m.getHotspotPayload().statusChangedCount).isEqualTo(3);
     assertThat(m.getTaintVulnerabilitiesPayload().investigatedLocallyCount).isEqualTo(6);
     assertThat(m.getTaintVulnerabilitiesPayload().investigatedRemotelyCount).isEqualTo(7);
-    assertThat(m.getTelemetryRulesPayload().defaultDisabled).containsExactly("disabledRuleKey1", "disabledRuleKey2");
-    assertThat(m.getTelemetryRulesPayload().nonDefaultEnabled).containsExactly("enabledRuleKey1", "enabledRuleKey2");
-    assertThat(m.getTelemetryRulesPayload().raisedIssues).containsExactly("reportedRuleKey1", "reportedRuleKey2");
-    assertThat(m.getTelemetryRulesPayload().quickFixesApplied).containsExactly("quickFixedRuleKey1", "quickFixedRuleKey2");
-    assertThat(m.getShareConnectedModePayload().manualAddedBindingsCount).isEqualTo(3);
-    assertThat(m.getShareConnectedModePayload().importedAddedBindingsCount).isEqualTo(2);
-    assertThat(m.getShareConnectedModePayload().autoAddedBindingsCount).isEqualTo(1);
-    assertThat(m.getShareConnectedModePayload().exportedConnectedModeCount).isEqualTo(4);
+    assertRulesPayload(m);
+    assertShareConnectedModePayload(m);
+    assertMetadata(m);
+  }
+
+  private static void assertMetadata(TelemetryPayload m) {
     assertThat(m.getIdeVersion()).isEqualTo("Pycharm 3.2");
     assertThat(m.getPlatform()).isEqualTo("platform");
     assertThat(m.getArchitecture()).isEqualTo("architecture");
     assertThat(m.getInstallTime()).hasToString("2017-11-10T12:01:14.984123123+02:00");
+    assertThat(m.os()).isEqualTo("Windows 10");
+    assertThat(m.jre()).isEqualTo("1.8.0");
+    assertThat(m.nodejs()).isEqualTo("10.5.2");
+    assertThat(m.daysOfUse()).isEqualTo(15);
+    assertThat(m.daysSinceInstallation()).isEqualTo(4);
+    assertThat(m.product()).isEqualTo("SLI");
+    assertThat(m.version()).isEqualTo("2.4");
+  }
+
+  private static void assertShareConnectedModePayload(TelemetryPayload m) {
+    assertThat(m.getShareConnectedModePayload().manualAddedBindingsCount).isEqualTo(3);
+    assertThat(m.getShareConnectedModePayload().importedAddedBindingsCount).isEqualTo(2);
+    assertThat(m.getShareConnectedModePayload().autoAddedBindingsCount).isEqualTo(1);
+    assertThat(m.getShareConnectedModePayload().exportedConnectedModeCount).isEqualTo(4);
+  }
+
+  private static void assertRulesPayload(TelemetryPayload m) {
+    assertThat(m.getTelemetryRulesPayload().defaultDisabled).containsExactly("disabledRuleKey1", "disabledRuleKey2");
+    assertThat(m.getTelemetryRulesPayload().nonDefaultEnabled).containsExactly("enabledRuleKey1", "enabledRuleKey2");
+    assertThat(m.getTelemetryRulesPayload().raisedIssues).containsExactly("reportedRuleKey1", "reportedRuleKey2");
+    assertThat(m.getTelemetryRulesPayload().quickFixesApplied).containsExactly("quickFixedRuleKey1", "quickFixedRuleKey2");
+  }
+
+  private static TelemetryFixSuggestionPayload[] getTelemetryFixSuggestionPayloads() {
+    var fixSuggestionPayload1 = new TelemetryFixSuggestionPayload("suggestionId1", 1,
+      AiSuggestionSource.SONARCLOUD,
+      List.of(new TelemetryFixSuggestionResolvedPayload(FixSuggestionStatus.ACCEPTED, 0),
+        new TelemetryFixSuggestionResolvedPayload(FixSuggestionStatus.DECLINED, 1)));
+    var fixSuggestionPayload2 = new TelemetryFixSuggestionPayload("suggestionId2", 2,
+      AiSuggestionSource.SONARCLOUD,
+      List.of(new TelemetryFixSuggestionResolvedPayload(FixSuggestionStatus.ACCEPTED, null)));
+    return new TelemetryFixSuggestionPayload[]{fixSuggestionPayload1, fixSuggestionPayload2};
   }
 
   @Test

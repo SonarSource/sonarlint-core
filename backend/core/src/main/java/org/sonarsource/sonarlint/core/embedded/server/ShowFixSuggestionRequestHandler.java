@@ -61,6 +61,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.LineRangeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.ShowFixSuggestionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionReceivedParams;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
@@ -100,7 +101,8 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
       response.setCode(HttpStatus.SC_BAD_REQUEST);
       return;
     }
-    telemetryService.fixSuggestionReceived(new FixSuggestionReceivedParams(showFixSuggestionQuery.getFixSuggestion().suggestionId));
+    telemetryService.fixSuggestionReceived(new FixSuggestionReceivedParams(showFixSuggestionQuery.getFixSuggestion().suggestionId,
+      showFixSuggestionQuery.isSonarCloud ? AiSuggestionSource.SONARCLOUD : AiSuggestionSource.SONARQUBE));
 
     AssistCreatingConnectionParams serverConnectionParams = createAssistServerConnectionParams(showFixSuggestionQuery);
 

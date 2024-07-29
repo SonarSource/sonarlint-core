@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
 
 import static java.time.temporal.ChronoUnit.DAYS;
@@ -293,9 +294,9 @@ public class TelemetryLocalStorage {
     showIssueRequestsCount++;
   }
 
-  public void incrementFixSuggestionReceivedCount(String suggestionId) {
+  public void incrementFixSuggestionReceivedCount(String suggestionId, AiSuggestionSource aiSuggestionSource) {
     markSonarLintAsUsedToday();
-    this.fixSuggestionReceivedCounter.computeIfAbsent(suggestionId, k -> new TelemetryFixSuggestionReceivedCounter()).incrementFixSuggestionReceivedCount();
+    this.fixSuggestionReceivedCounter.computeIfAbsent(suggestionId, k -> new TelemetryFixSuggestionReceivedCounter(aiSuggestionSource)).incrementFixSuggestionReceivedCount();
   }
 
   public void fixSuggestionResolved(String suggestionId, FixSuggestionStatus status, @Nullable Integer snippetIndex) {

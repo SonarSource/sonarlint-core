@@ -25,8 +25,12 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -117,5 +121,39 @@ class TelemetryUtilsTests {
     var date = LocalDateTime.now().minusDays(1);
     var hours = date.until(LocalDateTime.now(), ChronoUnit.HOURS);
     assertThat(TelemetryUtils.isGracePeriodElapsedAndDayChanged(date, hours)).isTrue();
+  }
+
+  @Test
+  void should_create_telemetry_fixSuggestions_payload() {
+    var suggestionId1 = UUID.randomUUID().toString();
+    var counter1 = new TelemetryFixSuggestionReceivedCounter(AiSuggestionSource.SONARCLOUD);
+    counter1.incrementFixSuggestionReceivedCount();
+    counter1.incrementFixSuggestionReceivedCount();
+
+    var suggestionId2 = UUID.randomUUID().toString();
+    var counter2 = new TelemetryFixSuggestionReceivedCounter(AiSuggestionSource.SONARCLOUD);
+    counter2.incrementFixSuggestionReceivedCount();
+
+    var fixSuggestionReceivedCounter = Map.of(
+      suggestionId1, counter1,
+      suggestionId2, counter2
+    );
+
+    var fixSuggestionResolvedStatus1 = new TelemetryFixSuggestionResolvedStatus(FixSuggestionStatus.ACCEPTED, 0);
+    var fixSuggestionResolvedStatus2 = new TelemetryFixSuggestionResolvedStatus(FixSuggestionStatus.ACCEPTED, 1);
+    var fixSuggestionResolved = Map.of(suggestionId1, List.of(fixSuggestionResolvedStatus1, fixSuggestionResolvedStatus2));
+
+    var result = TelemetryUtils.toFixSuggestionResolvedPayload(fixSuggestionReceivedCounter, fixSuggestionResolved);
+
+    assertThat(result).hasSize(2);
+    assertThat(result[0].getSuggestionId()).isEqualTo(suggestionId1);
+    assertThat(result[0].getAiSuggestionOpenedFrom()).isEqualTo(AiSuggestionSource.SONARCLOUD);
+    assertThat(result[0].getOpenedSuggestionsCount()).isEqualTo(2);
+    assertThat(result[0].getSnippets()).hasSize(2);
+
+    assertThat(result[1].getSuggestionId()).isEqualTo(suggestionId2);
+    assertThat(result[1].getAiSuggestionOpenedFrom()).isEqualTo(AiSuggestionSource.SONARCLOUD);
+    assertThat(result[1].getOpenedSuggestionsCount()).isEqualTo(1);
+    assertThat(result[1].getSnippets()).isEmpty();
   }
 }

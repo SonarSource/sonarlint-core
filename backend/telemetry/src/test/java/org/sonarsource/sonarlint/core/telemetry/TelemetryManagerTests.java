@@ -30,6 +30,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.stubbing.Answer;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 
@@ -213,7 +214,7 @@ class TelemetryManagerTests {
       data.incrementOpenHotspotInBrowserCount();
       data.incrementShowHotspotRequestCount();
       data.incrementShowIssueRequestCount();
-      data.incrementFixSuggestionReceivedCount("suggestionId");
+      data.incrementFixSuggestionReceivedCount("suggestionId", AiSuggestionSource.SONARCLOUD);
       data.fixSuggestionResolved("suggestionId", FixSuggestionStatus.ACCEPTED, 0);
       data.incrementTaintVulnerabilitiesInvestigatedLocallyCount();
       data.incrementTaintVulnerabilitiesInvestigatedRemotelyCount();

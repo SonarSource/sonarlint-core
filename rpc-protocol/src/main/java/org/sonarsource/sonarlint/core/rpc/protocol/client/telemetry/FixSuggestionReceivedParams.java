@@ -21,12 +21,18 @@ package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
 
 public class FixSuggestionReceivedParams {
   private final String suggestionId;
+  private final AiSuggestionSource aiSuggestionsSource;
 
-  public FixSuggestionReceivedParams(String suggestionId) {
+  public FixSuggestionReceivedParams(String suggestionId, AiSuggestionSource aiSuggestionsSource) {
     this.suggestionId = suggestionId;
+    this.aiSuggestionsSource = aiSuggestionsSource;
   }
 
   public String getSuggestionId() {
     return suggestionId;
+  }
+
+  public AiSuggestionSource getAiSuggestionsSource() {
+    return aiSuggestionsSource;
   }
 }
