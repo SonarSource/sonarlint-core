@@ -27,8 +27,8 @@ public class TelemetryFixSuggestionPayload {
   @SerializedName("suggestion_id")
   private final String suggestionId;
 
-  @SerializedName("count_ai_suggestions")
-  private final int openedSuggestionsCount;
+  @SerializedName("count_snippets")
+  private final int snippetsCount;
 
   @SerializedName("opened_from")
   private final AiSuggestionSource aiSuggestionOpenedFrom;
@@ -36,10 +36,10 @@ public class TelemetryFixSuggestionPayload {
   @SerializedName("snippets")
   private final List<TelemetryFixSuggestionResolvedPayload> snippets;
 
-  public TelemetryFixSuggestionPayload(String suggestionId, int openedSuggestionsCount, AiSuggestionSource aiSuggestionOpenedFrom,
+  public TelemetryFixSuggestionPayload(String suggestionId, int snippetsCount, AiSuggestionSource aiSuggestionOpenedFrom,
     List<TelemetryFixSuggestionResolvedPayload> snippets) {
     this.suggestionId = suggestionId;
-    this.openedSuggestionsCount = openedSuggestionsCount;
+    this.snippetsCount = snippetsCount;
     this.aiSuggestionOpenedFrom = aiSuggestionOpenedFrom;
     this.snippets = snippets;
   }
@@ -48,12 +48,12 @@ public class TelemetryFixSuggestionPayload {
     return suggestionId;
   }
 
-  public int getOpenedSuggestionsCount() {
-    return openedSuggestionsCount;
-  }
-
   public List<TelemetryFixSuggestionResolvedPayload> getSnippets() {
     return snippets;
+  }
+
+  public int getSnippetsCount() {
+    return snippetsCount;
   }
 
   public AiSuggestionSource getAiSuggestionOpenedFrom() {

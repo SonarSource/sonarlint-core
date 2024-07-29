@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -126,34 +127,50 @@ class TelemetryUtilsTests {
   @Test
   void should_create_telemetry_fixSuggestions_payload() {
     var suggestionId1 = UUID.randomUUID().toString();
-    var counter1 = new TelemetryFixSuggestionReceivedCounter(AiSuggestionSource.SONARCLOUD);
-    counter1.incrementFixSuggestionReceivedCount();
-    counter1.incrementFixSuggestionReceivedCount();
+    var counter1 = new TelemetryFixSuggestionReceivedCounter(AiSuggestionSource.SONARCLOUD, 4);
 
     var suggestionId2 = UUID.randomUUID().toString();
-    var counter2 = new TelemetryFixSuggestionReceivedCounter(AiSuggestionSource.SONARCLOUD);
-    counter2.incrementFixSuggestionReceivedCount();
+    var counter2 = new TelemetryFixSuggestionReceivedCounter(AiSuggestionSource.SONARCLOUD, 2);
+
+    var suggestionId3 = UUID.randomUUID().toString();
+    var counter3 = new TelemetryFixSuggestionReceivedCounter(AiSuggestionSource.SONARCLOUD, 1);
 
     var fixSuggestionReceivedCounter = Map.of(
       suggestionId1, counter1,
-      suggestionId2, counter2
+      suggestionId2, counter2,
+      suggestionId3, counter3
     );
-
     var fixSuggestionResolvedStatus1 = new TelemetryFixSuggestionResolvedStatus(FixSuggestionStatus.ACCEPTED, 0);
     var fixSuggestionResolvedStatus2 = new TelemetryFixSuggestionResolvedStatus(FixSuggestionStatus.ACCEPTED, 1);
-    var fixSuggestionResolved = Map.of(suggestionId1, List.of(fixSuggestionResolvedStatus1, fixSuggestionResolvedStatus2));
+    var fixSuggestionResolvedStatus3 = new TelemetryFixSuggestionResolvedStatus(FixSuggestionStatus.DECLINED, null);
+    var fixSuggestionResolved = Map.of(suggestionId1, List.of(fixSuggestionResolvedStatus1, fixSuggestionResolvedStatus2),
+      suggestionId3, List.of(fixSuggestionResolvedStatus3));
 
     var result = TelemetryUtils.toFixSuggestionResolvedPayload(fixSuggestionReceivedCounter, fixSuggestionResolved);
 
-    assertThat(result).hasSize(2);
-    assertThat(result[0].getSuggestionId()).isEqualTo(suggestionId1);
-    assertThat(result[0].getAiSuggestionOpenedFrom()).isEqualTo(AiSuggestionSource.SONARCLOUD);
-    assertThat(result[0].getOpenedSuggestionsCount()).isEqualTo(2);
-    assertThat(result[0].getSnippets()).hasSize(2);
+    assertThat(result).hasSize(3);
+    var resultingSuggestion1 = Arrays.stream(result).filter(s -> s.getSuggestionId().equals(suggestionId1)).findFirst().orElseThrow();
+    assertThat(resultingSuggestion1.getSuggestionId()).isEqualTo(suggestionId1);
+    assertThat(resultingSuggestion1.getAiSuggestionOpenedFrom()).isEqualTo(AiSuggestionSource.SONARCLOUD);
+    assertThat(resultingSuggestion1.getSnippetsCount()).isEqualTo(4);
+    assertThat(resultingSuggestion1.getSnippets()).hasSize(2);
 
-    assertThat(result[1].getSuggestionId()).isEqualTo(suggestionId2);
-    assertThat(result[1].getAiSuggestionOpenedFrom()).isEqualTo(AiSuggestionSource.SONARCLOUD);
-    assertThat(result[1].getOpenedSuggestionsCount()).isEqualTo(1);
-    assertThat(result[1].getSnippets()).isEmpty();
+    var resultingSuggestion2 = Arrays.stream(result).filter(s -> s.getSuggestionId().equals(suggestionId2)).findFirst().orElseThrow();
+    assertThat(resultingSuggestion2.getSuggestionId()).isEqualTo(suggestionId2);
+    assertThat(resultingSuggestion2.getAiSuggestionOpenedFrom()).isEqualTo(AiSuggestionSource.SONARCLOUD);
+    assertThat(resultingSuggestion2.getSnippetsCount()).isEqualTo(2);
+    assertThat(resultingSuggestion2.getSnippets()).hasSize(1);
+    var telemetryFixSuggestionResolvedPayload2 = resultingSuggestion2.getSnippets().get(0);
+    assertThat(telemetryFixSuggestionResolvedPayload2.getSnippetIndex()).isNull();
+    assertThat(telemetryFixSuggestionResolvedPayload2.getStatus()).isNull();
+
+    var resultingSuggestion3 = Arrays.stream(result).filter(s -> s.getSuggestionId().equals(suggestionId3)).findFirst().orElseThrow();
+    assertThat(resultingSuggestion3.getSuggestionId()).isEqualTo(suggestionId3);
+    assertThat(resultingSuggestion3.getAiSuggestionOpenedFrom()).isEqualTo(AiSuggestionSource.SONARCLOUD);
+    assertThat(resultingSuggestion3.getSnippetsCount()).isEqualTo(1);
+    assertThat(resultingSuggestion3.getSnippets()).hasSize(1);
+    var telemetryFixSuggestionResolvedPayload3 = resultingSuggestion3.getSnippets().get(0);
+    assertThat(telemetryFixSuggestionResolvedPayload3.getSnippetIndex()).isNull();
+    assertThat(telemetryFixSuggestionResolvedPayload3.getStatus()).isEqualTo(FixSuggestionStatus.DECLINED);
   }
 }

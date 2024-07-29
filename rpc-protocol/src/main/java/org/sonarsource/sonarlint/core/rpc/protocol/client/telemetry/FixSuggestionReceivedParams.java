@@ -22,10 +22,12 @@ package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
 public class FixSuggestionReceivedParams {
   private final String suggestionId;
   private final AiSuggestionSource aiSuggestionsSource;
+  private final int snippetsCount;
 
-  public FixSuggestionReceivedParams(String suggestionId, AiSuggestionSource aiSuggestionsSource) {
+  public FixSuggestionReceivedParams(String suggestionId, AiSuggestionSource aiSuggestionsSource, int snippetsCount) {
     this.suggestionId = suggestionId;
     this.aiSuggestionsSource = aiSuggestionsSource;
+    this.snippetsCount = snippetsCount;
   }
 
   public String getSuggestionId() {
@@ -34,5 +36,9 @@ public class FixSuggestionReceivedParams {
 
   public AiSuggestionSource getAiSuggestionsSource() {
     return aiSuggestionsSource;
+  }
+
+  public int getSnippetsCount() {
+    return snippetsCount;
   }
 }

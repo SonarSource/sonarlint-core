@@ -34,4 +34,12 @@ public class TelemetryFixSuggestionResolvedPayload {
     this.status = status;
     this.snippetIndex = snippetIndex;
   }
+
+  public FixSuggestionStatus getStatus() {
+    return status;
+  }
+
+  public Integer getSnippetIndex() {
+    return snippetIndex;
+  }
 }

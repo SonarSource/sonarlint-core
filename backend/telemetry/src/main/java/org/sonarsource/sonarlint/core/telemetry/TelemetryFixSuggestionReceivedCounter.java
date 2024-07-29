@@ -22,22 +22,19 @@ package org.sonarsource.sonarlint.core.telemetry;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
 
 public class TelemetryFixSuggestionReceivedCounter {
-  private int fixSuggestionReceivedCount;
   private final AiSuggestionSource aiSuggestionsSource;
+  private final int snippetsCount;
 
-  public TelemetryFixSuggestionReceivedCounter(AiSuggestionSource aiSuggestionSource) {
+  public TelemetryFixSuggestionReceivedCounter(AiSuggestionSource aiSuggestionSource, int snippetsCount) {
     this.aiSuggestionsSource = aiSuggestionSource;
-  }
-
-  public int getFixSuggestionReceivedCount() {
-    return fixSuggestionReceivedCount;
-  }
-
-  public void incrementFixSuggestionReceivedCount() {
-    this.fixSuggestionReceivedCount++;
+    this.snippetsCount = snippetsCount;
   }
 
   public AiSuggestionSource getAiSuggestionsSource() {
     return aiSuggestionsSource;
+  }
+
+  public int getSnippetsCount() {
+    return snippetsCount;
   }
 }

@@ -294,9 +294,9 @@ public class TelemetryLocalStorage {
     showIssueRequestsCount++;
   }
 
-  public void incrementFixSuggestionReceivedCount(String suggestionId, AiSuggestionSource aiSuggestionSource) {
+  public void fixSuggestionReceived(String suggestionId, AiSuggestionSource aiSuggestionSource, int snippetsCount) {
     markSonarLintAsUsedToday();
-    this.fixSuggestionReceivedCounter.computeIfAbsent(suggestionId, k -> new TelemetryFixSuggestionReceivedCounter(aiSuggestionSource)).incrementFixSuggestionReceivedCount();
+    this.fixSuggestionReceivedCounter.computeIfAbsent(suggestionId, k -> new TelemetryFixSuggestionReceivedCounter(aiSuggestionSource, snippetsCount));
   }
 
   public void fixSuggestionResolved(String suggestionId, FixSuggestionStatus status, @Nullable Integer snippetIndex) {

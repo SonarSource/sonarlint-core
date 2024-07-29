@@ -104,7 +104,7 @@ class TelemetryPayloadTests {
       + "\"hotspot\":{\"open_in_browser_count\":5,\"status_changed_count\":3},"
       + "\"issue\":{\"status_changed_rule_keys\":[\"java:S123\"],\"status_changed_count\":1},"
       + "\"help_and_feedback\":{\"count_by_link\":{\"docs\":5,\"faq\":4}},"
-      + "\"ai_fix_suggestions\":[{\"suggestion_id\":\"suggestionId1\",\"count_ai_suggestions\":1,\"opened_from\":\"SONARCLOUD\",\"snippets\":[{\"status\":\"ACCEPTED\",\"snippet_index\":0},{\"status\":\"DECLINED\",\"snippet_index\":1}]},{\"suggestion_id\":\"suggestionId2\",\"count_ai_suggestions\":2,\"opened_from\":\"SONARCLOUD\",\"snippets\":[{\"status\":\"ACCEPTED\"}]}],"
+      + "\"ai_fix_suggestions\":[{\"suggestion_id\":\"suggestionId1\",\"count_snippets\":1,\"opened_from\":\"SONARCLOUD\",\"snippets\":[{\"status\":\"ACCEPTED\",\"snippet_index\":0},{\"status\":\"DECLINED\",\"snippet_index\":1}]},{\"suggestion_id\":\"suggestionId2\",\"count_snippets\":2,\"opened_from\":\"SONARCLOUD\",\"snippets\":[{\"status\":\"ACCEPTED\"}]},{\"suggestion_id\":\"suggestionId3\",\"count_snippets\":3,\"opened_from\":\"SONARCLOUD\",\"snippets\":[]}],"
       + "\"cayc\":{\"new_code_focus\":{\"enabled\":true,\"changes\":2}},"
       + "\"shared_connected_mode\":{\"manual_bindings_count\":3,\"imported_bindings_count\":2,\"auto_bindings_count\":1,\"exported_connected_mode_count\":4},"
       + "\"aString\":\"stringValue\","
@@ -119,7 +119,7 @@ class TelemetryPayloadTests {
     assertThat(m.notifications().disabled()).isTrue();
     assertThat(m.notifications().counters()).containsOnlyKeys("QUALITY_GATE", "NEW_ISSUES");
     assertThat(m.helpAndFeedbackPayload().getCounters()).containsOnlyKeys("docs", "faq");
-    assertThat(m.getAiFixSuggestionsPayload()).hasSize(2);
+    assertThat(m.getAiFixSuggestionsPayload()).hasSize(3);
     assertThat(m.cleanAsYouCodePayload().getNewCodePayload())
       .extracting(NewCodeFocusPayload::isEnabled, NewCodeFocusPayload::getChanges)
       .containsExactly(true, 2);
@@ -173,7 +173,10 @@ class TelemetryPayloadTests {
     var fixSuggestionPayload2 = new TelemetryFixSuggestionPayload("suggestionId2", 2,
       AiSuggestionSource.SONARCLOUD,
       List.of(new TelemetryFixSuggestionResolvedPayload(FixSuggestionStatus.ACCEPTED, null)));
-    return new TelemetryFixSuggestionPayload[]{fixSuggestionPayload1, fixSuggestionPayload2};
+    var fixSuggestionPayload3 = new TelemetryFixSuggestionPayload("suggestionId3", 3,
+      AiSuggestionSource.SONARCLOUD,
+      List.of());
+    return new TelemetryFixSuggestionPayload[]{fixSuggestionPayload1, fixSuggestionPayload2, fixSuggestionPayload3};
   }
 
   @Test
