@@ -301,7 +301,14 @@ public class TelemetryLocalStorage {
 
   public void fixSuggestionResolved(String suggestionId, FixSuggestionStatus status, @Nullable Integer snippetIndex) {
     markSonarLintAsUsedToday();
-    this.fixSuggestionResolved.computeIfAbsent(suggestionId, k -> new ArrayList<>()).add(new TelemetryFixSuggestionResolvedStatus(status, snippetIndex));
+    var fixSuggestionSnippets = this.fixSuggestionResolved.computeIfAbsent(suggestionId, k -> new ArrayList<>());
+    var existingSnippetStatus = fixSuggestionSnippets.stream()
+      .filter(s -> (snippetIndex == null && s.getFixSuggestionResolvedSnippetIndex() == null) ||
+        (s.getFixSuggestionResolvedSnippetIndex() != null && s.getFixSuggestionResolvedSnippetIndex().equals(snippetIndex)))
+      .findFirst();
+    // if we already had a status for this snippet, we should replace it
+    existingSnippetStatus.ifPresentOrElse(telemetryFixSuggestionResolvedStatus -> telemetryFixSuggestionResolvedStatus.setFixSuggestionResolvedStatus(status),
+      () -> fixSuggestionSnippets.add(new TelemetryFixSuggestionResolvedStatus(status, snippetIndex)));
   }
 
   public int getShowIssueRequestsCount() {

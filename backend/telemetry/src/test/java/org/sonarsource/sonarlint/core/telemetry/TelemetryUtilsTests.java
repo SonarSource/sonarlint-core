@@ -159,10 +159,7 @@ class TelemetryUtilsTests {
     assertThat(resultingSuggestion2.getSuggestionId()).isEqualTo(suggestionId2);
     assertThat(resultingSuggestion2.getAiSuggestionOpenedFrom()).isEqualTo(AiSuggestionSource.SONARCLOUD);
     assertThat(resultingSuggestion2.getSnippetsCount()).isEqualTo(2);
-    assertThat(resultingSuggestion2.getSnippets()).hasSize(1);
-    var telemetryFixSuggestionResolvedPayload2 = resultingSuggestion2.getSnippets().get(0);
-    assertThat(telemetryFixSuggestionResolvedPayload2.getSnippetIndex()).isNull();
-    assertThat(telemetryFixSuggestionResolvedPayload2.getStatus()).isNull();
+    assertThat(resultingSuggestion2.getSnippets()).isEmpty();
 
     var resultingSuggestion3 = Arrays.stream(result).filter(s -> s.getSuggestionId().equals(suggestionId3)).findFirst().orElseThrow();
     assertThat(resultingSuggestion3.getSuggestionId()).isEqualTo(suggestionId3);
