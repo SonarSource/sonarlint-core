@@ -31,8 +31,8 @@ import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryAnalyzerPerformancePayload;
+import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryFixSuggestionPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryFixSuggestionResolvedPayload;
-import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryFixSuggestionResolvedStatusPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryNotificationsCounterPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryNotificationsPayload;
 
@@ -88,13 +88,21 @@ class TelemetryUtils {
       e -> new TelemetryNotificationsCounterPayload(e.getValue().getDevNotificationsCount(), e.getValue().getDevNotificationsClicked())));
   }
 
-  static TelemetryFixSuggestionResolvedPayload toFixSuggestionResolvedPayload(
+  static TelemetryFixSuggestionPayload[] toFixSuggestionResolvedPayload(
+    Map<String, TelemetryFixSuggestionReceivedCounter> fixSuggestionReceivedCounter,
     Map<String, List<TelemetryFixSuggestionResolvedStatus>> fixSuggestionResolved
   ) {
-    return new TelemetryFixSuggestionResolvedPayload(fixSuggestionResolved.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey,
-      e -> e.getValue().stream().map(
-        l -> new TelemetryFixSuggestionResolvedStatusPayload(l.getFixSuggestionResolvedStatus().toString(), l.getFixSuggestionResolvedSnippetIndex())
-    ).collect(Collectors.toList()))));
+    return fixSuggestionReceivedCounter.entrySet().stream().map(e -> {
+      var suggestionId = e.getKey();
+      var snippetsCount = e.getValue().getSnippetsCount();
+      var source = e.getValue().getAiSuggestionsSource();
+      var resolvedSnippetStatues = fixSuggestionResolved.getOrDefault(suggestionId, List.of(new TelemetryFixSuggestionResolvedStatus(null, null)));
+      var resolvedSnippetPayload = resolvedSnippetStatues.stream()
+        .map(s -> new TelemetryFixSuggestionResolvedPayload(s.getFixSuggestionResolvedStatus(),
+        s.getFixSuggestionResolvedSnippetIndex())).collect(Collectors.toList());
+
+      return new TelemetryFixSuggestionPayload(suggestionId, snippetsCount, source, resolvedSnippetPayload);
+    }).toArray(TelemetryFixSuggestionPayload[]::new);
   }
 
   /**

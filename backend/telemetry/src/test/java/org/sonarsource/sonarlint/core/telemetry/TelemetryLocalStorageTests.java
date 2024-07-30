@@ -23,11 +23,14 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.UUID;
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorage.isOlder;
 
 class TelemetryLocalStorageTests {
@@ -201,5 +204,20 @@ class TelemetryLocalStorageTests {
     assertThat(data.numUseDays()).isEqualTo(numUseDays);
     assertThat(data.installTime()).isEqualTo(installTime);
     assertThat(data.lastUseDate()).isEqualTo(lastUseDate);
+  }
+
+  @Test
+  void should_replace_fix_suggestion_snippet_status() {
+    var data = new TelemetryLocalStorage();
+
+    var suggestionId = UUID.randomUUID().toString();
+    data.fixSuggestionResolved(suggestionId, FixSuggestionStatus.ACCEPTED, 0);
+
+    assertThat(data.getFixSuggestionResolved().get(suggestionId)).extracting(TelemetryFixSuggestionResolvedStatus::getFixSuggestionResolvedStatus, TelemetryFixSuggestionResolvedStatus::getFixSuggestionResolvedSnippetIndex)
+      .containsExactly(tuple(FixSuggestionStatus.ACCEPTED, 0));
+
+    data.fixSuggestionResolved(suggestionId, FixSuggestionStatus.DECLINED, 0);
+    assertThat(data.getFixSuggestionResolved().get(suggestionId)).extracting(TelemetryFixSuggestionResolvedStatus::getFixSuggestionResolvedStatus, TelemetryFixSuggestionResolvedStatus::getFixSuggestionResolvedSnippetIndex)
+      .containsExactly(tuple(FixSuggestionStatus.DECLINED, 0));
   }
 }
