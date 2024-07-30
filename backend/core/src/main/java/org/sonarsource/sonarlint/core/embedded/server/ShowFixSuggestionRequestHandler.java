@@ -109,8 +109,8 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
       showFixSuggestionQuery.projectKey,
       (connectionId, configScopeId, cancelMonitor) -> {
         if (configScopeId != null) {
-          if (branchTrackingService.getMatchedSonarProjectBranch(configScopeId) != null &&
-            !branchTrackingService.getMatchedSonarProjectBranch(configScopeId).equals(showFixSuggestionQuery.branch)) {
+          var matchingBranch = branchTrackingService.getMatchedSonarProjectBranch(configScopeId);
+          if (matchingBranch != null && !matchingBranch.equals(showFixSuggestionQuery.branch)) {
             client.showMessage(new ShowMessageParams(MessageType.ERROR, "Attempted to show a fix suggestion for a different branch than the one currently checked out." +
               "\nPlease check out the correct branch and try again."));
             return;

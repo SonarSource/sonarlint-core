@@ -156,6 +156,7 @@ public class SonarProjectBranchTrackingService {
     return matchedSonarBranch;
   }
 
+  @CheckForNull
   public String getMatchedSonarProjectBranch(String configurationScopeId) {
     return cachedMatchingBranchByConfigScope.get(configurationScopeId);
   }

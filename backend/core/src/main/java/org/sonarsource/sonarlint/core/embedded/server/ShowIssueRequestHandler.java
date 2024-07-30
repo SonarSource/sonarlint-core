@@ -113,8 +113,8 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
   }
 
   private static AssistCreatingConnectionParams createAssistServerConnectionParams(ShowIssueQuery query) {
-    String tokenName = query.getTokenName();
-    String tokenValue = query.getTokenValue();
+    var tokenName = query.getTokenName();
+    var tokenValue = query.getTokenValue();
     return query.isSonarCloud ?
       new AssistCreatingConnectionParams(new SonarCloudConnectionParams(query.getOrganizationKey(), tokenName, tokenValue))
       : new AssistCreatingConnectionParams(new SonarQubeConnectionParams(query.getServerUrl(), tokenName, tokenValue));

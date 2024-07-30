@@ -6,13 +6,29 @@
   * User-defined files will be included in the analysis. Non-user-defined files such as generated or library files will be excluded from
     analysis when analysis is triggered by the backend. If the analysis was forced by the client, exclusions are not respected.
 
+* Introduce a new parameter in the constructor of `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto`: `canOpenFixSuggestion`.
+  * This flag lets clients completely disable the opening a fix suggestion in the IDE, which can be useful if the feature is not yet available in the client.
+
 ## New features
 
 * Add a method to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient` to allow the backend to request client-defined file
   exclusions from the client before every standalone analysis.
   * `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#getFileExclusions` to request file exclusions
+
 * Add a field to `org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto` to allow the backend to distinguish non-user-defined
   files to exclude from analysis
+
+* Add `showFixSuggestion` method to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient`
+  * It's only available when the feature flag `canOpenFixSuggestion` is enabled
+  * When using this method, you will receive a single fix suggestion for a specific issue that should be displayed to the user
+  * The user should have the possibility to accept or decline the fix suggestion
+  * The fix suggestion can be displayed at different locations in the file
+
+* Add `fixSuggestionResolved` method to `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService`
+  * You should use this method whenever a fix suggestion has been accepted or declined
+  * If the fix has multiple changes (snippets), you should call the method once for each
+  * The `indexSnippet` should be filled if possible, it corresponds to the snippet index in the list of changes
+  * If you do not know if the fix was accepted or declined at the snippet level, you should call the method once for the whole fix
 
 ### File events
 
