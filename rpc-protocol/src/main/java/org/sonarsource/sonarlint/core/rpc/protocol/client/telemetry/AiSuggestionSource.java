@@ -20,16 +20,6 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
 
 public enum AiSuggestionSource {
-  SONARQUBE("SonarQube"),
-  SONARCLOUD("SonarCloud");
-
-  private final String displayName;
-
-  AiSuggestionSource(String source) {
-    this.displayName = source;
-  }
-
-  public String getDisplayName() {
-    return displayName;
-  }
+  SONARQUBE,
+  SONARCLOUD;
 }

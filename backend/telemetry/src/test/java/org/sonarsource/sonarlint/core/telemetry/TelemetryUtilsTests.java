@@ -151,20 +151,22 @@ class TelemetryUtilsTests {
     assertThat(result).hasSize(3);
     var resultingSuggestion1 = Arrays.stream(result).filter(s -> s.getSuggestionId().equals(suggestionId1)).findFirst().orElseThrow();
     assertThat(resultingSuggestion1.getSuggestionId()).isEqualTo(suggestionId1);
-    assertThat(resultingSuggestion1.getAiSuggestionOpenedFrom()).isEqualTo(AiSuggestionSource.SONARCLOUD);
-    assertThat(resultingSuggestion1.getSnippetsCount()).isEqualTo(4);
+    assertThat(resultingSuggestion1.getOpenedFrom()).isEqualTo(AiSuggestionSource.SONARCLOUD);
+    assertThat(resultingSuggestion1.getCountSnippets()).isEqualTo(4);
     assertThat(resultingSuggestion1.getSnippets()).hasSize(2);
 
     var resultingSuggestion2 = Arrays.stream(result).filter(s -> s.getSuggestionId().equals(suggestionId2)).findFirst().orElseThrow();
     assertThat(resultingSuggestion2.getSuggestionId()).isEqualTo(suggestionId2);
-    assertThat(resultingSuggestion2.getAiSuggestionOpenedFrom()).isEqualTo(AiSuggestionSource.SONARCLOUD);
-    assertThat(resultingSuggestion2.getSnippetsCount()).isEqualTo(2);
-    assertThat(resultingSuggestion2.getSnippets()).isEmpty();
+    assertThat(resultingSuggestion2.getOpenedFrom()).isEqualTo(AiSuggestionSource.SONARCLOUD);
+    assertThat(resultingSuggestion2.getCountSnippets()).isEqualTo(2);
+    assertThat(resultingSuggestion2.getSnippets()).hasSize(1);
+    assertThat(resultingSuggestion2.getSnippets().get(0).getStatus()).isNull();
+    assertThat(resultingSuggestion2.getSnippets().get(0).getSnippetIndex()).isNull();
 
     var resultingSuggestion3 = Arrays.stream(result).filter(s -> s.getSuggestionId().equals(suggestionId3)).findFirst().orElseThrow();
     assertThat(resultingSuggestion3.getSuggestionId()).isEqualTo(suggestionId3);
-    assertThat(resultingSuggestion3.getAiSuggestionOpenedFrom()).isEqualTo(AiSuggestionSource.SONARCLOUD);
-    assertThat(resultingSuggestion3.getSnippetsCount()).isEqualTo(1);
+    assertThat(resultingSuggestion3.getOpenedFrom()).isEqualTo(AiSuggestionSource.SONARCLOUD);
+    assertThat(resultingSuggestion3.getCountSnippets()).isEqualTo(1);
     assertThat(resultingSuggestion3.getSnippets()).hasSize(1);
     var telemetryFixSuggestionResolvedPayload3 = resultingSuggestion3.getSnippets().get(0);
     assertThat(telemetryFixSuggestionResolvedPayload3.getSnippetIndex()).isNull();

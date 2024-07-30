@@ -263,6 +263,7 @@ public class TelemetryPayload {
   public String toJson() {
     var gson = new GsonBuilder()
       .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeAdapter())
+      .serializeNulls()
       .create();
     var jsonPayload = gson.toJsonTree(this).getAsJsonObject();
     var jsonAdditional = gson.toJsonTree(additionalAttributes, new TypeToken<Map<String, Object>>() {

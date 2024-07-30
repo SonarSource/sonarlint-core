@@ -30,7 +30,7 @@ public class TelemetryFixSuggestionResolvedPayload {
   @SerializedName("snippet_index")
   private final Integer snippetIndex;
 
-  public TelemetryFixSuggestionResolvedPayload(FixSuggestionStatus status, @Nullable Integer snippetIndex) {
+  public TelemetryFixSuggestionResolvedPayload(@Nullable FixSuggestionStatus status, @Nullable Integer snippetIndex) {
     this.status = status;
     this.snippetIndex = snippetIndex;
   }

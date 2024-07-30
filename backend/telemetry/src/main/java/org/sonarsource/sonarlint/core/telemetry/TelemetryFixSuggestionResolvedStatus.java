@@ -23,11 +23,12 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
 
 public class TelemetryFixSuggestionResolvedStatus {
+  @Nullable
   private FixSuggestionStatus fixSuggestionResolvedStatus;
   @Nullable
   private final Integer fixSuggestionResolvedSnippetIndex;
 
-  public TelemetryFixSuggestionResolvedStatus(FixSuggestionStatus fixSuggestionResolvedStatus, @Nullable Integer fixSuggestionResolvedSnippetIndex) {
+  public TelemetryFixSuggestionResolvedStatus(@Nullable FixSuggestionStatus fixSuggestionResolvedStatus, @Nullable Integer fixSuggestionResolvedSnippetIndex) {
     this.fixSuggestionResolvedStatus = fixSuggestionResolvedStatus;
     this.fixSuggestionResolvedSnippetIndex = fixSuggestionResolvedSnippetIndex;
   }
