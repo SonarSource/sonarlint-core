@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
 
 import static java.time.temporal.ChronoUnit.DAYS;
@@ -293,14 +294,24 @@ public class TelemetryLocalStorage {
     showIssueRequestsCount++;
   }
 
-  public void incrementFixSuggestionReceivedCount(String suggestionId) {
+  public void fixSuggestionReceived(String suggestionId, AiSuggestionSource aiSuggestionSource, int snippetsCount) {
     markSonarLintAsUsedToday();
-    this.fixSuggestionReceivedCounter.computeIfAbsent(suggestionId, k -> new TelemetryFixSuggestionReceivedCounter()).incrementFixSuggestionReceivedCount();
+    this.fixSuggestionReceivedCounter.computeIfAbsent(suggestionId, k -> new TelemetryFixSuggestionReceivedCounter(aiSuggestionSource, snippetsCount));
   }
 
   public void fixSuggestionResolved(String suggestionId, FixSuggestionStatus status, @Nullable Integer snippetIndex) {
     markSonarLintAsUsedToday();
-    this.fixSuggestionResolved.computeIfAbsent(suggestionId, k -> new ArrayList<>()).add(new TelemetryFixSuggestionResolvedStatus(status, snippetIndex));
+    var fixSuggestionSnippets = this.fixSuggestionResolved.computeIfAbsent(suggestionId, k -> new ArrayList<>());
+    var existingSnippetStatus = fixSuggestionSnippets.stream()
+      .filter(s -> {
+        var previousIndex = s.getFixSuggestionResolvedSnippetIndex();
+        return (snippetIndex == null && previousIndex == null) ||
+          (previousIndex != null && previousIndex.equals(snippetIndex));
+      })
+      .findFirst();
+    // if we already had a status for this snippet, we should replace it
+    existingSnippetStatus.ifPresentOrElse(telemetryFixSuggestionResolvedStatus -> telemetryFixSuggestionResolvedStatus.setFixSuggestionResolvedStatus(status),
+      () -> fixSuggestionSnippets.add(new TelemetryFixSuggestionResolvedStatus(status, snippetIndex)));
   }
 
   public int getShowIssueRequestsCount() {

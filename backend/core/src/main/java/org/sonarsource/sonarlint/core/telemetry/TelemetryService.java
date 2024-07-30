@@ -164,7 +164,7 @@ public class TelemetryService {
   }
 
   public void fixSuggestionReceived(FixSuggestionReceivedParams params) {
-    updateTelemetry(localStorage -> localStorage.incrementFixSuggestionReceivedCount(params.getSuggestionId()));
+    updateTelemetry(localStorage -> localStorage.fixSuggestionReceived(params.getSuggestionId(), params.getAiSuggestionsSource(), params.getSnippetsCount()));
   }
 
   public void fixSuggestionResolved(FixSuggestionResolvedParams params) {

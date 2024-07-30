@@ -20,19 +20,26 @@
 package org.sonarsource.sonarlint.core.telemetry.payload;
 
 import com.google.gson.annotations.SerializedName;
-import java.util.List;
-import java.util.Map;
+import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
 
 public class TelemetryFixSuggestionResolvedPayload {
+  @SerializedName("status")
+  private final FixSuggestionStatus status;
 
-  @SerializedName("opened_fix_status_by_suggestion_id")
-  private final Map<String, List<TelemetryFixSuggestionResolvedStatusPayload>> status;
+  @SerializedName("snippet_index")
+  private final Integer snippetIndex;
 
-  public TelemetryFixSuggestionResolvedPayload(Map<String, List<TelemetryFixSuggestionResolvedStatusPayload>> status) {
+  public TelemetryFixSuggestionResolvedPayload(@Nullable FixSuggestionStatus status, @Nullable Integer snippetIndex) {
     this.status = status;
+    this.snippetIndex = snippetIndex;
   }
 
-  public Map<String, List<TelemetryFixSuggestionResolvedStatusPayload>> getStatus() {
+  public FixSuggestionStatus getStatus() {
     return status;
+  }
+
+  public Integer getSnippetIndex() {
+    return snippetIndex;
   }
 }
