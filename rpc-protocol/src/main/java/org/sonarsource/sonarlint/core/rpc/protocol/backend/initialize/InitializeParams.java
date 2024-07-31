@@ -88,6 +88,7 @@ public class InitializeParams {
    * @param workDir                     Path to work directory. If null, will default to [sonarlintUserHome]/work
    * @param sonarlintUserHome           Path to SonarLint user home directory. If null, will default to ~/.sonarlint
    * @param standaloneRuleConfigByKey   Local rule configuration for standalone analysis. This configuration will override defaults rule activation and parameters.
+   * @deprecated since 10.4, use the other constructor instead
    */
   @Deprecated(since = "10.4")
   public InitializeParams(
