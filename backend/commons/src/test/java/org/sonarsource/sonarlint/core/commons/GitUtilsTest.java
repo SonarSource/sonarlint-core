@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.commons;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -244,5 +245,13 @@ class GitUtilsTest {
     assertThat(Stream.of(fileAUri, fileBUri, fileCUri).filter(not(sonarLintGitIgnore::isFileIgnored)).collect(Collectors.toList()))
       .hasSize(3)
       .containsExactly(fileAUri, fileBUri, fileCUri);
+  }
+
+  @Test
+  void should_consider_files_with_non_file_scheme_not_ignored() {
+    var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(projectDirPath);
+
+    assertThat(sonarLintGitIgnore.isIgnored(URI.create("temp:///file/path"), false)).isFalse();
+    assertThat(sonarLintGitIgnore.isIgnored(URI.create("http:///localhost:12345/file/path"), false)).isFalse();
   }
 }

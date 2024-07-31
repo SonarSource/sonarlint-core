@@ -20,10 +20,13 @@
 package org.sonarsource.sonarlint.core.commons;
 
 import java.net.URI;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Path;
 import org.eclipse.jgit.ignore.IgnoreNode;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class SonarLintGitIgnore {
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final IgnoreNode ignoreNode;
   private final Path gitRepoRelativeProjectBaseDir;
 
@@ -33,16 +36,21 @@ public class SonarLintGitIgnore {
   }
 
   public boolean isIgnored(URI fileUri, boolean isDirectory) {
-    var fileRelativeToGitRepoPath = gitRepoRelativeProjectBaseDir.resolve(Path.of(fileUri)).toUri().toString();
-    var rules = ignoreNode.getRules();
-    // Parse rules in the reverse order that they were read because later rules have higher priority
-    for (var i = rules.size() - 1; i > -1; i--) {
-      var rule = rules.get(i);
-      if (rule.isMatch(fileRelativeToGitRepoPath, isDirectory)) {
-        return rule.getResult();
+    try {
+      var fileRelativeToGitRepoPath = gitRepoRelativeProjectBaseDir.resolve(Path.of(fileUri)).toUri().toString();
+      var rules = ignoreNode.getRules();
+      // Parse rules in the reverse order that they were read because later rules have higher priority
+      for (var i = rules.size() - 1; i > -1; i--) {
+        var rule = rules.get(i);
+        if (rule.isMatch(fileRelativeToGitRepoPath, isDirectory)) {
+          return rule.getResult();
+        }
       }
+      return false;
+    } catch (FileSystemNotFoundException e) {
+      LOG.debug("Could not resolve file URI to a path. Considering file {} not ignored.", fileUri);
+      return false;
     }
-    return false;
   }
 
   public boolean isFileIgnored(URI fileUri) {
