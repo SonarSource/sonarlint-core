@@ -52,7 +52,7 @@ class LanguageDetectionTests {
   }
 
   @Test
-  void search_by_file_extension() throws Exception {
+  void search_by_file_extension() {
     var detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
 
     assertThat(detection.language(newInputFile("Foo.java"))).isEqualTo(SonarLanguage.JAVA);
@@ -69,7 +69,7 @@ class LanguageDetectionTests {
   }
 
   @Test
-  void recognise_yaml_files() throws IOException {
+  void recognise_yaml_files() {
     var detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
 
     assertThat(detection.language(newInputFile("lambda.yaml"))).isEqualTo(SonarLanguage.YAML);
@@ -82,7 +82,7 @@ class LanguageDetectionTests {
   }
 
   @Test
-  void recognise_kts_files() throws IOException {
+  void recognise_kts_files() {
     var detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
 
     assertThat(detection.language(newInputFile("settings.kts"))).isEqualTo(SonarLanguage.KOTLIN);
@@ -92,7 +92,7 @@ class LanguageDetectionTests {
   }
 
   @Test
-  void recognise_css_files() throws IOException {
+  void recognise_css_files() {
     var detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
 
     assertThat(detection.language(newInputFile("style.css"))).isEqualTo(SonarLanguage.CSS);
@@ -103,7 +103,7 @@ class LanguageDetectionTests {
   }
 
   @Test
-  void recognise_go_file() throws IOException {
+  void recognise_go_file() {
     var detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
 
     assertThat(detection.language(newInputFile("myFile.go"))).isEqualTo(SonarLanguage.GO);
@@ -113,7 +113,7 @@ class LanguageDetectionTests {
   }
 
   @Test
-  void recognise_terraform_file() throws IOException {
+  void recognise_terraform_file() {
     var detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
 
     assertThat(detection.language(newInputFile("myFile.tf"))).isEqualTo(SonarLanguage.TERRAFORM);
@@ -123,13 +123,13 @@ class LanguageDetectionTests {
   }
 
   @Test
-  void should_not_fail_if_no_language() throws Exception {
+  void should_not_fail_if_no_language() {
     var detection = new LanguageDetection(new MapSettings(Map.of()).asConfig());
     assertThat(detection.language(newInputFile("Foo.blabla"))).isNull();
   }
 
   @Test
-  void fail_if_conflicting_language_suffix() throws Exception {
+  void fail_if_conflicting_language_suffix() {
     var settings = new MapSettings(Map.of(SonarLanguage.XML.getFileSuffixesPropKey(), "xhtml",
       SonarLanguage.HTML.getFileSuffixesPropKey(), "xhtml"));
     var detection = new LanguageDetection(settings.asConfig());
