@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.commons;
 
-import java.net.URI;
 import java.nio.file.Path;
 import org.eclipse.jgit.ignore.IgnoreNode;
 
@@ -32,8 +31,8 @@ public class SonarLintGitIgnore {
     this.gitRepoRelativeProjectBaseDir = gitRepoRelativeProjectBaseDir;
   }
 
-  public boolean isIgnored(URI fileUri, boolean isDirectory) {
-    var fileRelativeToGitRepoPath = gitRepoRelativeProjectBaseDir.resolve(Path.of(fileUri)).toUri().toString();
+  public boolean isIgnored(String relativeFilePath, boolean isDirectory) {
+    var fileRelativeToGitRepoPath = gitRepoRelativeProjectBaseDir.resolve(relativeFilePath).toString();
     var rules = ignoreNode.getRules();
     // Parse rules in the reverse order that they were read because later rules have higher priority
     for (var i = rules.size() - 1; i > -1; i--) {
@@ -45,7 +44,7 @@ public class SonarLintGitIgnore {
     return false;
   }
 
-  public boolean isFileIgnored(URI fileUri) {
-    return isIgnored(fileUri, false);
+  public boolean isFileIgnored(String relativeFilePath) {
+    return isIgnored(relativeFilePath, false);
   }
 }

@@ -25,8 +25,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.UnaryOperator;
-import java.util.stream.IntStream;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -43,15 +43,15 @@ import org.sonarsource.sonarlint.core.commons.util.git.GitUtils;
 
 import static java.util.function.Predicate.not;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.jgit.lib.Constants.GITIGNORE_FILENAME;
 import static org.eclipse.jgit.util.FileUtils.RECURSIVE;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.addFileToGitIgnoreAndCommit;
-import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.blameWithFilesGitCommand;
-import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.getVSCChangedFiles;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
-import static org.eclipse.jgit.lib.Constants.GITIGNORE_FILENAME;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createFile;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRepository;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.modifyFile;
+import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.blameWithFilesGitCommand;
+import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.getVSCChangedFiles;
 
 class GitUtilsTest {
 
@@ -179,9 +179,9 @@ class GitUtilsTest {
     createFile(projectDirPath, "fileB", "line1", "line2", "line3");
     createFile(projectDirPath, "fileC", "line1", "line2", "line3");
 
-    var fileAUri = projectDirPath.resolve("fileA").toUri();
-    var fileBUri = projectDirPath.resolve("fileB").toUri();
-    var fileCUri = projectDirPath.resolve("fileC").toUri();
+    var fileAUri = projectDirPath.resolve("fileA").toString();
+    var fileBUri = projectDirPath.resolve("fileB").toString();
+    var fileCUri = projectDirPath.resolve("fileC").toString();
 
     var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(projectDirPath);
     assertThat(Stream.of(fileAUri, fileBUri, fileCUri).filter(not(sonarLintGitIgnore::isFileIgnored)).collect(Collectors.toList()))
@@ -205,9 +205,9 @@ class GitUtilsTest {
     createFile(projectDirPath, fileB.toString(), "line1", "line2", "line3");
     createFile(projectDirPath, fileC.toString(), "line1", "line2", "line3");
 
-    var fileAUri = projectDirPath.resolve("fileA").toUri();
-    var fileBUri = projectDirPath.resolve(fileB).toUri();
-    var fileCUri = projectDirPath.resolve(fileC).toUri();
+    var fileAUri = projectDirPath.resolve("fileA").toString();
+    var fileBUri = projectDirPath.resolve(fileB).toString();
+    var fileCUri = projectDirPath.resolve(fileC).toString();
 
     var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(projectDirPath);
     assertThat(Stream.of(fileAUri, fileBUri, fileCUri).filter(not(sonarLintGitIgnore::isFileIgnored)).collect(Collectors.toList()))
@@ -228,9 +228,9 @@ class GitUtilsTest {
     createFile(projectDirPath, "fileB", "line1", "line2", "line3");
     createFile(projectDirPath, "fileC", "line1", "line2", "line3");
 
-    var fileAUri = projectDirPath.resolve("fileA").toUri();
-    var fileBUri = projectDirPath.resolve("fileB").toUri();
-    var fileCUri = projectDirPath.resolve("fileC").toUri();
+    var fileAUri = projectDirPath.resolve("fileA").toString();
+    var fileBUri = projectDirPath.resolve("fileB").toString();
+    var fileCUri = projectDirPath.resolve("fileC").toString();
 
     var gitIgnore = projectDirPath.resolve(GITIGNORE_FILENAME);
     FileUtils.deleteQuietly(gitIgnore.toFile());
