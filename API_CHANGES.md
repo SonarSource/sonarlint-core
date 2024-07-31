@@ -8,6 +8,8 @@
 
 * Introduce a new parameter in the constructor of `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto`: `canOpenFixSuggestion`.
   * This flag lets clients completely disable the opening a fix suggestion in the IDE, which can be useful if the feature is not yet available in the client.
+* Introduce a new initialization parameter `TelemetryMigrationDto` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams`
+  * The parameter is nullable and should be used only by the SLVS to migrate its telemetry. All other clients should provide `null` as a value.
 
 ## New features
 
@@ -80,9 +82,6 @@
 * Add a method to the `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService` to let the client notify the backend with user defined analysis properties
   * `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#didSetUserAnalysisProperties` to set user defined properties
 * For analysis, both user-defined and inferred properties will be merged. If the same property is inferred by the client and provided by the user - the inferred value will be used for analysis.
-* Add a method to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient` to allow the backend to request client-defined file
-  exclusions from the client before every standalone analysis.
-  * `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#getFileExclusions` to request file exclusions
 
 ### Open Issue in IDE
 
