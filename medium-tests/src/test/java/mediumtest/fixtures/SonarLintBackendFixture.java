@@ -68,6 +68,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSp
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarCloudAlternativeEnvironmentDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SslConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryMigrationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
@@ -154,6 +155,7 @@ public class SonarLintBackendFixture {
     private String keyStorePassword;
     private String keyStoreType;
     private boolean automaticAnalysisEnabled = true;
+    private TelemetryMigrationDto telemetryMigration;
 
     public SonarLintBackendBuilder withSonarQubeConnection() {
       return withSonarQubeConnection("connectionId");
@@ -429,6 +431,11 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintBackendBuilder withTelemetryMigration(TelemetryMigrationDto telemetryMigration) {
+      this.telemetryMigration = telemetryMigration;
+      return this;
+    }
+
     public SonarLintTestRpcServer build(SonarLintRpcClientDelegate client) {
       var sonarlintUserHome = tempDirectory("slUserHome");
       var workDir = tempDirectory("work");
@@ -461,7 +468,7 @@ public class SonarLintBackendFixture {
             featureFlags,
             storageRoot, workDir, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
             enabledLanguages, extraEnabledLanguagesInConnectedMode, disabledPluginKeysForAnalysis, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
-            standaloneConfigByKey, isFocusOnNewCode, new LanguageSpecificRequirements(clientNodeJsPath, null), automaticAnalysisEnabled))
+            standaloneConfigByKey, isFocusOnNewCode, new LanguageSpecificRequirements(clientNodeJsPath, null), automaticAnalysisEnabled, telemetryMigration))
           .get();
         sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
         return sonarLintBackend;

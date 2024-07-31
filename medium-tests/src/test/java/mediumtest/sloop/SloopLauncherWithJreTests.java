@@ -84,7 +84,7 @@ class SloopLauncherWithJreTests {
 
     server.initialize(new InitializeParams(clientInfo, telemetryInitDto, HttpConfigurationDto.defaultConfig(), null, featureFlags, sonarUserHome.resolve("storage"), sonarUserHome.resolve("workDir"),
     Set.of(PluginLocator.getPhpPluginPath().toAbsolutePath()), Collections.emptyMap(), Set.of(PHP), Collections.emptySet(), Collections.emptySet(), Collections.emptyList(),
-      Collections.emptyList(), sonarUserHome.toString(), Map.of(), false, null, false)).join();
+      Collections.emptyList(), sonarUserHome.toString(), Map.of(), false, null, false, null)).join();
 
     var result = server.getRulesService().listAllStandaloneRulesDefinitions().join();
     assertThat(result.getRulesByKey()).hasSize(219);

@@ -8,6 +8,8 @@
 
 * Introduce a new parameter in the constructor of `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto`: `canOpenFixSuggestion`.
   * This flag lets clients completely disable the opening a fix suggestion in the IDE, which can be useful if the feature is not yet available in the client.
+* Introduce a new initialization parameter `TelemetryMigrationDto` to `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams`
+  * The parameter is nullable and should be used only by the SLVS to migrate its telemetry. All other clients should provide `null` as a value.
 
 ## New features
 

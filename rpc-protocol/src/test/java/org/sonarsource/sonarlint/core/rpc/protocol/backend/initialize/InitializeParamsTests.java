@@ -27,7 +27,30 @@ class InitializeParamsTests {
 
   @Test
   void should_replace_null_collections_by_empty() {
-    var params = new InitializeParams(null, null,null, null, null, null, null, null, null, null, null, null, null, null, null, null, false,null, false);
+    var params = new InitializeParams(null, null,null, null, null, null, null, null, null, null, null, null, null, null, null, null, false, null, false, null);
+    assertNotNull(params.getEmbeddedPluginPaths());
+    assertNotNull(params.getConnectedModeEmbeddedPluginPathsByKey());
+    assertNotNull(params.getEnabledLanguagesInStandaloneMode());
+    assertNotNull(params.getExtraEnabledLanguagesInConnectedMode());
+    assertNotNull(params.getSonarQubeConnections());
+    assertNotNull(params.getSonarCloudConnections());
+    assertNotNull(params.getStandaloneRuleConfigByKey());
+    assertNotNull(params.getDisabledPluginKeysForAnalysis());
+  }
+
+  @Test
+  void should_replace_null_collections_by_empty_in_deprecated_constructors() {
+    var params = new InitializeParams(null, null,null, null, null, null, null, null, null, null, null, null, null, null, null, false, null);
+    assertNotNull(params.getEmbeddedPluginPaths());
+    assertNotNull(params.getConnectedModeEmbeddedPluginPathsByKey());
+    assertNotNull(params.getEnabledLanguagesInStandaloneMode());
+    assertNotNull(params.getExtraEnabledLanguagesInConnectedMode());
+    assertNotNull(params.getSonarQubeConnections());
+    assertNotNull(params.getSonarCloudConnections());
+    assertNotNull(params.getStandaloneRuleConfigByKey());
+    assertNotNull(params.getDisabledPluginKeysForAnalysis());
+
+    params = new InitializeParams(null, null,null, null, null, null, null, null, null, null, null, null, null, null, null,  null, false,null, false, null);
     assertNotNull(params.getEmbeddedPluginPaths());
     assertNotNull(params.getConnectedModeEmbeddedPluginPathsByKey());
     assertNotNull(params.getEnabledLanguagesInStandaloneMode());

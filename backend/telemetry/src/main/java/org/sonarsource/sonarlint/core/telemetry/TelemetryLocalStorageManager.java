@@ -29,14 +29,18 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryMigrationDto;
 
 /**
  * Serialize and deserialize telemetry data to persistent storage.
@@ -49,9 +53,12 @@ public class TelemetryLocalStorageManager {
   private final Gson gson;
   private TelemetryLocalStorage inMemoryStorage = new TelemetryLocalStorage();
   private long lastModified = Long.MAX_VALUE;
+  @Nullable
+  private final TelemetryMigrationDto telemetryMigration;
 
-  public TelemetryLocalStorageManager(Path telemetryPath) {
+  public TelemetryLocalStorageManager(Path telemetryPath, InitializeParams initializeParams) {
     this.path = telemetryPath;
+    this.telemetryMigration = initializeParams.getTelemetryMigration();
     this.gson = new GsonBuilder()
       .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeAdapter().nullSafe())
       .registerTypeAdapter(LocalDate.class, new LocalDateAdapter().nullSafe())
@@ -71,7 +78,24 @@ public class TelemetryLocalStorageManager {
     } else if (isCacheInvalid()) {
       refreshInMemoryStorage();
     }
+    applyTelemetryMigration();
     return inMemoryStorage;
+  }
+
+  private void applyTelemetryMigration() {
+    if (needToMigrateTelemetry()) {
+      inMemoryStorage.setEnabled(telemetryMigration.isEnabled());
+      inMemoryStorage.setInstallTime(telemetryMigration.getInstallTime());
+      inMemoryStorage.setNumUseDays(telemetryMigration.getNumUseDays());
+    }
+  }
+
+  private boolean needToMigrateTelemetry() {
+    if (telemetryMigration == null) {
+      return false;
+    }
+    var duration = Duration.between(inMemoryStorage.installTime(), OffsetDateTime.now());
+    return duration.getSeconds() < 10 && inMemoryStorage.numUseDays() == 0;
   }
 
   private boolean isCacheInvalid() {
