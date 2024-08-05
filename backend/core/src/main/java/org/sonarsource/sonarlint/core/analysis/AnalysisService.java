@@ -199,7 +199,6 @@ public class AnalysisService {
       analysisSettings = storageService.binding(effectiveBinding.get())
         .analyzerConfiguration().read().getSettings().getAll();
     }
-    // TODO merge client side analysis settings
     return getPatterns(enabledLanguages, analysisSettings);
   }
 
