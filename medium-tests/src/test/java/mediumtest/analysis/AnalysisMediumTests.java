@@ -706,6 +706,20 @@ class AnalysisMediumTests {
     assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID).get(cFileUri)).hasSize(1);
   }
 
+  @Test
+  void should_allow_removing_compile_commands_path() {
+    assumeTrue(COMMERCIAL_ENABLED);
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.CFAMILY)
+      .build();
+
+    backend.getAnalysisService().didChangePathToCompileCommands(new DidChangePathToCompileCommandsParams(CONFIG_SCOPE_ID, null));
+
+    var analysisConfigResponse = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).join();
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(analysisConfigResponse.getAnalysisProperties()).containsEntry("sonar.cfamily.compile-commands", ""));
+  }
+
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding,
     @Nullable SonarLanguage language, Path baseDir) throws IOException {
     final var file = new File(baseDir.toFile(), relativePath);

@@ -42,6 +42,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -126,8 +127,8 @@ import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.trimToNull;
 import static org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.LanguageDetection.sanitizeExtension;
-import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.createSonarLintGitIgnore;
 import static org.sonarsource.sonarlint.core.commons.util.StringUtils.pluralize;
+import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.createSonarLintGitIgnore;
 import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.getVSCChangedFiles;
 
 @Named
@@ -288,7 +289,7 @@ public class AnalysisService {
     userAnalysisPropertiesRepository.setUserProperties(configScopeId, properties);
   }
 
-  public void didChangePathToCompileCommands(String configScopeId, String pathToCompileCommands) {
+  public void didChangePathToCompileCommands(String configScopeId, @Nullable String pathToCompileCommands) {
     userAnalysisPropertiesRepository.setOrUpdatePathToCompileCommands(configScopeId, pathToCompileCommands);
     var openFiles = openFilesRepository.getOpenFilesForConfigScope(configScopeId);
     if (!openFiles.isEmpty()) {
