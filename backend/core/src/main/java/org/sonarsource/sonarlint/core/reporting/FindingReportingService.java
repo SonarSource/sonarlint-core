@@ -60,8 +60,8 @@ public class FindingReportingService {
   private final ConfigurationRepository configurationRepository;
   private final NewCodeService newCodeService;
   private final PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository;
-  private final Map<URI, Collection<TrackedIssue>> issuesPerFileUri = new ConcurrentHashMap<>();
-  private final Map<URI, Collection<TrackedIssue>> securityHotspotsPerFileUri = new ConcurrentHashMap<>();
+  private final Map<String, Map<URI, Collection<TrackedIssue>>> issuesPerFileUriPerConfigScope = new ConcurrentHashMap<>();
+  private final Map<String, Map<URI, Collection<TrackedIssue>>> securityHotspotsPerFileUriPerConfigScope = new ConcurrentHashMap<>();
   private final Map<String, Alarm> streamingTriggeringAlarmByConfigScopeId = new ConcurrentHashMap<>();
 
   public FindingReportingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, NewCodeService newCodeService,
@@ -74,31 +74,31 @@ public class FindingReportingService {
 
   public void resetFindingsForFiles(String configurationScopeId, Set<URI> files) {
     files.forEach(fileUri -> {
-      resetFindingsForFile(issuesPerFileUri, fileUri);
-      resetFindingsForFile(securityHotspotsPerFileUri, fileUri);
+      resetFindingsForFile(issuesPerFileUriPerConfigScope, fileUri, configurationScopeId);
+      resetFindingsForFile(securityHotspotsPerFileUriPerConfigScope, fileUri, configurationScopeId);
     });
     previouslyRaisedFindingsRepository.resetFindingsCache(configurationScopeId, files);
   }
 
-  private static void resetFindingsForFile(Map<URI, Collection<TrackedIssue>> findingsMap, URI fileUri) {
-    findingsMap.computeIfAbsent(fileUri, k -> new ArrayList<>()).clear();
+  private static void resetFindingsForFile(Map<String, Map<URI, Collection<TrackedIssue>>> findingsMap, URI fileUri, String scopeId) {
+    findingsMap.computeIfAbsent(scopeId, k -> new ConcurrentHashMap<>()).computeIfAbsent(fileUri, k -> new ArrayList<>()).clear();
   }
 
   public void streamIssue(String configurationScopeId, UUID analysisId, TrackedIssue trackedIssue) {
     if (trackedIssue.isSecurityHotspot()) {
-      securityHotspotsPerFileUri.computeIfAbsent(trackedIssue.getFileUri(), k -> new ArrayList<>()).add(trackedIssue);
+      securityHotspotsPerFileUriPerConfigScope.computeIfAbsent(configurationScopeId, k -> new ConcurrentHashMap<>()).computeIfAbsent(trackedIssue.getFileUri(), k -> new ArrayList<>()).add(trackedIssue);
     } else {
-      issuesPerFileUri.computeIfAbsent(trackedIssue.getFileUri(), k -> new ArrayList<>()).add(trackedIssue);
+      issuesPerFileUriPerConfigScope.computeIfAbsent(configurationScopeId, k -> new ConcurrentHashMap<>()).computeIfAbsent(trackedIssue.getFileUri(), k -> new ArrayList<>()).add(trackedIssue);
     }
     getStreamingDebounceAlarm(configurationScopeId, analysisId).schedule();
   }
 
   private void triggerStreaming(String configurationScopeId, UUID analysisId) {
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId).orElseGet(NewCodeDefinition::withAlwaysNew);
-    var issuesToRaise = issuesPerFileUri.entrySet().stream()
+    var issuesToRaise = issuesPerFileUriPerConfigScope.getOrDefault(configurationScopeId, new ConcurrentHashMap<>()).entrySet().stream()
       .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedIssueDto(issue, newCodeDefinition)).collect(toList())))
       .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
-    var hotspotsToRaise = securityHotspotsPerFileUri.entrySet().stream()
+    var hotspotsToRaise = securityHotspotsPerFileUriPerConfigScope.getOrDefault(configurationScopeId, new ConcurrentHashMap<>()).entrySet().stream()
       .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedHotspotDto(issue, newCodeDefinition)).collect(toList())))
       .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
     updateRaisedFindingsCacheAndNotifyClient(configurationScopeId, analysisId, issuesToRaise, hotspotsToRaise, true);
