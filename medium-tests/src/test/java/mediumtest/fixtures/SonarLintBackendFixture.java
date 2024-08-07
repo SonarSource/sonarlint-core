@@ -814,6 +814,11 @@ public class SonarLintBackendFixture {
       return raisedIssuesByScopeId.getOrDefault(configurationScopeId, Map.of());
     }
 
+    public Map<URI, List<RaisedIssueDto>> getAllRaisedIssues() {
+      return raisedIssuesByScopeId.values().stream().flatMap(map -> map.entrySet().stream())
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
     public List<RaisedIssueDto> getRaisedIssuesForScopeIdAsList(String configurationScopeId) {
       return raisedIssuesByScopeId.getOrDefault(configurationScopeId, Map.of()).values().stream().flatMap(Collection::stream)
         .collect(Collectors.toList());
