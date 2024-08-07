@@ -86,9 +86,11 @@ public class FindingReportingService {
 
   public void streamIssue(String configurationScopeId, UUID analysisId, TrackedIssue trackedIssue) {
     if (trackedIssue.isSecurityHotspot()) {
-      securityHotspotsPerFileUriPerConfigScope.computeIfAbsent(configurationScopeId, k -> new ConcurrentHashMap<>()).computeIfAbsent(trackedIssue.getFileUri(), k -> new ArrayList<>()).add(trackedIssue);
+      securityHotspotsPerFileUriPerConfigScope.computeIfAbsent(configurationScopeId, k -> new ConcurrentHashMap<>())
+        .computeIfAbsent(trackedIssue.getFileUri(), k -> new ArrayList<>()).add(trackedIssue);
     } else {
-      issuesPerFileUriPerConfigScope.computeIfAbsent(configurationScopeId, k -> new ConcurrentHashMap<>()).computeIfAbsent(trackedIssue.getFileUri(), k -> new ArrayList<>()).add(trackedIssue);
+      issuesPerFileUriPerConfigScope.computeIfAbsent(configurationScopeId, k -> new ConcurrentHashMap<>())
+        .computeIfAbsent(trackedIssue.getFileUri(), k -> new ArrayList<>()).add(trackedIssue);
     }
     getStreamingDebounceAlarm(configurationScopeId, analysisId).schedule();
   }
