@@ -25,6 +25,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -63,6 +64,7 @@ public class FindingReportingService {
   private final Map<URI, Collection<TrackedIssue>> issuesPerFileUri = new ConcurrentHashMap<>();
   private final Map<URI, Collection<TrackedIssue>> securityHotspotsPerFileUri = new ConcurrentHashMap<>();
   private final Map<String, Alarm> streamingTriggeringAlarmByConfigScopeId = new ConcurrentHashMap<>();
+  private final Map<UUID, Set<URI>> filesPerAnalysis = new ConcurrentHashMap<>();
 
   public FindingReportingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, NewCodeService newCodeService,
     PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository) {
@@ -78,6 +80,10 @@ public class FindingReportingService {
       resetFindingsForFile(securityHotspotsPerFileUri, fileUri);
     });
     previouslyRaisedFindingsRepository.resetFindingsCache(configurationScopeId, files);
+  }
+
+  public void initFilesToAnalyze(UUID analysisId, Set<URI> files) {
+    filesPerAnalysis.computeIfAbsent(analysisId, k -> new HashSet<>()).addAll(files);
   }
 
   private static void resetFindingsForFile(Map<URI, Collection<TrackedIssue>> findingsMap, URI fileUri) {
@@ -96,9 +102,11 @@ public class FindingReportingService {
   private void triggerStreaming(String configurationScopeId, UUID analysisId) {
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId).orElseGet(NewCodeDefinition::withAlwaysNew);
     var issuesToRaise = issuesPerFileUri.entrySet().stream()
+      .filter(e -> filesPerAnalysis.get(analysisId).contains(e.getKey()))
       .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedIssueDto(issue, newCodeDefinition)).collect(toList())))
       .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
     var hotspotsToRaise = securityHotspotsPerFileUri.entrySet().stream()
+      .filter(e -> filesPerAnalysis.get(analysisId).contains(e.getKey()))
       .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedHotspotDto(issue, newCodeDefinition)).collect(toList())))
       .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
     updateRaisedFindingsCacheAndNotifyClient(configurationScopeId, analysisId, issuesToRaise, hotspotsToRaise, true);
@@ -111,6 +119,7 @@ public class FindingReportingService {
     var issuesToRaise = getIssuesToRaise(issuesToReport, newCodeDefinition);
     var hotspotsToRaise = getHotspotsToRaise(hotspotsToReport, newCodeDefinition);
     updateRaisedFindingsCacheAndNotifyClient(configurationScopeId, analysisId, issuesToRaise, hotspotsToRaise, false);
+    filesPerAnalysis.remove(analysisId);
   }
 
   private synchronized void updateRaisedFindingsCacheAndNotifyClient(String configurationScopeId, @Nullable UUID analysisId, Map<URI, List<RaisedIssueDto>> updatedIssues,
