@@ -38,7 +38,7 @@ Icon?
 
 # ---- Windows
 # Windows image file caches
-Thumbs.db 
+Thumbs.db
 # Folder config file
 Desktop.ini
 
@@ -49,3 +49,6 @@ Desktop.ini
 # scripts patches, they are local to each developer
 scripts/patches/*.sh
 scripts/patches/*license*.txt
+
+# Visual Studio
+.vs
