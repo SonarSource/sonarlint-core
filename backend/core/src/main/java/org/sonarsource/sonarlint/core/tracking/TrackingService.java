@@ -102,6 +102,7 @@ public class TrackingService {
       var matchingSession = startMatchingSession(configurationScopeId, event.getFileRelativePaths(), event.getFileContentProvider());
       matchingSessionByAnalysisId.put(event.getAnalysisId(), matchingSession);
       reportingService.resetFindingsForFiles(configurationScopeId, event.getFileUris());
+      reportingService.initFilesToAnalyze(event.getAnalysisId(), event.getFileUris());
     }
   }
 
