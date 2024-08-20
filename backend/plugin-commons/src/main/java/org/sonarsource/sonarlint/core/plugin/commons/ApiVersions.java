@@ -50,7 +50,7 @@ public class ApiVersions {
       var versionInFile = scanner.nextLine();
       return Version.parse(versionInFile);
     } catch (Exception e) {
-      throw new IllegalStateException("Can not load " + versionFilePath + " from classpath", e);
+      throw new IllegalStateException("Can nott load " + versionFilePath + " from classpath", e);
     }
   }
 

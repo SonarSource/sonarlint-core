@@ -47,14 +47,14 @@ class ApiVersionsTests {
   void should_throw_an_exception_if_resource_does_not_exist() {
     var throwable = catchThrowable(() -> ApiVersions.loadVersion(null, "wrongPath"));
 
-    assertThat(throwable).hasMessage("Can not load wrongPath from classpath");
+    assertThat(throwable).hasMessage("Can nott load wrongPath from classpath");
   }
 
   @Test
   void should_throw_an_exception_if_resource_can_not_be_loaded() {
     var throwable = catchThrowable(() -> ApiVersions.loadVersion(new URL("file://wrong"), "wrongPath"));
 
-    assertThat(throwable).hasMessage("Can not load wrongPath from classpath");
+    assertThat(throwable).hasMessage("Can nott load wrongPath from classpath");
   }
 
 }
