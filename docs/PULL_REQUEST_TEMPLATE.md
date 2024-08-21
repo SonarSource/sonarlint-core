@@ -1,6 +1,11 @@
+
 # For SonarSourcers:
 
-- [ ] Prefix the commit message with the ticket number, i.e. `SLCORE-XXXX` (or use `NO-JIRA` for a trivial change not tracked by a ticket)
+- [ ] Prefix the commit message with the ticket number, i.e. `SLCORE-XXXX` if you already have a ticket in Jira
+- [ ] For standalone PRs without issue in Jira:
+    - [ ] Mention Epic ID in this descrition to create a new Task in Jira
+    - [ ] Mention Issue ID in this descrition to create a new Sub-Task in Jira
+    - [ ] Do not mention any Jira issue to create a new Task in Jira without a parent
 - [ ] When changing an API:
     - [ ] Explain in the JavaDoc the purpose of the new API
     - [ ] Document the change in [API_CHANGES.md](https://github.com/SonarSource/sonarlint-core/blob/master/API_CHANGES.md)
