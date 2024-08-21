@@ -1,3 +1,4 @@
+
 SonarLint Core
 ==============
 Core library to run SonarLint analysis (used by SonarLint Eclipse and IntelliJ), as well as the SonarLint language server (used by SonarLint VSCode). SonarLint helps you deliver [Clean Code](https://www.sonarsource.com/solutions/clean-code/?utm_medium=referral&utm_source=github&utm_campaign=clean-code&utm_content=sonarlint-core) in your IDE.
