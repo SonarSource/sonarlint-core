@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.analysis;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -755,6 +756,7 @@ public class AnalysisService {
       .filter(not(fileExclusionService::isExcluded))
       .filter(not(sonarLintGitIgnore::isFileIgnored))
       .filter(userDefinedFilesFilter(configScopeId))
+      .filter(uri -> !Files.isSymbolicLink(Path.of(uri)))
       .map(uri -> toInputFile(configScopeId, uri))
       .filter(Objects::nonNull)
       .collect(toList());
