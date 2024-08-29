@@ -19,20 +19,25 @@
  */
 package org.sonarsource.sonarlint.core.commons;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.UnaryOperator;
-import java.util.stream.IntStream;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.transport.URIish;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,15 +49,15 @@ import org.sonarsource.sonarlint.core.commons.util.git.GitUtils;
 
 import static java.util.function.Predicate.not;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.eclipse.jgit.lib.Constants.GITIGNORE_FILENAME;
 import static org.eclipse.jgit.util.FileUtils.RECURSIVE;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.addFileToGitIgnoreAndCommit;
-import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.blameWithFilesGitCommand;
-import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.getVSCChangedFiles;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
-import static org.eclipse.jgit.lib.Constants.GITIGNORE_FILENAME;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createFile;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRepository;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.modifyFile;
+import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.blameWithFilesGitCommand;
+import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.getVSCChangedFiles;
 
 class GitUtilsTest {
 
@@ -254,4 +259,43 @@ class GitUtilsTest {
     assertThat(sonarLintGitIgnore.isIgnored(URI.create("temp:///file/path"), false)).isFalse();
     assertThat(sonarLintGitIgnore.isIgnored(URI.create("http:///localhost:12345/file/path"), false)).isFalse();
   }
+
+  @Test
+  void createSonarLintGitIgnore_works_for_bare_repos_too(@TempDir Path bareRepoPath, @TempDir Path workingRepoPath) throws GitAPIException, IOException {
+    setUpBareRepo(bareRepoPath, workingRepoPath, Map.of(".gitignore", "*.log\n*.tmp\n"));
+
+    var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(bareRepoPath);
+
+    assertThat(sonarLintGitIgnore.isFileIgnored(Path.of("file.txt").toUri())).isFalse();
+    assertThat(sonarLintGitIgnore.isFileIgnored(Path.of("file.tmp").toUri())).isTrue();
+    assertThat(sonarLintGitIgnore.isFileIgnored(Path.of("file.log").toUri())).isTrue();
+  }
+
+  private void setUpBareRepo(Path bareRepoPath, Path workingRepoPath, Map<String, String> filePathContentMap) throws IOException, GitAPIException {
+    // Initialize a bare repository
+    try (Git ignored = Git.init().setBare(true).setDirectory(bareRepoPath.toFile()).call()) {
+      // Initialize a working directory repository
+      try (Git workingGit = Git.init().setDirectory(workingRepoPath.toFile()).call()) {
+        // Create a .gitignore file in the working directory
+        for (String filePath : filePathContentMap.keySet()) {
+          File gitignoreFile = new File(workingRepoPath.toFile(), filePath);
+          Files.writeString(gitignoreFile.toPath(), filePathContentMap.get(filePath));
+
+          // Stage and commit the .gitignore file
+          workingGit.add().addFilepattern(filePath).call();
+          workingGit.commit().setMessage("Add " + filePath).call();
+        }
+
+        // Add the bare repository as a remote and push the commit
+        workingGit.remoteAdd()
+          .setName("origin")
+          .setUri(new URIish(bareRepoPath.toUri().toString()))
+          .call();
+        workingGit.push().setRemote("origin").call();
+      } catch (URISyntaxException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
 }

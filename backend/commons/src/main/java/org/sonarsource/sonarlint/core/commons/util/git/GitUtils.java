@@ -22,9 +22,11 @@ package org.sonarsource.sonarlint.core.commons.util.git;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -35,9 +37,13 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.RawTextComparator;
 import org.eclipse.jgit.ignore.IgnoreNode;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.treewalk.TreeWalk;
 import org.sonar.scm.git.blame.RepositoryBlameCommand;
 import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
 import org.sonarsource.sonarlint.core.commons.SonarLintGitIgnore;
@@ -130,26 +136,48 @@ public class GitUtils {
   public static SonarLintGitIgnore createSonarLintGitIgnore(Path baseDir) {
     try {
       var gitRepo = buildGitRepository(baseDir);
-      var gitRepoRelativeProjectBaseDir = gitRepo.getWorkTree().toPath().relativize(baseDir);
+      var gitRepoRelativeProjectBaseDir = getRelativePath(gitRepo, baseDir);
       var ignoreNode = buildIgnoreNode(gitRepo);
       return new SonarLintGitIgnore(ignoreNode, gitRepoRelativeProjectBaseDir);
     } catch (GitRepoNotFoundException e) {
       LOG.info("Git Repository not found for {}. The path {} is not in a Git repository", baseDir, e.getPath());
-    }
-    return new SonarLintGitIgnore(new IgnoreNode(), baseDir);
-  }
-
-  private static IgnoreNode buildIgnoreNode(Repository repository) {
-    var rootDir = repository.getWorkTree();
-    var gitIgnoreFile = new File(rootDir, GITIGNORE_FILENAME);
-    var ignoreNode = new IgnoreNode();
-    try (var inputStream = new FileInputStream(gitIgnoreFile)) {
-      ignoreNode.parse(inputStream);
     } catch (Exception e) {
       LOG.warn("Error occurred while reading .gitignore file: ", e);
       LOG.warn("Building empty ignore node with no rules. Files checked against this node will be considered as not ignored.");
     }
+    return new SonarLintGitIgnore(new IgnoreNode(), baseDir);
+  }
+
+  private static Path getRelativePath(Repository gitRepo, Path projectBaseDir) {
+    var repoDir = gitRepo.isBare() ? gitRepo.getDirectory() : gitRepo.getWorkTree();
+    return repoDir.toPath().relativize(projectBaseDir);
+  }
+
+  private static IgnoreNode buildIgnoreNode(Repository repository) throws IOException {
+    var ignoreNode = new IgnoreNode();
+    if (repository.isBare()) {
+      readGitIgnoreFileFromBareRepo(repository, ignoreNode);
+    } else {
+      readIgnoreFileFromNonBareRepo(repository, ignoreNode);
+    }
     return ignoreNode;
+  }
+
+  private static void readGitIgnoreFileFromBareRepo(Repository repository, IgnoreNode ignoreNode) throws IOException {
+    var loader = readFileContentFromGitRepo(repository, GITIGNORE_FILENAME);
+    if (loader.isPresent()) {
+      try (InputStream inputStream = loader.get().openStream()) {
+        ignoreNode.parse(inputStream);
+      }
+    }
+  }
+
+  private static void readIgnoreFileFromNonBareRepo(Repository repository, IgnoreNode ignoreNode) throws IOException {
+    var rootDir = repository.getWorkTree();
+    var gitIgnoreFile = new File(rootDir, GITIGNORE_FILENAME);
+    try (var inputStream = new FileInputStream(gitIgnoreFile)) {
+      ignoreNode.parse(inputStream);
+    }
   }
 
   private static UnaryOperator<String> adaptToPlatformBasedPath(UnaryOperator<String> provider) {
@@ -159,4 +187,23 @@ public class GitUtils {
     };
   }
 
+  private static Optional<ObjectLoader> readFileContentFromGitRepo(Repository repository, String fileName) throws IOException {
+    var headId = repository.resolve(Constants.HEAD);
+
+    try (var revWalk = new RevWalk(repository)) {
+      var commit = revWalk.parseCommit(headId);
+
+      try (var treeWalk = new TreeWalk(repository)) {
+        treeWalk.addTree(commit.getTree());
+        treeWalk.setRecursive(true);
+        treeWalk.setFilter(org.eclipse.jgit.treewalk.filter.PathFilter.create(fileName));
+
+        if (!treeWalk.next()) {
+          return Optional.empty();
+        }
+
+        return Optional.of(repository.open(treeWalk.getObjectId(0)));
+      }
+    }
+  }
 }
