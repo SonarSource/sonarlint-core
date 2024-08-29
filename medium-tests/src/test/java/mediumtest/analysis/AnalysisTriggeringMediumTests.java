@@ -19,11 +19,15 @@
  */
 package mediumtest.analysis;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
@@ -42,6 +46,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -92,6 +97,32 @@ class AnalysisTriggeringMediumTests {
           .extracting(RaisedIssueDto::getPrimaryMessage)
           .containsExactly("Replace \"pom.version\" with \"project.version\".");
       });
+  }
+
+  @Test
+  void it_should_not_fail_an_analysis_of_symlink_file_and_skip_the_file_analysis(@TempDir Path baseDir) throws IOException {
+    var filePath = createFile(baseDir, "pom.xml",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        + "<project>\n"
+        + "  <modelVersion>4.0.0</modelVersion>\n"
+        + "  <groupId>com.foo</groupId>\n"
+        + "  <artifactId>bar</artifactId>\n"
+        + "  <version>${pom.version}</version>\n"
+        + "</project>");
+    var link = Paths.get(baseDir.toString(), "pom-link.xml");
+    Files.createSymbolicLink(link, filePath);
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
+        new ClientFileDto(link.toUri(), baseDir.relativize(link), CONFIG_SCOPE_ID, false, null, link, null, null, true)))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .build(client);
+
+    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, link.toUri()));
+
+    await().during(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isEmpty());
   }
 
   @Test
