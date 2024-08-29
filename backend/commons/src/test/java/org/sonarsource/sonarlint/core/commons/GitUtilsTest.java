@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.commons;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -38,7 +37,9 @@ import org.apache.commons.io.FilenameUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.transport.URIish;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -51,6 +52,7 @@ import static java.util.function.Predicate.not;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.jgit.lib.Constants.GITIGNORE_FILENAME;
 import static org.eclipse.jgit.util.FileUtils.RECURSIVE;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.addFileToGitIgnoreAndCommit;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createFile;
@@ -67,6 +69,23 @@ class GitUtilsTest {
   @TempDir
   private Path projectDirPath;
   private Git git;
+  private static Path bareRepoPath;
+  private static Path workingRepoPath;
+
+  @BeforeAll
+  public static void beforeAll() throws GitAPIException, IOException {
+    setUpBareRepo(Map.of(".gitignore", "*.log\n*.tmp\n"));
+  }
+
+  @AfterAll
+  public static void afterAll() {
+    try {
+      FileUtils.forceDelete(bareRepoPath.toFile());
+      FileUtils.forceDelete(workingRepoPath.toFile());
+    } catch (Exception ignored) {
+      //It throws an exception in windows
+    }
+  }
 
   @BeforeEach
   public void prepare() throws Exception {
@@ -261,9 +280,7 @@ class GitUtilsTest {
   }
 
   @Test
-  void createSonarLintGitIgnore_works_for_bare_repos_too(@TempDir Path bareRepoPath, @TempDir Path workingRepoPath) throws GitAPIException, IOException {
-    setUpBareRepo(bareRepoPath, workingRepoPath, Map.of(".gitignore", "*.log\n*.tmp\n"));
-
+  void createSonarLintGitIgnore_works_for_bare_repos_too() {
     var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(bareRepoPath);
 
     assertThat(sonarLintGitIgnore.isFileIgnored(Path.of("file.txt").toUri())).isFalse();
@@ -271,14 +288,25 @@ class GitUtilsTest {
     assertThat(sonarLintGitIgnore.isFileIgnored(Path.of("file.log").toUri())).isTrue();
   }
 
-  private void setUpBareRepo(Path bareRepoPath, Path workingRepoPath, Map<String, String> filePathContentMap) throws IOException, GitAPIException {
+  @Test
+  void git_blame_throws_illegal_state_exception_if_repo_is_bare() {
+    Set<Path> emptySet = Set.of();
+
+    var e = assertThrows(IllegalStateException.class, () -> GitUtils.blameWithFilesGitCommand(bareRepoPath, emptySet));
+
+    assertThat(e).hasMessage("GitRepo is a bare repository");
+  }
+
+  private static void setUpBareRepo(Map<String, String> filePathContentMap) throws IOException, GitAPIException {
+    bareRepoPath = Files.createTempDirectory("bare-repo");
+    workingRepoPath = Files.createTempDirectory("working-repo");
     // Initialize a bare repository
-    try (Git ignored = Git.init().setBare(true).setDirectory(bareRepoPath.toFile()).call()) {
+    try (var ignored = Git.init().setBare(true).setDirectory(bareRepoPath.toFile()).call()) {
       // Initialize a working directory repository
-      try (Git workingGit = Git.init().setDirectory(workingRepoPath.toFile()).call()) {
+      try (var workingGit = Git.init().setDirectory(workingRepoPath.toFile()).call()) {
         // Create a .gitignore file in the working directory
-        for (String filePath : filePathContentMap.keySet()) {
-          File gitignoreFile = new File(workingRepoPath.toFile(), filePath);
+        for (var filePath : filePathContentMap.keySet()) {
+          var gitignoreFile = new File(workingRepoPath.toFile(), filePath);
           Files.writeString(gitignoreFile.toPath(), filePathContentMap.get(filePath));
 
           // Stage and commit the .gitignore file
@@ -292,10 +320,9 @@ class GitUtilsTest {
           .setUri(new URIish(bareRepoPath.toUri().toString()))
           .call();
         workingGit.push().setRemote("origin").call();
-      } catch (URISyntaxException e) {
+      } catch (Exception e) {
         throw new RuntimeException(e);
       }
     }
   }
-
 }
