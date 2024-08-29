@@ -87,6 +87,10 @@ public class GitUtils {
   public static SonarLintBlameResult blameWithFilesGitCommand(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, @Nullable UnaryOperator<String> fileContentProvider) {
     var gitRepo = buildGitRepository(projectBaseDir);
 
+    if (gitRepo.isBare()) {
+      throw new IllegalStateException("GitRepo is a bare repository");
+    }
+
     var gitRepoRelativeProjectBaseDir = gitRepo.getWorkTree().toPath().relativize(projectBaseDir);
 
     var gitRepoRelativeFilePaths = projectBaseRelativeFilePaths.stream()
