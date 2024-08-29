@@ -42,6 +42,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
@@ -61,6 +62,7 @@ import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.modifyFi
 import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.blameWithFilesGitCommand;
 import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.getVSCChangedFiles;
 
+@ExtendWith(LogTestStartAndEnd.class)
 class GitUtilsTest {
 
   @RegisterExtension
@@ -277,6 +279,16 @@ class GitUtilsTest {
 
     assertThat(sonarLintGitIgnore.isIgnored(URI.create("temp:///file/path"), false)).isFalse();
     assertThat(sonarLintGitIgnore.isIgnored(URI.create("http:///localhost:12345/file/path"), false)).isFalse();
+  }
+
+  @Test
+  void should_respect_gitignore_rules() throws IOException {
+    Files.write(projectDirPath.resolve(GITIGNORE_FILENAME), List.of("app/", "!frontend/app/"), java.nio.file.StandardOpenOption.CREATE);
+    var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(projectDirPath);
+
+    assertThat(sonarLintGitIgnore.isIgnored(projectDirPath.resolve("frontend/app/should_not_be_ignored.js").toUri(), false)).isFalse();
+    assertThat(sonarLintGitIgnore.isIgnored(projectDirPath.resolve("should_be_ignored.js").toUri(), false)).isFalse();
+    assertThat(sonarLintGitIgnore.isIgnored(projectDirPath.resolve("app/should_be_ignored.js").toUri(), false)).isTrue();
   }
 
   @Test

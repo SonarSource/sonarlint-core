@@ -57,7 +57,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.Son
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
-import testutils.LogTestStartAndEnd;
+import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import testutils.sse.SSEServer;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
