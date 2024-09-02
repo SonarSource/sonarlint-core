@@ -224,7 +224,7 @@ qa_task:
       path: "**/target/**/sonarqube*/logs/*.log"
 
 promote_task:
-  # Promotion
+  # Promotion test
   depends_on:
     - build
     - test_linux
