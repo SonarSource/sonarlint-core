@@ -231,7 +231,7 @@ promote_task:
     - test_windows
     - mend_scan
     - qa
-  <<: *ONLY_IF_EXCEPT_NIGHTLY
+  skip: true
   eks_container:
     <<: *CONTAINER_DEFINITION
     cpu: 2
