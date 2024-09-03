@@ -3,37 +3,10 @@
 
 # Manifest entries to configure the OSGi attributes for the normal JAR archive
 Bundle-SymbolicName: ${project.groupId}.${project.artifactId}
-Export-Package: org.sonarsource.sonarlint.core.client.legacy.*;version="${project.version}",\
-  org.sonarsource.sonarlint.core.client.utils.*;version="${project.version}",\
+Export-Package: org.sonarsource.sonarlint.core.client.utils.*;version="${project.version}",\
   org.sonarsource.sonarlint.core.rpc.client.*;version="${project.version}",\
   org.sonarsource.sonarlint.core.rpc.protocol.*;version="${project.version}",\
   org.sonarsource.sonarlint.shaded.com.google.gson.*;version="${gson.version}",\
   org.sonarsource.sonarlint.shaded.org.eclipse.lsp4j.jsonrpc.*;version="${lsp4j.version}",
 Import-Package: javax.annotation.*;resolution:=optional,\
   org.eclipse.jgit.*;resolution:=optional,
-
-# BND configuration to export packages from 'sonarlint-analysis-engine.jar' / 'sonarlint-common.jar' / 'sonarlint-plugins-commons.jar'
-# without copying them from the included JAR archive (resource, see instruction below) to the normal JAR archive!
--exportcontents: org.sonarsource.sonarlint.core.analysis.api.*;version="${project.version}",\
-  org.sonarsource.sonarlint.core.commons.api.*;version="${project.version}",\
-  org.sonarsource.sonarlint.core.plugin.commons.api.*;version="${project.version}",
-
-# BND configuration to include specific dependencies inside the normal JAR archive
-# INFO: The `java-client-osgi-sources.jar` won't include sources of this dependencies - this is a limitation of BND!
--includeresource: lib/guava.jar=guava-*.jar;lib:=true,\
-  lib/sonarlint-commons.jar=sonarlint-commons-*.jar;lib:=true,\
-  lib/sonarlint-analysis-engine.jar=sonarlint-analysis-engine-*.jar;lib:=true,\
-  lib/sonarlint-plugin-commons.jar=sonarlint-plugin-commons-*.jar;lib:=true,\
-  lib/sonarlint-plugin-api.jar=sonarlint-plugin-api-*.jar;lib:=true,\
-  lib/sonar-plugin-api.jar=sonar-plugin-api-*.jar;lib:=true,\
-  lib/spring-context.jar=spring-context-*.jar;lib:=true,\
-  lib/spring-aop.jar=spring-aop-*.jar;lib:=true,\
-  lib/spring-beans.jar=spring-beans-*.jar;lib:=true,\
-  lib/spring-core.jar=spring-core-*.jar;lib:=true,\
-  lib/spring-jcl.jar=spring-jcl-*.jar;lib:=true,\
-  lib/spring-expression.jar=spring-expression-*.jar;lib:=true,\
-  lib/commons-lang3.jar=commons-lang3-*.jar;lib:=true,\
-  lib/commons-io.jar=commons-io-*.jar;lib:=true,\
-  lib/commons-codec.jar=commons-codec-*.jar;lib:=true,\
-  lib/commons-csv.jar=commons-csv-*.jar;lib:=true,\
-  lib/sonar-classloader.jar=sonar-classloader-*.jar;lib:=true
