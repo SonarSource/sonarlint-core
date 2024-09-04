@@ -49,9 +49,6 @@ public class FileUtils {
       directories.add(file.getFileName().toString());
       file = file.getParent();
     } while (file.getParent() != null);
-    if (file.getFileName() != null) {
-      directories.add(file.getFileName().toString());
-    }
     Collections.reverse(directories);
     return directories;
   }
