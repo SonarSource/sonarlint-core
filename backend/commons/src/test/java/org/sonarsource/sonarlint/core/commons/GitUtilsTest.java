@@ -295,9 +295,9 @@ class GitUtilsTest {
   void createSonarLintGitIgnore_works_for_bare_repos_too() {
     var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(bareRepoPath);
 
-    assertThat(sonarLintGitIgnore.isFileIgnored(Path.of("file.txt").toUri())).isFalse();
-    assertThat(sonarLintGitIgnore.isFileIgnored(Path.of("file.tmp").toUri())).isTrue();
-    assertThat(sonarLintGitIgnore.isFileIgnored(Path.of("file.log").toUri())).isTrue();
+    assertThat(sonarLintGitIgnore.isFileIgnored(bareRepoPath.resolve("file.txt").toUri())).isFalse();
+    assertThat(sonarLintGitIgnore.isFileIgnored(bareRepoPath.resolve("file.tmp").toUri())).isTrue();
+    assertThat(sonarLintGitIgnore.isFileIgnored(bareRepoPath.resolve("file.log").toUri())).isTrue();
   }
 
   @Test
