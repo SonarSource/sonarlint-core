@@ -58,7 +58,7 @@ class TelemetryHttpClientTests {
   private static final String architecture = SystemUtils.OS_ARCH;
 
   @RegisterExtension
-  static WireMockExtension sonarqubeMock = WireMockExtension.newInstance()
+  static WireMockExtension telemetryMock = WireMockExtension.newInstance()
     .options(wireMockConfig().dynamicPort())
     .build();
 
@@ -69,18 +69,18 @@ class TelemetryHttpClientTests {
     when(initializeParams.getTelemetryConstantAttributes())
       .thenReturn(new TelemetryClientConstantAttributesDto(null, "product", "version", "ideversion", Map.of("additionalKey", "additionalValue")));
 
-    underTest = new TelemetryHttpClient(initializeParams, HttpClientProvider.forTesting(), sonarqubeMock.baseUrl());
+    underTest = new TelemetryHttpClient(initializeParams, HttpClientProvider.forTesting(), telemetryMock.baseUrl());
   }
 
   @Test
   void opt_out() {
-    sonarqubeMock.stubFor(delete("/")
+    telemetryMock.stubFor(delete("/")
       .willReturn(aResponse()));
 
     underTest.optOut(new TelemetryLocalStorage(), getTelemetryLiveAttributesDto());
 
     await().untilAsserted(() -> {
-      sonarqubeMock.verify(deleteRequestedFor(urlEqualTo("/"))
+      telemetryMock.verify(deleteRequestedFor(urlEqualTo("/"))
         .withRequestBody(
           equalToJson(
             "{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"" + platform + "\",\"architecture\":\"" + architecture + "\"}",
@@ -108,35 +108,41 @@ class TelemetryHttpClientTests {
   private void assertTelemetryUploaded(boolean isDebugEnabled) {
     var spy = spy(underTest);
     doReturn(isDebugEnabled).when(spy).isTelemetryLogEnabled();
-    sonarqubeMock.stubFor(post("/")
+    telemetryMock.stubFor(post("/")
       .willReturn(aResponse()));
     spy.upload(new TelemetryLocalStorage(), getTelemetryLiveAttributesDto());
 
-    sonarqubeMock.verify(postRequestedFor(urlEqualTo("/"))
+    telemetryMock.verify(postRequestedFor(urlEqualTo("/"))
       .withRequestBody(
         equalToJson(
           "{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"" + platform + "\",\"architecture\":\""+architecture+"\",\"additionalKey\" : \"additionalValue\"}",
+          true, true)));
+
+    telemetryMock.verify(postRequestedFor(urlEqualTo("/metrics"))
+      .withRequestBody(
+        equalToJson(
+          "{\"sonarlint_product\":\"product\",\"os\":\"" + platform + "\",\"dimension\":\"installation\",\"metric_values\": [{\"key\":\"shared_connected_mode.manual\",\"value\":\"0\",\"type\":\"integer\",\"granularity\":\"daily\"}]}",
           true, true)));
   }
 
   @Test
   void should_not_crash_when_cannot_upload() {
-    sonarqubeMock.stubFor(post("/")
+    telemetryMock.stubFor(post("/")
       .willReturn(aResponse().withStatus(500)));
 
     underTest.upload(new TelemetryLocalStorage(), getTelemetryLiveAttributesDto());
 
-    await().untilAsserted(() -> sonarqubeMock.verify(postRequestedFor(urlEqualTo("/"))));
+    await().untilAsserted(() -> telemetryMock.verify(postRequestedFor(urlEqualTo("/"))));
   }
 
   @Test
   void should_not_crash_when_cannot_opt_out() {
-    sonarqubeMock.stubFor(delete("/")
+    telemetryMock.stubFor(delete("/")
       .willReturn(aResponse().withStatus(500)));
 
     underTest.optOut(new TelemetryLocalStorage(), getTelemetryLiveAttributesDto());
 
-    await().untilAsserted(() -> sonarqubeMock.verify(deleteRequestedFor(urlEqualTo("/"))));
+    await().untilAsserted(() -> telemetryMock.verify(deleteRequestedFor(urlEqualTo("/"))));
   }
 
   @Test

@@ -23,7 +23,9 @@ import com.google.common.annotations.VisibleForTesting;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -33,6 +35,9 @@ import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
+import org.sonarsource.sonarlint.core.telemetry.metricspayload.TelemetryMetricsDimension;
+import org.sonarsource.sonarlint.core.telemetry.metricspayload.TelemetryMetricsPayload;
+import org.sonarsource.sonarlint.core.telemetry.metricspayload.TelemetryMetricsValue;
 import org.sonarsource.sonarlint.core.telemetry.payload.HotspotPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.IssuePayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.ShareConnectedModePayload;
@@ -44,6 +49,9 @@ import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryRulesPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.cayc.CleanAsYouCodePayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.cayc.NewCodeFocusPayload;
+
+import static org.sonarsource.sonarlint.core.telemetry.metricspayload.TelemetryMetricsValueGranularity.DAILY;
+import static org.sonarsource.sonarlint.core.telemetry.metricspayload.TelemetryMetricsValueType.INTEGER;
 
 @Named
 @Singleton
@@ -78,6 +86,13 @@ public class TelemetryHttpClient {
     } catch (Throwable catchEmAll) {
       if (InternalDebug.isEnabled()) {
         LOG.error("Failed to upload telemetry data", catchEmAll);
+      }
+    }
+    try {
+      sendMetricsPost(createMetricsPayload(data, telemetryLiveAttributes));
+    } catch (Throwable catchEmAll) {
+      if (InternalDebug.isEnabled()) {
+        LOG.error("Failed to upload telemetry metrics data", catchEmAll);
       }
     }
   }
@@ -129,15 +144,46 @@ public class TelemetryHttpClient {
       mergedAdditionalAttributes);
   }
 
+  private TelemetryMetricsPayload createMetricsPayload(TelemetryLocalStorage data, TelemetryLiveAttributes telemetryLiveAttrs) {
+    List<TelemetryMetricsValue> values;
+    if (telemetryLiveAttrs.usesConnectedMode()) {
+      values = List.of(
+        new TelemetryMetricsValue("shared_connected_mode.manual", String.valueOf(data.getManualAddedBindingsCount()), INTEGER, DAILY),
+        new TelemetryMetricsValue("shared_connected_mode.imported", String.valueOf(data.getImportedAddedBindingsCount()), INTEGER, DAILY),
+        new TelemetryMetricsValue("shared_connected_mode.auto", String.valueOf(data.getAutoAddedBindingsCount()), INTEGER, DAILY),
+        new TelemetryMetricsValue("shared_connected_mode.exported", String.valueOf(data.getExportedConnectedModeCount()), INTEGER, DAILY)
+      );
+      new ShareConnectedModePayload(data.getManualAddedBindingsCount(), data.getImportedAddedBindingsCount(),
+        data.getAutoAddedBindingsCount(), data.getExportedConnectedModeCount());
+    } else {
+      values = List.of();
+    }
+
+    return new TelemetryMetricsPayload(UUID.randomUUID().toString(), platform, data.installTime(), product, TelemetryMetricsDimension.INSTALLATION, values);
+  }
+
   private void sendPost(TelemetryPayload payload) {
     logTelemetryPayload(payload);
     var responseCompletableFuture = client.postAsync(endpoint, HttpClient.JSON_CONTENT_TYPE, payload.toJson());
     handleTelemetryResponse(responseCompletableFuture, "data");
   }
 
+  private void sendMetricsPost(TelemetryMetricsPayload payload) {
+    logTelemetryMetricsPayload(payload);
+    var responseCompletableFuture = client.postAsync(endpoint + "/metrics", HttpClient.JSON_CONTENT_TYPE, payload.toJson());
+    handleTelemetryResponse(responseCompletableFuture, "data");
+  }
+
   private void logTelemetryPayload(TelemetryPayload payload) {
     if (isTelemetryLogEnabled()) {
       LOG.info("Sending telemetry payload.");
+      LOG.info(payload.toJson());
+    }
+  }
+
+  private void logTelemetryMetricsPayload(TelemetryMetricsPayload payload) {
+    if (isTelemetryLogEnabled()) {
+      LOG.info("Sending telemetry metrics payload.");
       LOG.info(payload.toJson());
     }
   }
