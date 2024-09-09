@@ -20,7 +20,9 @@
 package org.sonarsource.sonarlint.core.commons;
 
 public enum ImpactSeverity {
+  INFO,
   LOW,
   MEDIUM,
-  HIGH;
+  HIGH,
+  BLOCKER
 }
