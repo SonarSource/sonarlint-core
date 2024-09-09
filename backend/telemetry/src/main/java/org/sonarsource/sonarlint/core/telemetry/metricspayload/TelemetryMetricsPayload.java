@@ -63,4 +63,8 @@ public class TelemetryMetricsPayload {
     var jsonPayload = gson.toJsonTree(this).getAsJsonObject();
     return gson.toJson(jsonPayload);
   }
+
+  public boolean hasMetrics() {
+    return !values.isEmpty();
+  }
 }

@@ -89,7 +89,7 @@ public class TelemetryHttpClient {
       }
     }
     try {
-      sendMetricsPost(createMetricsPayload(data, telemetryLiveAttributes));
+      sendMetricsPostIfNeeded(createMetricsPayload(data, telemetryLiveAttributes));
     } catch (Throwable catchEmAll) {
       if (InternalDebug.isEnabled()) {
         LOG.error("Failed to upload telemetry metrics data", catchEmAll);
@@ -168,7 +168,15 @@ public class TelemetryHttpClient {
     handleTelemetryResponse(responseCompletableFuture, "data");
   }
 
-  private void sendMetricsPost(TelemetryMetricsPayload payload) {
+  private void sendMetricsPostIfNeeded(TelemetryMetricsPayload payload) {
+    if (!payload.hasMetrics()) {
+      // No metrics to send
+      if (isTelemetryLogEnabled()) {
+        LOG.info("Not sending empty telemetry metrics payload.");
+      }
+      return;
+    }
+
     logTelemetryMetricsPayload(payload);
     var responseCompletableFuture = client.postAsync(endpoint + "/metrics", HttpClient.JSON_CONTENT_TYPE, payload.toJson());
     handleTelemetryResponse(responseCompletableFuture, "data");
