@@ -110,18 +110,20 @@ class TelemetryHttpClientTests {
     doReturn(isDebugEnabled).when(spy).isTelemetryLogEnabled();
     telemetryMock.stubFor(post("/")
       .willReturn(aResponse()));
-    spy.upload(new TelemetryLocalStorage(), getTelemetryLiveAttributesDto());
+    var telemetryLocalStorage = new TelemetryLocalStorage();
+    telemetryLocalStorage.helpAndFeedbackLinkClicked("docs");
+    spy.upload(telemetryLocalStorage, getTelemetryLiveAttributesDto());
 
     telemetryMock.verify(postRequestedFor(urlEqualTo("/"))
       .withRequestBody(
         equalToJson(
-          "{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"" + platform + "\",\"architecture\":\""+architecture+"\",\"additionalKey\" : \"additionalValue\"}",
+          "{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"" + platform + "\",\"architecture\":\""+architecture+ "\",\"additionalKey\" : \"additionalValue\",\"help_and_feedback\":{\"count_by_link\":{\"docs\":1}}}",
           true, true)));
 
     telemetryMock.verify(postRequestedFor(urlEqualTo("/metrics"))
       .withRequestBody(
         equalToJson(
-          "{\"sonarlint_product\":\"product\",\"os\":\"" + platform + "\",\"dimension\":\"installation\",\"metric_values\": [{\"key\":\"shared_connected_mode.manual\",\"value\":\"0\",\"type\":\"integer\",\"granularity\":\"daily\"}]}",
+          "{\"sonarlint_product\":\"product\",\"os\":\"" + platform + "\",\"dimension\":\"installation\",\"metric_values\": [{\"key\":\"shared_connected_mode.manual\",\"value\":\"0\",\"type\":\"integer\",\"granularity\":\"daily\"},{\"key\":\"help_and_feedback.docs\",\"value\":\"1\",\"type\":\"integer\",\"granularity\":\"daily\"}]}",
           true, true)));
   }
 

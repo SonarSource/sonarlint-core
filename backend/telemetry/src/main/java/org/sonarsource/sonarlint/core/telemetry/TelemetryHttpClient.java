@@ -22,8 +22,9 @@ package org.sonarsource.sonarlint.core.telemetry;
 import com.google.common.annotations.VisibleForTesting;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -145,19 +146,23 @@ public class TelemetryHttpClient {
   }
 
   private TelemetryMetricsPayload createMetricsPayload(TelemetryLocalStorage data, TelemetryLiveAttributes telemetryLiveAttrs) {
-    List<TelemetryMetricsValue> values;
+    var values = new ArrayList<TelemetryMetricsValue>();
     if (telemetryLiveAttrs.usesConnectedMode()) {
-      values = List.of(
-        new TelemetryMetricsValue("shared_connected_mode.manual", String.valueOf(data.getManualAddedBindingsCount()), INTEGER, DAILY),
-        new TelemetryMetricsValue("shared_connected_mode.imported", String.valueOf(data.getImportedAddedBindingsCount()), INTEGER, DAILY),
-        new TelemetryMetricsValue("shared_connected_mode.auto", String.valueOf(data.getAutoAddedBindingsCount()), INTEGER, DAILY),
-        new TelemetryMetricsValue("shared_connected_mode.exported", String.valueOf(data.getExportedConnectedModeCount()), INTEGER, DAILY)
-      );
-      new ShareConnectedModePayload(data.getManualAddedBindingsCount(), data.getImportedAddedBindingsCount(),
-        data.getAutoAddedBindingsCount(), data.getExportedConnectedModeCount());
-    } else {
-      values = List.of();
+      values.add(new TelemetryMetricsValue("shared_connected_mode.manual", String.valueOf(data.getManualAddedBindingsCount()), INTEGER, DAILY));
+      values.add(new TelemetryMetricsValue("shared_connected_mode.imported", String.valueOf(data.getImportedAddedBindingsCount()), INTEGER, DAILY));
+      values.add(new TelemetryMetricsValue("shared_connected_mode.auto", String.valueOf(data.getAutoAddedBindingsCount()), INTEGER, DAILY));
+      values.add(new TelemetryMetricsValue("shared_connected_mode.exported", String.valueOf(data.getExportedConnectedModeCount()), INTEGER, DAILY));
     }
+
+    data.getHelpAndFeedbackLinkClickedCounter().entrySet().stream()
+      .filter(e -> e.getValue().getHelpAndFeedbackLinkClickedCount() > 0)
+      .map(e -> new TelemetryMetricsValue(
+        "help_and_feedback." + e.getKey().toLowerCase(Locale.ROOT),
+        String.valueOf(e.getValue().getHelpAndFeedbackLinkClickedCount()),
+        INTEGER,
+        DAILY
+      ))
+      .forEach(values::add);
 
     return new TelemetryMetricsPayload(UUID.randomUUID().toString(), platform, data.installTime(), product, TelemetryMetricsDimension.INSTALLATION, values);
   }
