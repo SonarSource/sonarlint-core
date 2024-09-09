@@ -215,4 +215,8 @@ public class DefaultSensorContext implements SensorContext {
     throw unsupported();
   }
 
+  @Override
+  public void addTelemetryProperty(String key, String value) {
+    throw unsupported();
+  }
 }

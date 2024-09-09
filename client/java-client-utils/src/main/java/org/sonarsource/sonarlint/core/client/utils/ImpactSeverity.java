@@ -20,9 +20,11 @@
 package org.sonarsource.sonarlint.core.client.utils;
 
 public enum ImpactSeverity {
+  INFO("Info"),
   LOW("Low"),
   MEDIUM("Medium"),
-  HIGH("High");
+  HIGH("High"),
+  BLOCKER("Blocker");
 
   private final String label;
 
@@ -36,12 +38,16 @@ public enum ImpactSeverity {
 
   public static ImpactSeverity fromDto(org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity rpcEnum) {
     switch (rpcEnum) {
+      case INFO:
+        return INFO;
       case LOW:
         return LOW;
       case MEDIUM:
         return MEDIUM;
       case HIGH:
         return HIGH;
+      case BLOCKER:
+        return BLOCKER;
       default:
         throw new IllegalArgumentException("Unknown severity: " + rpcEnum);
     }

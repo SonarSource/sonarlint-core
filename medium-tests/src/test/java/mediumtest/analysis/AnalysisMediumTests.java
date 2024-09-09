@@ -195,7 +195,7 @@ class AnalysisMediumTests {
     assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.MINOR);
     assertThat(rawIssue.getType()).isEqualTo(RuleType.CODE_SMELL);
     assertThat(rawIssue.getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.CONVENTIONAL);
-    assertThat(rawIssue.getImpacts()).isEqualTo(Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW));
+    assertThat(rawIssue.getImpacts()).isEqualTo(Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.INFO));
     assertThat(rawIssue.getRuleKey()).isEqualTo("xml:S3421");
     assertThat(rawIssue.getPrimaryMessage()).isEqualTo("Replace \"pom.version\" with \"project.version\".");
     assertThat(rawIssue.getFileUri()).isEqualTo(fileUri);
