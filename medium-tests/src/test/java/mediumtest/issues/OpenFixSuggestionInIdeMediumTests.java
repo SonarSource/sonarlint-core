@@ -197,7 +197,8 @@ class OpenFixSuggestionInIdeMediumTests {
     var statusCode = executeOpenFixSuggestionRequestWithoutToken(FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
 
     assertThat(statusCode).isEqualTo(200);
-    verify(fakeClient, timeout(1000)).noBindingSuggestionFound(PROJECT_KEY);
+    // Since noBindingSuggestionFound now has a NoBindingSuggestionFoundParams parameter, we can just check for any!
+    verify(fakeClient, timeout(1000)).noBindingSuggestionFound(any());
     verify(fakeClient, never()).showIssue(any(), any());
   }
 

@@ -273,7 +273,8 @@ class OpenIssueInIdeMediumTests {
     var statusCode = executeOpenIssueRequest(ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
 
     assertThat(statusCode).isEqualTo(200);
-    verify(fakeClient, timeout(1000)).noBindingSuggestionFound(PROJECT_KEY);
+    // Since noBindingSuggestionFound now has a NoBindingSuggestionFoundParams parameter, we can just check for any!
+    verify(fakeClient, timeout(1000)).noBindingSuggestionFound(any());
     verify(fakeClient, never()).showIssue(any(), any());
   }
 

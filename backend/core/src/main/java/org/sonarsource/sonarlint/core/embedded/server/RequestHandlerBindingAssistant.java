@@ -88,14 +88,15 @@ public class RequestHandlerBindingAssistant {
     var serverUrl = getServerUrl(connectionParams);
     LOG.debug("Assist connection and binding if needed for project {} and server {}", projectKey, serverUrl);
     try {
-      var connectionsMatchingOrigin = connectionParams.getConnectionParams().isLeft() ?
-        connectionConfigurationRepository.findByUrl(serverUrl) :
-        connectionConfigurationRepository.findByOrganization(connectionParams.getConnectionParams().getRight().getOrganizationKey());
+      var isSonarCloud = connectionParams.getConnectionParams().isRight();
+      var connectionsMatchingOrigin = isSonarCloud ?
+        connectionConfigurationRepository.findByOrganization(connectionParams.getConnectionParams().getRight().getOrganizationKey()) :
+        connectionConfigurationRepository.findByUrl(serverUrl);
       if (connectionsMatchingOrigin.isEmpty()) {
         startFullBindingProcess();
         try {
           var assistNewConnectionResult = assistCreatingConnectionAndWaitForRepositoryUpdate(connectionParams, cancelMonitor);
-          var assistNewBindingResult = assistBindingAndWaitForRepositoryUpdate(assistNewConnectionResult.getNewConnectionId(),
+          var assistNewBindingResult = assistBindingAndWaitForRepositoryUpdate(assistNewConnectionResult.getNewConnectionId(), isSonarCloud,
             projectKey, cancelMonitor);
           callback.andThen(assistNewConnectionResult.getNewConnectionId(), assistNewBindingResult.getConfigurationScopeId(), cancelMonitor);
         } finally {
@@ -104,7 +105,7 @@ public class RequestHandlerBindingAssistant {
       } else {
         // we pick the first connection but this could lead to issues later if there were several matches (make the user select the right
         // one?)
-        assistBindingIfNeeded(connectionsMatchingOrigin.get(0).getConnectionId(), projectKey, callback, cancelMonitor);
+        assistBindingIfNeeded(connectionsMatchingOrigin.get(0).getConnectionId(), isSonarCloud, projectKey, callback, cancelMonitor);
       }
     } catch (Exception e) {
       LOG.error("Unable to show issue", e);
@@ -136,10 +137,10 @@ public class RequestHandlerBindingAssistant {
     return assistNewConnectionResult;
   }
 
-  private void assistBindingIfNeeded(String connectionId, String projectKey, Callback callback, SonarLintCancelMonitor cancelMonitor) {
+  private void assistBindingIfNeeded(String connectionId, boolean isSonarCloud, String projectKey, Callback callback, SonarLintCancelMonitor cancelMonitor) {
     var scopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, projectKey);
     if (scopes.isEmpty()) {
-      var assistNewBindingResult = assistBindingAndWaitForRepositoryUpdate(connectionId, projectKey, cancelMonitor);
+      var assistNewBindingResult = assistBindingAndWaitForRepositoryUpdate(connectionId, isSonarCloud, projectKey, cancelMonitor);
       callback.andThen(connectionId, assistNewBindingResult.getConfigurationScopeId(), cancelMonitor);
     } else {
       // we pick the first bound scope but this could lead to issues later if there were several matches (make the user select the right one?)
@@ -147,8 +148,8 @@ public class RequestHandlerBindingAssistant {
     }
   }
 
-  private NewBinding assistBindingAndWaitForRepositoryUpdate(String connectionId, String projectKey, SonarLintCancelMonitor cancelMonitor) {
-    var assistNewBindingResult = assistBinding(connectionId, projectKey, cancelMonitor);
+  private NewBinding assistBindingAndWaitForRepositoryUpdate(String connectionId, boolean isSonarCloud, String projectKey, SonarLintCancelMonitor cancelMonitor) {
+    var assistNewBindingResult = assistBinding(connectionId, isSonarCloud, projectKey, cancelMonitor);
     // Wait 5s for the binding to be created in the repository. This is happening asynchronously by the
     // ConfigurationService::didUpdateBinding event
     var configurationScopeId = assistNewBindingResult.getConfigurationScopeId();
@@ -209,11 +210,11 @@ public class RequestHandlerBindingAssistant {
     }
   }
 
-  NewBinding assistBinding(String connectionId, String projectKey, SonarLintCancelMonitor cancelMonitor) {
+  NewBinding assistBinding(String connectionId, boolean isSonarCloud, String projectKey, SonarLintCancelMonitor cancelMonitor) {
     var configScopeCandidates = bindingCandidatesFinder.findConfigScopesToBind(connectionId, projectKey, cancelMonitor);
     // For now, we decided to only support automatic binding if there is only one clear candidate
     if (configScopeCandidates.size() != 1) {
-      client.noBindingSuggestionFound(new NoBindingSuggestionFoundParams(projectKey));
+      client.noBindingSuggestionFound(new NoBindingSuggestionFoundParams(projectKey, isSonarCloud));
       return new NewBinding(connectionId, null);
     }
     var bindableConfig = configScopeCandidates.iterator().next();

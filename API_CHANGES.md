@@ -1,3 +1,16 @@
+# 10.6
+
+## Breaking changes
+
+* signature of `org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate#noBindingSuggestionFound` was changed
+  * replaced parameter with `org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSuggestionFoundParams`
+  * former parameter `projectKey` can now be accessed by `params.getProjectKey()`
+
+## New features
+
+* Add a field to `org.sonarsource.sonarlint.core.rpc.protocol.common.NoBindingSuggestionFoundParams` indicating whether the suggestion where
+  no binding was found by is SonarCloud or not, can be used to display a more precise notification in the IDE rather than a generic one
+
 # 10.4
 
 ## Breaking changes
