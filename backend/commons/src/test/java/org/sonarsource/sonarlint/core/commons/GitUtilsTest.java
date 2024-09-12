@@ -246,9 +246,9 @@ class GitUtilsTest {
       .hasSize(1)
       .containsExactly(fileAUri);
   }
-
+  
   @Test
-  void should_consider_all_files_not_ignored_on_exception() throws IOException {
+  void should_consider_all_files_not_ignored_on_gitignore() throws IOException {
     createFile(projectDirPath, "fileA", "line1", "line2", "line3");
     createFile(projectDirPath, "fileB", "line1", "line2", "line3");
     createFile(projectDirPath, "fileC", "line1", "line2", "line3");
@@ -262,9 +262,8 @@ class GitUtilsTest {
 
     var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(projectDirPath);
 
-    assertThat(logTester.logs(LogOutput.Level.WARN))
-      .anyMatch(s -> s.contains("Error occurred while reading .gitignore file"))
-      .anyMatch(s -> s.contains("Building empty ignore node with no rules. Files checked against this node will be considered as not ignored"));
+    assertThat(logTester.logs(LogOutput.Level.INFO))
+      .anyMatch(s -> s.contains(".gitignore file was not found for "));
 
     assertThat(Stream.of(fileAUri, fileBUri, fileCUri).filter(not(sonarLintGitIgnore::isFileIgnored)).collect(Collectors.toList()))
       .hasSize(3)

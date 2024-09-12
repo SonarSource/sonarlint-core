@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.commons.util.git;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -145,6 +146,8 @@ public class GitUtils {
       return new SonarLintGitIgnore(ignoreNode, gitRepoRelativeProjectBaseDir);
     } catch (GitRepoNotFoundException e) {
       LOG.info("Git Repository not found for {}. The path {} is not in a Git repository", baseDir, e.getPath());
+    } catch (FileNotFoundException e) {
+      LOG.info(".gitignore file was not found for {}", baseDir);
     } catch (Exception e) {
       LOG.warn("Error occurred while reading .gitignore file: ", e);
       LOG.warn("Building empty ignore node with no rules. Files checked against this node will be considered as not ignored.");
