@@ -22,13 +22,18 @@ package org.sonarsource.sonarlint.core.rpc.protocol.client.binding;
 public class NoBindingSuggestionFoundParams {
 
   private final String projectKey;
+  private final boolean isSonarCloud;
 
-  public NoBindingSuggestionFoundParams(String projectKey) {
+  public NoBindingSuggestionFoundParams(String projectKey, boolean isSonarCloud) {
     this.projectKey = projectKey;
+    this.isSonarCloud = isSonarCloud;
   }
 
   public String getProjectKey() {
     return projectKey;
   }
 
+  public boolean isSonarCloud() {
+    return isSonarCloud;
+  }
 }

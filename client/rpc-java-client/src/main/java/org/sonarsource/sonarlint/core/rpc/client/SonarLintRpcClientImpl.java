@@ -351,7 +351,7 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   @Override
   public void noBindingSuggestionFound(NoBindingSuggestionFoundParams params) {
-    notify(() -> delegate.noBindingSuggestionFound(params.getProjectKey()));
+    notify(() -> delegate.noBindingSuggestionFound(params));
   }
 
   public void didChangeAnalysisReadiness(DidChangeAnalysisReadinessParams params) {

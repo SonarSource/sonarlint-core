@@ -55,6 +55,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRul
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSuggestionFoundParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.ConnectionSuggestionDto;
@@ -305,7 +306,7 @@ class SloopLauncherTests {
     }
 
     @Override
-    public void noBindingSuggestionFound(String projectKey) {
+    public void noBindingSuggestionFound(NoBindingSuggestionFoundParams params) {
 
     }
 
