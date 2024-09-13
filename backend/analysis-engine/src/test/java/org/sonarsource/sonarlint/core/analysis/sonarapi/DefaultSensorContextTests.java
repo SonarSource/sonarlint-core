@@ -101,6 +101,7 @@ class DefaultSensorContextTests {
     assertThrows(UnsupportedOperationException.class, () -> ctx.newExternalIssue());
     assertThrows(UnsupportedOperationException.class, () -> ctx.previousCache());
     assertThrows(UnsupportedOperationException.class, () -> ctx.nextCache());
+    ctx.addTelemetryProperty("not", "applicable");
 
     verify(sqRuntime).getApiVersion();
 
