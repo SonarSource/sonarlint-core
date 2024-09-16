@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.analysis;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import java.net.URI;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -757,8 +758,20 @@ public class AnalysisService {
       .filter(not(fileExclusionService::isExcluded))
       .filter(not(sonarLintGitIgnore::isFileIgnored))
       .filter(userDefinedFilesFilter(configScopeId))
-      .filter(uri -> !Files.isSymbolicLink(Path.of(uri)))
-      .filter(uri -> !WindowsShortcutUtils.isWindowsShortcut(uri))
+      .filter(uri -> {
+        // On protocols with schemes like "temp" (used by IntelliJ in the integration tests) or "rse" (the Eclipse Remote System Explorer)
+        // and maybe others the check for a symbolic link or Windows shortcut will fail as these file systems cannot be resolved for the
+        // operations.
+        // If this happens, we won't exclude the file as the chance for someone to use a protocol with such a scheme while also using
+        // symbolic links or Windows shortcuts should be near zero and this is less error-prone than excluding the
+        try {
+          return !Files.isSymbolicLink(Path.of(uri)) && !WindowsShortcutUtils.isWindowsShortcut(uri);
+        } catch (FileSystemNotFoundException err) {
+          LOG.debug("Checking for symbolic links or Windows shortcuts in the file system is not possible for the URI '" + uri
+            + "'. Therefore skipping the checks due to the underlying protocol / its scheme.", err);
+          return true;
+        }
+      })
       .map(uri -> toInputFile(configScopeId, uri))
       .filter(Objects::nonNull)
       .collect(toList());
