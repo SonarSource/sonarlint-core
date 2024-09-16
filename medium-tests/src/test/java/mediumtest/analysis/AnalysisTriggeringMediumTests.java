@@ -19,6 +19,7 @@
  */
 package mediumtest.analysis;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -97,6 +98,31 @@ class AnalysisTriggeringMediumTests {
           .extracting(RaisedIssueDto::getPrimaryMessage)
           .containsExactly("Replace \"pom.version\" with \"project.version\".");
       });
+  }
+  
+  @Test
+  void it_should_not_fail_an_analysis_of_windows_shortcut_file_and_skip_the_file_analysis() {
+    var baseDir = new File("src/test/projects/windows-shortcut").getAbsoluteFile().toPath();
+    var actualFile = Paths.get(baseDir.toString(), "hello.py");
+    var windowsShortcut = Paths.get(baseDir.toString(), "hello.py.lnk");
+    var fakeWindowsShortcut = Paths.get(baseDir.toString(), "hello.py.fake.lnk");
+
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
+        new ClientFileDto(actualFile.toUri(), baseDir.relativize(actualFile), CONFIG_SCOPE_ID, false, null, actualFile, null, null, true),
+        new ClientFileDto(windowsShortcut.toUri(), baseDir.relativize(windowsShortcut), CONFIG_SCOPE_ID, false, null, windowsShortcut, null, null, true),
+        new ClientFileDto(fakeWindowsShortcut.toUri(), baseDir.relativize(fakeWindowsShortcut), CONFIG_SCOPE_ID, false, null, fakeWindowsShortcut, null, null, true)))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.TEXT)
+      .build(client);
+
+    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, windowsShortcut.toUri()));
+    await().during(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isEmpty());
+
+    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fakeWindowsShortcut.toUri()));
+    await().during(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
   }
 
   @Test

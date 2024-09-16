@@ -72,6 +72,7 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
+import org.sonarsource.sonarlint.core.file.WindowsShortcutUtils;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.fs.FileExclusionService;
@@ -757,6 +758,7 @@ public class AnalysisService {
       .filter(not(sonarLintGitIgnore::isFileIgnored))
       .filter(userDefinedFilesFilter(configScopeId))
       .filter(uri -> !Files.isSymbolicLink(Path.of(uri)))
+      .filter(uri -> !WindowsShortcutUtils.isWindowsShortcut(uri))
       .map(uri -> toInputFile(configScopeId, uri))
       .filter(Objects::nonNull)
       .collect(toList());
