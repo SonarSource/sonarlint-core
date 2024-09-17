@@ -55,9 +55,6 @@ public class DtoMapper {
     return new RaisedIssueDto(issue.getId(), issue.getServerKey(), issue.getRuleKey(), issue.getMessage(),
       isMQRMode ? Either.forRight(new MQRModeDetails(RuleDetailsAdapter.adapt(issue.getCleanCodeAttribute()), RuleDetailsAdapter.toDto(issue.getImpacts())))
         : Either.forLeft(new StandardModeDetails(RuleDetailsAdapter.adapt(issue.getSeverity()), RuleDetailsAdapter.adapt(issue.getType()))),
-      RuleDetailsAdapter.adapt(issue.getSeverity()),
-      RuleDetailsAdapter.adapt(issue.getType()),
-      RuleDetailsAdapter.adapt(issue.getCleanCodeAttribute()), RuleDetailsAdapter.toDto(issue.getImpacts()),
       requireNonNull(issue.getIntroductionDate()), newCodeDefinition.isOnNewCode(issue.getIntroductionDate()), issue.isResolved(),
       toTextRangeDto(issue.getTextRangeWithHash()),
       issue.getFlows().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()),
@@ -72,9 +69,6 @@ public class DtoMapper {
       isMQRMode && !issue.getImpacts().isEmpty() ?
         Either.forRight(new MQRModeDetails(RuleDetailsAdapter.adapt(issue.getCleanCodeAttribute()), RuleDetailsAdapter.toDto(issue.getImpacts())))
         : Either.forLeft(new StandardModeDetails(RuleDetailsAdapter.adapt(issue.getSeverity()), RuleDetailsAdapter.adapt(issue.getType()))),
-      RuleDetailsAdapter.adapt(issue.getSeverity()),
-      RuleDetailsAdapter.adapt(issue.getType()),
-      RuleDetailsAdapter.adapt(issue.getCleanCodeAttribute()), RuleDetailsAdapter.toDto(issue.getImpacts()),
       requireNonNull(issue.getIntroductionDate()), newCodeDefinition.isOnNewCode(issue.getIntroductionDate()), issue.isResolved(),
       toTextRangeDto(issue.getTextRangeWithHash()),
       issue.getFlows().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()),

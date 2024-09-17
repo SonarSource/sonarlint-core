@@ -23,6 +23,5 @@ public enum HotspotStatus {
   TO_REVIEW,
   ACKNOWLEDGED,
   FIXED,
-  SAFE;
-
+  SAFE
 }

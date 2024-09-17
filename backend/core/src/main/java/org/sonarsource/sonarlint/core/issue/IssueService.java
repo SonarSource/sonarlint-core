@@ -96,8 +96,7 @@ public class IssueService {
   private static final Map<ResolutionStatus, Transition> transitionByResolutionStatus = Map.of(
     ResolutionStatus.ACCEPT, Transition.ACCEPT,
     ResolutionStatus.WONT_FIX, Transition.WONT_FIX,
-    ResolutionStatus.FALSE_POSITIVE, Transition.FALSE_POSITIVE
-  );
+    ResolutionStatus.FALSE_POSITIVE, Transition.FALSE_POSITIVE);
 
   private final ConfigurationRepository configurationRepository;
   private final ServerApiProvider serverApiProvider;
@@ -426,28 +425,31 @@ public class IssueService {
       UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder().withResolution(resolved).buildIssue();
       updatedIssue = updateIssue(updatedIssue, impactedIssueKeys, issueUpdater);
     }
-    if (userSeverity != null) {
-      UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder().withSeverity(IssueSeverity.valueOf(userSeverity.name())).buildIssue();
-      updatedIssue = updateIssue(updatedIssue, impactedIssueKeys, issueUpdater);
-    }
-    if (userType != null) {
-      UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder().withType(RuleType.valueOf(userType.name())).buildIssue();
-      updatedIssue = updateIssue(updatedIssue, impactedIssueKeys, issueUpdater);
+    if (updatedIssue.getSeverityMode().isLeft()) {
+      // if the event does not match the local severity mode, we skip updating as we would only have partial information
+      // the data will be updated at the next sync
+      var standardModeDetails = updatedIssue.getSeverityMode().getLeft();
+      if (userSeverity != null) {
+        UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder().withStandardModeDetails(IssueSeverity.valueOf(userSeverity.name()), standardModeDetails.getType())
+          .buildIssue();
+        updatedIssue = updateIssue(updatedIssue, impactedIssueKeys, issueUpdater);
+      }
+      if (userType != null) {
+        UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder().withStandardModeDetails(standardModeDetails.getSeverity(), RuleType.valueOf(userType.name()))
+          .buildIssue();
+        updatedIssue = updateIssue(updatedIssue, impactedIssueKeys, issueUpdater);
+      }
     }
     for (var issue : event.getImpactedIssues()) {
-      if (!issue.getImpacts().isEmpty() && isMQRMode) {
+      if (!issue.getImpacts().isEmpty() && isMQRMode && updatedIssue.getSeverityMode().isRight()) {
+        var mqrModeDetails = updatedIssue.getSeverityMode().getRight();
         var impacts = issue.getImpacts().entrySet().stream()
-          .map(impact ->
-            new ImpactDto(
-              SoftwareQuality.valueOf(impact.getKey().name()),
-              org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity.valueOf(impact.getValue().name())
-            )
-          ).collect(Collectors.toList());
-        UnaryOperator<RaisedIssueDto> issueUpdater =
-          it -> it.builder().withMQRModeDetails(
-            it.getCleanCodeAttribute(),
-            mergeImpacts(it.getSeverityMode().getRight().getImpacts(), impacts)
-          ).buildIssue();
+          .map(impact -> new ImpactDto(
+            SoftwareQuality.valueOf(impact.getKey().name()),
+            org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity.valueOf(impact.getValue().name())))
+          .collect(Collectors.toList());
+        UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder()
+          .withMQRModeDetails(mqrModeDetails.getCleanCodeAttribute(), mergeImpacts(it.getSeverityMode().getRight().getImpacts(), impacts)).buildIssue();
         updatedIssue = updateIssue(updatedIssue, impactedIssueKeys, issueUpdater);
       }
 
