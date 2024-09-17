@@ -19,77 +19,63 @@
  */
 package mediumtest;
 
-import com.google.common.collect.LinkedListMultimap;
-import com.google.common.collect.Multimap;
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.List;
-import org.apache.commons.io.FileUtils;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import mediumtest.fixtures.SonarLintBackendFixture;
+import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
-import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.AnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.EngineConfiguration;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine;
-import org.sonarsource.sonarlint.core.client.utils.ClientLogOutput;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
-import testutils.TestUtils;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
+import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
+import static org.awaitility.Awaitility.await;
+import static testutils.AnalysisUtils.createFile;
 
 class StandaloneNoPluginMediumTests {
 
-  private static final String CONFIGURATION_SCOPE_ID = "configScopeId";
-  private SonarLintAnalysisEngine engine;
-
-  @TempDir
-  private File baseDir;
-  private final Multimap<ClientLogOutput.Level, String> logs = LinkedListMultimap.create();
-
-  @BeforeEach
-  void prepare() {
-    ClientLogOutput logOutput = (msg, level) -> logs.put(level, msg);
-    engine = new SonarLintAnalysisEngine(EngineConfiguration.builder()
-      .setLogOutput(logOutput)
-      .setModulesProvider(() -> List.of(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class))))
-      .build(), newBackend().build(), null);
-  }
+  private static final String CONFIG_SCOPE_ID = "configScopeId";
+  private SonarLintTestRpcServer backend;
+  private static SonarLintBackendFixture.FakeSonarLintRpcClient client;
 
   @AfterEach
-  void stop() {
-    engine.stop();
+  void stop() throws ExecutionException, InterruptedException {
+    if (backend != null) {
+      backend.shutdown().get();
+    }
   }
 
   @Test
-  void dont_fail_and_detect_language_even_if_no_plugin() throws Exception {
+  void dont_fail_and_detect_language_even_if_no_plugin(@TempDir Path baseDir) {
+    var inputFile = createFile(baseDir, "Foo.java", "public class Foo {\n" +
+      "\n" +
+      "  void foo() {\n" +
+      "    String password = \"blue\";\n" +
+      "  }\n" +
+      "}\n");
+    client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, List.of(
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)
+      ))
+      .build();
+    backend = newBackend()
+      .withSecurityHotspotsEnabled()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .build(client);
 
-    assertThat(engine.getPluginDetails()).isEmpty();
-
-    var inputFile = prepareInputFile("foo.js", "function foo() {var x;}", false);
-
-    var results = engine.analyze(
-      AnalysisConfiguration.builder()
-        .setBaseDir(baseDir.toPath())
-        .addInputFile(inputFile)
-        .build(),
-      i -> {
-      }, null, null, CONFIGURATION_SCOPE_ID);
-
-    assertThat(results.indexedFileCount()).isEqualTo(1);
-    assertThat(results.languagePerFile()).containsEntry(inputFile, SonarLanguage.JS);
-  }
-
-  private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest) throws IOException {
-    final var file = new File(baseDir, relativePath);
-    FileUtils.write(file, content, StandardCharsets.UTF_8);
-    return TestUtils.createInputFile(file.toPath(), relativePath, isTest);
+    var analysisId = UUID.randomUUID();
+    var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
+        new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(inputFile.toUri()), Map.of(), true, System.currentTimeMillis()))
+      .join();
+    assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
+    await().during(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty());
   }
 
 }
