@@ -5,6 +5,7 @@
 * signature of `org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate#noBindingSuggestionFound` was changed
   * replaced parameter with `org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSuggestionFoundParams`
   * former parameter `projectKey` can now be accessed by `params.getProjectKey()`
+* removed deprecated constructors from `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams`
 
 ## New features
 

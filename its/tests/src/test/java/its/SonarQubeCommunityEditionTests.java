@@ -73,6 +73,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
 import static its.utils.ItUtils.SONAR_VERSION;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
@@ -116,11 +118,11 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
           new InitializeParams(IT_CLIENT_INFO,
             IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(), null, featureFlags, sonarUserHome.resolve("storage"),
             sonarUserHome.resolve("work"),
-            Collections.emptySet(), Collections.emptyMap(), enabledLanguages, Collections.emptySet(),
+            Collections.emptySet(), Collections.emptyMap(), enabledLanguages,  emptySet(), emptySet(),
             List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)),
             Collections.emptyList(),
             sonarUserHome.toString(),
-            Map.of(), false, null))
+            Map.of(), false, null, false, null))
         .get();
     } catch (Exception e) {
       throw new IllegalStateException("Cannot initialize the backend", e);

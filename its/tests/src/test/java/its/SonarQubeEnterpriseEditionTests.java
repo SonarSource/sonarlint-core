@@ -413,10 +413,10 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
             sonarUserHome.resolve("storage"),
             sonarUserHome.resolve("work"),
             emptySet(),
-            connectedModeEmbeddedPluginPathsByKey, languages, emptySet(),
+            connectedModeEmbeddedPluginPathsByKey, languages, emptySet(), emptySet(),
             List.of(new SonarQubeConnectionConfigurationDto(CONNECTION_ID, ORCHESTRATOR.getServer().getUrl(), true)), emptyList(),
             sonarUserHome.toString(),
-            Map.of(), false, null))
+            Map.of(), false, null, false, null))
         .get();
     } catch (Exception e) {
       throw new IllegalStateException("Cannot initialize the backend", e);
