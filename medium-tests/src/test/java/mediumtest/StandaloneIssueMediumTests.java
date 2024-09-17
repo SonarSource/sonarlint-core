@@ -33,7 +33,9 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
+import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
@@ -91,8 +93,7 @@ class StandaloneIssueMediumTests {
 
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
-        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)
-      ))
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
 
     var backend = harness.newBackend()
@@ -103,10 +104,8 @@ class StandaloneIssueMediumTests {
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
     assertThat(issues)
-      .extracting(RaisedIssueDto::getRuleKey, i -> i.getTextRange().getStartLine(), RaisedIssueDto::getRuleDescriptionContextKey,
-        RaisedIssueDto::getCleanCodeAttribute,
-        i -> i.getImpacts().get(0).getSoftwareQuality(), i -> i.getImpacts().get(0).getImpactSeverity())
-      .containsOnly(tuple("javascript:S1481", 2, null, CleanCodeAttribute.CONVENTIONAL, SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW));
+      .extracting(RaisedIssueDto::getRuleKey, i -> i.getTextRange().getStartLine(), RaisedIssueDto::getRuleDescriptionContextKey, StandaloneIssueMediumTests::extractMqrDetails)
+      .containsOnly(tuple("javascript:S1481", 2, null, tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
     client.cleanRaisedIssues();
 
     // SLCORE-160
@@ -129,8 +128,7 @@ class StandaloneIssueMediumTests {
 
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
-        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)
-      ))
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
@@ -142,7 +140,8 @@ class StandaloneIssueMediumTests {
 
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
-        new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, analysisId, List.of(inputFile.toUri()), Map.of("sonar.javascript.globals", "LOCAL1"), true, System.currentTimeMillis()))
+      new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, analysisId, List.of(inputFile.toUri()), Map.of("sonar.javascript.globals", "LOCAL1"), true,
+        System.currentTimeMillis()))
       .join();
     assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
     await().atMost(20, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIGURATION_SCOPE_ID)).isNotEmpty());
@@ -165,8 +164,7 @@ class StandaloneIssueMediumTests {
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
         new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true),
-        new ClientFileDto(tsConfigPath.toUri(), baseDir.relativize(tsConfigPath), CONFIGURATION_SCOPE_ID, false, null, tsConfigPath, null, null, true)
-      ))
+        new ClientFileDto(tsConfigPath.toUri(), baseDir.relativize(tsConfigPath), CONFIGURATION_SCOPE_ID, false, null, tsConfigPath, null, null, true)))
       .build();
 
     var backend = harness.newBackend()
@@ -198,8 +196,7 @@ class StandaloneIssueMediumTests {
 
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
-        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)
-      ))
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
 
     var backend = harness.newBackend()
@@ -235,8 +232,7 @@ class StandaloneIssueMediumTests {
       "\",\"executable\":\"compiler\",\"cmd\":[\"cc\",\"foo.c\"]}]}";
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
-        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)
-      ))
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
@@ -245,7 +241,8 @@ class StandaloneIssueMediumTests {
 
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
-        new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, analysisId, List.of(inputFile.toUri()), Map.of("sonar.cfamily.build-wrapper-content", buildWrapperContent), true, System.currentTimeMillis()))
+      new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, analysisId, List.of(inputFile.toUri()), Map.of("sonar.cfamily.build-wrapper-content", buildWrapperContent), true,
+        System.currentTimeMillis()))
       .join();
     assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
     await().atMost(20, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIGURATION_SCOPE_ID)).isNotEmpty());
@@ -268,8 +265,7 @@ class StandaloneIssueMediumTests {
 
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
-        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)
-      ))
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
 
     var backend = harness.newBackend()
@@ -299,8 +295,7 @@ class StandaloneIssueMediumTests {
 
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
-        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, StandardCharsets.UTF_16.name(), inputFile, null, null, true)
-      ))
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, StandardCharsets.UTF_16.name(), inputFile, null, null, true)))
       .build();
 
     var backend = harness.newBackend()
@@ -324,8 +319,7 @@ class StandaloneIssueMediumTests {
 
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
-        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)
-      ))
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
 
     var backend = harness.newBackend()
@@ -335,7 +329,7 @@ class StandaloneIssueMediumTests {
 
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
-        new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, analysisId, List.of(inputFile.toUri()), Map.of(), true, System.currentTimeMillis()))
+      new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, analysisId, List.of(inputFile.toUri()), Map.of(), true, System.currentTimeMillis()))
       .join();
     assertThat(analysisResult.getFailedAnalysisFiles()).containsExactly(inputFile.toUri());
     await().during(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIGURATION_SCOPE_ID)).isEmpty());
@@ -349,8 +343,7 @@ class StandaloneIssueMediumTests {
       + "\n");
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
-        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)
-      ))
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
@@ -369,8 +362,7 @@ class StandaloneIssueMediumTests {
     var inputFile = createFile(baseDir, "settings.gradle.kts", "description = \"SonarLint for IntelliJ IDEA\"");
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
-        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)
-      ))
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
@@ -392,8 +384,7 @@ class StandaloneIssueMediumTests {
       + "\n");
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
-        new ClientFileDto(inputFile.toUri(), Path.of("foo.py"), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)
-      ))
+        new ClientFileDto(inputFile.toUri(), Path.of("foo.py"), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
@@ -420,8 +411,7 @@ class StandaloneIssueMediumTests {
 
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
-        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)
-      ))
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
@@ -430,13 +420,13 @@ class StandaloneIssueMediumTests {
 
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
-    assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, RaisedIssueDto::getSeverity)
+    assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, StandaloneIssueMediumTests::extractMqrDetails)
       .usingRecursiveFieldByFieldElementComparator()
       .containsOnly(
-        tuple("java:S1220", null, IssueSeverity.MINOR),
-        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), IssueSeverity.MINOR),
-        tuple("java:S106", new TextRangeDto(4, 4, 4, 14), IssueSeverity.MAJOR),
-        tuple("java:S1135", new TextRangeDto(5, 0, 5, 27), IssueSeverity.INFO));
+        tuple("java:S1220", null, tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
+        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
+        tuple("java:S106", new TextRangeDto(4, 4, 4, 14), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM)))),
+        tuple("java:S1135", new TextRangeDto(5, 0, 5, 27), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
   }
 
   @SonarLintTest
@@ -449,8 +439,7 @@ class StandaloneIssueMediumTests {
         + "}");
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
-        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)
-      ))
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
@@ -459,10 +448,10 @@ class StandaloneIssueMediumTests {
 
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
-    assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, RaisedIssueDto::getSeverity)
+    assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, StandaloneIssueMediumTests::extractMqrDetails)
       .usingRecursiveFieldByFieldElementComparator()
       .contains(
-        tuple("java:S1186", new TextRangeDto(2, 14, 2, 17), IssueSeverity.CRITICAL));
+        tuple("java:S1186", new TextRangeDto(2, 14, 2, 17), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.HIGH)))));
 
     assertThat(issues)
       .flatExtracting(RaisedIssueDto::getQuickFixes)
@@ -493,8 +482,7 @@ class StandaloneIssueMediumTests {
         + "}");
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
-        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)
-      ))
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
@@ -503,17 +491,18 @@ class StandaloneIssueMediumTests {
 
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
-        new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, analysisId, List.of(inputFile.toUri()), Map.of("sonar.java.libraries", "\"" + Paths.get("target/lib/guava,with,comma.jar").toAbsolutePath().toString() + "\""), true, System.currentTimeMillis()))
+      new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, analysisId, List.of(inputFile.toUri()),
+        Map.of("sonar.java.libraries", "\"" + Paths.get("target/lib/guava,with,comma.jar").toAbsolutePath().toString() + "\""), true, System.currentTimeMillis()))
       .join();
     assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
     await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIGURATION_SCOPE_ID)).isNotEmpty());
     var issues = client.getRaisedIssuesForScopeIdAsList(CONFIGURATION_SCOPE_ID);
 
-    assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, RaisedIssueDto::getSeverity)
+    assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, StandaloneIssueMediumTests::extractMqrDetails)
       .usingRecursiveFieldByFieldElementComparator()
       .containsOnly(
-        tuple("java:S1220", null, IssueSeverity.MINOR),
-        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), IssueSeverity.MINOR));
+        tuple("java:S1220", null, tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
+        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
   }
 
   @SonarLintTest
@@ -522,7 +511,8 @@ class StandaloneIssueMediumTests {
       "KEY = \"AKIAIGKECZXA7AEIJLMQ\"");
     var fileUri = filePath.toUri();
     var client = harness.newFakeClient()
-      .withInitialFs(CONFIGURATION_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIGURATION_SCOPE_ID, false, null, filePath, null, null, true)))
+      .withInitialFs(CONFIGURATION_SCOPE_ID, baseDir,
+        List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIGURATION_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
@@ -530,7 +520,8 @@ class StandaloneIssueMediumTests {
       .build(client);
     var analysisId = UUID.randomUUID();
 
-    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), false, System.currentTimeMillis())).join();
+    backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), false, System.currentTimeMillis())).join();
     await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIGURATION_SCOPE_ID).get(fileUri)).isNotEmpty());
 
     var issueId = client.getRaisedIssuesForScopeId(CONFIGURATION_SCOPE_ID).get(fileUri).get(0).getId();
@@ -554,7 +545,8 @@ class StandaloneIssueMediumTests {
       "KEY = \"AKIAIGKECZXA7AEIJLMQ\"");
     var fileUri = filePath.toUri();
     var client = harness.newFakeClient()
-      .withInitialFs(CONFIGURATION_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIGURATION_SCOPE_ID, false, null, filePath, null, null, true)))
+      .withInitialFs(CONFIGURATION_SCOPE_ID, baseDir,
+        List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIGURATION_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
@@ -619,8 +611,7 @@ class StandaloneIssueMediumTests {
 
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
-        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)
-      ))
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
@@ -644,8 +635,7 @@ class StandaloneIssueMediumTests {
         + "</project>");
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
-        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)
-      ))
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
@@ -654,8 +644,8 @@ class StandaloneIssueMediumTests {
 
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
-    assertThat(issues).extracting(RaisedIssueDto::getRuleKey, i -> i.getTextRange().getStartLine(), RaisedIssueDto::getSeverity).containsOnly(
-      tuple("xml:S3421", 6, IssueSeverity.MINOR));
+    assertThat(issues).extracting(RaisedIssueDto::getRuleKey, i -> i.getTextRange().getStartLine(), StandaloneIssueMediumTests::extractMqrDetails).containsOnly(
+      tuple("xml:S3421", 6, tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
   }
 
   @SonarLintTest
@@ -671,8 +661,7 @@ class StandaloneIssueMediumTests {
         + "}");
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
-        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)
-      ))
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
@@ -681,11 +670,11 @@ class StandaloneIssueMediumTests {
 
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
-    assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, RaisedIssueDto::getSeverity)
+    assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, StandaloneIssueMediumTests::extractMqrDetails)
       .usingRecursiveFieldByFieldElementComparator()
       .containsOnly(
-        tuple("java:S1220", null, IssueSeverity.MINOR),
-        tuple("java:S1481", new TextRangeDto(4, 8, 4, 9), IssueSeverity.MINOR));
+        tuple("java:S1220", null, tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
+        tuple("java:S1481", new TextRangeDto(4, 8, 4, 9), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
   }
 
   @SonarLintTest
@@ -697,8 +686,7 @@ class StandaloneIssueMediumTests {
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
         new ClientFileDto(inputFile.toUri(), projectWithByteCode.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true),
-        new ClientFileDto(binFile.toUri(), projectWithByteCode.relativize(binFile), CONFIGURATION_SCOPE_ID, false, null, binFile, null, null, false)
-      ))
+        new ClientFileDto(binFile.toUri(), projectWithByteCode.relativize(binFile), CONFIGURATION_SCOPE_ID, false, null, binFile, null, null, false)))
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
@@ -706,7 +694,8 @@ class StandaloneIssueMediumTests {
       .build(client);
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
-        new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, analysisId, List.of(inputFile.toUri()), Map.of("sonar.java.binaries", projectWithByteCode.resolve("bin").toString()), true, System.currentTimeMillis()))
+      new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, analysisId, List.of(inputFile.toUri()), Map.of("sonar.java.binaries", projectWithByteCode.resolve("bin").toString()),
+        true, System.currentTimeMillis()))
       .join();
     assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
     await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIGURATION_SCOPE_ID)).isNotEmpty());
@@ -733,8 +722,7 @@ class StandaloneIssueMediumTests {
 
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
-        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)
-      ))
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
@@ -745,11 +733,11 @@ class StandaloneIssueMediumTests {
 
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
-    assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, RaisedIssueDto::getSeverity)
+    assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, StandaloneIssueMediumTests::extractMqrDetails)
       .usingRecursiveFieldByFieldElementComparator()
       .containsOnly(
-        tuple("java:S1220", null, IssueSeverity.MINOR),
-        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), IssueSeverity.MINOR));
+        tuple("java:S1220", null, tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
+        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
   }
 
   @SonarLintTest
@@ -764,8 +752,7 @@ class StandaloneIssueMediumTests {
 
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
-        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)
-      ))
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
@@ -776,11 +763,11 @@ class StandaloneIssueMediumTests {
 
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
-    assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, RaisedIssueDto::getSeverity)
+    assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, StandaloneIssueMediumTests::extractMqrDetails)
       .usingRecursiveFieldByFieldElementComparator()
       .containsOnly(
-        tuple("java:S1220", null, IssueSeverity.MINOR),
-        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), IssueSeverity.MINOR));
+        tuple("java:S1220", null, tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
+        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
 
     assertThat(client.getLogMessages()).contains("Rule 'java:S106' was excluded using its deprecated key 'squid:S106'. Please fix your configuration.");
   }
@@ -797,8 +784,7 @@ class StandaloneIssueMediumTests {
         + "}");
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
-        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)
-      ))
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
@@ -809,13 +795,13 @@ class StandaloneIssueMediumTests {
 
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
-    assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, RaisedIssueDto::getSeverity)
+    assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, StandaloneIssueMediumTests::extractMqrDetails)
       .usingRecursiveFieldByFieldElementComparator()
       .containsOnly(
-        tuple("java:S3553", new TextRangeDto(3, 18, 3, 34), IssueSeverity.MAJOR),
-        tuple("java:S106", new TextRangeDto(5, 4, 5, 14), IssueSeverity.MAJOR),
-        tuple("java:S1220", null, IssueSeverity.MINOR),
-        tuple("java:S1481", new TextRangeDto(4, 8, 4, 9), IssueSeverity.MINOR));
+        tuple("java:S3553", new TextRangeDto(3, 18, 3, 34), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM)))),
+        tuple("java:S106", new TextRangeDto(5, 4, 5, 14), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM)))),
+        tuple("java:S1220", null, tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
+        tuple("java:S1481", new TextRangeDto(4, 8, 4, 9), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
   }
 
   @SonarLintTest
@@ -830,8 +816,7 @@ class StandaloneIssueMediumTests {
         + "}");
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
-        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)
-      ))
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
@@ -842,13 +827,13 @@ class StandaloneIssueMediumTests {
 
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
-    assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, RaisedIssueDto::getSeverity)
+    assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, StandaloneIssueMediumTests::extractMqrDetails)
       .usingRecursiveFieldByFieldElementComparator()
       .containsOnly(
-        tuple("java:S3553", new TextRangeDto(3, 18, 3, 34), IssueSeverity.MAJOR),
-        tuple("java:S106", new TextRangeDto(5, 4, 5, 14), IssueSeverity.MAJOR),
-        tuple("java:S1220", null, IssueSeverity.MINOR),
-        tuple("java:S1481", new TextRangeDto(4, 8, 4, 9), IssueSeverity.MINOR));
+        tuple("java:S3553", new TextRangeDto(3, 18, 3, 34), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM)))),
+        tuple("java:S106", new TextRangeDto(5, 4, 5, 14), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM)))),
+        tuple("java:S1220", null, tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
+        tuple("java:S1481", new TextRangeDto(4, 8, 4, 9), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
 
     assertThat(client.getLogMessages()).contains("Rule 'java:S3553' was included using its deprecated key 'squid:S3553'. Please fix your configuration.");
   }
@@ -863,8 +848,7 @@ class StandaloneIssueMediumTests {
         + "}");
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
-        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)
-      ))
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
@@ -876,7 +860,7 @@ class StandaloneIssueMediumTests {
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
     assertThat(issues)
-      .extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, RaisedIssueDto::getSeverity)
+      .extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, StandaloneIssueMediumTests::extractMqrDetails)
       .usingRecursiveFieldByFieldElementComparator()
       .containsOnly(
         tuple("java:S2094", new TextRangeDto(2, 13, 2, 16), IssueSeverity.MINOR),
@@ -897,8 +881,7 @@ class StandaloneIssueMediumTests {
 
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
-        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)
-      ))
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
@@ -943,8 +926,7 @@ class StandaloneIssueMediumTests {
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
         new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true),
-        new ClientFileDto(inputFileTest.toUri(), baseDir.relativize(inputFileTest), CONFIGURATION_SCOPE_ID, true, null, inputFileTest, null, null, true)
-      ))
+        new ClientFileDto(inputFileTest.toUri(), baseDir.relativize(inputFileTest), CONFIGURATION_SCOPE_ID, true, null, inputFileTest, null, null, true)))
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
@@ -953,7 +935,8 @@ class StandaloneIssueMediumTests {
 
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
-        new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, analysisId, List.of(inputFile.toUri(), inputFileTest.toUri()), Map.of("sonar.junit.reportsPath", "reports/"), true, System.currentTimeMillis()))
+      new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, analysisId, List.of(inputFile.toUri(), inputFileTest.toUri()), Map.of("sonar.junit.reportsPath", "reports/"), true,
+        System.currentTimeMillis()))
       .join();
     assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
     await().atMost(20, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIGURATION_SCOPE_ID)).isNotEmpty());
@@ -985,8 +968,7 @@ class StandaloneIssueMediumTests {
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
         new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true),
-        new ClientFileDto(unexistingFilePath.toUri(), baseDir.relativize(unexistingFilePath), CONFIGURATION_SCOPE_ID, false, null, unexistingFilePath, null, null, true)
-      ))
+        new ClientFileDto(unexistingFilePath.toUri(), baseDir.relativize(unexistingFilePath), CONFIGURATION_SCOPE_ID, false, null, unexistingFilePath, null, null, true)))
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
@@ -995,12 +977,20 @@ class StandaloneIssueMediumTests {
 
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
-        new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, analysisId, List.of(inputFile.toUri(), unexistingFilePath.toUri()), Map.of("sonar.junit.reportsPath", "reports/"), true, System.currentTimeMillis()))
+      new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, analysisId, List.of(inputFile.toUri(), unexistingFilePath.toUri()), Map.of("sonar.junit.reportsPath", "reports/"),
+        true, System.currentTimeMillis()))
       .join();
 
     assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
     assertThat(client.getLogMessages())
       .contains("Initializing metadata of file " + inputFile.toUri())
       .doesNotContain("Initializing metadata of file " + unexistingFilePath.toFile());
+  }
+
+  private static Tuple extractMqrDetails(RaisedIssueDto raisedIssueDto) {
+    assertThat(raisedIssueDto.getSeverityMode().isRight()).isTrue();
+    var mqrModeDetails = raisedIssueDto.getSeverityMode().getRight();
+    return tuple(mqrModeDetails.getCleanCodeAttribute(),
+      mqrModeDetails.getImpacts().stream().map(i -> tuple(i.getSoftwareQuality(), i.getImpactSeverity())).collect(Collectors.toList()));
   }
 }

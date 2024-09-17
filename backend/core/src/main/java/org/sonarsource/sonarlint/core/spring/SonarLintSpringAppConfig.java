@@ -104,10 +104,8 @@ import org.sonarsource.sonarlint.core.sync.IssueSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationService;
 import org.sonarsource.sonarlint.core.sync.TaintSynchronizationService;
-import org.sonarsource.sonarlint.core.tracking.IssueMatchingService;
 import org.sonarsource.sonarlint.core.tracking.KnownFindingsStorageService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
-import org.sonarsource.sonarlint.core.tracking.SecurityHotspotMatchingService;
 import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
 import org.sonarsource.sonarlint.core.tracking.TrackingService;
 import org.sonarsource.sonarlint.core.usertoken.UserTokenService;
@@ -161,7 +159,6 @@ import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_S
   IssueService.class,
   AnalysisService.class,
   SmartNotifications.class,
-  IssueMatchingService.class,
   LocalOnlyIssueRepository.class,
   WebSocketService.class,
   ServerEventsService.class,
@@ -170,7 +167,6 @@ import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_S
   StorageService.class,
   SeverityModeService.class,
   NewCodeService.class,
-  SecurityHotspotMatchingService.class,
   UserTokenService.class,
   RequestHandlerBindingAssistant.class,
   TaintVulnerabilityTrackingService.class,

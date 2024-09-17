@@ -45,7 +45,6 @@ import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.testutils.GitUtils;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeAnalysisPropertiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangePathToCompileCommandsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigParams;
@@ -57,7 +56,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemov
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingPluginParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ProgressEndNotification;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
@@ -67,24 +67,22 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.OnDiskTestClientInputFile;
 import utils.TestPlugin;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.refEq;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static utils.AnalysisUtils.waitForRaisedIssues;
 
 @ExtendWith(LogTestStartAndEnd.class)
 class AnalysisMediumTests {
@@ -112,10 +110,11 @@ class AnalysisMediumTests {
     var analysisId = UUID.randomUUID();
 
     var result = backend.getAnalysisService()
-      .analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId, List.of(tempDir.resolve("File.java").toUri()), Map.of(), System.currentTimeMillis())).join();
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(tempDir.resolve("File.java").toUri()), Map.of(), false, System.currentTimeMillis()))
+      .join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
-    verify(client, never()).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), any());
+    await().during(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty());
   }
 
   @SonarLintTest
@@ -186,24 +185,22 @@ class AnalysisMediumTests {
       .build(client);
     var analysisId = UUID.randomUUID();
 
-    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
+    var result = backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), false, System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
-    var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
-    verify(client).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
-    var rawIssue = rawIssueCaptor.getValue();
-    assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.MINOR);
-    assertThat(rawIssue.getType()).isEqualTo(RuleType.CODE_SMELL);
-    assertThat(rawIssue.getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.CONVENTIONAL);
-    assertThat(rawIssue.getImpacts()).isEqualTo(Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW));
-    assertThat(rawIssue.getRuleKey()).isEqualTo("xml:S3421");
-    assertThat(rawIssue.getPrimaryMessage()).isEqualTo("Replace \"pom.version\" with \"project.version\".");
-    assertThat(rawIssue.getFileUri()).isEqualTo(fileUri);
-    assertThat(rawIssue.getFlows()).isEmpty();
-    assertThat(rawIssue.getQuickFixes()).isEmpty();
-    assertThat(rawIssue.getTextRange()).usingRecursiveComparison().isEqualTo(new TextRangeDto(6, 11, 6, 25));
-    assertThat(rawIssue.getRuleDescriptionContextKey()).isNull();
-    assertThat(rawIssue.getVulnerabilityProbability()).isNull();
+    var raisedIssueDto = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID).get(0);
+    assertThat(raisedIssueDto.getSeverityMode().isRight()).isTrue();
+    assertThat(raisedIssueDto.getSeverityMode().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.CONVENTIONAL);
+    assertThat(raisedIssueDto.getSeverityMode().getRight().getImpacts())
+      .extracting(ImpactDto::getSoftwareQuality, ImpactDto::getImpactSeverity)
+      .containsExactly(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW));
+    assertThat(raisedIssueDto.getRuleKey()).isEqualTo("xml:S3421");
+    assertThat(raisedIssueDto.getPrimaryMessage()).isEqualTo("Replace \"pom.version\" with \"project.version\".");
+    assertThat(raisedIssueDto.getFlows()).isEmpty();
+    assertThat(raisedIssueDto.getQuickFixes()).isEmpty();
+    assertThat(raisedIssueDto.getTextRange()).usingRecursiveComparison().isEqualTo(new TextRangeDto(6, 11, 6, 25));
+    assertThat(raisedIssueDto.getRuleDescriptionContextKey()).isNull();
   }
 
   @SonarLintTest
@@ -229,14 +226,17 @@ class AnalysisMediumTests {
       .build(client);
     var analysisId = UUID.randomUUID();
 
-    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
+    var result = backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), false, System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
-    var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
-    verify(client).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
-    var rawIssue = rawIssueCaptor.getValue();
-    assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
-    assertThat(rawIssue.getRuleKey()).isEqualTo("xml:S3421");
+    var raisedIssueDto = client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID).get(fileUri).get(0);
+    assertThat(raisedIssueDto.getSeverityMode().isRight()).isTrue();
+    assertThat(raisedIssueDto.getSeverityMode().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.CONVENTIONAL);
+    assertThat(raisedIssueDto.getSeverityMode().getRight().getImpacts())
+      .extracting(ImpactDto::getSoftwareQuality, ImpactDto::getImpactSeverity)
+      .containsExactly(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW));
+    assertThat(raisedIssueDto.getRuleKey()).isEqualTo("xml:S3421");
   }
 
   @SonarLintTest
@@ -254,7 +254,8 @@ class AnalysisMediumTests {
       .build(client);
     var analysisId = UUID.randomUUID();
 
-    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
+    var result = backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), false, System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     verify(client, timeout(200)).didSkipLoadingPlugin(CONFIG_SCOPE_ID, Language.JAVA, DidSkipLoadingPluginParams.SkipReason.UNSATISFIED_JRE, "11", "10");
@@ -274,7 +275,8 @@ class AnalysisMediumTests {
       .build(client);
     var analysisId = UUID.randomUUID();
 
-    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
+    var result = backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), false, System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     verify(client, timeout(1000)).didDetectSecret(CONFIG_SCOPE_ID);
@@ -294,7 +296,8 @@ class AnalysisMediumTests {
       .build(client);
     var analysisId = UUID.randomUUID();
 
-    backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
+    backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), false, System.currentTimeMillis())).join();
 
     verify(client).startProgress(refEq(new StartProgressParams(analysisId.toString(), CONFIG_SCOPE_ID, "Analyzing 1 file", null, true, false)));
     var reportProgressCaptor = ArgumentCaptor.forClass(ReportProgressParams.class);
@@ -318,7 +321,8 @@ class AnalysisMediumTests {
       .build(client);
     var analysisId = UUID.randomUUID();
 
-    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
+    var result = backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), false, System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     assertThat(result.getRawIssues()).hasSize(1);
@@ -345,15 +349,14 @@ class AnalysisMediumTests {
       .build(client);
     var analysisId = UUID.randomUUID();
 
-    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId,
-      List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
+    var result = backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId,
+        List.of(fileIssueUri), Map.of(), false, System.currentTimeMillis()))
+      .join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
-    var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
-    verify(client, timeout(2000)).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
-    var rawIssue = rawIssueCaptor.getValue();
-    assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
-    assertThat(rawIssue.getRuleKey()).isEqualTo("python:S930");
+    var raisedIssueDto = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID).get(0);
+    assertThat(raisedIssueDto.getRuleKey()).isEqualTo("python:S930");
   }
 
   @SonarLintTest
@@ -373,12 +376,11 @@ class AnalysisMediumTests {
       .build(client);
     var analysisId = UUID.randomUUID();
 
-    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId,
-      List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
+    var result = backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId,
+      List.of(fileIssueUri), Map.of(), false, System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
-    var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
-    verify(client, times(0)).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
+    await().during(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty());
 
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
       new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, false, CONFIG_SCOPE_ID, null))));
@@ -389,15 +391,12 @@ class AnalysisMediumTests {
         List.of(),
         List.of()));
 
-    result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId,
-      List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
+    result = backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId,
+      List.of(fileIssueUri), Map.of(), false, System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
-    rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
-    verify(client, timeout(2000)).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
-    var rawIssue = rawIssueCaptor.getValue();
-    assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
-    assertThat(rawIssue.getRuleKey()).isEqualTo("python:S930");
+    var raisedIssueDto = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID).get(0);
+    assertThat(raisedIssueDto.getRuleKey()).isEqualTo("python:S930");
   }
 
   @SonarLintTest
@@ -434,25 +433,23 @@ class AnalysisMediumTests {
       .build(client);
     var analysisId = UUID.randomUUID();
 
-    var leafConfigScopeResult = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(leafConfigScope, analysisId,
-      List.of(file2IssueUri), Map.of(), System.currentTimeMillis())).join();
+    var leafConfigScopeResult = backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(leafConfigScope, analysisId,
+      List.of(file2IssueUri), Map.of(), false, System.currentTimeMillis())).join();
 
     assertThat(leafConfigScopeResult.getFailedAnalysisFiles()).isEmpty();
-    var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
-    verify(client).didRaiseIssue(eq(leafConfigScope), eq(analysisId), rawIssueCaptor.capture());
-    var rawIssue = rawIssueCaptor.getValue();
-    assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
-    assertThat(rawIssue.getRuleKey()).isEqualTo("python:S930");
+    var raisedIssueDto = awaitRaisedIssuesNotification(client, leafConfigScope).get(0);
+    assertThat(raisedIssueDto.getRuleKey()).isEqualTo("python:S930");
 
-    var parentConfigScopeResult = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(parentConfigScope,
-      analysisId, List.of(file1IssueUri), Map.of(), System.currentTimeMillis())).join();
+    var parentConfigScopeResult = backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(parentConfigScope,
+      analysisId, List.of(file1IssueUri), Map.of(), false, System.currentTimeMillis())).join();
 
     assertThat(parentConfigScopeResult.getFailedAnalysisFiles()).isEmpty();
-    verify(client, times(0)).didRaiseIssue(eq(parentConfigScope), eq(analysisId), rawIssueCaptor.capture());
+    await().during(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(parentConfigScope)).isEmpty());
   }
 
   @SonarLintTest
-  void it_should_update_module_file_system_on_file_events_creating_file(SonarLintTestHarness harness, @TempDir Path baseDir) {
+  void it_should_update_module_file_system_on_file_events_creating_file(SonarLintTestHarness harness, @TempDir Path tempDir) throws IOException {
+    var baseDir = Files.createDirectory(tempDir.resolve("it_should_update_module_file_system_on_file_events_creating_file"));
     var fileIssue = createFile(baseDir, "fileIssue.py",
       "from fileFuncDef import foo\n" +
         "foo(1,2,3)\n");
@@ -467,12 +464,11 @@ class AnalysisMediumTests {
       .build(client);
     var analysisId = UUID.randomUUID();
 
-    var parentConfigScopeResult = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId,
-      List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
+    var parentConfigScopeResult = backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId,
+      List.of(fileIssueUri), Map.of(), false, System.currentTimeMillis())).join();
 
     assertThat(parentConfigScopeResult.getFailedAnalysisFiles()).isEmpty();
-    var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
-    verify(client, times(0)).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
+    await().during(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty());
 
     var fileFuncDef = createFile(baseDir, "fileFuncDef.py",
       "def foo(a):\n" +
@@ -484,15 +480,12 @@ class AnalysisMediumTests {
       List.of(),
       List.of()));
 
-    parentConfigScopeResult = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID,
-      analysisId, List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
+    parentConfigScopeResult = backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID,
+      analysisId, List.of(fileIssueUri), Map.of(), false, System.currentTimeMillis())).join();
 
     assertThat(parentConfigScopeResult.getFailedAnalysisFiles()).isEmpty();
-    rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
-    verify(client).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
-    var rawIssue = rawIssueCaptor.getValue();
-    assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
-    assertThat(rawIssue.getRuleKey()).isEqualTo("python:S930");
+    var raisedIssueDto = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID).get(0);
+    assertThat(raisedIssueDto.getRuleKey()).isEqualTo("python:S930");
   }
 
   @Disabled("SLCORE-1113")
@@ -518,25 +511,23 @@ class AnalysisMediumTests {
       .build(client);
     var analysisId = UUID.randomUUID();
 
-    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId,
-      List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
+    var result = backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId,
+      List.of(fileIssueUri), Map.of(), false, System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
-    var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
-    verify(client).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
-    var rawIssue = rawIssueCaptor.getValue();
-    assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
-    assertThat(rawIssue.getRuleKey()).isEqualTo("python:S930");
+    var raisedIssueDto = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID).get(0);
+    assertThat(raisedIssueDto.getSeverityMode().isLeft()).isTrue();
+    assertThat(raisedIssueDto.getSeverityMode().getLeft().getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
+    assertThat(raisedIssueDto.getRuleKey()).isEqualTo("python:S930");
 
     removeFile(baseDir, "fileFuncDef.py");
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(), List.of(), List.of(fileFuncDefUri)));
 
-    result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId,
-      List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
+    result = backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId,
+      List.of(fileIssueUri), Map.of(), false, System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
-    rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
-    verify(client, times(0)).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
+    assertThat(client.getRaisedHotspotsForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty();
   }
 
   @Disabled("SLCORE-1113")
@@ -562,15 +553,14 @@ class AnalysisMediumTests {
       .build(client);
     var analysisId = UUID.randomUUID();
 
-    var result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId,
-      List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
+    var result = backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId,
+      List.of(fileIssueUri), Map.of(), false, System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
-    var rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
-    verify(client).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
-    var rawIssue = rawIssueCaptor.getValue();
-    assertThat(rawIssue.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
-    assertThat(rawIssue.getRuleKey()).isEqualTo("python:S930");
+    var raisedIssueDto = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID).get(0);
+    assertThat(raisedIssueDto.getSeverityMode().isLeft()).isTrue();
+    assertThat(raisedIssueDto.getSeverityMode().getLeft().getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
+    assertThat(raisedIssueDto.getRuleKey()).isEqualTo("python:S930");
 
     editFile(baseDir, "fileFuncDef.py", "");
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(
@@ -579,12 +569,11 @@ class AnalysisMediumTests {
       List.of(),
       List.of()));
 
-    result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId,
-      List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
+    result = backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId,
+      List.of(fileIssueUri), Map.of(), false, System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
-    rawIssueCaptor = ArgumentCaptor.forClass(RawIssueDto.class);
-    verify(client, times(0)).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
+    assertThat(client.getRaisedHotspotsForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty();
   }
 
   @SonarLintTest
@@ -655,7 +644,7 @@ class AnalysisMediumTests {
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     assertThat(result.getRawIssues()).isEmpty();
-    verify(client, never()).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), any());
+    await().during(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty());
 
     var allRules = backend.getRulesService().listAllStandaloneRulesDefinitions().join();
     assertThat(allRules.getRulesByKey().keySet())
@@ -808,9 +797,11 @@ class AnalysisMediumTests {
 
     // analyse files to warmup caches
     var analysisId1 = UUID.randomUUID();
-    backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId1, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId1, List.of(fileUri), Map.of(), true, System.currentTimeMillis()))
+      .join();
     var analysisId2 = UUID.randomUUID();
-    backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(configScope2, analysisId2, List.of(fileUri2), Map.of(), System.currentTimeMillis())).join();
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(configScope2, analysisId2, List.of(fileUri2), Map.of(), true, System.currentTimeMillis()))
+      .join();
 
     // unload one of the projects
     backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(configScope2));
@@ -881,9 +872,11 @@ class AnalysisMediumTests {
 
     // analyse files to warmup caches
     var analysisId1 = UUID.randomUUID();
-    backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId1, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId1, List.of(fileUri), Map.of(), true, System.currentTimeMillis()))
+      .join();
     var analysisId2 = UUID.randomUUID();
-    backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(configScope2, analysisId2, List.of(fileUri2), Map.of(), System.currentTimeMillis())).join();
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(configScope2, analysisId2, List.of(fileUri2), Map.of(), true, System.currentTimeMillis()))
+      .join();
 
     // unload one of the projects
     backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(configScope2));
@@ -911,16 +904,16 @@ class AnalysisMediumTests {
 
     backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri1), Map.of(), false, System.currentTimeMillis())).join();
-    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).hasSize(1));
 
-    var raisedIssues = client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID);
+    var raisedIssues = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID);
     assertThat(raisedIssues).hasSize(1);
+    client.cleanRaisedIssues();
 
     backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri2), Map.of(), false, System.currentTimeMillis())).join();
     await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).hasSize(1));
 
-    raisedIssues = client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID);
+    raisedIssues = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID);
     assertThat(raisedIssues).hasSize(1);
   }
 
@@ -1027,5 +1020,10 @@ class AnalysisMediumTests {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  private static List<RaisedIssueDto> awaitRaisedIssuesNotification(SonarLintBackendFixture.FakeSonarLintRpcClient client, String configScopeId) {
+    waitForRaisedIssues(client, configScopeId);
+    return client.getRaisedIssuesForScopeIdAsList(configScopeId);
   }
 }

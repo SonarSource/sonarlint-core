@@ -107,10 +107,10 @@ class SecurityHotspotTrackingMediumTests {
         new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, CONFIG_SCOPE_ID,
           new BindingConfigurationDto(connectionId, projectKey, true)))));
 
-    var firstPublishedIssue = analyzeFileAndGetHotspot(backend, fileUri, client);
+    var firstPublishedHotspot = analyzeFileAndGetHotspot(backend, fileUri, client);
 
-    assertThat(firstPublishedIssue)
-      .extracting("ruleKey", "primaryMessage", "severity", "type", "serverKey", "status", "introductionDate",
+    assertThat(firstPublishedHotspot)
+      .extracting("ruleKey", "primaryMessage", "severityMode.left.severity", "severityMode.left.type", "serverKey", "status", "introductionDate",
         "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
       .containsExactly(ruleKey, message, IssueSeverity.MINOR, RuleType.SECURITY_HOTSPOT, "uuid", HotspotStatus.TO_REVIEW, Instant.ofEpochSecond(123456789L), 6, 11, 6, 19);
   }
@@ -165,13 +165,13 @@ class SecurityHotspotTrackingMediumTests {
         new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, CONFIG_SCOPE_ID,
           new BindingConfigurationDto(connectionId, projectKey, true)))));
 
-    var firstPublishedIssue = analyzeFileAndGetHotspot(backend, fileUri, client);
-    var secondPublishedIssue = analyzeFileAndGetHotspot(backend, fileUri, client);
+    var firstPublishedHotspot = analyzeFileAndGetHotspot(backend, fileUri, client);
+    var secondPublishedHotspot = analyzeFileAndGetHotspot(backend, fileUri, client);
 
-    assertThat(secondPublishedIssue)
-      .extracting("id", "ruleKey", "primaryMessage", "severity", "type", "serverKey", "introductionDate",
+    assertThat(secondPublishedHotspot)
+      .extracting("id", "ruleKey", "primaryMessage", "severityMode.left.severity", "severityMode.left.type", "serverKey", "introductionDate",
         "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
-      .containsExactly(firstPublishedIssue.getId(), ruleKey, message, IssueSeverity.MINOR, RuleType.SECURITY_HOTSPOT, "uuid", Instant.ofEpochSecond(123456789L), 6, 11, 6, 19);
+      .containsExactly(firstPublishedHotspot.getId(), ruleKey, message, IssueSeverity.MINOR, RuleType.SECURITY_HOTSPOT, "uuid", Instant.ofEpochSecond(123456789L), 6, 11, 6, 19);
   }
 
   @SonarLintTest

@@ -32,6 +32,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.GetEffectiveIssueDetailsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
@@ -98,12 +99,12 @@ class ConnectedIssueMediumTests {
     await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isNotEmpty());
 
     var issues = client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID);
-    assertThat(issues).extracting("ruleKey", "severity")
+    assertThat(issues).extracting("ruleKey", "severityMode.right.cleanCodeAttribute")
       .usingRecursiveFieldByFieldElementComparator()
       .containsOnly(
-        tuple("java:S106", IssueSeverity.MAJOR),
-        tuple("java:S1220", IssueSeverity.MINOR),
-        tuple("java:S1481", IssueSeverity.BLOCKER));
+        tuple("java:S106", CleanCodeAttribute.CONVENTIONAL),
+        tuple("java:S1220", CleanCodeAttribute.CONVENTIONAL),
+        tuple("java:S1481", CleanCodeAttribute.CONVENTIONAL));
   }
 
   @SonarLintTest
