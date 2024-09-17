@@ -57,9 +57,10 @@ import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
@@ -69,7 +70,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSys
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
@@ -214,7 +214,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
       var rawIssues = analyzeFile(configScopeId, PROJECT_KEY_C, "src/file.c", "sonar.cfamily.build-wrapper-output", buildWrapperOutput.getAbsolutePath());
 
       assertThat(rawIssues)
-        .extracting(RawIssueDto::getRuleKey)
+        .extracting(RaisedIssueDto::getRuleKey)
         .containsOnly("c:S3805", singlePointOfExitRuleKey);
     }
 
@@ -245,7 +245,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
       var rawIssues = analyzeFile(configScopeId, PROJECT_KEY_C, "src/file.c", "sonar.cfamily.build-wrapper-content", buildWrapperContent);
 
       assertThat(rawIssues)
-        .extracting(RawIssueDto::getRuleKey)
+        .extracting(RaisedIssueDto::getRuleKey)
         .containsOnly("c:S3805", singlePointOfExitRuleKey);
     }
 
@@ -299,7 +299,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
       var rawIssues = analyzeFile(configScopeId, PROJECT_KEY_CUSTOM_SECRETS, "src/file.md");
 
       assertThat(rawIssues)
-        .extracting(RawIssueDto::getRuleKey, RawIssueDto::getPrimaryMessage)
+        .extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getPrimaryMessage)
         .containsOnly(tuple("secrets:custom_secret_rule", "User-specified secrets should not be disclosed."));
     }
   }
@@ -343,7 +343,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
       var rawIssues = analyzeFile(configScopeId, PROJECT_KEY_C, "src/file.c", "sonar.cfamily.build-wrapper-content", buildWrapperContent);
 
       assertThat(rawIssues)
-        .extracting(RawIssueDto::getRuleKey)
+        .extracting(RaisedIssueDto::getRuleKey)
         .containsOnly("c:S3805", "c:S1005");
     }
   }
@@ -355,7 +355,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     await().atMost(30, SECONDS).untilAsserted(() -> assertThat(analysisReadinessByConfigScopeId).containsEntry(configScopeId, true));
   }
 
-  private List<RawIssueDto> analyzeFile(String configScopeId, String projectDir, String filePathStr, String... properties) {
+  private List<RaisedIssueDto> analyzeFile(String configScopeId, String projectDir, String filePathStr, String... properties) {
     var filePath = Path.of("projects").resolve(projectDir).resolve(filePathStr);
     var fileUri = filePath.toUri();
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(
@@ -364,13 +364,14 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
       List.of()
     ));
 
-    var analyzeResponse = backend.getAnalysisService().analyzeFiles(
-      new AnalyzeFilesParams(configScopeId, UUID.randomUUID(), List.of(fileUri), toMap(properties), System.currentTimeMillis())
+    var analyzeResponse = backend.getAnalysisService().analyzeFilesAndTrack(
+      new AnalyzeFilesAndTrackParams(configScopeId, UUID.randomUUID(), List.of(fileUri), toMap(properties), true, System.currentTimeMillis())
     ).join();
 
     assertThat(analyzeResponse.getFailedAnalysisFiles()).isEmpty();
     var raisedIssues = ((MockSonarLintRpcClientDelegate) client).getRaisedIssues(configScopeId);
-    return raisedIssues != null ? raisedIssues : List.of();
+    ((MockSonarLintRpcClientDelegate) client).getRaisedIssues().clear();
+    return raisedIssues != null ? raisedIssues.values().stream().flatMap(List::stream).collect(Collectors.toList()) : List.of();
   }
 
   private static void removeGroupPermission(String groupName, String permission) {

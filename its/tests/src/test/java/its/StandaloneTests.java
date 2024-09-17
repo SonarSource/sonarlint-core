@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -47,7 +48,7 @@ import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
@@ -59,7 +60,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleParamDefini
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleParamType;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.UpdateStandaloneRulesConfigurationParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 
@@ -145,18 +146,18 @@ class StandaloneTests {
 
   @Test
   void globalExtension() throws Exception {
-    var inputFile = prepareInputFile("foo.glob", "foo", false);
+    prepareInputFile("foo.glob", "foo", false);
 
     var raisedIssues = analyzeFile(CONFIG_SCOPE_ID, baseDir.getAbsolutePath(), "foo.glob", "sonar.cobol.file.suffixes", "glob");
-    assertThat(raisedIssues).extracting("ruleKey", "fileUri.path", "primaryMessage").containsOnly(
-      tuple("global:inc", inputFile.getPath(), "Issue number 0"));
+    assertThat(raisedIssues).extracting("ruleKey", "primaryMessage").containsOnly(
+      tuple("global:inc", "Issue number 0"));
 
     backend.getRulesService().updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(
       Map.of("global:inc", new StandaloneRuleConfigDto(true, Map.of("stringParam", "polop", "textParam", "", "multipleIntegersParam", "80,160", "unknown", "parameter")))));
 
     raisedIssues = analyzeFile(CONFIG_SCOPE_ID, baseDir.getAbsolutePath(), "foo.glob", "sonar.cobol.file.suffixes", "glob");
-    assertThat(raisedIssues).extracting("ruleKey", "fileUri.path", "primaryMessage").containsOnly(
-      tuple("global:inc", inputFile.getPath(), "Issue number 1"));
+    assertThat(raisedIssues).extracting("ruleKey", "primaryMessage").containsOnly(
+      tuple("global:inc", "Issue number 1"));
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding) throws IOException {
@@ -178,7 +179,7 @@ class StandaloneTests {
     };
   }
 
-  private List<RawIssueDto> analyzeFile(String configScopeId, String baseDir, String filePathStr, String... properties) {
+  private List<RaisedIssueDto> analyzeFile(String configScopeId, String baseDir, String filePathStr, String... properties) {
     var filePath = Path.of("projects").resolve(baseDir).resolve(filePathStr);
     var fileUri = filePath.toUri();
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(
@@ -187,8 +188,8 @@ class StandaloneTests {
       List.of()
     ));
 
-    var analyzeResponse = backend.getAnalysisService().analyzeFiles(
-      new AnalyzeFilesParams(configScopeId, UUID.randomUUID(), List.of(fileUri), toMap(properties), System.currentTimeMillis())
+    var analyzeResponse = backend.getAnalysisService().analyzeFilesAndTrack(
+      new AnalyzeFilesAndTrackParams(configScopeId, UUID.randomUUID(), List.of(fileUri), toMap(properties), true, System.currentTimeMillis())
     ).join();
 
     assertThat(analyzeResponse.getFailedAnalysisFiles()).isEmpty();
@@ -196,6 +197,6 @@ class StandaloneTests {
     await().atMost(Duration.ofMillis(200)).untilAsserted(() -> assertThat(((MockSonarLintRpcClientDelegate) client).getRaisedIssues(configScopeId)).isNotEmpty());
     var raisedIssues = ((MockSonarLintRpcClientDelegate) client).getRaisedIssues(configScopeId);
     ((MockSonarLintRpcClientDelegate) client).getRaisedIssues().clear();
-    return raisedIssues != null ? raisedIssues : List.of();
+    return raisedIssues != null ? raisedIssues.values().stream().flatMap(List::stream).collect(Collectors.toList()) : List.of();
   }
 }

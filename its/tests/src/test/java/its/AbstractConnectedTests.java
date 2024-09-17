@@ -160,6 +160,16 @@ public abstract class AbstractConnectedTests {
     }
   }
 
+  protected static void resolveHotspotAsSafe(WsClient adminWsClient, String hotspotKey) {
+    var request = new PostRequest("/api/hotspots/change_status")
+      .setParam("hotspot", hotspotKey)
+      .setParam("status", "REVIEWED")
+      .setParam("resolution", "SAFE");
+    try (var response = adminWsClient.wsConnector().call(request)) {
+      assertTrue(response.isSuccessful(), "Unable to resolve hotspot");
+    }
+  }
+
   protected static void provisionProject(Orchestrator orchestrator, String projectKey, String projectName) {
     orchestrator.getServer()
       .newHttpCall("/api/projects/create")

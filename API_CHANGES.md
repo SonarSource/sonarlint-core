@@ -1,3 +1,25 @@
+# 10.14
+
+## Breaking changes
+
+* Removed `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#didRaiseIssue` and associated types. See `raiseIssues` and `raiseHotspots` instead.
+* Removed `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer#getIssueTrackingService` and associated types. Tracking is managed by the backend.
+* Removed `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer#getSecurityHotspotMatchingService` and associated types. Tracking is managed by the backend.
+* Removed `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams#getServerUrl()`. Use `getConnectionParams` instead.
+* Removed `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFiles`. Use `analyzeFilesAndTrack` instead.
+* Removed deprecated methods in `org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto`:
+  * `getSeverity`
+  * `getType`
+  * `getCleanCodeAttribute`
+  * `getImpacts`
+  * Use `getSeverityMode` instead.
+* Removed deprecated methods in `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto`:
+  * `getSeverity`
+  * `getType`
+  * `getCleanCodeAttribute`
+  * `getImpacts`
+  * Use `getSeverityMode` instead.
+
 # 10.13
 
 ## Breaking changes

@@ -20,10 +20,15 @@
 package mediumtest.issues;
 
 import com.google.protobuf.Message;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -32,27 +37,39 @@ import mockwebserver3.MockResponse;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
+import org.sonar.scanner.protocol.Constants;
+import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.api.TextRange;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LineWithHashDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlyIssueDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.MockWebServerExtensionWithProtobuf;
+import utils.TestPlugin;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+import static utils.AnalysisUtils.createFile;
+import static utils.AnalysisUtils.waitForAnalysisReady;
+import static utils.AnalysisUtils.waitForRaisedIssues;
 
 class CheckResolutionStatusChangePermittedMediumTests {
 
-  private static final Path FILE_PATH = Path.of("file/path");
+  private static final String CONFIG_SCOPE_ID = "configScopeId";
+  private static final String CONNECTION_ID = "connectionId";
+
   @RegisterExtension
   public final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
 
@@ -65,7 +82,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
   void it_should_fail_when_the_connection_is_unknown(SonarLintTestHarness harness) {
     var backend = harness.newBackend().build();
 
-    var response = checkStatusChangePermitted(backend, "connectionId", "issueKey");
+    var response = checkStatusChangePermitted(backend, CONNECTION_ID, "issueKey");
 
     assertThat(response)
       .failsWithin(Duration.ofSeconds(2))
@@ -79,10 +96,10 @@ class CheckResolutionStatusChangePermittedMediumTests {
   void it_should_allow_2_statuses_when_user_has_permission_for_sonarqube_103(SonarLintTestHarness harness) {
     fakeServerWithIssue("issueKey", List.of("wontfix", "falsepositive"));
     var backend = harness.newBackend()
-      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
+      .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
       .build();
 
-    var response = checkStatusChangePermitted(backend, "connectionId", "issueKey");
+    var response = checkStatusChangePermitted(backend, CONNECTION_ID, "issueKey");
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
@@ -95,10 +112,10 @@ class CheckResolutionStatusChangePermittedMediumTests {
   void it_should_allow_2_statuses_when_user_has_permission_for_sonarqube_104(SonarLintTestHarness harness) {
     fakeServerWithIssue("issueKey", List.of("accept", "falsepositive"));
     var backend = harness.newBackend()
-      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.4"))
+      .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.4"))
       .build();
 
-    var response = checkStatusChangePermitted(backend, "connectionId", "issueKey");
+    var response = checkStatusChangePermitted(backend, CONNECTION_ID, "issueKey");
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
@@ -112,10 +129,10 @@ class CheckResolutionStatusChangePermittedMediumTests {
     fakeServerWithIssue("issueKey", "orgKey", List.of("wontfix", "falsepositive"));
     var backend = harness.newBackend()
       .withSonarCloudUrl(mockWebServerExtension.endpointParams().getBaseUrl())
-      .withSonarCloudConnection("connectionId", "orgKey")
+      .withSonarCloudConnection(CONNECTION_ID, "orgKey")
       .build();
 
-    var response = checkStatusChangePermitted(backend, "connectionId", "issueKey");
+    var response = checkStatusChangePermitted(backend, CONNECTION_ID, "issueKey");
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
@@ -129,10 +146,10 @@ class CheckResolutionStatusChangePermittedMediumTests {
     var issueKey = UUID.randomUUID().toString();
     fakeServerWithIssue(issueKey, List.of("accept", "falsepositive"));
     var backend = harness.newBackend()
-      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.4"))
+      .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.4"))
       .build();
 
-    var response = checkStatusChangePermitted(backend, "connectionId", issueKey);
+    var response = checkStatusChangePermitted(backend, CONNECTION_ID, issueKey);
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
@@ -145,10 +162,10 @@ class CheckResolutionStatusChangePermittedMediumTests {
   void it_should_not_permit_status_change_when_issue_misses_required_transitions(SonarLintTestHarness harness) {
     fakeServerWithIssue("issueKey", List.of("confirm"));
     var backend = harness.newBackend()
-      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
+      .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
       .build();
 
-    var response = checkStatusChangePermitted(backend, "connectionId", "issueKey");
+    var response = checkStatusChangePermitted(backend, CONNECTION_ID, "issueKey");
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
@@ -161,10 +178,10 @@ class CheckResolutionStatusChangePermittedMediumTests {
   void it_should_fail_if_no_issue_is_returned_by_web_api(SonarLintTestHarness harness) {
     fakeServerWithResponse("issueKey", null, Issues.SearchWsResponse.newBuilder().build());
     var backend = harness.newBackend()
-      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
+      .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
       .build();
 
-    var response = checkStatusChangePermitted(backend, "connectionId", "issueKey");
+    var response = checkStatusChangePermitted(backend, CONNECTION_ID, "issueKey");
 
     assertThat(response)
       .failsWithin(Duration.ofSeconds(2))
@@ -178,10 +195,10 @@ class CheckResolutionStatusChangePermittedMediumTests {
   @SonarLintTest
   void it_should_fail_if_web_api_returns_an_error(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
-      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
+      .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
       .build();
 
-    var response = checkStatusChangePermitted(backend, "connectionId", "issueKey");
+    var response = checkStatusChangePermitted(backend, CONNECTION_ID, "issueKey");
 
     assertThat(response)
       .failsWithin(Duration.ofSeconds(2))
@@ -194,10 +211,10 @@ class CheckResolutionStatusChangePermittedMediumTests {
   void it_should_fail_if_web_api_returns_unexpected_body(SonarLintTestHarness harness) {
     fakeServerWithWrongBody("issueKey");
     var backend = harness.newBackend()
-      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
+      .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
       .build();
 
-    var response = checkStatusChangePermitted(backend, "connectionId", "issueKey");
+    var response = checkStatusChangePermitted(backend, CONNECTION_ID, "issueKey");
 
     assertThat(response)
       .failsWithin(Duration.ofSeconds(2))
@@ -208,22 +225,49 @@ class CheckResolutionStatusChangePermittedMediumTests {
       });
   }
 
+  @Disabled("SC is difficult to setup for this test")
   @SonarLintTest
-  void it_should_not_permit_status_change_on_local_only_issues_for_sonarcloud(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
-    var client = harness.newFakeClient().build();
+  void it_should_not_permit_status_change_on_local_only_issues_for_sonarcloud(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+      + "<project>\n"
+      + "  <modelVersion>4.0.0</modelVersion>\n"
+      + "  <groupId>com.foo</groupId>\n"
+      + "  <artifactId>bar</artifactId>\n"
+      + "  <version>${pom.version}</version>\n"
+      + "</project>");
+    var fileUri = filePath.toUri();
+    var branchName = "main";
+    var projectKey = "projectKey";
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
+        new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
+      .build();
+    var server = harness.newFakeSonarCloudServer("org")
+      .withQualityProfile("qpKey", qualityProfile -> qualityProfile
+        .withLanguage("xml").withActiveRule("xml:S3421", activeRule -> activeRule
+          .withSeverity(IssueSeverity.BLOCKER)
+        ))
+      .withProject(projectKey,
+        project -> project
+          .withQualityProfile("qpKey")
+          .withBranch(branchName))
+      .withPlugin(TestPlugin.XML)
+      .start();
     var backend = harness.newBackend()
-      .withSonarCloudConnection("connectionId", "orgKey", true, storage -> storage
-        .withProject("projectKey", project -> project.withMainBranch("main")))
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withSonarCloudConnection(CONNECTION_ID, server.baseUrl())
+      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
+      .withExtraEnabledLanguagesInConnectedMode(Language.XML)
+      .withFullSynchronization()
       .build(client);
+    client.waitForSynchronization();
+    waitForAnalysisReady(client, CONFIG_SCOPE_ID);
 
-    var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of(FILE_PATH, List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
-      false));
-    Thread.sleep(2000);
-    var localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(FILE_PATH).get(0).getRight();
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(),
+      List.of(fileUri), Map.of(), false, 0)).join();
 
-    var response = checkStatusChangePermitted(backend, "connectionId", localOnlyIssue.getId().toString());
+    waitForRaisedIssues(client, CONFIG_SCOPE_ID);
+    var localOnlyIssue = client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID).get(0);
+    var response = checkStatusChangePermitted(backend, CONNECTION_ID, localOnlyIssue.getId().toString());
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
@@ -232,24 +276,55 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .containsExactly(false, "Marking a local-only issue as resolved requires SonarQube Server 10.2+", List.of());
   }
 
+  @Disabled("SLCORE-966")
   @SonarLintTest
-  void it_should_not_permit_status_change_on_local_only_issues_for_sonarqube_prior_to_10_2(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
-    var client = harness.newFakeClient().build();
-    var server = harness.newFakeSonarQubeServer()
-      .withProject("projectKey").start();
+  void it_should_not_permit_status_change_on_local_only_issues_for_sonarqube_prior_to_10_2(SonarLintTestHarness harness, @TempDir Path testDir) throws IOException {
+    var baseDir = testDir.resolve("it_should_not_permit_status_change_on_local_only_issues_for_sonarqube_prior_to_10_2");
+    Files.createDirectory(baseDir);
+    var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+      + "<project>\n"
+      + "  <modelVersion>4.0.0</modelVersion>\n"
+      + "  <groupId>com.foo</groupId>\n"
+      + "  <artifactId>bar</artifactId>\n"
+      + "  <version>${pom.version}</version>\n"
+      + "</project>");
+    var fileUri = filePath.toUri();
+    var branchName = "main";
+    var projectKey = "projectKey";
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
+        new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
+      .build();
+    var server = harness.newFakeSonarQubeServer("10.1")
+      .withQualityProfile("qpKey", qualityProfile -> qualityProfile
+        .withLanguage("xml").withActiveRule("xml:S3421", activeRule -> activeRule
+          .withSeverity(IssueSeverity.BLOCKER)
+        ))
+      .withProject(projectKey,
+        project -> project
+          .withQualityProfile("qpKey")
+          .withBranch(branchName))
+      .withPlugin(TestPlugin.XML)
+      .start();
     var backend = harness.newBackend()
-      .withSonarQubeConnection("connectionId", server, storage -> storage.withServerVersion("10.1")
-        .withProject("projectKey", project -> project.withMainBranch("main")))
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withSonarQubeConnection(CONNECTION_ID, server)
+      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
+      .withExtraEnabledLanguagesInConnectedMode(Language.XML)
+      .withFullSynchronization()
       .build(client);
+    client.waitForSynchronization();
+    waitForAnalysisReady(client, CONFIG_SCOPE_ID);
 
-    var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of(FILE_PATH, List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
-      false));
-    Thread.sleep(2000);
-    var localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(FILE_PATH).get(0).getRight();
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(),
+      List.of(fileUri), Map.of(), false, 0)).join();
 
-    var response = checkStatusChangePermitted(backend, "connectionId", localOnlyIssue.getId().toString());
+    waitForRaisedIssues(client, CONFIG_SCOPE_ID);
+    var localOnlyIssue = client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID).get(0);
+    assertThat(localOnlyIssue.getSeverityMode().isLeft()).isTrue();
+    assertThat(localOnlyIssue.getSeverityMode().getLeft().getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
+    assertThat(localOnlyIssue.getRuleKey()).isEqualTo("xml:S3421");
+
+    var response = checkStatusChangePermitted(backend, CONNECTION_ID, localOnlyIssue.getId().toString());
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
@@ -258,25 +333,57 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .containsExactly(false, "Marking a local-only issue as resolved requires SonarQube Server 10.2+", List.of());
   }
 
+  @Disabled("SLCORE-966")
   @SonarLintTest
-  void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_2_plus(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
-    var client = harness.newFakeClient().build();
-    var server = harness.newFakeSonarQubeServer()
-      .withProject("projectKey").start();
+  void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_2_plus(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+      + "<project>\n"
+      + "  <modelVersion>4.0.0</modelVersion>\n"
+      + "  <groupId>com.foo</groupId>\n"
+      + "  <artifactId>bar</artifactId>\n"
+      + "  <version>${pom.version}</version>\n"
+      + "</project>");
+    var fileUri = filePath.toUri();
+    var branchName = "branchName";
+    var projectKey = "projectKey";
+    var serverIssueKey = "myIssueKey";
+    var introductionDate = Instant.now().truncatedTo(ChronoUnit.SECONDS);
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
+        new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
+      .build();
+    when(client.matchSonarProjectBranch(eq(CONFIG_SCOPE_ID), eq("main"), eq(Set.of("main", branchName)), any()))
+      .thenReturn(branchName);
+    var server = harness.newFakeSonarQubeServer("10.2")
+      .withQualityProfile("qpKey", qualityProfile -> qualityProfile
+        .withLanguage("xml").withActiveRule("xml:S3421", activeRule -> activeRule
+        .withSeverity(IssueSeverity.MAJOR)
+      ))
+      .withProject(projectKey,
+        project -> project
+          .withQualityProfile("qpKey")
+          .withBranch(branchName,
+            branch -> branch.withIssue(serverIssueKey, "xml:S3421", "message",
+              "author", baseDir.relativize(filePath).toString(), "1356c67d7ad1638d816bfb822dd2c25d", Constants.Severity.MAJOR, RuleType.CODE_SMELL,
+              "OPEN", null, introductionDate, new TextRange(1, 1, 1, 1))
+          ))
+      .withPlugin(TestPlugin.XML)
+      .start();
     var backend = harness.newBackend()
-      .withSonarQubeConnection("connectionId", server, storage -> storage
-        .withServerVersion("10.2")
-        .withProject("projectKey", project -> project.withMainBranch("main")))
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withSonarQubeConnection(CONNECTION_ID, server)
+      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
+      .withExtraEnabledLanguagesInConnectedMode(Language.XML)
+      .withFullSynchronization()
       .build(client);
+    client.waitForSynchronization();
 
-    var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of(FILE_PATH, List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
-      false));
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(),
+      List.of(fileUri), Map.of(), false, 0)).join();
 
-    var localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(FILE_PATH).get(0).getRight();
+    waitForRaisedIssues(client, CONFIG_SCOPE_ID);
+    var localOnlyIssue = client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID).get(0);
 
-    var response = checkStatusChangePermitted(backend, "connectionId", localOnlyIssue.getId().toString());
+    var response = checkStatusChangePermitted(backend, CONNECTION_ID, localOnlyIssue.getId().toString());
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
@@ -285,26 +392,51 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .containsExactly(true, null, List.of(ResolutionStatus.WONT_FIX, ResolutionStatus.FALSE_POSITIVE));
   }
 
+  @Disabled("SLCORE-966")
   @SonarLintTest
-  void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_4_plus(SonarLintTestHarness harness) {
-    var server = harness.newFakeSonarQubeServer()
-      .withProject("projectKey").start();
-    var backend = harness.newBackend()
-      .withSonarQubeConnection("connectionId", server, storage -> storage.withServerVersion("10.4").withProject("projectKey", project -> project.withMainBranch("main")))
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+  void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_4_plus(SonarLintTestHarness harness, @TempDir Path testDir) throws IOException {
+    var baseDir = testDir.resolve("it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_4_plus");
+    Files.createDirectory(baseDir);
+    var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+      + "<project>\n"
+      + "  <modelVersion>4.0.0</modelVersion>\n"
+      + "  <groupId>com.foo</groupId>\n"
+      + "  <artifactId>bar</artifactId>\n"
+      + "  <version>${pom.version}</version>\n"
+      + "</project>");
+    var fileUri = filePath.toUri();
+    var branchName = "main";
+    var projectKey = "projectKey";
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
+        new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of(FILE_PATH, List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
-      false));
+    var server = harness.newFakeSonarQubeServer("10.4")
+      .withQualityProfile("qpKey", qualityProfile -> qualityProfile
+        .withLanguage("xml").withActiveRule("xml:S3421", activeRule -> activeRule
+          .withSeverity(IssueSeverity.MAJOR)
+        ))
+      .withProject(projectKey,
+        project -> project
+          .withQualityProfile("qpKey")
+          .withBranch(branchName))
+      .withPlugin(TestPlugin.XML)
+      .start();
+    var backend = harness.newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, server)
+      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
+      .withExtraEnabledLanguagesInConnectedMode(Language.XML)
+      .withFullSynchronization()
+      .build(client);
+    client.waitForSynchronization();
+    waitForAnalysisReady(client, CONFIG_SCOPE_ID);
 
-    LocalOnlyIssueDto localOnlyIssue = null;
-    try {
-      localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(FILE_PATH).get(0).getRight();
-    } catch (Exception e) {
-      fail();
-    }
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(),
+      List.of(fileUri), Map.of(), false, 0)).join();
 
-    var response = checkStatusChangePermitted(backend, "connectionId", localOnlyIssue.getId().toString());
+    waitForRaisedIssues(client, CONFIG_SCOPE_ID);
+    var localOnlyIssue = client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID).get(0);
+    var response = checkStatusChangePermitted(backend, CONNECTION_ID, localOnlyIssue.getId().toString());
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))

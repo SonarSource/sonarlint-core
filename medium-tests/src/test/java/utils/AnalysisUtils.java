@@ -100,4 +100,12 @@ public class AnalysisUtils {
     return client.getRaisedIssuesForScopeId(scopeId);
   }
 
+  public static void waitForRaisedIssues(SonarLintBackendFixture.FakeSonarLintRpcClient client, String scopeId) {
+    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(scopeId)).isNotEmpty());
+  }
+
+  public static void waitForAnalysisReady(SonarLintBackendFixture.FakeSonarLintRpcClient client, String scopeId) {
+    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.isAnalysisReadyForScope(scopeId)).isTrue());
+  }
+
 }

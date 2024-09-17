@@ -93,7 +93,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.NodeJsDetail
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnalysisReadinessParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidDetectSecretParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidRaiseIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.FileEditDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetInferredAnalysisPropertiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.QuickFixDto;
@@ -698,7 +697,6 @@ public class AnalysisService {
     if (activeRule != null) {
       var rawIssue = new RawIssue(issue, activeRule);
       rawIssues.add(rawIssue);
-      client.didRaiseIssue(new DidRaiseIssueParams(configScopeId, analysisId, toDto(issue, activeRule)));
       if (ruleKey.contains("secrets")) {
         client.didDetectSecret(new DidDetectSecretParams(configScopeId));
       }

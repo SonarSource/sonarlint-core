@@ -574,7 +574,8 @@ class ServerSentEventsMediumTests {
       serverWithTaintIssues = harness.newFakeSonarQubeServer("10.0")
         .withProject(projectKey,
           project -> project.withBranch(branchName,
-            branch -> branch.withTaintIssue("key1", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", introductionDate, new TextRange(1, 0, 3, 4), RuleType.VULNERABILITY)
+            branch -> branch
+              .withTaintIssue("key1", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", introductionDate, new TextRange(1, 0, 3, 4), RuleType.VULNERABILITY)
               .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))))
         .start();
 
@@ -587,8 +588,7 @@ class ServerSentEventsMediumTests {
           "  \"branchName\": \"" + branchName + "\"" +
           "}]," +
           "\"userType\": \"BUG\"" +
-          "}\n\n"
-      );
+          "}\n\n");
 
       harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
@@ -609,9 +609,8 @@ class ServerSentEventsMediumTests {
         .usingRecursiveComparison()
         .ignoringFields("id")
         .isEqualTo(List.of(new TaintVulnerabilityDto(UUID.randomUUID(), "key1", false, "ruleKey", "msg", Paths.get("file/path"), introductionDate,
-          Either.forLeft(new StandardModeDetails(IssueSeverity.MAJOR, org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.BUG)), IssueSeverity.MAJOR,
-          org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.BUG, Collections.emptyList(), new TextRangeWithHashDto(1, 0, 3, 4, "hash"), null, null,
-          Collections.emptyMap(), true)));
+          Either.forLeft(new StandardModeDetails(IssueSeverity.MAJOR, org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.BUG)), Collections.emptyList(),
+          new TextRangeWithHashDto(1, 0, 3, 4, "hash"), null, true)));
 
       reset(fakeClient);
       waitAtMost(20, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getTaintVulnerabilityChanges()).isNotEmpty());
@@ -621,9 +620,8 @@ class ServerSentEventsMediumTests {
         .usingRecursiveComparison()
         .ignoringFields("id")
         .isEqualTo(List.of(new TaintVulnerabilityDto(UUID.randomUUID(), "key1", false, "ruleKey", "msg", Paths.get("file/path"), introductionDate,
-          Either.forLeft(new StandardModeDetails(IssueSeverity.MAJOR, org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.BUG)), IssueSeverity.MAJOR,
-          org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.BUG, Collections.emptyList(), new TextRangeWithHashDto(1, 0, 3, 4, "hash"), null, null,
-          Collections.emptyMap(), true)));
+          Either.forLeft(new StandardModeDetails(IssueSeverity.MAJOR, org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.BUG)), Collections.emptyList(),
+          new TextRangeWithHashDto(1, 0, 3, 4, "hash"), null, true)));
     }
 
     private void mockEvent(ServerFixture.Server server, String projectKey, String eventPayload) {
@@ -631,8 +629,7 @@ class ServerSentEventsMediumTests {
       var sseServerUrl = sseServer.getUrl();
       server.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java,js")
         .willReturn(aResponse().proxiedFrom(sseServerUrl + "/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java,js")
-          .withStatus(200)
-        ));
+          .withStatus(200)));
     }
   }
 

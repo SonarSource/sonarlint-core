@@ -69,7 +69,6 @@ class ConnectedStorageProblemsMediumTests {
       .withEnabledLanguageInStandaloneMode(org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA)
       .withEnabledLanguageInStandaloneMode(org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JS).build(client);
 
-
     backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(),
       List.of(inputFile.toUri()), Map.of(), false, Instant.now().toEpochMilli())).get();
 

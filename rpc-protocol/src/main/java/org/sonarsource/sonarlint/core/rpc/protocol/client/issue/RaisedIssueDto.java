@@ -23,23 +23,17 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.MQRModeDetails;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.StandardModeDetails;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 
 public class RaisedIssueDto extends RaisedFindingDto {
 
   public RaisedIssueDto(UUID id, @Nullable String serverKey, String ruleKey, String primaryMessage, Either<StandardModeDetails, MQRModeDetails> severityMode,
-    @Nullable IssueSeverity severity, @Nullable RuleType type, @Nullable CleanCodeAttribute cleanCodeAttribute,
-    List<ImpactDto> impacts, Instant introductionDate, boolean isOnNewCode,
-    boolean resolved, @Nullable TextRangeDto textRange, List<IssueFlowDto> flows, List<QuickFixDto> quickFixes, @Nullable String ruleDescriptionContextKey) {
-    super(id, serverKey, ruleKey, primaryMessage, severityMode, severity, type, cleanCodeAttribute, impacts,
-      introductionDate, isOnNewCode, resolved, textRange, flows, quickFixes, ruleDescriptionContextKey);
+    Instant introductionDate, boolean isOnNewCode, boolean resolved, @Nullable TextRangeDto textRange, List<IssueFlowDto> flows, List<QuickFixDto> quickFixes,
+    @Nullable String ruleDescriptionContextKey) {
+    super(id, serverKey, ruleKey, primaryMessage, severityMode, introductionDate, isOnNewCode, resolved, textRange, flows, quickFixes, ruleDescriptionContextKey);
   }
 
 }

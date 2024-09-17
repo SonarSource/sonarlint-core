@@ -38,7 +38,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnalysisReadinessParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidDetectSecretParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidRaiseIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetFileExclusionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetFileExclusionsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetInferredAnalysisPropertiesParams;
@@ -370,11 +369,6 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   public void didChangeAnalysisReadiness(DidChangeAnalysisReadinessParams params) {
     notify(() -> delegate.didChangeAnalysisReadiness(params.getConfigurationScopeIds(), params.areReadyForAnalysis()));
-  }
-
-  @Override
-  public void didRaiseIssue(DidRaiseIssueParams params) {
-    notify(() -> delegate.didRaiseIssue(params.getConfigurationScopeId(), params.getAnalysisId(), params.getRawIssue()));
   }
 
   @Override
