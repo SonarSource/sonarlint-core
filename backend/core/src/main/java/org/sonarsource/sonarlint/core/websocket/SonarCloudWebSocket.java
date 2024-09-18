@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.websocket;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.WebSocket;
 import java.time.Duration;
@@ -210,7 +211,11 @@ public class SonarCloudWebSocket {
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       } catch (ExecutionException e) {
-        LOG.error("Cannot close the WebSocket output", e);
+        // This might fail with a "java.io.IOException: Output closed" in case the WebSocket was closed by the server or reached EOL which
+        // is fine and should not throw an error message to the user misleading them that something is not working correctly.
+        if (!(e.getCause() instanceof IOException) || !e.getCause().getMessage().contains("Output closed")) {
+          LOG.error("Cannot close the WebSocket output", e);
+        }
       } catch (TimeoutException e) {
         LOG.error("The WebSocket input did not close in a timely manner", e);
         if (!ws.isInputClosed()) {
