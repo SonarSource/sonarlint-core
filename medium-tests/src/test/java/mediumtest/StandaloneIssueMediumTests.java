@@ -198,7 +198,7 @@ class StandaloneIssueMediumTests {
         RawIssue::getCleanCodeAttribute,
         RawIssue::getImpacts)
       .containsOnly(tuple("javascript:S1481", 2, "foo.js", Optional.empty(), Optional.of(CleanCodeAttribute.CONVENTIONAL),
-        Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.INFO)));
+        Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)));
 
     // SLCORE-160
     inputFile = prepareInputFile("node_modules/foo.js", content, false);
