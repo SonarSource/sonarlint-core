@@ -149,4 +149,13 @@ class SloopLauncherTests {
     var wrongPath = Paths.get("wrongPath");
     assertThrows(IllegalStateException.class, () -> sloop = underTest.start(distPath, wrongPath));
   }
+
+  @Test
+  void test_command_with_custom_jre_on_linux_and_jvm_option(@TempDir Path distPath) {
+    sloop = underTest.start(distPath, fakeJreHomePath, "-XX:+UseG1GC -XX:MaxHeapFreeRatio=50");
+
+    verify(mockPbFactory)
+      .apply(List.of(fakeJreJavaLinuxPath.toString(), "-XX:+UseG1GC", "-XX:MaxHeapFreeRatio=50", "-classpath", distPath.resolve("lib") + File.separator + '*', "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli"));
+    assertThat(sloop.getRpcServer()).isNotNull();
+  }
 }

@@ -30,6 +30,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -59,8 +60,15 @@ public class SloopLauncher {
   }
 
   public Sloop start(Path distPath, @Nullable Path jrePath) {
+    return start(distPath, jrePath, null);
+  }
+
+  /**
+   * @param jvmOpts Each argument should be separated by a space, such as '-XX:+UseG1GC -XX:MaxHeapFreeRatio=50'
+   */
+  public Sloop start(Path distPath, @Nullable Path jrePath, @Nullable String jvmOpts) {
     try {
-      return execute(distPath, jrePath);
+      return execute(distPath, jrePath, jvmOpts);
     } catch (Exception e) {
       logToClient(LogLevel.ERROR, "Unable to start the SonarLint backend", stackTraceToString(e));
       throw new IllegalStateException("Unable to start the SonarLint backend", e);
@@ -85,7 +93,7 @@ public class SloopLauncher {
     return osName.startsWith("Windows");
   }
 
-  private Sloop execute(Path distPath, @Nullable Path jrePath) throws IOException {
+  private Sloop execute(Path distPath, @Nullable Path jrePath, @Nullable String jvmOpts) throws IOException {
     var jreHomePath = jrePath == null ? distPath.resolve("jre") : jrePath;
     logToClient(LogLevel.INFO, "Using JRE from " + jreHomePath, null);
     var binDirPath = jreHomePath.resolve("bin");
@@ -93,7 +101,7 @@ public class SloopLauncher {
     if (!Files.exists(jreJavaExePath)) {
       throw new IllegalArgumentException("The provided JRE path does not exist: " + jreJavaExePath);
     }
-    var processBuilder = processBuilderFactory.apply(createCommand(distPath, jreJavaExePath));
+    var processBuilder = processBuilderFactory.apply(createCommand(distPath, jreJavaExePath, jvmOpts));
     processBuilder.directory(binDirPath.toFile());
     processBuilder.redirectOutput(ProcessBuilder.Redirect.PIPE);
     processBuilder.redirectInput(ProcessBuilder.Redirect.PIPE);
@@ -114,14 +122,17 @@ public class SloopLauncher {
     return new Sloop(serverProxy, process);
   }
 
-  private static List<String> createCommand(Path distPath, Path jreJavaExePath) {
+  private static List<String> createCommand(Path distPath, Path jreJavaExePath, @Nullable String clientJvmOpts) {
     var libFolderPath = distPath.resolve("lib");
     var classpath = libFolderPath.toAbsolutePath().normalize() + File.separator + '*';
     List<String> commands = new ArrayList<>();
     commands.add(jreJavaExePath.toAbsolutePath().normalize().toString());
-    var sonarlintJvmOpts = System.getenv("SONARLINT_JVM_OPTS");
-    if (sonarlintJvmOpts != null) {
-      commands.add(sonarlintJvmOpts);
+    var sonarlintEnvJvmOpts = System.getenv("SONARLINT_JVM_OPTS");
+    if (sonarlintEnvJvmOpts != null) {
+      commands.add(sonarlintEnvJvmOpts);
+    }
+    if (clientJvmOpts != null) {
+      commands.addAll(Arrays.asList(clientJvmOpts.split(" ")));
     }
     commands.add("-classpath");
     commands.add(classpath);

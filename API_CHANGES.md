@@ -11,6 +11,7 @@
 
 * Add a field to `org.sonarsource.sonarlint.core.rpc.protocol.common.NoBindingSuggestionFoundParams` indicating whether the suggestion where
   no binding was found by is SonarCloud or not, can be used to display a more precise notification in the IDE rather than a generic one
+* Add a signature to `SloopLauncher.start`, allowing clients to add custom JVM arguments to the start of the process
 
 # 10.4
 
