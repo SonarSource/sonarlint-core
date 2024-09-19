@@ -34,7 +34,7 @@ import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint.PluginReferences.PluginReference;
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
-import testutils.LogTestStartAndEnd;
+import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import testutils.PluginLocator;
 
 import static java.util.concurrent.TimeUnit.SECONDS;

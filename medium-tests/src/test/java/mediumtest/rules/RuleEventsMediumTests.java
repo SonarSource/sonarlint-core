@@ -40,7 +40,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
-import testutils.LogTestStartAndEnd;
+import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import testutils.sse.SSEServer;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;

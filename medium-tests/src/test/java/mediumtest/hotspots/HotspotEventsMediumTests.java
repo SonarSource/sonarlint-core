@@ -46,7 +46,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
-import testutils.LogTestStartAndEnd;
+import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import testutils.sse.SSEServer;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;

@@ -42,7 +42,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeVCSCh
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
-import testutils.LogTestStartAndEnd;
+import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;

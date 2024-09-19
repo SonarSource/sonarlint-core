@@ -42,7 +42,7 @@ import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
-import testutils.LogTestStartAndEnd;
+import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import testutils.sse.SSEServer;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;

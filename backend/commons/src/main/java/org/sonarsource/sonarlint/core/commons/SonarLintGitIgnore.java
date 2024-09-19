@@ -22,22 +22,26 @@ package org.sonarsource.sonarlint.core.commons;
 import java.net.URI;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Path;
+import javax.annotation.Nullable;
 import org.eclipse.jgit.ignore.IgnoreNode;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.util.FileUtils;
 
 public class SonarLintGitIgnore {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final IgnoreNode ignoreNode;
   private final Path gitRepoRelativeProjectBaseDir;
+  private final Path gitRepoBaseDir;
 
-  public SonarLintGitIgnore(IgnoreNode ignoreNode, Path gitRepoRelativeProjectBaseDir) {
+  public SonarLintGitIgnore(IgnoreNode ignoreNode, @Nullable Path gitRepoRelativeProjectBaseDir, @Nullable Path gitRepoBaseDir) {
     this.ignoreNode = ignoreNode;
     this.gitRepoRelativeProjectBaseDir = gitRepoRelativeProjectBaseDir;
+    this.gitRepoBaseDir = gitRepoBaseDir;
   }
 
   public boolean isIgnored(URI fileUri, boolean isDirectory) {
     try {
-      var fileRelativeToGitRepoPath = gitRepoRelativeProjectBaseDir.resolve(Path.of(fileUri)).toUri().toString();
+      var fileRelativeToGitRepoPath = getFileRelativePath(fileUri);
       var rules = ignoreNode.getRules();
       // Parse rules in the reverse order that they were read because later rules have higher priority
       for (var i = rules.size() - 1; i > -1; i--) {
@@ -55,5 +59,13 @@ public class SonarLintGitIgnore {
 
   public boolean isFileIgnored(URI fileUri) {
     return isIgnored(fileUri, false);
+  }
+
+  private String getFileRelativePath(URI fileUri) {
+    if (gitRepoRelativeProjectBaseDir != null && !gitRepoRelativeProjectBaseDir.toString().isEmpty()) {
+      return FileUtils.getFileRelativePath(gitRepoRelativeProjectBaseDir, fileUri, true);
+    } else {
+      return FileUtils.getFileRelativePath(gitRepoBaseDir, fileUri, false);
+    }
   }
 }

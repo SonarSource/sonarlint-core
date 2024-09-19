@@ -57,7 +57,6 @@ public class GitUtils {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-
   private GitUtils() {
     // Utility class
   }
@@ -143,7 +142,7 @@ public class GitUtils {
       var gitRepo = buildGitRepository(baseDir);
       var gitRepoRelativeProjectBaseDir = getRelativePath(gitRepo, baseDir);
       var ignoreNode = buildIgnoreNode(gitRepo);
-      return new SonarLintGitIgnore(ignoreNode, gitRepoRelativeProjectBaseDir);
+      return new SonarLintGitIgnore(ignoreNode, gitRepoRelativeProjectBaseDir, baseDir);
     } catch (GitRepoNotFoundException e) {
       LOG.info("Git Repository not found for {}. The path {} is not in a Git repository", baseDir, e.getPath());
     } catch (FileNotFoundException e) {
@@ -152,7 +151,7 @@ public class GitUtils {
       LOG.warn("Error occurred while reading .gitignore file: ", e);
       LOG.warn("Building empty ignore node with no rules. Files checked against this node will be considered as not ignored.");
     }
-    return new SonarLintGitIgnore(new IgnoreNode(), baseDir);
+    return new SonarLintGitIgnore(new IgnoreNode(), null, baseDir);
   }
 
   private static Path getRelativePath(Repository gitRepo, Path projectBaseDir) {
