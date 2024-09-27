@@ -91,10 +91,18 @@ public class FindingReportingService {
   }
 
   public void streamIssue(String configurationScopeId, UUID analysisId, TrackedIssue trackedIssue) {
+    // Cache is cleared on new analysis, but it's possible that 2 analyses almost start at the same time.
+    // In this case, same issues will be reported twice for the same file during the streaming, which will be sent to the client.
+    // A quick workaround is to replace the existing issue with the duplicated one (which should be the most up-to-date).
+    // Ideally, we should be able to cancel the previous analysis if it's not relevant.
     if (trackedIssue.isSecurityHotspot()) {
-      securityHotspotsPerFileUri.computeIfAbsent(trackedIssue.getFileUri(), k -> new ArrayList<>()).add(trackedIssue);
+      var securityHotspots = securityHotspotsPerFileUri.computeIfAbsent(trackedIssue.getFileUri(), k -> new ArrayList<>());
+      securityHotspots.removeIf(i -> i.getId().equals(trackedIssue.getId()));
+      securityHotspots.add(trackedIssue);
     } else {
-      issuesPerFileUri.computeIfAbsent(trackedIssue.getFileUri(), k -> new ArrayList<>()).add(trackedIssue);
+      var issues = issuesPerFileUri.computeIfAbsent(trackedIssue.getFileUri(), k -> new ArrayList<>());
+      issues.removeIf(i -> i.getId().equals(trackedIssue.getId()));
+      issues.add(trackedIssue);
     }
     getStreamingDebounceAlarm(configurationScopeId, analysisId).schedule();
   }
