@@ -197,7 +197,7 @@ public interface SonarLintRpcClientDelegate {
   default void raiseIssues(String configurationScopeId, Map<URI, List<RaisedIssueDto>> issuesByFileUri, boolean isIntermediatePublication, @Nullable UUID analysisId) {
   }
 
-  default void raiseHotspots(String configurationScopeId, Map<URI, List<RaisedHotspotDto>> issuesByFileUri, boolean isIntermediatePublication, @Nullable UUID analysisId) {
+  default void raiseHotspots(String configurationScopeId, Map<URI, List<RaisedHotspotDto>> hotspotsByFileUri, boolean isIntermediatePublication, @Nullable UUID analysisId) {
   }
 
   default void didSkipLoadingPlugin(String configurationScopeId, Language language, DidSkipLoadingPluginParams.SkipReason reason, String minVersion,

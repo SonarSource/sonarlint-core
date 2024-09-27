@@ -370,7 +370,7 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
 
   @Override
   public void raiseHotspots(RaiseHotspotsParams params) {
-    notify(() -> delegate.raiseHotspots(params.getConfigurationScopeId(), params.getIssuesByFileUri(), params.isIntermediatePublication(), params.getAnalysisId()));
+    notify(() -> delegate.raiseHotspots(params.getConfigurationScopeId(), params.getHotspotsByFileUri(), params.isIntermediatePublication(), params.getAnalysisId()));
   }
 
   @Override
