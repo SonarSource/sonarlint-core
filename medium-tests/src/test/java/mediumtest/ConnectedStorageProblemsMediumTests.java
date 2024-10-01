@@ -51,14 +51,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 class ConnectedStorageProblemsMediumTests {
-  @RegisterExtension
-  private static final SonarLintLogTester logTester = new SonarLintLogTester();
   private static final String CONNECTION_ID = "localhost";
   private final String CONFIG_SCOPE_ID = "myProject";
 
   @Disabled("relies on engine API")
   @Test
-  void test_no_storage(@TempDir Path slHome, @TempDir Path baseDir) throws ExecutionException, InterruptedException {
+  void test_no_storage() throws ExecutionException, InterruptedException {
     var fakeClient = newFakeClient().build();
     var backend = newBackend().build(fakeClient);
 
@@ -68,9 +66,10 @@ class ConnectedStorageProblemsMediumTests {
     assertThat(fakeClient.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isEmpty();
   }
 
+  // TODO review
   @Disabled("relies on engine API")
   @Test
-  void corrupted_plugin_should_not_prevent_startup(@TempDir Path slHome, @TempDir Path baseDir) throws Exception {
+  void corrupted_plugin_should_not_prevent_startup(@TempDir Path baseDir) throws Exception {
     List<String> logs = new CopyOnWriteArrayList<>();
 
     var backend = newBackend()

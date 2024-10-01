@@ -50,7 +50,6 @@ class ConnectedIssueMediumTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
   private static final String CONFIG_SCOPE_ID = "configScopeId";
-  private static final String PROJECT_KEY = "test-project";
   private static final String CONNECTION_ID = "connectionId";
   private static SonarLintTestRpcServer backend;
 
@@ -120,7 +119,7 @@ class ConnectedIssueMediumTests {
   }
 
   @Test
-  void emptyQPJava(@TempDir Path baseDir) throws IOException {
+  void emptyQPJava(@TempDir Path baseDir) {
     var inputFile = createFile(baseDir, "Foo.java",
       "public class Foo {\n"
         + "  public void foo() {\n"

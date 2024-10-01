@@ -525,6 +525,7 @@ class SonarCloudTests extends AbstractConnectedTests {
         .contains("Check that your production deployment doesn’t have its loggers in \"debug\" mode");
     }
 
+    // TODO review this
     @Disabled
     @Test
     void shouldMatchServerSecurityHotspots() throws ExecutionException, InterruptedException {

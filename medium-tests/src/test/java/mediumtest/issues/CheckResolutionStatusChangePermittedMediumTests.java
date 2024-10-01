@@ -342,7 +342,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
   }
 
   @Test
-  void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_2_plus(@TempDir Path baseDir) throws ExecutionException, InterruptedException {
+  void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_2_plus(@TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
       + "<project>\n"
       + "  <modelVersion>4.0.0</modelVersion>\n"
@@ -400,7 +400,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
   }
 
   @Test
-  void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_4_plus(@TempDir Path testDir) throws ExecutionException, InterruptedException, IOException {
+  void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_4_plus(@TempDir Path testDir) throws IOException {
     var baseDir = testDir.resolve("it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_4_plus");
     Files.createDirectory(baseDir);
     var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"

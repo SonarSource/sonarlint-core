@@ -167,8 +167,6 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
   @TestInstance(Lifecycle.PER_CLASS)
   class PathPrefix {
 
-    private static final String MULTI_MODULE_PROJECT_KEY = "com.sonarsource.it.samples:multi-modules-sample";
-
     @BeforeAll
     void analyzeMultiModuleProject() {
       // Project has 5 modules: B, B/B1, B/B2, A, A/A1 and A/A2
@@ -197,6 +195,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
         .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
     }
 
+    // TODO review this
     @Disabled
     @Test
     void should_match_server_issues_of_enabled_languages() throws ExecutionException, InterruptedException {

@@ -155,7 +155,7 @@ class IssuesStatusChangeMediumTests {
   }
 
   @Test
-  void it_should_update_local_only_storage_when_the_issue_exists_locally(@TempDir Path baseDir) throws ExecutionException, InterruptedException {
+  void it_should_update_local_only_storage_when_the_issue_exists_locally(@TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
       + "<project>\n"
       + "  <modelVersion>4.0.0</modelVersion>\n"
@@ -200,7 +200,7 @@ class IssuesStatusChangeMediumTests {
   }
 
   @Test
-  void it_should_sync_anticipated_transitions_with_sonarqube_when_the_issue_exists_locally(@TempDir Path baseDir) throws ExecutionException, InterruptedException {
+  void it_should_sync_anticipated_transitions_with_sonarqube_when_the_issue_exists_locally(@TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
       + "<project>\n"
       + "  <modelVersion>4.0.0</modelVersion>\n"
@@ -248,7 +248,7 @@ class IssuesStatusChangeMediumTests {
   }
 
   @Test
-  void it_should_update_telemetry_when_changing_status_of_a_local_only_issue(@TempDir Path baseDir) throws ExecutionException, InterruptedException {
+  void it_should_update_telemetry_when_changing_status_of_a_local_only_issue(@TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
       + "<project>\n"
       + "  <modelVersion>4.0.0</modelVersion>\n"

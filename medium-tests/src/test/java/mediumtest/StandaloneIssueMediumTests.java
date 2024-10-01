@@ -87,7 +87,7 @@ class StandaloneIssueMediumTests {
   private static final boolean COMMERCIAL_ENABLED = System.getProperty("commercial") != null;
 
   @AfterAll
-  static void stop() throws IOException, ExecutionException, InterruptedException {
+  static void stop() throws ExecutionException, InterruptedException {
     if (backend != null) {
       backend.shutdown().get();
     }
@@ -134,8 +134,9 @@ class StandaloneIssueMediumTests {
     analyzeFilesAndVerifyNoIssues(List.of(inputFile.toUri()), client, backend, CONFIGURATION_SCOPE_ID);
   }
 
+  // TODO review
   //  @Test
-//  void sonarjs_should_honor_global_and_analysis_level_properties(@TempDir Path baseDir) throws Exception {
+//  void sonarjs_should_honor_global_and_analysis_level_properties(@TempDir Path baseDir) {
 //    var content = "function foo() {\n"
 //      + "  console.log(LOCAL1); // Noncompliant\n"
 //      + "  console.log(GLOBAL1); // GLOBAL1 defined as global variable in global settings\n"
@@ -201,7 +202,7 @@ class StandaloneIssueMediumTests {
 
   @Disabled("https://sonarsource.atlassian.net/browse/SLCORE-873 - plug test YAML plugin")
   @Test
-  void simpleJavaScriptInYamlFile(@TempDir Path baseDir) throws Exception {
+  void simpleJavaScriptInYamlFile(@TempDir Path baseDir) {
     String content = "Resources:\n" +
       "  LambdaFunction:\n" +
       "    Type: 'AWS::Lambda::Function'\n" +
@@ -232,7 +233,7 @@ class StandaloneIssueMediumTests {
   }
 
   @Test
-  void simpleC(@TempDir Path baseDir) throws Exception {
+  void simpleC(@TempDir Path baseDir) {
     assumeTrue(COMMERCIAL_ENABLED);
     var inputFile = createFile(baseDir, "foo.c", "#import \"foo.h\"\n"
       + "#import \"foo2.h\" //NOSONAR\n");
@@ -277,7 +278,7 @@ class StandaloneIssueMediumTests {
   }
 
   @Test
-  void simplePhp(@TempDir Path baseDir) throws Exception {
+  void simplePhp(@TempDir Path baseDir) {
     var inputFile = createFile(baseDir, "foo.php", "<?php\n"
       + "function writeMsg($fname) {\n"
       + "    $i = 0; // NOSONAR\n"
@@ -333,7 +334,7 @@ class StandaloneIssueMediumTests {
   }
 
   @Test
-  void analysisErrors(@TempDir Path baseDir) throws Exception {
+  void analysisErrors(@TempDir Path baseDir) {
     var content = "<?php\n"
       + "function writeMsg($fname) {\n"
       + "    echo \"Hello world!;\n"
@@ -361,7 +362,7 @@ class StandaloneIssueMediumTests {
   }
 
   @Test
-  void simplePython(@TempDir Path baseDir) throws Exception {
+  void simplePython(@TempDir Path baseDir) {
     var inputFile = createFile(baseDir, "foo.py", "def my_function(name):\n"
       + "    print \"Hello\"\n"
       + "    print \"world!\" # NOSONAR\n"
@@ -384,7 +385,7 @@ class StandaloneIssueMediumTests {
   }
 
   @Test
-  void simpleKotlinKts(@TempDir Path baseDir) throws Exception {
+  void simpleKotlinKts(@TempDir Path baseDir) {
     var inputFile = createFile(baseDir, "settings.gradle.kts", "description = \"SonarLint for IntelliJ IDEA\"");
     client = newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
@@ -404,7 +405,7 @@ class StandaloneIssueMediumTests {
 
   // SLCORE-162
   @Test
-  void useRelativePathToEvaluatePathPatterns(@TempDir Path baseDir) throws Exception {
+  void useRelativePathToEvaluatePathPatterns(@TempDir Path baseDir) {
     var inputFile = createFile(baseDir, "foo.tmp", "def my_function(name):\n"
       + "    print \"Hello\"\n"
       + "    print \"world!\" # NOSONAR\n"
@@ -427,7 +428,7 @@ class StandaloneIssueMediumTests {
   }
 
   @Test
-  void simpleJava(@TempDir Path baseDir) throws Exception {
+  void simpleJava(@TempDir Path baseDir) {
     var inputFile = createFile(baseDir, A_JAVA_FILE_PATH,
       "public class Foo {\n"
         + "  public void foo() {\n"
@@ -459,7 +460,7 @@ class StandaloneIssueMediumTests {
   }
 
   @Test
-  void simpleJavaWithQuickFix(@TempDir Path baseDir) throws Exception {
+  void simpleJavaWithQuickFix(@TempDir Path baseDir) {
     var inputFile = createFile(baseDir, A_JAVA_FILE_PATH,
       "public class Foo {\n"
         + "  public void foo() {\n"
@@ -503,7 +504,7 @@ class StandaloneIssueMediumTests {
   }
 
   @Test
-  void simpleJavaWithCommaInClasspath(@TempDir Path baseDir) throws Exception {
+  void simpleJavaWithCommaInClasspath(@TempDir Path baseDir) {
     var inputFile = createFile(baseDir, A_JAVA_FILE_PATH,
       "public class Foo {\n"
         + "  public void foo() {\n"
@@ -537,7 +538,7 @@ class StandaloneIssueMediumTests {
 
   // SLCORE-251
   @Test
-  void noRuleTemplates() throws Exception {
+  void noRuleTemplates() throws ExecutionException, InterruptedException {
     client = newFakeClient().build();
     backend = newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
@@ -600,7 +601,7 @@ class StandaloneIssueMediumTests {
   }
 
   @Test
-  void simpleJavaPomXml(@TempDir Path baseDir) throws Exception {
+  void simpleJavaPomXml(@TempDir Path baseDir) {
     var inputFile = createFile(baseDir, "pom.xml",
       "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         + "<project>\n"
@@ -626,7 +627,7 @@ class StandaloneIssueMediumTests {
   }
 
   @Test
-  void supportJavaSuppressWarning(@TempDir Path baseDir) throws Exception {
+  void supportJavaSuppressWarning(@TempDir Path baseDir) {
     var inputFile = createFile(baseDir, A_JAVA_FILE_PATH,
       "public class Foo {\n"
         + "  @SuppressWarnings(\"java:S106\")\n"
@@ -689,7 +690,7 @@ class StandaloneIssueMediumTests {
   }
 
   @Test
-  void simpleJavaWithExcludedRules(@TempDir Path baseDir) throws Exception {
+  void simpleJavaWithExcludedRules(@TempDir Path baseDir) {
     var inputFile = createFile(baseDir, A_JAVA_FILE_PATH,
       "public class Foo {\n"
         + "  public void foo() {\n"
@@ -720,7 +721,7 @@ class StandaloneIssueMediumTests {
   }
 
   @Test
-  void simpleJavaWithExcludedRulesUsingDeprecatedKey(@TempDir Path baseDir) throws Exception {
+  void simpleJavaWithExcludedRulesUsingDeprecatedKey(@TempDir Path baseDir) {
     var inputFile = createFile(baseDir, A_JAVA_FILE_PATH,
       "public class Foo {\n"
         + "  public void foo() {\n"
@@ -753,7 +754,7 @@ class StandaloneIssueMediumTests {
   }
 
   @Test
-  void simpleJavaWithIncludedRules(@TempDir Path baseDir) throws Exception {
+  void simpleJavaWithIncludedRules(@TempDir Path baseDir) {
     var inputFile = createFile(baseDir, A_JAVA_FILE_PATH,
       "import java.util.Optional;\n"
         + "public class Foo {\n"
@@ -786,7 +787,7 @@ class StandaloneIssueMediumTests {
   }
 
   @Test
-  void simpleJavaWithIncludedRulesUsingDeprecatedKey(@TempDir Path baseDir) throws Exception {
+  void simpleJavaWithIncludedRulesUsingDeprecatedKey(@TempDir Path baseDir) {
     var inputFile = createFile(baseDir, A_JAVA_FILE_PATH,
       "import java.util.Optional;\n"
         + "public class Foo {\n"
@@ -970,5 +971,4 @@ class StandaloneIssueMediumTests {
       .contains("Initializing metadata of file " + inputFile.toUri())
       .doesNotContain("Initializing metadata of file " + unexistingFilePath.toFile());
   }
-
 }

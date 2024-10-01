@@ -44,6 +44,7 @@ public class AnalysisUtils {
     // utility class
   }
 
+  // TODO methods are not called
   public static List<RaisedIssueDto> analyzeAndGetIssues(String projectKey, String fileName, String configScopeId, SonarLintRpcServer backend, SonarLintRpcClientDelegate client, String ... properties) {
     final var baseDir = Paths.get("projects/" + projectKey).toAbsolutePath();
     final var filePath = baseDir.resolve(fileName);

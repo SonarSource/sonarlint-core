@@ -666,6 +666,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       });
     }
 
+    // TODO review this
     @Disabled
     @Test
     @OnlyOnSonarQube(from = "9.9")
@@ -737,6 +738,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       await().untilAsserted(() -> assertThat(allBranchNamesForProject).contains(MAIN_BRANCH_NAME, short_branch, long_branch));
     }
 
+    // TODO review
     @Disabled
     @Test
     void should_match_issues_from_branch() throws ExecutionException, InterruptedException {
@@ -1062,6 +1064,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         .contains("Check that your production deployment doesn’t have its loggers in \"debug\" mode");
     }
 
+    // TODO review
     @Test
     void shouldMatchServerSecurityHotspots() throws ExecutionException, InterruptedException {
       var configScopeId = "shouldMatchServerSecurityHotspots";

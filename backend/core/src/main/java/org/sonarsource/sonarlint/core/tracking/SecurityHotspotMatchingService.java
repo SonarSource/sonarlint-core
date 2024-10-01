@@ -20,47 +20,24 @@
 package org.sonarsource.sonarlint.core.tracking;
 
 import com.google.common.util.concurrent.MoreExecutors;
-import java.nio.file.Path;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
-import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
-import org.sonarsource.sonarlint.core.file.FilePathTranslation;
-import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.reporting.FindingReportingService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlySecurityHotspotDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ServerMatchedSecurityHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotChangedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotClosedEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.SecurityHotspotRaisedEvent;
 import org.sonarsource.sonarlint.core.storage.StorageService;
-import org.sonarsource.sonarlint.core.sync.HotspotSynchronizationService;
-import org.sonarsource.sonarlint.core.tracking.matching.ClientTrackedFindingMatchingAttributeMapper;
-import org.sonarsource.sonarlint.core.tracking.matching.IssueMatcher;
-import org.sonarsource.sonarlint.core.tracking.matching.ServerHotspotMatchingAttributesMapper;
 import org.springframework.context.event.EventListener;
-
-import static java.util.stream.Collectors.toMap;
 
 @Named
 @Singleton

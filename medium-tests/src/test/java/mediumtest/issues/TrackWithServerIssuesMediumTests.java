@@ -62,6 +62,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.BUG;
 
+// TODO reveiw if it makes sense to rewrite it all or it should be removed
 @Disabled
 class TrackWithServerIssuesMediumTests {
 
