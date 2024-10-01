@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class FileUtils {
@@ -34,7 +35,7 @@ public class FileUtils {
     // utility class
   }
 
-  public static String getFileRelativePath(Path gitRepoBaseDir, URI fileUri, boolean addCommonPath) {
+  public static String getFileRelativePath(@Nullable Path gitRepoBaseDir, URI fileUri, boolean addCommonPath) {
     var filePath = Path.of(fileUri);
     LOG.debug("Relativizing path: {} for git repo {}", filePath, gitRepoBaseDir);
 
@@ -43,12 +44,15 @@ public class FileUtils {
     return findFuzzyRelativeFilePath(baseDirDirectories, filePathDirectories, addCommonPath);
   }
 
-  public static List<String> getPathDirectories(Path file) {
+  public static List<String> getPathDirectories(@Nullable Path file) {
+    if (file == null) {
+      return Collections.emptyList();
+    }
     var directories = new ArrayList<String>();
     do {
       directories.add(file.getFileName().toString());
       file = file.getParent();
-    } while (file.getParent() != null);
+    } while (file != null && file.getParent() != null);
     Collections.reverse(directories);
     return directories;
   }

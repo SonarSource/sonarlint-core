@@ -37,7 +37,7 @@ import static org.mockito.Mockito.verify;
 class FileUtilsTests {
 
   @Test
-  void deleteRecursively(@TempDir Path dir) throws IOException {
+  void deleteRecursively(@TempDir Path dir) {
     var fileInDir = createNewFile(dir, "dummy");
     assertThat(fileInDir).isFile();
 
@@ -47,7 +47,7 @@ class FileUtilsTests {
   }
 
   @Test
-  void deleteRecursively_should_ignore_nonexistent_dir(@TempDir Path temp) throws IOException {
+  void deleteRecursively_should_ignore_nonexistent_dir(@TempDir Path temp) {
     var dir = new File(temp.toFile(), "nonexistent");
     assertThat(dir).doesNotExist();
 
@@ -55,7 +55,7 @@ class FileUtilsTests {
   }
 
   @Test
-  void deleteRecursively_should_delete_file(@TempDir Path temp) throws IOException {
+  void deleteRecursively_should_delete_file(@TempDir Path temp) {
     var file = createNewFile(temp, "foo.txt");
     assertThat(file).isFile();
 
@@ -64,7 +64,7 @@ class FileUtilsTests {
   }
 
   @Test
-  void deleteRecursively_should_delete_deeply_nested_dirs(@TempDir Path basedir) throws IOException {
+  void deleteRecursively_should_delete_deeply_nested_dirs(@TempDir Path basedir) {
     var deeplyNestedDir = basedir.resolve("a").resolve("b").resolve("c");
     assertThat(deeplyNestedDir.toFile().isDirectory()).isFalse();
     FileUtils.mkdirs(deeplyNestedDir);
@@ -86,11 +86,9 @@ class FileUtilsTests {
   }
 
   @Test
-  void mkdirs_should_fail_if_destination_is_a_file(@TempDir Path temp) throws IOException {
+  void mkdirs_should_fail_if_destination_is_a_file(@TempDir Path temp) {
     var file = createNewFile(temp, "foo").toPath();
-    assertThrows(IllegalStateException.class, () -> {
-      FileUtils.mkdirs(file);
-    });
+    assertThrows(IllegalStateException.class, () -> FileUtils.mkdirs(file));
   }
 
   @Test
