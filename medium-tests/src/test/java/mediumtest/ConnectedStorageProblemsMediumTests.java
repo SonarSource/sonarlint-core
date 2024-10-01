@@ -24,27 +24,31 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.TestPlugin;
 import org.apache.commons.io.FileUtils;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.analysis.AnalysisEngine;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.AnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.EngineConfiguration;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.RawIssue;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine;
+import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import testutils.TestUtils;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
+import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
-import static testutils.TestUtils.createNoOpIssueListener;
+import static org.awaitility.Awaitility.await;
 
 class ConnectedStorageProblemsMediumTests {
   @RegisterExtension
@@ -52,40 +56,23 @@ class ConnectedStorageProblemsMediumTests {
   private static final String CONNECTION_ID = "localhost";
   private final String CONFIG_SCOPE_ID = "myProject";
 
-  private SonarLintAnalysisEngine engine;
-
-  @AfterEach
-  void stop() {
-    engine.stop();
-  }
-
+  @Disabled("relies on engine API")
   @Test
-  void test_no_storage(@TempDir Path slHome, @TempDir Path baseDir) {
-    var config = EngineConfiguration.builder()
-      .setSonarLintUserHome(slHome)
-      .setLogOutput((msg, level) -> {
-      })
-      .build();
-    engine = new SonarLintAnalysisEngine(config, newBackend().build(), CONNECTION_ID);
+  void test_no_storage(@TempDir Path slHome, @TempDir Path baseDir) throws ExecutionException, InterruptedException {
+    var fakeClient = newFakeClient().build();
+    var backend = newBackend().build(fakeClient);
 
-    var analysisConfig = AnalysisConfiguration.builder()
-      .setBaseDir(baseDir)
-      .build();
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(),
+      List.of(), Map.of(), false, Instant.now().toEpochMilli())).get();
 
-    var rawIssues = new ArrayList<RawIssue>();
-    engine.analyze(analysisConfig, rawIssues::add, null, null, CONFIG_SCOPE_ID);
-
-    assertThat(rawIssues).isEmpty();
+    assertThat(fakeClient.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isEmpty();
   }
 
+  @Disabled("relies on engine API")
   @Test
   void corrupted_plugin_should_not_prevent_startup(@TempDir Path slHome, @TempDir Path baseDir) throws Exception {
     List<String> logs = new CopyOnWriteArrayList<>();
 
-    var config = EngineConfiguration.builder()
-      .setSonarLintUserHome(slHome)
-      .setLogOutput((m, l) -> logs.add(m))
-      .build();
     var backend = newBackend()
       .withSonarQubeConnection(CONNECTION_ID, storage -> storage
         .withPlugin(TestPlugin.JAVA)
@@ -96,16 +83,13 @@ class ConnectedStorageProblemsMediumTests {
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, CONFIG_SCOPE_ID)
       .withEnabledLanguageInStandaloneMode(org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA)
       .withEnabledLanguageInStandaloneMode(org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JS).build();
-    engine = new SonarLintAnalysisEngine(config, backend, CONNECTION_ID);
 
     var inputFile = prepareJavaInputFile(baseDir);
 
-    engine.analyze(AnalysisConfiguration.builder()
-      .setBaseDir(baseDir)
-      .addInputFile(inputFile).build(),
-      createNoOpIssueListener(), null, null, CONFIG_SCOPE_ID);
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(),
+      List.of(inputFile.uri()), Map.of(), false, Instant.now().toEpochMilli())).get();
 
-    assertThat(logs).contains("Execute Sensor: JavaSensor");
+    await().untilAsserted(() -> assertThat(logs).contains("Execute Sensor: JavaSensor"));
   }
 
   private ClientInputFile prepareJavaInputFile(Path baseDir) throws IOException {

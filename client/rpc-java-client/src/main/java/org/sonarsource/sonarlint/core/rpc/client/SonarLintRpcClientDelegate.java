@@ -186,14 +186,6 @@ public interface SonarLintRpcClientDelegate {
 
   void didChangeAnalysisReadiness(Set<String> configurationScopeIds, boolean areReadyForAnalysis);
 
-  /**
-   * @deprecated since 10.2, please implement raiseIssues and raiseHotspots instead.
-   * See {@link org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService#analyzeFilesAndTrack(AnalyzeFilesAndTrackParams)}
-   */
-  @Deprecated(since = "10.2")
-  default void didRaiseIssue(String configurationScopeId, UUID analysisId, RawIssueDto rawIssue) {
-  }
-
   default void raiseIssues(String configurationScopeId, Map<URI, List<RaisedIssueDto>> issuesByFileUri, boolean isIntermediatePublication, @Nullable UUID analysisId) {
   }
 

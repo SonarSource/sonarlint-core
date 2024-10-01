@@ -65,96 +65,17 @@ import static java.util.stream.Collectors.toMap;
 @Named
 @Singleton
 public class SecurityHotspotMatchingService {
-  private static final int FETCH_ALL_SECURITY_HOTSPOTS_THRESHOLD = 10;
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final ConfigurationRepository configurationRepository;
   private final StorageService storageService;
-  private final SonarProjectBranchTrackingService branchTrackingService;
-  private final HotspotSynchronizationService hotspotSynchronizationService;
-  private final PathTranslationService pathTranslationService;
   private final FindingReportingService findingReportingService;
   private final ExecutorService executorService;
 
-  public SecurityHotspotMatchingService(ConfigurationRepository configurationRepository, StorageService storageService,
-    SonarProjectBranchTrackingService branchTrackingService, HotspotSynchronizationService hotspotSynchronizationService,
-    PathTranslationService pathTranslationService, FindingReportingService findingReportingService) {
+  public SecurityHotspotMatchingService(ConfigurationRepository configurationRepository, StorageService storageService,  FindingReportingService findingReportingService) {
     this.configurationRepository = configurationRepository;
     this.storageService = storageService;
-    this.branchTrackingService = branchTrackingService;
-    this.hotspotSynchronizationService = hotspotSynchronizationService;
-    this.pathTranslationService = pathTranslationService;
     this.findingReportingService = findingReportingService;
     this.executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-server-tracking-hotspot-updater"));
-  }
-
-  public Map<Path, List<Either<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>>> matchWithServerSecurityHotspots(String configurationScopeId,
-    Map<Path, List<ClientTrackedFindingDto>> clientTrackedHotspotsByIdeRelativePath, boolean shouldFetchHotspotsFromServer, SonarLintCancelMonitor cancelMonitor) {
-    var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
-    var activeBranchOpt = branchTrackingService.awaitEffectiveSonarProjectBranch(configurationScopeId);
-    var translationOpt = pathTranslationService.getOrComputePathTranslation(configurationScopeId);
-    if (effectiveBindingOpt.isEmpty() || activeBranchOpt.isEmpty() || translationOpt.isEmpty()) {
-      return clientTrackedHotspotsByIdeRelativePath.entrySet().stream()
-        .map(e -> Map.entry(e.getKey(), e.getValue().stream()
-          .map(issue -> Either.<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>forRight(
-            new LocalOnlySecurityHotspotDto(UUID.randomUUID())))
-          .collect(Collectors.toList())))
-        .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
-    }
-    var binding = effectiveBindingOpt.get();
-    var activeBranch = activeBranchOpt.get();
-    if (shouldFetchHotspotsFromServer) {
-      refreshServerSecurityHotspots(cancelMonitor, binding, activeBranch, clientTrackedHotspotsByIdeRelativePath, translationOpt.get());
-    }
-    var newCodeDefinition = storageService.binding(binding).newCodeDefinition().read();
-    return clientTrackedHotspotsByIdeRelativePath.entrySet().stream().map(e -> {
-      var serverRelativePath = e.getKey();
-      var serverHotspots = storageService.binding(binding).findings().loadHotspots(activeBranch, serverRelativePath);
-      var matches = matchSecurityHotspots(serverHotspots, e.getValue())
-        .stream().map(result -> {
-          if (result.isLeft()) {
-            var serverSecurityHotspot = result.getLeft();
-            var creationDate = serverSecurityHotspot.getCreationDate();
-            var isOnNewCode = newCodeDefinition.map(definition -> definition.isOnNewCode(creationDate.toEpochMilli())).orElse(true);
-            return Either.<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>forLeft(
-              new ServerMatchedSecurityHotspotDto(UUID.randomUUID(), serverSecurityHotspot.getKey(), creationDate.toEpochMilli(),
-                HotspotStatus.valueOf(serverSecurityHotspot.getStatus().name()), isOnNewCode));
-          } else {
-            return Either.<ServerMatchedSecurityHotspotDto, LocalOnlySecurityHotspotDto>forRight(new LocalOnlySecurityHotspotDto(result.getRight().getId()));
-          }
-        }).collect(Collectors.toList());
-      return Map.entry(serverRelativePath, matches);
-    }).collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
-  }
-
-  private void refreshServerSecurityHotspots(SonarLintCancelMonitor cancelMonitor, Binding binding, String activeBranch,
-    Map<Path, List<ClientTrackedFindingDto>> clientTrackedHotspotsByIdeRelativePath, FilePathTranslation translation) {
-    var serverFileRelativePaths = clientTrackedHotspotsByIdeRelativePath.keySet()
-      .stream().map(translation::ideToServerPath).collect(Collectors.toSet());
-    var downloadAllSecurityHotspotsAtOnce = serverFileRelativePaths.size() > FETCH_ALL_SECURITY_HOTSPOTS_THRESHOLD;
-    var fetchTasks = new LinkedList<CompletableFuture<?>>();
-    if (downloadAllSecurityHotspotsAtOnce) {
-      fetchTasks.add(CompletableFuture.runAsync(() -> hotspotSynchronizationService.fetchProjectHotspots(binding, activeBranch, cancelMonitor), executorService));
-    } else {
-      fetchTasks.addAll(serverFileRelativePaths.stream()
-        .map(serverFileRelativePath -> CompletableFuture
-          .runAsync(() -> hotspotSynchronizationService.fetchFileHotspots(binding, activeBranch, serverFileRelativePath, cancelMonitor), executorService))
-        .collect(Collectors.toList()));
-    }
-    CompletableFuture.allOf(fetchTasks.toArray(new CompletableFuture[0])).join();
-  }
-
-  private static List<Either<ServerHotspot, LocalOnlySecurityHotspot>> matchSecurityHotspots(Collection<ServerHotspot> serverHotspots,
-    List<ClientTrackedFindingDto> clientTrackedHotspots) {
-    var matcher = new IssueMatcher<>(new ClientTrackedFindingMatchingAttributeMapper(), new ServerHotspotMatchingAttributesMapper());
-    var matchingResult = matcher.match(clientTrackedHotspots, serverHotspots);
-    return clientTrackedHotspots.stream().<Either<ServerHotspot, LocalOnlySecurityHotspot>>map(clientTrackedHotspot -> {
-      var match = matchingResult.getMatch(clientTrackedHotspot);
-      if (match != null) {
-        return Either.forLeft(match);
-      } else {
-        return Either.forRight(new LocalOnlySecurityHotspot(UUID.randomUUID()));
-      }
-    }).collect(Collectors.toList());
   }
 
   @EventListener

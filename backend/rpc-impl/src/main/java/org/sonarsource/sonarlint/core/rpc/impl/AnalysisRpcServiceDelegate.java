@@ -118,17 +118,6 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
   }
 
   @Override
-  public CompletableFuture<AnalyzeFilesResponse> analyzeFiles(AnalyzeFilesParams params) {
-    var configurationScopeId = params.getConfigurationScopeId();
-    return requestAsync(cancelChecker -> {
-      var analysisResults = getBean(AnalysisService.class)
-        .analyze(cancelChecker, params.getConfigurationScopeId(), params.getAnalysisId(), params.getFilesToAnalyze(),
-          params.getExtraProperties(), params.getStartTime(), false, false, false).join();
-      return generateAnalyzeFilesResponse(analysisResults);
-    }, configurationScopeId);
-  }
-
-  @Override
   public CompletableFuture<AnalyzeFilesResponse> analyzeFilesAndTrack(AnalyzeFilesAndTrackParams params) {
     var configurationScopeId = params.getConfigurationScopeId();
     return requestAsync(cancelChecker -> {

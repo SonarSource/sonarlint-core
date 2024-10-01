@@ -42,7 +42,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.NewCodeRpcSer
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.IssueTrackingRpcService;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.SecurityHotspotMatchingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityTrackingRpcService;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 
@@ -123,16 +122,6 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
   @Override
   public IssueRpcService getIssueService() {
     return serverUsingRpc.getIssueService();
-  }
-
-  @Override
-  public IssueTrackingRpcService getIssueTrackingService() {
-    return serverUsingRpc.getIssueTrackingService();
-  }
-
-  @Override
-  public SecurityHotspotMatchingRpcService getSecurityHotspotMatchingService() {
-    return serverUsingRpc.getSecurityHotspotMatchingService();
   }
 
   @Override

@@ -31,24 +31,24 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import mediumtest.fixtures.ServerFixture;
 import mediumtest.fixtures.SonarLintTestRpcServer;
+import mediumtest.fixtures.TestPlugin;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssueResolution;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.AddIssueCommentParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ChangeIssueStatusParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssuesForFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LineWithHashDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlyIssueDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
@@ -62,9 +62,13 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static mediumtest.fixtures.storage.ServerIssueFixtures.aServerIssue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
+import static testutils.AnalysisUtils.createFile;
+import static testutils.AnalysisUtils.waitForRaisedIssues;
 
 class IssuesStatusChangeMediumTests {
 
+  private static final String CONFIGURATION_SCOPE_ID = "configScopeId";
+  private static final String CONNECTION_ID = "connectionId";
   private SonarLintTestRpcServer backend;
   private ServerFixture.Server server;
 
@@ -82,13 +86,13 @@ class IssuesStatusChangeMediumTests {
     var serverIssue = aServerIssue("myIssueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")).withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
     server = newSonarQubeServer().start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage
+      .withSonarQubeConnection(CONNECTION_ID, server.baseUrl(), storage -> storage
         .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue)))
         .withServerVersion("9.8"))
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
       .build();
 
-    var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", "myIssueKey",
+    var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams(CONFIGURATION_SCOPE_ID, "myIssueKey",
       ResolutionStatus.WONT_FIX, false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
@@ -104,7 +108,7 @@ class IssuesStatusChangeMediumTests {
   void it_should_update_the_telemetry_when_changing_the_status_on_a_server_matched_issue() {
     server = newSonarQubeServer().start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage
+      .withSonarQubeConnection(CONNECTION_ID, server.baseUrl(), storage -> storage
         .withProject("projectKey",
           project -> project.withMainBranch("main",
             branch -> branch.withIssue(
@@ -114,11 +118,11 @@ class IssuesStatusChangeMediumTests {
                 .withIntroductionDate(Instant.EPOCH.plusSeconds(1))
                 .withType(RuleType.BUG))))
         .withServerVersion("9.8"))
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
       .withTelemetryEnabled()
       .build();
 
-    var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", "myIssueKey",
+    var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams(CONFIGURATION_SCOPE_ID, "myIssueKey",
       ResolutionStatus.WONT_FIX, false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
@@ -132,13 +136,13 @@ class IssuesStatusChangeMediumTests {
     var serverIssue = aServerIssue("myIssueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")).withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
     server = newSonarQubeServer().withStatus(DOWN).start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage
+      .withSonarQubeConnection(CONNECTION_ID, server.baseUrl(), storage -> storage
         .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue)))
         .withServerVersion("9.8"))
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
       .build();
 
-    var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", "myIssueKey",
+    var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams(CONFIGURATION_SCOPE_ID, "myIssueKey",
       ResolutionStatus.WONT_FIX, false));
 
     assertThat(response)
@@ -151,56 +155,86 @@ class IssuesStatusChangeMediumTests {
   }
 
   @Test
-  void it_should_update_local_only_storage_when_the_issue_exists_locally() throws ExecutionException, InterruptedException {
+  void it_should_update_local_only_storage_when_the_issue_exists_locally(@TempDir Path baseDir) throws ExecutionException, InterruptedException {
+    var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+      + "<project>\n"
+      + "  <modelVersion>4.0.0</modelVersion>\n"
+      + "  <groupId>com.foo</groupId>\n"
+      + "  <artifactId>bar</artifactId>\n"
+      + "  <version>${pom.version}</version>\n"
+      + "</project>");
+    var fileUri = filePath.toUri();
     server = newSonarQubeServer()
-      .withProject("projectKey")
+      .withQualityProfile("qpKey", qualityProfile -> qualityProfile
+        .withLanguage("xml").withActiveRule("xml:S3421", activeRule -> activeRule.withSeverity(IssueSeverity.BLOCKER)
+        ))
+      .withProject("projectKey",
+        project -> project.withQualityProfile("qpKey"))
       .start();
-    var client = newFakeClient().build();
+    var client = newFakeClient()
+      .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
+        new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIGURATION_SCOPE_ID, false, null, filePath, null, null, true)))
+      .build();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server.baseUrl())
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withSonarQubeConnection(CONNECTION_ID, server)
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .withFullSynchronization()
       .build(client);
     client.waitForSynchronization();
 
-    var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of(Path.of("file/path"),
-        List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
-      false));
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, UUID.randomUUID(),
+      List.of(fileUri), Map.of(), false, 0)).join();
 
-    LocalOnlyIssueDto localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(Path.of("file/path")).get(0).getRight();
+    waitForRaisedIssues(client, CONFIGURATION_SCOPE_ID);
+    var localOnlyIssue = client.getRaisedIssuesForScopeId(CONFIGURATION_SCOPE_ID).get(fileUri).get(0);
 
-    var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", localOnlyIssue.getId().toString(),
+    var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams(CONFIGURATION_SCOPE_ID, localOnlyIssue.getId().toString(),
       ResolutionStatus.WONT_FIX, false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    var issueLoaded = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", Path.of("file/path"));
+    var issueLoaded = backend.getLocalOnlyIssueStorageService().get().loadForFile(CONFIGURATION_SCOPE_ID, baseDir.relativize(filePath));
     assertThat(issueLoaded).hasSize(1);
     assertThat(issueLoaded.get(0).getId()).isEqualTo(localOnlyIssue.getId());
     assertThat(issueLoaded.get(0).getResolution().getStatus()).isEqualTo(org.sonarsource.sonarlint.core.commons.IssueStatus.WONT_FIX);
   }
 
   @Test
-  void it_should_sync_anticipated_transitions_with_sonarqube_when_the_issue_exists_locally() throws ExecutionException, InterruptedException {
+  void it_should_sync_anticipated_transitions_with_sonarqube_when_the_issue_exists_locally(@TempDir Path baseDir) throws ExecutionException, InterruptedException {
+    var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+      + "<project>\n"
+      + "  <modelVersion>4.0.0</modelVersion>\n"
+      + "  <groupId>com.foo</groupId>\n"
+      + "  <artifactId>bar</artifactId>\n"
+      + "  <version>${pom.version}</version>\n"
+      + "</project>");
+    var fileUri = filePath.toUri();
     server = newSonarQubeServer()
-      .withProject("projectKey")
+      .withQualityProfile("qpKey", qualityProfile -> qualityProfile
+        .withLanguage("xml").withActiveRule("xml:S3421", activeRule -> activeRule.withSeverity(IssueSeverity.BLOCKER)
+        ))
+      .withProject("projectKey",
+        project -> project.withQualityProfile("qpKey"))
       .start();
-    var client = newFakeClient().build();
+    var client = newFakeClient()
+      .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
+        new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIGURATION_SCOPE_ID, false, null, filePath, null, null, true)))
+      .build();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server.baseUrl())
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withSonarQubeConnection(CONNECTION_ID, server)
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .withFullSynchronization()
       .build(client);
     client.waitForSynchronization();
 
-    var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of(Path.of("file/path"),
-        List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
-      false));
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, UUID.randomUUID(),
+      List.of(fileUri), Map.of(), true, 0)).join();
 
-    LocalOnlyIssueDto localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(Path.of("file/path")).get(0).getRight();
+    waitForRaisedIssues(client, CONFIGURATION_SCOPE_ID);
+    var localOnlyIssue = client.getRaisedIssuesForScopeId(CONFIGURATION_SCOPE_ID).get(fileUri).get(0);
 
-    var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", localOnlyIssue.getId().toString(),
+    var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams(CONFIGURATION_SCOPE_ID, localOnlyIssue.getId().toString(),
       ResolutionStatus.WONT_FIX, false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
@@ -209,51 +243,64 @@ class IssuesStatusChangeMediumTests {
         .verify(WireMock.postRequestedFor(urlEqualTo("/api/issues/anticipated_transitions?projectKey=projectKey"))
           .withHeader("Content-Type", equalTo("application/json; charset=UTF-8"))
           .withRequestBody(
-            equalToJson("[{\"filePath\":\"file/path\",\"line\":1,\"hash\":\"linehash\",\"ruleKey\":\"ruleKey\",\"issueMessage\":\"message\",\"transition\":\"wontfix\"}]")));
+            equalToJson("[{\"filePath\":\"pom.xml\",\"line\":6,\"hash\":\"07bac3d9d23dc1b0d7156598e01d40b0\",\"ruleKey\":\"xml:S3421\",\"issueMessage\":\"Replace \\\"pom.version\\\" with \\\"project.version\\\".\",\"transition\":\"wontfix\"}]")));
     });
   }
 
   @Test
-  void it_should_update_telemetry_when_changing_status_of_a_local_only_issue() throws ExecutionException, InterruptedException {
+  void it_should_update_telemetry_when_changing_status_of_a_local_only_issue(@TempDir Path baseDir) throws ExecutionException, InterruptedException {
+    var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+      + "<project>\n"
+      + "  <modelVersion>4.0.0</modelVersion>\n"
+      + "  <groupId>com.foo</groupId>\n"
+      + "  <artifactId>bar</artifactId>\n"
+      + "  <version>${pom.version}</version>\n"
+      + "</project>");
+    var fileUri = filePath.toUri();
     server = newSonarQubeServer()
-      .withProject("projectKey")
+      .withQualityProfile("qpKey", qualityProfile -> qualityProfile
+        .withLanguage("xml").withActiveRule("xml:S3421", activeRule -> activeRule.withSeverity(IssueSeverity.BLOCKER)
+        ))
+      .withProject("projectKey",
+        project -> project.withQualityProfile("qpKey"))
       .start();
     var client = newFakeClient()
+      .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
+        new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIGURATION_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withSonarQubeConnection(CONNECTION_ID, server)
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .withFullSynchronization()
       .withTelemetryEnabled()
       .build(client);
-
     client.waitForSynchronization();
 
-    var trackedIssues = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams("configScopeId",
-      Map.of(Path.of("file/path"),
-        List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
-      false));
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, UUID.randomUUID(),
+      List.of(fileUri), Map.of(), false, 0)).join();
 
-    LocalOnlyIssueDto localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(Path.of("file/path")).get(0).getRight();
+    waitForRaisedIssues(client, CONFIGURATION_SCOPE_ID);
+    var localOnlyIssue = client.getRaisedIssuesForScopeId(CONFIGURATION_SCOPE_ID).get(fileUri).get(0);
 
-    var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", localOnlyIssue.getId().toString(),
+    var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams(CONFIGURATION_SCOPE_ID, localOnlyIssue.getId().toString(),
       ResolutionStatus.WONT_FIX, false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     assertThat(backend.telemetryFilePath())
       .content().asBase64Decoded().asString()
-      .contains("\"issueStatusChangedRuleKeys\":[\"ruleKey\"]");
+      .contains("\"issueStatusChangedRuleKeys\":[\"xml:S3421\"]");
   }
 
   @Test
   void it_should_fail_when_the_issue_does_not_exists() {
     server = newSonarQubeServer().withStatus(DOWN).start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withSonarQubeConnection(CONNECTION_ID, server)
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
       .build();
 
-    var params = new ChangeIssueStatusParams("configScopeId", "myIssueKey", ResolutionStatus.WONT_FIX, false);
+    var params = new ChangeIssueStatusParams(CONFIGURATION_SCOPE_ID, "myIssueKey", ResolutionStatus.WONT_FIX, false);
     var issueService = backend.getIssueService();
 
     assertThat(issueService.changeStatus(params))
@@ -267,12 +314,12 @@ class IssuesStatusChangeMediumTests {
   void it_should_add_new_comment_to_server_issue() {
     server = newSonarQubeServer().start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server,
+      .withSonarQubeConnection(CONNECTION_ID, server,
         storage -> storage.withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(aServerIssue("myIssueKey")))))
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
       .build();
 
-    var response = backend.getIssueService().addComment(new AddIssueCommentParams("configScopeId", "myIssueKey", "That's " +
+    var response = backend.getIssueService().addComment(new AddIssueCommentParams(CONFIGURATION_SCOPE_ID, "myIssueKey", "That's " +
       "serious issue"));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
@@ -289,12 +336,12 @@ class IssuesStatusChangeMediumTests {
     var issueKey = UUID.randomUUID().toString();
     server = newSonarQubeServer().start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server,
+      .withSonarQubeConnection(CONNECTION_ID, server,
         storage -> storage.withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(aServerIssue(issueKey)))))
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
       .build();
 
-    var response = backend.getIssueService().addComment(new AddIssueCommentParams("configScopeId", issueKey, "That's " +
+    var response = backend.getIssueService().addComment(new AddIssueCommentParams(CONFIGURATION_SCOPE_ID, issueKey, "That's " +
       "serious issue"));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
@@ -311,15 +358,15 @@ class IssuesStatusChangeMediumTests {
     server = newSonarQubeServer().start();
     var issueId = UUID.randomUUID();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId)))
+      .withSonarQubeConnection(CONNECTION_ID, server)
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey", storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId)))
       .build();
 
-    var response = backend.getIssueService().addComment(new AddIssueCommentParams("configScopeId", issueId.toString(), "That's " +
+    var response = backend.getIssueService().addComment(new AddIssueCommentParams(CONFIGURATION_SCOPE_ID, issueId.toString(), "That's " +
       "serious issue"));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
-    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", Path.of("file/path"));
+    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadForFile(CONFIGURATION_SCOPE_ID, Path.of("file/path"));
     assertThat(storedIssues)
       .extracting(LocalOnlyIssue::getResolution)
       .extracting(LocalOnlyIssueResolution::getComment)
@@ -330,12 +377,12 @@ class IssuesStatusChangeMediumTests {
   void it_should_throw_if_server_response_is_not_OK_during_add_new_comment_to_issue() {
     server = newSonarQubeServer().withStatus(DOWN).start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server,
+      .withSonarQubeConnection(CONNECTION_ID, server,
         storage -> storage.withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(aServerIssue("myIssueKey")))))
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
       .build();
 
-    var response = backend.getIssueService().addComment(new AddIssueCommentParams("configScopeId", "myIssueKey", "That's " +
+    var response = backend.getIssueService().addComment(new AddIssueCommentParams(CONFIGURATION_SCOPE_ID, "myIssueKey", "That's " +
       "serious issue"));
 
     assertThat(response)
@@ -351,11 +398,11 @@ class IssuesStatusChangeMediumTests {
   void it_should_throw_if_issue_is_unknown_when_adding_a_comment() {
     server = newSonarQubeServer().start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withSonarQubeConnection(CONNECTION_ID, server)
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
       .build();
 
-    var response = backend.getIssueService().addComment(new AddIssueCommentParams("configScopeId", "myIssueKey", "That's " +
+    var response = backend.getIssueService().addComment(new AddIssueCommentParams(CONFIGURATION_SCOPE_ID, "myIssueKey", "That's " +
       "serious issue"));
 
     assertThat(response)
@@ -371,12 +418,12 @@ class IssuesStatusChangeMediumTests {
   void it_should_throw_if_issue_with_uuid_key_is_unknown_when_adding_a_comment() {
     server = newSonarQubeServer().start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withSonarQubeConnection(CONNECTION_ID, server)
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
       .build();
     var issueKey = UUID.randomUUID().toString();
 
-    var response = backend.getIssueService().addComment(new AddIssueCommentParams("configScopeId", issueKey, "That's " +
+    var response = backend.getIssueService().addComment(new AddIssueCommentParams(CONFIGURATION_SCOPE_ID, issueKey, "That's " +
       "serious issue"));
 
     assertThat(response)
@@ -393,17 +440,17 @@ class IssuesStatusChangeMediumTests {
     server = newSonarQubeServer().start();
     var issueId = UUID.randomUUID();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId)))
+      .withSonarQubeConnection(CONNECTION_ID, server)
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey", storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId)))
       .build();
-    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadAll("configScopeId");
+    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadAll(CONFIGURATION_SCOPE_ID);
     assertThat(storedIssues).extracting(LocalOnlyIssue::getId).containsOnly(issueId);
 
-    var response = backend.getIssueService().reopenIssue(new ReopenIssueParams("configScopeId", issueId.toString(), false));
+    var response = backend.getIssueService().reopenIssue(new ReopenIssueParams(CONFIGURATION_SCOPE_ID, issueId.toString(), false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     assertThat(response.get().isSuccess()).isTrue();
-    storedIssues = backend.getLocalOnlyIssueStorageService().get().loadAll("configScopeId");
+    storedIssues = backend.getLocalOnlyIssueStorageService().get().loadAll(CONFIGURATION_SCOPE_ID);
     assertThat(storedIssues).isEmpty();
   }
 
@@ -414,8 +461,8 @@ class IssuesStatusChangeMediumTests {
     var issueId2 = UUID.randomUUID();
     var otherFileIssueId = UUID.randomUUID();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey",
+      .withSonarQubeConnection(CONNECTION_ID, server)
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey",
         storage -> storage
           .withLocalOnlyIssue(new LocalOnlyIssue(
             otherFileIssueId,
@@ -429,9 +476,9 @@ class IssuesStatusChangeMediumTests {
           .withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId2)))
       .build();
 
-    var issuesForFile = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", Path.of("file/path"));
-    var issuesForOtherFile = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", Path.of("file/path1"));
-    var allIssues = backend.getLocalOnlyIssueStorageService().get().loadAll("configScopeId");
+    var issuesForFile = backend.getLocalOnlyIssueStorageService().get().loadForFile(CONFIGURATION_SCOPE_ID, Path.of("file/path"));
+    var issuesForOtherFile = backend.getLocalOnlyIssueStorageService().get().loadForFile(CONFIGURATION_SCOPE_ID, Path.of("file/path1"));
+    var allIssues = backend.getLocalOnlyIssueStorageService().get().loadAll(CONFIGURATION_SCOPE_ID);
     assertThat(issuesForFile).extracting(LocalOnlyIssue::getId).containsOnly(issueId1, issueId2);
     assertThat(issuesForOtherFile).extracting(LocalOnlyIssue::getId).containsOnly(otherFileIssueId);
     assertThat(allIssues).extracting(LocalOnlyIssue::getId).containsOnly(issueId1, issueId2, otherFileIssueId);
@@ -444,8 +491,8 @@ class IssuesStatusChangeMediumTests {
     var issueId2 = UUID.randomUUID();
     var otherFileIssueId = UUID.randomUUID();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey",
+      .withSonarQubeConnection(CONNECTION_ID, server)
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey",
         storage -> storage
           .withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId1))
           .withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId2))
@@ -458,15 +505,15 @@ class IssuesStatusChangeMediumTests {
             "message",
             new LocalOnlyIssueResolution(org.sonarsource.sonarlint.core.commons.IssueStatus.WONT_FIX, Instant.now().truncatedTo(ChronoUnit.MILLIS), "comment"))))
       .build();
-    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadAll("configScopeId");
+    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadAll(CONFIGURATION_SCOPE_ID);
     assertThat(storedIssues).extracting(LocalOnlyIssue::getId).containsOnly(issueId1, issueId2, otherFileIssueId);
 
     var response = backend.getIssueService()
-      .reopenAllIssuesForFile(new ReopenAllIssuesForFileParams("configScopeId", Path.of("file/path")));
+      .reopenAllIssuesForFile(new ReopenAllIssuesForFileParams(CONFIGURATION_SCOPE_ID, Path.of("file/path")));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     assertThat(response.get().isSuccess()).isTrue();
-    storedIssues = backend.getLocalOnlyIssueStorageService().get().loadAll("configScopeId");
+    storedIssues = backend.getLocalOnlyIssueStorageService().get().loadAll(CONFIGURATION_SCOPE_ID);
     assertThat(storedIssues).extracting(LocalOnlyIssue::getId).containsOnly(otherFileIssueId);
   }
 
@@ -476,15 +523,15 @@ class IssuesStatusChangeMediumTests {
     var issueId = UUID.randomUUID();
     var invalidIssueId = "invalid-id";
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId)))
+      .withSonarQubeConnection(CONNECTION_ID, server)
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey", storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId)))
       .build();
 
-    var response = backend.getIssueService().reopenIssue(new ReopenIssueParams("configScopeId", invalidIssueId, false));
+    var response = backend.getIssueService().reopenIssue(new ReopenIssueParams(CONFIGURATION_SCOPE_ID, invalidIssueId, false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     assertThat(response.get().isSuccess()).isFalse();
-    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", Path.of("file/path"));
+    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadForFile(CONFIGURATION_SCOPE_ID, Path.of("file/path"));
     assertThat(storedIssues).extracting(LocalOnlyIssue::getId).containsOnly(issueId);
   }
 
@@ -494,15 +541,15 @@ class IssuesStatusChangeMediumTests {
     var issueId = UUID.randomUUID();
     var nonExistingIssueId = UUID.randomUUID();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey", storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId)))
+      .withSonarQubeConnection(CONNECTION_ID, server)
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey", storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId)))
       .build();
 
-    var response = backend.getIssueService().reopenIssue(new ReopenIssueParams("configScopeId", nonExistingIssueId.toString(), false));
+    var response = backend.getIssueService().reopenIssue(new ReopenIssueParams(CONFIGURATION_SCOPE_ID, nonExistingIssueId.toString(), false));
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     assertThat(response.get().isSuccess()).isFalse();
-    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadForFile("configScopeId", Path.of("file/path"));
+    var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadForFile(CONFIGURATION_SCOPE_ID, Path.of("file/path"));
     assertThat(storedIssues)
       .extracting(LocalOnlyIssue::getId)
       .containsOnly(issueId);
@@ -514,13 +561,13 @@ class IssuesStatusChangeMediumTests {
       .resolved();
     server = newSonarQubeServer().start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage
+      .withSonarQubeConnection(CONNECTION_ID, server.baseUrl(), storage -> storage
         .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue)))
         .withServerVersion("9.8"))
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
       .build();
 
-    var reopen_response = backend.getIssueService().reopenIssue(new ReopenIssueParams("configScopeId", "myIssueKey", false));
+    var reopen_response = backend.getIssueService().reopenIssue(new ReopenIssueParams(CONFIGURATION_SCOPE_ID, "myIssueKey", false));
 
     assertThat(reopen_response).succeedsWithin(Duration.ofSeconds(2));
     assertThat(reopen_response.get().isSuccess()).isTrue();

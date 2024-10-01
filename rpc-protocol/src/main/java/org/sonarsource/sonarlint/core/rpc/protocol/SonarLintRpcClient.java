@@ -32,7 +32,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientCons
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnalysisReadinessParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidRaiseIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetFileExclusionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetFileExclusionsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
@@ -244,18 +243,6 @@ public interface SonarLintRpcClient {
    */
   @JsonNotification
   void didChangeAnalysisReadiness(DidChangeAnalysisReadinessParams params);
-
-  /**
-   * @deprecated Implement {@link #raiseIssues} instead.
-   * <br/>
-   * Called as soon as one of the analyzer discovered an issue.
-   * A "raw" issue is an issue as it is raised by the analyzer, without any effort to match it to a previously raised issue (this happens at a later stage).
-   * This is to let clients track the issue with previous local issues, and potentially show them to users via streaming
-   */
-  @Deprecated(since = "10.2")
-  @JsonNotification
-  default void didRaiseIssue(DidRaiseIssueParams params) {
-  }
 
   /**
    * Called when clients should update the issues list in the UI. This can happen in several situations:
