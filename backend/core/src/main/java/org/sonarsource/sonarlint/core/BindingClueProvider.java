@@ -256,7 +256,7 @@ public class BindingClueProvider {
       return new SonarCloudBindingClue(scannerProps.projectKey, scannerProps.organization, scannerProps.isFromSharedConfiguration);
     }
     if (scannerProps.serverUrl != null) {
-      if (removeEnd(scannerProps.serverUrl, "/").equals(sonarCloudUri.toString())) {
+      if (removeEnd(scannerProps.serverUrl, "/").equals(removeEnd(sonarCloudUri.toString(), "/"))) {
         return new SonarCloudBindingClue(scannerProps.projectKey, null, scannerProps.isFromSharedConfiguration);
       } else {
         return new SonarQubeBindingClue(scannerProps.projectKey, scannerProps.serverUrl, scannerProps.isFromSharedConfiguration);

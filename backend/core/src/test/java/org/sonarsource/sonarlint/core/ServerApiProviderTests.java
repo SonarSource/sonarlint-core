@@ -78,6 +78,15 @@ class ServerApiProviderTests {
   }
 
   @Test
+  void getServerApi_for_sonarcloud_with_trailing_slash_notConnected() {
+    var httpClient = mock(HttpClient.class);
+    when(httpClientProvider.getHttpClientWithPreemptiveAuth("token")).thenReturn(httpClient);
+
+    var serverApi = underTest.getServerApi("https://sonarcloud.io/", "organization", "token");
+    assertThat(serverApi.isSonarCloud()).isTrue();
+  }
+
+  @Test
   void getServerApi_for_sonarcloud_notConnected() {
     var httpClient = mock(HttpClient.class);
     when(httpClientProvider.getHttpClientWithPreemptiveAuth("token")).thenReturn(httpClient);
