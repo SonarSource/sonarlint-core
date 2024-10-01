@@ -87,13 +87,13 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.G
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProjectDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarCloudAlternativeEnvironmentDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
@@ -525,29 +525,16 @@ class SonarCloudTests extends AbstractConnectedTests {
         .contains("Check that your production deployment doesn’t have its loggers in \"debug\" mode");
     }
 
-    // TODO review this
-    @Disabled
     @Test
-    void shouldMatchServerSecurityHotspots() throws ExecutionException, InterruptedException {
+    void shouldMatchServerSecurityHotspots() {
       var configScopeId = "shouldMatchServerSecurityHotspots";
       openBoundConfigurationScope(configScopeId, PROJECT_KEY_JAVA_HOTSPOT);
       waitForAnalysisToBeReady(configScopeId);
 
-      var textRangeWithHash = new TextRangeWithHashDto(9, 4, 9, 45, "qwer");
-//      var clientTrackedHotspotsByServerRelativePath = Map.of(
-//        Path.of("src/main/java/foo/Foo.java"),
-//        List.of(new ClientTrackedFindingDto(null, null, textRangeWithHash, null, "java:S4792", "Make sure that this logger's configuration is safe.")),
-//        Path.of("src/main/java/bar/Bar.java"), List.of(new ClientTrackedFindingDto(null, null, textRangeWithHash, null, "java:S1234", "Some other rule")));
-//      var matchWithServerSecurityHotspotsResponse = backend.getSecurityHotspotMatchingService()
-//        .matchWithServerSecurityHotspots(new MatchWithServerSecurityHotspotsParams(configScopeId, clientTrackedHotspotsByServerRelativePath, true)).get();
-//      assertThat(matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByIdeRelativePath()).hasSize(2);
-//      var fooSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByIdeRelativePath().get(Path.of("src/main/java/foo/Foo.java"));
-//      assertThat(fooSecurityHotspots).hasSize(1);
-//      assertThat(fooSecurityHotspots.get(0).isLeft()).isTrue();
-//      assertThat(fooSecurityHotspots.get(0).getLeft().getStatus()).isEqualTo(HotspotStatus.TO_REVIEW);
-//      var barSecurityHotspots = matchWithServerSecurityHotspotsResponse.getSecurityHotspotsByIdeRelativePath().get(Path.of("src/main/java/bar/Bar.java"));
-//      assertThat(barSecurityHotspots).hasSize(1);
-//      assertThat(barSecurityHotspots.get(0).isRight()).isTrue();
+      var raisedHotspots = analyzeAndGetHotspots(PROJECT_KEY_JAVA_HOTSPOT, "src/main/java/foo/Foo.java", configScopeId);
+
+      assertThat(raisedHotspots).hasSize(1);
+      assertThat(raisedHotspots.get(0).getStatus()).isEqualTo(HotspotStatus.TO_REVIEW);
     }
   }
 

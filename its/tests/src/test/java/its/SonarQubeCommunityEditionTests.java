@@ -29,11 +29,13 @@ import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -56,6 +58,10 @@ import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
@@ -65,9 +71,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.Son
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.RevokeTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
@@ -78,6 +81,7 @@ import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.CODE_SMELL;
 
 class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
@@ -95,6 +99,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
   private static Path sonarUserHome;
   private static WsClient adminWsClient;
   private static SonarLintRpcServer backend;
+  private static SonarLintRpcClientDelegate client;
   private static final Map<String, Boolean> analysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
   private static BackendJsonRpcLauncher serverLauncher;
 
@@ -105,9 +110,9 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
     var serverToClientOutputStream = new PipedOutputStream();
     var serverToClientInputStream = new PipedInputStream(serverToClientOutputStream);
-
+    client = newDummySonarLintClient();
     serverLauncher = new BackendJsonRpcLauncher(clientToServerInputStream, serverToClientOutputStream);
-    var clientLauncher = new ClientJsonRpcLauncher(serverToClientInputStream, clientToServerOutputStream, newDummySonarLintClient());
+    var clientLauncher = new ClientJsonRpcLauncher(serverToClientInputStream, clientToServerOutputStream, client);
 
     backend = clientLauncher.getServerProxy();
     try {
@@ -195,8 +200,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
         .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
     }
 
-    // TODO review this
-    @Disabled
+    // TODO wip
     @Test
     void should_match_server_issues_of_enabled_languages() throws ExecutionException, InterruptedException {
       var configScopeId = "should_match_server_issues_of_enabled_languages";
@@ -205,27 +209,14 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
           true)))));
       waitForAnalysisToBeReady(configScopeId);
 
-      var javaClientTrackedFindingDto = new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(14, 4, 14, 14, "hashedHash"),
-        null, "java:S106", "Replace this use of System.out by a logger.");
-      var pythonClientTrackedFindingDto = new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(2, 4, 2, 9, "hashedHash"),
-        null, "python:PrintStatementUsage", "Replace print statement by built-in function.");
-      var trackWithServerIssuesParams = new TrackWithServerIssuesParams(configScopeId, Map.of(Path.of("src/main/java/foo/Foo.java"),
-        List.of(javaClientTrackedFindingDto), Path.of("src/main/java/foo/main.py"), List.of(pythonClientTrackedFindingDto)), true);
-//      var issuesByIdeRelativePath = backend.getIssueTrackingService().trackWithServerIssues(trackWithServerIssuesParams).get().getIssuesByIdeRelativePath();
-//
-//      var mainPyIssues = issuesByIdeRelativePath.get(Path.of("src/main/java/foo/main.py"));
-//      assertThat(mainPyIssues).hasSize(1);
-//      assertThat(mainPyIssues.get(0).isRight()).isTrue();
-//
-//      var fooJavaIssues = issuesByIdeRelativePath.get(Path.of("src/main/java/foo/Foo.java"));
-//      assertThat(fooJavaIssues).hasSize(1);
-//
-//      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(9, 5)) {
-//        assertThat(fooJavaIssues.get(0).isLeft()).isTrue();
-//        assertThat(fooJavaIssues.get(0).getLeft().getType()).isEqualTo(CODE_SMELL);
-//      } else {
-//        assertThat(fooJavaIssues.get(0).isRight()).isTrue();
-//      }
+      var mainPyIssues = analyzeAndGetIssues(PROJECT_KEY_LANGUAGE_MIX, "src/main/java/foo/main.py", configScopeId);
+      assertThat(mainPyIssues).hasSize(1);
+      assertThat(mainPyIssues.get(0).getServerKey()).isEmpty();
+
+      var fooJavaIssues = analyzeAndGetIssues(PROJECT_KEY_LANGUAGE_MIX, "src/main/java/foo/Foo.java", configScopeId);
+      assertThat(fooJavaIssues).hasSize(1);
+      assertThat(fooJavaIssues.get(0).getServerKey()).isNotEmpty();
+      assertThat(fooJavaIssues.get(0).getType()).isEqualTo(CODE_SMELL);
     }
   }
 
@@ -257,5 +248,20 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
       }
 
     };
+  }
+  private static List<RaisedIssueDto> analyzeAndGetIssues(String projectKey, String fileName, String configScopeId, String ... properties) {
+    final var baseDir = Paths.get("projects/" + projectKey).toAbsolutePath();
+    final var filePath = baseDir.resolve(fileName);
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(),
+      List.of(new ClientFileDto(filePath.toUri(), Path.of(fileName), configScopeId, false, null, filePath, null, null, true))));
+
+    var analyzeResponse = backend.getAnalysisService().analyzeFilesAndTrack(
+      new AnalyzeFilesAndTrackParams(configScopeId, UUID.randomUUID(), List.of(filePath.toUri()), toMap(properties), true, System.currentTimeMillis())
+    ).join();
+
+    assertThat(analyzeResponse.getFailedAnalysisFiles()).isEmpty();
+    var raisedIssues = ((MockSonarLintRpcClientDelegate) client).getRaisedIssues(configScopeId);
+    ((MockSonarLintRpcClientDelegate) client).getRaisedIssues().clear();
+    return raisedIssues != null ? raisedIssues.values().stream().flatMap(List::stream).collect(Collectors.toList()) : List.of();
   }
 }
