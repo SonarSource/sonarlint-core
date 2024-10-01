@@ -666,10 +666,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       });
     }
 
-    // TODO review this
-    @Disabled
+    // TODO wip
     @Test
-    @OnlyOnSonarQube(from = "9.9")
     void shouldUpdateIssueInLocalStorageWhenIssueResolvedOnServer() {
       var configScopeId = "shouldUpdateIssueInLocalStorageWhenIssueResolvedOnServer";
       var projectKey = "projectKey-sse2";
@@ -685,18 +683,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var issueKey = getIssueKeys(adminWsClient, "java:S106").get(0);
       resolveIssueAsWontFix(adminWsClient, issueKey);
 
-//      waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
-//        var issuesResponse = backend.getIssueTrackingService().trackWithServerIssues(new TrackWithServerIssuesParams(configScopeId, Map.of(
-//          Path.of("src/main/java/foo/Foo.java"),
-//          List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(14, 4, 14, 14, "hashedHash"),
-//            null, "java:S106", "Replace this use of System.out by a logger."))),
-//          true)).get();
-//
-//        var fooIssues = issuesResponse.getIssuesByIdeRelativePath().get(Path.of("src/main/java/foo/Foo.java"));
-//        assertThat(fooIssues).hasSize(1);
-//        assertThat(fooIssues.get(0).isLeft()).isTrue();
-//        assertThat(fooIssues.get(0).getLeft().isResolved()).isTrue();
-//      });
+      waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> {
+        var fooIssues = analyzeAndGetIssues(projectKey, "src/main/java/foo/Foo.java", configScopeId);
+
+        assertThat(fooIssues).hasSize(1);
+        assertThat(fooIssues.get(0).getServerKey()).isNotEmpty();
+        assertThat(fooIssues.get(0).isResolved()).isTrue();
+      });
     }
   }
 
@@ -1482,5 +1475,21 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         rpcClientLogs.add(params);
       }
     };
+  }
+
+  private static List<RaisedIssueDto> analyzeAndGetIssues(String projectKey, String fileName, String configScopeId, String ... properties) {
+    final var baseDir = Paths.get("projects/" + projectKey).toAbsolutePath();
+    final var filePath = baseDir.resolve(fileName);
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(),
+      List.of(new ClientFileDto(filePath.toUri(), Path.of(fileName), configScopeId, false, null, filePath, null, null, true))));
+
+    var analyzeResponse = backend.getAnalysisService().analyzeFilesAndTrack(
+      new AnalyzeFilesAndTrackParams(configScopeId, UUID.randomUUID(), List.of(filePath.toUri()), toMap(properties), true, System.currentTimeMillis())
+    ).join();
+
+    assertThat(analyzeResponse.getFailedAnalysisFiles()).isEmpty();
+    var raisedIssues = ((MockSonarLintRpcClientDelegate) client).getRaisedIssues(configScopeId);
+    ((MockSonarLintRpcClientDelegate) client).getRaisedIssues().clear();
+    return raisedIssues != null ? raisedIssues.values().stream().flatMap(List::stream).collect(Collectors.toList()) : List.of();
   }
 }
