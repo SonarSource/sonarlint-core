@@ -281,6 +281,27 @@ class GitUtilsTest {
   }
 
   @Test
+  void should_continue_normally_with_null_basedir() {
+    var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(null);
+
+    assertThat(sonarLintGitIgnore.isIgnored(URI.create("temp:///file/path"), false)).isFalse();
+  }
+
+  @Test
+  void should_consider_files_ignored_when_git_root_above_project_root() throws IOException, GitAPIException {
+    var gitRoot = Files.createTempDirectory("test");
+    var projectRoot = Files.createDirectory(gitRoot.resolve("toto"));
+    try (var ignored = Git.init().setDirectory(gitRoot.toFile()).call()) {
+      var gitignoreFile = new File(gitRoot.toFile(), ".gitignore");
+      Files.writeString(gitignoreFile.toPath(), "*.js");
+    }
+
+    var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(projectRoot);
+
+    assertThat(sonarLintGitIgnore.isIgnored(projectRoot.resolve("frontend/app/should_not_be_ignored.js").toUri(), false)).isTrue();
+  }
+
+  @Test
   void should_respect_gitignore_rules() throws IOException {
     Files.write(projectDirPath.resolve(GITIGNORE_FILENAME), List.of("app/", "!frontend/app/"), java.nio.file.StandardOpenOption.CREATE);
     var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(projectDirPath);

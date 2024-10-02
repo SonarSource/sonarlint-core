@@ -137,7 +137,10 @@ public class GitUtils {
    * Assumes the supplied {@param baseDir} or some of its parents is a git repository.
    * If error occurs during parsing .gitignore file then an ignore node with no rules is created -> Files checked against this node will be considered as not ignored.
    */
-  public static SonarLintGitIgnore createSonarLintGitIgnore(Path baseDir) {
+  public static SonarLintGitIgnore createSonarLintGitIgnore(@Nullable Path baseDir) {
+    if (baseDir == null) {
+      return new SonarLintGitIgnore(new IgnoreNode(), null, null);
+    }
     try {
       var gitRepo = buildGitRepository(baseDir);
       var gitRepoRelativeProjectBaseDir = getRelativePath(gitRepo, baseDir);
