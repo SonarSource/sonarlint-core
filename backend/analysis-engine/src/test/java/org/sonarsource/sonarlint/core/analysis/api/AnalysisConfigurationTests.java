@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
@@ -34,6 +35,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 class AnalysisConfigurationTests {
+
+  @AfterEach
+  void init_property() {
+    System.clearProperty("sonarlint.debug.active.rules");
+  }
 
   @Test
   void testToString_and_getters(@TempDir Path temp) throws Exception {
@@ -63,7 +69,7 @@ class AnalysisConfigurationTests {
     assertThat(config).hasToString("[\n" +
       "  baseDir: " + baseDir + "\n" +
       "  extraProperties: {sonar.java.libraries=foo bar, sonar.foo=bar}\n" +
-      "  activeRules: [java:S123, java:S456, php:S123{param1=value1}, python:S123, python:S456]\n" +
+      "  activeRules: [2 python, 2 java, 1 php]\n" +
       "  inputFiles: [\n" +
       "    " + srcFile1.toUri() + " (UTF-8)\n" +
       "    " + srcFile2.toUri() + " (UTF-8) [java]\n" +
@@ -75,4 +81,64 @@ class AnalysisConfigurationTests {
     assertThat(config.extraProperties()).containsExactly(entry("sonar.java.libraries", "foo bar"), entry("sonar.foo", "bar"));
     assertThat(config.activeRules()).extracting(ActiveRule::getRuleKey).containsExactly("java:S123", "java:S456", "php:S123", "python:S123", "python:S456");
   }
+
+  @Test
+  void testToString_and_getters_when_empty() {
+    var config = AnalysisConfiguration.builder().build();
+    assertThat(config).hasToString("[\n" +
+      "  baseDir: null\n" +
+      "  extraProperties: {}\n" +
+      "  activeRules: []\n" +
+      "  inputFiles: [\n" +
+      "  ]\n" +
+      "]\n");
+    assertThat(config.baseDir()).isNull();
+    assertThat(config.inputFiles()).isEmpty();
+    assertThat(config.activeRules()).isEmpty();
+  }
+
+  @Test
+  void testToString_and_getters_when_active_rules_verbose() {
+    System.setProperty("sonarlint.debug.active.rules", "true");
+
+    var activeRuleWithParams = new ActiveRule("php:S123", null);
+    activeRuleWithParams.setParams(Map.of("param1", "value1"));
+    var config = AnalysisConfiguration.builder()
+      .addActiveRules(List.of(new ActiveRule("java:S123", null), new ActiveRule("java:S456", null)))
+      .addActiveRules(activeRuleWithParams)
+      .addActiveRules(new ActiveRule("python:S123", null), new ActiveRule("python:S456", null))
+      .build();
+    assertThat(config).hasToString("[\n" +
+      "  baseDir: null\n" +
+      "  extraProperties: {}\n" +
+      "  activeRules: [java:S123, java:S456, php:S123{param1=value1}, python:S123, python:S456]\n" +
+      "  inputFiles: [\n" +
+      "  ]\n" +
+      "]\n");
+    assertThat(config.baseDir()).isNull();
+    assertThat(config.inputFiles()).isEmpty();
+    assertThat(config.activeRules()).extracting(ActiveRule::getRuleKey).containsExactly("java:S123", "java:S456", "php:S123", "python:S123", "python:S456");
+  }
+
+  @Test
+  void testToString_and_getters_when_active_rules_not_verbose() {
+    var activeRuleWithParams = new ActiveRule("php:S123", null);
+    activeRuleWithParams.setParams(Map.of("param1", "value1"));
+    var config = AnalysisConfiguration.builder()
+      .addActiveRules(List.of(new ActiveRule("java:S123", null), new ActiveRule("java:S456", null)))
+      .addActiveRules(activeRuleWithParams)
+      .addActiveRules(new ActiveRule("python:S123", null), new ActiveRule("python:S456", null))
+      .build();
+    assertThat(config).hasToString("[\n" +
+      "  baseDir: null\n" +
+      "  extraProperties: {}\n" +
+      "  activeRules: [2 python, 2 java, 1 php]\n" +
+      "  inputFiles: [\n" +
+      "  ]\n" +
+      "]\n");
+    assertThat(config.baseDir()).isNull();
+    assertThat(config.inputFiles()).isEmpty();
+    assertThat(config.activeRules()).extracting(ActiveRule::getRuleKey).containsExactly("java:S123", "java:S456", "php:S123", "python:S123", "python:S456");
+  }
+
 }

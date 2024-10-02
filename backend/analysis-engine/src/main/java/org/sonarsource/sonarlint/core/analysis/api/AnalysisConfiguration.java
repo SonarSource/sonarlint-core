@@ -74,10 +74,31 @@ public class AnalysisConfiguration {
     var sb = new StringBuilder();
     sb.append("[\n");
     generateToStringCommon(sb);
-    sb.append("  activeRules: ").append(activeRules).append("\n");
+    generateToStringActiveRules(sb);
     generateToStringInputFiles(sb);
     sb.append("]\n");
     return sb.toString();
+  }
+
+  protected void generateToStringActiveRules(StringBuilder sb) {
+    if ("true".equals(System.getProperty("sonarlint.debug.active.rules"))) {
+      sb.append("  activeRules: ").append(activeRules).append("\n");
+    } else {
+      // Group active rules by language and count occurrences
+      var languageCounts = new HashMap<String, Integer>();
+      for (var rule : activeRules) {
+        var languageKey = rule.getRuleKey().split(":")[0];
+        languageCounts.put(languageKey, languageCounts.getOrDefault(languageKey, 0) + 1);
+      }
+
+      sb.append("  activeRules: [");
+      languageCounts.forEach((language, count) -> sb.append(count).append(" ").append(language).append(", "));
+      if (!languageCounts.isEmpty()) {
+        // Remove the trailing comma and space
+        sb.setLength(sb.length() - 2);
+      }
+      sb.append("]\n");
+    }
   }
 
   protected void generateToStringCommon(StringBuilder sb) {
