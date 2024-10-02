@@ -11,6 +11,7 @@
 * Add return value `GetForcedNodeJsResponse` to `org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate#didChangeClientNodeJsPath` indicating whether
   the Node.js path is effective or not. If that's the case, the path and the version will be returned. 
   * It's not mandatory to use this return value. It is used by some IDEs to show the current Node.js version used.
+* Add a new system property `sonarlint.debug.active.rules` to log active rules in verbose mode when triggering an analysis
 
 # 10.6
 
