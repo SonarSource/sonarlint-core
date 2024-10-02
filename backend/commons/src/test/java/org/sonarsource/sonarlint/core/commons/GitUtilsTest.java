@@ -281,6 +281,13 @@ class GitUtilsTest {
   }
 
   @Test
+  void should_continue_normally_with_null_basedir() {
+    var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(null);
+
+    assertThat(sonarLintGitIgnore.isIgnored(URI.create("temp:///file/path"), false)).isFalse();
+  }
+
+  @Test
   void should_consider_files_ignored_when_git_root_above_project_root() throws IOException, GitAPIException {
     var gitRoot = Files.createTempDirectory("test");
     var projectRoot = Files.createDirectory(gitRoot.resolve("toto"));
