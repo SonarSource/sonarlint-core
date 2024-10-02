@@ -798,8 +798,8 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public void raiseHotspots(String configurationScopeId, Map<URI, List<RaisedHotspotDto>> issuesByFileUri, boolean isIntermediatePublication, @org.jetbrains.annotations.Nullable UUID analysisId) {
-      raisedHotspotsByScopeId.put(configurationScopeId, issuesByFileUri);
+    public void raiseHotspots(String configurationScopeId, Map<URI, List<RaisedHotspotDto>> hotspotsByFileUri, boolean isIntermediatePublication, @org.jetbrains.annotations.Nullable UUID analysisId) {
+      raisedHotspotsByScopeId.put(configurationScopeId, hotspotsByFileUri);
     }
 
     @Override

@@ -1,11 +1,19 @@
+# 10.7
+
+## Breaking changes
+
+* Signature of `org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate#raiseHotspots` was changed
+  * Parameter `issuesByFileUri` has been rightfully replaced by `hotspotsByFileUri`
+  * This is purely a naming change, there is no functional impact
+
 # 10.6
 
 ## Breaking changes
 
-* signature of `org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate#noBindingSuggestionFound` was changed
-  * replaced parameter with `org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSuggestionFoundParams`
-  * former parameter `projectKey` can now be accessed by `params.getProjectKey()`
-* removed deprecated constructors from `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams`
+* Signature of `org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate#noBindingSuggestionFound` was changed
+  * Replaced parameter with `org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSuggestionFoundParams`
+  * Former parameter `projectKey` can now be accessed by `params.getProjectKey()`
+* Removed deprecated constructors from `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams`
 
 ## New features
 

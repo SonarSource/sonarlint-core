@@ -28,16 +28,16 @@ import javax.annotation.Nullable;
 
 public class RaiseHotspotsParams {
   private final String configurationScopeId;
-  private final Map<URI, List<RaisedHotspotDto>> issuesByFileUri;
+  private final Map<URI, List<RaisedHotspotDto>> hotspotsByFileUri;
   // true if the publication is made for streaming purposes, false if it's the final publication for a given analysis
   private final boolean isIntermediatePublication;
   @Nullable
   // the ID that was provided when the analysis was triggered, or null if this publication is not a consequence of an analysis
   private final UUID analysisId;
 
-  public RaiseHotspotsParams(String configurationScopeId, Map<URI, List<RaisedHotspotDto>> issuesByFileUri, boolean isIntermediatePublication, @Nullable UUID analysisId) {
+  public RaiseHotspotsParams(String configurationScopeId, Map<URI, List<RaisedHotspotDto>> hotspotsByFileUri, boolean isIntermediatePublication, @Nullable UUID analysisId) {
     this.configurationScopeId = configurationScopeId;
-    this.issuesByFileUri = issuesByFileUri;
+    this.hotspotsByFileUri = hotspotsByFileUri;
     this.isIntermediatePublication = isIntermediatePublication;
     this.analysisId = analysisId;
   }
@@ -46,8 +46,8 @@ public class RaiseHotspotsParams {
     return configurationScopeId;
   }
 
-  public Map<URI, List<RaisedHotspotDto>> getIssuesByFileUri() {
-    return issuesByFileUri;
+  public Map<URI, List<RaisedHotspotDto>> getHotspotsByFileUri() {
+    return hotspotsByFileUri;
   }
 
   public boolean isIntermediatePublication() {
