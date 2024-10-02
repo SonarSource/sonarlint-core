@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
@@ -119,7 +120,13 @@ class AnalysisTriggeringMediumTests {
       .build(client);
 
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, windowsShortcut.toUri()));
-    await().during(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isEmpty());
+    await().during(5, TimeUnit.SECONDS).untilAsserted(() -> {
+      assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isEmpty();
+      assertThat(client.getLogMessages().stream()
+        .filter(message -> message.startsWith("Filtered out URIs that are Windows shortcuts: "))
+        .collect(Collectors.toList())
+      ).isNotEmpty();
+    });
 
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fakeWindowsShortcut.toUri()));
     await().during(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
@@ -147,8 +154,13 @@ class AnalysisTriggeringMediumTests {
       .build(client);
 
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, link.toUri()));
-
-    await().during(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isEmpty());
+    await().during(5, TimeUnit.SECONDS).untilAsserted(() -> {
+      assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isEmpty();
+      assertThat(client.getLogMessages().stream()
+        .filter(message -> message.startsWith("Filtered out URIs that are symbolic links: "))
+        .collect(Collectors.toList())
+      ).isNotEmpty();
+    });
   }
 
   @Test

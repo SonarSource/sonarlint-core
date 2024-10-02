@@ -753,11 +753,38 @@ public class AnalysisService {
 
   private List<ClientInputFile> toInputFiles(String configScopeId, Path actualBaseDir, List<URI> fileUrisToAnalyze) {
     var sonarLintGitIgnore = createSonarLintGitIgnore(actualBaseDir);
+    
+    // INFO: When there are additional filters coming at some point, add them here and log them down below as well!
+    var filteredURIsFromExclusionService = new ArrayList<URI>();
+    var filteredURIsFromGitIgnore = new ArrayList<URI>();
+    var filteredURIsNotUserDefined = new ArrayList<URI>();
+    var filteredURIsFromSymbolicLink = new ArrayList<URI>();
+    var filteredURIsFromWindowsShortcut = new ArrayList<URI>();
+    var filteredURIsNoInputFile = new ArrayList<URI>();
 
-    return fileUrisToAnalyze.stream()
-      .filter(not(fileExclusionService::isExcluded))
-      .filter(not(sonarLintGitIgnore::isFileIgnored))
-      .filter(userDefinedFilesFilter(configScopeId))
+    // Do the actual filtering and in case of a filtered out URI, save them for later logging!
+    var actualFilesToAnalyze = fileUrisToAnalyze.stream()
+      .filter(uri -> {
+        if (fileExclusionService.isExcluded(uri)) {
+          filteredURIsFromExclusionService.add(uri);
+          return false;
+        }
+        return true;
+      })
+      .filter(uri -> {
+        if (sonarLintGitIgnore.isFileIgnored(uri)) {
+          filteredURIsFromGitIgnore.add(uri);
+          return false;
+        }
+        return true;
+      })
+      .filter(uri -> {
+        if (!isUserDefined(configScopeId, uri)) {
+          filteredURIsNotUserDefined.add(uri);
+          return false;
+        }
+        return true;
+      })
       .filter(uri -> {
         // On protocols with schemes like "temp" (used by IntelliJ in the integration tests) or "rse" (the Eclipse Remote System Explorer)
         // and maybe others the check for a symbolic link or Windows shortcut will fail as these file systems cannot be resolved for the
@@ -765,20 +792,49 @@ public class AnalysisService {
         // If this happens, we won't exclude the file as the chance for someone to use a protocol with such a scheme while also using
         // symbolic links or Windows shortcuts should be near zero and this is less error-prone than excluding the
         try {
-          return !Files.isSymbolicLink(Path.of(uri)) && !WindowsShortcutUtils.isWindowsShortcut(uri);
+          if (Files.isSymbolicLink(Path.of(uri))) {
+            filteredURIsFromSymbolicLink.add(uri);
+            return false;
+          } else if (WindowsShortcutUtils.isWindowsShortcut(uri)) {
+            filteredURIsFromWindowsShortcut.add(uri);
+            return false;
+          }
+          return true;
         } catch (FileSystemNotFoundException err) {
           LOG.debug("Checking for symbolic links or Windows shortcuts in the file system is not possible for the URI '" + uri
             + "'. Therefore skipping the checks due to the underlying protocol / its scheme.", err);
           return true;
         }
       })
-      .map(uri -> toInputFile(configScopeId, uri))
+      .map(uri -> {
+        var inputFile = toInputFile(configScopeId, uri);
+        if (inputFile == null) {
+          filteredURIsNoInputFile.add(uri);
+        }
+        return inputFile;
+      })
       .filter(Objects::nonNull)
       .collect(toList());
+    
+    // Log all the filtered out URIs but not for the filters where there were none
+    logFilteredURIs("Filtered out URIs based on the exclusion service", filteredURIsFromExclusionService);
+    logFilteredURIs("Filtered out URIs ignored by Git", filteredURIsFromGitIgnore);
+    logFilteredURIs("Filtered out URIs not user-defined", filteredURIsNotUserDefined);
+    logFilteredURIs("Filtered out URIs that are symbolic links", filteredURIsFromSymbolicLink);
+    logFilteredURIs("Filtered out URIs that are Windows shortcuts", filteredURIsFromWindowsShortcut);
+    logFilteredURIs("Filtered out URIs having no input file", filteredURIsNoInputFile);
+    
+    return actualFilesToAnalyze;
   }
-
-  private Predicate<URI> userDefinedFilesFilter(String configurationScopeId) {
-    return uri -> ofNullable(fileSystemService.getClientFiles(configurationScopeId, uri))
+  
+  private void logFilteredURIs(String reason, ArrayList<URI> uris) {
+    if (!uris.isEmpty()) {
+      SonarLintLogger.get().debug(reason + ": " + uris.stream().map(Object::toString).collect(Collectors.joining(", ")));
+    }
+  }
+  
+  private boolean isUserDefined(String configurationScopeId, URI uri) {
+    return ofNullable(fileSystemService.getClientFiles(configurationScopeId, uri))
       .map(ClientFile::isUserDefined)
       .orElse(false);
   }
