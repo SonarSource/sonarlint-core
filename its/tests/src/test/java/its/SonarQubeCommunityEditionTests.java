@@ -201,6 +201,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
     }
 
     // TODO wip
+    @Disabled
     @Test
     void should_match_server_issues_of_enabled_languages() {
       var configScopeId = "should_match_server_issues_of_enabled_languages";

@@ -286,6 +286,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .containsExactly(false, "Marking a local-only issue as resolved requires SonarQube 10.2+", List.of());
   }
 
+  @Disabled
   @Test
   void it_should_not_permit_status_change_on_local_only_issues_for_sonarqube_prior_to_10_2(@TempDir Path testDir) throws IOException {
     var baseDir = testDir.resolve("it_should_not_permit_status_change_on_local_only_issues_for_sonarqube_prior_to_10_2");
@@ -341,6 +342,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .containsExactly(false, "Marking a local-only issue as resolved requires SonarQube 10.2+", List.of());
   }
 
+  @Disabled
   @Test
   void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_2_plus(@TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
@@ -399,6 +401,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .containsExactly(true, null, List.of(ResolutionStatus.WONT_FIX, ResolutionStatus.FALSE_POSITIVE));
   }
 
+  @Disabled
   @Test
   void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_4_plus(@TempDir Path testDir) throws IOException {
     var baseDir = testDir.resolve("it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_4_plus");

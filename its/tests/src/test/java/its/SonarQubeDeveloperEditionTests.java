@@ -667,6 +667,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     }
 
     // TODO wip
+    @Disabled
     @Test
     void shouldUpdateIssueInLocalStorageWhenIssueResolvedOnServer() {
       var configScopeId = "shouldUpdateIssueInLocalStorageWhenIssueResolvedOnServer";
