@@ -57,12 +57,15 @@ public class NodeJsService {
     this.eventPublisher = eventPublisher;
   }
 
-  public synchronized void didChangeClientNodeJsPath(@Nullable Path clientNodeJsPath) {
+  @CheckForNull
+  public synchronized InstalledNodeJs didChangeClientNodeJsPath(@Nullable Path clientNodeJsPath) {
     if (this.clientNodeJsPath != clientNodeJsPath) {
       this.clientNodeJsPath = clientNodeJsPath;
       this.clientForcedNodeJsDetected = false;
       this.eventPublisher.publishEvent(new ClientNodeJsPathChanged());
     }
+    var forcedNodeJs = getClientForcedNodeJs();
+    return forcedNodeJs == null ? null : new InstalledNodeJs(forcedNodeJs.getPath(), forcedNodeJs.getVersion());
   }
 
   @CheckForNull

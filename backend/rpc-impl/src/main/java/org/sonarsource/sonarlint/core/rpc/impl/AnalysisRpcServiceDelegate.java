@@ -47,6 +47,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeAna
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAutoDetectedNodeJsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetForcedNodeJsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetGlobalConfigurationResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetGlobalConnectedConfigurationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsParams;
@@ -104,8 +105,12 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
   }
 
   @Override
-  public void didChangeClientNodeJsPath(DidChangeClientNodeJsPathParams params) {
-    notify(() -> getBean(NodeJsService.class).didChangeClientNodeJsPath(params.getClientNodeJsPath()));
+  public CompletableFuture<GetForcedNodeJsResponse> didChangeClientNodeJsPath(DidChangeClientNodeJsPathParams params) {
+    return requestAsync(cancelChecker -> {
+      var forcedNodeJs = getBean(NodeJsService.class).didChangeClientNodeJsPath(params.getClientNodeJsPath());
+      var dto = forcedNodeJs == null ? null : new NodeJsDetailsDto(forcedNodeJs.getPath(), forcedNodeJs.getVersion().toString());
+      return new GetForcedNodeJsResponse(dto);
+    });
   }
 
   @Override

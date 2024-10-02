@@ -6,6 +6,12 @@
   * Parameter `issuesByFileUri` has been rightfully replaced by `hotspotsByFileUri`
   * This is purely a naming change, there is no functional impact
 
+## New features
+
+* Add return value `GetForcedNodeJsResponse` to `org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate#didChangeClientNodeJsPath` indicating whether
+  the Node.js path is effective or not. If that's the case, the path and the version will be returned. 
+  * It's not mandatory to use this return value. It is used by some IDEs to show the current Node.js version used.
+
 # 10.6
 
 ## Breaking changes

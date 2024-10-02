@@ -58,9 +58,10 @@ public interface AnalysisRpcService {
 
   /**
    * Inform the backend that the client has changed the location of the nodejs executable to be used by analyzer
+   * @return The Node.js path and version that were forced on the user's machine.
    */
-  @JsonNotification
-  void didChangeClientNodeJsPath(DidChangeClientNodeJsPathParams params);
+  @JsonRequest
+  CompletableFuture<GetForcedNodeJsResponse> didChangeClientNodeJsPath(DidChangeClientNodeJsPathParams params);
 
   /**
    * @return The Node.js path and version that were automatically detected on the user's machine.

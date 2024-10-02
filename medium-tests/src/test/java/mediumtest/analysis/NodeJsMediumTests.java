@@ -27,6 +27,7 @@ import mediumtest.fixtures.TestPlugin;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeClientNodeJsPathParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetStandaloneRuleDescriptionParams;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
@@ -76,6 +77,20 @@ class NodeJsMediumTests {
       .build(client);
 
     var nodeJsDetails = backend.getAnalysisService().getAutoDetectedNodeJs().join().getDetails();
+
+    assertThat(nodeJsDetails).isNotNull();
+    assertThat(nodeJsDetails.getPath()).isNotNull();
+    assertThat(nodeJsDetails.getVersion()).isNotNull();
+  }
+
+  @Test
+  void can_retrieve_forced_node_js() {
+    var client = newFakeClient().build();
+    backend = newBackend()
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVASCRIPT)
+      .build(client);
+
+    var nodeJsDetails = backend.getAnalysisService().didChangeClientNodeJsPath(new DidChangeClientNodeJsPathParams(null)).join().getDetails();
 
     assertThat(nodeJsDetails).isNotNull();
     assertThat(nodeJsDetails.getPath()).isNotNull();
