@@ -567,9 +567,9 @@ class IssuesStatusChangeMediumTests {
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
       .build();
 
-    var reopen_response = backend.getIssueService().reopenIssue(new ReopenIssueParams(CONFIGURATION_SCOPE_ID, "myIssueKey", false));
+    var reopenResponse = backend.getIssueService().reopenIssue(new ReopenIssueParams(CONFIGURATION_SCOPE_ID, "myIssueKey", false));
 
-    assertThat(reopen_response).succeedsWithin(Duration.ofSeconds(2));
-    assertThat(reopen_response.get().isSuccess()).isTrue();
+    assertThat(reopenResponse).succeedsWithin(Duration.ofSeconds(2));
+    assertThat(reopenResponse.get().isSuccess()).isTrue();
   }
 }

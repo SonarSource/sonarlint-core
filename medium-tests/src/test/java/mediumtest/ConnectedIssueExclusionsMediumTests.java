@@ -101,7 +101,7 @@ class ConnectedIssueExclusionsMediumTests {
   }
 
   @Test
-  void issueExclusions(@TempDir Path baseDir) throws Exception {
+  void issueExclusions() {
     var issues = analyzeFilesAndGetIssuesAsMap(List.of(inputFile1.toUri(), inputFile2.toUri()), client, backend, JAVA_MODULE_KEY);
     var issuesFile1 = issues.get(inputFile1.toUri());
     var issuesFile2 = issues.get(inputFile2.toUri());
@@ -178,7 +178,7 @@ class ConnectedIssueExclusionsMediumTests {
   }
 
   @Test
-  void issueExclusionsByRegexp(@TempDir Path baseDir) throws Exception {
+  void issueExclusionsByRegexp() {
     var issues = analyzeFilesAndGetIssuesAsMap(List.of(inputFile1.toUri(), inputFile2.toUri()), client, backend, JAVA_MODULE_KEY);
     var issuesFile1 = issues.get(inputFile1.toUri());
     var issuesFile2 = issues.get(inputFile2.toUri());
@@ -216,7 +216,7 @@ class ConnectedIssueExclusionsMediumTests {
   }
 
   @Test
-  void issueExclusionsByBlock(@TempDir Path baseDir) throws Exception {
+  void issueExclusionsByBlock() {
     var issues = analyzeFilesAndGetIssuesAsMap(List.of(inputFile1.toUri(), inputFile2.toUri()), client, backend, JAVA_MODULE_KEY);
     var issuesFile1 = issues.get(inputFile1.toUri());
     var issuesFile2 = issues.get(inputFile2.toUri());
@@ -253,7 +253,7 @@ class ConnectedIssueExclusionsMediumTests {
   }
 
   @Test
-  void issueInclusions(@TempDir Path baseDir) throws Exception {
+  void issueInclusions() {
     updateIssueExclusionsSettings(Map.of("sonar.issue.enforce.multicriteria", "1",
       "sonar.issue.enforce.multicriteria.1.resourceKey", "Foo*.java",
       "sonar.issue.enforce.multicriteria.1.ruleKey", "*"));

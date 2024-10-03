@@ -34,21 +34,18 @@ import mediumtest.fixtures.TestPlugin;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.analysis.AnalysisEngine;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import testutils.TestUtils;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static testutils.AnalysisUtils.createFile;
 
 class ConnectedStorageProblemsMediumTests {
   private static final String CONNECTION_ID = "localhost";
@@ -66,12 +63,21 @@ class ConnectedStorageProblemsMediumTests {
     assertThat(fakeClient.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isEmpty();
   }
 
-  // TODO review
-  @Disabled("relies on engine API")
   @Test
   void corrupted_plugin_should_not_prevent_startup(@TempDir Path baseDir) throws Exception {
-    List<String> logs = new CopyOnWriteArrayList<>();
-
+    var inputFile = createFile(baseDir, "Foo.java",
+      "public class Foo {\n"
+        + "  public void foo() {\n"
+        + "    int x;\n"
+        + "    System.out.println(\"Foo\");\n"
+        + "    System.out.println(\"Foo\"); //NOSONAR\n"
+        + "  }\n"
+        + "}");
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, List.of(
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)
+      ))
+      .build();
     var backend = newBackend()
       .withSonarQubeConnection(CONNECTION_ID, storage -> storage
         .withPlugin(TestPlugin.JAVA)
@@ -81,32 +87,13 @@ class ConnectedStorageProblemsMediumTests {
             ruleSet -> ruleSet.withActiveRule("java:S106", "BLOCKER"))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, CONFIG_SCOPE_ID)
       .withEnabledLanguageInStandaloneMode(org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA)
-      .withEnabledLanguageInStandaloneMode(org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JS).build();
+      .withEnabledLanguageInStandaloneMode(org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JS).build(client);
 
-    var inputFile = prepareJavaInputFile(baseDir);
 
     backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(),
-      List.of(inputFile.uri()), Map.of(), false, Instant.now().toEpochMilli())).get();
+      List.of(inputFile.toUri()), Map.of(), false, Instant.now().toEpochMilli())).get();
 
-    await().untilAsserted(() -> assertThat(logs).contains("Execute Sensor: JavaSensor"));
-  }
-
-  private ClientInputFile prepareJavaInputFile(Path baseDir) throws IOException {
-    return prepareInputFile(baseDir, "Foo.java",
-      "public class Foo {\n"
-        + "  public void foo() {\n"
-        + "    int x;\n"
-        + "    System.out.println(\"Foo\");\n"
-        + "    System.out.println(\"Foo\"); //NOSONAR\n"
-        + "  }\n"
-        + "}",
-      false);
-  }
-
-  private ClientInputFile prepareInputFile(Path baseDir, String relativePath, String content, final boolean isTest) throws IOException {
-    final var file = new File(baseDir.toFile(), relativePath);
-    FileUtils.write(file, content, StandardCharsets.UTF_8);
-    return TestUtils.createInputFile(file.toPath(), relativePath, isTest);
+    await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Execute Sensor: JavaSensor"));
   }
 
   private static Path createFakePlugin() {

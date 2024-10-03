@@ -102,7 +102,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueFlowDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueLocationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.TextEditDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseIssuesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
