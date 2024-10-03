@@ -81,6 +81,7 @@ import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.CODE_SMELL;
 
 class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
@@ -199,8 +200,6 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
         .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
     }
 
-    // TODO wip
-    @Disabled
     @Test
     void should_match_server_issues_of_enabled_languages() {
       var configScopeId = "should_match_server_issues_of_enabled_languages";
@@ -209,14 +208,14 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
           true)))));
       waitForAnalysisToBeReady(configScopeId);
 
-//      var mainPyIssues = analyzeAndGetIssues(PROJECT_KEY_LANGUAGE_MIX, "src/main/java/foo/main.py", configScopeId);
-//      assertThat(mainPyIssues).hasSize(1);
-//      assertThat(mainPyIssues.get(0).getServerKey()).isEmpty();
-//
-//      var fooJavaIssues = analyzeAndGetIssues(PROJECT_KEY_LANGUAGE_MIX, "src/main/java/foo/Foo.java", configScopeId);
-//      assertThat(fooJavaIssues).hasSize(1);
-//      assertThat(fooJavaIssues.get(0).getServerKey()).isNotEmpty();
-//      assertThat(fooJavaIssues.get(0).getType()).isEqualTo(CODE_SMELL);
+      var mainPyIssues = analyzeAndGetIssues(PROJECT_KEY_LANGUAGE_MIX, "src/main/java/foo/main.py", configScopeId);
+      assertThat(mainPyIssues).hasSize(1);
+      assertThat(mainPyIssues.get(0).getServerKey()).isEmpty();
+
+      var fooJavaIssues = analyzeAndGetIssues(PROJECT_KEY_LANGUAGE_MIX, "src/main/java/foo/Foo.java", configScopeId);
+      assertThat(fooJavaIssues).hasSize(1);
+      assertThat(fooJavaIssues.get(0).getServerKey()).isNotEmpty();
+      assertThat(fooJavaIssues.get(0).getType()).isEqualTo(CODE_SMELL);
     }
   }
 
@@ -249,6 +248,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
     };
   }
+
   private static List<RaisedIssueDto> analyzeAndGetIssues(String projectKey, String fileName, String configScopeId, String ... properties) {
     final var baseDir = Paths.get("projects/" + projectKey).toAbsolutePath();
     final var filePath = baseDir.resolve(fileName);
@@ -260,6 +260,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
     ).join();
 
     assertThat(analyzeResponse.getFailedAnalysisFiles()).isEmpty();
+    await().atMost(20, TimeUnit.SECONDS).untilAsserted(() -> assertThat(((MockSonarLintRpcClientDelegate) client).getRaisedIssuesAsList(configScopeId)).isNotEmpty());
     var raisedIssues = ((MockSonarLintRpcClientDelegate) client).getRaisedIssues(configScopeId);
     ((MockSonarLintRpcClientDelegate) client).getRaisedIssues().clear();
     return raisedIssues != null ? raisedIssues.values().stream().flatMap(List::stream).collect(Collectors.toList()) : List.of();
