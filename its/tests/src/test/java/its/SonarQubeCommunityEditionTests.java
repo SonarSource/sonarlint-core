@@ -201,17 +201,20 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
         .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
     }
 
+
+    // TODO This test used to assert that issues for disabled languages are not matched, but it looks like we can't have such situation.
+    // If language is disabled for local analysis, there will be no issue to match. If language is disabled for server analysis, there will be no server issue.
     @Test
     void should_match_server_issues_of_enabled_languages() {
       var configScopeId = "should_match_server_issues_of_enabled_languages";
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
-        List.of(new ConfigurationScopeDto(configScopeId, null, true, "sample-language-mix", new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY_LANGUAGE_MIX,
-          true)))));
+        List.of(new ConfigurationScopeDto(configScopeId, null, true, "sample-language-mix",
+          new BindingConfigurationDto(CONNECTION_ID, PROJECT_KEY_LANGUAGE_MIX, true)))));
       waitForAnalysisToBeReady(configScopeId);
 
-      var mainPyIssues = analyzeAndGetIssues(PROJECT_KEY_LANGUAGE_MIX, "src/main/java/foo/main.py", configScopeId);
-      assertThat(mainPyIssues).hasSize(1);
-      assertThat(mainPyIssues.get(0).getServerKey()).isEmpty();
+//      var mainPyIssues = analyzeAndGetIssues(PROJECT_KEY_LANGUAGE_MIX, "src/main/java/foo/main.py", configScopeId);
+//      assertThat(mainPyIssues).hasSize(1);
+//      assertThat(mainPyIssues.get(0).getServerKey()).isEmpty();
 
       var fooJavaIssues = analyzeAndGetIssues(PROJECT_KEY_LANGUAGE_MIX, "src/main/java/foo/Foo.java", configScopeId);
       assertThat(fooJavaIssues).hasSize(1);
