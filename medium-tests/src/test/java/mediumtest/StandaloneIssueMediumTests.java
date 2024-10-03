@@ -134,44 +134,41 @@ class StandaloneIssueMediumTests {
     analyzeFilesAndVerifyNoIssues(List.of(inputFile.toUri()), client, backend, CONFIGURATION_SCOPE_ID);
   }
 
-  // TODO review
-  //  @Test
-//  void sonarjs_should_honor_global_and_analysis_level_properties(@TempDir Path baseDir) {
-//    var content = "function foo() {\n"
-//      + "  console.log(LOCAL1); // Noncompliant\n"
-//      + "  console.log(GLOBAL1); // GLOBAL1 defined as global variable in global settings\n"
-//      + "}";
-//    var inputFile = createFile(baseDir,"foo.js", content, false);
-//
-//    backend.getRulesService()
-//      .updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("javascript:S3827", new StandaloneRuleConfigDto(true, emptyMap()))));
-//    final List<RaisedIssueDto> issues = new ArrayList<>();
-//    engine.analyze(
-//      AnalysisConfiguration.builder()
-//        .setBaseDir(baseDir.toPath())
-//        .addInputFile(inputFile)
-//        .build(),
-//      issues::add, null,
-//      null, CONFIGURATION_SCOPE_ID);
-//    assertThat(issues.stream().filter(i -> i.getRuleKey().equals("javascript:S3827")))
-//      .extracting(i -> i.getTextRange().getStartLine()).containsOnly(
-//        tuple(2, "foo.js"));
-//
-//    // Change globals using analysis property
-//    issues.clear();
-//    engine.analyze(
-//      AnalysisConfiguration.builder()
-//        .setBaseDir(baseDir.toPath())
-//        .addInputFile(inputFile)
-//        .putExtraProperty("sonar.javascript.globals", "LOCAL1")
-//        .build(),
-//      issues::add, null,
-//      null, CONFIGURATION_SCOPE_ID);
-//    assertThat(issues.stream().filter(i -> i.getRuleKey().equals("javascript:S3827")))
-//      .extracting(i -> i.getTextRange().getStartLine()).containsOnly(
-//        tuple(3, "foo.js"));
-//  }
-//
+  // looks like we don't pass global settings to init params, only exclusion is omnisharp params
+  // to be checked if we need this functionality back, it will require to modify init params
+  @Test
+  void sonarjs_should_honor_global_and_analysis_level_properties(@TempDir Path baseDir) {
+    var content = "function foo() {\n"
+      + "  console.log(LOCAL1); // Noncompliant\n"
+      + "  console.log(GLOBAL1); // GLOBAL1 defined as global variable in global settings\n"
+      + "}";
+    var inputFile = createFile(baseDir, "foo.js", content);
+
+    client = newFakeClient()
+      .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)
+      ))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVASCRIPT)
+
+      .build(client);
+    backend.getRulesService()
+      .updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("javascript:S3827", new StandaloneRuleConfigDto(true, emptyMap()))));
+
+    var analysisId = UUID.randomUUID();
+    var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
+        new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, analysisId, List.of(inputFile.toUri()), Map.of("sonar.javascript.globals", "LOCAL1"), true, System.currentTimeMillis()))
+      .join();
+    assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
+    await().atMost(20, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIGURATION_SCOPE_ID)).isNotEmpty());
+    var issues = client.getRaisedIssuesForScopeIdAsList(CONFIGURATION_SCOPE_ID);
+    assertThat(issues).hasSize(1);
+    var issue = issues.get(0);
+    assertThat(issue.getTextRange().getStartLine()).isEqualTo(3);
+  }
+
   @Test
   void simpleTypeScript(@TempDir Path baseDir) throws Exception {
     final var tsConfig = new File(baseDir.toFile(), "tsconfig.json");
@@ -821,11 +818,11 @@ class StandaloneIssueMediumTests {
     assertThat(client.getLogMessages()).contains("Rule 'java:S3553' was included using its deprecated key 'squid:S3553'. Please fix your configuration.");
   }
 
-  @Disabled
+  @Disabled("Rule java:S1228 is not reported: Add a 'package-info.java' file to document the 'foo' package")
   @Test
   void simpleJavaWithIssueOnDir(@TempDir Path baseDir) throws Exception {
     var fooDir = Files.createDirectory(baseDir.resolve("foo"));
-    var inputFile = createFile(fooDir,"Foo.java",
+    var inputFile = createFile(fooDir, "Foo.java",
       "package foo;\n"
         + "public class Foo {\n"
         + "}");
@@ -853,7 +850,7 @@ class StandaloneIssueMediumTests {
 
   @Test
   void simpleJavaWithSecondaryLocations(@TempDir Path baseDir) {
-    var inputFile = createFile(baseDir,"Foo.java",
+    var inputFile = createFile(baseDir, "Foo.java",
       "package foo;\n"
         + "public class Foo {\n"
         + "  public void method() {\n"
@@ -893,7 +890,7 @@ class StandaloneIssueMediumTests {
       "<testcase name=\"errorAnalysis\" classname=\"FooTest\" time=\"0.031\"/>\n" +
       "</testsuite>", StandardCharsets.UTF_8);
 
-    var inputFile = createFile(baseDir,A_JAVA_FILE_PATH,
+    var inputFile = createFile(baseDir, A_JAVA_FILE_PATH,
       "public class Foo {\n"
         + "  public void foo() {\n"
         + "    int x;\n"
@@ -902,7 +899,7 @@ class StandaloneIssueMediumTests {
         + "  }\n"
         + "}");
 
-    var inputFileTest = createFile(baseDir,"FooTest.java",
+    var inputFileTest = createFile(baseDir, "FooTest.java",
       "public class FooTest {\n"
         + "  public void testFoo() {\n"
         + "  }\n"
