@@ -81,7 +81,6 @@ import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
-import static org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.CODE_SMELL;
 
 class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
