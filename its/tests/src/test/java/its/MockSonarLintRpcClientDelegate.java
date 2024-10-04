@@ -189,6 +189,10 @@ public class MockSonarLintRpcClientDelegate implements SonarLintRpcClientDelegat
     return mainBranchName;
   }
 
+  public boolean matchProjectBranch(String configurationScopeId, String branchNameToMatch, SonarLintCancelChecker cancelChecker) throws ConfigScopeNotFoundException {
+    return true;
+  }
+
   @Override
   public void didChangeMatchedSonarProjectBranch(String configScopeId, String newMatchedBranchName) {
 

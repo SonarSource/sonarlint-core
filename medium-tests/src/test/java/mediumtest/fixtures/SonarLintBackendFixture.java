@@ -727,6 +727,11 @@ public class SonarLintBackendFixture {
     }
 
     @Override
+    public boolean matchProjectBranch(String configurationScopeId, String branchNameToMatch, SonarLintCancelChecker cancelChecker) throws ConfigScopeNotFoundException {
+      return true;
+    }
+
+    @Override
     public void didChangeMatchedSonarProjectBranch(String configScopeId, String newMatchedBranchName) {
 
     }

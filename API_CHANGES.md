@@ -1,3 +1,9 @@
+# 10.7.1
+
+## Breaking changes
+
+* Add a new method to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#matchProjectBranch` allowing the backend to check whether the locally checked-out branch matches a requesting server branch
+
 # 10.7
 
 ## Breaking changes
