@@ -39,15 +39,17 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnalysisReadinessParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidDetectSecretParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidRaiseIssueParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetInferredAnalysisPropertiesParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetInferredAnalysisPropertiesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetFileExclusionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetFileExclusionsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetInferredAnalysisPropertiesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetInferredAnalysisPropertiesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSuggestionFoundParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.DidChangeMatchedSonarProjectBranchParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchProjectBranchParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchProjectBranchResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
@@ -305,6 +307,18 @@ public class SonarLintRpcClientImpl implements SonarLintRpcClient {
         return new MatchSonarProjectBranchResponse(
           delegate.matchSonarProjectBranch(params.getConfigurationScopeId(), params.getMainSonarBranchName(),
             params.getAllSonarBranchesNames(), new SonarLintCancelChecker(cancelChecker)));
+      } catch (ConfigScopeNotFoundException e) {
+        throw configScopeNotFoundError(params.getConfigurationScopeId());
+      }
+    });
+  }
+
+  @Override
+  public CompletableFuture<MatchProjectBranchResponse> matchProjectBranch(MatchProjectBranchParams params) {
+    return requestAsync(cancelChecker -> {
+      try {
+        return new MatchProjectBranchResponse(
+          delegate.matchProjectBranch(params.getConfigurationScopeId(), params.getServerBranchToMatch(), new SonarLintCancelChecker(cancelChecker)));
       } catch (ConfigScopeNotFoundException e) {
         throw configScopeNotFoundError(params.getConfigurationScopeId());
       }

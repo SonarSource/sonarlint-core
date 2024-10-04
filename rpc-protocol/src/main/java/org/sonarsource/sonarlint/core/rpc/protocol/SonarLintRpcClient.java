@@ -23,23 +23,23 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.eclipse.lsp4j.jsonrpc.services.JsonNotification;
 import org.eclipse.lsp4j.jsonrpc.services.JsonRequest;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidDetectSecretParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetInferredAnalysisPropertiesParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetInferredAnalysisPropertiesResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseIssuesParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingPluginParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnalysisReadinessParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidDetectSecretParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidRaiseIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetFileExclusionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetFileExclusionsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetInferredAnalysisPropertiesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetInferredAnalysisPropertiesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSuggestionFoundParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.SuggestBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.DidChangeMatchedSonarProjectBranchParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchProjectBranchParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchProjectBranchResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
@@ -62,10 +62,12 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordA
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.info.GetClientLiveInfoResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseIssuesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowSoonUnsupportedMessageParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingPluginParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.promotion.PromoteExtraEnabledLanguagesInConnectedModeParams;
@@ -206,6 +208,13 @@ public interface SonarLintRpcClient {
 
   @JsonRequest
   CompletableFuture<MatchSonarProjectBranchResponse> matchSonarProjectBranch(MatchSonarProjectBranchParams params);
+
+  /**
+   * Used for checking whether a locally checked out branch matches a candidate branch name (not necessarily a Sonar branch).
+   * For example, in "show fix suggestion" use-case, to match a local branch with a PR branch that originated a fix suggestion
+   */
+  @JsonRequest
+  CompletableFuture<MatchProjectBranchResponse> matchProjectBranch(MatchProjectBranchParams params);
 
   @JsonNotification
   void didChangeMatchedSonarProjectBranch(DidChangeMatchedSonarProjectBranchParams params);

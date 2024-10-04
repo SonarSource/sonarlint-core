@@ -37,6 +37,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.Sloop;
 import org.sonarsource.sonarlint.core.rpc.client.SloopLauncher;
@@ -282,6 +283,11 @@ class SloopLauncherTests {
     @Override
     public String matchSonarProjectBranch(String configurationScopeId, String mainBranchName, Set<String> allBranchesNames, SonarLintCancelChecker cancelChecker) {
       return null;
+    }
+
+    @Override
+    public boolean matchProjectBranch(String configurationScopeId, String branchNameToMatch, SonarLintCancelChecker cancelChecker) throws ConfigScopeNotFoundException {
+      return true;
     }
 
     @Override

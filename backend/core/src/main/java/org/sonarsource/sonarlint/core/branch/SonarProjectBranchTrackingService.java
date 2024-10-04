@@ -157,11 +157,6 @@ public class SonarProjectBranchTrackingService {
   }
 
   @CheckForNull
-  public String getMatchedSonarProjectBranch(String configurationScopeId) {
-    return cachedMatchingBranchByConfigScope.get(configurationScopeId);
-  }
-
-  @CheckForNull
   private String requestClientToMatchSonarProjectBranch(String configurationScopeId, String mainSonarBranchName, Set<String> allSonarBranchesNames,
     SonarLintCancelMonitor cancelMonitor) {
     var matchSonarProjectBranchResponseCompletableFuture = client

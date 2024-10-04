@@ -51,6 +51,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarCloudConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarQubeConnectionParams;
@@ -112,10 +113,10 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
       showFixSuggestionQuery.projectKey,
       (connectionId, configScopeId, cancelMonitor) -> {
         if (configScopeId != null) {
-          var matchingBranch = branchTrackingService.getMatchedSonarProjectBranch(configScopeId);
-          if (matchingBranch != null && !matchingBranch.equals(showFixSuggestionQuery.branch)) {
+          var localBranchMatchesRequesting = client.matchProjectBranch(new MatchProjectBranchParams(configScopeId, showFixSuggestionQuery.branch)).join().isBranchMatched();
+          if (!localBranchMatchesRequesting) {
             client.showMessage(new ShowMessageParams(MessageType.ERROR, "Attempted to show a fix suggestion for a different branch than the one currently checked out." +
-              "\nPlease check out the correct branch and try again."));
+              "\nPlease make sure the correct branch is checked out and try again."));
             return;
           }
           showFixSuggestionForScope(configScopeId, showFixSuggestionQuery.issueKey, showFixSuggestionQuery.fixSuggestion);

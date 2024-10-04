@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
@@ -49,6 +50,7 @@ import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnection
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchProjectBranchResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
@@ -247,16 +249,16 @@ class ShowFixSuggestionRequestHandlerTests {
     when(connectionConfigurationRepository.findByOrganization(any())).thenReturn(List.of(
       new SonarCloudConnectionConfiguration(PRODUCTION_URI, "name", "organizationKey", false)));
     when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope", "connectionId", "projectKey")));
-    when(sonarProjectBranchTrackingService.getMatchedSonarProjectBranch(any())).thenReturn("branch");
-    when(sonarProjectBranchTrackingService.getMatchedSonarProjectBranch(any())).thenReturn("anotherBranch");
+    when(sonarLintRpcClient.matchProjectBranch(any())).thenReturn(CompletableFuture.completedFuture(new MatchProjectBranchResponse(false)));
 
     showFixSuggestionRequestHandler.handle(request, response, context);
     var showMessageArgumentCaptor = ArgumentCaptor.forClass(ShowMessageParams.class);
 
     await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> verify(sonarLintRpcClient).showMessage(showMessageArgumentCaptor.capture()));
     assertThat(showMessageArgumentCaptor.getValue().getType()).isEqualTo(MessageType.ERROR);
-    assertThat(showMessageArgumentCaptor.getValue().getText()).isEqualTo("Attempted to show a fix suggestion for a different branch than the one currently checked out." +
-      "\nPlease check out the correct branch and try again.");
+    assertThat(showMessageArgumentCaptor.getValue().getText()).isEqualTo("Attempted to show a fix suggestion for a different branch than the one currently checked out.\n" +
+      "Please make sure the correct branch is checked out and try again.");
+    verify(sonarLintRpcClient).matchProjectBranch(any());
     verifyNoMoreInteractions(sonarLintRpcClient);
   }
 
