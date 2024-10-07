@@ -38,7 +38,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.OpenUrlInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnalysisReadinessParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidDetectSecretParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidRaiseIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetFileExclusionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetFileExclusionsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetInferredAnalysisPropertiesParams;
