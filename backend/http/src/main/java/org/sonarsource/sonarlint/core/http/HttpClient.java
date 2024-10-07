@@ -35,6 +35,7 @@ public interface HttpClient {
   interface Response extends Closeable {
 
     int code();
+    String header(String name);
 
     default boolean isSuccessful() {
       return code() >= 200 && code() < 300;
@@ -60,6 +61,8 @@ public interface HttpClient {
   AsyncRequest getEventStream(String url, HttpConnectionListener connectionListener, Consumer<String> messageConsumer);
 
   Response post(String url, String contentType, String body);
+
+  Response postWithBearer(String url, String contentType, String body);
 
   CompletableFuture<Response> postAsync(String url, String contentType, String body);
 
