@@ -204,6 +204,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
     // TODO This test used to assert that issues for disabled languages are not matched, but it looks like we can't have such situation.
     // If language is disabled for local analysis, there will be no issue to match. If language is disabled for server analysis, there will be no server issue.
+    @Disabled("read comment above")
     @Test
     void should_match_server_issues_of_enabled_languages() {
       var configScopeId = "should_match_server_issues_of_enabled_languages";
