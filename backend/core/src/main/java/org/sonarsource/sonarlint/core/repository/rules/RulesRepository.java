@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
@@ -98,6 +99,14 @@ public class RulesRepository {
   @EventListener
   public void connectionRemoved(ConnectionConfigurationRemovedEvent e) {
     evictAll(e.getRemovedConnectionId());
+  }
+
+  @EventListener
+  public void configScopeRemoved(ConfigurationScopeRemovedEvent e) {
+    var removedBindingConfiguration = e.getRemovedBindingConfiguration();
+    if (removedBindingConfiguration.isBound()) {
+      evictAll(removedBindingConfiguration.getConnectionId());
+    }
   }
 
   private void evictAll(String connectionId) {
