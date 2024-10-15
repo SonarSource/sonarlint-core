@@ -61,6 +61,8 @@ public class AnalysisEngineCache {
     if (shouldSupportCsharp && languageSpecificRequirements != null) {
       var omnisharpRequirements = languageSpecificRequirements.getOmnisharpRequirements();
       if (omnisharpRequirements != null) {
+        extraProperties.put("sonar.cs.internal.ossAnalyzerPath", omnisharpRequirements.getOssAnalyzerPath().toString());
+        extraProperties.put("sonar.cs.internal.enterpriseAnalyzerPath", omnisharpRequirements.getEnterpriseAnalyzerPath().toString());
         extraProperties.put("sonar.cs.internal.omnisharpMonoLocation", omnisharpRequirements.getMonoDistributionPath().toString());
         extraProperties.put("sonar.cs.internal.omnisharpWinLocation", omnisharpRequirements.getDotNet472DistributionPath().toString());
         extraProperties.put("sonar.cs.internal.omnisharpNet6Location", omnisharpRequirements.getDotNet6DistributionPath().toString());

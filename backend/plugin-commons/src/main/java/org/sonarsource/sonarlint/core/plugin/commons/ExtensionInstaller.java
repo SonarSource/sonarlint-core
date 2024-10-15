@@ -50,7 +50,7 @@ public class ExtensionInstaller {
       var pluginKey = pluginInstanceEntry.getKey();
       try {
         plugin.define(context);
-        loadExtensions(container, pluginKey, context, extensionFilter);
+        loadExtensions(container, pluginKey, context, CSharpSupport.maybePatchExtensionFilter(pluginKey, extensionFilter));
       } catch (Throwable t) {
         LOG.error("Error loading components for plugin '{}'", pluginKey, t);
       }
