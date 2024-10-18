@@ -55,6 +55,7 @@ import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
 import org.sonarsource.sonarlint.core.progress.ProgressNotifier;
 import org.sonarsource.sonarlint.core.progress.TaskManager;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
@@ -99,12 +100,13 @@ public class SynchronizationService {
   private final ExecutorServiceShutdownWatchable<ScheduledExecutorService> scheduledSynchronizer = new ExecutorServiceShutdownWatchable<>(
     Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "SonarLint Local Storage Synchronizer")));
   private final Set<String> ignoreBranchEventForScopes = ConcurrentHashMap.newKeySet();
+  private final ConnectionConfigurationRepository connectionConfigurationRepository;
 
   public SynchronizationService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
     ServerApiProvider serverApiProvider, StorageService storageService, InitializeParams params, TaintSynchronizationService taintSynchronizationService,
     IssueSynchronizationService issueSynchronizationService, HotspotSynchronizationService hotspotSynchronizationService,
     SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService, SonarProjectBranchTrackingService sonarProjectBranchTrackingService,
-    PluginsRepository pluginsRepository, ApplicationEventPublisher applicationEventPublisher) {
+    PluginsRepository pluginsRepository, ApplicationEventPublisher applicationEventPublisher, ConnectionConfigurationRepository connectionConfigurationRepository) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
@@ -121,6 +123,7 @@ public class SynchronizationService {
     this.sonarProjectBranchTrackingService = sonarProjectBranchTrackingService;
     this.pluginsRepository = pluginsRepository;
     this.applicationEventPublisher = applicationEventPublisher;
+    this.connectionConfigurationRepository = connectionConfigurationRepository;
   }
 
   @PostConstruct
@@ -305,6 +308,7 @@ public class SynchronizationService {
       LOG.debug("Synchronizing storage of connection '{}'", connectionId);
       var summary = serverConnection.sync(serverApi, cancelMonitor);
       if (summary.anyPluginSynchronized()) {
+        updateConnectionDetails(connectionId, summary.isEnterprisePluginPresent());
         // TODO re-review this solution before merging
         pluginsRepository.unload(connectionId);
         applicationEventPublisher.publishEvent(new PluginsSynchronizedEvent(connectionId));
@@ -333,6 +337,13 @@ public class SynchronizationService {
       LOG.error("Error during synchronization", e);
     } finally {
       ignoreBranchEventForScopes.removeAll(scopesToSync.stream().map(BoundScope::getConfigScopeId).collect(toSet()));
+    }
+  }
+
+  private void updateConnectionDetails(String connectionId, boolean hasEnterprisePlugin) {
+    var connection = connectionConfigurationRepository.getConnectionById(connectionId);
+    if (connection != null) {
+      connection.setHasEnterpriseCSharpPlugin(hasEnterprisePlugin);
     }
   }
 

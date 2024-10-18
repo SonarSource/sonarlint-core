@@ -637,6 +637,21 @@ public class AnalysisService {
     return isReady;
   }
 
+  public boolean shouldUseEnterpriseCSharpAnalyzer(String configurationScopeId) {
+    var binding = configurationRepository.getEffectiveBinding(configurationScopeId);
+    if (binding.isEmpty()) {
+      return false;
+    } else {
+      var connectionId = binding.get().getConnectionId();
+      var connection = connectionConfigurationRepository.getConnectionById(connectionId);
+      if (connection == null) {
+        return false;
+      } else {
+        return connection.isHasEnterpriseCSharpPlugin();
+      }
+    }
+  }
+
   public CompletableFuture<AnalysisResults> analyze(SonarLintCancelMonitor cancelMonitor, String configurationScopeId, UUID analysisId, List<URI> filePathsToAnalyze,
     Map<String, String> extraProperties, long startTime, boolean enableTracking, boolean shouldFetchServerIssues, boolean hotspotsOnly) {
     var analysisEngine = engineCache.getOrCreateAnalysisEngine(configurationScopeId);

@@ -62,12 +62,14 @@ public class PluginsSynchronizer {
       .filter(p -> shouldDownload(p, storedPluginsByKey))
       .collect(Collectors.toList());
 
+    var hasEnterprisePlugin = serverPlugins.stream().map(ServerPlugin::getKey).anyMatch(key -> key.contains("csharpenterprise"));
+
     if (pluginsToDownload.isEmpty()) {
       storage.plugins().storeNoPlugins();
-      return new PluginSynchronizationSummary(false);
+      return new PluginSynchronizationSummary(false, hasEnterprisePlugin);
     }
     downloadAll(serverApi, pluginsToDownload, cancelMonitor);
-    return new PluginSynchronizationSummary(true);
+    return new PluginSynchronizationSummary(true, hasEnterprisePlugin);
   }
 
   private void downloadAll(ServerApi serverApi, List<ServerPlugin> pluginsToDownload, SonarLintCancelMonitor cancelMonitor) {
