@@ -25,11 +25,15 @@ public class OmnisharpRequirementsDto {
   private final Path monoDistributionPath;
   private final Path dotNet6DistributionPath;
   private final Path dotNet472DistributionPath;
+  private final Path ossAnalyzerPath;
+  private final Path enterpriseAnalyzerPath;
 
-  public OmnisharpRequirementsDto(Path monoDistributionPath, Path dotNet6DistributionPath, Path dotNet472DistributionPath) {
+  public OmnisharpRequirementsDto(Path monoDistributionPath, Path dotNet6DistributionPath, Path dotNet472DistributionPath, Path ossAnalyzerPath, Path enterpriseAnalyzerPath) {
     this.monoDistributionPath = monoDistributionPath;
     this.dotNet6DistributionPath = dotNet6DistributionPath;
     this.dotNet472DistributionPath = dotNet472DistributionPath;
+    this.ossAnalyzerPath = ossAnalyzerPath;
+    this.enterpriseAnalyzerPath = enterpriseAnalyzerPath;
   }
 
   public Path getMonoDistributionPath() {
@@ -42,5 +46,13 @@ public class OmnisharpRequirementsDto {
 
   public Path getDotNet472DistributionPath() {
     return dotNet472DistributionPath;
+  }
+
+  public Path getOssAnalyzerPath() {
+    return ossAnalyzerPath;
+  }
+
+  public Path getEnterpriseAnalyzerPath() {
+    return enterpriseAnalyzerPath;
   }
 }
