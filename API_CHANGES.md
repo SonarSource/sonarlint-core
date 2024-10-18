@@ -26,6 +26,14 @@
   * `cleanCodeAttribute`
   * `impacts`
 
+## New features
+
+* Introduce a new method `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService.shouldUseEnterpriseCSharpAnalyzer` to allow clients to know what kind of C# analyzer should be used for the analysis
+  * The method returns a boolean value indicating whether the enterprise C# analyzer should be used or not
+  * The method returns `true` if a binding exists for config scope AND the related connected server has the enterprise C# plugin (`csharpenterprise`) installed
+  * The method returns `true` if binding exists with a SonarQube version < 10.8 (i.e. SQ versions that do not include repackaged dotnet analyzer) OR SonarCloud
+  * The method returns `false` in standalone mode or if connected to non-commercial edition of SonarQube with a version >= 10.8
+
 # 10.7.1
 
 ## Breaking changes

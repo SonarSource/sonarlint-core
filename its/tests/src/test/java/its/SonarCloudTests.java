@@ -73,6 +73,7 @@ import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.ShouldUseEnterpriseCSharpAnalyzerParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.GetMatchedSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
@@ -262,6 +263,18 @@ class SonarCloudTests extends AbstractConnectedTests {
     var sonarProjectBranch = backend.getSonarProjectBranchService().getMatchedSonarProjectBranch(new GetMatchedSonarProjectBranchParams(configScopeId)).get();
 
     await().untilAsserted(() -> assertThat(sonarProjectBranch.getMatchedSonarProjectBranch()).isEqualTo(MAIN_BRANCH_NAME));
+  }
+
+  @Test
+  void should_use_enterprise_csharp_analyzer_with_sonarcloud() {
+    // the project and config scope names do not matter
+    var configScopeId = "match_main_branch_by_default";
+    openBoundConfigurationScope(configScopeId, PROJECT_KEY_JAVA);
+    waitForAnalysisToBeReady(configScopeId);
+
+    var shouldUseEnterpriseAnalyzer = backend.getAnalysisService().shouldUseEnterpriseCSharpAnalyzer(new ShouldUseEnterpriseCSharpAnalyzerParams(configScopeId)).join();
+
+    await().untilAsserted(() -> assertThat(shouldUseEnterpriseAnalyzer.shouldUseEnterpriseAnalyzer()).isTrue());
   }
 
   @Test

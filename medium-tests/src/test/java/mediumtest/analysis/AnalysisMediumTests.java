@@ -32,6 +32,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
+import mediumtest.fixtures.ServerFixture;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
 import org.apache.commons.io.FileUtils;
@@ -53,6 +54,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFiles
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeAnalysisPropertiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangePathToCompileCommandsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.ShouldUseEnterpriseCSharpAnalyzerParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
@@ -94,6 +96,7 @@ class AnalysisMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
   private SonarLintTestRpcServer backend;
+  private ServerFixture.Server server;
   private String javaVersion;
   private static final boolean COMMERCIAL_ENABLED = System.getProperty("commercial") != null;
 
@@ -907,6 +910,54 @@ class AnalysisMediumTests {
 
     backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), false, System.currentTimeMillis())).join();
     await().during(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isEmpty());
+  }
+
+  @Test
+  void it_should_not_use_enterprise_csharp_analyzer_in_standalone() {
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .build();
+
+    var response = backend.getAnalysisService().shouldUseEnterpriseCSharpAnalyzer(new ShouldUseEnterpriseCSharpAnalyzerParams(CONFIG_SCOPE_ID)).join();
+
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(response.shouldUseEnterpriseAnalyzer()).isFalse());
+  }
+
+  @Test
+  void it_should_not_use_enterprise_csharp_analyzer_when_connected_to_community() {
+    server = newSonarQubeServer("10.8").start();
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId",
+        server,
+        storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "BLOCKER"))))
+      .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
+      .withExtraEnabledLanguagesInConnectedMode(Language.XML)
+      .withFullSynchronization()
+      .build();
+
+    var result = backend.getAnalysisService().shouldUseEnterpriseCSharpAnalyzer(new ShouldUseEnterpriseCSharpAnalyzerParams(CONFIG_SCOPE_ID)).join();
+
+    assertThat(result.shouldUseEnterpriseAnalyzer()).isFalse();
+  }
+
+  @Test
+  void it_should_use_enterprise_csharp_analyzer_when_connected_to_community_non_repackaged() {
+    server = newSonarQubeServer("10.7").start();
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId",
+        server,
+        storage -> storage
+          .withPlugin(TestPlugin.XML)
+          .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "BLOCKER")))
+          .withServerVersion("10.7"))
+      .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
+      .withExtraEnabledLanguagesInConnectedMode(Language.XML)
+      .withFullSynchronization()
+      .build();
+
+    var result = backend.getAnalysisService().shouldUseEnterpriseCSharpAnalyzer(new ShouldUseEnterpriseCSharpAnalyzerParams(CONFIG_SCOPE_ID)).join();
+
+    assertThat(result.shouldUseEnterpriseAnalyzer()).isTrue();
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding,
