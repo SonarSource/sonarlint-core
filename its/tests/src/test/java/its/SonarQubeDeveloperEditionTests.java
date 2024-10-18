@@ -837,8 +837,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       assertThat(taintVulnerability.getType()).isEqualTo(org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.VULNERABILITY);
       assertThat(taintVulnerability.getRuleDescriptionContextKey()).isEqualTo("java_se");
-      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 2)) {
+      if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 8)) {
         assertThat(taintVulnerability.getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.COMPLETE);
+        // In SQ 10.8+, old MAJOR severity maps to overridden MEDIUM impact
+        assertThat(taintVulnerability.getImpacts()).containsExactly(entry(SoftwareQuality.SECURITY, ImpactSeverity.MEDIUM));
+      } else if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 2)) {
+        assertThat(taintVulnerability.getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.COMPLETE);
+        // In 10.2 <= SQ < 10.8, the impact severity is not overridden
         assertThat(taintVulnerability.getImpacts()).containsExactly(entry(SoftwareQuality.SECURITY, ImpactSeverity.HIGH));
       } else {
         assertThat(taintVulnerability.getCleanCodeAttribute()).isNull();
