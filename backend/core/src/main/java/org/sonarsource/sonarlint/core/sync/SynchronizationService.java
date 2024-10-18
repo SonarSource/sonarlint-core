@@ -341,6 +341,7 @@ public class SynchronizationService {
   }
 
   private void updateConnectionDetails(String connectionId, boolean hasEnterprisePlugin) {
+    //TODO make sure ols sonarqube versions are supported properly
     var connection = connectionConfigurationRepository.getConnectionById(connectionId);
     if (connection != null) {
       connection.setHasEnterpriseCSharpPlugin(hasEnterprisePlugin);
