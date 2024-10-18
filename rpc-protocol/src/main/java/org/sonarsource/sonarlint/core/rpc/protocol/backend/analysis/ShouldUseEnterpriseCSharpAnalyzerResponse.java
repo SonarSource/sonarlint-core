@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Server Connection
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,22 +17,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis;
 
-public class PluginSynchronizationSummary {
-  private final boolean anyPluginSynchronized;
-  private final boolean enterprisePluginPresent;
+public class ShouldUseEnterpriseCSharpAnalyzerResponse {
+  private final boolean shouldUseEnterpriseAnalyzer;
 
-  public PluginSynchronizationSummary(boolean anyPluginSynchronized, boolean enterprisePluginPresent) {
-    this.anyPluginSynchronized = anyPluginSynchronized;
-    this.enterprisePluginPresent = enterprisePluginPresent;
+  public ShouldUseEnterpriseCSharpAnalyzerResponse(boolean shouldUseEnterpriseAnalyzer) {
+    this.shouldUseEnterpriseAnalyzer = shouldUseEnterpriseAnalyzer;
   }
 
-  public boolean anyPluginSynchronized() {
-    return anyPluginSynchronized;
-  }
-
-  public boolean isEnterprisePluginPresent() {
-    return enterprisePluginPresent;
+  public boolean isShouldUseEnterpriseAnalyzer() {
+    return shouldUseEnterpriseAnalyzer;
   }
 }
