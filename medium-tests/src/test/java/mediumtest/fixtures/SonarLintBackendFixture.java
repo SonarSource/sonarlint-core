@@ -605,6 +605,7 @@ public class SonarLintBackendFixture {
     Map<String, Map<URI, List<RaisedIssueDto>>> raisedIssuesByScopeId = new HashMap<>();
     Map<String, Map<URI, List<RaisedHotspotDto>>> raisedHotspotsByScopeId = new HashMap<>();
     Map<String, Map<String, String>> inferredAnalysisPropertiesByScopeId = new HashMap<>();
+    Map<String, Boolean> analysisReadinessPerScopeId = new HashMap<>();
 
     public FakeSonarLintRpcClient(Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId, boolean printLogsToStdOut,
       Map<String, String> matchedBranchPerScopeId, Map<String, Path> baseDirsByConfigScope, Map<String, List<ClientFileDto>> initialFilesByConfigScope, Map<String, Set<String>> fileExclusionsByConfigScope) {
@@ -794,7 +795,11 @@ public class SonarLintBackendFixture {
 
     @Override
     public void didChangeAnalysisReadiness(Set<String> configurationScopeIds, boolean areReadyForAnalysis) {
+      configurationScopeIds.forEach(scopeId -> analysisReadinessPerScopeId.put(scopeId, areReadyForAnalysis));
+    }
 
+    public boolean isAnalysisReadyForScope(String configurationScopeId) {
+      return analysisReadinessPerScopeId.getOrDefault(configurationScopeId, false);
     }
 
     @Override
@@ -836,6 +841,7 @@ public class SonarLintBackendFixture {
 
     public void cleanRaisedIssues() {
       raisedIssuesByScopeId.clear();
+      raisedHotspotsByScopeId.clear();
     }
 
     public void cleanRaisedHotspots() {

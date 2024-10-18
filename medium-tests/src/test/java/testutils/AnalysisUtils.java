@@ -66,6 +66,35 @@ public class AnalysisUtils {
     return client.getRaisedIssuesForScopeId(scopeId).get(fileUri);
   }
 
+  public static Map<URI, List<RaisedIssueDto>> analyzeFilesAndGetIssuesAsMap(List<URI> files, SonarLintBackendFixture.FakeSonarLintRpcClient client, SonarLintTestRpcServer backend, String scopeId) {
+    var analysisId = UUID.randomUUID();
+    var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
+        new AnalyzeFilesAndTrackParams(scopeId, analysisId, files, Map.of(), true, System.currentTimeMillis()))
+      .join();
+    assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
+    await().atMost(20, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(scopeId)).isNotEmpty());
+    return client.getRaisedIssuesForScopeId(scopeId);
+  }
+
+  public static void analyzeFilesAndVerifyNoIssues(List<URI> files, SonarLintBackendFixture.FakeSonarLintRpcClient client, SonarLintTestRpcServer backend, String scopeId) {
+    var analysisId = UUID.randomUUID();
+    var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
+        new AnalyzeFilesAndTrackParams(scopeId, analysisId, files, Map.of(), true, System.currentTimeMillis()))
+      .join();
+    assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
+    await().during(1, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(scopeId)).isEmpty());
+  }
+
+  public static List<RaisedIssueDto> analyzeFilesAndGetIssues(List<URI> files, SonarLintBackendFixture.FakeSonarLintRpcClient client, SonarLintTestRpcServer backend, String scopeId) {
+    var analysisId = UUID.randomUUID();
+    var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
+        new AnalyzeFilesAndTrackParams(scopeId, analysisId, files, Map.of(), true, System.currentTimeMillis()))
+      .join();
+    assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
+    await().atMost(20, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(scopeId)).isNotEmpty());
+    return client.getRaisedIssuesForScopeIdAsList(scopeId);
+  }
+
   public static void analyzeFileAndGetHotspots(URI fileUri, SonarLintBackendFixture.FakeSonarLintRpcClient client, SonarLintTestRpcServer backend, String scopeId) {
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
@@ -79,6 +108,14 @@ public class AnalysisUtils {
   public static Map<URI, List<RaisedIssueDto>> getPublishedIssues(SonarLintBackendFixture.FakeSonarLintRpcClient client, String scopeId) {
     await().atMost(20, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(scopeId)).isNotEmpty());
     return client.getRaisedIssuesForScopeId(scopeId);
+  }
+
+  public static void waitForRaisedIssues(SonarLintBackendFixture.FakeSonarLintRpcClient client, String scopeId) {
+    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(scopeId)).isNotEmpty());
+  }
+
+  public static void waitForAnalysisReady(SonarLintBackendFixture.FakeSonarLintRpcClient client, String scopeId) {
+    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.isAnalysisReadyForScope(scopeId)).isTrue());
   }
 
 }
