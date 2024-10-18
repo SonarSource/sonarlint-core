@@ -153,4 +153,16 @@ public interface AnalysisRpcService {
    */
   @JsonRequest
   CompletableFuture<ForceAnalyzeResponse> analyzeVCSChangedFiles(AnalyzeVCSChangedFilesParams params);
+
+
+  /**
+   * For a given configuration scope, returns whether an enterprise csharp analyzer should be used.
+   * 1. configScope is not bound to anything -> false
+   * 2. configScope is bound to a SonarQube server that does not have enterprise CSharp analyzer -> false
+   * 3. configScope is bound to a SonarQube server that has enterprise CSharp analyzer -> true
+   * 4. configScope is bound to a SonarQube server that does not have repackaged analyzer (<10.8) -> true
+   * 5. configScope is bound to SonarCloud -> true
+   */
+  @JsonRequest
+  CompletableFuture<ShouldUseEnterpriseCSharpAnalyzerResponse> shouldUseEnterpriseCSharpAnalyzer(ShouldUseEnterpriseCSharpAnalyzerParams params);
 }
