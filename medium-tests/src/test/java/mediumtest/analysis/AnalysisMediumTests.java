@@ -851,7 +851,7 @@ class AnalysisMediumTests {
     // unload one of the projects
     backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(configScope2));
 
-    // expect corresponding cache to be evicted
+    // expect corresponding cache not to be evicted
     await().during(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getLogMessages())
       .doesNotContain("Evict cached rules definitions for connection 'connectionId-2'"));
   }
