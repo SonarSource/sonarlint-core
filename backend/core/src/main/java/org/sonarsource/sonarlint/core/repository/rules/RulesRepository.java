@@ -29,6 +29,7 @@ import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
 import org.springframework.context.event.EventListener;
@@ -43,9 +44,11 @@ public class RulesRepository {
   private Map<String, SonarLintRuleDefinition> embeddedRulesByKey;
   private final Map<String, Map<String, SonarLintRuleDefinition>> rulesByKeyByConnectionId = new HashMap<>();
   private final Map<String, Map<String, String>> ruleKeyReplacementsByConnectionId = new HashMap<>();
+  private final ConfigurationRepository configurationRepository;
 
-  public RulesRepository(RulesExtractionHelper extractionHelper) {
+  public RulesRepository(RulesExtractionHelper extractionHelper, ConfigurationRepository configurationRepository) {
     this.extractionHelper = extractionHelper;
+    this.configurationRepository = configurationRepository;
   }
 
   public Collection<SonarLintRuleDefinition> getEmbeddedRules() {
@@ -104,9 +107,13 @@ public class RulesRepository {
   @EventListener
   public void configScopeRemoved(ConfigurationScopeRemovedEvent e) {
     var removedBindingConfiguration = e.getRemovedBindingConfiguration();
-    if (removedBindingConfiguration.isBound()) {
+    if (removedBindingConfiguration.isBound() && hasNoMoreBindings(removedBindingConfiguration.getConnectionId())) {
       evictAll(removedBindingConfiguration.getConnectionId());
     }
+  }
+
+  private boolean hasNoMoreBindings(String connectionId) {
+    return configurationRepository.getBoundScopesToConnection(connectionId).isEmpty();
   }
 
   private void evictAll(String connectionId) {

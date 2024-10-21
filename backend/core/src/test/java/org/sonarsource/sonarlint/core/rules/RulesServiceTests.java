@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDefinitionDto;
 
@@ -36,11 +37,13 @@ class RulesServiceTests {
 
   private RulesRepository rulesRepository;
   private RulesExtractionHelper extractionHelper;
+  private ConfigurationRepository configurationRepository;
 
   @BeforeEach
   void prepare() {
     extractionHelper = mock(RulesExtractionHelper.class);
-    rulesRepository = new RulesRepository(extractionHelper);
+    configurationRepository = mock(ConfigurationRepository.class);
+    rulesRepository = new RulesRepository(extractionHelper, configurationRepository);
   }
 
   @Test

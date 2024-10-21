@@ -743,10 +743,10 @@ class AnalysisMediumTests {
         + "</project>");
     var fileUri = filePath.toUri();
     var fileUri2 = filePath2.toUri();
-    var anotherConfigScope = "anotherConfigScope";
+    var configScope2 = "configScope2";
     var client = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
-      .withInitialFs(anotherConfigScope, baseDir, List.of(new ClientFileDto(fileUri2, baseDir.relativize(filePath2), anotherConfigScope, false, null, filePath2, null, null, true)))
+      .withInitialFs(configScope2, baseDir, List.of(new ClientFileDto(fileUri2, baseDir.relativize(filePath2), configScope2, false, null, filePath2, null, null, true)))
       .build();
     var projectKey = "projectKey";
     var connectionId = "connectionId";
@@ -761,25 +761,99 @@ class AnalysisMediumTests {
         storage -> storage.withPlugin(TestPlugin.XML).withProject(projectKey2,
           project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "BLOCKER"))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
-      .withBoundConfigScope(anotherConfigScope, connectionId2, projectKey2)
+      .withBoundConfigScope(configScope2, connectionId2, projectKey2)
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
       .withFullSynchronization()
       .build(client);
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
-      new ConfigurationScopeDto(anotherConfigScope, null, true, anotherConfigScope,
+      new ConfigurationScopeDto(configScope2, null, true, configScope2,
         new BindingConfigurationDto(connectionId2, projectKey2, true)))));
 
     // analyse files to warmup caches
     var analysisId1 = UUID.randomUUID();
     backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId1, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
     var analysisId2 = UUID.randomUUID();
-    backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(anotherConfigScope, analysisId2, List.of(fileUri2), Map.of(), System.currentTimeMillis())).join();
+    backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(configScope2, analysisId2, List.of(fileUri2), Map.of(), System.currentTimeMillis())).join();
 
     // unload one of the projects
-    backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(anotherConfigScope));
+    backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(configScope2));
 
     // expect corresponding cache to be evicted
     await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getLogMessages()).contains("Evict cached rules definitions for connection 'connectionId-2'"));
+  }
+
+  @Test
+  void it_should_not_unload_rules_cache_on_config_scope_closed_if_another_config_scope_still_opened(@TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "pom.xml",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        + "<project>\n"
+        + "  <modelVersion>4.0.0</modelVersion>\n"
+        + "  <groupId>com.foo</groupId>\n"
+        + "  <artifactId>bar</artifactId>\n"
+        + "  <version>${pom.version}</version>\n"
+        + "</project>");
+    var filePath2 = createFile(baseDir, "pom.xml",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        + "<project>\n"
+        + "  <modelVersion>4.0.0</modelVersion>\n"
+        + "  <groupId>com.foo</groupId>\n"
+        + "  <artifactId>bar</artifactId>\n"
+        + "  <version>${pom.version}</version>\n"
+        + "</project>");
+    var filePath3 = createFile(baseDir, "pom.xml",
+      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        + "<project>\n"
+        + "  <modelVersion>4.0.0</modelVersion>\n"
+        + "  <groupId>com.foo</groupId>\n"
+        + "  <artifactId>bar</artifactId>\n"
+        + "  <version>${pom.version}</version>\n"
+        + "</project>");
+    var fileUri = filePath.toUri();
+    var fileUri2 = filePath2.toUri();
+    var fileUri3 = filePath3.toUri();
+    var configScope2 = "configScope2";
+    var configScope3 = "configScope3";
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
+      .withInitialFs(configScope2, baseDir, List.of(new ClientFileDto(fileUri2, baseDir.relativize(filePath2), configScope2, false, null, filePath2, null, null, true)))
+      .withInitialFs(configScope3, baseDir, List.of(new ClientFileDto(fileUri3, baseDir.relativize(filePath3), configScope3, false, null, filePath3, null, null, true)))
+      .build();
+    var projectKey = "projectKey";
+    var connectionId = "connectionId";
+    var projectKey2 = "projectKey-2";
+    var connectionId2 = "connectionId-2";
+    var server = newSonarQubeServer().withSmartNotificationsSupported(false).start();
+    backend = newBackend()
+      .withSonarQubeConnection(connectionId, server,
+        storage -> storage.withPlugin(TestPlugin.XML).withProject(projectKey,
+          project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "BLOCKER"))))
+      .withSonarQubeConnection(connectionId2, server,
+        storage -> storage.withPlugin(TestPlugin.XML).withProject(projectKey2,
+          project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "BLOCKER"))))
+      .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
+      .withBoundConfigScope(configScope2, connectionId2, projectKey2)
+      .withExtraEnabledLanguagesInConnectedMode(Language.XML)
+      .withFullSynchronization()
+      .build(client);
+    backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
+      new ConfigurationScopeDto(configScope2, null, true, configScope2,
+        new BindingConfigurationDto(connectionId2, projectKey2, true)))));
+    backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
+      new ConfigurationScopeDto(configScope3, null, true, configScope3,
+        new BindingConfigurationDto(connectionId2, projectKey2, true)))));
+
+    // analyse files to warmup caches
+    var analysisId1 = UUID.randomUUID();
+    backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId1, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
+    var analysisId2 = UUID.randomUUID();
+    backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(configScope2, analysisId2, List.of(fileUri2), Map.of(), System.currentTimeMillis())).join();
+
+    // unload one of the projects
+    backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(configScope2));
+
+    // expect corresponding cache to be evicted
+    await().during(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getLogMessages())
+      .doesNotContain("Evict cached rules definitions for connection 'connectionId-2'"));
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding,
