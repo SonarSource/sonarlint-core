@@ -80,7 +80,7 @@ public abstract class AbstractConnectionConfiguration {
     this.hasEnterpriseCSharpPlugin = hasEnterpriseCSharpPlugin;
   }
 
-  public boolean isHasEnterpriseCSharpPlugin() {
+  public boolean hasEnterpriseCSharpPlugin() {
     return hasEnterpriseCSharpPlugin;
   }
 

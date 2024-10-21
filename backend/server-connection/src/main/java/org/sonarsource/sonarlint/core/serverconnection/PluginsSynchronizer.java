@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
 
 public class PluginsSynchronizer {
   public static final Version CUSTOM_SECRETS_MIN_SQ_VERSION = Version.create("10.4");
+  public static final Version REPACKAGED_DOTNET_ANALYZER_MIN_SQ_VERSION = Version.create("10.8");
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final Set<String> sonarSourceDisabledPluginKeys;
@@ -49,7 +50,8 @@ public class PluginsSynchronizer {
     this.embeddedPluginKeys = embeddedPluginKeys;
   }
 
-  public PluginSynchronizationSummary synchronize(ServerApi serverApi, boolean supportsCustomSecrets, SonarLintCancelMonitor cancelMonitor) {
+  public PluginSynchronizationSummary synchronize(ServerApi serverApi, boolean supportsCustomSecrets,
+    boolean supportsRepackagedEnterpriseDotnetAnalyzer, SonarLintCancelMonitor cancelMonitor) {
     if (supportsCustomSecrets) {
       var embeddedPluginKeysCopy = new HashSet<>(embeddedPluginKeys);
       embeddedPluginKeysCopy.remove(SonarLanguage.SECRETS.getPluginKey());
@@ -62,14 +64,17 @@ public class PluginsSynchronizer {
       .filter(p -> shouldDownload(p, storedPluginsByKey))
       .collect(Collectors.toList());
 
-    var hasEnterprisePlugin = serverPlugins.stream().map(ServerPlugin::getKey).anyMatch(key -> key.contains("csharpenterprise"));
+    var enterpriseDotnetAnalyzerInstalled = serverPlugins.stream().map(ServerPlugin::getKey).anyMatch(key -> key.contains("csharpenterprise"));
+    // For SQ versions older than 10.8, enterprise C# analyzer was packaged in all editions.
+    // For newer versions, we need to check if enterprise plugin is present on the server
+    var usesEnterpriseDotnetAnalyzer = !supportsRepackagedEnterpriseDotnetAnalyzer || enterpriseDotnetAnalyzerInstalled;
 
     if (pluginsToDownload.isEmpty()) {
       storage.plugins().storeNoPlugins();
-      return new PluginSynchronizationSummary(false, hasEnterprisePlugin);
+      return new PluginSynchronizationSummary(false, usesEnterpriseDotnetAnalyzer);
     }
     downloadAll(serverApi, pluginsToDownload, cancelMonitor);
-    return new PluginSynchronizationSummary(true, hasEnterprisePlugin);
+    return new PluginSynchronizationSummary(true, usesEnterpriseDotnetAnalyzer);
   }
 
   private void downloadAll(ServerApi serverApi, List<ServerPlugin> pluginsToDownload, SonarLintCancelMonitor cancelMonitor) {

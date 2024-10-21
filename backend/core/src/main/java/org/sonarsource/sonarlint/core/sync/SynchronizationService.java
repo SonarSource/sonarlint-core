@@ -308,11 +308,11 @@ public class SynchronizationService {
       LOG.debug("Synchronizing storage of connection '{}'", connectionId);
       var summary = serverConnection.sync(serverApi, cancelMonitor);
       if (summary.anyPluginSynchronized()) {
-        updateConnectionDetails(connectionId, summary.isEnterprisePluginPresent());
         // TODO re-review this solution before merging
         pluginsRepository.unload(connectionId);
         applicationEventPublisher.publishEvent(new PluginsSynchronizedEvent(connectionId));
       }
+      updateConnectionDetails(connectionId, summary.canUseEnterpriseDotnetPlugin());
       scopesToSync = scopesToSync.stream()
         .filter(boundScope -> shouldSynchronizeBinding(new Binding(connectionId, boundScope.getSonarProjectKey()))).collect(toList());
       var scopesPerProjectKey = scopesToSync.stream()
@@ -341,7 +341,6 @@ public class SynchronizationService {
   }
 
   private void updateConnectionDetails(String connectionId, boolean hasEnterprisePlugin) {
-    //TODO make sure ols sonarqube versions are supported properly
     var connection = connectionConfigurationRepository.getConnectionById(connectionId);
     if (connection != null) {
       connection.setHasEnterpriseCSharpPlugin(hasEnterprisePlugin);

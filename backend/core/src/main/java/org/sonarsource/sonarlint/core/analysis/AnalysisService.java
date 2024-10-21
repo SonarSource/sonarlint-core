@@ -647,7 +647,7 @@ public class AnalysisService {
       if (connection == null) {
         return false;
       } else {
-        return connection.isHasEnterpriseCSharpPlugin();
+        return connection.hasEnterpriseCSharpPlugin();
       }
     }
   }

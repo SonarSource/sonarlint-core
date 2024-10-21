@@ -33,6 +33,7 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 
 import static java.util.stream.Collectors.toSet;
 import static org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer.CUSTOM_SECRETS_MIN_SQ_VERSION;
+import static org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer.REPACKAGED_DOTNET_ANALYZER_MIN_SQ_VERSION;
 
 public class LocalStorageSynchronizer {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -57,7 +58,9 @@ public class LocalStorageSynchronizer {
     //       downloaded for the first time and also everytime the plug-ins are refreshed (e.g. after IDE restart).
     var supportsCustomSecrets = !serverApi.isSonarCloud()
       && version.compareToIgnoreQualifier(CUSTOM_SECRETS_MIN_SQ_VERSION) >= 0;
-    return pluginsSynchronizer.synchronize(serverApi, supportsCustomSecrets, cancelMonitor);
+    var supportsRepackagedDotnetAnalyzer = !serverApi.isSonarCloud()
+      && version.compareToIgnoreQualifier(REPACKAGED_DOTNET_ANALYZER_MIN_SQ_VERSION) >= 0;
+    return pluginsSynchronizer.synchronize(serverApi, supportsCustomSecrets, supportsRepackagedDotnetAnalyzer, cancelMonitor);
   }
 
   private static AnalyzerSettingsUpdateSummary diffAnalyzerConfiguration(AnalyzerConfiguration original, AnalyzerConfiguration updated) {

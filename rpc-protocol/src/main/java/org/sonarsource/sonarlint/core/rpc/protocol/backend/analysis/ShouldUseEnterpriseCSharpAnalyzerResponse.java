@@ -26,7 +26,7 @@ public class ShouldUseEnterpriseCSharpAnalyzerResponse {
     this.shouldUseEnterpriseAnalyzer = shouldUseEnterpriseAnalyzer;
   }
 
-  public boolean isShouldUseEnterpriseAnalyzer() {
+  public boolean shouldUseEnterpriseAnalyzer() {
     return shouldUseEnterpriseAnalyzer;
   }
 }
