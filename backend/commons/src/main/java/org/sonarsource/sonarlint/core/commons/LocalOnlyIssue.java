@@ -34,12 +34,13 @@ public class LocalOnlyIssue {
   private final String ruleKey;
   private final String message;
   private LocalOnlyIssueResolution resolution;
+  private String ruleDescriptionContextKey;
 
   /**
    * @param resolution is null when the issue is not resolved
    */
   public LocalOnlyIssue(UUID id, Path serverRelativePath, @Nullable TextRangeWithHash textRangeWithHash, @Nullable LineWithHash lineWithHash, String ruleKey,
-    String message, @Nullable LocalOnlyIssueResolution resolution) {
+    String message, @Nullable LocalOnlyIssueResolution resolution, @Nullable String ruleDescriptionContextKey) {
     this.id = id;
     this.serverRelativePath = serverRelativePath;
     this.textRangeWithHash = textRangeWithHash;
@@ -47,6 +48,7 @@ public class LocalOnlyIssue {
     this.ruleKey = ruleKey;
     this.message = message;
     this.resolution = resolution;
+    this.ruleDescriptionContextKey = ruleDescriptionContextKey;
   }
 
   public UUID getId() {
@@ -84,4 +86,7 @@ public class LocalOnlyIssue {
     resolution = new LocalOnlyIssueResolution(newStatus, Instant.now(), null);
   }
 
+  public String getRuleDescriptionContextKey() {
+    return ruleDescriptionContextKey;
+  }
 }

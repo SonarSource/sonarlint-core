@@ -43,6 +43,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.sonar.api.utils.System2;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
+import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
@@ -69,7 +70,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
-import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import testutils.OnDiskTestClientInputFile;
 
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;

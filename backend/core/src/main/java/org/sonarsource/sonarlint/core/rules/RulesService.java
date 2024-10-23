@@ -46,6 +46,7 @@ import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
+import org.sonarsource.sonarlint.core.mode.SeverityModeService;
 import org.sonarsource.sonarlint.core.reporting.FindingReportingService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
@@ -69,7 +70,6 @@ import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
 import org.sonarsource.sonarlint.core.serverconnection.RuleSet;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 import org.sonarsource.sonarlint.core.storage.StorageService;
-import org.sonarsource.sonarlint.core.sync.SynchronizationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
@@ -83,48 +83,51 @@ import static org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter.toDto;
 public class RulesService {
 
   private static final Logger LOG = LoggerFactory.getLogger(RulesService.class);
+  public static final String IN_EMBEDDED_RULES = "' in embedded rules";
   private final ServerApiProvider serverApiProvider;
   private final ConfigurationRepository configurationRepository;
   private final RulesRepository rulesRepository;
   private final StorageService storageService;
-  private final SynchronizationService synchronizationService;
   private final ApplicationEventPublisher eventPublisher;
   private static final String COULD_NOT_FIND_RULE = "Could not find rule '";
   private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfig = new ConcurrentHashMap<>();
   private FindingReportingService findingReportingService;
+  private SeverityModeService severityModeService;
 
   @Inject
-  public RulesService(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository, StorageService storageService,
-    SynchronizationService synchronizationService, InitializeParams params, ApplicationEventPublisher eventPublisher) {
-    this(serverApiProvider, configurationRepository, rulesRepository, storageService, synchronizationService, eventPublisher, params.getStandaloneRuleConfigByKey());
+  public RulesService(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository,
+    StorageService storageService, InitializeParams params,
+    ApplicationEventPublisher eventPublisher) {
+    this(serverApiProvider, configurationRepository, rulesRepository, storageService, eventPublisher,
+      params.getStandaloneRuleConfigByKey());
   }
 
-  RulesService(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository, StorageService storageService,
-    SynchronizationService synchronizationService, ApplicationEventPublisher eventPublisher, @Nullable Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey) {
+  RulesService(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository,
+    StorageService storageService, ApplicationEventPublisher eventPublisher,
+    @Nullable Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey) {
     this.serverApiProvider = serverApiProvider;
     this.configurationRepository = configurationRepository;
     this.rulesRepository = rulesRepository;
     this.storageService = storageService;
-    this.synchronizationService = synchronizationService;
     this.eventPublisher = eventPublisher;
     if (standaloneRuleConfigByKey != null) {
       this.standaloneRuleConfig.putAll(standaloneRuleConfigByKey);
     }
   }
 
-  public EffectiveRuleDetailsDto getEffectiveRuleDetails(String configurationScopeId, String ruleKey, @Nullable String contextKey, SonarLintCancelMonitor cancelMonitor)
-    throws RuleNotFoundException {
+  public EffectiveRuleDetailsDto getEffectiveRuleDetails(String configurationScopeId, String ruleKey, @Nullable String contextKey,
+    SonarLintCancelMonitor cancelMonitor) throws RuleNotFoundException {
     var ruleDetails = getRuleDetails(configurationScopeId, ruleKey, cancelMonitor);
     return buildResponse(ruleDetails, contextKey);
   }
 
-  private RuleDetails getRuleDetails(String configurationScopeId, String ruleKey, SonarLintCancelMonitor cancelMonitor) throws RuleNotFoundException {
+  public RuleDetails getRuleDetails(String configurationScopeId, String ruleKey, SonarLintCancelMonitor cancelMonitor) throws RuleNotFoundException {
     var effectiveBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
     RuleDetails ruleDetails;
     if (effectiveBinding.isEmpty()) {
       var embeddedRule = rulesRepository.getEmbeddedRule(ruleKey);
       if (embeddedRule.isEmpty()) {
-        throw new RuleNotFoundException(COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules", ruleKey);
+        throw new RuleNotFoundException(COULD_NOT_FIND_RULE + ruleKey + IN_EMBEDDED_RULES, ruleKey);
       }
       ruleDetails = RuleDetails.from(embeddedRule.get(), standaloneRuleConfig.get(ruleKey));
     } else {
@@ -133,16 +136,17 @@ public class RulesService {
     return ruleDetails;
   }
 
-  private RuleDetails getActiveRuleForBinding(String ruleKey, Binding binding, SonarLintCancelMonitor cancelMonitor) {
+  public RuleDetails getActiveRuleForBinding(String ruleKey, Binding binding, SonarLintCancelMonitor cancelMonitor) {
     var connectionId = binding.getConnectionId();
     var serverApi = serverApiProvider.getServerApi(connectionId);
     if (serverApi.isEmpty()) {
       throw unknownConnection(connectionId);
     }
-    boolean skipCleanCodeTaxonomy = synchronizationService.getServerConnection(connectionId, serverApi.get()).shouldSkipCleanCodeTaxonomy();
+
+    var serverUsesStandardSeverityMode = !severityModeService.isMQRModeForConnection(connectionId);
 
     return findServerActiveRuleInStorage(binding, ruleKey)
-      .map(storageRule -> hydrateDetailsWithServer(connectionId, storageRule, skipCleanCodeTaxonomy, cancelMonitor))
+      .map(storageRule -> hydrateDetailsWithServer(connectionId, storageRule, serverUsesStandardSeverityMode, cancelMonitor))
       // try from loaded rules, for e.g. extra analyzers
       .orElseGet(() -> rulesRepository.getRule(connectionId, ruleKey)
         .map(r -> RuleDetails.from(r, standaloneRuleConfig.get(ruleKey)))
@@ -274,10 +278,10 @@ public class RulesService {
     }
   }
 
-  public GetStandaloneRuleDescriptionResponse getStandaloneRuleDetails(String ruleKey) {
+  public GetStandaloneRuleDescriptionResponse getStandaloneRuleDescription(String ruleKey) {
     var embeddedRule = rulesRepository.getEmbeddedRule(ruleKey);
     if (embeddedRule.isEmpty()) {
-      var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules", new Object[] {ruleKey});
+      var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + IN_EMBEDDED_RULES, new Object[] {ruleKey});
       throw new ResponseErrorException(error);
     }
     var ruleDefinition = embeddedRule.get();
@@ -324,7 +328,8 @@ public class RulesService {
   public void updateAndReportFindings(String scopeId, List<String> deactivatedRules) {
     findingReportingService.updateAndReportFindings(scopeId,
       hotspot -> raisedFindingUpdater(hotspot, deactivatedRules),
-      issue -> raisedFindingUpdater(issue, deactivatedRules));
+      issue -> raisedFindingUpdater(issue, deactivatedRules)
+    );
   }
 
   @CheckForNull
@@ -385,7 +390,7 @@ public class RulesService {
   private RuleDetailsForAnalysis getRuleDetailsForStandaloneAnalysis(String ruleKey) throws RuleNotFoundException {
     var embeddedRule = rulesRepository.getEmbeddedRule(ruleKey);
     if (embeddedRule.isEmpty()) {
-      throw new RuleNotFoundException(COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules", ruleKey);
+      throw new RuleNotFoundException(COULD_NOT_FIND_RULE + ruleKey + IN_EMBEDDED_RULES, ruleKey);
     }
     var ruleDefinition = embeddedRule.get();
     return new RuleDetailsForAnalysis(ruleDefinition.getDefaultSeverity(), ruleDefinition.getType(),
@@ -405,7 +410,7 @@ public class RulesService {
     }
     var ruleDefinitionOpt = rulesRepository.getRule(binding.getConnectionId(), actualRuleKey);
     if (ruleDefinitionOpt.isEmpty()) {
-      throw new RuleNotFoundException(COULD_NOT_FIND_RULE + actualRuleKey + "' in embedded rules", actualRuleKey);
+      throw new RuleNotFoundException(COULD_NOT_FIND_RULE + actualRuleKey + IN_EMBEDDED_RULES, actualRuleKey);
     }
     var ruleDefinition = ruleDefinitionOpt.get();
     return new RuleDetailsForAnalysis(activeRule.getSeverity(), ruleDefinition.getType(),
@@ -418,4 +423,8 @@ public class RulesService {
     this.findingReportingService = findingReportingService;
   }
 
+  @Autowired
+  public void setSeverityModeService(SeverityModeService severityModeService) {
+    this.severityModeService = severityModeService;
+  }
 }

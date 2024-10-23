@@ -23,10 +23,10 @@ import com.google.gson.annotations.JsonAdapter;
 import java.util.Collection;
 import java.util.List;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherRuleDescriptionAdapterFactory;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttributeCategory;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
@@ -37,8 +37,8 @@ public class EffectiveRuleDetailsDto extends AbstractRuleDto {
   private final Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> description;
   private final Collection<EffectiveRuleParamDto> params;
 
-  public EffectiveRuleDetailsDto(String key, String name, IssueSeverity severity, RuleType type,
-    @Nullable CleanCodeAttribute cleanCodeAttribute, @Nullable CleanCodeAttributeCategory cleanCodeAttributeCategory, List<ImpactDto> defaultImpacts,
+  public EffectiveRuleDetailsDto(String key, String name, @Nullable IssueSeverity severity, @Nullable RuleType type,
+    @Nullable CleanCodeAttribute cleanCodeAttribute, @Nullable CleanCodeAttributeCategory cleanCodeAttributeCategory, @Nullable List<ImpactDto> defaultImpacts,
     Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> description, Collection<EffectiveRuleParamDto> params,
     Language language, @Nullable VulnerabilityProbability vulnerabilityProbability) {
     super(key, name, severity, type, cleanCodeAttribute, cleanCodeAttributeCategory, defaultImpacts, language, vulnerabilityProbability);

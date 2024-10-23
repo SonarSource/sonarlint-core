@@ -7,6 +7,10 @@
   * A new type `StandardModeDetails` has been introduced, which contains information about severity and type
   * A new type `MQRModeDetails` has been introduced, which contains information about clean code attribute and impacts
   * You should display the finding accordingly to the information contained by `severityMode`
+* A new method `IssueRpcService#getIssueDetails` has been added to the backend to allow clients to retrieve detailed information about an issue
+  * The method accepts a configuration scope ID and an issue ID (UUID) as parameters
+  * The method returns a `GetIssueDetailsResponse` object containing the detailed information about the issue
+  * It is preferred to use this method instead of the `RulesRpcService#getEffectiveRuleDetails` when retrieving rule description details in the context of a specific issue
 
 ## Breaking changes
 

@@ -39,7 +39,8 @@ public class LocalOnlyIssueFixtures {
       null,
       "ruleKey",
       "message",
-      new LocalOnlyIssueResolution(IssueStatus.WONT_FIX, Instant.now().truncatedTo(ChronoUnit.MILLIS), "comment")
+      new LocalOnlyIssueResolution(IssueStatus.WONT_FIX, Instant.now().truncatedTo(ChronoUnit.MILLIS), "comment"),
+      null
     );
   }
 
@@ -63,7 +64,8 @@ public class LocalOnlyIssueFixtures {
       new LineWithHash(1, "linehash"),
       "ruleKey",
       "message",
-      new LocalOnlyIssueResolution(IssueStatus.WONT_FIX, resolutionDate.truncatedTo(ChronoUnit.MILLIS), "comment")
+      new LocalOnlyIssueResolution(IssueStatus.WONT_FIX, resolutionDate.truncatedTo(ChronoUnit.MILLIS), "comment"),
+      null
     );
   }
 
