@@ -20,9 +20,7 @@
 package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.nio.file.Path;
-import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -33,7 +31,6 @@ public class ServerConnection {
 
   private static final Version CLEAN_CODE_TAXONOMY_MIN_SQ_VERSION = Version.create("10.2");
 
-  private final Set<SonarLanguage> enabledLanguagesToSync;
   private final LocalStorageSynchronizer storageSynchronizer;
   private final boolean isSonarCloud;
   private final ServerInfoSynchronizer serverInfoSynchronizer;
@@ -45,11 +42,9 @@ public class ServerConnection {
 
   public ServerConnection(StorageFacade storageFacade, String connectionId, boolean isSonarCloud, Set<SonarLanguage> enabledLanguages, Set<String> embeddedPluginKeys) {
     this.isSonarCloud = isSonarCloud;
-    this.enabledLanguagesToSync = enabledLanguages.stream().filter(SonarLanguage::shouldSyncInConnectedMode).collect(Collectors.toCollection(LinkedHashSet::new));
-
     this.storage = storageFacade.connection(connectionId);
     serverInfoSynchronizer = new ServerInfoSynchronizer(storage);
-    this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguagesToSync, embeddedPluginKeys, serverInfoSynchronizer, storage);
+    this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguages, embeddedPluginKeys, serverInfoSynchronizer, storage);
     storage.plugins().cleanUp();
   }
 
@@ -70,9 +65,5 @@ public class ServerConnection {
     return !isSonarCloud && storage.serverInfo().read()
       .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(CLEAN_CODE_TAXONOMY_MIN_SQ_VERSION) < 0)
       .orElse(false);
-  }
-
-  public Set<SonarLanguage> getEnabledLanguagesToSync() {
-    return enabledLanguagesToSync;
   }
 }
