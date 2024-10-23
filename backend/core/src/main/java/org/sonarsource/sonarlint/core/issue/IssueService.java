@@ -46,13 +46,19 @@ import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.local.only.XodusLocalOnlyIssueStore;
 import org.sonarsource.sonarlint.core.reporting.FindingReportingService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.reporting.PreviouslyRaisedFindingsRepository;
+import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssuesForFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
+import org.sonarsource.sonarlint.core.rules.RuleDetails;
+import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
+import org.sonarsource.sonarlint.core.rules.RulesService;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
@@ -91,10 +97,14 @@ public class IssueService {
   private final LocalOnlyIssueRepository localOnlyIssueRepository;
   private final ApplicationEventPublisher eventPublisher;
   private final FindingReportingService findingReportingService;
+  private final RulesRepository rulesRepository;
+  private final PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository;
+  private final RulesService rulesService;
 
   public IssueService(ConfigurationRepository configurationRepository, ServerApiProvider serverApiProvider, StorageService storageService,
     LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
-    ApplicationEventPublisher eventPublisher, FindingReportingService findingReportingService) {
+    ApplicationEventPublisher eventPublisher, FindingReportingService findingReportingService, RulesRepository rulesRepository,
+    PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, RulesService rulesService) {
     this.configurationRepository = configurationRepository;
     this.serverApiProvider = serverApiProvider;
     this.storageService = storageService;
@@ -102,6 +112,9 @@ public class IssueService {
     this.localOnlyIssueRepository = localOnlyIssueRepository;
     this.eventPublisher = eventPublisher;
     this.findingReportingService = findingReportingService;
+    this.rulesRepository = rulesRepository;
+    this.previouslyRaisedFindingsRepository = previouslyRaisedFindingsRepository;
+    this.rulesService = rulesService;
   }
 
   public void changeStatus(String configurationScopeId, String issueKey, ResolutionStatus newStatus, boolean isTaintIssue, SonarLintCancelMonitor cancelMonitor) {
@@ -322,6 +335,26 @@ public class IssueService {
     var localOnlyIssueStore = localOnlyIssueStorageService.get();
     removeIssueOnServer(localOnlyIssueStore, configurationScopeId, issueUuid, cancelMonitor);
     return localOnlyIssueStorageService.get().removeIssue(issueUuid);
+  }
+
+  // TODO change return type
+  public EffectiveRuleDetailsDto getIssueDetails(String configurationScopeId, UUID issueKey) throws IssueNotFoundException {
+    var effectiveBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
+    var issue = previouslyRaisedFindingsRepository.getRaisedIssueWithScopeAndKey(configurationScopeId, issueKey);
+
+    if (issue.isEmpty()) {
+      throw new IssueNotFoundException("Failed to retrieve issue details. Issue with key '"
+        + issueKey + "' not found.", issueKey);
+    }
+
+    var ruleKey = issue.get().getRuleKey();
+    RuleDetails ruleDetails = null;
+    if (effectiveBinding.isEmpty()) {
+      ruleDetails = rulesService.getStandaloneRuleDetails(ruleKey);
+    } else {
+      // TODO handle Connected Mode
+    }
+    return RuleDetailsAdapter.transform(ruleDetails, issue.get().getRuleDescriptionContextKey());
   }
 
   @EventListener

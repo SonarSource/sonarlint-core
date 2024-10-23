@@ -282,7 +282,8 @@ public class RulesService {
     }
   }
 
-  public GetStandaloneRuleDescriptionResponse getStandaloneRuleDetails(String ruleKey) {
+  public GetStandaloneRuleDescriptionResponse getStandaloneRuleDescription(String ruleKey) {
+    // TODO deduplicate
     var embeddedRule = rulesRepository.getEmbeddedRule(ruleKey);
     if (embeddedRule.isEmpty()) {
       var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules", new Object[] {ruleKey});
@@ -292,6 +293,16 @@ public class RulesService {
     var ruleDetails = RuleDetails.from(ruleDefinition, standaloneRuleConfig.get(ruleKey));
 
     return new GetStandaloneRuleDescriptionResponse(convert(ruleDefinition), RuleDetailsAdapter.transformDescriptions(ruleDetails, null));
+  }
+
+  public RuleDetails getStandaloneRuleDetails(String ruleKey) {
+    var embeddedRule = rulesRepository.getEmbeddedRule(ruleKey);
+    if (embeddedRule.isEmpty()) {
+      var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules", new Object[] {ruleKey});
+      throw new ResponseErrorException(error);
+    }
+    var ruleDefinition = embeddedRule.get();
+    return RuleDetails.from(ruleDefinition, standaloneRuleConfig.get(ruleKey));
   }
 
   public void updateStandaloneRulesConfiguration(Map<String, StandaloneRuleConfigDto> standaloneRuleConfig) {
