@@ -24,7 +24,9 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -71,6 +73,20 @@ public class PreviouslyRaisedFindingsRepository {
   private static <F extends RaisedFindingDto> void resetCacheForFindings(String scopeId, Set<URI> files, Map<String, Map<URI, List<F>>> cache) {
     Map<URI, List<F>> blankCache = files.stream().collect(Collectors.toMap(Function.identity(), e -> new ArrayList<>()));
     cache.compute(scopeId, (file, issues) -> blankCache);
+  }
+
+  public Optional<RaisedIssueDto> getRaisedIssueWithScopeAndId(String scopeId, UUID issueId) {
+    return getRaisedIssuesForScope(scopeId).values().stream()
+      .flatMap(List::stream)
+      .filter(issue -> issue.getId().equals(issueId))
+      .findFirst();
+  }
+
+  public Optional<RaisedHotspotDto> getRaisedHotspotWithScopeAndId(String scopeId, UUID hotspotId) {
+    return getRaisedHotspotsForScope(scopeId).values().stream()
+      .flatMap(List::stream)
+      .filter(hotspot -> hotspot.getId().equals(hotspotId))
+      .findFirst();
   }
 
 }

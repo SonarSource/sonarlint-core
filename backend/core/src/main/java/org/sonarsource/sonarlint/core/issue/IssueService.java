@@ -47,13 +47,20 @@ import org.sonarsource.sonarlint.core.local.only.XodusLocalOnlyIssueStore;
 import org.sonarsource.sonarlint.core.mode.SeverityModeService;
 import org.sonarsource.sonarlint.core.reporting.FindingReportingService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.reporting.PreviouslyRaisedFindingsRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.EffectiveIssueDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssuesForFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
+import org.sonarsource.sonarlint.core.rules.RuleDetails;
+import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
+import org.sonarsource.sonarlint.core.rules.RuleNotFoundException;
+import org.sonarsource.sonarlint.core.rules.RulesService;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
@@ -92,10 +99,13 @@ public class IssueService {
   private final ApplicationEventPublisher eventPublisher;
   private final FindingReportingService findingReportingService;
   private final SeverityModeService severityModeService;
+  private final PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository;
+  private final RulesService rulesService;
 
   public IssueService(ConfigurationRepository configurationRepository, ServerApiProvider serverApiProvider, StorageService storageService,
     LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
-    ApplicationEventPublisher eventPublisher, FindingReportingService findingReportingService, SeverityModeService severityModeService) {
+    ApplicationEventPublisher eventPublisher, FindingReportingService findingReportingService, SeverityModeService severityModeService,
+    PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, RulesService rulesService) {
     this.configurationRepository = configurationRepository;
     this.serverApiProvider = serverApiProvider;
     this.storageService = storageService;
@@ -104,6 +114,8 @@ public class IssueService {
     this.eventPublisher = eventPublisher;
     this.findingReportingService = findingReportingService;
     this.severityModeService = severityModeService;
+    this.previouslyRaisedFindingsRepository = previouslyRaisedFindingsRepository;
+    this.rulesService = rulesService;
   }
 
   public void changeStatus(String configurationScopeId, String issueKey, ResolutionStatus newStatus, boolean isTaintIssue, SonarLintCancelMonitor cancelMonitor) {
@@ -324,6 +336,31 @@ public class IssueService {
     var localOnlyIssueStore = localOnlyIssueStorageService.get();
     removeIssueOnServer(localOnlyIssueStore, configurationScopeId, issueUuid, cancelMonitor);
     return localOnlyIssueStorageService.get().removeIssue(issueUuid);
+  }
+
+  public EffectiveIssueDetailsDto getEffectiveIssueDetails(String configurationScopeId, UUID findingId, SonarLintCancelMonitor cancelMonitor)
+    throws IssueNotFoundException, RuleNotFoundException {
+    var maybeIssue =
+      previouslyRaisedFindingsRepository.getRaisedIssueWithScopeAndId(configurationScopeId, findingId);
+    Optional<RaisedHotspotDto> maybeHotspot = Optional.empty();
+
+    if (maybeIssue.isEmpty()) {
+      maybeHotspot = previouslyRaisedFindingsRepository.getRaisedHotspotWithScopeAndId(configurationScopeId, findingId);
+      if (maybeHotspot.isEmpty()) {
+        throw new IssueNotFoundException("Failed to retrieve finding details. Finding with key '"
+          + findingId + "' not found.", findingId);
+      }
+    }
+
+    var finding = maybeHotspot.isEmpty() ? maybeIssue.get() : maybeHotspot.get();
+    var ruleKey = finding.getRuleKey();
+    var ruleDetails = rulesService.getRuleDetails(configurationScopeId, ruleKey, cancelMonitor);
+    var ruleDetailsEnrichedWithActualIssueSeverity = RuleDetails.merging(ruleDetails, finding);
+    var effectiveRuleDetails = RuleDetailsAdapter.transform(ruleDetailsEnrichedWithActualIssueSeverity, finding.getRuleDescriptionContextKey());
+    return new EffectiveIssueDetailsDto(ruleKey, effectiveRuleDetails.getName(), effectiveRuleDetails.getLanguage(),
+      // users cannot customize vulnerability probability
+      effectiveRuleDetails.getVulnerabilityProbability(),
+      effectiveRuleDetails.getDescription(), effectiveRuleDetails.getParams(), finding.getSeverityMode(), finding.getRuleDescriptionContextKey());
   }
 
   @EventListener

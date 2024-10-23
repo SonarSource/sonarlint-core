@@ -20,18 +20,25 @@
 package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.concurrent.CompletableFuture;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
+import org.sonarsource.sonarlint.core.issue.IssueNotFoundException;
 import org.sonarsource.sonarlint.core.issue.IssueService;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.AddIssueCommentParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ChangeIssueStatusParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckAnticipatedStatusChangeSupportedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckAnticipatedStatusChangeSupportedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.GetIssueDetailsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.GetIssueDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.IssueRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssuesForFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssuesForFileResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenIssueResponse;
+import org.sonarsource.sonarlint.core.rules.RuleNotFoundException;
 
 public class IssueRpcServiceDelegate extends AbstractRpcServiceDelegate implements IssueRpcService {
   public IssueRpcServiceDelegate(SonarLintRpcServerImpl server) {
@@ -73,5 +80,21 @@ public class IssueRpcServiceDelegate extends AbstractRpcServiceDelegate implemen
   public CompletableFuture<ReopenAllIssuesForFileResponse> reopenAllIssuesForFile(ReopenAllIssuesForFileParams params) {
     return requestAsync(cancelMonitor -> new ReopenAllIssuesForFileResponse(getBean(IssueService.class).reopenAllIssuesForFile(params, cancelMonitor)),
       params.getConfigurationScopeId());
+  }
+
+  @Override
+  public CompletableFuture<GetIssueDetailsResponse> getIssueDetails(GetIssueDetailsParams params) {
+    return requestAsync(cancelMonitor -> {
+      try {
+        return new GetIssueDetailsResponse(getBean(IssueService.class)
+          .getEffectiveIssueDetails(params.getConfigurationScopeId(), params.getIssueId(), cancelMonitor));
+      } catch (IssueNotFoundException e) {
+        var error = new ResponseError(SonarLintRpcErrorCode.ISSUE_NOT_FOUND, e.getMessage(), e.getIssueKey());
+        throw new ResponseErrorException(error);
+      } catch (RuleNotFoundException e) {
+        var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, e.getMessage(), e.getRuleKey());
+        throw new ResponseErrorException(error);
+      }
+    });
   }
 }
