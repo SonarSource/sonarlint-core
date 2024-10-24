@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
-import java.util.List;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.settings.SettingsApi;
@@ -45,8 +44,7 @@ public class ServerInfoSynchronizer {
     var serverVersionAndStatusChecker = new ServerVersionAndStatusChecker(serverApi);
     serverVersionAndStatusChecker.checkVersionAndStatus(cancelMonitor);
     var multiQualityMode = getMultiQualityMode(serverApi.settings(), cancelMonitor);
-    serverStatus.setMultiQualityModeEnabled(multiQualityMode);
-    storage.serverInfo().store(serverStatus);
+    storage.serverInfo().store(serverStatus, multiQualityMode);
   }
 
   private static MultiQualityMode getMultiQualityMode(SettingsApi settingsApi, SonarLintCancelMonitor cancelMonitor) {

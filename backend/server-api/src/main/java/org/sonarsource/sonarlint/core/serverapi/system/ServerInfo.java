@@ -23,16 +23,11 @@ public class ServerInfo {
   private final String id;
   private final String status;
   private final String version;
-  private MultiQualityMode multiQualityMode;
 
   public ServerInfo(String id, String status, String version) {
     this.id = id;
     this.status = status;
     this.version = version;
-  }
-
-  public void setMultiQualityModeEnabled(MultiQualityMode multiQualityMode) {
-    this.multiQualityMode = multiQualityMode;
   }
 
   public String getId() {
@@ -49,9 +44,5 @@ public class ServerInfo {
 
   public boolean isUp() {
     return "UP".equals(status);
-  }
-
-  public MultiQualityMode getMultiQualityMode() {
-    return multiQualityMode == null ? MultiQualityMode.DEFAULT : multiQualityMode;
   }
 }

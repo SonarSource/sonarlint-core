@@ -43,9 +43,9 @@ public class ServerInfoStorage {
     this.storageFilePath = rootPath.resolve(SERVER_INFO_PB);
   }
 
-  public void store(ServerInfo serverInfo) {
+  public void store(ServerInfo serverInfo, MultiQualityMode multiQualityMode) {
     FileUtils.mkdirs(storageFilePath.getParent());
-    var serverInfoToStore = adapt(serverInfo);
+    var serverInfoToStore = adapt(serverInfo, multiQualityMode);
     LOG.debug("Storing server info in {}", storageFilePath);
     rwLock.write(() -> writeToFile(serverInfoToStore, storageFilePath));
     LOG.debug("Stored server info");
@@ -55,8 +55,8 @@ public class ServerInfoStorage {
     return rwLock.read(() -> Files.exists(storageFilePath) ? Optional.of(adapt(ProtobufFileUtil.readFile(storageFilePath, Sonarlint.ServerInfo.parser()))) : Optional.empty());
   }
 
-  private static Sonarlint.ServerInfo adapt(ServerInfo serverInfo) {
-    return Sonarlint.ServerInfo.newBuilder().setVersion(serverInfo.getVersion()).setMode(Sonarlint.MultiQualityMode.valueOf(serverInfo.getMultiQualityMode().name())).build();
+  private static Sonarlint.ServerInfo adapt(ServerInfo serverInfo, MultiQualityMode multiQualityMode) {
+    return Sonarlint.ServerInfo.newBuilder().setVersion(serverInfo.getVersion()).setMode(Sonarlint.MultiQualityMode.valueOf(multiQualityMode.name())).build();
   }
 
   private static StoredServerInfo adapt(Sonarlint.ServerInfo serverInfo) {

@@ -27,7 +27,6 @@ import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverapi.settings.SettingsApi;
 
 public class ServerConnection {
   public static final Version SECRET_ANALYSIS_MIN_SQ_VERSION = Version.create("9.9");
