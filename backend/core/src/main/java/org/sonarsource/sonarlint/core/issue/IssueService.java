@@ -360,6 +360,7 @@ public class IssueService {
       UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder().withType(RuleType.valueOf(userType.name())).buildIssue();
       return updateIssue(previouslyRaisedIssue, impactedIssueKeys, issueUpdater);
     }
+    // TODO: WIP
     return previouslyRaisedIssue;
   }
 
