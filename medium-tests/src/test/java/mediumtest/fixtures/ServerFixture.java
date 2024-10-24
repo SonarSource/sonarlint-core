@@ -1075,6 +1075,8 @@ public class ServerFixture {
     private void registerSettingsApiResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> mockServer.stubFor(get("/api/settings/values.protobuf?component=" + projectKey)
         .willReturn(aResponse().withResponseBody(protobufBody(Settings.ValuesWsResponse.newBuilder().build())))));
+      projectsByProjectKey.forEach((projectKey, project) -> mockServer.stubFor(get("/api/settings/values.protobuf?keys=sonar.multi-quality-mode.enabled")
+        .willReturn(aResponse().withResponseBody(protobufBody(Settings.ValuesWsResponse.newBuilder().build())))));
     }
 
     private void registerTokenApiResponse() {

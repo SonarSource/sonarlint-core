@@ -26,10 +26,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Settings;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 import testutils.MockWebServerExtensionWithProtobuf;
@@ -68,14 +70,19 @@ class ServerInfoSynchronizerTests {
   }
 
   @Test
-  void it_should_synchronize_version_when_not_available() {
+  void it_should_synchronize_version_and_mode_when_not_available() {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}");
+    mockServer.addProtobufResponse("/api/settings/values.protobuf?keys=sonar.multi-quality-mode.enabled", Settings.ValuesWsResponse.newBuilder()
+      .addSettings(Settings.Setting.newBuilder()
+        .setKey("sonar.multi-quality-mode.enabled")
+        .setValue("true"))
+      .build());
 
     var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor());
 
     assertThat(storedServerInfo)
-      .extracting("version")
-      .hasToString("9.9");
+      .extracting("version", "isMQRMode")
+      .containsExactly(Version.create("9.9"), true);
   }
 
   @Test

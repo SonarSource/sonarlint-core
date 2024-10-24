@@ -41,14 +41,14 @@ public class ServerPathProvider {
 
   public static String getServerUrlForTokenGeneration(EndpointParams endpoint, HttpClient client, int port, String ideName, SonarLintCancelMonitor cancelMonitor) {
     var serverApi = new ServerApi(endpoint, client);
-    var systemInfo = serverApi.system().getStatus(cancelMonitor);
-    return buildServerPath(endpoint.getBaseUrl(), systemInfo.getVersion(), port, ideName, endpoint.isSonarCloud());
+    var serverStatus = serverApi.system().getStatus(cancelMonitor);
+    return buildServerPath(endpoint.getBaseUrl(), serverStatus.getVersion(), port, ideName, endpoint.isSonarCloud());
   }
 
   public static String getFallbackServerUrlForTokenGeneration(EndpointParams endpoint, HttpClient client, String ideName, SonarLintCancelMonitor cancelMonitor) {
     var serverApi = new ServerApi(endpoint, client);
-    var systemInfo = serverApi.system().getStatus(cancelMonitor);
-    return buildServerPath(endpoint.getBaseUrl(), systemInfo.getVersion(), null, ideName, endpoint.isSonarCloud());
+    var serverStatus = serverApi.system().getStatus(cancelMonitor);
+    return buildServerPath(endpoint.getBaseUrl(), serverStatus.getVersion(), null, ideName, endpoint.isSonarCloud());
   }
 
   static String buildServerPath(String baseUrl, String serverVersionStr, @Nullable Integer port, String ideName, boolean isSonarCloud) {

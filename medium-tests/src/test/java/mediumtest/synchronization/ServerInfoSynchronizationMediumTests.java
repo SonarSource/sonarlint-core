@@ -58,8 +58,43 @@ class ServerInfoSynchronizationMediumTests {
 
     waitAtMost(3, SECONDS).untilAsserted(() -> assertThat(getServerInfoFile())
       .exists()
-      .extracting(this::readServerVersion)
-      .isEqualTo("10.3"));
+      .extracting(this::readServerVersion, this::readServerMode)
+      .containsExactly("10.3", true));
+  }
+
+  @Test
+  void it_should_pull_server_info_and_mqr_mode_should_be_disabled() {
+    var server = newSonarQubeServer("10.1")
+      .withProject("projectKey", project -> project.withBranch("main"))
+      .start();
+    backend = newBackend()
+      .withEnabledLanguageInStandaloneMode(Language.JAVA)
+      .withSonarQubeConnection("connectionId", server)
+      .withFullSynchronization()
+      .build();
+
+    addConfigurationScope("configScopeId", "connectionId", "projectKey");
+
+    waitAtMost(3, SECONDS).untilAsserted(() -> assertThat(getServerInfoFile())
+      .exists()
+      .extracting(this::readServerVersion, this::readServerMode)
+      .containsExactly("10.1", false));
+  }
+
+  @Test
+  void it_should_pull_server_info_from_sonarcloud() {
+    backend = newBackend()
+      .withEnabledLanguageInStandaloneMode(Language.JAVA)
+      .withSonarCloudConnection("connectionId", "test")
+      .withFullSynchronization()
+      .build();
+
+    addConfigurationScope("configScopeId", "connectionId", "projectKey");
+
+    waitAtMost(3, SECONDS).untilAsserted(() -> assertThat(getServerInfoFile())
+      .exists()
+      .extracting(this::readServerMode)
+      .isEqualTo(true));
   }
 
   @Test
@@ -114,6 +149,10 @@ class ServerInfoSynchronizationMediumTests {
 
   private String readServerVersion(Path protoFilePath) {
     return ProtobufFileUtil.readFile(protoFilePath, Sonarlint.ServerInfo.parser()).getVersion();
+  }
+
+  private boolean readServerMode(Path protoFilePath) {
+    return ProtobufFileUtil.readFile(protoFilePath, Sonarlint.ServerInfo.parser()).getIsMqrMode();
   }
 
   @AfterEach

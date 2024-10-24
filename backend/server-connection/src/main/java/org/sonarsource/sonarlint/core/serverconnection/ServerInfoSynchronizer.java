@@ -19,10 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.settings.SettingsApi;
 
 public class ServerInfoSynchronizer {
+  private static final String MIN_MQR_MODE_SUPPORT_VERSION = "10.2";
+  private static final String MQR_MODE_SETTING = "sonar.multi-quality-mode.enabled";
   private final ConnectionStorage storage;
 
   public ServerInfoSynchronizer(ConnectionStorage storage) {
@@ -41,6 +45,16 @@ public class ServerInfoSynchronizer {
     var serverStatus = serverApi.system().getStatus(cancelMonitor);
     var serverVersionAndStatusChecker = new ServerVersionAndStatusChecker(serverApi);
     serverVersionAndStatusChecker.checkVersionAndStatus(cancelMonitor);
-    storage.serverInfo().store(serverStatus);
+    var isMQRMode = serverApi.isSonarCloud() || isMQRMode(serverApi.settings(), serverStatus.getVersion(), cancelMonitor);
+    storage.serverInfo().store(serverStatus, isMQRMode);
+  }
+
+  private static boolean isMQRMode(SettingsApi settingsApi, String version, SonarLintCancelMonitor cancelMonitor) {
+    var settingResponse = settingsApi.getGlobalSetting(MQR_MODE_SETTING, cancelMonitor);
+    if (settingResponse == null) {
+      var serverVersion = Version.create(version);
+      return serverVersion.compareToIgnoreQualifier(Version.create(MIN_MQR_MODE_SUPPORT_VERSION)) >= 0;
+    }
+    return Boolean.TRUE.equals(Boolean.parseBoolean(settingResponse));
   }
 }
