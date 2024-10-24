@@ -109,9 +109,9 @@ public class VersionSoonUnsupportedHelper {
       try {
         var connection = connectionRepository.getConnectionById(connectionId);
         if (connection != null && connection.getKind() == ConnectionKind.SONARQUBE) {
-          var serverInfo = serverApiProvider.getServerApi(connectionId);
-          if (serverInfo.isPresent()) {
-            var version = synchronizationService.getServerConnection(connectionId, serverInfo.get()).readOrSynchronizeServerVersion(serverInfo.get(), cancelMonitor);
+          var serverApi = serverApiProvider.getServerApi(connectionId);
+          if (serverApi.isPresent()) {
+            var version = synchronizationService.getServerConnection(connectionId, serverApi.get()).readOrSynchronizeServerVersion(serverApi.get(), cancelMonitor);
             var isCached = cacheConnectionIdPerVersion.containsKey(connectionId) && cacheConnectionIdPerVersion.get(connectionId).compareTo(version) == 0;
             if (!isCached && VersionUtils.isVersionSupportedDuringGracePeriod(version)) {
               client.showSoonUnsupportedMessage(

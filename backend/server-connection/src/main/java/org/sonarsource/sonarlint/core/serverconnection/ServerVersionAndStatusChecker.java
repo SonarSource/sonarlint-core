@@ -63,12 +63,12 @@ public class ServerVersionAndStatusChecker {
     checkServerUp(serverInfo);
     var serverVersion = Version.create(serverInfo.getVersion());
     if (serverVersion.compareToIgnoreQualifier(Version.create(MIN_SQ_VERSION)) < 0) {
-      throw new UnsupportedServerException(unsupportedVersion(serverInfo, MIN_SQ_VERSION));
+      throw new UnsupportedServerException(unsupportedVersion(serverInfo));
     }
   }
 
-  private static String unsupportedVersion(ServerInfo serverStatus, String minVersion) {
-    return "SonarQube server has version " + serverStatus.getVersion() + ". Version should be greater or equal to " + minVersion;
+  private static String unsupportedVersion(ServerInfo serverStatus) {
+    return "SonarQube server has version " + serverStatus.getVersion() + ". Version should be greater or equal to " + MIN_SQ_VERSION;
   }
 
   private static String serverNotReady(ServerInfo serverStatus) {

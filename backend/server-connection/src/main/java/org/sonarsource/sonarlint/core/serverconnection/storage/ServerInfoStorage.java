@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.serverapi.system.MultiQualityMode;
 import org.sonarsource.sonarlint.core.serverapi.system.ServerInfo;
 import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
 import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
@@ -55,10 +56,10 @@ public class ServerInfoStorage {
   }
 
   private static Sonarlint.ServerInfo adapt(ServerInfo serverInfo) {
-    return Sonarlint.ServerInfo.newBuilder().setVersion(serverInfo.getVersion()).build();
+    return Sonarlint.ServerInfo.newBuilder().setVersion(serverInfo.getVersion()).setMode(Sonarlint.MultiQualityMode.valueOf(serverInfo.getMultiQualityMode().name())).build();
   }
 
   private static StoredServerInfo adapt(Sonarlint.ServerInfo serverInfo) {
-    return new StoredServerInfo(Version.create(serverInfo.getVersion()));
+    return new StoredServerInfo(Version.create(serverInfo.getVersion()), MultiQualityMode.valueOf(serverInfo.getMode().name()));
   }
 }

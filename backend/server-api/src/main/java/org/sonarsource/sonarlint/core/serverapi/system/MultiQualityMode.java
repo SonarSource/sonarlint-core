@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Server Connection
+ * SonarLint Core - Server API
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,25 +17,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection;
+package org.sonarsource.sonarlint.core.serverapi.system;
 
-import org.sonarsource.sonarlint.core.commons.Version;
-import org.sonarsource.sonarlint.core.serverapi.system.MultiQualityMode;
-
-public class StoredServerInfo {
-  private final Version version;
-  private final MultiQualityMode multiQualityMode;
-
-  public StoredServerInfo(Version version, MultiQualityMode multiQualityMode) {
-    this.version = version;
-    this.multiQualityMode = multiQualityMode;
-  }
-
-  public Version getVersion() {
-    return version;
-  }
-
-  public MultiQualityMode getMultiQualityMode() {
-    return this.multiQualityMode;
-  }
+public enum MultiQualityMode {
+  STANDARD, MQR, DEFAULT
 }
