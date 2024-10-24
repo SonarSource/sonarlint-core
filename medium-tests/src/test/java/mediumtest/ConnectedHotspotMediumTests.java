@@ -19,55 +19,34 @@
  */
 package mediumtest;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import mediumtest.fixtures.SonarLintBackendFixture;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
-import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.AnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.EngineConfiguration;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.RawIssue;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.RawIssueListener;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.SonarLintAnalysisEngine;
-import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
-import testutils.MockWebServerExtensionWithProtobuf;
-import testutils.TestUtils;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 
+import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
+import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
-import static org.mockito.Mockito.mock;
-import static testutils.TestUtils.createNoOpLogOutput;
+import static org.awaitility.Awaitility.await;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
+import static testutils.AnalysisUtils.createFile;
 
 class ConnectedHotspotMediumTests {
-  @RegisterExtension
-  private static final SonarLintLogTester logTester = new SonarLintLogTester();
-
-  @AfterEach
-  void stop() {
-    if (engine != null) {
-      engine.stop();
-      engine = null;
-    }
-  }
-
   private SonarLintTestRpcServer backend;
+  private static SonarLintBackendFixture.FakeSonarLintRpcClient client;
 
   @AfterEach
   void stopBackend() throws ExecutionException, InterruptedException {
@@ -77,95 +56,53 @@ class ConnectedHotspotMediumTests {
   }
 
   @Test
-  void should_not_locally_detect_hotspots_when_connected_to_a_never_synced_server(@TempDir Path baseDir) throws Exception {
-    createStorageAndEngine(null);
-    var inputFile = prepareJavaInputFile(baseDir);
-
-    final List<RawIssue> issues = new ArrayList<>();
-    engine.analyze(AnalysisConfiguration.builder()
-      .setBaseDir(baseDir)
-      .addInputFile(inputFile)
-      .setModuleKey("key")
-      .build(),
-      new StoreIssueListener(issues), null, null, CONFIG_SCOPE_ID);
-
-    assertThat(issues).isEmpty();
-  }
-
-  @Test
-  void should_locally_detect_hotspots_when_connected_to_sonarqube_9_9_plus(@TempDir Path baseDir) throws Exception {
-    createStorageAndEngine("9.9");
-    var inputFile = prepareJavaInputFile(baseDir);
-
-    final List<RawIssue> issues = new ArrayList<>();
-    engine.analyze(AnalysisConfiguration.builder()
-      .setBaseDir(baseDir)
-      .addInputFile(inputFile)
-      .setModuleKey("key")
-      .build(),
-      new StoreIssueListener(issues), null, null, CONFIG_SCOPE_ID);
-
-    assertThat(issues).extracting("ruleKey", "textRange", "inputFile.path", "severity")
-      .usingRecursiveFieldByFieldElementComparator()
-      .containsOnly(tuple("java:S5852", new TextRangeDto(3, 28, 3, 35), inputFile.getPath(), IssueSeverity.BLOCKER));
-  }
-
-  private void createStorageAndEngine(String serverVersion) {
+  void should_locally_detect_hotspots_when_connected_to_sonarqube_9_9_plus(@TempDir Path baseDir) {
+    var inputFile = createFile(baseDir, "Foo.java", "public class Foo {\n" +
+      "\n" +
+      "  void foo() {\n" +
+      "    String password = \"blue\";\n" +
+      "  }\n" +
+      "}\n");
+    client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, List.of(
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)
+      ))
+      .build();
+    var projectKey = "projectKey";
+    var branchName = "main";
+    var server = newSonarQubeServer("9.9")
+      .withQualityProfile("qpKey", qualityProfile -> qualityProfile
+        .withLanguage("java").withActiveRule("java:S2068", activeRule -> activeRule
+          .withSeverity(org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.BLOCKER)
+        ))
+      .withProject(projectKey,
+        project -> project
+          .withQualityProfile("qpKey")
+          .withBranch(branchName))
+      .withPlugin(TestPlugin.JAVA)
+      .start();
     backend = newBackend()
-      .withSonarQubeConnection(CONNECTION_ID, mockWebServer.url("/"), storage -> storage
-        .withServerVersion(serverVersion)
-        .withPlugin(TestPlugin.JAVA)
-        .withProject(JAVA_MODULE_KEY, project -> project
-          .withRuleSet("java", ruleSet -> ruleSet
-            .withActiveRule("java:S5852", "BLOCKER"))))
-      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, JAVA_MODULE_KEY)
+      .withFullSynchronization()
       .withSecurityHotspotsEnabled()
-      .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
-      .build();
+      .withSonarQubeConnection(CONNECTION_ID, server)
+      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
+      .withExtraEnabledLanguagesInConnectedMode(JAVA)
+      .build(client);
+    client.waitForSynchronization();
 
-    var config = EngineConfiguration.builder()
-      .setSonarLintUserHome(backend.getUserHome())
-      .setLogOutput(createNoOpLogOutput())
-      .setModulesProvider(() -> List.of(new ClientModuleInfo("key", mock(ClientModuleFileSystem.class))))
-      .build();
-    engine = new SonarLintAnalysisEngine(config, backend, CONNECTION_ID);
+    var analysisId = UUID.randomUUID();
+    var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
+        new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(inputFile.toUri()), Map.of(), true, System.currentTimeMillis()))
+      .join();
+    assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
+    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedHotspotsForScopeIdAsList(CONFIG_SCOPE_ID)).isNotEmpty());
+
+    var hotspot = client.getRaisedHotspotsForScopeIdAsList(CONFIG_SCOPE_ID).get(0);
+    assertThat(hotspot.getRuleKey()).isEqualTo("java:S2068");
+    assertThat(hotspot.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
   }
-
-  private ClientInputFile prepareJavaInputFile(Path baseDir) throws IOException {
-    return prepareInputFile(baseDir, "Foo.java",
-      "public class Foo {\n"
-        + "  public void foo() {\n"
-        + "    java.util.regex.Pattern.compile(\".*PATH=\\\"(.*)\\\"; export PATH;.*\");\n"
-        + "  }\n"
-        + "}",
-      false);
-  }
-
-  private ClientInputFile prepareInputFile(Path baseDir, String relativePath, String content, final boolean isTest) throws IOException {
-    final var file = new File(baseDir.toFile(), relativePath);
-    FileUtils.write(file, content, StandardCharsets.UTF_8);
-    return TestUtils.createInputFile(file.toPath(), relativePath, isTest);
-  }
-
-  static class StoreIssueListener implements RawIssueListener {
-    private final List<RawIssue> issues;
-
-    StoreIssueListener(List<RawIssue> issues) {
-      this.issues = issues;
-    }
-
-    @Override
-    public void handle(RawIssue rawIssue) {
-      issues.add(rawIssue);
-    }
-  }
-
-  @RegisterExtension
-  private final MockWebServerExtensionWithProtobuf mockWebServer = new MockWebServerExtensionWithProtobuf();
 
   private static final String CONNECTION_ID = StringUtils.repeat("very-long-id", 30);
   private static final String CONFIG_SCOPE_ID = "configScopeId";
-  private static final String JAVA_MODULE_KEY = "test-project-2";
-  private static SonarLintAnalysisEngine engine;
 
 }
