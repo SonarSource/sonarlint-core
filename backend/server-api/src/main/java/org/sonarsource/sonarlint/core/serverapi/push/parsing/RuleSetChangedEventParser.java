@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.push.RuleSetChangedEvent;
+import org.sonarsource.sonarlint.core.serverapi.push.parsing.common.ImpactPayload;
 
 import static org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils.areBlank;
 import static org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils.isBlank;
@@ -49,7 +50,9 @@ public class RuleSetChangedEventParser implements EventParser<RuleSetChangedEven
         changedRule.language,
         IssueSeverity.valueOf(changedRule.severity),
         changedRule.params.stream().filter(p -> p.value != null).collect(Collectors.toMap(p -> p.key, p -> p.value)),
-        changedRule.templateKey))
+        changedRule.templateKey,
+        changedRule.impacts.stream().map(impact -> new OverriddenImpact(impact.getSoftwareQuality(), impact.getSeverity())).collect(Collectors.toList())
+        ))
         .collect(Collectors.toList()),
       payload.deactivatedRules));
   }
@@ -69,6 +72,7 @@ public class RuleSetChangedEventParser implements EventParser<RuleSetChangedEven
       private String severity;
       private List<RuleParameterPayload> params;
       private String templateKey;
+      private List<ImpactPayload> impacts;
     }
 
     private static class RuleParameterPayload {

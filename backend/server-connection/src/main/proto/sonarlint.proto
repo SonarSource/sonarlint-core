@@ -59,6 +59,7 @@ message RuleSet {
     string severity = 2;
     string template_key = 3;
     map<string, string> params = 4;
+    repeated OverriddenImpact overriddenImpacts = 5;
   }
 }
 
@@ -73,6 +74,11 @@ message Flows {
 
 message Flow {
   repeated Location location = 1;
+}
+
+message OverriddenImpact {
+  string softwareQuality = 1;
+  string severity = 2;
 }
 
 message Impact {

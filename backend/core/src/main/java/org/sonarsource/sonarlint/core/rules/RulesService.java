@@ -231,7 +231,7 @@ public class RulesService {
       var templateRuleKeyWithCorrectRepo = RuleKey.parse(ruleOrTemplateDefinition.get().getKey());
       var ruleKey = new RuleKey(templateRuleKeyWithCorrectRepo.repository(), ruleKeyPossiblyWithDeprecatedRepo.rule()).toString();
       return new ServerActiveRule(ruleKey, possiblyDeprecatedActiveRuleFromStorage.getSeverity(), possiblyDeprecatedActiveRuleFromStorage.getParams(),
-        ruleOrTemplateDefinition.get().getKey());
+        ruleOrTemplateDefinition.get().getKey(), new ArrayList<>());
     } else {
       ruleOrTemplateDefinition = rulesRepository.getRule(connectionId, possiblyDeprecatedActiveRuleFromStorage.getRuleKey());
       if (ruleOrTemplateDefinition.isEmpty()) {
@@ -240,7 +240,7 @@ public class RulesService {
       }
       return new ServerActiveRule(ruleOrTemplateDefinition.get().getKey(), possiblyDeprecatedActiveRuleFromStorage.getSeverity(),
         possiblyDeprecatedActiveRuleFromStorage.getParams(),
-        null);
+        null, new ArrayList<>());
     }
   }
 
@@ -367,7 +367,8 @@ public class RulesService {
       activatedRule.getKey(),
       activatedRule.getSeverity(),
       activatedRule.getParameters(),
-      ruleTemplateKey == null ? "" : ruleTemplateKey));
+      ruleTemplateKey == null ? "" : ruleTemplateKey,
+      activatedRule.getOverriddenImpacts()));
     ruleSetsByLanguageKey.put(ruleLanguageKey, new RuleSet(new ArrayList<>(languageRulesByKey.values()), currentRuleSet.getLastModified()));
   }
 

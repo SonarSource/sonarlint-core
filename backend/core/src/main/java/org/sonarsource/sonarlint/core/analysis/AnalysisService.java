@@ -419,7 +419,7 @@ public class AnalysisService {
       var templateRuleKeyWithCorrectRepo = RuleKey.parse(ruleOrTemplateDefinition.getKey());
       var ruleKey = new RuleKey(templateRuleKeyWithCorrectRepo.repository(), ruleKeyPossiblyWithDeprecatedRepo.rule()).toString();
       return new ServerActiveRule(ruleKey, possiblyDeprecatedActiveRuleFromStorage.getSeverity(), possiblyDeprecatedActiveRuleFromStorage.getParams(),
-        ruleOrTemplateDefinition.getKey());
+        ruleOrTemplateDefinition.getKey(), new ArrayList<>());
     } else {
       ruleOrTemplateDefinition = rulesRepository.getRule(connectionId, possiblyDeprecatedActiveRuleFromStorage.getRuleKey()).orElse(null);
       if (ruleOrTemplateDefinition == null) {
@@ -427,7 +427,7 @@ public class AnalysisService {
         return possiblyDeprecatedActiveRuleFromStorage;
       }
       return new ServerActiveRule(ruleOrTemplateDefinition.getKey(), possiblyDeprecatedActiveRuleFromStorage.getSeverity(), possiblyDeprecatedActiveRuleFromStorage.getParams(),
-        null);
+        null, new ArrayList<>());
     }
   }
 
