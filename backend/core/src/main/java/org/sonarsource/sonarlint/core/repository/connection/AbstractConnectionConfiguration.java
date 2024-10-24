@@ -36,7 +36,6 @@ public abstract class AbstractConnectionConfiguration {
   private final boolean disableNotifications;
   private final ConnectionKind kind;
   private final String url;
-  private boolean hasEnterpriseCSharpPlugin = false;
 
   protected AbstractConnectionConfiguration(String connectionId, ConnectionKind kind, boolean disableNotifications, String url) {
     Objects.requireNonNull(connectionId, "Connection id is mandatory");
@@ -74,14 +73,6 @@ public abstract class AbstractConnectionConfiguration {
       return false;
     }
     return Objects.equals(myUri, otherUri);
-  }
-
-  public void setHasEnterpriseCSharpPlugin(boolean hasEnterpriseCSharpPlugin) {
-    this.hasEnterpriseCSharpPlugin = hasEnterpriseCSharpPlugin;
-  }
-
-  public boolean hasEnterpriseCSharpPlugin() {
-    return hasEnterpriseCSharpPlugin;
   }
 
   @Override

@@ -872,11 +872,14 @@ class AnalysisMediumTests {
 
   @Test
   void it_should_not_use_enterprise_csharp_analyzer_when_connected_to_community() {
+    server = newSonarQubeServer("10.8").start();
     backend = newBackend()
       .withSonarQubeConnection("connectionId",
+        server,
         storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "BLOCKER"))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
+      .withFullSynchronization()
       .build();
 
     var result = backend.getAnalysisService().shouldUseEnterpriseCSharpAnalyzer(new ShouldUseEnterpriseCSharpAnalyzerParams(CONFIG_SCOPE_ID)).join();

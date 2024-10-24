@@ -112,6 +112,7 @@ import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
 import org.sonarsource.sonarlint.core.rules.RulesService;
 import org.sonarsource.sonarlint.core.rules.StandaloneRulesConfigurationChanged;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
+import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.AnalyzerConfigurationSynchronized;
 import org.sonarsource.sonarlint.core.sync.ConfigurationScopesSynchronizedEvent;
@@ -138,6 +139,7 @@ import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.getVSCCha
 @Singleton
 public class AnalysisService {
   private static final Version SECRET_ANALYSIS_MIN_SQ_VERSION = Version.create("9.9");
+  public static final Version REPACKAGED_DOTNET_ANALYZER_MIN_SQ_VERSION = Version.create("10.8");
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
@@ -644,10 +646,22 @@ public class AnalysisService {
     } else {
       var connectionId = binding.get().getConnectionId();
       var connection = connectionConfigurationRepository.getConnectionById(connectionId);
-      if (connection == null) {
-        return false;
+      var isSonarCloud = connection != null && connection.getEndpointParams().isSonarCloud();
+      var connectionStorage = storageService.connection(connectionId);
+      if (isSonarCloud) {
+        return true;
       } else {
-        return connection.hasEnterpriseCSharpPlugin();
+        var serverInfo = connectionStorage.serverInfo().read();
+        if (serverInfo.isEmpty()) {
+          return false;
+        } else {
+          // For SQ versions older than 10.8, enterprise C# analyzer was packaged in all editions.
+          // For newer versions, we need to check if enterprise plugin is present on the server
+          var serverVersion = serverInfo.get().getVersion();
+          var supportsRepackagedDotnetAnalyzer = serverVersion.compareToIgnoreQualifier(REPACKAGED_DOTNET_ANALYZER_MIN_SQ_VERSION) >= 0;
+          var hasEnterprisePlugin = connectionStorage.plugins().getStoredPlugins().stream().map(StoredPlugin::getKey).anyMatch("csharpenterprise"::equals);
+          return !supportsRepackagedDotnetAnalyzer || hasEnterprisePlugin;
+        }
       }
     }
   }

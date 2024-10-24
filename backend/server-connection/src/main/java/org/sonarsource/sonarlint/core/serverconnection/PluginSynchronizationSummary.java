@@ -21,18 +21,12 @@ package org.sonarsource.sonarlint.core.serverconnection;
 
 public class PluginSynchronizationSummary {
   private final boolean anyPluginSynchronized;
-  private final boolean canUseEnterpriseDotnetPlugin;
 
-  public PluginSynchronizationSummary(boolean anyPluginSynchronized, boolean enterprisePluginPresent) {
+  public PluginSynchronizationSummary(boolean anyPluginSynchronized) {
     this.anyPluginSynchronized = anyPluginSynchronized;
-    this.canUseEnterpriseDotnetPlugin = enterprisePluginPresent;
   }
 
   public boolean anyPluginSynchronized() {
     return anyPluginSynchronized;
-  }
-
-  public boolean canUseEnterpriseDotnetPlugin() {
-    return canUseEnterpriseDotnetPlugin;
   }
 }
