@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,16 +17,19 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.backend.issue;
+package org.sonarsource.sonarlint.core.rpc.protocol.adapter;
 
-public class GetIssueDetailsResponse {
-  private final EffectiveIssueDetailsDto details;
+import com.google.gson.reflect.TypeToken;
+import org.eclipse.lsp4j.jsonrpc.json.adapters.EitherTypeAdapter;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.MQRModeDetails;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.StandardModeDetails;
 
-  public GetIssueDetailsResponse(EffectiveIssueDetailsDto details) {
-    this.details = details;
-  }
+public class EitherStandardOrMRAdapterFactory extends CustomEitherAdapterFactory<StandardModeDetails, MQRModeDetails> {
+  private static final TypeToken<Either<StandardModeDetails, MQRModeDetails>> ELEMENT_TYPE = new TypeToken<>() {
+  };
 
-  public EffectiveIssueDetailsDto getDetails() {
-    return details;
+  public EitherStandardOrMRAdapterFactory() {
+    super(ELEMENT_TYPE, StandardModeDetails.class, MQRModeDetails.class, new EitherTypeAdapter.PropertyChecker("severity"));
   }
 }

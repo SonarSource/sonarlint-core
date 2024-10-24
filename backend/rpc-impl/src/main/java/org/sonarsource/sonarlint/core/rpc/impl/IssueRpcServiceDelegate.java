@@ -38,6 +38,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssues
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssuesForFileResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenIssueResponse;
+import org.sonarsource.sonarlint.core.rules.RuleNotFoundException;
 
 public class IssueRpcServiceDelegate extends AbstractRpcServiceDelegate implements IssueRpcService {
   public IssueRpcServiceDelegate(SonarLintRpcServerImpl server) {
@@ -86,9 +87,12 @@ public class IssueRpcServiceDelegate extends AbstractRpcServiceDelegate implemen
     return requestAsync(cancelMonitor -> {
       try {
         return new GetIssueDetailsResponse(getBean(IssueService.class)
-          .getIssueDetails(params.getConfigurationScopeId(), params.getIssueId()));
+          .getIssueDetails(params.getConfigurationScopeId(), params.getIssueId(), cancelMonitor));
       } catch (IssueNotFoundException e) {
         var error = new ResponseError(SonarLintRpcErrorCode.ISSUE_NOT_FOUND, e.getMessage(), e.getIssueKey());
+        throw new ResponseErrorException(error);
+      } catch (RuleNotFoundException e) {
+        var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, e.getMessage(), e.getRuleKey());
         throw new ResponseErrorException(error);
       }
     });
