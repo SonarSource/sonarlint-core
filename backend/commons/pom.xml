@@ -18,7 +18,7 @@
     <dependency>
         <groupId>org.sonarsource.git.blame</groupId>
         <artifactId>git-files-blame</artifactId>
-      <version>1.0.3.1673</version>
+      <version>1.1.0.1835</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jgit</groupId>

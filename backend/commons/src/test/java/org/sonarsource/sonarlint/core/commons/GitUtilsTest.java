@@ -52,7 +52,6 @@ import static java.util.function.Predicate.not;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.jgit.lib.Constants.GITIGNORE_FILENAME;
 import static org.eclipse.jgit.util.FileUtils.RECURSIVE;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.addFileToGitIgnoreAndCommit;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createFile;
@@ -75,7 +74,11 @@ class GitUtilsTest {
 
   @BeforeAll
   public static void beforeAll() throws GitAPIException, IOException {
-    setUpBareRepo(Map.of(".gitignore", "*.log\n*.tmp\n"));
+    setUpBareRepo(Map.of(
+      ".gitignore", "*.log\n*.tmp\n",
+      "fileA", "lineA1\nlineA2\n",
+      "fileB", "lineB1\nlineB2\n"
+    ));
   }
 
   @AfterAll
@@ -317,12 +320,13 @@ class GitUtilsTest {
   }
 
   @Test
-  void git_blame_throws_illegal_state_exception_if_repo_is_bare() {
-    Set<Path> emptySet = Set.of();
+  void git_blame_works_for_bare_repos_too() {
+    var sonarLintBlameResult = blameWithFilesGitCommand(bareRepoPath, Stream.of("fileA", "fileB").map(Path::of).collect(Collectors.toSet()));
 
-    var e = assertThrows(IllegalStateException.class, () -> GitUtils.blameWithFilesGitCommand(bareRepoPath, emptySet));
-
-    assertThat(e).hasMessage("GitRepo is a bare repository");
+    assertThat(sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(1, 2))).isPresent();
+    assertThat(sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(3))).isEmpty();
+    assertThat(sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of("fileB"), List.of(1, 2))).isPresent();
+    assertThat(sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of("fileB"), List.of(3))).isEmpty();
   }
 
   private static void setUpBareRepo(Map<String, String> filePathContentMap) throws IOException, GitAPIException {
