@@ -339,7 +339,7 @@ public class IssueService {
   }
 
   private void republishPreviouslyRaisedIssues(String connectionId, IssueChangedEvent event) {
-    var isMQRMode = storageService.connection(connectionId).serverInfo().read().map(StoredServerInfo::isMQRMode).orElse(false);
+    boolean isMQRMode = storageService.connection(connectionId).serverInfo().read().map(StoredServerInfo::isMQRMode).orElse(false);
     var boundScopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, event.getProjectKey());
     boundScopes.forEach(scope -> {
       var scopeId = scope.getConfigScopeId();

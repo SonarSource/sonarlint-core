@@ -45,7 +45,7 @@ public class ServerInfoSynchronizer {
     var serverStatus = serverApi.system().getStatus(cancelMonitor);
     var serverVersionAndStatusChecker = new ServerVersionAndStatusChecker(serverApi);
     serverVersionAndStatusChecker.checkVersionAndStatus(cancelMonitor);
-    var isMQRMode = serverApi.isSonarCloud() || isMQRMode(serverApi.settings(), serverStatus.getVersion(), cancelMonitor);
+    boolean isMQRMode = serverApi.isSonarCloud() || isMQRMode(serverApi.settings(), serverStatus.getVersion(), cancelMonitor);
     storage.serverInfo().store(serverStatus, isMQRMode);
   }
 

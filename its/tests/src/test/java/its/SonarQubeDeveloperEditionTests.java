@@ -841,12 +841,21 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         assertThat(taintVulnerability.getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.COMPLETE);
         // In SQ 10.8+, old MAJOR severity maps to overridden MEDIUM impact
         assertThat(taintVulnerability.getImpacts()).containsExactly(entry(SoftwareQuality.SECURITY, ImpactSeverity.MEDIUM));
+        assertThat(taintVulnerability.getDetails().isRight()).isTrue();
+        assertThat(taintVulnerability.getDetails().getRight().getImpacts()).isEqualTo(entry(SoftwareQuality.SECURITY, ImpactSeverity.MEDIUM));
+        assertThat(taintVulnerability.getDetails().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.COMPLETE);
       } else if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 2)) {
         assertThat(taintVulnerability.getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.COMPLETE);
         // In 10.2 <= SQ < 10.8, the impact severity is not overridden
         assertThat(taintVulnerability.getImpacts()).containsExactly(entry(SoftwareQuality.SECURITY, ImpactSeverity.HIGH));
+        assertThat(taintVulnerability.getDetails().isRight()).isTrue();
+        assertThat(taintVulnerability.getDetails().getRight().getImpacts()).isEqualTo(entry(SoftwareQuality.SECURITY, ImpactSeverity.HIGH));
+        assertThat(taintVulnerability.getDetails().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.COMPLETE);
       } else {
         assertThat(taintVulnerability.getCleanCodeAttribute()).isNull();
+        assertThat(taintVulnerability.getDetails().isLeft()).isTrue();
+        assertThat(taintVulnerability.getDetails().getLeft().getSeverity()).isEqualTo(org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.MAJOR);
+        assertThat(taintVulnerability.getDetails().getLeft().getType()).isEqualTo(org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.VULNERABILITY);
       }
       assertThat(taintVulnerability.getFlows()).isNotEmpty();
       assertThat(taintVulnerability.isOnNewCode()).isTrue();
