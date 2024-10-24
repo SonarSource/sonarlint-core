@@ -113,7 +113,7 @@ public class FindingReportingService {
 
   private void triggerStreaming(String configurationScopeId, UUID analysisId) {
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId).orElseGet(NewCodeDefinition::withAlwaysNew);
-    var isMQRMode = isMQRModeForConfigurationScope(configurationScopeId);
+    boolean isMQRMode = isMQRModeForConfigurationScope(configurationScopeId);
     var issuesToRaise = issuesPerFileUri.entrySet().stream()
       .filter(e -> filesPerAnalysis.get(analysisId).contains(e.getKey()))
       .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedIssueDto(issue, newCodeDefinition, isMQRMode)).collect(toList())))
