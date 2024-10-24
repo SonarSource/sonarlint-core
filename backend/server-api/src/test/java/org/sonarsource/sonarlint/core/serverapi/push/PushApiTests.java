@@ -129,6 +129,40 @@ class PushApiTests {
   }
 
   @Test
+  void should_notify_rule_set_changed_event_without_impacts() {
+    var mockResponse = new MockResponse();
+    mockResponse.setBody("event: RuleSetChanged\n" +
+      "data: {" +
+      "\"projects\": [\"projectKey1\", \"projectKey2\"]," +
+      "\"activatedRules\": [{" +
+      "\"key\": \"java:S0000\"," +
+      "\"severity\": \"MAJOR\"," +
+      "\"params\": [{" +
+      "\"key\": \"key1\"," +
+      "\"value\": \"value1\"" +
+      "}]" +
+      "}]," +
+      "\"deactivatedRules\": [\"java:S4321\"]" +
+      "}\n\n");
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
+
+    List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
+    underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);
+
+    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(receivedEvents)
+      .extracting("projectKeys", "deactivatedRules")
+      .containsOnly(tuple(List.of("projectKey1", "projectKey2"), List.of("java:S4321"))));
+    assertThat(receivedEvents)
+      .flatExtracting("activatedRules")
+      .extracting("key", "severity")
+      .containsOnly(tuple("java:S0000", IssueSeverity.MAJOR));
+    assertThat(receivedEvents)
+      .flatExtracting("activatedRules")
+      .extracting("parameters")
+      .containsOnly(Map.of("key1", "value1"));
+  }
+
+  @Test
   void should_notify_rule_set_changed_event() {
     var mockResponse = new MockResponse();
     mockResponse.setBody("event: RuleSetChanged\n" +
@@ -140,6 +174,11 @@ class PushApiTests {
       "\"params\": [{" +
       "\"key\": \"key1\"," +
       "\"value\": \"value1\"" +
+      "}]," +
+      "\"templateKey\": \"templateKey\"," +
+      "\"impacts\": [{" +
+      "\"softwareQuality\": \"SECURITY\"," +
+      "\"severity\": \"HIGH\"" +
       "}]" +
       "}]," +
       "\"deactivatedRules\": [\"java:S4321\"]" +
