@@ -25,12 +25,8 @@ import com.sonar.orchestrator.Orchestrator;
 import com.sonar.orchestrator.build.MavenBuild;
 import com.sonar.orchestrator.http.HttpMethod;
 import its.utils.LogOnTestFailure;
-import its.utils.TestClientInputFile;
-import java.io.File;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -47,9 +43,6 @@ import org.sonarqube.ws.client.PostRequest;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.WsClientFactories;
 import org.sonarqube.ws.client.qualityprofiles.SearchRequest;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.AnalysisConfiguration;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.RawIssue;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.RawIssueListener;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
@@ -69,40 +62,12 @@ public abstract class AbstractConnectedTests {
   protected static final String SONARLINT_PWD = "sonarlintpwd";
   protected static final String MAIN_BRANCH_NAME = "master";
 
-  protected static class SaveIssueListener implements RawIssueListener {
-    List<RawIssue> issues = new LinkedList<>();
-
-    @Override
-    public void handle(RawIssue rawIssue) {
-      issues.add(rawIssue);
-    }
-
-    public List<RawIssue> getIssues() {
-      return issues;
-    }
-
-    public void clear() {
-      issues.clear();
-    }
-
-  }
-
   protected static WsClient newAdminWsClient(Orchestrator orchestrator) {
     var server = orchestrator.getServer();
     return WsClientFactories.getDefault().newClient(HttpConnector.newBuilder()
       .url(server.getUrl())
       .credentials(com.sonar.orchestrator.container.Server.ADMIN_LOGIN, com.sonar.orchestrator.container.Server.ADMIN_PASSWORD)
       .build());
-  }
-
-  protected static AnalysisConfiguration createAnalysisConfiguration(String projectDir, String filePath, String... properties) {
-    final var baseDir = Paths.get("projects/" + projectDir).toAbsolutePath();
-    final var path = baseDir.resolve(filePath);
-    return AnalysisConfiguration.builder()
-      .setBaseDir(new File("projects/" + projectDir).toPath().toAbsolutePath())
-      .addInputFile(new TestClientInputFile(baseDir, path, false, StandardCharsets.UTF_8))
-      .putAllExtraProperties(toMap(properties))
-      .build();
   }
 
   static Map<String, String> toMap(String[] keyValues) {

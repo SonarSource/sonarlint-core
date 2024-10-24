@@ -14,12 +14,12 @@
   <dependencies>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>sonarlint-java-client-dependencies</artifactId>
+      <artifactId>sonarlint-commons</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>sonarlint-java-client-legacy</artifactId>
+      <artifactId>sonarlint-java-client-dependencies</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -138,7 +138,7 @@
           <!-- The dependencies we actually want to be shaded, without transitive ones! -->
           <artifactSet>
             <includes>
-              <include>${project.groupId}:sonarlint-java-client-legacy</include>
+              <include>${project.groupId}:sonarlint-commons</include>
               <include>${project.groupId}:sonarlint-java-client-dependencies</include>
               <include>${project.groupId}:sonarlint-java-client-utils</include>
               <include>${project.groupId}:sonarlint-rpc-java-client</include>

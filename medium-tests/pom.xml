@@ -29,7 +29,7 @@
     </dependency>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>sonarlint-java-client-legacy</artifactId>
+      <artifactId>sonarlint-java-client-utils</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>

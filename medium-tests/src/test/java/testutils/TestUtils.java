@@ -28,21 +28,9 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.RawIssue;
-import org.sonarsource.sonarlint.core.client.legacy.analysis.RawIssueListener;
 import org.sonarsource.sonarlint.core.client.utils.ClientLogOutput;
 
 public class TestUtils {
-
-  public static class NoOpIssueListener implements RawIssueListener {
-    @Override
-    public void handle(RawIssue rawIssue) {
-    }
-  };
-
-  public static NoOpIssueListener createNoOpIssueListener() {
-    return new NoOpIssueListener();
-  }
 
   public static class NoOpLogOutput implements ClientLogOutput {
     @Override
