@@ -20,12 +20,14 @@
 package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.serverapi.push.parsing.OverriddenImpact;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
@@ -116,7 +118,10 @@ public class AnalyzerConfigurationStorage {
       rule.getRuleKey(),
       IssueSeverity.valueOf(rule.getSeverity()),
       rule.getParamsMap(),
-      rule.getTemplateKey());
+      rule.getTemplateKey(),
+      rule.getOverriddenImpactsList().stream()
+        .map(impact -> new OverriddenImpact(impact.getSoftwareQuality(), impact.getSeverity()))
+        .collect(Collectors.toList()));
   }
 
   private static Sonarlint.RuleSet adapt(RuleSet ruleSet) {
