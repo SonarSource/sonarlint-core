@@ -25,7 +25,7 @@ import java.util.Optional;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.system.MultiQualityMode;
-import org.sonarsource.sonarlint.core.serverapi.system.ServerInfo;
+import org.sonarsource.sonarlint.core.serverapi.system.ServerStatusInfo;
 import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
 import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
@@ -43,9 +43,9 @@ public class ServerInfoStorage {
     this.storageFilePath = rootPath.resolve(SERVER_INFO_PB);
   }
 
-  public void store(ServerInfo serverInfo, MultiQualityMode multiQualityMode) {
+  public void store(ServerStatusInfo serverStatus, MultiQualityMode multiQualityMode) {
     FileUtils.mkdirs(storageFilePath.getParent());
-    var serverInfoToStore = adapt(serverInfo, multiQualityMode);
+    var serverInfoToStore = adapt(serverStatus, multiQualityMode);
     LOG.debug("Storing server info in {}", storageFilePath);
     rwLock.write(() -> writeToFile(serverInfoToStore, storageFilePath));
     LOG.debug("Stored server info");
@@ -55,8 +55,8 @@ public class ServerInfoStorage {
     return rwLock.read(() -> Files.exists(storageFilePath) ? Optional.of(adapt(ProtobufFileUtil.readFile(storageFilePath, Sonarlint.ServerInfo.parser()))) : Optional.empty());
   }
 
-  private static Sonarlint.ServerInfo adapt(ServerInfo serverInfo, MultiQualityMode multiQualityMode) {
-    return Sonarlint.ServerInfo.newBuilder().setVersion(serverInfo.getVersion()).setMode(Sonarlint.MultiQualityMode.valueOf(multiQualityMode.name())).build();
+  private static Sonarlint.ServerInfo adapt(ServerStatusInfo serverStatus, MultiQualityMode multiQualityMode) {
+    return Sonarlint.ServerInfo.newBuilder().setVersion(serverStatus.getVersion()).setMode(Sonarlint.MultiQualityMode.valueOf(multiQualityMode.name())).build();
   }
 
   private static StoredServerInfo adapt(Sonarlint.ServerInfo serverInfo) {

@@ -33,14 +33,14 @@ public class SystemApi {
     this.helper = helper;
   }
 
-  public ServerInfo getStatus(SonarLintCancelMonitor cancelMonitor) {
+  public ServerStatusInfo getStatus(SonarLintCancelMonitor cancelMonitor) {
     return ServerApiHelper.processTimed(
       () -> helper.get("api/system/status", cancelMonitor),
       response -> {
         var responseStr = response.bodyAsString();
         try {
           var status = new Gson().fromJson(responseStr, SystemStatus.class);
-          return new ServerInfo(status.id, status.status, status.version);
+          return new ServerStatusInfo(status.id, status.status, status.version);
         } catch (Exception e) {
           throw new IllegalStateException("Unable to parse server infos from: " + responseStr, e);
         }
