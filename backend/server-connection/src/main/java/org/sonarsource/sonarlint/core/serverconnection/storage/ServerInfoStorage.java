@@ -24,7 +24,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.serverapi.system.ServerInfo;
+import org.sonarsource.sonarlint.core.serverapi.system.ServerStatusInfo;
 import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
 import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
@@ -42,9 +42,9 @@ public class ServerInfoStorage {
     this.storageFilePath = rootPath.resolve(SERVER_INFO_PB);
   }
 
-  public void store(ServerInfo serverInfo) {
+  public void store(ServerStatusInfo serverStatus, boolean isMQRMode) {
     FileUtils.mkdirs(storageFilePath.getParent());
-    var serverInfoToStore = adapt(serverInfo);
+    var serverInfoToStore = adapt(serverStatus, isMQRMode);
     LOG.debug("Storing server info in {}", storageFilePath);
     rwLock.write(() -> writeToFile(serverInfoToStore, storageFilePath));
     LOG.debug("Stored server info");
@@ -54,11 +54,11 @@ public class ServerInfoStorage {
     return rwLock.read(() -> Files.exists(storageFilePath) ? Optional.of(adapt(ProtobufFileUtil.readFile(storageFilePath, Sonarlint.ServerInfo.parser()))) : Optional.empty());
   }
 
-  private static Sonarlint.ServerInfo adapt(ServerInfo serverInfo) {
-    return Sonarlint.ServerInfo.newBuilder().setVersion(serverInfo.getVersion()).build();
+  private static Sonarlint.ServerInfo adapt(ServerStatusInfo serverStatus, boolean isMQRMode) {
+    return Sonarlint.ServerInfo.newBuilder().setVersion(serverStatus.getVersion()).setIsMqrMode(isMQRMode).build();
   }
 
   private static StoredServerInfo adapt(Sonarlint.ServerInfo serverInfo) {
-    return new StoredServerInfo(Version.create(serverInfo.getVersion()));
+    return new StoredServerInfo(Version.create(serverInfo.getVersion()), serverInfo.getIsMqrMode());
   }
 }

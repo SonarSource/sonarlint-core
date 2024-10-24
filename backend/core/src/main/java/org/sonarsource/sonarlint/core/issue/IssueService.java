@@ -46,17 +46,24 @@ import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.local.only.XodusLocalOnlyIssueStore;
 import org.sonarsource.sonarlint.core.reporting.FindingReportingService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.reporting.PreviouslyRaisedFindingsRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.EffectiveIssueDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssuesForFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
+import org.sonarsource.sonarlint.core.rules.RuleDetails;
+import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
+import org.sonarsource.sonarlint.core.rules.RuleNotFoundException;
+import org.sonarsource.sonarlint.core.rules.RulesService;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
+import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
@@ -90,10 +97,13 @@ public class IssueService {
   private final LocalOnlyIssueRepository localOnlyIssueRepository;
   private final ApplicationEventPublisher eventPublisher;
   private final FindingReportingService findingReportingService;
+  private final PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository;
+  private final RulesService rulesService;
 
   public IssueService(ConfigurationRepository configurationRepository, ServerApiProvider serverApiProvider, StorageService storageService,
     LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
-    ApplicationEventPublisher eventPublisher, FindingReportingService findingReportingService) {
+    ApplicationEventPublisher eventPublisher, FindingReportingService findingReportingService,
+    PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, RulesService rulesService) {
     this.configurationRepository = configurationRepository;
     this.serverApiProvider = serverApiProvider;
     this.storageService = storageService;
@@ -101,6 +111,8 @@ public class IssueService {
     this.localOnlyIssueRepository = localOnlyIssueRepository;
     this.eventPublisher = eventPublisher;
     this.findingReportingService = findingReportingService;
+    this.previouslyRaisedFindingsRepository = previouslyRaisedFindingsRepository;
+    this.rulesService = rulesService;
   }
 
   public void changeStatus(String configurationScopeId, String issueKey, ResolutionStatus newStatus, boolean isTaintIssue, SonarLintCancelMonitor cancelMonitor) {
@@ -323,6 +335,24 @@ public class IssueService {
     return localOnlyIssueStorageService.get().removeIssue(issueUuid);
   }
 
+  public EffectiveIssueDetailsDto getIssueDetails(String configurationScopeId, UUID issueId, SonarLintCancelMonitor cancelMonitor)
+    throws IssueNotFoundException, RuleNotFoundException {
+    var maybeIssue = previouslyRaisedFindingsRepository.getRaisedIssueWithScopeAndKey(configurationScopeId, issueId);
+
+    if (maybeIssue.isEmpty()) {
+      throw new IssueNotFoundException("Failed to retrieve issue details. Issue with key '"
+        + issueId + "' not found.", issueId);
+    }
+
+    var issue = maybeIssue.get();
+    var ruleKey = issue.getRuleKey();
+    var effectiveRuleDetails = rulesService.getRuleDetails(configurationScopeId, ruleKey, cancelMonitor);
+    var ruleDetails = RuleDetails.merging(effectiveRuleDetails, issue);
+    // TODO remove this added layer of effectiveruledetails
+    var effectiveRuleDetails1 = RuleDetailsAdapter.transform(ruleDetails, issue.getRuleDescriptionContextKey());
+    return new EffectiveIssueDetailsDto(effectiveRuleDetails1, issue.getDetails(), issue.getRuleDescriptionContextKey());
+  }
+
   @EventListener
   public void onServerEventReceived(SonarServerEventReceivedEvent eventReceived) {
     var connectionId = eventReceived.getConnectionId();
@@ -338,29 +368,40 @@ public class IssueService {
   }
 
   private void republishPreviouslyRaisedIssues(String connectionId, IssueChangedEvent event) {
+    var isMQRMode = storageService.connection(connectionId).serverInfo().read().map(StoredServerInfo::isMQRMode).orElse(false);
     var boundScopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, event.getProjectKey());
     boundScopes.forEach(scope -> {
       var scopeId = scope.getConfigScopeId();
-      findingReportingService.updateAndReportIssues(scopeId, previouslyRaisedIssue -> raisedIssueUpdater(previouslyRaisedIssue, event));
+      findingReportingService.updateAndReportIssues(scopeId, previouslyRaisedIssue -> raisedIssueUpdater(previouslyRaisedIssue, isMQRMode, event));
     });
   }
 
-  public static RaisedIssueDto raisedIssueUpdater(RaisedIssueDto previouslyRaisedIssue, IssueChangedEvent event) {
+  public static RaisedIssueDto raisedIssueUpdater(RaisedIssueDto previouslyRaisedIssue, boolean isMQRMode, IssueChangedEvent event) {
+    var updatedIssue = previouslyRaisedIssue;
     var resolved = event.getResolved();
     var userSeverity = event.getUserSeverity();
     var userType = event.getUserType();
     var impactedIssueKeys = Set.copyOf(event.getImpactedIssueKeys());
     if (resolved != null) {
       UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder().withResolution(resolved).buildIssue();
-      return updateIssue(previouslyRaisedIssue, impactedIssueKeys, issueUpdater);
-    } else if (userSeverity != null) {
-      UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder().withSeverity(IssueSeverity.valueOf(userSeverity.name())).buildIssue();
-      return updateIssue(previouslyRaisedIssue, impactedIssueKeys, issueUpdater);
-    } else if (userType != null) {
-      UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder().withType(RuleType.valueOf(userType.name())).buildIssue();
-      return updateIssue(previouslyRaisedIssue, impactedIssueKeys, issueUpdater);
+      updatedIssue = updateIssue(updatedIssue, impactedIssueKeys, issueUpdater);
     }
-    return previouslyRaisedIssue;
+    if (userSeverity != null) {
+      UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder().withSeverity(IssueSeverity.valueOf(userSeverity.name())).buildIssue();
+      updatedIssue = updateIssue(updatedIssue, impactedIssueKeys, issueUpdater);
+    }
+    if (userType != null) {
+      UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder().withType(RuleType.valueOf(userType.name())).buildIssue();
+      updatedIssue = updateIssue(updatedIssue, impactedIssueKeys, issueUpdater);
+    }
+    UnaryOperator<RaisedIssueDto> issueUpdater;
+    if (isMQRMode) {
+      issueUpdater = it -> it.builder().withMQRModeDetails(it.getCleanCodeAttribute(), it.getImpacts()).buildIssue();
+    } else {
+      issueUpdater = it -> it.builder().withStandardModeDetails(it.getSeverity(), it.getType()).buildIssue();
+    }
+    updatedIssue = updateIssue(updatedIssue, impactedIssueKeys, issueUpdater);
+    return updatedIssue;
   }
 
   private static RaisedIssueDto updateIssue(RaisedIssueDto issue, Set<String> impactedIssueKeys, UnaryOperator<RaisedIssueDto> issueUpdater) {

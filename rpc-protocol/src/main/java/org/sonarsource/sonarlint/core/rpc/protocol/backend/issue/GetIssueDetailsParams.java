@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Server Connection
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,24 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.issue;
 
-import org.sonarsource.sonarlint.core.commons.Version;
+import java.util.UUID;
 
-public class StoredServerInfo {
-  private final Version version;
-  private final boolean isMQRMode;
+public class GetIssueDetailsParams {
+  private final String configurationScopeId;
+  private final UUID issueId;
 
-  public StoredServerInfo(Version version, boolean isMQRMode) {
-    this.version = version;
-    this.isMQRMode = isMQRMode;
+  public GetIssueDetailsParams(String configurationScopeId, UUID issueId) {
+    this.configurationScopeId = configurationScopeId;
+    this.issueId = issueId;
   }
 
-  public Version getVersion() {
-    return version;
+  public String getConfigurationScopeId() {
+    return configurationScopeId;
   }
 
-  public boolean isMQRMode() {
-    return this.isMQRMode;
+  public UUID getIssueId() {
+    return issueId;
   }
 }

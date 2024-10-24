@@ -19,12 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.system;
 
-public class ServerInfo {
+public class ServerStatusInfo {
   private final String id;
   private final String status;
   private final String version;
 
-  public ServerInfo(String id, String status, String version) {
+  public ServerStatusInfo(String id, String status, String version) {
     this.id = id;
     this.status = status;
     this.version = version;

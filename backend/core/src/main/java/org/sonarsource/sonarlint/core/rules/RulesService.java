@@ -69,6 +69,7 @@ import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerRule;
 import org.sonarsource.sonarlint.core.serverconnection.AnalyzerConfiguration;
 import org.sonarsource.sonarlint.core.serverconnection.RuleSet;
+import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.SynchronizationService;
@@ -126,7 +127,7 @@ public class RulesService {
     return buildResponse(ruleDetails, contextKey);
   }
 
-  private RuleDetails getRuleDetails(String configurationScopeId, String ruleKey, SonarLintCancelMonitor cancelMonitor) throws RuleNotFoundException {
+  public RuleDetails getRuleDetails(String configurationScopeId, String ruleKey, SonarLintCancelMonitor cancelMonitor) throws RuleNotFoundException {
     var effectiveBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
     RuleDetails ruleDetails;
     if (effectiveBinding.isEmpty()) {
@@ -141,13 +142,15 @@ public class RulesService {
     return ruleDetails;
   }
 
-  private RuleDetails getActiveRuleForBinding(String ruleKey, Binding binding, SonarLintCancelMonitor cancelMonitor) {
+  public RuleDetails getActiveRuleForBinding(String ruleKey, Binding binding, SonarLintCancelMonitor cancelMonitor) {
     var connectionId = binding.getConnectionId();
     var serverApi = serverApiProvider.getServerApi(connectionId);
     if (serverApi.isEmpty()) {
       throw unknownConnection(connectionId);
     }
-    boolean skipCleanCodeTaxonomy = synchronizationService.getServerConnection(connectionId, serverApi.get()).shouldSkipCleanCodeTaxonomy();
+
+    var skipCleanCodeTaxonomy = !storageService.connection(connectionId)
+      .serverInfo().read().map(StoredServerInfo::isMQRMode).orElse(false);
 
     return findServerActiveRuleInStorage(binding, ruleKey)
       .map(storageRule -> hydrateDetailsWithServer(connectionId, storageRule, skipCleanCodeTaxonomy, cancelMonitor))
@@ -282,7 +285,7 @@ public class RulesService {
     }
   }
 
-  public GetStandaloneRuleDescriptionResponse getStandaloneRuleDetails(String ruleKey) {
+  public GetStandaloneRuleDescriptionResponse getStandaloneRuleDescription(String ruleKey) {
     var embeddedRule = rulesRepository.getEmbeddedRule(ruleKey);
     if (embeddedRule.isEmpty()) {
       var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' in embedded rules", new Object[] {ruleKey});

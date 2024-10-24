@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.rules;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,14 +30,15 @@ import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
-import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
+import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamDefinition;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
@@ -61,7 +63,8 @@ public class RuleDetails {
   private final VulnerabilityProbability vulnerabilityProbability;
 
   public RuleDetails(String key, SonarLanguage language, String name, String htmlDescription, Map<String, List<DescriptionSection>> descriptionSectionsByKey,
-    IssueSeverity defaultSeverity, RuleType type, @Nullable CleanCodeAttribute cleanCodeAttribute, Map<SoftwareQuality, ImpactSeverity> defaultImpacts,
+    IssueSeverity defaultSeverity, RuleType type, @Nullable CleanCodeAttribute cleanCodeAttribute,
+    Map<SoftwareQuality, ImpactSeverity> defaultImpacts,
     @Nullable String extendedDescription, Collection<EffectiveRuleParam> params, Set<String> educationPrincipleKeys,
     @Nullable VulnerabilityProbability vulnerabilityProbability) {
     this.key = key;
@@ -150,6 +153,27 @@ public class RuleDetails {
       defaultImpacts,
       serverRule.getHtmlNote(),
       Collections.emptyList(), templateRuleDefFromPlugin.getEducationPrincipleKeys(), templateRuleDefFromPlugin.getVulnerabilityProbability().orElse(null));
+  }
+
+  public static RuleDetails merging(RuleDetails serverActiveRuleDetails, RaisedFindingDto raisedFindingDto) {
+    EnumMap<SoftwareQuality, ImpactSeverity> softwareImpacts = new EnumMap<>(SoftwareQuality.class);
+    raisedFindingDto.getImpacts().forEach(
+      i -> softwareImpacts.put(SoftwareQuality.valueOf(i.getSoftwareQuality().name()),
+        ImpactSeverity.valueOf(i.getImpactSeverity().name()))
+    );
+    return new RuleDetails(serverActiveRuleDetails.getKey(),
+      serverActiveRuleDetails.getLanguage(),
+      serverActiveRuleDetails.getName(),
+      serverActiveRuleDetails.getHtmlDescription(),
+      serverActiveRuleDetails.getDescriptionSectionsByKey(),
+      IssueSeverity.valueOf(raisedFindingDto.getSeverity().toString()),
+      RuleType.valueOf(raisedFindingDto.getType().toString()),
+      CleanCodeAttribute.valueOf(raisedFindingDto.getCleanCodeAttribute().name()),
+      softwareImpacts,
+      serverActiveRuleDetails.getExtendedDescription(),
+      serverActiveRuleDetails.getParams(),
+      serverActiveRuleDetails.educationPrincipleKeys,
+      serverActiveRuleDetails.getVulnerabilityProbability());
   }
 
   public String getKey() {
