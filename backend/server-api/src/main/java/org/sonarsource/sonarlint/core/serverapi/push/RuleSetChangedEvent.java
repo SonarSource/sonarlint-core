@@ -24,6 +24,7 @@ import java.util.Map;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.serverapi.push.parsing.common.ImpactPayload;
 
 public class RuleSetChangedEvent implements SonarServerEvent {
   private final List<String> projectKeys;
@@ -54,13 +55,16 @@ public class RuleSetChangedEvent implements SonarServerEvent {
     private final IssueSeverity severity;
     private final Map<String, String> parameters;
     private final String templateKey;
+    private final List<ImpactPayload> impacts;
 
-    public ActiveRule(String key, String languageKey, IssueSeverity severity, Map<String, String> parameters, @Nullable String templateKey) {
+    public ActiveRule(String key, String languageKey, IssueSeverity severity, Map<String, String> parameters,
+      @Nullable String templateKey, List<ImpactPayload> impacts) {
       this.key = key;
       this.languageKey = languageKey;
       this.severity = severity;
       this.parameters = parameters;
       this.templateKey = templateKey;
+      this.impacts = impacts;
     }
 
     public String getKey() {
@@ -82,6 +86,10 @@ public class RuleSetChangedEvent implements SonarServerEvent {
     @CheckForNull
     public String getTemplateKey() {
       return templateKey;
+    }
+
+    public List<ImpactPayload> getOverriddenImpacts() {
+      return impacts;
     }
   }
 }

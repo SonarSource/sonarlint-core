@@ -119,7 +119,9 @@ public class RulesApi {
           ruleKey,
           IssueSeverity.valueOf(ar.getSeverity()),
           ar.getParamsList().stream().collect(toMap(Rules.Active.Param::getKey, Rules.Active.Param::getValue)),
-          ruleTemplatesByRuleKey.get(ruleKey)));
+          ruleTemplatesByRuleKey.get(ruleKey),
+          //TODO Pass the right value
+          Collections.emptyList()));
 
       },
       false,
