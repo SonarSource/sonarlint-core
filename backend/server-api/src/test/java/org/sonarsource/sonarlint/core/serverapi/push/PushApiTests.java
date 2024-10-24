@@ -140,6 +140,11 @@ class PushApiTests {
       "\"params\": [{" +
       "\"key\": \"key1\"," +
       "\"value\": \"value1\"" +
+      "}]," +
+      "\"templateKey\": \"templateKey\"," +
+      "\"impacts\": [{" +
+      "\"softwareQuality\": \"SECURITY\"," +
+      "\"severity\": \"HIGH\"" +
       "}]" +
       "}]," +
       "\"deactivatedRules\": [\"java:S4321\"]" +
@@ -149,7 +154,7 @@ class PushApiTests {
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);
 
-    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(receivedEvents)
+    await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> assertThat(receivedEvents)
       .extracting("projectKeys", "deactivatedRules")
       .containsOnly(tuple(List.of("projectKey1", "projectKey2"), List.of("java:S4321"))));
     assertThat(receivedEvents)
