@@ -32,7 +32,6 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Settings;
-import org.sonarsource.sonarlint.core.serverapi.system.MultiQualityMode;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 import testutils.MockWebServerExtensionWithProtobuf;
@@ -82,8 +81,8 @@ class ServerInfoSynchronizerTests {
     var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor());
 
     assertThat(storedServerInfo)
-      .extracting("version", "multiQualityMode")
-      .containsExactly(Version.create("9.9"), MultiQualityMode.MQR);
+      .extracting("version", "isMQRMode")
+      .containsExactly(Version.create("9.9"), true);
   }
 
   @Test

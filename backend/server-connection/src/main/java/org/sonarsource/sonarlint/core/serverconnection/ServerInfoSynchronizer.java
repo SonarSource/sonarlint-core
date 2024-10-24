@@ -19,12 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.settings.SettingsApi;
-import org.sonarsource.sonarlint.core.serverapi.system.MultiQualityMode;
 
 public class ServerInfoSynchronizer {
+  private static final String MIN_MQR_MODE_SUPPORT_VERSION = "10.2";
   private final ConnectionStorage storage;
 
   public ServerInfoSynchronizer(ConnectionStorage storage) {
@@ -43,20 +44,16 @@ public class ServerInfoSynchronizer {
     var serverStatus = serverApi.system().getStatus(cancelMonitor);
     var serverVersionAndStatusChecker = new ServerVersionAndStatusChecker(serverApi);
     serverVersionAndStatusChecker.checkVersionAndStatus(cancelMonitor);
-    var multiQualityMode = getMultiQualityMode(serverApi.settings(), cancelMonitor);
-    storage.serverInfo().store(serverStatus, multiQualityMode);
+    var isMQRMode = isMQRMode(serverApi.settings(), serverStatus.getVersion(), cancelMonitor);
+    storage.serverInfo().store(serverStatus, isMQRMode);
   }
 
-  private static MultiQualityMode getMultiQualityMode(SettingsApi settingsApi, SonarLintCancelMonitor cancelMonitor) {
+  private static boolean isMQRMode(SettingsApi settingsApi, String version, SonarLintCancelMonitor cancelMonitor) {
     var settingResponse = settingsApi.getGlobalSetting("sonar.multi-quality-mode.enabled", cancelMonitor);
     if (settingResponse == null) {
-      return MultiQualityMode.DEFAULT;
+      var serverVersion = Version.create(version);
+      return serverVersion.compareToIgnoreQualifier(Version.create(MIN_MQR_MODE_SUPPORT_VERSION)) >= 0;
     }
-    var multiQualityMode = Boolean.parseBoolean(settingResponse);
-    if (Boolean.TRUE.equals(multiQualityMode)) {
-      return MultiQualityMode.MQR;
-    } else {
-      return MultiQualityMode.STANDARD;
-    }
+    return Boolean.TRUE.equals(Boolean.parseBoolean(settingResponse));
   }
 }

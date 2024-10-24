@@ -20,22 +20,21 @@
 package org.sonarsource.sonarlint.core.serverconnection;
 
 import org.sonarsource.sonarlint.core.commons.Version;
-import org.sonarsource.sonarlint.core.serverapi.system.MultiQualityMode;
 
 public class StoredServerInfo {
   private final Version version;
-  private final MultiQualityMode multiQualityMode;
+  private final boolean isMQRMode;
 
-  public StoredServerInfo(Version version, MultiQualityMode multiQualityMode) {
+  public StoredServerInfo(Version version, boolean isMQRMode) {
     this.version = version;
-    this.multiQualityMode = multiQualityMode;
+    this.isMQRMode = isMQRMode;
   }
 
   public Version getVersion() {
     return version;
   }
 
-  public MultiQualityMode getMultiQualityMode() {
-    return this.multiQualityMode;
+  public boolean isMQRMode() {
+    return this.isMQRMode;
   }
 }
