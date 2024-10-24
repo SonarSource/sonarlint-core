@@ -20,12 +20,14 @@
 package org.sonarsource.sonarlint.core.serverapi.push.parsing;
 
 import com.google.gson.Gson;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.push.RuleSetChangedEvent;
+import org.sonarsource.sonarlint.core.serverapi.push.parsing.common.ImpactPayload;
 
 import static org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils.areBlank;
 import static org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils.isBlank;
@@ -45,11 +47,14 @@ public class RuleSetChangedEventParser implements EventParser<RuleSetChangedEven
     return Optional.of(new RuleSetChangedEvent(
       payload.projects,
       payload.activatedRules.stream().map(changedRule -> new RuleSetChangedEvent.ActiveRule(
-        changedRule.key,
-        changedRule.language,
-        IssueSeverity.valueOf(changedRule.severity),
-        changedRule.params.stream().filter(p -> p.value != null).collect(Collectors.toMap(p -> p.key, p -> p.value)),
-        changedRule.templateKey))
+          changedRule.key,
+          changedRule.language,
+          IssueSeverity.valueOf(changedRule.severity),
+          changedRule.params.stream().filter(p -> p.value != null).collect(Collectors.toMap(p -> p.key, p -> p.value)),
+          changedRule.templateKey,
+          changedRule.impacts == null ? Collections.emptyList() : changedRule.impacts.stream()
+            .map(impact -> new ImpactPayload(impact.getSoftwareQuality(), impact.getSeverity())).collect(Collectors.toList())
+        ))
         .collect(Collectors.toList()),
       payload.deactivatedRules));
   }
@@ -69,6 +74,7 @@ public class RuleSetChangedEventParser implements EventParser<RuleSetChangedEven
       private String severity;
       private List<RuleParameterPayload> params;
       private String templateKey;
+      private List<ImpactPayload> impacts;
     }
 
     private static class RuleParameterPayload {

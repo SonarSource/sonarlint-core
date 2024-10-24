@@ -23,6 +23,11 @@ public class ImpactPayload {
 
   private String softwareQuality;
 
+  public ImpactPayload(String softwareQuality, String severity) {
+    this.softwareQuality = softwareQuality;
+    this.severity = severity;
+  }
+
   private String severity;
 
   public String getSoftwareQuality() {

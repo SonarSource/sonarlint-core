@@ -73,8 +73,9 @@ class RuleEventsMediumTests {
 
   @Nested
   class WhenReceivingRuleSetChangedEvent {
+    //write a test just like this one without the impacts
     @Test
-    void it_should_create_the_ruleset_storage_if_does_not_exist() {
+    void it_should_create_the_ruleset_storage_if_does_not_exist_without_impacts() {
       var server = newSonarQubeServer("10.0")
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
@@ -108,6 +109,55 @@ class RuleEventsMediumTests {
         .extractingByKey("java")
         .isEqualTo(Sonarlint.RuleSet.newBuilder()
           .addRule(Sonarlint.RuleSet.ActiveRule.newBuilder().setRuleKey("java:S0000").setSeverity("MAJOR").putParams("key1", "value1").build()).build()));
+    }
+
+    @Test
+    void it_should_create_the_ruleset_storage_if_does_not_exist() {
+      var server = newSonarQubeServer("10.0")
+        .withProject("projectKey",
+          project -> project.withBranch("branchName"))
+        .start();
+      mockEvent(server, "projectKey", "event: RuleSetChanged\n" +
+        "data: {" +
+        "\"projects\": [\"projectKey\", \"projectKey2\"]," +
+        "\"deactivatedRules\": []," +
+        "\"activatedRules\": [{" +
+        "\"key\": \"java:S0000\"," +
+        "\"language\": \"java\"," +
+        "\"severity\": \"MAJOR\"," +
+        "\"params\": [{" +
+        "\"key\": \"key1\"," +
+        "\"value\": \"value1\"" +
+        "}]," +
+        "\"impacts\": [{" +
+        "\"softwareQuality\": \"SECURITY\"," +
+        "\"severity\": \"HIGH\"" +
+        "}]" +
+        "}]" +
+        "}\n\n");
+      var client = newFakeClient().build();
+      when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
+      backend = newBackend()
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
+        .withServerSentEventsEnabled()
+        .withSonarQubeConnection("connectionId", server)
+        .withBoundConfigScope("configScope", "connectionId", "projectKey")
+        .build();
+      sseServer.shouldSendServerEventOnce();
+
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets("connectionId", "projectKey"))
+        .extractingByKey("java")
+        .isEqualTo(Sonarlint.RuleSet.newBuilder()
+          .addRule(Sonarlint.RuleSet.ActiveRule.newBuilder()
+            .setRuleKey("java:S0000")
+            .setSeverity("MAJOR")
+            .putParams("key1", "value1")
+            .addOverriddenImpacts(Sonarlint.RuleSet.ActiveRule.newBuilder().addOverriddenImpactsBuilder()
+              .setSoftwareQuality("SECURITY")
+              .setSeverity("HIGH")
+              .build())
+            .build())
+          .build()));
     }
 
     @Test
