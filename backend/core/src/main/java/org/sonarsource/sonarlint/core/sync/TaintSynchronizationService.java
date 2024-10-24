@@ -19,13 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.sync;
 
-import java.util.LinkedHashSet;
-import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.TaintVulnerabilitiesSynchronizedEvent;
@@ -87,8 +84,7 @@ public class TaintSynchronizationService {
   private UpdateSummary<ServerTaintIssue> updateServerTaintIssuesForProject(String connectionId, ServerApi serverApi, String projectKey,
     String branchName, SonarLintCancelMonitor cancelMonitor) {
     var storage = storageService.getStorageFacade().connection(connectionId);
-    var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
-      .collect(Collectors.toCollection(LinkedHashSet::new));
+    var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode();
     var issuesUpdater = new ServerIssueUpdater(storage, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
     if (serverApi.isSonarCloud()) {
       return issuesUpdater.downloadProjectTaints(serverApi, projectKey, branchName, cancelMonitor);

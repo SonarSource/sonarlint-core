@@ -20,13 +20,10 @@
 package org.sonarsource.sonarlint.core.sync;
 
 import java.nio.file.Path;
-import java.util.LinkedHashSet;
-import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.Binding;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
@@ -53,8 +50,7 @@ public class IssueSynchronizationService {
 
   public void syncServerIssuesForProject(ServerApi serverApi, String connectionId, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
     var storage = storageService.getStorageFacade().connection(connectionId);
-    var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
-      .collect(Collectors.toCollection(LinkedHashSet::new));
+    var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode();
     var issuesUpdater = new ServerIssueUpdater(storage, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
     if (serverApi.isSonarCloud()) {
       LOG.debug("Incremental issue sync is not supported by SonarCloud. Skipping.");
@@ -71,8 +67,7 @@ public class IssueSynchronizationService {
 
   private void downloadServerIssuesForProject(String connectionId, ServerApi serverApi, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
     var storage = storageService.getStorageFacade().connection(connectionId);
-    var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
-      .collect(Collectors.toCollection(LinkedHashSet::new));
+    var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode();
     var issuesUpdater = new ServerIssueUpdater(storage, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
     issuesUpdater.update(serverApi, projectKey, branchName, cancelMonitor);
   }
@@ -85,8 +80,7 @@ public class IssueSynchronizationService {
   public void downloadServerIssuesForFile(String connectionId, ServerApi serverApi, String projectKey, Path serverFileRelativePath, String branchName,
     SonarLintCancelMonitor cancelMonitor) {
     var storage = storageService.getStorageFacade().connection(connectionId);
-    var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream().filter(SonarLanguage::shouldSyncInConnectedMode)
-      .collect(Collectors.toCollection(LinkedHashSet::new));
+    var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode();
     var issuesUpdater = new ServerIssueUpdater(storage, new IssueDownloader(enabledLanguagesToSync), new TaintIssueDownloader(enabledLanguagesToSync));
     issuesUpdater.updateFileIssuesIfNeeded(serverApi, projectKey, serverFileRelativePath, branchName, cancelMonitor);
   }

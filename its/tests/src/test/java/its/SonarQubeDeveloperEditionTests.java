@@ -42,7 +42,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -141,6 +140,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.COBOL;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.DOCKER;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.GO;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.HTML;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.IPYTHON;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JS;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.KOTLIN;
@@ -209,7 +209,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
     backend = clientLauncher.getServerProxy();
     try {
-      var languages = Set.of(JAVA, GO, PHP, JS, PYTHON, HTML, RUBY, KOTLIN, SCALA, XML, COBOL, CLOUDFORMATION, DOCKER, KUBERNETES, TERRAFORM);
+      var languages = Set.of(JAVA, GO, PHP, JS, PYTHON, HTML, RUBY, KOTLIN, SCALA, XML, COBOL, CLOUDFORMATION, DOCKER, KUBERNETES, TERRAFORM, IPYTHON);
       var featureFlags = new FeatureFlagsDto(true, true, true, true, true, true, true, true, false, true);
       backend.initialize(
           new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(), null, featureFlags,
@@ -341,6 +341,23 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       waitForAnalysisToBeReady(configScopeId);
 
       var rawIssues = analyzeFile(configScopeId, "sample-web", "src/file.html");
+
+      assertThat(rawIssues).hasSize(1);
+    }
+
+    @Test
+    @OnlyOnSonarQube(from = "10.7")
+    void shouldRaiseIssuesOnAJupyterNotebookFile() {
+      var configScopeId = "shouldRaiseIssuesOnAJupyterNotebookFile";
+      var projectKey = "sample-ipython";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample IPython");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/ipython-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "ipynb", "SonarLint IT IPython");
+
+      openBoundConfigurationScope(configScopeId, projectKey, true);
+      waitForAnalysisToBeReady(configScopeId);
+
+      var rawIssues = analyzeFile(configScopeId, "sample-ipython", "src/hello.ipynb");
 
       assertThat(rawIssues).hasSize(1);
     }

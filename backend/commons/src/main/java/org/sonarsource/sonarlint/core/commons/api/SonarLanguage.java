@@ -110,10 +110,6 @@ public enum SonarLanguage {
     return fileSuffixesPropKey;
   }
 
-  public boolean shouldSyncInConnectedMode() {
-    return !equals(SonarLanguage.IPYTHON);
-  }
-
   public static Set<SonarLanguage> getLanguagesByPluginKey(String pluginKey) {
     return Stream.of(values()).filter(l -> l.getPluginKey().equals(pluginKey)).collect(Collectors.toCollection(LinkedHashSet::new));
   }
