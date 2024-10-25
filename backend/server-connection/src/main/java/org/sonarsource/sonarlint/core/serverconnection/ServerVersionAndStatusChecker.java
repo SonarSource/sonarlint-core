@@ -23,7 +23,7 @@ import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;
-import org.sonarsource.sonarlint.core.serverapi.system.ServerInfo;
+import org.sonarsource.sonarlint.core.serverapi.system.ServerStatusInfo;
 import org.sonarsource.sonarlint.core.serverapi.system.SystemApi;
 
 public class ServerVersionAndStatusChecker {
@@ -53,25 +53,25 @@ public class ServerVersionAndStatusChecker {
     }
   }
 
-  private static void checkServerUp(ServerInfo serverInfo) {
-    if (!serverInfo.isUp()) {
-      throw new IllegalStateException(serverNotReady(serverInfo));
+  private static void checkServerUp(ServerStatusInfo serverStatus) {
+    if (!serverStatus.isUp()) {
+      throw new IllegalStateException(serverNotReady(serverStatus));
     }
   }
 
-  private static void checkServerUpAndSupported(ServerInfo serverInfo) {
-    checkServerUp(serverInfo);
-    var serverVersion = Version.create(serverInfo.getVersion());
+  private static void checkServerUpAndSupported(ServerStatusInfo serverStatus) {
+    checkServerUp(serverStatus);
+    var serverVersion = Version.create(serverStatus.getVersion());
     if (serverVersion.compareToIgnoreQualifier(Version.create(MIN_SQ_VERSION)) < 0) {
-      throw new UnsupportedServerException(unsupportedVersion(serverInfo, MIN_SQ_VERSION));
+      throw new UnsupportedServerException(unsupportedVersion(serverStatus));
     }
   }
 
-  private static String unsupportedVersion(ServerInfo serverStatus, String minVersion) {
-    return "SonarQube server has version " + serverStatus.getVersion() + ". Version should be greater or equal to " + minVersion;
+  private static String unsupportedVersion(ServerStatusInfo serverStatus) {
+    return "SonarQube server has version " + serverStatus.getVersion() + ". Version should be greater or equal to " + MIN_SQ_VERSION;
   }
 
-  private static String serverNotReady(ServerInfo serverStatus) {
+  private static String serverNotReady(ServerStatusInfo serverStatus) {
     return "Server not ready (" + serverStatus.getStatus() + ")";
   }
 

@@ -23,12 +23,18 @@ import org.sonarsource.sonarlint.core.commons.Version;
 
 public class StoredServerInfo {
   private final Version version;
+  private final boolean isMQRMode;
 
-  public StoredServerInfo(Version version) {
+  public StoredServerInfo(Version version, boolean isMQRMode) {
     this.version = version;
+    this.isMQRMode = isMQRMode;
   }
 
   public Version getVersion() {
     return version;
+  }
+
+  public boolean isMQRMode() {
+    return this.isMQRMode;
   }
 }
