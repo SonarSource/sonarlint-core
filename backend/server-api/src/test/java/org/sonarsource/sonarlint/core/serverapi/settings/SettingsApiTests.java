@@ -37,7 +37,7 @@ class SettingsApiTests {
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
 
   @Test
-  void testFetchProjectSettings() {
+  void test_fetch_project_settings() {
     var valuesBuilder = Settings.FieldValues.Value.newBuilder();
     valuesBuilder.putValue("filepattern", "**/*.xml");
     valuesBuilder.putValue("rulepattern", "*:S12345");
@@ -72,4 +72,34 @@ class SettingsApiTests {
       entry("sonar.issue.exclusions.multicriteria.2.rulepattern", "*:S456"));
   }
 
+  @Test
+  void test_fetch_global_setting() {
+    var response = Settings.ValuesWsResponse.newBuilder()
+      .addSettings(Settings.Setting.newBuilder()
+        .setKey("sonar.multi-quality-mode.enabled")
+        .setValue("true"))
+      .addSettings(Settings.Setting.newBuilder()
+        .setKey("fake.property")
+        .setValue("false"))
+      .build();
+    mockServer.addProtobufResponse("/api/settings/values.protobuf?keys=sonar.multi-quality-mode.enabled", response);
+
+    var globalSettings = new SettingsApi(mockServer.serverApiHelper()).getGlobalSetting("sonar.multi-quality-mode.enabled", new SonarLintCancelMonitor());
+
+    assertThat(globalSettings).isEqualTo("true");
+  }
+
+  @Test
+  void test_fetch_global_setting_not_present() {
+    var response = Settings.ValuesWsResponse.newBuilder()
+      .addSettings(Settings.Setting.newBuilder()
+        .setKey("fake.property")
+        .setValue("false"))
+      .build();
+    mockServer.addProtobufResponse("/api/settings/values.protobuf?keys=sonar.multi-quality-mode.enabled", response);
+
+    var globalSettings = new SettingsApi(mockServer.serverApiHelper()).getGlobalSetting("sonar.multi-quality-mode.enabled", new SonarLintCancelMonitor());
+
+    assertThat(globalSettings).isNull();
+  }
 }
