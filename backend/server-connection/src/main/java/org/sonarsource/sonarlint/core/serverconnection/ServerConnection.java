@@ -65,7 +65,7 @@ public class ServerConnection {
 
   public boolean shouldSkipCleanCodeTaxonomy() {
     // In connected mode, Clean Code taxonomy is skipped if the server is SonarQube < 10.2
-    return !isSonarCloud && storage.serverInfo().read()
+    return !isSonarCloud && storage.serverInfo().read(false)
       .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(CLEAN_CODE_TAXONOMY_MIN_SQ_VERSION) < 0)
       .orElse(false);
   }

@@ -157,7 +157,7 @@ public class HotspotService {
   }
 
   private boolean isLocalDetectionSupported(boolean isSonarCloud, String connectionId) {
-    return isSonarCloud || storageService.connection(connectionId).serverInfo().read().isPresent();
+    return isSonarCloud || storageService.connection(connectionId).serverInfo().read(false).isPresent();
   }
 
   static String buildHotspotUrl(String projectKey, String branch, String hotspotKey, EndpointParams endpointParams) {

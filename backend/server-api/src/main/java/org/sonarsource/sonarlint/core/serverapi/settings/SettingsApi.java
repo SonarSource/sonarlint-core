@@ -22,9 +22,9 @@ package org.sonarsource.sonarlint.core.serverapi.settings;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -41,13 +41,34 @@ public class SettingsApi {
     this.helper = helper;
   }
 
-  public Map<String, String> getProjectSettings(String projectKey, SonarLintCancelMonitor cancelMonitor) {
-    Map<String, String> settings = new HashMap<>();
-    var url = new StringBuilder();
-    url.append(API_SETTINGS_PATH);
-    url.append("?component=").append(UrlUtils.urlEncode(projectKey));
+  @Nullable
+  public String getGlobalSetting(String settingKey, SonarLintCancelMonitor cancelMonitor) {
+    var settings = new HashMap<String, String>();
+    var url = API_SETTINGS_PATH + "?keys=" + UrlUtils.urlEncode(settingKey);
     ServerApiHelper.consumeTimed(
-      () -> helper.get(url.toString(), cancelMonitor),
+      () -> helper.get(url, cancelMonitor),
+      response -> {
+        try (var is = response.bodyAsStream()) {
+          var values = Settings.ValuesWsResponse.parseFrom(is);
+          for (Settings.Setting s : values.getSettingsList()) {
+            if (s.getKey().equals(settingKey)) {
+              processSetting(settings::put, s);
+              break;
+            }
+          }
+        } catch (IOException e) {
+          throw new IllegalStateException("Unable to parse properties from: " + response.bodyAsString(), e);
+        }
+      },
+      duration -> LOG.info("Downloaded settings in {}ms", duration));
+    return settings.get(settingKey);
+  }
+
+  public Map<String, String> getProjectSettings(String projectKey, SonarLintCancelMonitor cancelMonitor) {
+    var settings = new HashMap<String, String>();
+    var url = API_SETTINGS_PATH + "?component=" + UrlUtils.urlEncode(projectKey);
+    ServerApiHelper.consumeTimed(
+      () -> helper.get(url, cancelMonitor),
       response -> {
         try (var is = response.bodyAsStream()) {
           var values = Settings.ValuesWsResponse.parseFrom(is);
@@ -79,10 +100,10 @@ public class SettingsApi {
   }
 
   private static void processPropertySet(Settings.Setting s, BiConsumer<String, String> consumer) {
-    List<String> ids = new ArrayList<>();
+    var ids = new ArrayList<String>();
     var id = 1;
     for (Settings.FieldValues.Value v : s.getFieldValues().getFieldValuesList()) {
-      for (Map.Entry<String, String> entry : v.getValue().entrySet()) {
+      for (Map.Entry<String, String> entry : v.getValueMap().entrySet()) {
         consumer.accept(s.getKey() + "." + id + "." + entry.getKey(), entry.getValue());
       }
       ids.add(String.valueOf(id));
