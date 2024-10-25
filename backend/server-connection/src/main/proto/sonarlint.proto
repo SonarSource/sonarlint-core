@@ -26,9 +26,15 @@ package sonarlint;
 option java_package = "org.sonarsource.sonarlint.core.serverconnection.proto";
 option optimize_for = SPEED;
 
+enum Mode {
+  DEFAULT = 0;
+  STANDARD = 1;
+  MQR = 2;
+}
+
 message ServerInfo {
   string version = 1;
-  bool is_mqr_mode = 2;
+  Mode mode = 2;
 }
 
 message PluginReferences {

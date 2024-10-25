@@ -59,11 +59,11 @@ class ServerInfoSynchronizationMediumTests {
     waitAtMost(3, SECONDS).untilAsserted(() -> assertThat(getServerInfoFile())
       .exists()
       .extracting(this::readServerVersion, this::readServerMode)
-      .containsExactly("10.3", true));
+      .containsExactly("10.3", Sonarlint.Mode.DEFAULT));
   }
 
   @Test
-  void it_should_pull_server_info_and_mqr_mode_should_be_disabled() {
+  void it_should_pull_old_server_info_and_mqr_mode_should_be_default() {
     var server = newSonarQubeServer("10.1")
       .withProject("projectKey", project -> project.withBranch("main"))
       .start();
@@ -78,11 +78,11 @@ class ServerInfoSynchronizationMediumTests {
     waitAtMost(3, SECONDS).untilAsserted(() -> assertThat(getServerInfoFile())
       .exists()
       .extracting(this::readServerVersion, this::readServerMode)
-      .containsExactly("10.1", false));
+      .containsExactly("10.1", Sonarlint.Mode.DEFAULT));
   }
 
   @Test
-  void it_should_pull_server_info_from_sonarcloud() {
+  void it_should_synchronize_with_sonarcloud_and_return_default_mode() {
     backend = newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarCloudConnection("connectionId", "test")
@@ -94,7 +94,26 @@ class ServerInfoSynchronizationMediumTests {
     waitAtMost(3, SECONDS).untilAsserted(() -> assertThat(getServerInfoFile())
       .exists()
       .extracting(this::readServerMode)
-      .isEqualTo(true));
+      .isEqualTo(Sonarlint.Mode.DEFAULT));
+  }
+
+  @Test
+  void it_should_synchronize_with_recent_sonarqube_and_return_mqr_mode() {
+    var server = newSonarQubeServer("10.8")
+      .withProject("projectKey", project -> project.withBranch("main"))
+      .start();
+    backend = newBackend()
+      .withEnabledLanguageInStandaloneMode(Language.JAVA)
+      .withSonarQubeConnection("connectionId", server)
+      .withFullSynchronization()
+      .build();
+
+    addConfigurationScope("configScopeId", "connectionId", "projectKey");
+
+    waitAtMost(3, SECONDS).untilAsserted(() -> assertThat(getServerInfoFile())
+      .exists()
+      .extracting(this::readServerMode)
+      .isEqualTo(Sonarlint.Mode.MQR));
   }
 
   @Test
@@ -151,8 +170,8 @@ class ServerInfoSynchronizationMediumTests {
     return ProtobufFileUtil.readFile(protoFilePath, Sonarlint.ServerInfo.parser()).getVersion();
   }
 
-  private boolean readServerMode(Path protoFilePath) {
-    return ProtobufFileUtil.readFile(protoFilePath, Sonarlint.ServerInfo.parser()).getIsMqrMode();
+  private Sonarlint.Mode readServerMode(Path protoFilePath) {
+    return ProtobufFileUtil.readFile(protoFilePath, Sonarlint.ServerInfo.parser()).getMode();
   }
 
   @AfterEach
