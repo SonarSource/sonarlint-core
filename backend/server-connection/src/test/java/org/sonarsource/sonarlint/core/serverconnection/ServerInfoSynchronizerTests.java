@@ -75,6 +75,11 @@ class ServerInfoSynchronizerTests {
   @Test
   void it_should_synchronize_version_and_mode_when_not_supported() {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}");
+    mockServer.addProtobufResponse("/api/settings/values.protobuf?keys=sonar.multi-quality-mode.enabled", Settings.ValuesWsResponse.newBuilder()
+      .addSettings(Settings.Setting.newBuilder()
+        .setKey("sonar.multi-quality-mode.enabled")
+        .setValue("true"))
+      .build());
 
     var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor());
 
