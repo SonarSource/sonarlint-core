@@ -1,3 +1,9 @@
+# 10.9
+
+## Breaking changes
+
+* Remove the `org.sonarsource.sonarlint.core.serverconnection.ServerPathProvider` class.
+
 # 10.7.1
 
 ## Breaking changes
