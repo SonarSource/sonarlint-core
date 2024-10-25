@@ -51,7 +51,7 @@ public class LocalStorageSynchronizer {
 
   public PluginSynchronizationSummary synchronizeServerInfosAndPlugins(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
     serverInfoSynchronizer.synchronize(serverApi, cancelMonitor);
-    var version = storage.serverInfo().read().orElseThrow().getVersion();
+    var version = storage.serverInfo().read(serverApi.isSonarCloud()).orElseThrow().getVersion();
     // INFO: In order to download `sonar-text` alongside `sonar-text-enterprise` on SQ 10.4+ we have to change the
     //       plug-in synchronizer to work correctly the moment the connection is established and the plug-ins are
     //       downloaded for the first time and also everytime the plug-ins are refreshed (e.g. after IDE restart).
@@ -82,7 +82,7 @@ public class LocalStorageSynchronizer {
     }
 
     storage.project(projectKey).analyzerConfiguration().store(updatedAnalyzerConfiguration);
-    var version = storage.serverInfo().read().orElseThrow().getVersion();
+    var version = storage.serverInfo().read(serverApi.isSonarCloud()).orElseThrow().getVersion();
     serverApi.newCodeApi().getNewCodeDefinition(projectKey, null, version, cancelMonitor)
       .ifPresent(ncd -> storage.project(projectKey).newCodeDefinition().store(ncd));
     return configUpdateSummary;

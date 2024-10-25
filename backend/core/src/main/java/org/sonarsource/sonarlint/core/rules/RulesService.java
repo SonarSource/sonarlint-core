@@ -433,7 +433,7 @@ public class RulesService {
       return false;
     }
     // when storage is not present, assume that secrets are not supported by server
-    return connection.getKind() == ConnectionKind.SONARCLOUD || storageService.connection(connectionId).serverInfo().read()
+    return connection.getKind() == ConnectionKind.SONARCLOUD || storageService.connection(connectionId).serverInfo().read(false)
       .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(SECRET_ANALYSIS_MIN_SQ_VERSION) >= 0)
       .orElse(false);
   }
