@@ -53,7 +53,8 @@ public class ServerInfoStorage {
   }
 
   public Optional<StoredServerInfo> read(boolean isSonarCloud) {
-    return rwLock.read(() -> Files.exists(storageFilePath) ? Optional.of(adapt(ProtobufFileUtil.readFile(storageFilePath, Sonarlint.ServerInfo.parser()), isSonarCloud)) : Optional.empty());
+    return rwLock.read(() -> Files.exists(storageFilePath) ? Optional.of(adapt(ProtobufFileUtil.readFile(storageFilePath, Sonarlint.ServerInfo.parser()), isSonarCloud))
+      : Optional.empty());
   }
 
   private static Sonarlint.ServerInfo adapt(ServerStatusInfo serverStatus, @Nullable String isMQRMode) {
