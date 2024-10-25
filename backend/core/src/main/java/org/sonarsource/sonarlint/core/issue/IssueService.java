@@ -57,6 +57,7 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
+import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
@@ -338,29 +339,42 @@ public class IssueService {
   }
 
   private void republishPreviouslyRaisedIssues(String connectionId, IssueChangedEvent event) {
+    var isSonarCloud = serverApiProvider.getServerApiOrThrow(connectionId).isSonarCloud();
+    var isMQRMode = storageService.connection(connectionId).serverInfo().read(isSonarCloud).map(StoredServerInfo::isMQRMode).orElse(false);
     var boundScopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, event.getProjectKey());
     boundScopes.forEach(scope -> {
       var scopeId = scope.getConfigScopeId();
-      findingReportingService.updateAndReportIssues(scopeId, previouslyRaisedIssue -> raisedIssueUpdater(previouslyRaisedIssue, event));
+      findingReportingService.updateAndReportIssues(scopeId, previouslyRaisedIssue -> raisedIssueUpdater(previouslyRaisedIssue, isMQRMode, event));
     });
   }
 
-  public static RaisedIssueDto raisedIssueUpdater(RaisedIssueDto previouslyRaisedIssue, IssueChangedEvent event) {
+  public static RaisedIssueDto raisedIssueUpdater(RaisedIssueDto previouslyRaisedIssue, boolean isMQRMode, IssueChangedEvent event) {
+    var updatedIssue = previouslyRaisedIssue;
     var resolved = event.getResolved();
     var userSeverity = event.getUserSeverity();
     var userType = event.getUserType();
     var impactedIssueKeys = Set.copyOf(event.getImpactedIssueKeys());
     if (resolved != null) {
       UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder().withResolution(resolved).buildIssue();
-      return updateIssue(previouslyRaisedIssue, impactedIssueKeys, issueUpdater);
-    } else if (userSeverity != null) {
-      UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder().withSeverity(IssueSeverity.valueOf(userSeverity.name())).buildIssue();
-      return updateIssue(previouslyRaisedIssue, impactedIssueKeys, issueUpdater);
-    } else if (userType != null) {
-      UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder().withType(RuleType.valueOf(userType.name())).buildIssue();
-      return updateIssue(previouslyRaisedIssue, impactedIssueKeys, issueUpdater);
+      updatedIssue = updateIssue(updatedIssue, impactedIssueKeys, issueUpdater);
     }
-    return previouslyRaisedIssue;
+    if (userSeverity != null) {
+      UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder().withSeverity(IssueSeverity.valueOf(userSeverity.name())).buildIssue();
+      updatedIssue = updateIssue(updatedIssue, impactedIssueKeys, issueUpdater);
+    }
+    if (userType != null) {
+      UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder().withType(RuleType.valueOf(userType.name())).buildIssue();
+      updatedIssue = updateIssue(updatedIssue, impactedIssueKeys, issueUpdater);
+    }
+    // TODO: Adapt with CCA/Impacts from the event
+    UnaryOperator<RaisedIssueDto> issueUpdater;
+    if (isMQRMode) {
+      issueUpdater = it -> it.builder().withMQRModeDetails(it.getCleanCodeAttribute(), it.getImpacts()).buildIssue();
+    } else {
+      issueUpdater = it -> it.builder().withStandardModeDetails(it.getSeverity(), it.getType()).buildIssue();
+    }
+    updatedIssue = updateIssue(updatedIssue, impactedIssueKeys, issueUpdater);
+    return updatedIssue;
   }
 
   private static RaisedIssueDto updateIssue(RaisedIssueDto issue, Set<String> impactedIssueKeys, UnaryOperator<RaisedIssueDto> issueUpdater) {

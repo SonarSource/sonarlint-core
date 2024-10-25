@@ -27,6 +27,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.MQRModeDetails;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.StandardModeDetails;
 import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
 import org.sonarsource.sonarlint.core.tracking.TrackedIssue;
 
@@ -48,8 +51,10 @@ public class DtoMapper {
         .collect(Collectors.toList()), RuleDetailsAdapter.adapt(ruleDetails.getVulnerabilityProbability()));
   }
 
-  public static RaisedIssueDto toRaisedIssueDto(TrackedIssue issue, NewCodeDefinition newCodeDefinition) {
+  public static RaisedIssueDto toRaisedIssueDto(TrackedIssue issue, NewCodeDefinition newCodeDefinition, boolean isMQRMode) {
     return new RaisedIssueDto(issue.getId(), issue.getServerKey(), issue.getRuleKey(), issue.getMessage(),
+      isMQRMode ? Either.forLeft(new StandardModeDetails(RuleDetailsAdapter.adapt(issue.getSeverity()), RuleDetailsAdapter.adapt(issue.getType())))
+        : Either.forRight(new MQRModeDetails(RuleDetailsAdapter.adapt(issue.getCleanCodeAttribute()), RuleDetailsAdapter.toDto(issue.getImpacts()))),
       RuleDetailsAdapter.adapt(issue.getSeverity()),
       RuleDetailsAdapter.adapt(issue.getType()),
       RuleDetailsAdapter.adapt(issue.getCleanCodeAttribute()), RuleDetailsAdapter.toDto(issue.getImpacts()),
@@ -60,10 +65,12 @@ public class DtoMapper {
       issue.getRuleDescriptionContextKey());
   }
 
-  public static RaisedHotspotDto toRaisedHotspotDto(TrackedIssue issue, NewCodeDefinition newCodeDefinition) {
+  public static RaisedHotspotDto toRaisedHotspotDto(TrackedIssue issue, NewCodeDefinition newCodeDefinition, boolean isMQRMode) {
     var status = issue.getHotspotStatus();
     status = status != null ? status : HotspotStatus.TO_REVIEW;
     return new RaisedHotspotDto(issue.getId(), issue.getServerKey(), issue.getRuleKey(), issue.getMessage(),
+      isMQRMode ? Either.forLeft(new StandardModeDetails(RuleDetailsAdapter.adapt(issue.getSeverity()), RuleDetailsAdapter.adapt(issue.getType())))
+        : Either.forRight(new MQRModeDetails(RuleDetailsAdapter.adapt(issue.getCleanCodeAttribute()), RuleDetailsAdapter.toDto(issue.getImpacts()))),
       RuleDetailsAdapter.adapt(issue.getSeverity()),
       RuleDetailsAdapter.adapt(issue.getType()),
       RuleDetailsAdapter.adapt(issue.getCleanCodeAttribute()), RuleDetailsAdapter.toDto(issue.getImpacts()),

@@ -34,6 +34,7 @@ import org.eclipse.lsp4j.jsonrpc.json.adapters.MessageTypeAdapter;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.DurationTypeAdapter;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherServerOrLocalHotspotAdapterFactory;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherServerOrLocalIssueAdapterFactory;
+import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherStandardOrMQRModeAdapterFactory;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherTypeAdapter;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.InstantTypeAdapter;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.OffsetDateTimeAdapter;
@@ -58,6 +59,7 @@ public class SonarLintLauncherBuilder<T> extends Launcher.Builder<T> {
           // We need to register those adapters globally, because we can't use the @JsonAdapter annotation on generic types
           .registerTypeAdapterFactory(new EitherServerOrLocalHotspotAdapterFactory())
           .registerTypeAdapterFactory(new EitherServerOrLocalIssueAdapterFactory())
+          .registerTypeAdapterFactory(new EitherStandardOrMQRModeAdapterFactory())
 
           .registerTypeAdapterFactory(new MessageTypeAdapter.Factory(this))
           .registerTypeHierarchyAdapter(Path.class, new PathTypeAdapter())
