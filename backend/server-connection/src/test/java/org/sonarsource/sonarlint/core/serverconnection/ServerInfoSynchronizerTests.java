@@ -26,10 +26,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Settings;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 import testutils.MockWebServerExtensionWithProtobuf;
@@ -60,22 +62,38 @@ class ServerInfoSynchronizerTests {
     Files.createDirectory(connectionPath);
     ProtobufFileUtil.writeToFile(Sonarlint.ServerInfo.newBuilder().setVersion("1.0.0").build(), connectionPath.resolve("server_info.pb"));
 
-    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(null, new SonarLintCancelMonitor());
+    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor());
 
     assertThat(storedServerInfo)
-      .extracting("version")
+      .extracting(StoredServerInfo::getVersion)
       .hasToString("1.0.0");
   }
 
   @Test
-  void it_should_synchronize_version_when_not_available() {
+  void it_should_synchronize_version_and_mode_when_not_supported() {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}");
 
     var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor());
 
     assertThat(storedServerInfo)
-      .extracting("version")
-      .hasToString("9.9");
+      .extracting(StoredServerInfo::getVersion, StoredServerInfo::isMQRMode)
+      .containsExactly(Version.create("9.9"), false);
+  }
+
+  @Test
+  void it_should_synchronize_version_and_mode_when_supported() {
+    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"10.8\",\"status\": \"UP\"}");
+    mockServer.addProtobufResponse("/api/settings/values.protobuf?keys=sonar.multi-quality-mode.enabled", Settings.ValuesWsResponse.newBuilder()
+      .addSettings(Settings.Setting.newBuilder()
+        .setKey("sonar.multi-quality-mode.enabled")
+        .setValue("true"))
+      .build());
+
+    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor());
+
+    assertThat(storedServerInfo)
+      .extracting(StoredServerInfo::getVersion, StoredServerInfo::isMQRMode)
+      .containsExactly(Version.create("10.8"), true);
   }
 
   @Test

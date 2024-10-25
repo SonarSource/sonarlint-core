@@ -154,7 +154,7 @@ public class IssueService {
    * @return whether server is SonarQube instance and matches version requirement
    */
   private boolean checkAnticipatedStatusChangeSupported(ServerApi api, String connectionId) {
-    return !api.isSonarCloud() && storageService.connection(connectionId).serverInfo().read()
+    return !api.isSonarCloud() && storageService.connection(connectionId).serverInfo().read(false)
       .map(version -> version.getVersion().satisfiesMinRequirement(SQ_ANTICIPATED_TRANSITIONS_MIN_VERSION))
       .orElse(false);
   }
