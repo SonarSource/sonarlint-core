@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.commons;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -206,25 +205,26 @@ class GitUtilsTest {
     createFile(projectDirPath, "fileB", "line1", "line2", "line3");
     createFile(projectDirPath, "fileC", "line1", "line2", "line3");
 
-    var fileAUri = projectDirPath.resolve("fileA").toUri();
-    var fileBUri = projectDirPath.resolve("fileB").toUri();
-    var fileCUri = projectDirPath.resolve("fileC").toUri();
+    var fileAPath = Path.of("fileA");
+    var fileBPath = Path.of("fileB");
+    var fileCPath = Path.of("fileC");
 
     var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(projectDirPath);
-    assertThat(Stream.of(fileAUri, fileBUri, fileCUri).filter(not(sonarLintGitIgnore::isFileIgnored)).collect(Collectors.toList()))
+    assertThat(Stream.of(fileAPath, fileBPath, fileCPath).filter(not(sonarLintGitIgnore::isFileIgnored)).collect(Collectors.toList()))
       .hasSize(3)
-      .containsExactly(fileAUri, fileBUri, fileCUri);
+      .containsExactly(fileAPath, fileBPath, fileCPath);
 
     addFileToGitIgnoreAndCommit(git, "fileB");
 
     sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(projectDirPath);
-    assertThat(Stream.of(fileAUri, fileBUri, fileCUri).filter(not(sonarLintGitIgnore::isFileIgnored)).collect(Collectors.toList()))
+    assertThat(Stream.of(fileAPath, fileBPath, fileCPath).filter(not(sonarLintGitIgnore::isFileIgnored)).collect(Collectors.toList()))
       .hasSize(2)
-      .containsExactly(fileAUri, fileCUri);
+      .containsExactly(fileAPath, fileCPath);
   }
 
   @Test
   void should_filter_ignored_directories() throws IOException, GitAPIException {
+    var fileA = Path.of("fileA");
     var fileB = Path.of("myDir").resolve("fileB");
     var fileC = Path.of("myDir").resolve("fileC");
 
@@ -232,32 +232,28 @@ class GitUtilsTest {
     createFile(projectDirPath, fileB.toString(), "line1", "line2", "line3");
     createFile(projectDirPath, fileC.toString(), "line1", "line2", "line3");
 
-    var fileAUri = projectDirPath.resolve("fileA").toUri();
-    var fileBUri = projectDirPath.resolve(fileB).toUri();
-    var fileCUri = projectDirPath.resolve(fileC).toUri();
-
     var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(projectDirPath);
-    assertThat(Stream.of(fileAUri, fileBUri, fileCUri).filter(not(sonarLintGitIgnore::isFileIgnored)).collect(Collectors.toList()))
+    assertThat(Stream.of(fileA, fileB, fileC).filter(not(sonarLintGitIgnore::isFileIgnored)).collect(Collectors.toList()))
       .hasSize(3)
-      .containsExactly(fileAUri, fileBUri, fileCUri);
+      .containsExactly(fileA, fileB, fileC);
 
     addFileToGitIgnoreAndCommit(git, "myDir/");
 
     sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(projectDirPath);
-    assertThat(Stream.of(fileAUri, fileBUri, fileCUri).filter(not(sonarLintGitIgnore::isFileIgnored)).collect(Collectors.toList()))
+    assertThat(Stream.of(fileA, fileB, fileC).filter(not(sonarLintGitIgnore::isFileIgnored)).collect(Collectors.toList()))
       .hasSize(1)
-      .containsExactly(fileAUri);
+      .containsExactly(fileA);
   }
-  
+
   @Test
   void should_consider_all_files_not_ignored_on_gitignore() throws IOException {
     createFile(projectDirPath, "fileA", "line1", "line2", "line3");
     createFile(projectDirPath, "fileB", "line1", "line2", "line3");
     createFile(projectDirPath, "fileC", "line1", "line2", "line3");
 
-    var fileAUri = projectDirPath.resolve("fileA").toUri();
-    var fileBUri = projectDirPath.resolve("fileB").toUri();
-    var fileCUri = projectDirPath.resolve("fileC").toUri();
+    var fileAPath = projectDirPath.resolve("fileA");
+    var fileBPath = projectDirPath.resolve("fileB");
+    var fileCPath = projectDirPath.resolve("fileC");
 
     var gitIgnore = projectDirPath.resolve(GITIGNORE_FILENAME);
     FileUtils.deleteQuietly(gitIgnore.toFile());
@@ -267,24 +263,16 @@ class GitUtilsTest {
     assertThat(logTester.logs(LogOutput.Level.INFO))
       .anyMatch(s -> s.contains(".gitignore file was not found for "));
 
-    assertThat(Stream.of(fileAUri, fileBUri, fileCUri).filter(not(sonarLintGitIgnore::isFileIgnored)).collect(Collectors.toList()))
+    assertThat(Stream.of(fileAPath, fileBPath, fileCPath).filter(not(sonarLintGitIgnore::isFileIgnored)).collect(Collectors.toList()))
       .hasSize(3)
-      .containsExactly(fileAUri, fileBUri, fileCUri);
-  }
-
-  @Test
-  void should_consider_files_with_non_file_scheme_not_ignored() {
-    var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(projectDirPath);
-
-    assertThat(sonarLintGitIgnore.isIgnored(URI.create("temp:///file/path"), false)).isFalse();
-    assertThat(sonarLintGitIgnore.isIgnored(URI.create("http:///localhost:12345/file/path"), false)).isFalse();
+      .containsExactly(fileAPath, fileBPath, fileCPath);
   }
 
   @Test
   void should_continue_normally_with_null_basedir() {
     var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(null);
 
-    assertThat(sonarLintGitIgnore.isIgnored(URI.create("temp:///file/path"), false)).isFalse();
+    assertThat(sonarLintGitIgnore.isIgnored(Path.of("file/path"))).isFalse();
   }
 
   @Test
@@ -298,7 +286,7 @@ class GitUtilsTest {
 
     var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(projectRoot);
 
-    assertThat(sonarLintGitIgnore.isIgnored(projectRoot.resolve("frontend/app/should_not_be_ignored.js").toUri(), false)).isTrue();
+    assertThat(sonarLintGitIgnore.isIgnored(Path.of("frontend/app/should_not_be_ignored.js"))).isTrue();
   }
 
   @Test
@@ -306,18 +294,26 @@ class GitUtilsTest {
     Files.write(projectDirPath.resolve(GITIGNORE_FILENAME), List.of("app/", "!frontend/app/"), java.nio.file.StandardOpenOption.CREATE);
     var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(projectDirPath);
 
-    assertThat(sonarLintGitIgnore.isIgnored(projectDirPath.resolve("frontend/app/should_not_be_ignored.js").toUri(), false)).isFalse();
-    assertThat(sonarLintGitIgnore.isIgnored(projectDirPath.resolve("should_be_ignored.js").toUri(), false)).isFalse();
-    assertThat(sonarLintGitIgnore.isIgnored(projectDirPath.resolve("app/should_be_ignored.js").toUri(), false)).isTrue();
+    assertThat(sonarLintGitIgnore.isIgnored(Path.of("frontend/app/should_not_be_ignored.js"))).isFalse();
+    assertThat(sonarLintGitIgnore.isIgnored(Path.of("should_be_ignored.js"))).isFalse();
+    assertThat(sonarLintGitIgnore.isIgnored(Path.of("app/should_be_ignored.js"))).isTrue();
   }
 
   @Test
   void createSonarLintGitIgnore_works_for_bare_repos_too() {
     var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(bareRepoPath);
 
-    assertThat(sonarLintGitIgnore.isFileIgnored(bareRepoPath.resolve("file.txt").toUri())).isFalse();
-    assertThat(sonarLintGitIgnore.isFileIgnored(bareRepoPath.resolve("file.tmp").toUri())).isTrue();
-    assertThat(sonarLintGitIgnore.isFileIgnored(bareRepoPath.resolve("file.log").toUri())).isTrue();
+    assertThat(sonarLintGitIgnore.isFileIgnored(Path.of("file.txt"))).isFalse();
+    assertThat(sonarLintGitIgnore.isFileIgnored(Path.of("file.tmp"))).isTrue();
+    assertThat(sonarLintGitIgnore.isFileIgnored(Path.of("file.log"))).isTrue();
+  }
+
+  @Test
+  void nonAsciiCharacterFileName() {
+    var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(bareRepoPath);
+
+    assertThat(sonarLintGitIgnore.isIgnored(Path.of("Sönar.txt"))).isFalse();
+    assertThat(sonarLintGitIgnore.isIgnored(Path.of("Sönar.log"))).isTrue();
   }
 
   @Test

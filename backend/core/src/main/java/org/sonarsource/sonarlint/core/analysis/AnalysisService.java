@@ -728,7 +728,6 @@ public class AnalysisService {
 
   private List<ClientInputFile> toInputFiles(String configScopeId, Path actualBaseDir, List<URI> fileUrisToAnalyze) {
     var sonarLintGitIgnore = createSonarLintGitIgnore(actualBaseDir);
-
     // INFO: When there are additional filters coming at some point, add them here and log them down below as well!
     var filteredURIsFromExclusionService = new ArrayList<URI>();
     var filteredURIsFromGitIgnore = new ArrayList<URI>();
@@ -747,7 +746,12 @@ public class AnalysisService {
         return true;
       })
       .filter(uri -> {
-        if (sonarLintGitIgnore.isFileIgnored(uri)) {
+        var clientFile = clientFileSystemService.getClientFile(uri);
+        if (clientFile == null) {
+          LOG.error("File to analyze was not found in the file system: {}", uri);
+          return false;
+        }
+        if (sonarLintGitIgnore.isFileIgnored(clientFile.getClientRelativePath())) {
           filteredURIsFromGitIgnore.add(uri);
           return false;
         }
