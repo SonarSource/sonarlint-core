@@ -26,10 +26,10 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckLocalDetectionSupportedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckLocalDetectionSupportedResponse;
-import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -102,18 +102,7 @@ class HotspotLocalDetectionSupportMediumTests {
   }
 
   @Test
-  void it_should_not_support_local_detection_when_connected_to_sonarqube_and_storage_is_missing() {
-    bindToSonarQube("configScopeId", null);
-
-    var checkResponse = checkLocalDetectionSupported("configScopeId");
-
-    assertThat(checkResponse)
-      .extracting(CheckLocalDetectionSupportedResponse::isSupported, CheckLocalDetectionSupportedResponse::getReason)
-      .containsExactly(false, "Security Hotspots detection is disabled since storage is not available");
-  }
-
-  @Test
-  void it_should_support_local_detection_when_connected_to_sonarqube_9_9_plus() {
+  void it_should_support_local_detection_when_connected_to_sonarqube() {
     var configScopeId = "configScopeId";
     bindToSonarQube(configScopeId, "9.9");
 

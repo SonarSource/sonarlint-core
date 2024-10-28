@@ -28,7 +28,6 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.Binding;
-import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -52,7 +51,6 @@ public class HotspotService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final String NO_BINDING_REASON = "The project is not bound, please bind it to SonarQube 9.9+ or SonarCloud";
-  private static final String UNSUPPORTED_SONARQUBE_REASON = "Security Hotspots detection is disabled since storage is not available";
 
   private static final String REVIEW_STATUS_UPDATE_PERMISSION_MISSING_REASON = "Changing a hotspot's status requires the 'Administer Security Hotspot' permission.";
   private final SonarLintRpcClient client;
@@ -107,14 +105,13 @@ public class HotspotService {
       return new CheckLocalDetectionSupportedResponse(false, NO_BINDING_REASON);
     }
     var connectionId = effectiveBinding.get().getConnectionId();
-    var connection = connectionRepository.getConnectionById(connectionId);
-    if (connection == null) {
+    if (connectionRepository.getConnectionById(connectionId) == null) {
       var error = new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND, "The provided configuration scope is bound to an unknown connection: " + connectionId,
         connectionId);
       throw new ResponseErrorException(error);
     }
-    var supported = isLocalDetectionSupported(connection.getKind() == ConnectionKind.SONARCLOUD, connectionId);
-    return new CheckLocalDetectionSupportedResponse(supported, supported ? null : UNSUPPORTED_SONARQUBE_REASON);
+
+    return new CheckLocalDetectionSupportedResponse(true, null);
   }
 
   public CheckStatusChangePermittedResponse checkStatusChangePermitted(String connectionId, String hotspotKey, SonarLintCancelMonitor cancelMonitor) {
