@@ -35,8 +35,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
+import org.sonarsource.sonarlint.core.mode.SeverityModeService;
 import org.sonarsource.sonarlint.core.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.reporting.PreviouslyRaisedFindingsRepository;
@@ -46,8 +47,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotD
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseIssuesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
-import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
-import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.tracking.TrackedIssue;
 import org.sonarsource.sonarlint.core.tracking.streaming.Alarm;
 
@@ -63,8 +62,7 @@ public class FindingReportingService {
   private final SonarLintRpcClient client;
   private final ConfigurationRepository configurationRepository;
   private final NewCodeService newCodeService;
-  private final StorageService storageService;
-  private final ServerApiProvider serverApiProvider;
+  private final SeverityModeService modeService;
   private final PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository;
   private final Map<URI, Collection<TrackedIssue>> issuesPerFileUri = new ConcurrentHashMap<>();
   private final Map<URI, Collection<TrackedIssue>> securityHotspotsPerFileUri = new ConcurrentHashMap<>();
@@ -72,12 +70,11 @@ public class FindingReportingService {
   private final Map<UUID, Set<URI>> filesPerAnalysis = new ConcurrentHashMap<>();
 
   public FindingReportingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, NewCodeService newCodeService,
-    StorageService storageService, ServerApiProvider serverApiProvider, PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository) {
+    SeverityModeService modeService, PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.newCodeService = newCodeService;
-    this.storageService = storageService;
-    this.serverApiProvider = serverApiProvider;
+    this.modeService = modeService;
     this.previouslyRaisedFindingsRepository = previouslyRaisedFindingsRepository;
   }
 
@@ -115,8 +112,9 @@ public class FindingReportingService {
   }
 
   private void triggerStreaming(String configurationScopeId, UUID analysisId) {
+    var connectionId = configurationRepository.getEffectiveBinding(configurationScopeId).map(Binding::getConnectionId).orElse(null);
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId).orElseGet(NewCodeDefinition::withAlwaysNew);
-    var isMQRMode = isMQRModeForConfigurationScope(configurationScopeId);
+    var isMQRMode = modeService.isMQRModeForConnection(connectionId);
     var issuesToRaise = issuesPerFileUri.entrySet().stream()
       .filter(e -> filesPerAnalysis.get(analysisId).contains(e.getKey()))
       .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedIssueDto(issue, newCodeDefinition, isMQRMode)).collect(toList())))
@@ -131,8 +129,9 @@ public class FindingReportingService {
   public void reportTrackedFindings(String configurationScopeId, UUID analysisId, Map<Path, List<TrackedIssue>> issuesToReport, Map<Path, List<TrackedIssue>> hotspotsToReport) {
     // stop streaming now, we will raise all issues one last time from this method
     stopStreaming(configurationScopeId);
+    var connectionId = configurationRepository.getEffectiveBinding(configurationScopeId).map(Binding::getConnectionId).orElse(null);
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId).orElseGet(NewCodeDefinition::withAlwaysNew);
-    var isMQRMode = isMQRModeForConfigurationScope(configurationScopeId);
+    var isMQRMode = modeService.isMQRModeForConnection(connectionId);
     var issuesToRaise = getIssuesToRaise(issuesToReport, newCodeDefinition, isMQRMode);
     var hotspotsToRaise = getHotspotsToRaise(hotspotsToReport, newCodeDefinition, isMQRMode);
     updateRaisedFindingsCacheAndNotifyClient(configurationScopeId, analysisId, issuesToRaise, hotspotsToRaise, false);
@@ -201,15 +200,5 @@ public class FindingReportingService {
       updatedFindings.put(uri, updatedFindingsForFile);
     });
     return updatedFindings;
-  }
-
-  private boolean isMQRModeForConfigurationScope(String configurationScopeId) {
-    var effectiveBindingOpt = configurationRepository.getEffectiveBinding(configurationScopeId);
-    return effectiveBindingOpt
-      .flatMap(binding -> storageService.connection(binding.getConnectionId())
-        .serverInfo()
-        .read(serverApiProvider.getServerApiOrThrow(binding.getConnectionId()).isSonarCloud())
-        .map(StoredServerInfo::isMQRMode))
-      .orElse(false);
   }
 }

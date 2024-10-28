@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Server Connection
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,37 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.mode;
 
-import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.Version;
-
-public class StoredServerInfo {
-
-  private final Version version;
-  private final ModeDetails isMQRMode;
-
-  public StoredServerInfo(Version version, @Nullable Boolean mode) {
-    this.version = version;
-    if (mode == null) {
-      this.isMQRMode = ModeDetails.DEFAULT;
-    } else if (mode) {
-      this.isMQRMode = ModeDetails.MQR;
-    } else {
-      this.isMQRMode = ModeDetails.STANDARD;
-    }
-  }
-
-  public Version getVersion() {
-    return version;
-  }
-
-  public ModeDetails isMQRMode() {
-    return this.isMQRMode;
-  }
-
-  public enum ModeDetails {
-    DEFAULT, STANDARD, MQR
-  }
-
-}
+import javax.annotation.ParametersAreNonnullByDefault;

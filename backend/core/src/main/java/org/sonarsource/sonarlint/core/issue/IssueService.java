@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.event.ServerIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.local.only.XodusLocalOnlyIssueStore;
+import org.sonarsource.sonarlint.core.mode.SeverityModeService;
 import org.sonarsource.sonarlint.core.reporting.FindingReportingService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
@@ -57,7 +58,6 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
-import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
@@ -91,10 +91,11 @@ public class IssueService {
   private final LocalOnlyIssueRepository localOnlyIssueRepository;
   private final ApplicationEventPublisher eventPublisher;
   private final FindingReportingService findingReportingService;
+  private final SeverityModeService modeService;
 
   public IssueService(ConfigurationRepository configurationRepository, ServerApiProvider serverApiProvider, StorageService storageService,
     LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
-    ApplicationEventPublisher eventPublisher, FindingReportingService findingReportingService) {
+    ApplicationEventPublisher eventPublisher, FindingReportingService findingReportingService, SeverityModeService modeService) {
     this.configurationRepository = configurationRepository;
     this.serverApiProvider = serverApiProvider;
     this.storageService = storageService;
@@ -102,6 +103,7 @@ public class IssueService {
     this.localOnlyIssueRepository = localOnlyIssueRepository;
     this.eventPublisher = eventPublisher;
     this.findingReportingService = findingReportingService;
+    this.modeService = modeService;
   }
 
   public void changeStatus(String configurationScopeId, String issueKey, ResolutionStatus newStatus, boolean isTaintIssue, SonarLintCancelMonitor cancelMonitor) {
@@ -155,7 +157,7 @@ public class IssueService {
    * @return whether server is SonarQube instance and matches version requirement
    */
   private boolean checkAnticipatedStatusChangeSupported(ServerApi api, String connectionId) {
-    return !api.isSonarCloud() && storageService.connection(connectionId).serverInfo().read(false)
+    return !api.isSonarCloud() && storageService.connection(connectionId).serverInfo().read()
       .map(version -> version.getVersion().satisfiesMinRequirement(SQ_ANTICIPATED_TRANSITIONS_MIN_VERSION))
       .orElse(false);
   }
@@ -339,8 +341,7 @@ public class IssueService {
   }
 
   private void republishPreviouslyRaisedIssues(String connectionId, IssueChangedEvent event) {
-    var isSonarCloud = serverApiProvider.getServerApiOrThrow(connectionId).isSonarCloud();
-    var isMQRMode = storageService.connection(connectionId).serverInfo().read(isSonarCloud).map(StoredServerInfo::isMQRMode).orElse(false);
+    var isMQRMode = modeService.isMQRModeForConnection(connectionId);
     var boundScopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, event.getProjectKey());
     boundScopes.forEach(scope -> {
       var scopeId = scope.getConfigScopeId();
