@@ -56,7 +56,7 @@ class ConnectedHotspotMediumTests {
   }
 
   @Test
-  void should_locally_detect_hotspots_when_connected_to_sonarqube_9_9_plus(@TempDir Path baseDir) {
+  void should_locally_detect_hotspots_when_connected_to_sonarqube(@TempDir Path baseDir) {
     var inputFile = createFile(baseDir, "Foo.java", "public class Foo {\n" +
       "\n" +
       "  void foo() {\n" +
@@ -65,16 +65,14 @@ class ConnectedHotspotMediumTests {
       "}\n");
     client = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, List.of(
-        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)
-      ))
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
     var projectKey = "projectKey";
     var branchName = "main";
     var server = newSonarQubeServer("9.9")
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile
         .withLanguage("java").withActiveRule("java:S2068", activeRule -> activeRule
-          .withSeverity(org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.BLOCKER)
-        ))
+          .withSeverity(org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.BLOCKER)))
       .withProject(projectKey,
         project -> project
           .withQualityProfile("qpKey")
@@ -92,7 +90,7 @@ class ConnectedHotspotMediumTests {
 
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
-        new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(inputFile.toUri()), Map.of(), true, System.currentTimeMillis()))
+      new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(inputFile.toUri()), Map.of(), true, System.currentTimeMillis()))
       .join();
     assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
     await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedHotspotsForScopeIdAsList(CONFIG_SCOPE_ID)).isNotEmpty());

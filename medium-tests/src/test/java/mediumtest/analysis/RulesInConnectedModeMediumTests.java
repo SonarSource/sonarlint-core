@@ -82,28 +82,6 @@ class RulesInConnectedModeMediumTests {
   }
 
   @Test
-  void secrets_rules_should_always_be_active_with_legacy_sonarqube() throws Exception {
-    backend = newBackend()
-      .withEnabledLanguageInStandaloneMode(org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA)
-      .withEnabledLanguageInStandaloneMode(org.sonarsource.sonarlint.core.rpc.protocol.common.Language.SECRETS)
-      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.TEXT)
-      .withSonarQubeConnection(CONNECTION_ID)
-      .withStorage(CONNECTION_ID, s -> s
-        .withPlugins(TestPlugin.JAVA)
-        .withServerVersion("9.8")
-        .withProject(JAVA_MODULE_KEY))
-      .build();
-
-    backend.getConfigurationService().didAddConfigurationScopes(
-      new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "My project",
-        new BindingConfigurationDto(CONNECTION_ID, JAVA_MODULE_KEY, true)))));
-
-    var activeRules = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).get().getActiveRules();
-    assertThat(activeRules).extracting(ActiveRuleDto::getRuleKey, ActiveRuleDto::getLanguageKey).contains(
-      tuple("secrets:S6292", "secrets"));
-  }
-
-  @Test
   void hotspot_rules_should_be_active_when_feature_flag_is_enabled() throws Exception {
     backend = newBackend()
       .withSecurityHotspotsEnabled()

@@ -43,26 +43,7 @@ class RuleDetailsMediumTests {
   }
 
   @Test
-  void it_should_return_details_from_embedded_secrets_rules_when_sonarqube_less_than_9_9() {
-    var server = newSonarQubeServer("9.9")
-      .withProject("projectKey",
-        project -> project.withBranch("branchName"))
-      .start();
-    backend = newBackend()
-      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.TEXT)
-      .withExtraEnabledLanguagesInConnectedMode(JAVA)
-      .withServerSentEventsEnabled()
-      .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScope", "connectionId", "projectKey")
-      .build();
-
-    var ruleDetails = backend.getAnalysisService().getRuleDetails(new GetRuleDetailsParams("configScope", "secrets:S6290")).join();
-
-    assertThat(ruleDetails.getType()).isEqualTo(RuleType.VULNERABILITY);
-  }
-
-  @Test
-  void it_should_return_details_from_server_when_sonarqube_9_9_plus() {
+  void it_should_return_details_from_server_when_sonarqube() {
     var server = newSonarQubeServer()
       .withProject("projectKey",
         project -> project.withBranch("branchName"))
@@ -71,7 +52,9 @@ class RuleDetailsMediumTests {
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.TEXT)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
       .withServerSentEventsEnabled()
-      .withSonarQubeConnection("connectionId", server, storage -> storage.withServerVersion("9.9").withProject("projectKey", project -> project.withRuleSet("secrets", ruleSet -> ruleSet.withActiveRule("secrets:S6290", "MAJOR"))))
+      .withSonarQubeConnection("connectionId", server,
+        storage -> storage.withServerVersion("9.9").withProject("projectKey",
+          project -> project.withRuleSet("secrets", ruleSet -> ruleSet.withActiveRule("secrets:S6290", "MAJOR"))))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
       .build();
 
@@ -92,7 +75,9 @@ class RuleDetailsMediumTests {
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.TEXT)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
       .withServerSentEventsEnabled()
-      .withSonarCloudConnection("connectionId", storage -> storage.withPlugin(TestPlugin.TEXT).withProject("projectKey", project -> project.withRuleSet("secrets", ruleSet -> ruleSet.withActiveRule("secrets:S6290", "MAJOR"))))
+      .withSonarCloudConnection("connectionId",
+        storage -> storage.withPlugin(TestPlugin.TEXT).withProject("projectKey",
+          project -> project.withRuleSet("secrets", ruleSet -> ruleSet.withActiveRule("secrets:S6290", "MAJOR"))))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
       .build();
 

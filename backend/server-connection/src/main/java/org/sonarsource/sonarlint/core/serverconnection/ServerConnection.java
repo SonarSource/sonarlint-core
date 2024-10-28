@@ -29,8 +29,6 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 
 public class ServerConnection {
-  public static final Version SECRET_ANALYSIS_MIN_SQ_VERSION = Version.create("9.9");
-
   private static final Version CLEAN_CODE_TAXONOMY_MIN_SQ_VERSION = Version.create("10.2");
 
   private final Set<SonarLanguage> enabledLanguagesToSync;

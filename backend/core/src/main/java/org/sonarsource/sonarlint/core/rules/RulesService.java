@@ -43,13 +43,11 @@ import org.sonarsource.sonarlint.core.analysis.RuleDetailsForAnalysis;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
-import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.reporting.FindingReportingService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -79,7 +77,6 @@ import org.springframework.context.event.EventListener;
 import static org.sonarsource.sonarlint.core.commons.CleanCodeAttribute.CONVENTIONAL;
 import static org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter.adapt;
 import static org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter.toDto;
-import static org.sonarsource.sonarlint.core.serverconnection.ServerConnection.SECRET_ANALYSIS_MIN_SQ_VERSION;
 
 @Named
 @Singleton
@@ -91,7 +88,6 @@ public class RulesService {
   private final RulesRepository rulesRepository;
   private final StorageService storageService;
   private final SynchronizationService synchronizationService;
-  private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final ApplicationEventPublisher eventPublisher;
   private static final String COULD_NOT_FIND_RULE = "Could not find rule '";
   private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfig = new ConcurrentHashMap<>();
@@ -99,29 +95,25 @@ public class RulesService {
 
   @Inject
   public RulesService(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository, StorageService storageService,
-    SynchronizationService synchronizationService, ConnectionConfigurationRepository connectionConfigurationRepository, InitializeParams params,
-    ApplicationEventPublisher eventPublisher) {
-    this(serverApiProvider, configurationRepository, rulesRepository, storageService, synchronizationService, connectionConfigurationRepository, eventPublisher,
-      params.getStandaloneRuleConfigByKey());
+    SynchronizationService synchronizationService, InitializeParams params, ApplicationEventPublisher eventPublisher) {
+    this(serverApiProvider, configurationRepository, rulesRepository, storageService, synchronizationService, eventPublisher, params.getStandaloneRuleConfigByKey());
   }
 
   RulesService(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository, StorageService storageService,
-    SynchronizationService synchronizationService, ConnectionConfigurationRepository connectionConfigurationRepository, ApplicationEventPublisher eventPublisher,
-    @Nullable Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey) {
+    SynchronizationService synchronizationService, ApplicationEventPublisher eventPublisher, @Nullable Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey) {
     this.serverApiProvider = serverApiProvider;
     this.configurationRepository = configurationRepository;
     this.rulesRepository = rulesRepository;
     this.storageService = storageService;
     this.synchronizationService = synchronizationService;
-    this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.eventPublisher = eventPublisher;
     if (standaloneRuleConfigByKey != null) {
       this.standaloneRuleConfig.putAll(standaloneRuleConfigByKey);
     }
   }
 
-  public EffectiveRuleDetailsDto getEffectiveRuleDetails(String configurationScopeId, String ruleKey, @Nullable String contextKey,
-    SonarLintCancelMonitor cancelMonitor) throws RuleNotFoundException {
+  public EffectiveRuleDetailsDto getEffectiveRuleDetails(String configurationScopeId, String ruleKey, @Nullable String contextKey, SonarLintCancelMonitor cancelMonitor)
+    throws RuleNotFoundException {
     var ruleDetails = getRuleDetails(configurationScopeId, ruleKey, cancelMonitor);
     return buildResponse(ruleDetails, contextKey);
   }
@@ -332,8 +324,7 @@ public class RulesService {
   public void updateAndReportFindings(String scopeId, List<String> deactivatedRules) {
     findingReportingService.updateAndReportFindings(scopeId,
       hotspot -> raisedFindingUpdater(hotspot, deactivatedRules),
-      issue -> raisedFindingUpdater(issue, deactivatedRules)
-    );
+      issue -> raisedFindingUpdater(issue, deactivatedRules));
   }
 
   @CheckForNull
@@ -403,10 +394,6 @@ public class RulesService {
   }
 
   public RuleDetailsForAnalysis getRuleDetailsForConnectedAnalysis(Binding binding, String ruleKey) throws RuleNotFoundException {
-    if (ruleKey.startsWith("secrets:") && !supportsSecretAnalysis(binding.getConnectionId())) {
-      // before 9.9, SQ did not have the secrets plugin, so we pick the rules from the embedded one
-      return getRuleDetailsForStandaloneAnalysis(ruleKey);
-    }
     var activeRuleOpt = findServerActiveRuleInStorage(binding, ruleKey);
     if (activeRuleOpt.isEmpty()) {
       throw new RuleNotFoundException(COULD_NOT_FIND_RULE + ruleKey + "' in active rules", ruleKey);
@@ -424,18 +411,6 @@ public class RulesService {
     return new RuleDetailsForAnalysis(activeRule.getSeverity(), ruleDefinition.getType(),
       ruleDefinition.getCleanCodeAttribute().orElse(CONVENTIONAL), ruleDefinition.getDefaultImpacts(),
       ruleDefinition.getVulnerabilityProbability().orElse(null));
-  }
-
-  private boolean supportsSecretAnalysis(String connectionId) {
-    var connection = connectionConfigurationRepository.getConnectionById(connectionId);
-    if (connection == null) {
-      // Connection is gone
-      return false;
-    }
-    // when storage is not present, assume that secrets are not supported by server
-    return connection.getKind() == ConnectionKind.SONARCLOUD || storageService.connection(connectionId).serverInfo().read()
-      .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(SECRET_ANALYSIS_MIN_SQ_VERSION) >= 0)
-      .orElse(false);
   }
 
   @Autowired
