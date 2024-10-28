@@ -87,7 +87,7 @@ public class RuleDetailsAdapter {
       type != null ? adapt(type) : null,
       ruleDetails.getCleanCodeAttribute().map(RuleDetailsAdapter::adapt).orElse(null),
       ruleDetails.getCleanCodeAttribute().map(org.sonarsource.sonarlint.core.commons.CleanCodeAttribute::getAttributeCategory).map(RuleDetailsAdapter::adapt).orElse(null),
-      toDto(ruleDetails.getDefaultImpacts()),
+      toDto(ruleDetails.getImpacts()),
       transformDescriptions(ruleDetails, contextKey),
       transform(ruleDetails.getParams()),
       adapt(ruleDetails.getLanguage()),

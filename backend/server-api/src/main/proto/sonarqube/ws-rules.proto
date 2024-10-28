@@ -95,9 +95,14 @@ message Active {
   optional string qProfile = 1;
   optional string severity = 3;
   repeated Param params = 5;
+  optional Impacts impacts = 9;
 
   message Param {
     optional string key = 1;
     optional string value = 2;
+  }
+
+  message Impacts {
+    repeated sonarqube.ws.commons.Impact impacts = 1;
   }
 }
