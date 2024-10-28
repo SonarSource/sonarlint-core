@@ -260,7 +260,7 @@ public class AnalysisService {
         Set.copyOf(pluginsService.getEmbeddedPluginPaths())));
   }
 
-  public AnalysisConfiguration getAnalysisConfigForEngine(String configScopeId, List<URI> filePathsToAnalyze, Map<String, String> extraProperties, boolean hotspotsOnly) {
+  private AnalysisConfiguration getAnalysisConfigForEngine(String configScopeId, List<URI> filePathsToAnalyze, Map<String, String> extraProperties, boolean hotspotsOnly) {
     var analysisConfig = getAnalysisConfig(configScopeId, hotspotsOnly);
     var analysisProperties = analysisConfig.getAnalysisProperties();
     var inferredAnalysisProperties = client.getInferredAnalysisProperties(new GetInferredAnalysisPropertiesParams(configScopeId, filePathsToAnalyze)).join().getProperties();
@@ -341,6 +341,13 @@ public class AnalysisService {
           }
         }
       });
+    if (languageSupportRepository.getEnabledLanguagesInConnectedMode().contains(SonarLanguage.IPYTHON)) {
+      // Jupyter Notebooks are not yet fully supported in connected mode, use standalone rule configuration in the meantime
+      var iPythonRules = buildStandaloneActiveRules()
+        .stream().filter(rule -> rule.getLanguageKey().equals(SonarLanguage.IPYTHON.getSonarLanguageKey()))
+        .collect(toList());
+      result.addAll(iPythonRules);
+    }
     return result;
   }
 
