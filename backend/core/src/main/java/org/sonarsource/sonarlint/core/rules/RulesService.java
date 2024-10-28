@@ -393,7 +393,11 @@ public class RulesService {
       ruleDefinition.getVulnerabilityProbability().orElse(null));
   }
 
-  public RuleDetailsForAnalysis getRuleDetailsForConnectedAnalysis(Binding binding, String ruleKey) throws RuleNotFoundException {
+  private RuleDetailsForAnalysis getRuleDetailsForConnectedAnalysis(Binding binding, String ruleKey) throws RuleNotFoundException {
+    if (ruleKey.startsWith("ipython:")) {
+      // Jupyter Notebooks are not yet fully supported in connected mode, use standalone rule configuration in the meantime
+      return getRuleDetailsForStandaloneAnalysis(ruleKey);
+    }
     var activeRuleOpt = findServerActiveRuleInStorage(binding, ruleKey);
     if (activeRuleOpt.isEmpty()) {
       throw new RuleNotFoundException(COULD_NOT_FIND_RULE + ruleKey + "' in active rules", ruleKey);

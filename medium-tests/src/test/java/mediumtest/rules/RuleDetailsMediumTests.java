@@ -25,6 +25,7 @@ import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
 
 import static mediumtest.fixtures.ServerFixture.newSonarCloudServer;
@@ -51,7 +52,6 @@ class RuleDetailsMediumTests {
     backend = newBackend()
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.TEXT)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
-      .withServerSentEventsEnabled()
       .withSonarQubeConnection("connectionId", server,
         storage -> storage.withServerVersion("9.9").withProject("projectKey",
           project -> project.withRuleSet("secrets", ruleSet -> ruleSet.withActiveRule("secrets:S6290", "MAJOR"))))
@@ -74,7 +74,6 @@ class RuleDetailsMediumTests {
       .withSonarCloudUrl(server.baseUrl())
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.TEXT)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
-      .withServerSentEventsEnabled()
       .withSonarCloudConnection("connectionId",
         storage -> storage.withPlugin(TestPlugin.TEXT).withProject("projectKey",
           project -> project.withRuleSet("secrets", ruleSet -> ruleSet.withActiveRule("secrets:S6290", "MAJOR"))))
@@ -84,5 +83,26 @@ class RuleDetailsMediumTests {
     var ruleDetails = backend.getAnalysisService().getRuleDetails(new GetRuleDetailsParams("configScope", "secrets:S6290")).join();
 
     assertThat(ruleDetails.getType()).isEqualTo(RuleType.VULNERABILITY);
+  }
+
+  @Test
+  void it_should_return_details_from_the_embedded_ipython_rules_when_connected() {
+    var server = newSonarCloudServer()
+      .withProject("projectKey",
+        project -> project.withBranch("branchName"))
+      .start();
+    backend = newBackend()
+      .withSonarCloudUrl(server.baseUrl())
+      .withStandaloneEmbeddedPlugin(TestPlugin.PYTHON)
+      .withEnabledLanguageInStandaloneMode(Language.IPYTHON)
+      .withSonarCloudConnection("connectionId",
+        storage -> storage.withPlugin(TestPlugin.TEXT).withProject("projectKey",
+          project -> project.withRuleSet("secrets", ruleSet -> ruleSet.withActiveRule("secrets:S6290", "MAJOR"))))
+      .withBoundConfigScope("configScope", "connectionId", "projectKey")
+      .build();
+
+    var ruleDetails = backend.getAnalysisService().getRuleDetails(new GetRuleDetailsParams("configScope", "ipython:PrintStatementUsage")).join();
+
+    assertThat(ruleDetails.getType()).isEqualTo(RuleType.CODE_SMELL);
   }
 }
