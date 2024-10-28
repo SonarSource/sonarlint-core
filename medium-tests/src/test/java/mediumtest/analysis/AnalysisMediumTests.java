@@ -762,9 +762,9 @@ class AnalysisMediumTests {
 
     // analyse files to warmup caches
     var analysisId1 = UUID.randomUUID();
-    backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId1, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId1, List.of(fileUri), Map.of(),true, System.currentTimeMillis())).join();
     var analysisId2 = UUID.randomUUID();
-    backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(configScope2, analysisId2, List.of(fileUri2), Map.of(), System.currentTimeMillis())).join();
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(configScope2, analysisId2, List.of(fileUri2), Map.of(), true, System.currentTimeMillis())).join();
 
     // unload one of the projects
     backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(configScope2));
@@ -835,9 +835,9 @@ class AnalysisMediumTests {
 
     // analyse files to warmup caches
     var analysisId1 = UUID.randomUUID();
-    backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId1, List.of(fileUri), Map.of(), System.currentTimeMillis())).join();
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId1, List.of(fileUri), Map.of(), true, System.currentTimeMillis())).join();
     var analysisId2 = UUID.randomUUID();
-    backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(configScope2, analysisId2, List.of(fileUri2), Map.of(), System.currentTimeMillis())).join();
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(configScope2, analysisId2, List.of(fileUri2), Map.of(), true, System.currentTimeMillis())).join();
 
     // unload one of the projects
     backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(configScope2));
