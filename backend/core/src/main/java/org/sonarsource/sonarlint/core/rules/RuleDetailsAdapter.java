@@ -81,8 +81,8 @@ public class RuleDetailsAdapter {
 
   public static EffectiveRuleDetailsDto transform(RuleDetails ruleDetails, @Nullable String contextKey) {
     var cleanCodeAttribute = ruleDetails.getCleanCodeAttribute().map(RuleDetailsAdapter::adapt).orElse(null);
-    Either<StandardModeDetails, MQRModeDetails> severityDetails = cleanCodeAttribute != null && !ruleDetails.getDefaultImpacts().isEmpty() ?
-      Either.forRight(new MQRModeDetails(cleanCodeAttribute, toDto(ruleDetails.getDefaultImpacts()))) :
+    Either<StandardModeDetails, MQRModeDetails> severityDetails = cleanCodeAttribute != null && !ruleDetails.getImpacts().isEmpty() ?
+      Either.forRight(new MQRModeDetails(cleanCodeAttribute, toDto(ruleDetails.getImpacts()))) :
       Either.forLeft(new StandardModeDetails(adapt(Objects.requireNonNull(ruleDetails.getDefaultSeverity())),
         adapt(Objects.requireNonNull(ruleDetails.getType()))));
     return new EffectiveRuleDetailsDto(

@@ -227,19 +227,17 @@ public class RulesService {
       var ruleKeyPossiblyWithDeprecatedRepo = RuleKey.parse(possiblyDeprecatedActiveRuleFromStorage.getRuleKey());
       var templateRuleKeyWithCorrectRepo = RuleKey.parse(ruleOrTemplateDefinition.get().getKey());
       var ruleKey = new RuleKey(templateRuleKeyWithCorrectRepo.repository(), ruleKeyPossiblyWithDeprecatedRepo.rule()).toString();
-      //TODO Replace empty list with proper one.
       return new ServerActiveRule(ruleKey, possiblyDeprecatedActiveRuleFromStorage.getSeverity(), possiblyDeprecatedActiveRuleFromStorage.getParams(),
-        ruleOrTemplateDefinition.get().getKey(), Collections.emptyList());
+        ruleOrTemplateDefinition.get().getKey(), possiblyDeprecatedActiveRuleFromStorage.getOverriddenImpacts());
     } else {
       ruleOrTemplateDefinition = rulesRepository.getRule(connectionId, possiblyDeprecatedActiveRuleFromStorage.getRuleKey());
       if (ruleOrTemplateDefinition.isEmpty()) {
         // The rule is not known among our loaded analyzers, so return it untouched, to let calling code take appropriate decision
         return possiblyDeprecatedActiveRuleFromStorage;
       }
-      //TODO Replace empty list with proper one.
       return new ServerActiveRule(ruleOrTemplateDefinition.get().getKey(), possiblyDeprecatedActiveRuleFromStorage.getSeverity(),
         possiblyDeprecatedActiveRuleFromStorage.getParams(),
-        null, Collections.emptyList());
+        null, possiblyDeprecatedActiveRuleFromStorage.getOverriddenImpacts());
     }
   }
 
@@ -420,7 +418,8 @@ public class RulesService {
     }
     var ruleDefinition = ruleDefinitionOpt.get();
     return new RuleDetailsForAnalysis(activeRule.getSeverity(), ruleDefinition.getType(),
-      ruleDefinition.getCleanCodeAttribute().orElse(CONVENTIONAL), ruleDefinition.getDefaultImpacts(),
+      ruleDefinition.getCleanCodeAttribute().orElse(CONVENTIONAL),
+      RuleDetails.mergeImpacts(ruleDefinition.getDefaultImpacts(), activeRule.getOverriddenImpacts()),
       ruleDefinition.getVulnerabilityProbability().orElse(null));
   }
 

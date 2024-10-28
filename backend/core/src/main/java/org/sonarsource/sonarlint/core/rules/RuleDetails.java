@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.rules;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -38,10 +39,14 @@ import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
+import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamDefinition;
+import org.sonarsource.sonarlint.core.serverapi.push.parsing.common.ImpactPayload;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerRule;
 
@@ -57,15 +62,14 @@ public class RuleDetails {
   private final IssueSeverity defaultSeverity;
   private final RuleType type;
   private final CleanCodeAttribute cleanCodeAttribute;
-  private final Map<SoftwareQuality, ImpactSeverity> defaultImpacts;
+  private final Map<SoftwareQuality, ImpactSeverity> impacts;
   private final Collection<EffectiveRuleParam> params;
   private final String extendedDescription;
   private final Set<String> educationPrincipleKeys;
   private final VulnerabilityProbability vulnerabilityProbability;
 
   public RuleDetails(String key, SonarLanguage language, String name, String htmlDescription, Map<String, List<DescriptionSection>> descriptionSectionsByKey,
-    @Nullable IssueSeverity defaultSeverity, @Nullable RuleType type, @Nullable CleanCodeAttribute cleanCodeAttribute,
-    Map<SoftwareQuality, ImpactSeverity> defaultImpacts,
+    Map<SoftwareQuality, ImpactSeverity> impacts, @Nullable IssueSeverity defaultSeverity, @Nullable RuleType type, @Nullable CleanCodeAttribute cleanCodeAttribute,
     @Nullable String extendedDescription, Collection<EffectiveRuleParam> params, Set<String> educationPrincipleKeys,
     @Nullable VulnerabilityProbability vulnerabilityProbability) {
     this.key = key;
@@ -76,7 +80,7 @@ public class RuleDetails {
     this.defaultSeverity = defaultSeverity;
     this.type = type;
     this.cleanCodeAttribute = cleanCodeAttribute;
-    this.defaultImpacts = defaultImpacts;
+    this.impacts = impacts;
     this.params = params;
     this.extendedDescription = extendedDescription;
     this.educationPrincipleKeys = educationPrincipleKeys;
@@ -92,10 +96,10 @@ public class RuleDetails {
       ruleDefinition.getDescriptionSections().stream()
         .map(s -> new DescriptionSection(s.getKey(), s.getHtmlContent(), s.getContext().map(c -> new DescriptionSection.Context(c.getKey(), c.getDisplayName()))))
         .collect(Collectors.groupingBy(DescriptionSection::getKey)),
+      ruleDefinition.getDefaultImpacts(),
       ruleDefinition.getDefaultSeverity(),
       ruleDefinition.getType(),
       ruleDefinition.getCleanCodeAttribute().orElse(CleanCodeAttribute.defaultCleanCodeAttribute()),
-      ruleDefinition.getDefaultImpacts(),
       null,
       transformParams(ruleDefinition.getParams(), ruleConfig != null ? ruleConfig.getParamValueByKey() : Map.of()),
       ruleDefinition.getEducationPrincipleKeys(), ruleDefinition.getVulnerabilityProbability().orElse(null));
@@ -114,10 +118,10 @@ public class RuleDetails {
       serverRule.getDescriptionSections().stream()
         .map(s -> new DescriptionSection(s.getKey(), s.getHtmlContent(), s.getContext().map(c -> new DescriptionSection.Context(c.getKey(), c.getDisplayName()))))
         .collect(Collectors.groupingBy(DescriptionSection::getKey)),
+      serverRule.getImpacts(),
       Optional.ofNullable(activeRuleFromStorage.getSeverity()).orElse(serverRule.getSeverity()),
       serverRule.getType(),
       serverRule.getCleanCodeAttribute(),
-      serverRule.getImpacts(),
       serverRule.getHtmlNote(), Collections.emptyList(),
       serverRule.getEducationPrincipleKeys(),
       null); // TODO get vulnerability probability from storage?
@@ -130,9 +134,9 @@ public class RuleDetails {
       ruleDefFromPlugin.getDescriptionSections().stream()
         .map(s -> new DescriptionSection(s.getKey(), s.getHtmlContent(), s.getContext().map(c -> new DescriptionSection.Context(c.getKey(), c.getDisplayName()))))
         .collect(Collectors.groupingBy(DescriptionSection::getKey)),
+      defaultImpacts,
       Optional.ofNullable(activeRuleFromServer.getSeverity()).orElse(ruleDefFromPlugin.getDefaultSeverity()), ruleDefFromPlugin.getType(),
       cleanCodeAttribute,
-      defaultImpacts,
       activeRuleFromServer.getHtmlNote(), Collections.emptyList(), ruleDefFromPlugin.getEducationPrincipleKeys(), ruleDefFromPlugin.getVulnerabilityProbability().orElse(null));
   }
 
@@ -148,12 +152,25 @@ public class RuleDetails {
       serverRule.getDescriptionSections().stream()
         .map(s -> new DescriptionSection(s.getKey(), s.getHtmlContent(), s.getContext().map(c -> new DescriptionSection.Context(c.getKey(), c.getDisplayName()))))
         .collect(Collectors.groupingBy(DescriptionSection::getKey)),
+      mergeImpacts(defaultImpacts, activeRuleFromStorage.getOverriddenImpacts()),
       serverRule.getSeverity(),
       templateRuleDefFromPlugin.getType(),
       cleanCodeAttribute,
-      defaultImpacts,
       serverRule.getHtmlNote(),
       Collections.emptyList(), templateRuleDefFromPlugin.getEducationPrincipleKeys(), templateRuleDefFromPlugin.getVulnerabilityProbability().orElse(null));
+  }
+
+  public static Map<SoftwareQuality, ImpactSeverity> mergeImpacts(Map<SoftwareQuality, ImpactSeverity> defaultImpacts,
+    List<ImpactPayload> overriddenImpacts) {
+    Map<SoftwareQuality, ImpactSeverity> mergedImpacts = new HashMap<>(defaultImpacts);
+
+    for (ImpactPayload impact : overriddenImpacts) {
+      var quality = SoftwareQuality.valueOf(impact.getSoftwareQuality());
+      var severity = ImpactSeverity.valueOf(impact.getSeverity());
+      mergedImpacts.computeIfPresent(quality, (k, v) -> severity);
+    }
+
+    return Collections.unmodifiableMap(mergedImpacts);
   }
 
   public static RuleDetails merging(RuleDetails serverActiveRuleDetails, RaisedFindingDto raisedFindingDto) {
@@ -170,10 +187,10 @@ public class RuleDetails {
       serverActiveRuleDetails.getName(),
       serverActiveRuleDetails.getHtmlDescription(),
       serverActiveRuleDetails.getDescriptionSectionsByKey(),
+      softwareImpacts,
       isMQRMode ? null : IssueSeverity.valueOf(raisedFindingDto.getSeverityMode().getLeft().getSeverity().toString()),
       isMQRMode ? null : RuleType.valueOf(raisedFindingDto.getSeverityMode().getLeft().getType().toString()),
       isMQRMode ? CleanCodeAttribute.valueOf(raisedFindingDto.getSeverityMode().getRight().getCleanCodeAttribute().name()) : null,
-      softwareImpacts,
       serverActiveRuleDetails.getExtendedDescription(),
       serverActiveRuleDetails.getParams(),
       serverActiveRuleDetails.educationPrincipleKeys,
@@ -194,10 +211,10 @@ public class RuleDetails {
       serverActiveRuleDetails.getName(),
       serverActiveRuleDetails.getHtmlDescription(),
       serverActiveRuleDetails.getDescriptionSectionsByKey(),
+      softwareImpacts,
       isMQRMode ? null : IssueSeverity.valueOf(taintVulnerabilityDto.getSeverityMode().getLeft().getSeverity().toString()),
       isMQRMode ? null : RuleType.valueOf(taintVulnerabilityDto.getSeverityMode().getLeft().getType().toString()),
       isMQRMode ? CleanCodeAttribute.valueOf(taintVulnerabilityDto.getSeverityMode().getRight().getCleanCodeAttribute().name()) : null,
-      softwareImpacts,
       serverActiveRuleDetails.getExtendedDescription(),
       serverActiveRuleDetails.getParams(),
       serverActiveRuleDetails.educationPrincipleKeys,
@@ -246,8 +263,8 @@ public class RuleDetails {
     return Optional.ofNullable(cleanCodeAttribute);
   }
 
-  public Map<SoftwareQuality, ImpactSeverity> getDefaultImpacts() {
-    return defaultImpacts;
+  public Map<SoftwareQuality, ImpactSeverity> getImpacts() {
+    return impacts;
   }
 
   public Collection<EffectiveRuleParam> getParams() {
