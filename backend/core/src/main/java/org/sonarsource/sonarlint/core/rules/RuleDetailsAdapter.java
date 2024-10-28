@@ -37,12 +37,6 @@ import org.sonarsource.sonarlint.core.analysis.api.QuickFix;
 import org.sonarsource.sonarlint.core.analysis.api.TextEdit;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.FileEditDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueFlowDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueLocationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.QuickFixDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.TextEditDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleParamDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
@@ -53,8 +47,14 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleMonolithicD
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleNonContextualSectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleSplitDescriptionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.VulnerabilityProbability;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.FileEditDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueFlowDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueLocationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.QuickFixDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.TextEditDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttributeCategory;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
@@ -85,7 +85,7 @@ public class RuleDetailsAdapter {
       adapt(ruleDetails.getType()),
       ruleDetails.getCleanCodeAttribute().map(RuleDetailsAdapter::adapt).orElse(null),
       ruleDetails.getCleanCodeAttribute().map(org.sonarsource.sonarlint.core.commons.CleanCodeAttribute::getAttributeCategory).map(RuleDetailsAdapter::adapt).orElse(null),
-      toDto(ruleDetails.getDefaultImpacts()),
+      toDto(ruleDetails.getImpacts()),
       transformDescriptions(ruleDetails, contextKey),
       transform(ruleDetails.getParams()),
       adapt(ruleDetails.getLanguage()),
