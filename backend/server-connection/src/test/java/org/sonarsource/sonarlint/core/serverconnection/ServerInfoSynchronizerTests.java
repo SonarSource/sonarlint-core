@@ -38,9 +38,9 @@ import testutils.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
-import static org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo.ModeDetails.DEFAULT;
-import static org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo.ModeDetails.MQR;
-import static org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo.ModeDetails.STANDARD;
+import static org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo.SeverityModeDetails.DEFAULT;
+import static org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo.SeverityModeDetails.MQR;
+import static org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo.SeverityModeDetails.STANDARD;
 
 class ServerInfoSynchronizerTests {
   @RegisterExtension
@@ -79,7 +79,7 @@ class ServerInfoSynchronizerTests {
     var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor());
 
     assertThat(storedServerInfo)
-      .extracting(StoredServerInfo::getVersion, StoredServerInfo::isMQRMode)
+      .extracting(StoredServerInfo::getVersion, StoredServerInfo::getSeverityMode)
       .containsExactly(Version.create("9.9"), DEFAULT);
   }
 
@@ -95,7 +95,7 @@ class ServerInfoSynchronizerTests {
     var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor());
 
     assertThat(storedServerInfo)
-      .extracting(StoredServerInfo::getVersion, StoredServerInfo::isMQRMode)
+      .extracting(StoredServerInfo::getVersion, StoredServerInfo::getSeverityMode)
       .containsExactly(Version.create("10.8"), MQR);
   }
 
@@ -111,7 +111,7 @@ class ServerInfoSynchronizerTests {
     var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor());
 
     assertThat(storedServerInfo)
-      .extracting(StoredServerInfo::getVersion, StoredServerInfo::isMQRMode)
+      .extracting(StoredServerInfo::getVersion, StoredServerInfo::getSeverityMode)
       .containsExactly(Version.create("10.8"), STANDARD);
   }
 

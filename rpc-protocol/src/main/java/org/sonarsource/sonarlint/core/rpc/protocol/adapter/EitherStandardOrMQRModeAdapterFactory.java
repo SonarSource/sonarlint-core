@@ -31,7 +31,7 @@ public class EitherStandardOrMQRModeAdapterFactory extends CustomEitherAdapterFa
   };
 
   public EitherStandardOrMQRModeAdapterFactory() {
-    super(ELEMENT_TYPE, StandardModeDetails.class, MQRModeDetails.class, new EitherTypeAdapter.PropertyChecker("details"));
+    super(ELEMENT_TYPE, StandardModeDetails.class, MQRModeDetails.class, new EitherTypeAdapter.PropertyChecker("severity"));
   }
 
 }

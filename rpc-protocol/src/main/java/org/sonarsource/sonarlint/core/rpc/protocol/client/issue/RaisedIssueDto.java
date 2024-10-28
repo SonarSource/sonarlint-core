@@ -34,10 +34,10 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 
 public class RaisedIssueDto extends RaisedFindingDto {
 
-  public RaisedIssueDto(UUID id, @Nullable String serverKey, String ruleKey, String primaryMessage, Either<StandardModeDetails, MQRModeDetails> details,
+  public RaisedIssueDto(UUID id, @Nullable String serverKey, String ruleKey, String primaryMessage, Either<StandardModeDetails, MQRModeDetails> severityMode,
     IssueSeverity severity, RuleType type, CleanCodeAttribute cleanCodeAttribute, List<ImpactDto> impacts, Instant introductionDate, boolean isOnNewCode,
     boolean resolved, @Nullable TextRangeDto textRange, List<IssueFlowDto> flows, List<QuickFixDto> quickFixes, @Nullable String ruleDescriptionContextKey) {
-    super(id, serverKey, ruleKey, primaryMessage, details, severity, type, cleanCodeAttribute, impacts,
+    super(id, serverKey, ruleKey, primaryMessage, severityMode, severity, type, cleanCodeAttribute, impacts,
       introductionDate, isOnNewCode, resolved, textRange, flows, quickFixes, ruleDescriptionContextKey);
   }
 

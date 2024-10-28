@@ -50,11 +50,11 @@ public class SeverityModeService {
       return true;
     }
     var optServerInfo = storageService.connection(connectionId).serverInfo().read();
-    var isMQRMode = optServerInfo.map(StoredServerInfo::isMQRMode).orElse(StoredServerInfo.ModeDetails.MQR);
-    if (isMQRMode == StoredServerInfo.ModeDetails.DEFAULT) {
+    var isMQRMode = optServerInfo.map(StoredServerInfo::getSeverityMode).orElse(StoredServerInfo.SeverityModeDetails.MQR);
+    if (isMQRMode == StoredServerInfo.SeverityModeDetails.DEFAULT) {
       return optServerInfo.get().getVersion().compareToIgnoreQualifier(Version.create(MIN_MQR_MODE_SUPPORT_VERSION)) >= 0;
     }
-    return isMQRMode == StoredServerInfo.ModeDetails.MQR;
+    return isMQRMode == StoredServerInfo.SeverityModeDetails.MQR;
   }
 
 }

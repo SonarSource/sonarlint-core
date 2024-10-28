@@ -242,7 +242,7 @@ class IssueEventsMediumTests {
       var raisedIssueDto = raisedIssues.get(0);
       assertThat(raisedIssueDto.getServerKey()).isEqualTo(serverIssueKey);
       assertThat(raisedIssueDto.getType()).isEqualTo(org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.BUG);
-      assertThat(raisedIssueDto.getDetails().isRight()).isTrue();
+      assertThat(raisedIssueDto.getSeverityMode().isRight()).isTrue();
     }
 
     @Test
@@ -306,7 +306,7 @@ class IssueEventsMediumTests {
       var raisedIssueDto = raisedIssues.get(0);
       assertThat(raisedIssueDto.getServerKey()).isEqualTo(serverIssueKey);
       assertThat(raisedIssueDto.isResolved()).isTrue();
-      assertThat(raisedIssueDto.getDetails().isRight()).isTrue();
+      assertThat(raisedIssueDto.getSeverityMode().isRight()).isTrue();
     }
 
     @Test
@@ -371,7 +371,7 @@ class IssueEventsMediumTests {
       var raisedIssueDto = raisedIssues.get(0);
       assertThat(raisedIssueDto.getServerKey()).isEqualTo(serverIssueKey);
       assertThat(raisedIssueDto.getSeverity()).isEqualTo(org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.MINOR);
-      assertThat(raisedIssueDto.getDetails().isRight()).isTrue();
+      assertThat(raisedIssueDto.getSeverityMode().isRight()).isTrue();
     }
 
   }

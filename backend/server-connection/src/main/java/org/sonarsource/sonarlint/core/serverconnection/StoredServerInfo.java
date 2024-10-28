@@ -25,16 +25,16 @@ import org.sonarsource.sonarlint.core.commons.Version;
 public class StoredServerInfo {
 
   private final Version version;
-  private final ModeDetails isMQRMode;
+  private final SeverityModeDetails severityMode;
 
   public StoredServerInfo(Version version, @Nullable Boolean mode) {
     this.version = version;
     if (mode == null) {
-      this.isMQRMode = ModeDetails.DEFAULT;
+      this.severityMode = SeverityModeDetails.DEFAULT;
     } else if (mode) {
-      this.isMQRMode = ModeDetails.MQR;
+      this.severityMode = SeverityModeDetails.MQR;
     } else {
-      this.isMQRMode = ModeDetails.STANDARD;
+      this.severityMode = SeverityModeDetails.STANDARD;
     }
   }
 
@@ -42,11 +42,11 @@ public class StoredServerInfo {
     return version;
   }
 
-  public ModeDetails isMQRMode() {
-    return this.isMQRMode;
+  public SeverityModeDetails getSeverityMode() {
+    return this.severityMode;
   }
 
-  public enum ModeDetails {
+  public enum SeverityModeDetails {
     DEFAULT, STANDARD, MQR
   }
 

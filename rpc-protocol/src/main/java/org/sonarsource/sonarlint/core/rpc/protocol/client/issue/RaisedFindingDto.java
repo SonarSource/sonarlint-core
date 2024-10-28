@@ -43,7 +43,7 @@ public abstract class RaisedFindingDto {
   private final String serverKey;
   private final String ruleKey;
   private final String primaryMessage;
-  private final Either<StandardModeDetails, MQRModeDetails> details;
+  private final Either<StandardModeDetails, MQRModeDetails> severityMode;
   @Deprecated(since = "10.9")
   private final IssueSeverity severity;
   @Deprecated(since = "10.9")
@@ -62,14 +62,14 @@ public abstract class RaisedFindingDto {
   @Nullable
   private final String ruleDescriptionContextKey;
 
-  protected RaisedFindingDto(UUID id, @Nullable String serverKey, String ruleKey, String primaryMessage, Either<StandardModeDetails, MQRModeDetails> details,
+  protected RaisedFindingDto(UUID id, @Nullable String serverKey, String ruleKey, String primaryMessage, Either<StandardModeDetails, MQRModeDetails> severityMode,
     IssueSeverity severity, RuleType type, CleanCodeAttribute cleanCodeAttribute, List<ImpactDto> impacts, Instant introductionDate, boolean isOnNewCode,
     boolean resolved, @Nullable TextRangeDto textRange, List<IssueFlowDto> flows, List<QuickFixDto> quickFixes, @Nullable String ruleDescriptionContextKey) {
     this.id = id;
     this.serverKey = serverKey;
     this.ruleKey = ruleKey;
     this.primaryMessage = primaryMessage;
-    this.details = details;
+    this.severityMode = severityMode;
     this.severity = severity;
     this.type = type;
     this.cleanCodeAttribute = cleanCodeAttribute;
@@ -100,8 +100,8 @@ public abstract class RaisedFindingDto {
     return primaryMessage;
   }
 
-  public Either<StandardModeDetails, MQRModeDetails> getDetails() {
-    return details;
+  public Either<StandardModeDetails, MQRModeDetails> getSeverityMode() {
+    return severityMode;
   }
 
   @Deprecated(since = "10.9")
@@ -163,7 +163,7 @@ public abstract class RaisedFindingDto {
     private final String serverKey;
     private final String ruleKey;
     private final String primaryMessage;
-    private Either<StandardModeDetails, MQRModeDetails> details;
+    private Either<StandardModeDetails, MQRModeDetails> severityMode;
     @Deprecated(since = "10.9")
     private IssueSeverity severity;
     @Deprecated(since = "10.9")
@@ -182,7 +182,7 @@ public abstract class RaisedFindingDto {
     private HotspotStatus status;
     private final VulnerabilityProbability vulnerabilityProbability;
 
-    private RaisedFindingDtoBuilder(UUID id, @Nullable String serverKey, String ruleKey, String primaryMessage, Either<StandardModeDetails, MQRModeDetails> details,
+    private RaisedFindingDtoBuilder(UUID id, @Nullable String serverKey, String ruleKey, String primaryMessage, Either<StandardModeDetails, MQRModeDetails> severityMode,
       IssueSeverity severity, RuleType type, CleanCodeAttribute cleanCodeAttribute, List<ImpactDto> impacts, Instant introductionDate, boolean isOnNewCode,
       boolean resolved, @Nullable TextRangeDto textRange, List<IssueFlowDto> flows, List<QuickFixDto> quickFixes, @Nullable String ruleDescriptionContextKey,
       @Nullable HotspotStatus status, @Nullable VulnerabilityProbability vulnerabilityProbability) {
@@ -190,7 +190,7 @@ public abstract class RaisedFindingDto {
       this.serverKey = serverKey;
       this.ruleKey = ruleKey;
       this.primaryMessage = primaryMessage;
-      this.details = details;
+      this.severityMode = severityMode;
       this.severity = severity;
       this.type = type;
       this.cleanCodeAttribute = cleanCodeAttribute;
@@ -213,7 +213,7 @@ public abstract class RaisedFindingDto {
         status = ((RaisedHotspotDto) dto).getStatus();
         vulnerabilityProbability = ((RaisedHotspotDto) dto).getVulnerabilityProbability();
       }
-      return new RaisedFindingDtoBuilder(dto.getId(), dto.getServerKey(), dto.getRuleKey(), dto.getPrimaryMessage(), dto.getDetails(), dto.getSeverity(),
+      return new RaisedFindingDtoBuilder(dto.getId(), dto.getServerKey(), dto.getRuleKey(), dto.getPrimaryMessage(), dto.getSeverityMode(), dto.getSeverity(),
         dto.getType(), dto.getCleanCodeAttribute(), dto.getImpacts(), dto.getIntroductionDate(), dto.isOnNewCode(), dto.isResolved(), dto.getTextRange(),
         dto.getFlows(), dto.getQuickFixes(), dto.getRuleDescriptionContextKey(), status, vulnerabilityProbability);
     }
@@ -224,12 +224,12 @@ public abstract class RaisedFindingDto {
     }
 
     public RaisedFindingDtoBuilder withStandardModeDetails(IssueSeverity severity, RuleType type) {
-      this.details = Either.forLeft(new StandardModeDetails(severity, type));
+      this.severityMode = Either.forLeft(new StandardModeDetails(severity, type));
       return this;
     }
 
     public RaisedFindingDtoBuilder withMQRModeDetails(CleanCodeAttribute cleanCodeAttribute, List<ImpactDto> impacts) {
-      this.details = Either.forRight(new MQRModeDetails(cleanCodeAttribute, impacts));
+      this.severityMode = Either.forRight(new MQRModeDetails(cleanCodeAttribute, impacts));
       return this;
     }
 
@@ -251,12 +251,12 @@ public abstract class RaisedFindingDto {
     }
 
     public RaisedIssueDto buildIssue() {
-      return new RaisedIssueDto(id, serverKey, ruleKey, primaryMessage, details, severity, type, cleanCodeAttribute, impacts,
+      return new RaisedIssueDto(id, serverKey, ruleKey, primaryMessage, severityMode, severity, type, cleanCodeAttribute, impacts,
         introductionDate, isOnNewCode, resolved, textRange, flows, quickFixes, ruleDescriptionContextKey);
     }
 
     public RaisedHotspotDto buildHotspot() {
-      return new RaisedHotspotDto(id, serverKey, ruleKey, primaryMessage, details, severity, type, cleanCodeAttribute, impacts,
+      return new RaisedHotspotDto(id, serverKey, ruleKey, primaryMessage, severityMode, severity, type, cleanCodeAttribute, impacts,
         introductionDate, isOnNewCode, resolved, textRange, flows, quickFixes, ruleDescriptionContextKey, vulnerabilityProbability, status);
     }
   }

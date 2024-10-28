@@ -91,11 +91,11 @@ public class IssueService {
   private final LocalOnlyIssueRepository localOnlyIssueRepository;
   private final ApplicationEventPublisher eventPublisher;
   private final FindingReportingService findingReportingService;
-  private final SeverityModeService modeService;
+  private final SeverityModeService severityModeService;
 
   public IssueService(ConfigurationRepository configurationRepository, ServerApiProvider serverApiProvider, StorageService storageService,
     LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
-    ApplicationEventPublisher eventPublisher, FindingReportingService findingReportingService, SeverityModeService modeService) {
+    ApplicationEventPublisher eventPublisher, FindingReportingService findingReportingService, SeverityModeService severityModeService) {
     this.configurationRepository = configurationRepository;
     this.serverApiProvider = serverApiProvider;
     this.storageService = storageService;
@@ -103,7 +103,7 @@ public class IssueService {
     this.localOnlyIssueRepository = localOnlyIssueRepository;
     this.eventPublisher = eventPublisher;
     this.findingReportingService = findingReportingService;
-    this.modeService = modeService;
+    this.severityModeService = severityModeService;
   }
 
   public void changeStatus(String configurationScopeId, String issueKey, ResolutionStatus newStatus, boolean isTaintIssue, SonarLintCancelMonitor cancelMonitor) {
@@ -341,7 +341,7 @@ public class IssueService {
   }
 
   private void republishPreviouslyRaisedIssues(String connectionId, IssueChangedEvent event) {
-    var isMQRMode = modeService.isMQRModeForConnection(connectionId);
+    var isMQRMode = severityModeService.isMQRModeForConnection(connectionId);
     var boundScopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, event.getProjectKey());
     boundScopes.forEach(scope -> {
       var scopeId = scope.getConfigScopeId();

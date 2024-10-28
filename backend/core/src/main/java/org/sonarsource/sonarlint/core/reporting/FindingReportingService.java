@@ -62,7 +62,7 @@ public class FindingReportingService {
   private final SonarLintRpcClient client;
   private final ConfigurationRepository configurationRepository;
   private final NewCodeService newCodeService;
-  private final SeverityModeService modeService;
+  private final SeverityModeService severityModeService;
   private final PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository;
   private final Map<URI, Collection<TrackedIssue>> issuesPerFileUri = new ConcurrentHashMap<>();
   private final Map<URI, Collection<TrackedIssue>> securityHotspotsPerFileUri = new ConcurrentHashMap<>();
@@ -70,11 +70,11 @@ public class FindingReportingService {
   private final Map<UUID, Set<URI>> filesPerAnalysis = new ConcurrentHashMap<>();
 
   public FindingReportingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, NewCodeService newCodeService,
-    SeverityModeService modeService, PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository) {
+    SeverityModeService severityModeService, PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.newCodeService = newCodeService;
-    this.modeService = modeService;
+    this.severityModeService = severityModeService;
     this.previouslyRaisedFindingsRepository = previouslyRaisedFindingsRepository;
   }
 
@@ -114,7 +114,7 @@ public class FindingReportingService {
   private void triggerStreaming(String configurationScopeId, UUID analysisId) {
     var connectionId = configurationRepository.getEffectiveBinding(configurationScopeId).map(Binding::getConnectionId).orElse(null);
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId).orElseGet(NewCodeDefinition::withAlwaysNew);
-    var isMQRMode = modeService.isMQRModeForConnection(connectionId);
+    var isMQRMode = severityModeService.isMQRModeForConnection(connectionId);
     var issuesToRaise = issuesPerFileUri.entrySet().stream()
       .filter(e -> filesPerAnalysis.get(analysisId).contains(e.getKey()))
       .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedIssueDto(issue, newCodeDefinition, isMQRMode)).collect(toList())))
@@ -131,7 +131,7 @@ public class FindingReportingService {
     stopStreaming(configurationScopeId);
     var connectionId = configurationRepository.getEffectiveBinding(configurationScopeId).map(Binding::getConnectionId).orElse(null);
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId).orElseGet(NewCodeDefinition::withAlwaysNew);
-    var isMQRMode = modeService.isMQRModeForConnection(connectionId);
+    var isMQRMode = severityModeService.isMQRModeForConnection(connectionId);
     var issuesToRaise = getIssuesToRaise(issuesToReport, newCodeDefinition, isMQRMode);
     var hotspotsToRaise = getHotspotsToRaise(hotspotsToReport, newCodeDefinition, isMQRMode);
     updateRaisedFindingsCacheAndNotifyClient(configurationScopeId, analysisId, issuesToRaise, hotspotsToRaise, false);
