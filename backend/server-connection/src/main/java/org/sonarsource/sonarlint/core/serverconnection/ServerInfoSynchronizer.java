@@ -50,7 +50,7 @@ public class ServerInfoSynchronizer {
   }
 
   @Nullable
-  private Boolean retrieveMQRMode(ServerApi serverApi, String serverVersion, SonarLintCancelMonitor cancelMonitor) {
+  private static Boolean retrieveMQRMode(ServerApi serverApi, String serverVersion, SonarLintCancelMonitor cancelMonitor) {
     var version = Version.create(serverVersion);
     if (!serverApi.isSonarCloud() && version.compareToIgnoreQualifier(Version.create(MQR_MODE_SETTING_MIN_VERSION)) >= 0) {
       var mqrModeResponse = serverApi.settings().getGlobalSetting(MQR_MODE_SETTING, cancelMonitor);
