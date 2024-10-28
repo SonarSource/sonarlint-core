@@ -23,9 +23,12 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDefinitionDto;
+import org.sonarsource.sonarlint.core.serverapi.push.parsing.common.ImpactPayload;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -56,6 +59,34 @@ class RulesServiceTests {
     assertThat(embeddedRules)
       .extracting(RuleDefinitionDto::getKey, RuleDefinitionDto::getName)
       .containsExactly(tuple("repo:ruleKey", "ruleName"));
+  }
+
+  @Test
+  void it_should_only_override_overridden_impact_quality() {
+    Map<SoftwareQuality, ImpactSeverity> defaultImpacts = Map.of(
+      SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW,
+      SoftwareQuality.RELIABILITY, ImpactSeverity.MEDIUM
+    );
+
+    List<ImpactPayload> overriddenImpacts = List.of(
+      new ImpactPayload("MAINTAINABILITY", "HIGH")
+    );
+
+    Map<SoftwareQuality, ImpactSeverity> result = RuleDetails.mergeImpacts(defaultImpacts, overriddenImpacts);
+    assertThat(result).containsEntry(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.HIGH);
+    assertThat(result).containsEntry(SoftwareQuality.RELIABILITY, ImpactSeverity.MEDIUM);
+  }
+
+  @Test
+  void it_should_work_when_no_overridden_impacts() {
+    Map<SoftwareQuality, ImpactSeverity> defaultImpacts = Map.of(
+      SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW,
+      SoftwareQuality.RELIABILITY, ImpactSeverity.MEDIUM
+    );
+
+    Map<SoftwareQuality, ImpactSeverity> result = RuleDetails.mergeImpacts(defaultImpacts, List.of());
+
+    assertThat(result).isEqualTo(defaultImpacts);
   }
 
 }

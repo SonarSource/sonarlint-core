@@ -400,18 +400,16 @@ public class AnalysisService {
       var ruleKeyPossiblyWithDeprecatedRepo = RuleKey.parse(possiblyDeprecatedActiveRuleFromStorage.getRuleKey());
       var templateRuleKeyWithCorrectRepo = RuleKey.parse(ruleOrTemplateDefinition.getKey());
       var ruleKey = new RuleKey(templateRuleKeyWithCorrectRepo.repository(), ruleKeyPossiblyWithDeprecatedRepo.rule()).toString();
-      //TODO Replace empty list with proper one.
       return new ServerActiveRule(ruleKey, possiblyDeprecatedActiveRuleFromStorage.getSeverity(), possiblyDeprecatedActiveRuleFromStorage.getParams(),
-        ruleOrTemplateDefinition.getKey(), Collections.emptyList());
+        ruleOrTemplateDefinition.getKey(), possiblyDeprecatedActiveRuleFromStorage.getOverriddenImpacts());
     } else {
       ruleOrTemplateDefinition = rulesRepository.getRule(connectionId, possiblyDeprecatedActiveRuleFromStorage.getRuleKey()).orElse(null);
       if (ruleOrTemplateDefinition == null) {
         // The rule is not known among our loaded analyzers, so return it untouched, to let calling code take appropriate decision
         return possiblyDeprecatedActiveRuleFromStorage;
       }
-      //TODO Replace empty list with proper one.
       return new ServerActiveRule(ruleOrTemplateDefinition.getKey(), possiblyDeprecatedActiveRuleFromStorage.getSeverity(), possiblyDeprecatedActiveRuleFromStorage.getParams(),
-        null, Collections.emptyList());
+        null, possiblyDeprecatedActiveRuleFromStorage.getOverriddenImpacts());
     }
   }
 
