@@ -35,7 +35,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
+import org.sonarsource.sonarlint.core.mode.SeverityModeService;
 import org.sonarsource.sonarlint.core.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.reporting.PreviouslyRaisedFindingsRepository;
@@ -60,6 +62,7 @@ public class FindingReportingService {
   private final SonarLintRpcClient client;
   private final ConfigurationRepository configurationRepository;
   private final NewCodeService newCodeService;
+  private final SeverityModeService severityModeService;
   private final PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository;
   private final Map<URI, Collection<TrackedIssue>> issuesPerFileUri = new ConcurrentHashMap<>();
   private final Map<URI, Collection<TrackedIssue>> securityHotspotsPerFileUri = new ConcurrentHashMap<>();
@@ -67,10 +70,11 @@ public class FindingReportingService {
   private final Map<UUID, Set<URI>> filesPerAnalysis = new ConcurrentHashMap<>();
 
   public FindingReportingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, NewCodeService newCodeService,
-    PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository) {
+    SeverityModeService severityModeService, PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.newCodeService = newCodeService;
+    this.severityModeService = severityModeService;
     this.previouslyRaisedFindingsRepository = previouslyRaisedFindingsRepository;
   }
 
@@ -108,14 +112,16 @@ public class FindingReportingService {
   }
 
   private void triggerStreaming(String configurationScopeId, UUID analysisId) {
+    var connectionId = configurationRepository.getEffectiveBinding(configurationScopeId).map(Binding::getConnectionId).orElse(null);
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId).orElseGet(NewCodeDefinition::withAlwaysNew);
+    var isMQRMode = severityModeService.isMQRModeForConnection(connectionId);
     var issuesToRaise = issuesPerFileUri.entrySet().stream()
       .filter(e -> filesPerAnalysis.get(analysisId).contains(e.getKey()))
-      .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedIssueDto(issue, newCodeDefinition)).collect(toList())))
+      .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedIssueDto(issue, newCodeDefinition, isMQRMode)).collect(toList())))
       .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
     var hotspotsToRaise = securityHotspotsPerFileUri.entrySet().stream()
       .filter(e -> filesPerAnalysis.get(analysisId).contains(e.getKey()))
-      .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedHotspotDto(issue, newCodeDefinition)).collect(toList())))
+      .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedHotspotDto(issue, newCodeDefinition, isMQRMode)).collect(toList())))
       .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
     updateRaisedFindingsCacheAndNotifyClient(configurationScopeId, analysisId, issuesToRaise, hotspotsToRaise, true);
   }
@@ -123,9 +129,11 @@ public class FindingReportingService {
   public void reportTrackedFindings(String configurationScopeId, UUID analysisId, Map<Path, List<TrackedIssue>> issuesToReport, Map<Path, List<TrackedIssue>> hotspotsToReport) {
     // stop streaming now, we will raise all issues one last time from this method
     stopStreaming(configurationScopeId);
+    var connectionId = configurationRepository.getEffectiveBinding(configurationScopeId).map(Binding::getConnectionId).orElse(null);
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId).orElseGet(NewCodeDefinition::withAlwaysNew);
-    var issuesToRaise = getIssuesToRaise(issuesToReport, newCodeDefinition);
-    var hotspotsToRaise = getHotspotsToRaise(hotspotsToReport, newCodeDefinition);
+    var isMQRMode = severityModeService.isMQRModeForConnection(connectionId);
+    var issuesToRaise = getIssuesToRaise(issuesToReport, newCodeDefinition, isMQRMode);
+    var hotspotsToRaise = getHotspotsToRaise(hotspotsToReport, newCodeDefinition, isMQRMode);
     updateRaisedFindingsCacheAndNotifyClient(configurationScopeId, analysisId, issuesToRaise, hotspotsToRaise, false);
     filesPerAnalysis.remove(analysisId);
   }
@@ -158,14 +166,14 @@ public class FindingReportingService {
     return streamingTriggeringAlarmByConfigScopeId.remove(configurationScopeId);
   }
 
-  private static Map<URI, List<RaisedIssueDto>> getIssuesToRaise(Map<Path, List<TrackedIssue>> updatedIssues, NewCodeDefinition newCodeDefinition) {
+  private static Map<URI, List<RaisedIssueDto>> getIssuesToRaise(Map<Path, List<TrackedIssue>> updatedIssues, NewCodeDefinition newCodeDefinition, boolean isMQRMode) {
     return updatedIssues.values().stream().flatMap(Collection::stream)
-      .collect(groupingBy(TrackedIssue::getFileUri, Collectors.mapping(issue -> toRaisedIssueDto(issue, newCodeDefinition), Collectors.toList())));
+      .collect(groupingBy(TrackedIssue::getFileUri, Collectors.mapping(issue -> toRaisedIssueDto(issue, newCodeDefinition, isMQRMode), Collectors.toList())));
   }
 
-  private static Map<URI, List<RaisedHotspotDto>> getHotspotsToRaise(Map<Path, List<TrackedIssue>> hotspots, NewCodeDefinition newCodeDefinition) {
+  private static Map<URI, List<RaisedHotspotDto>> getHotspotsToRaise(Map<Path, List<TrackedIssue>> hotspots, NewCodeDefinition newCodeDefinition, boolean isMQRMode) {
     return hotspots.values().stream().flatMap(Collection::stream)
-      .collect(groupingBy(TrackedIssue::getFileUri, Collectors.mapping(hotspot -> toRaisedHotspotDto(hotspot, newCodeDefinition), Collectors.toList())));
+      .collect(groupingBy(TrackedIssue::getFileUri, Collectors.mapping(hotspot -> toRaisedHotspotDto(hotspot, newCodeDefinition, isMQRMode), Collectors.toList())));
   }
 
   public void updateAndReportIssues(String configurationScopeId, UnaryOperator<RaisedIssueDto> issueUpdater) {

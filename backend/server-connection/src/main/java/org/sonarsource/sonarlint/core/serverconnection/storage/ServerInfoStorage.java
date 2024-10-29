@@ -34,7 +34,6 @@ import static org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFi
 
 public class ServerInfoStorage {
   public static final String SERVER_INFO_PB = "server_info.pb";
-  private static final String MIN_MQR_MODE_SUPPORT_VERSION = "10.2";
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final Path storageFilePath;
@@ -44,7 +43,7 @@ public class ServerInfoStorage {
     this.storageFilePath = rootPath.resolve(SERVER_INFO_PB);
   }
 
-  public void store(ServerStatusInfo serverStatus, @Nullable String isMQRMode) {
+  public void store(ServerStatusInfo serverStatus, @Nullable Boolean isMQRMode) {
     FileUtils.mkdirs(storageFilePath.getParent());
     var serverInfoToStore = adapt(serverStatus, isMQRMode);
     LOG.debug("Storing server info in {}", storageFilePath);
@@ -52,36 +51,25 @@ public class ServerInfoStorage {
     LOG.debug("Stored server info");
   }
 
-  public Optional<StoredServerInfo> read(boolean isSonarCloud) {
-    return rwLock.read(() -> Files.exists(storageFilePath) ? Optional.of(adapt(ProtobufFileUtil.readFile(storageFilePath, Sonarlint.ServerInfo.parser()), isSonarCloud))
+  public Optional<StoredServerInfo> read() {
+    return rwLock.read(() -> Files.exists(storageFilePath) ? Optional.of(adapt(ProtobufFileUtil.readFile(storageFilePath, Sonarlint.ServerInfo.parser())))
       : Optional.empty());
   }
 
-  private static Sonarlint.ServerInfo adapt(ServerStatusInfo serverStatus, @Nullable String isMQRMode) {
+  private static Sonarlint.ServerInfo adapt(ServerStatusInfo serverStatus, @Nullable Boolean isMQRMode) {
     var serverInfoBuilder = Sonarlint.ServerInfo.newBuilder().setVersion(serverStatus.getVersion());
-    if (isMQRMode == null) {
-      serverInfoBuilder.setMode(Sonarlint.Mode.DEFAULT);
-    } else if (Boolean.parseBoolean(isMQRMode)) {
-      serverInfoBuilder.setMode(Sonarlint.Mode.MQR);
-    } else {
-      serverInfoBuilder.setMode(Sonarlint.Mode.STANDARD);
+    if (isMQRMode != null) {
+      serverInfoBuilder.setIsMqrMode(isMQRMode);
     }
     return serverInfoBuilder.build();
   }
 
-  private static StoredServerInfo adapt(Sonarlint.ServerInfo serverInfo, boolean isSonarCloud) {
-    var isMQRMode = isMQRMode(isSonarCloud, serverInfo.getMode(), serverInfo.getVersion());
-    return new StoredServerInfo(Version.create(serverInfo.getVersion()), isMQRMode);
+  private static StoredServerInfo adapt(Sonarlint.ServerInfo serverInfo) {
+    if (serverInfo.hasIsMqrMode()) {
+      return new StoredServerInfo(Version.create(serverInfo.getVersion()), serverInfo.getIsMqrMode());
+    } else {
+      return new StoredServerInfo(Version.create(serverInfo.getVersion()), null);
+    }
   }
 
-  private static boolean isMQRMode(boolean isSonarCloud, Sonarlint.Mode mode, String version) {
-    if (isSonarCloud) {
-      return true;
-    }
-    if (mode == Sonarlint.Mode.DEFAULT) {
-      var serverVersion = Version.create(version);
-      return serverVersion.compareToIgnoreQualifier(Version.create(MIN_MQR_MODE_SUPPORT_VERSION)) >= 0;
-    }
-    return mode == Sonarlint.Mode.MQR;
-  }
 }

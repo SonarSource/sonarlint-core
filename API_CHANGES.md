@@ -1,3 +1,22 @@
+# 10.8
+
+## New features
+
+* A new attribute `severityMode` has been added to `org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto`
+  that automatically contains either `StandardModeDetails` or `MQRModeDetails`
+  * A new type `StandardModeDetails` has been introduced, which contains information about severity and type
+  * A new type `MQRModeDetails` has been introduced, which contains information about clean code attribute and impacts
+  * You should display the finding accordingly to the information contained by `severityMode`
+
+## Deprecation
+
+* The following attributes have been deprecated from `org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto`, you should now use
+  the new attribute `severityMode`
+  * `severity`
+  * `type`
+  * `cleanCodeAttribute`
+  * `impacts`
+
 # 10.7.1
 
 ## Breaking changes
@@ -87,6 +106,7 @@
 # 10.3.2 
 
 ## Breaking changes
+
 * Change `disabledLanguagesForAnalysis` parameter of `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams` introduced in 10.3 version to `disabledPluginKeysForAnalysis`
   * Analysis will be disabled for plugins specified in `disabledPluginKeysForAnalysis` but it will be still possible to consume Rule Descriptions
   * Can be null or empty if clients do not wish to disable analysis for any loaded plugin
@@ -94,11 +114,13 @@
 # 10.3
 
 ## Breaking changes
+
 * Add new `disabledLanguagesForAnalysis` parameter into `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams`
   * Analysis will be disabled for languages specified `disabledLanguagesForAnalysis` but it will be still possible to consume Rule Descriptions
   * Can be null or empty if clients do not wish to disable analysis for any loaded plugin
 
 ## New features
+
 * Add a method to `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient` to allow backend to request inferred analysis properties from the client before every analysis. It's important because properties may change depending on files being analysed.
   * `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#getInferredAnalysisProperties` to request inferred properties
 * Add a method to the `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService` to let the client notify the backend with user defined analysis properties
@@ -113,6 +135,7 @@
   * Common methods of both connection types are added to the `AssistCreatingConnectionParams` class to provide users simplicity
 
 ## Deprecation
+
 * Deprecate `isSonarCloud` parameter from `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams`
   * This value on no longer needed on the backend side.
 
