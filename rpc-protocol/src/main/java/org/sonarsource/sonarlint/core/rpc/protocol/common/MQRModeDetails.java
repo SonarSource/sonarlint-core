@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Server Connection
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,37 +17,27 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection;
+package org.sonarsource.sonarlint.core.rpc.protocol.common;
 
-import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.Version;
+import java.util.List;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
 
-public class StoredServerInfo {
+public class MQRModeDetails {
 
-  private final Version version;
-  private final SeverityModeDetails severityMode;
+  private final CleanCodeAttribute cleanCodeAttribute;
+  private final List<ImpactDto> impacts;
 
-  public StoredServerInfo(Version version, @Nullable Boolean mode) {
-    this.version = version;
-    if (mode == null) {
-      this.severityMode = SeverityModeDetails.DEFAULT;
-    } else if (mode) {
-      this.severityMode = SeverityModeDetails.MQR;
-    } else {
-      this.severityMode = SeverityModeDetails.STANDARD;
-    }
+  public MQRModeDetails(CleanCodeAttribute cleanCodeAttribute, List<ImpactDto> impacts) {
+    this.cleanCodeAttribute = cleanCodeAttribute;
+    this.impacts = impacts;
   }
 
-  public Version getVersion() {
-    return version;
+  public CleanCodeAttribute getCleanCodeAttribute() {
+    return cleanCodeAttribute;
   }
 
-  public SeverityModeDetails getSeverityMode() {
-    return this.severityMode;
-  }
-
-  public enum SeverityModeDetails {
-    DEFAULT, STANDARD, MQR
+  public List<ImpactDto> getImpacts() {
+    return impacts;
   }
 
 }

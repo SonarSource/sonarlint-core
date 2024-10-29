@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Server Connection
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,37 +17,21 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection;
+package org.sonarsource.sonarlint.core.rpc.protocol.adapter;
 
-import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.Version;
+import com.google.gson.reflect.TypeToken;
+import org.eclipse.lsp4j.jsonrpc.json.adapters.EitherTypeAdapter;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.MQRModeDetails;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.StandardModeDetails;
 
-public class StoredServerInfo {
+public class EitherStandardOrMQRModeAdapterFactory extends CustomEitherAdapterFactory<StandardModeDetails, MQRModeDetails> {
 
-  private final Version version;
-  private final SeverityModeDetails severityMode;
+  private static final TypeToken<Either<StandardModeDetails, MQRModeDetails>> ELEMENT_TYPE = new TypeToken<>() {
+  };
 
-  public StoredServerInfo(Version version, @Nullable Boolean mode) {
-    this.version = version;
-    if (mode == null) {
-      this.severityMode = SeverityModeDetails.DEFAULT;
-    } else if (mode) {
-      this.severityMode = SeverityModeDetails.MQR;
-    } else {
-      this.severityMode = SeverityModeDetails.STANDARD;
-    }
-  }
-
-  public Version getVersion() {
-    return version;
-  }
-
-  public SeverityModeDetails getSeverityMode() {
-    return this.severityMode;
-  }
-
-  public enum SeverityModeDetails {
-    DEFAULT, STANDARD, MQR
+  public EitherStandardOrMQRModeAdapterFactory() {
+    super(ELEMENT_TYPE, StandardModeDetails.class, MQRModeDetails.class, new EitherTypeAdapter.PropertyChecker("severity"));
   }
 
 }

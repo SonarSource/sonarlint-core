@@ -38,6 +38,9 @@ import testutils.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo.SeverityModeDetails.DEFAULT;
+import static org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo.SeverityModeDetails.MQR;
+import static org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo.SeverityModeDetails.STANDARD;
 
 class ServerInfoSynchronizerTests {
   @RegisterExtension
@@ -76,8 +79,8 @@ class ServerInfoSynchronizerTests {
     var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor());
 
     assertThat(storedServerInfo)
-      .extracting(StoredServerInfo::getVersion, StoredServerInfo::isMQRMode)
-      .containsExactly(Version.create("9.9"), false);
+      .extracting(StoredServerInfo::getVersion, StoredServerInfo::getSeverityMode)
+      .containsExactly(Version.create("9.9"), DEFAULT);
   }
 
   @Test
@@ -92,8 +95,24 @@ class ServerInfoSynchronizerTests {
     var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor());
 
     assertThat(storedServerInfo)
-      .extracting(StoredServerInfo::getVersion, StoredServerInfo::isMQRMode)
-      .containsExactly(Version.create("10.8"), true);
+      .extracting(StoredServerInfo::getVersion, StoredServerInfo::getSeverityMode)
+      .containsExactly(Version.create("10.8"), MQR);
+  }
+
+  @Test
+  void it_should_synchronize_standard_mode() {
+    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"10.8\",\"status\": \"UP\"}");
+    mockServer.addProtobufResponse("/api/settings/values.protobuf?keys=sonar.multi-quality-mode.enabled", Settings.ValuesWsResponse.newBuilder()
+      .addSettings(Settings.Setting.newBuilder()
+        .setKey("sonar.multi-quality-mode.enabled")
+        .setValue("false"))
+      .build());
+
+    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor());
+
+    assertThat(storedServerInfo)
+      .extracting(StoredServerInfo::getVersion, StoredServerInfo::getSeverityMode)
+      .containsExactly(Version.create("10.8"), STANDARD);
   }
 
   @Test

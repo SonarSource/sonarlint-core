@@ -120,7 +120,7 @@ public class RuleDetailsAdapter {
     return new RuleSplitDescriptionDto(extractIntroductionFromSections(sectionsByKey), tabbedSections);
   }
 
-  @org.jetbrains.annotations.Nullable
+  @Nullable
   private static String extractIntroductionFromSections(Map<String, List<RuleDetails.DescriptionSection>> sectionsByKey) {
     var introductionSections = sectionsByKey.get(INTRODUCTION_SECTION_KEY);
     String introductionHtmlContent = null;
@@ -175,16 +175,16 @@ public class RuleDetailsAdapter {
   }
 
   private static String getTabTitle(RuleDetails ruleDetails, String sectionKey) {
-    if (ROOT_CAUSE_SECTION_KEY.equals(sectionKey)) {
-      return RuleType.SECURITY_HOTSPOT.equals(ruleDetails.getType()) ? "What's the risk?" : "Why is this an issue?";
+    switch (sectionKey) {
+      case ROOT_CAUSE_SECTION_KEY:
+        return RuleType.SECURITY_HOTSPOT.equals(ruleDetails.getType()) ? "What's the risk?" : "Why is this an issue?";
+      case ASSESS_THE_PROBLEM_SECTION_KEY:
+        return "Assess the risk";
+      case HOW_TO_FIX_SECTION_KEY:
+        return "How can I fix it?";
+      default:
+        return "More Info";
     }
-    if (ASSESS_THE_PROBLEM_SECTION_KEY.equals(sectionKey)) {
-      return "Assess the risk";
-    }
-    if (HOW_TO_FIX_SECTION_KEY.equals(sectionKey)) {
-      return "How can I fix it?";
-    }
-    return "More Info";
   }
 
   private static String concat(Collection<String> htmlSnippets) {
