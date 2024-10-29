@@ -386,7 +386,7 @@ public class AnalysisService {
       return false;
     }
     // when storage is not present, consider hotspots should not be detected
-    return storageService.connection(connectionId).serverInfo().read(connection.getKind() == ConnectionKind.SONARCLOUD).isPresent();
+    return storageService.connection(connectionId).serverInfo().read().isPresent();
   }
 
   private ServerActiveRule tryConvertDeprecatedKeys(String connectionId, ServerActiveRule possiblyDeprecatedActiveRuleFromStorage) {

@@ -75,6 +75,7 @@ import org.sonarsource.sonarlint.core.http.ssl.SslConfig;
 import org.sonarsource.sonarlint.core.issue.IssueService;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
+import org.sonarsource.sonarlint.core.mode.SeverityModeService;
 import org.sonarsource.sonarlint.core.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
@@ -164,6 +165,7 @@ import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_S
   VersionSoonUnsupportedHelper.class,
   LocalOnlyIssueStorageService.class,
   StorageService.class,
+  SeverityModeService.class,
   NewCodeService.class,
   SecurityHotspotMatchingService.class,
   UserTokenService.class,
