@@ -56,8 +56,10 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.Son
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.StandardModeDetails;
 import testutils.sse.SSEServer;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -599,6 +601,7 @@ class ServerSentEventsMediumTests {
         .withSonarQubeConnection("connectionId", serverWithTaintIssues)
         .withBoundConfigScope("configScope", "connectionId", projectKey)
         .build(fakeClient);
+      fakeClient.waitForSynchronization();
 
       ArgumentCaptor<List<TaintVulnerabilityDto>> captor = ArgumentCaptor.forClass(List.class);
       verify(fakeClient, timeout(3000)).didChangeTaintVulnerabilities(eq("configScope"), eq(Set.of()), captor.capture(), eq(List.of()));
@@ -608,7 +611,8 @@ class ServerSentEventsMediumTests {
       assertThat(captor.getValue())
         .usingRecursiveComparison()
         .ignoringFields("id")
-        .isEqualTo(List.of(new TaintVulnerabilityDto(UUID.randomUUID(), "key1", false, "ruleKey", "msg", Paths.get("file/path"), introductionDate, IssueSeverity.MAJOR,
+        .isEqualTo(List.of(new TaintVulnerabilityDto(UUID.randomUUID(), "key1", false, "ruleKey", "msg", Paths.get("file/path"), introductionDate,
+          Either.forLeft(new StandardModeDetails(IssueSeverity.MAJOR, org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.BUG)), IssueSeverity.MAJOR,
           org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.BUG, Collections.emptyList(), new TextRangeWithHashDto(1, 0, 3, 4, "hash"), null, null,
           Collections.emptyMap(), true)));
 
@@ -619,7 +623,8 @@ class ServerSentEventsMediumTests {
       assertThat(captor.getValue())
         .usingRecursiveComparison()
         .ignoringFields("id")
-        .isEqualTo(List.of(new TaintVulnerabilityDto(UUID.randomUUID(), "key1", false, "ruleKey", "msg", Paths.get("file/path"), introductionDate, IssueSeverity.MAJOR,
+        .isEqualTo(List.of(new TaintVulnerabilityDto(UUID.randomUUID(), "key1", false, "ruleKey", "msg", Paths.get("file/path"), introductionDate,
+          Either.forLeft(new StandardModeDetails(IssueSeverity.MAJOR, org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.BUG)), IssueSeverity.MAJOR,
           org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.BUG, Collections.emptyList(), new TextRangeWithHashDto(1, 0, 3, 4, "hash"), null, null,
           Collections.emptyMap(), true)));
     }

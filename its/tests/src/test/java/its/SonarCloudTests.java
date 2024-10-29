@@ -600,6 +600,9 @@ class SonarCloudTests extends AbstractConnectedTests {
       assertThat(taintVulnerability.getRuleDescriptionContextKey()).isNull();
       assertThat(taintVulnerability.getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.COMPLETE);
       assertThat(taintVulnerability.getImpacts()).containsExactly(entry(SoftwareQuality.SECURITY, ImpactSeverity.HIGH));
+      assertThat(taintVulnerability.getSeverityMode().isRight()).isTrue();
+      assertThat(taintVulnerability.getSeverityMode().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.COMPLETE);
+      assertThat(taintVulnerability.getSeverityMode().getRight().getImpacts().get(0)).extracting("softwareQuality", "impactSeverity").containsExactly(SoftwareQuality.SECURITY, ImpactSeverity.HIGH);
       assertThat(taintVulnerability.getFlows()).isNotEmpty();
       assertThat(taintVulnerability.isOnNewCode()).isTrue();
       var flow = taintVulnerability.getFlows().get(0);

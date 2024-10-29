@@ -42,7 +42,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -841,12 +840,21 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         assertThat(taintVulnerability.getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.COMPLETE);
         // In SQ 10.8+, old MAJOR severity maps to overridden MEDIUM impact
         assertThat(taintVulnerability.getImpacts()).containsExactly(entry(SoftwareQuality.SECURITY, ImpactSeverity.MEDIUM));
+        assertThat(taintVulnerability.getSeverityMode().isRight()).isTrue();
+        assertThat(taintVulnerability.getSeverityMode().getRight().getImpacts().get(0)).extracting("softwareQuality", "impactSeverity").containsExactly(SoftwareQuality.SECURITY, ImpactSeverity.MEDIUM);
+        assertThat(taintVulnerability.getSeverityMode().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.COMPLETE);
       } else if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 2)) {
         assertThat(taintVulnerability.getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.COMPLETE);
         // In 10.2 <= SQ < 10.8, the impact severity is not overridden
         assertThat(taintVulnerability.getImpacts()).containsExactly(entry(SoftwareQuality.SECURITY, ImpactSeverity.HIGH));
+        assertThat(taintVulnerability.getSeverityMode().isRight()).isTrue();
+        assertThat(taintVulnerability.getSeverityMode().getRight().getImpacts().get(0)).extracting("softwareQuality", "impactSeverity").containsExactly(SoftwareQuality.SECURITY, ImpactSeverity.HIGH);
+        assertThat(taintVulnerability.getSeverityMode().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.COMPLETE);
       } else {
         assertThat(taintVulnerability.getCleanCodeAttribute()).isNull();
+        assertThat(taintVulnerability.getSeverityMode().isLeft()).isTrue();
+        assertThat(taintVulnerability.getSeverityMode().getLeft().getSeverity()).isEqualTo(org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.MAJOR);
+        assertThat(taintVulnerability.getSeverityMode().getLeft().getType()).isEqualTo(org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.VULNERABILITY);
       }
       assertThat(taintVulnerability.getFlows()).isNotEmpty();
       assertThat(taintVulnerability.isOnNewCode()).isTrue();
