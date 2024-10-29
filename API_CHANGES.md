@@ -1,10 +1,9 @@
-
 # 10.8
 
 ## New features
 
 * A new attribute `severityMode` has been added to `org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto`
-  that automatically contains either `StandardModeDetails` or `MQRModeDetails`
+  and `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto` that automatically contains either `StandardModeDetails` or `MQRModeDetails`
   * A new type `StandardModeDetails` has been introduced, which contains information about severity and type
   * A new type `MQRModeDetails` has been introduced, which contains information about clean code attribute and impacts
   * You should display the finding accordingly to the information contained by `severityMode`
@@ -15,8 +14,8 @@
 
 ## Deprecation
 
-* The following attributes have been deprecated from `org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto`, you should now use
-  the new attribute `severityMode`
+* The following attributes have been deprecated from `org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto` and
+  `org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto`, you should now use the new attribute `severityMode`
   * `severity`
   * `type`
   * `cleanCodeAttribute`
