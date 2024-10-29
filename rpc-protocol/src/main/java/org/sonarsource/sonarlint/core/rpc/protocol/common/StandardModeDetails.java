@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Server Connection
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,37 +17,24 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection;
+package org.sonarsource.sonarlint.core.rpc.protocol.common;
 
-import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.Version;
+public class StandardModeDetails {
 
-public class StoredServerInfo {
+  private final IssueSeverity severity;
+  private final RuleType type;
 
-  private final Version version;
-  private final SeverityModeDetails severityMode;
-
-  public StoredServerInfo(Version version, @Nullable Boolean mode) {
-    this.version = version;
-    if (mode == null) {
-      this.severityMode = SeverityModeDetails.DEFAULT;
-    } else if (mode) {
-      this.severityMode = SeverityModeDetails.MQR;
-    } else {
-      this.severityMode = SeverityModeDetails.STANDARD;
-    }
+  public StandardModeDetails(IssueSeverity severity, RuleType type) {
+    this.severity = severity;
+    this.type = type;
   }
 
-  public Version getVersion() {
-    return version;
+  public IssueSeverity getSeverity() {
+    return severity;
   }
 
-  public SeverityModeDetails getSeverityMode() {
-    return this.severityMode;
-  }
-
-  public enum SeverityModeDetails {
-    DEFAULT, STANDARD, MQR
+  public RuleType getType() {
+    return type;
   }
 
 }
