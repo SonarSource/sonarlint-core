@@ -24,6 +24,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -32,12 +33,14 @@ import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.GetIssueDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
+import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static mediumtest.fixtures.storage.ServerTaintIssueFixtures.aServerTaintIssue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -94,6 +97,46 @@ class TaintVulnerabilitiesMediumTests {
     await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(listAllTaintVulnerabilities("configScopeId"))
       .extracting(TaintVulnerabilityDto::getIntroductionDate)
       .containsOnly(introductionDate));
+  }
+
+  @Test
+  void it_should_return_taint_details() {
+    var client = newFakeClient().build();
+
+    var server = newSonarQubeServer()
+      .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java").withActiveRule("javasecurity:S6549", activeRule -> activeRule
+        .withSeverity(org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.MAJOR)
+      ))
+      .withProject("projectKey", project -> project.withBranch("main")
+        .withQualityProfile("qpKey"))
+      .withPlugin(TestPlugin.JAVA)
+      .start();
+    var introductionDate = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+    var fakeTaintBuilder = aServerTaintIssue("key")
+      .withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")).withRuleKey("javasecurity:S6549")
+      .withType(RuleType.VULNERABILITY)
+      .withIntroductionDate(introductionDate);
+
+    backend = newBackend()
+      .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
+      .withSonarQubeConnection("connectionId", server,
+        storage -> storage.withProject("projectKey",
+          project -> project.withMainBranch("main",
+            branch -> branch.withTaintIssue(fakeTaintBuilder))))
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withFullSynchronization()
+      .build(client);
+
+    client.waitForSynchronization();
+
+    await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(listAllTaintVulnerabilities("configScopeId"))
+      .extracting(TaintVulnerabilityDto::getIntroductionDate)
+      .containsOnly(introductionDate));
+    var actualTaintId = listAllTaintVulnerabilities("configScopeId").get(0).getId();
+
+    var taintDetails = backend.getIssueService().getIssueDetails(new GetIssueDetailsParams("configScopeId", actualTaintId)).join();
+
+    assertThat(taintDetails).isNotNull();
   }
 
   @Test

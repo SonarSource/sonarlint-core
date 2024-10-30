@@ -53,7 +53,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChan
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.EffectiveIssueDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssuesForFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
@@ -68,6 +69,7 @@ import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
+import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
@@ -101,11 +103,12 @@ public class IssueService {
   private final SeverityModeService severityModeService;
   private final PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository;
   private final RulesService rulesService;
+  private final TaintVulnerabilityTrackingService taintVulnerabilityTrackingService;
 
   public IssueService(ConfigurationRepository configurationRepository, ServerApiProvider serverApiProvider, StorageService storageService,
     LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
     ApplicationEventPublisher eventPublisher, FindingReportingService findingReportingService, SeverityModeService severityModeService,
-    PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, RulesService rulesService) {
+    PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, RulesService rulesService, TaintVulnerabilityTrackingService taintVulnerabilityTrackingService) {
     this.configurationRepository = configurationRepository;
     this.serverApiProvider = serverApiProvider;
     this.storageService = storageService;
@@ -116,6 +119,7 @@ public class IssueService {
     this.severityModeService = severityModeService;
     this.previouslyRaisedFindingsRepository = previouslyRaisedFindingsRepository;
     this.rulesService = rulesService;
+    this.taintVulnerabilityTrackingService = taintVulnerabilityTrackingService;
   }
 
   public void changeStatus(String configurationScopeId, String issueKey, ResolutionStatus newStatus, boolean isTaintIssue, SonarLintCancelMonitor cancelMonitor) {
@@ -342,23 +346,37 @@ public class IssueService {
     throws IssueNotFoundException, RuleNotFoundException {
     var maybeIssue =
       previouslyRaisedFindingsRepository.getRaisedIssueWithScopeAndId(configurationScopeId, findingId);
-    Optional<RaisedHotspotDto> maybeHotspot = Optional.empty();
+    var maybeHotspot = previouslyRaisedFindingsRepository.getRaisedHotspotWithScopeAndId(configurationScopeId, findingId);
+    var maybeTaint = taintVulnerabilityTrackingService.getTaintVulnerability(configurationScopeId, findingId, cancelMonitor);
 
-    if (maybeIssue.isEmpty()) {
-      maybeHotspot = previouslyRaisedFindingsRepository.getRaisedHotspotWithScopeAndId(configurationScopeId, findingId);
-      if (maybeHotspot.isEmpty()) {
-        throw new IssueNotFoundException("Failed to retrieve finding details. Finding with key '"
-          + findingId + "' not found.", findingId);
-      }
+    if (maybeIssue.isPresent()) {
+      return getFindingDetails(maybeIssue.get(), configurationScopeId, cancelMonitor);
+    } else if (maybeHotspot.isPresent()) {
+      return getFindingDetails(maybeHotspot.get(), configurationScopeId, cancelMonitor);
+    } else if (maybeTaint.isPresent()) {
+      return getTaintDetails(maybeTaint.get(), configurationScopeId, cancelMonitor);
     }
+    throw new IssueNotFoundException("Failed to retrieve finding details. Finding with key '"
+      + findingId + "' not found.", findingId);
+  }
 
-    var finding = maybeHotspot.isEmpty() ? maybeIssue.get() : maybeHotspot.get();
+  private EffectiveIssueDetailsDto getFindingDetails(RaisedFindingDto finding, String configurationScopeId, SonarLintCancelMonitor cancelMonitor) throws RuleNotFoundException {
     var ruleKey = finding.getRuleKey();
     var ruleDetails = rulesService.getRuleDetails(configurationScopeId, ruleKey, cancelMonitor);
     var ruleDetailsEnrichedWithActualIssueSeverity = RuleDetails.merging(ruleDetails, finding);
     var effectiveRuleDetails = RuleDetailsAdapter.transform(ruleDetailsEnrichedWithActualIssueSeverity, finding.getRuleDescriptionContextKey());
     return new EffectiveIssueDetailsDto(ruleKey, effectiveRuleDetails.getName(), effectiveRuleDetails.getLanguage(),
       // users cannot customize vulnerability probability
+      effectiveRuleDetails.getVulnerabilityProbability(),
+      effectiveRuleDetails.getDescription(), effectiveRuleDetails.getParams(), finding.getSeverityMode(), finding.getRuleDescriptionContextKey());
+  }
+
+  private EffectiveIssueDetailsDto getTaintDetails(TaintVulnerabilityDto finding, String configurationScopeId, SonarLintCancelMonitor cancelMonitor) throws RuleNotFoundException {
+    var ruleKey = finding.getRuleKey();
+    var ruleDetails = rulesService.getRuleDetails(configurationScopeId, ruleKey, cancelMonitor);
+    var ruleDetailsEnrichedWithActualIssueSeverity = RuleDetails.merging(ruleDetails, finding);
+    var effectiveRuleDetails = RuleDetailsAdapter.transform(ruleDetailsEnrichedWithActualIssueSeverity, finding.getRuleDescriptionContextKey());
+    return new EffectiveIssueDetailsDto(ruleKey, effectiveRuleDetails.getName(), effectiveRuleDetails.getLanguage(),
       effectiveRuleDetails.getVulnerabilityProbability(),
       effectiveRuleDetails.getDescription(), effectiveRuleDetails.getParams(), finding.getSeverityMode(), finding.getRuleDescriptionContextKey());
   }
