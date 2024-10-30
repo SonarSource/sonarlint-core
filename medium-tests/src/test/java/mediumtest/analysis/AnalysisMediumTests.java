@@ -21,6 +21,7 @@ package mediumtest.analysis;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -34,6 +35,7 @@ import javax.annotation.Nullable;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
 import org.apache.commons.io.FileUtils;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -44,6 +46,7 @@ import org.mockito.ArgumentCaptor;
 import org.sonar.api.utils.System2;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.testutils.GitUtils;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeAnalysisPropertiesParams;
@@ -854,6 +857,56 @@ class AnalysisMediumTests {
     // expect corresponding cache not to be evicted
     await().during(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getLogMessages())
       .doesNotContain("Evict cached rules definitions for connection 'connectionId-2'"));
+  }
+
+  @Test
+  void it_should_analyse_file_with_non_file_uri_schema(@TempDir Path baseDir) {
+    var filePath1 = createFile(baseDir, "Foo.java", "public interface Foo {}");
+    var fileUri1 = URI.create("temp:///file/path/Foo.java");
+    var filePath2 = createFile(baseDir, "Bar.java", "public interface Bar {}");
+    var fileUri2 = URI.create("http:///localhost:12345/file/path/Bar.java");
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
+        new ClientFileDto(fileUri1, baseDir.relativize(filePath1), CONFIG_SCOPE_ID, false, null, filePath1, null, null, true),
+        new ClientFileDto(fileUri2, baseDir.relativize(filePath2), CONFIG_SCOPE_ID, false, null, filePath2, null, null, true)))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .build(client);
+
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri1), Map.of(), false, System.currentTimeMillis())).join();
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).hasSize(1));
+
+    var raisedIssues = client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID);
+    assertThat(raisedIssues).hasSize(1);
+
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri2), Map.of(), false, System.currentTimeMillis())).join();
+    await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).hasSize(1));
+
+    raisedIssues = client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID);
+    assertThat(raisedIssues).hasSize(1);
+  }
+
+  @Test
+  void it_should_respect_gitignore_exclusions(@TempDir Path baseDir) throws GitAPIException, IOException {
+    var filePath = createFile(baseDir, "Foo.java", "public interface Foo {}");
+    GitUtils.createRepository(baseDir);
+    var gitignorePath = createFile(baseDir, ".gitignore", "*.java");
+    var fileUri = filePath.toUri();
+    var gitignoreUri = gitignorePath.toUri();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
+        new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true),
+        new ClientFileDto(gitignoreUri, baseDir.relativize(gitignorePath), CONFIG_SCOPE_ID, false, null, gitignorePath, null, null, true)))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .build(client);
+
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), false, System.currentTimeMillis())).join();
+    await().during(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isEmpty());
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding,
