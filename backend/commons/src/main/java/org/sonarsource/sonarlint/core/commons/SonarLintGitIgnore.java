@@ -19,53 +19,34 @@
  */
 package org.sonarsource.sonarlint.core.commons;
 
-import java.net.URI;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Path;
-import javax.annotation.Nullable;
 import org.eclipse.jgit.ignore.IgnoreNode;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.util.FileUtils;
 
 public class SonarLintGitIgnore {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final IgnoreNode ignoreNode;
-  private final Path gitRepoRelativeProjectBaseDir;
-  private final Path gitRepoBaseDir;
 
-  public SonarLintGitIgnore(IgnoreNode ignoreNode, @Nullable Path gitRepoRelativeProjectBaseDir, @Nullable Path gitRepoBaseDir) {
+  public SonarLintGitIgnore(IgnoreNode ignoreNode) {
     this.ignoreNode = ignoreNode;
-    this.gitRepoRelativeProjectBaseDir = gitRepoRelativeProjectBaseDir;
-    this.gitRepoBaseDir = gitRepoBaseDir;
   }
 
-  public boolean isIgnored(URI fileUri, boolean isDirectory) {
-    try {
-      var fileRelativeToGitRepoPath = getFileRelativePath(fileUri);
-      var rules = ignoreNode.getRules();
-      // Parse rules in the reverse order that they were read because later rules have higher priority
-      for (var i = rules.size() - 1; i > -1; i--) {
-        var rule = rules.get(i);
-        if (rule.isMatch(fileRelativeToGitRepoPath, isDirectory)) {
-          return rule.getResult();
-        }
+  public boolean isIgnored(Path clientRelativeFilePath) {
+    var normalizedUnixPath = clientRelativeFilePath.toString().replace("\\", "/");
+    var rules = ignoreNode.getRules();
+    // Parse rules in the reverse order that they were read because later rules have higher priority
+    for (var i = rules.size() - 1; i > -1; i--) {
+      var rule = rules.get(i);
+      if (rule.isMatch(normalizedUnixPath, false)) {
+        return rule.getResult();
       }
-      return false;
-    } catch (FileSystemNotFoundException e) {
-      LOG.debug("Could not resolve file URI to a path. Considering file {} not ignored.", fileUri);
-      return false;
     }
+    return false;
   }
 
-  public boolean isFileIgnored(URI fileUri) {
-    return isIgnored(fileUri, false);
+  public boolean isFileIgnored(Path clientFileRelativePath) {
+    return isIgnored(clientFileRelativePath);
   }
 
-  private String getFileRelativePath(URI fileUri) {
-    if (gitRepoRelativeProjectBaseDir != null && !gitRepoRelativeProjectBaseDir.toString().isEmpty()) {
-      return FileUtils.getFileRelativePath(gitRepoRelativeProjectBaseDir, fileUri, true);
-    } else {
-      return FileUtils.getFileRelativePath(gitRepoBaseDir, fileUri, false);
-    }
-  }
 }
