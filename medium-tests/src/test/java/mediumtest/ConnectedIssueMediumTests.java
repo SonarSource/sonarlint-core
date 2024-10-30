@@ -20,6 +20,7 @@
 package mediumtest;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -27,12 +28,15 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import mediumtest.fixtures.TestPlugin;
+import org.assertj.core.api.Assertions;
+import org.assertj.core.api.AssertionsForInterfaceTypes;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.GetIssueDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 
@@ -159,4 +163,56 @@ class ConnectedIssueMediumTests {
     await().during(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty());
   }
 
+  @Test
+  void it_should_get_hotspot_details(@TempDir Path baseDir) {
+    var fileFoo = createFile(baseDir, "Foo.java", "public class Foo {\n" +
+      "\n" +
+      "  void foo() {\n" +
+      "    String password = \"blue\";\n" +
+      "  }\n" +
+      "}\n");
+    var fileFooUri = fileFoo.toUri();
+
+    var connectionId = "connectionId";
+    var branchName = "branchName";
+    var projectKey = "projectKey";
+    var serverWithHotspots = newSonarQubeServer("10.4")
+      .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java")
+        .withActiveRule("java:S2068", activeRule -> activeRule.withSeverity(IssueSeverity.BLOCKER)))
+      .withProject(projectKey,
+        project -> project
+          .withQualityProfile("qpKey")
+          .withBranch(branchName))
+      .start();
+    var client = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
+        new ClientFileDto(fileFooUri, baseDir.relativize(fileFoo), CONFIG_SCOPE_ID, false, null, fileFoo, null, null, true)))
+      .build();
+    backend = newBackend()
+      .withFullSynchronization()
+      .withSecurityHotspotsEnabled()
+      .withSonarQubeConnection(connectionId, serverWithHotspots,
+        storage -> storage.withServerVersion("10.4").withProject(projectKey,
+          project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S2068", "BLOCKER"))))
+      .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .build(client);
+    await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> Assertions.assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
+
+    var analysisId = UUID.randomUUID();
+
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileFooUri), Map.of(), true, System.currentTimeMillis())).join();
+    await().atMost(20, TimeUnit.SECONDS).untilAsserted(() ->
+      AssertionsForInterfaceTypes.assertThat(client.getRaisedHotspotsForScopeIdAsList(CONFIG_SCOPE_ID)).hasSize(1));
+
+    var raisedIssuesForFoo = client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID).get(fileFooUri);
+    var raisedHotspotsForFoo = client.getRaisedHotspotsForScopeId(CONFIG_SCOPE_ID).get(fileFooUri);
+    AssertionsForInterfaceTypes.assertThat(raisedIssuesForFoo).isEmpty();
+    AssertionsForInterfaceTypes.assertThat(raisedHotspotsForFoo).hasSize(1);
+
+    var result = backend.getIssueService().getIssueDetails(new GetIssueDetailsParams(CONFIG_SCOPE_ID, raisedHotspotsForFoo.get(0).getId())).join();
+    assertThat(result.getDetails()).isNotNull();
+
+    serverWithHotspots.shutdown();
+  }
 }

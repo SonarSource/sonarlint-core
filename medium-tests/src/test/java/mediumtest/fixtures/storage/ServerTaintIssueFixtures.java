@@ -24,6 +24,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
@@ -101,7 +102,7 @@ public class ServerTaintIssueFixtures {
   }
 
   public static class ServerTaintIssue {
-
+    public UUID id;
     public String key;
     public boolean resolved;
     public String ruleKey;
@@ -137,6 +138,10 @@ public class ServerTaintIssueFixtures {
 
     public String getFilePath() {
       return filePath;
+    }
+
+    public UUID getId() {
+      return id;
     }
   }
 
