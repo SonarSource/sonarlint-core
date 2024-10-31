@@ -158,7 +158,7 @@ public class RuleDetails {
 
   public static RuleDetails merging(RuleDetails serverActiveRuleDetails, RaisedFindingDto raisedFindingDto) {
     var isMQRMode = raisedFindingDto.getSeverityMode().isRight();
-    EnumMap<SoftwareQuality, ImpactSeverity> softwareImpacts = new EnumMap<>(SoftwareQuality.class);
+    var softwareImpacts = new EnumMap<SoftwareQuality, ImpactSeverity>(SoftwareQuality.class);
     if (isMQRMode) {
       raisedFindingDto.getSeverityMode().getRight().getImpacts().forEach(
         i -> softwareImpacts.put(SoftwareQuality.valueOf(i.getSoftwareQuality().name()),

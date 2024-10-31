@@ -33,7 +33,7 @@ import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.GetIssueDetailsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.GetEffectiveIssueDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
@@ -134,7 +134,7 @@ class TaintVulnerabilitiesMediumTests {
       .containsOnly(introductionDate));
     var actualTaintId = listAllTaintVulnerabilities("configScopeId").get(0).getId();
 
-    var taintDetails = backend.getIssueService().getIssueDetails(new GetIssueDetailsParams("configScopeId", actualTaintId)).join();
+    var taintDetails = backend.getIssueService().getEffectiveIssueDetails(new GetEffectiveIssueDetailsParams("configScopeId", actualTaintId)).join();
 
     assertThat(taintDetails).isNotNull();
   }

@@ -49,7 +49,7 @@ class RulesServiceTests {
   @Test
   void it_should_return_all_embedded_rules_from_the_repository() {
     when(extractionHelper.extractEmbeddedRules()).thenReturn(List.of(aRule()));
-    var rulesService = new RulesService(null, null, rulesRepository, null, null, Map.of());
+    var rulesService = new RulesService(null, null, rulesRepository, null, null, Map.of(), null);
 
     var embeddedRules = rulesService.listAllStandaloneRulesDefinitions().values();
 

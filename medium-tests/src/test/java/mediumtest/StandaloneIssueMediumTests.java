@@ -43,7 +43,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.GetIssueDetailsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.GetEffectiveIssueDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDefinitionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.UpdateStandaloneRulesConfigurationParams;
@@ -554,7 +554,7 @@ class StandaloneIssueMediumTests {
     await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIGURATION_SCOPE_ID).get(fileUri)).isNotEmpty());
 
     var issueId = client.getRaisedIssuesForScopeId(CONFIGURATION_SCOPE_ID).get(fileUri).get(0).getId();
-    var result = backend.getIssueService().getIssueDetails(new GetIssueDetailsParams(CONFIGURATION_SCOPE_ID, issueId)).join();
+    var result = backend.getIssueService().getEffectiveIssueDetails(new GetEffectiveIssueDetailsParams(CONFIGURATION_SCOPE_ID, issueId)).join();
 
     assertThat(result.getDetails()).isNotNull();
     // standalone mode should have Clean Code attribute
@@ -582,9 +582,9 @@ class StandaloneIssueMediumTests {
       .build(client);
 
     var issueId = UUID.randomUUID();
-    var params = new GetIssueDetailsParams(CONFIGURATION_SCOPE_ID, issueId);
+    var params = new GetEffectiveIssueDetailsParams(CONFIGURATION_SCOPE_ID, issueId);
     var issueService = backend.getIssueService();
-    var detailsFuture = issueService.getIssueDetails(params);
+    var detailsFuture = issueService.getEffectiveIssueDetails(params);
     assertThrows(CompletionException.class, detailsFuture::join);
   }
 

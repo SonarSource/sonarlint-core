@@ -92,24 +92,25 @@ public class RulesService {
   private static final String COULD_NOT_FIND_RULE = "Could not find rule '";
   private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfig = new ConcurrentHashMap<>();
   private FindingReportingService findingReportingService;
-  private SeverityModeService severityModeService;
+  private final SeverityModeService severityModeService;
 
   @Inject
   public RulesService(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository,
     StorageService storageService, InitializeParams params,
-    ApplicationEventPublisher eventPublisher) {
+    ApplicationEventPublisher eventPublisher, SeverityModeService severityModeService) {
     this(serverApiProvider, configurationRepository, rulesRepository, storageService, eventPublisher,
-      params.getStandaloneRuleConfigByKey());
+      params.getStandaloneRuleConfigByKey(), severityModeService);
   }
 
   RulesService(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository,
     StorageService storageService, ApplicationEventPublisher eventPublisher,
-    @Nullable Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey) {
+    @Nullable Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey, SeverityModeService severityModeService) {
     this.serverApiProvider = serverApiProvider;
     this.configurationRepository = configurationRepository;
     this.rulesRepository = rulesRepository;
     this.storageService = storageService;
     this.eventPublisher = eventPublisher;
+    this.severityModeService = severityModeService;
     if (standaloneRuleConfigByKey != null) {
       this.standaloneRuleConfig.putAll(standaloneRuleConfigByKey);
     }
@@ -423,8 +424,4 @@ public class RulesService {
     this.findingReportingService = findingReportingService;
   }
 
-  @Autowired
-  public void setSeverityModeService(SeverityModeService severityModeService) {
-    this.severityModeService = severityModeService;
-  }
 }

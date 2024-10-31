@@ -78,11 +78,13 @@ public class RuleDetailsAdapter {
   }
 
   public static EffectiveRuleDetailsDto transform(RuleDetails ruleDetails, @Nullable String contextKey) {
+    org.sonarsource.sonarlint.core.commons.IssueSeverity defaultSeverity = ruleDetails.getDefaultSeverity();
+    RuleType type = ruleDetails.getType();
     return new EffectiveRuleDetailsDto(
       ruleDetails.getKey(),
       ruleDetails.getName(),
-      ruleDetails.getDefaultSeverity() != null ? adapt(ruleDetails.getDefaultSeverity()) : null,
-      ruleDetails.getType() != null ? adapt(ruleDetails.getType()) : null,
+      defaultSeverity != null ? adapt(defaultSeverity) : null,
+      type != null ? adapt(type) : null,
       ruleDetails.getCleanCodeAttribute().map(RuleDetailsAdapter::adapt).orElse(null),
       ruleDetails.getCleanCodeAttribute().map(org.sonarsource.sonarlint.core.commons.CleanCodeAttribute::getAttributeCategory).map(RuleDetailsAdapter::adapt).orElse(null),
       toDto(ruleDetails.getDefaultImpacts()),
