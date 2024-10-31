@@ -138,8 +138,6 @@ import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.getVSCCha
 @Singleton
 public class AnalysisService {
 
-  public static final Version REPACKAGED_DOTNET_ANALYZER_MIN_SQ_VERSION = Version.create("10.8");
-
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final SonarLintRpcClient client;
@@ -630,24 +628,7 @@ public class AnalysisService {
       return false;
     } else {
       var connectionId = binding.get().getConnectionId();
-      var connection = connectionConfigurationRepository.getConnectionById(connectionId);
-      var isSonarCloud = connection != null && connection.getEndpointParams().isSonarCloud();
-      var connectionStorage = storageService.connection(connectionId);
-      if (isSonarCloud) {
-        return true;
-      } else {
-        var serverInfo = connectionStorage.serverInfo().read();
-        if (serverInfo.isEmpty()) {
-          return false;
-        } else {
-          // For SQ versions older than 10.8, enterprise C# analyzer was packaged in all editions.
-          // For newer versions, we need to check if enterprise plugin is present on the server
-          var serverVersion = serverInfo.get().getVersion();
-          var supportsRepackagedDotnetAnalyzer = serverVersion.compareToIgnoreQualifier(REPACKAGED_DOTNET_ANALYZER_MIN_SQ_VERSION) >= 0;
-          var hasEnterprisePlugin = connectionStorage.plugins().getStoredPlugins().stream().map(StoredPlugin::getKey).anyMatch("csharpenterprise"::equals);
-          return !supportsRepackagedDotnetAnalyzer || hasEnterprisePlugin;
-        }
-      }
+      return pluginsService.shouldUseEnterpriseCSharpAnalyzer(connectionId);
     }
   }
 
