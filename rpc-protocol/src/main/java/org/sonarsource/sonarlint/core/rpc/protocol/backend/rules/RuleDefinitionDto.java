@@ -21,21 +21,26 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.rules;
 
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttributeCategory;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
 
-public class RuleDefinitionDto extends AbstractRuleDto {
+public class RuleDefinitionDto {
+  private final String key;
+  private final String name;
+  private final CleanCodeAttribute cleanCodeAttribute;
+  private final List<ImpactDto> softwareImpacts;
+  private final Language language;
   private final Map<String, RuleParamDefinitionDto> paramsByKey;
   private final boolean isActiveByDefault;
 
-  public RuleDefinitionDto(String key, String name, IssueSeverity defaultSeverity, RuleType type, @Nullable CleanCodeAttribute cleanCodeAttribute,
-    @Nullable CleanCodeAttributeCategory cleanCodeAttributeCategory, List<ImpactDto> defaultImpacts, Map<String, RuleParamDefinitionDto> paramsByKey, boolean isActiveByDefault,
-    Language language, @Nullable VulnerabilityProbability vulnerabilityProbability) {
-    super(key, name, defaultSeverity, type, cleanCodeAttribute, cleanCodeAttributeCategory, defaultImpacts, language, vulnerabilityProbability);
+  public RuleDefinitionDto(String key, String name, CleanCodeAttribute cleanCodeAttribute, List<ImpactDto> softwareImpacts,
+    Map<String, RuleParamDefinitionDto> paramsByKey, boolean isActiveByDefault,
+    Language language) {
+    this.key = key;
+    this.name = name;
+    this.cleanCodeAttribute = cleanCodeAttribute;
+    this.softwareImpacts = softwareImpacts;
+    this.language = language;
     this.paramsByKey = paramsByKey;
     this.isActiveByDefault = isActiveByDefault;
   }
@@ -46,5 +51,25 @@ public class RuleDefinitionDto extends AbstractRuleDto {
 
   public boolean isActiveByDefault() {
     return isActiveByDefault;
+  }
+
+  public String getKey() {
+    return key;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public CleanCodeAttribute getCleanCodeAttribute() {
+    return cleanCodeAttribute;
+  }
+
+  public List<ImpactDto> getSoftwareImpacts() {
+    return softwareImpacts;
+  }
+
+  public Language getLanguage() {
+    return language;
   }
 }
