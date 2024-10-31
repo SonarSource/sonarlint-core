@@ -58,7 +58,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.MQRModeDetails;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.StandardModeDetails;
 
 import static org.sonarsource.sonarlint.core.tracking.TextRangeUtils.toTextRangeDto;
 
@@ -78,16 +80,15 @@ public class RuleDetailsAdapter {
   }
 
   public static EffectiveRuleDetailsDto transform(RuleDetails ruleDetails, @Nullable String contextKey) {
-    org.sonarsource.sonarlint.core.commons.IssueSeverity defaultSeverity = ruleDetails.getDefaultSeverity();
-    RuleType type = ruleDetails.getType();
+    var cleanCodeAttribute = ruleDetails.getCleanCodeAttribute().map(RuleDetailsAdapter::adapt).orElse(null);
+    Either<StandardModeDetails, MQRModeDetails> severityDetails = cleanCodeAttribute != null ?
+      Either.forRight(new MQRModeDetails(cleanCodeAttribute, Objects.requireNonNull(toDto(ruleDetails.getDefaultImpacts())))) :
+      Either.forLeft(new StandardModeDetails(adapt(Objects.requireNonNull(ruleDetails.getDefaultSeverity())),
+        adapt(Objects.requireNonNull(ruleDetails.getType()))));
     return new EffectiveRuleDetailsDto(
       ruleDetails.getKey(),
       ruleDetails.getName(),
-      defaultSeverity != null ? adapt(defaultSeverity) : null,
-      type != null ? adapt(type) : null,
-      ruleDetails.getCleanCodeAttribute().map(RuleDetailsAdapter::adapt).orElse(null),
-      ruleDetails.getCleanCodeAttribute().map(org.sonarsource.sonarlint.core.commons.CleanCodeAttribute::getAttributeCategory).map(RuleDetailsAdapter::adapt).orElse(null),
-      toDto(ruleDetails.getDefaultImpacts()),
+      severityDetails,
       transformDescriptions(ruleDetails, contextKey),
       transform(ruleDetails.getParams()),
       adapt(ruleDetails.getLanguage()),

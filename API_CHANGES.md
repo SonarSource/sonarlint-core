@@ -15,6 +15,7 @@
 ## Breaking changes
 
 * Remove the `org.sonarsource.sonarlint.core.serverconnection.ServerPathProvider` class.
+* Remove `severity` and `type` fields from `org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDefinitionDto` as this class is only used for fetching standalone rule details, which should always have the Clean Code Attribute and Impacts
 
 ## Deprecation
 
