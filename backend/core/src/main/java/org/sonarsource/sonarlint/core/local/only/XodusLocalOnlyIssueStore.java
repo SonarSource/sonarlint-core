@@ -74,7 +74,6 @@ public class XodusLocalOnlyIssueStore {
   private static final String END_LINE_PROPERTY_NAME = "endLine";
   private static final String END_LINE_OFFSET_PROPERTY_NAME = "endLineOffset";
   private static final String MESSAGE_BLOB_NAME = "message";
-  private static final String RULE_DESCRIPTION_CONTEXT_KEY_PROPERTY_NAME = "ruleDescriptionContextKey";
   private static final String BACKUP_TAR_GZ = "local_only_issue_backup.tar.gz";
   private final PersistentEntityStore entityStore;
   private final Path backupFile;
@@ -173,7 +172,6 @@ public class XodusLocalOnlyIssueStore {
     var msg = requireNonNull(storedIssue.getBlobString(MESSAGE_BLOB_NAME));
     var comment = storedIssue.getBlobString(COMMENT_PROPERTY_NAME);
     var startLine = (Integer) storedIssue.getProperty(START_LINE_PROPERTY_NAME);
-    var ruleDescriptionContextKey = (String) storedIssue.getProperty(RULE_DESCRIPTION_CONTEXT_KEY_PROPERTY_NAME);
 
     TextRangeWithHash textRange = null;
     LineWithHash lineWithHash = null;
@@ -197,8 +195,7 @@ public class XodusLocalOnlyIssueStore {
       lineWithHash,
       ruleKey,
       msg,
-      new LocalOnlyIssueResolution(status, resolvedDate, comment),
-      ruleDescriptionContextKey);
+      new LocalOnlyIssueResolution(status, resolvedDate, comment));
   }
 
   private PersistentEntityStore buildEntityStore() {
@@ -273,9 +270,6 @@ public class XodusLocalOnlyIssueStore {
       issueEntity.setBlobString(COMMENT_PROPERTY_NAME, comment);
     }
 
-    if (issue.getRuleDescriptionContextKey() != null) {
-      issueEntity.setProperty(RULE_DESCRIPTION_CONTEXT_KEY_PROPERTY_NAME, issue.getRuleDescriptionContextKey());
-    }
     var textRange = issue.getTextRangeWithHash();
     var lineWithHash = issue.getLineWithHash();
 

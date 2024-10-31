@@ -31,8 +31,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckAnticipate
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckAnticipatedStatusChangeSupportedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.GetIssueDetailsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.GetIssueDetailsResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.GetEffectiveIssueDetailsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.GetEffectiveIssueDetailsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.IssueRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssuesForFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssuesForFileResponse;
@@ -83,10 +83,10 @@ public class IssueRpcServiceDelegate extends AbstractRpcServiceDelegate implemen
   }
 
   @Override
-  public CompletableFuture<GetIssueDetailsResponse> getIssueDetails(GetIssueDetailsParams params) {
+  public CompletableFuture<GetEffectiveIssueDetailsResponse> getEffectiveIssueDetails(GetEffectiveIssueDetailsParams params) {
     return requestAsync(cancelMonitor -> {
       try {
-        return new GetIssueDetailsResponse(getBean(IssueService.class)
+        return new GetEffectiveIssueDetailsResponse(getBean(IssueService.class)
           .getEffectiveIssueDetails(params.getConfigurationScopeId(), params.getIssueId(), cancelMonitor));
       } catch (IssueNotFoundException e) {
         var error = new ResponseError(SonarLintRpcErrorCode.ISSUE_NOT_FOUND, e.getMessage(), e.getIssueKey());

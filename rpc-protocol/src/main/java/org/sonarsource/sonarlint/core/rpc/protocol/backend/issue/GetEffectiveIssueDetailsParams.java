@@ -21,11 +21,11 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.issue;
 
 import java.util.UUID;
 
-public class GetIssueDetailsParams {
+public class GetEffectiveIssueDetailsParams {
   private final String configurationScopeId;
   private final UUID issueId;
 
-  public GetIssueDetailsParams(String configurationScopeId, UUID issueId) {
+  public GetEffectiveIssueDetailsParams(String configurationScopeId, UUID issueId) {
     this.configurationScopeId = configurationScopeId;
     this.issueId = issueId;
   }

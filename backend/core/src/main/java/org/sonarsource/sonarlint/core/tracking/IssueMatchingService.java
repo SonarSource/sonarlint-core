@@ -183,7 +183,7 @@ public class IssueMatchingService {
   @NotNull
   private static LocalOnlyIssue newLocalOnlyIssue(Path serverRelativePath, ClientTrackedFindingDto clientTrackedIssue) {
     return new LocalOnlyIssue(UUID.randomUUID(), serverRelativePath, adapt(clientTrackedIssue.getTextRangeWithHash()), adapt(clientTrackedIssue.getLineWithHash()),
-      clientTrackedIssue.getRuleKey(), clientTrackedIssue.getMessage(), null, null);
+      clientTrackedIssue.getRuleKey(), clientTrackedIssue.getMessage(), null);
   }
 
   @CheckForNull

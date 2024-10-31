@@ -19,10 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.issue;
 
-public class GetIssueDetailsResponse {
+public class GetEffectiveIssueDetailsResponse {
   private final EffectiveIssueDetailsDto details;
 
-  public GetIssueDetailsResponse(EffectiveIssueDetailsDto details) {
+  public GetEffectiveIssueDetailsResponse(EffectiveIssueDetailsDto details) {
     this.details = details;
   }
 
