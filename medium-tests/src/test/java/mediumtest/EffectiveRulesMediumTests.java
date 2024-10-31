@@ -37,8 +37,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDescription
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleNonContextualSectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.UpdateStandaloneRulesConfigurationParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import testutils.MockWebServerExtensionWithProtobuf;
@@ -47,14 +47,14 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static org.apache.commons.lang3.StringUtils.abbreviate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute.CONVENTIONAL;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity.LOW;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity.MEDIUM;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.BLOCKER;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.INFO;
-import static org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.MAJOR;
-import static org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.MINOR;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.PYTHON;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.BUG;
-import static org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.CODE_SMELL;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.VULNERABILITY;
 
 class EffectiveRulesMediumTests {
@@ -79,9 +79,9 @@ class EffectiveRulesMediumTests {
     var details = getEffectiveRuleDetails("scopeId", "python:S139");
 
     assertThat(details)
-      .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
-        EffectiveRuleDetailsDto::getSeverity, r -> r.getDescription().getLeft().getHtmlContent())
-      .containsExactly("python:S139", "Comments should not be located at the end of lines of code", CODE_SMELL, PYTHON, MINOR,
+      .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getCleanCodeAttribute, EffectiveRuleDetailsDto::getLanguage,
+        r -> r.getDefaultImpacts().get(0).getImpactSeverity(), r -> r.getDescription().getLeft().getHtmlContent())
+      .containsExactly("python:S139", "Comments should not be located at the end of lines of code", CONVENTIONAL, PYTHON, LOW,
         PYTHON_S139_DESCRIPTION);
     assertThat(details.getParams())
       .extracting(EffectiveRuleParamDto::getName, EffectiveRuleParamDto::getDescription, EffectiveRuleParamDto::getValue, EffectiveRuleParamDto::getDefaultValue)
@@ -147,9 +147,9 @@ class EffectiveRulesMediumTests {
     var details = getEffectiveRuleDetails("scopeId", "java:S106");
 
     assertThat(details)
-      .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
-        EffectiveRuleDetailsDto::getSeverity, r -> r.getDescription().getLeft().getHtmlContent())
-      .containsExactly("java:S106", "Standard outputs should not be used directly to log anything", CODE_SMELL, JAVA, MAJOR,
+      .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getCleanCodeAttribute, EffectiveRuleDetailsDto::getLanguage,
+        r -> r.getDefaultImpacts().get(0).getImpactSeverity(), r -> r.getDescription().getLeft().getHtmlContent())
+      .containsExactly("java:S106", "Standard outputs should not be used directly to log anything", CONVENTIONAL, JAVA, MEDIUM,
         JAVA_S106_DESCRIPTION);
     assertThat(details.getParams()).isEmpty();
   }
@@ -170,9 +170,9 @@ class EffectiveRulesMediumTests {
     var details = getEffectiveRuleDetails("scopeId", "python:S139");
 
     assertThat(details)
-      .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
-        EffectiveRuleDetailsDto::getSeverity, r -> r.getDescription().getLeft().getHtmlContent())
-      .containsExactly("python:S139", "Comments should not be located at the end of lines of code", CODE_SMELL, PYTHON, INFO,
+      .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getCleanCodeAttribute, EffectiveRuleDetailsDto::getLanguage,
+        r -> r.getDefaultImpacts().get(0).getImpactSeverity(), r -> r.getDescription().getLeft().getHtmlContent())
+      .containsExactly("python:S139", "Comments should not be located at the end of lines of code", CONVENTIONAL, PYTHON, LOW,
         PYTHON_S139_DESCRIPTION + "extendedDesc");
     assertThat(details.getParams()).isEmpty();
   }
@@ -194,9 +194,9 @@ class EffectiveRulesMediumTests {
     var details = getEffectiveRuleDetails("childScopeId", "python:S139");
 
     assertThat(details)
-      .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
-        EffectiveRuleDetailsDto::getSeverity, r -> r.getDescription().getLeft().getHtmlContent())
-      .containsExactly("python:S139", "Comments should not be located at the end of lines of code", CODE_SMELL, PYTHON, INFO,
+      .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getCleanCodeAttribute, EffectiveRuleDetailsDto::getLanguage,
+        r -> r.getDefaultImpacts().get(0).getImpactSeverity(), r -> r.getDescription().getLeft().getHtmlContent())
+      .containsExactly("python:S139", "Comments should not be located at the end of lines of code", CONVENTIONAL, PYTHON, LOW,
         PYTHON_S139_DESCRIPTION + "extendedDesc");
     assertThat(details.getParams()).isEmpty();
   }
@@ -284,9 +284,9 @@ class EffectiveRulesMediumTests {
     var details = getEffectiveRuleDetails("scopeId", "python:custom");
 
     assertThat(details)
-      .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
-        EffectiveRuleDetailsDto::getSeverity, r -> r.getDescription().getLeft().getHtmlContent())
-      .containsExactly("python:custom", "newName", CODE_SMELL, PYTHON, INFO, "descextendedDesc");
+      .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getCleanCodeAttribute, EffectiveRuleDetailsDto::getLanguage,
+        r -> r.getDefaultImpacts().get(0).getImpactSeverity(), r -> r.getDescription().getLeft().getHtmlContent())
+      .containsExactly("python:custom", "newName", CONVENTIONAL, PYTHON, MEDIUM, "descextendedDesc");
     assertThat(details.getParams()).isEmpty();
   }
 
