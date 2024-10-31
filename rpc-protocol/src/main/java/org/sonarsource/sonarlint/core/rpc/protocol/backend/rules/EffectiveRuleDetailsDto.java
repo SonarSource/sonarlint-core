@@ -22,26 +22,35 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.rules;
 import com.google.gson.annotations.JsonAdapter;
 import java.util.Collection;
 import java.util.List;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherRuleDescriptionAdapterFactory;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttributeCategory;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.MQRModeDetails;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.StandardModeDetails;
 
-public class EffectiveRuleDetailsDto extends AbstractRuleDto {
-
+public class EffectiveRuleDetailsDto {
+  private final String key;
+  private final String name;
+  private final Either<StandardModeDetails, MQRModeDetails> severityDetails;
+  private final Language language;
+  private final VulnerabilityProbability vulnerabilityProbability;
   @JsonAdapter(EitherRuleDescriptionAdapterFactory.class)
   private final Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> description;
   private final Collection<EffectiveRuleParamDto> params;
 
-  public EffectiveRuleDetailsDto(String key, String name, @Nullable IssueSeverity severity, @Nullable RuleType type,
-    @Nullable CleanCodeAttribute cleanCodeAttribute, @Nullable CleanCodeAttributeCategory cleanCodeAttributeCategory, List<ImpactDto> defaultImpacts,
+  public EffectiveRuleDetailsDto(String key, String name, Either<StandardModeDetails, MQRModeDetails> severityDetails,
     Either<RuleMonolithicDescriptionDto, RuleSplitDescriptionDto> description, Collection<EffectiveRuleParamDto> params,
     Language language, @Nullable VulnerabilityProbability vulnerabilityProbability) {
-    super(key, name, severity, type, cleanCodeAttribute, cleanCodeAttributeCategory, defaultImpacts, language, vulnerabilityProbability);
+    this.key = key;
+    this.name = name;
+    this.severityDetails = severityDetails;
+    this.language = language;
+    this.vulnerabilityProbability = vulnerabilityProbability;
     this.description = description;
     this.params = params;
   }
@@ -52,5 +61,49 @@ public class EffectiveRuleDetailsDto extends AbstractRuleDto {
 
   public Collection<EffectiveRuleParamDto> getParams() {
     return params;
+  }
+
+  public String getKey() {
+    return key;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public Either<StandardModeDetails, MQRModeDetails> getSeverityDetails() {
+    return severityDetails;
+  }
+
+  @CheckForNull
+  public IssueSeverity getSeverity() {
+    return this.severityDetails.isLeft() ?
+      this.severityDetails.getLeft().getSeverity() : null;
+  }
+
+  @CheckForNull
+  public RuleType getType() {
+    return this.severityDetails.isLeft() ?
+      this.severityDetails.getLeft().getType() : null;
+  }
+
+  @CheckForNull
+  public List<ImpactDto> getDefaultImpacts() {
+    return this.severityDetails.isRight() ?
+      this.severityDetails.getRight().getImpacts() : null;
+  }
+
+  @CheckForNull
+  public CleanCodeAttribute getCleanCodeAttribute() {
+    return this.severityDetails.isRight() ?
+      this.severityDetails.getRight().getCleanCodeAttribute() : null;
+  }
+
+  public Language getLanguage() {
+    return language;
+  }
+
+  public VulnerabilityProbability getVulnerabilityProbability() {
+    return vulnerabilityProbability;
   }
 }
