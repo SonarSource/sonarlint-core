@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import javax.annotation.CheckForNull;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.jetbrains.annotations.NotNull;
@@ -211,5 +212,12 @@ public class PluginsService {
         return !supportsRepackagedDotnetAnalyzer || hasEnterprisePlugin;
       }
     }
+  }
+
+  @CheckForNull
+  public Path getEffectivePathToCsharpAnalyzer(String connectionId) {
+    return shouldUseEnterpriseCSharpAnalyzer(connectionId) ?
+      csharpEnterprisePluginPath :
+      csharpOssPluginPath;
   }
 }

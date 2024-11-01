@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
@@ -46,6 +47,7 @@ public class AnalysisEngineCache {
   private final PluginsService pluginsService;
   private final NodeJsService nodeJsService;
   private final Map<String, String> extraProperties = new HashMap<>();
+  private final Path csharpOssPluginPath;
   private AnalysisEngine standaloneEngine;
   private final Map<String, AnalysisEngine> connectedEnginesByConnectionId = new ConcurrentHashMap<>();
 
@@ -61,12 +63,15 @@ public class AnalysisEngineCache {
     if (shouldSupportCsharp && languageSpecificRequirements != null) {
       var omnisharpRequirements = languageSpecificRequirements.getOmnisharpRequirements();
       if (omnisharpRequirements != null) {
-        extraProperties.put("sonar.cs.internal.ossAnalyzerPath", omnisharpRequirements.getOssAnalyzerPath().toString());
-        extraProperties.put("sonar.cs.internal.enterpriseAnalyzerPath", omnisharpRequirements.getEnterpriseAnalyzerPath().toString());
+        csharpOssPluginPath = omnisharpRequirements.getOssAnalyzerPath();
         extraProperties.put("sonar.cs.internal.omnisharpMonoLocation", omnisharpRequirements.getMonoDistributionPath().toString());
         extraProperties.put("sonar.cs.internal.omnisharpWinLocation", omnisharpRequirements.getDotNet472DistributionPath().toString());
         extraProperties.put("sonar.cs.internal.omnisharpNet6Location", omnisharpRequirements.getDotNet6DistributionPath().toString());
+      } else {
+        csharpOssPluginPath = null;
       }
+    } else {
+      csharpOssPluginPath = null;
     }
   }
 
@@ -77,23 +82,28 @@ public class AnalysisEngineCache {
   }
 
   private synchronized AnalysisEngine getOrCreateConnectedEngine(String connectionId) {
-    return connectedEnginesByConnectionId.computeIfAbsent(connectionId, k -> createEngine(pluginsService.getPlugins(connectionId)));
+    return connectedEnginesByConnectionId.computeIfAbsent(connectionId,
+      k -> createEngine(pluginsService.getPlugins(connectionId), pluginsService.getEffectivePathToCsharpAnalyzer(connectionId)));
   }
 
   private synchronized AnalysisEngine getOrCreateStandaloneEngine() {
     if (standaloneEngine == null) {
-      standaloneEngine = createEngine(pluginsService.getEmbeddedPlugins());
+      standaloneEngine = createEngine(pluginsService.getEmbeddedPlugins(), csharpOssPluginPath);
     }
     return standaloneEngine;
   }
 
-  private AnalysisEngine createEngine(LoadedPlugins plugins) {
+  private AnalysisEngine createEngine(LoadedPlugins plugins, @Nullable Path actualCsharpAnalyzerPath) {
     var activeNodeJs = nodeJsService.getActiveNodeJs();
     var nodeJsPath = activeNodeJs == null ? null : activeNodeJs.getPath();
+    var fullExtraProperties = new HashMap<>(extraProperties);
+    if (actualCsharpAnalyzerPath != null) {
+      fullExtraProperties.put("sonar.cs.internal.analyzerPath", actualCsharpAnalyzerPath.toString());
+    }
     var analysisEngineConfiguration = AnalysisEngineConfiguration.builder()
       .setWorkDir(workDir)
       .setClientPid(ProcessHandle.current().pid())
-      .setExtraProperties(extraProperties)
+      .setExtraProperties(fullExtraProperties)
       .setNodeJs(nodeJsPath)
       .setModulesProvider(this::getModules)
       .build();
