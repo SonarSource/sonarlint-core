@@ -44,7 +44,8 @@ public class RaisedHotspotDto extends RaisedFindingDto {
   private final VulnerabilityProbability vulnerabilityProbability;
 
   public RaisedHotspotDto(UUID id, @Nullable String serverKey, String ruleKey, String primaryMessage, Either<StandardModeDetails, MQRModeDetails> severityMode,
-    IssueSeverity severity, RuleType type, CleanCodeAttribute cleanCodeAttribute, List<ImpactDto> impacts, Instant introductionDate, boolean isOnNewCode,
+    @Nullable IssueSeverity severity, @Nullable RuleType type, @Nullable CleanCodeAttribute cleanCodeAttribute,
+    List<ImpactDto> impacts, Instant introductionDate, boolean isOnNewCode,
     boolean resolved, @Nullable TextRangeDto textRange, List<IssueFlowDto> flows, List<QuickFixDto> quickFixes, @Nullable String ruleDescriptionContextKey,
     @Nullable VulnerabilityProbability vulnerabilityProbability,
     HotspotStatus status) {

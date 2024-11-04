@@ -45,10 +45,13 @@ public abstract class RaisedFindingDto {
   private final String primaryMessage;
   private final Either<StandardModeDetails, MQRModeDetails> severityMode;
   @Deprecated(since = "10.9")
+  @Nullable
   private final IssueSeverity severity;
   @Deprecated(since = "10.9")
+  @Nullable
   private final RuleType type;
   @Deprecated(since = "10.9")
+  @Nullable
   private final CleanCodeAttribute cleanCodeAttribute;
   @Deprecated(since = "10.9")
   private final List<ImpactDto> impacts;
@@ -63,7 +66,8 @@ public abstract class RaisedFindingDto {
   private final String ruleDescriptionContextKey;
 
   protected RaisedFindingDto(UUID id, @Nullable String serverKey, String ruleKey, String primaryMessage, Either<StandardModeDetails, MQRModeDetails> severityMode,
-    IssueSeverity severity, RuleType type, CleanCodeAttribute cleanCodeAttribute, List<ImpactDto> impacts, Instant introductionDate, boolean isOnNewCode,
+    @Nullable IssueSeverity severity, @Nullable RuleType type, @Nullable CleanCodeAttribute cleanCodeAttribute, List<ImpactDto> impacts,
+    Instant introductionDate, boolean isOnNewCode,
     boolean resolved, @Nullable TextRangeDto textRange, List<IssueFlowDto> flows, List<QuickFixDto> quickFixes, @Nullable String ruleDescriptionContextKey) {
     this.id = id;
     this.serverKey = serverKey;
@@ -105,16 +109,19 @@ public abstract class RaisedFindingDto {
   }
 
   @Deprecated(since = "10.9")
+  @CheckForNull
   public IssueSeverity getSeverity() {
     return severity;
   }
 
   @Deprecated(since = "10.9")
+  @CheckForNull
   public RuleType getType() {
     return type;
   }
 
   @Deprecated(since = "10.9")
+  @CheckForNull
   public CleanCodeAttribute getCleanCodeAttribute() {
     return cleanCodeAttribute;
   }
