@@ -167,28 +167,6 @@ class PluginSynchronizationMediumTests {
   }
 
   @Test
-  void it_should_not_pull_plugins_with_unsupported_version() {
-    var server = newSonarQubeServer("10.3")
-      .withPlugin(TestPlugin.JAVA.getPluginKey(), plugin -> plugin.withJarPath(Path.of("sonar-java-plugin-5.12.0.jar")).withHash(TestPlugin.JAVA.getHash()))
-      .withProject("projectKey", project -> project.withBranch("main"))
-      .start();
-    var client = newFakeClient().build();
-    backend = newBackend()
-      .withEnabledLanguageInStandaloneMode(Language.JAVA)
-      .withSonarQubeConnection("connectionId", server)
-      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withFullSynchronization()
-      .build(client);
-
-    waitAtMost(3, SECONDS).untilAsserted(() -> {
-      File[] files = getPluginsStorageFolder().toFile().listFiles();
-      assertThat(files).hasSize(1);
-      assertThat(files[0]).hasName(PluginsStorage.PLUGIN_REFERENCES_PB);
-      assertThat(client.getLogMessages()).contains("[SYNC] Code analyzer 'java' version '5.12.0' is not supported (minimal version is '7.16.0.30901'). Skip downloading it.");
-    });
-  }
-
-  @Test
   void it_should_not_pull_embedded_plugins() {
     var server = newSonarQubeServer("10.3")
       .withPlugin(TestPlugin.JAVA)
