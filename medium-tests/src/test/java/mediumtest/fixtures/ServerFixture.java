@@ -649,6 +649,29 @@ public class ServerFixture {
             .build())
           .setPaging(Common.Paging.newBuilder().setTotal(taintActiveRulesByKey.size()).build())
           .build()))));
+
+      var activeRules = qualityProfilesByKey.values().stream().flatMap(qp -> qp.activeRulesByKey.entrySet().stream()).collect(toList());
+      activeRules.forEach(entry -> {
+        var ruleKey = entry.getKey();
+        var rule = entry.getValue();
+        var rulesShowUrl = "/api/rules/show.protobuf?key=" + ruleKey;
+        mockServer.stubFor(get(rulesShowUrl)
+          .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Rules.ShowResponse.newBuilder()
+            .setRule(Rules.Rule.newBuilder()
+              .setKey(ruleKey)
+              .setName("fakeName")
+              .setLang("java")
+              .setHtmlNote("htmlNote")
+              .setDescriptionSections(Rules.Rule.DescriptionSections.newBuilder().build())
+              .setCleanCodeAttribute(Common.CleanCodeAttribute.CONVENTIONAL)
+              .setEducationPrinciples(Rules.Rule.EducationPrinciples.newBuilder().build())
+              .setSeverity(rule.issueSeverity.name())
+              .setType(Common.RuleType.BUG)
+              .setHtmlDesc("htmlDesc")
+              .setImpacts(Rules.Rule.Impacts.newBuilder().build())
+              .build())
+            .build()))));
+      });
     }
 
     private void registerProjectBranchesApiResponses() {

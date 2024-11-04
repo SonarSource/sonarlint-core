@@ -269,6 +269,7 @@ public class XodusLocalOnlyIssueStore {
     if (comment != null) {
       issueEntity.setBlobString(COMMENT_PROPERTY_NAME, comment);
     }
+
     var textRange = issue.getTextRangeWithHash();
     var lineWithHash = issue.getLineWithHash();
 

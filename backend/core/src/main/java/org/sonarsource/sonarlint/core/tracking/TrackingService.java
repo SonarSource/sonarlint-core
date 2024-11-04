@@ -221,7 +221,8 @@ public class TrackingService {
   }
 
   private static LocalOnlyIssue newLocalOnlyIssue(Path serverRelativePath, TrackedIssue issue) {
-    return new LocalOnlyIssue(issue.getId(), serverRelativePath, issue.getTextRangeWithHash(), issue.getLineWithHash(), issue.getRuleKey(), issue.getMessage(), null);
+    return new LocalOnlyIssue(issue.getId(), serverRelativePath, issue.getTextRangeWithHash(), issue.getLineWithHash(),
+      issue.getRuleKey(), issue.getMessage(), null);
   }
 
   private static TrackedIssue updateTrackedIssueWithServerData(TrackedIssue trackedIssue, ServerIssue<?> serverIssue) {
