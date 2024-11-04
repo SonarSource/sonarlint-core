@@ -73,8 +73,9 @@ class RulesServiceTests {
     );
 
     Map<SoftwareQuality, ImpactSeverity> result = RuleDetails.mergeImpacts(defaultImpacts, overriddenImpacts);
-    assertThat(result).containsEntry(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.HIGH);
-    assertThat(result).containsEntry(SoftwareQuality.RELIABILITY, ImpactSeverity.MEDIUM);
+    assertThat(result)
+      .containsEntry(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.HIGH)
+      .containsEntry(SoftwareQuality.RELIABILITY, ImpactSeverity.MEDIUM);
   }
 
   @Test

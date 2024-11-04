@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.rules;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -36,9 +35,6 @@ import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
-import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
@@ -162,15 +158,26 @@ public class RuleDetails {
 
   public static Map<SoftwareQuality, ImpactSeverity> mergeImpacts(Map<SoftwareQuality, ImpactSeverity> defaultImpacts,
     List<ImpactPayload> overriddenImpacts) {
-    Map<SoftwareQuality, ImpactSeverity> mergedImpacts = new HashMap<>(defaultImpacts);
+    if (defaultImpacts.isEmpty()) return Collections.emptyMap();
+    var mergedImpacts = new EnumMap<>(defaultImpacts);
 
     for (ImpactPayload impact : overriddenImpacts) {
       var quality = SoftwareQuality.valueOf(impact.getSoftwareQuality());
-      var severity = ImpactSeverity.valueOf(impact.getSeverity());
+      var severity = mapSeverity(impact.getSeverity());
       mergedImpacts.computeIfPresent(quality, (k, v) -> severity);
     }
 
     return Collections.unmodifiableMap(mergedImpacts);
+  }
+
+  private static ImpactSeverity mapSeverity(String severity) {
+    if ("BLOCKER".equals(severity) || "ImpactSeverity_BLOCKER".equals(severity)) {
+      return ImpactSeverity.BLOCKER;
+    } else if ("INFO".equals(severity) || "ImpactSeverity_INFO".equals(severity)) {
+      return ImpactSeverity.INFO;
+    } else {
+      return ImpactSeverity.valueOf(severity);
+    }
   }
 
   public static RuleDetails merging(RuleDetails serverActiveRuleDetails, RaisedFindingDto raisedFindingDto) {
