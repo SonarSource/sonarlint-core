@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.jetbrains.annotations.NotNull;
@@ -45,6 +46,7 @@ import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPlugin;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSpecificRequirements;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.event.EventListener;
@@ -62,8 +64,7 @@ public class PluginsService {
   private final LanguageSupportRepository languageSupportRepository;
   private final StorageService storageService;
   private final Set<Path> embeddedPluginPaths;
-  private final Path csharpOssPluginPath;
-  private final Path csharpEnterprisePluginPath;
+  private final CSharpSupport csharpSupport;
   private final Set<String> disabledPluginKeysForAnalysis;
   private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
@@ -77,28 +78,41 @@ public class PluginsService {
     this.languageSupportRepository = languageSupportRepository;
     this.storageService = storageService;
     this.embeddedPluginPaths = params.getEmbeddedPluginPaths();
-    if (params.getLanguageSpecificRequirements() != null
-      && params.getLanguageSpecificRequirements().getOmnisharpRequirements() != null) {
-      var omnisharpRequirementsDto = params.getLanguageSpecificRequirements().getOmnisharpRequirements();
-      csharpOssPluginPath = omnisharpRequirementsDto.getOssAnalyzerPath();
-      csharpEnterprisePluginPath = omnisharpRequirementsDto.getEnterpriseAnalyzerPath();
-    } else {
-      csharpOssPluginPath = null;
-      csharpEnterprisePluginPath = null;
-    }
     this.connectedModeEmbeddedPluginPathsByKey = params.getConnectedModeEmbeddedPluginPathsByKey();
     this.enableDataflowBugDetection = params.getFeatureFlags().isEnableDataflowBugDetection();
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.nodeJsService = nodeJsService;
     this.disabledPluginKeysForAnalysis = params.getDisabledPluginKeysForAnalysis();
+    this.csharpSupport = new CSharpSupport(params.getLanguageSpecificRequirements());
+  }
+
+  static class CSharpSupport {
+    final Path csharpOssPluginPath;
+    final Path csharpEnterprisePluginPath;
+
+    CSharpSupport(@Nullable LanguageSpecificRequirements languageSpecificRequirements) {
+      if (languageSpecificRequirements == null) {
+        csharpOssPluginPath = null;
+        csharpEnterprisePluginPath = null;
+      } else {
+        var omnisharpRequirements = languageSpecificRequirements.getOmnisharpRequirements();
+        if (omnisharpRequirements == null) {
+          csharpOssPluginPath = null;
+          csharpEnterprisePluginPath = null;
+        } else {
+          csharpOssPluginPath = omnisharpRequirements.getOssAnalyzerPath();
+          csharpEnterprisePluginPath = omnisharpRequirements.getEnterpriseAnalyzerPath();
+        }
+      }
+    }
   }
 
   public LoadedPlugins getEmbeddedPlugins() {
     var loadedEmbeddedPlugins = pluginsRepository.getLoadedEmbeddedPlugins();
     if (loadedEmbeddedPlugins == null) {
       var allEmbeddedPlugins = new HashSet<>(embeddedPluginPaths);
-      if (csharpOssPluginPath != null) {
-        allEmbeddedPlugins.add(csharpOssPluginPath);
+      if (csharpSupport.csharpOssPluginPath != null) {
+        allEmbeddedPlugins.add(csharpSupport.csharpOssPluginPath);
       }
       var result = loadPlugins(languageSupportRepository.getEnabledLanguagesInStandaloneMode(), allEmbeddedPlugins, enableDataflowBugDetection);
       loadedEmbeddedPlugins = result.getLoadedPlugins();
@@ -141,10 +155,10 @@ public class PluginsService {
     // order is important as e.g. embedded takes precedence over stored
     pluginsToLoadByKey.putAll(pluginsStorage.getStoredPluginPathsByKey());
     pluginsToLoadByKey.putAll(getEmbeddedPluginPathsByKey(connectionId));
-    if (shouldUseEnterpriseCSharpAnalyzer(connectionId) && csharpEnterprisePluginPath != null) {
-      pluginsToLoadByKey.put(SonarLanguage.CS.getPluginKey(), csharpEnterprisePluginPath);
-    } else if (csharpOssPluginPath != null) {
-      pluginsToLoadByKey.put(SonarLanguage.CS.getPluginKey(), csharpOssPluginPath);
+    if (shouldUseEnterpriseCSharpAnalyzer(connectionId) && csharpSupport.csharpEnterprisePluginPath != null) {
+      pluginsToLoadByKey.put(SonarLanguage.CS.getPluginKey(), csharpSupport.csharpEnterprisePluginPath);
+    } else if (csharpSupport.csharpOssPluginPath != null) {
+      pluginsToLoadByKey.put(SonarLanguage.CS.getPluginKey(), csharpSupport.csharpOssPluginPath);
     }
     return Set.copyOf(pluginsToLoadByKey.values());
   }
@@ -217,7 +231,7 @@ public class PluginsService {
   @CheckForNull
   public Path getEffectivePathToCsharpAnalyzer(String connectionId) {
     return shouldUseEnterpriseCSharpAnalyzer(connectionId) ?
-      csharpEnterprisePluginPath :
-      csharpOssPluginPath;
+      csharpSupport.csharpEnterprisePluginPath :
+      csharpSupport.csharpOssPluginPath;
   }
 }

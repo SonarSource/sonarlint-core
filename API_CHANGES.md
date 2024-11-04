@@ -1,3 +1,18 @@
+# 10.10
+
+## New features
+
+* Introduce a new method `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService.shouldUseEnterpriseCSharpAnalyzer` to allow clients to know what kind of C# analyzer should be used for the analysis.
+  * The method returns a boolean value indicating whether the enterprise C# analyzer should be used or not
+  * The method returns `true` if a binding exists for config scope AND the related connected server has the enterprise C# plugin (`csharpenterprise`) installed
+  * The method returns `true` if binding exists with a SonarQube version < 10.8 (i.e. SQ versions that do not include repackaged dotnet analyzer) OR SonarCloud
+  * The method returns `false` in standalone mode or if connected to non-commercial edition of SonarQube with a version >= 10.8
+* Inject the relevant C# analyzer to analysis engines based on the above and share the path to the analyzer JAR as an analysis property for the OmniSharp plugin.
+
+## Breaking changes
+
+* Add two new constructor arguments to `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.OmnisharpRequirementsDto` for clients to declare the paths to the Open-Source and Enterprise C# analyzers.
+
 # 10.9
 
 ## New features
@@ -25,14 +40,6 @@
   * `type`
   * `cleanCodeAttribute`
   * `impacts`
-
-## New features
-
-* Introduce a new method `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService.shouldUseEnterpriseCSharpAnalyzer` to allow clients to know what kind of C# analyzer should be used for the analysis
-  * The method returns a boolean value indicating whether the enterprise C# analyzer should be used or not
-  * The method returns `true` if a binding exists for config scope AND the related connected server has the enterprise C# plugin (`csharpenterprise`) installed
-  * The method returns `true` if binding exists with a SonarQube version < 10.8 (i.e. SQ versions that do not include repackaged dotnet analyzer) OR SonarCloud
-  * The method returns `false` in standalone mode or if connected to non-commercial edition of SonarQube with a version >= 10.8
 
 # 10.7.1
 
