@@ -110,6 +110,11 @@ public class GitUtils {
     }
   }
 
+  private static Path getRelativePath(Repository gitRepo, Path projectBaseDir) {
+    var repoDir = gitRepo.isBare() ? gitRepo.getDirectory() : gitRepo.getWorkTree();
+    return repoDir.toPath().relativize(projectBaseDir);
+  }
+
   public static Repository buildGitRepository(Path basedir) {
     try {
       var repositoryBuilder = new RepositoryBuilder()
