@@ -124,4 +124,7 @@ public interface IssueRpcService {
    */
   @JsonRequest
   CompletableFuture<ReopenAllIssuesForFileResponse> reopenAllIssuesForFile(ReopenAllIssuesForFileParams params);
+
+  @JsonRequest
+  CompletableFuture<GetEffectiveIssueDetailsResponse> getEffectiveIssueDetails(GetEffectiveIssueDetailsParams params);
 }

@@ -47,13 +47,21 @@ import org.sonarsource.sonarlint.core.local.only.XodusLocalOnlyIssueStore;
 import org.sonarsource.sonarlint.core.mode.SeverityModeService;
 import org.sonarsource.sonarlint.core.reporting.FindingReportingService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.reporting.PreviouslyRaisedFindingsRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.EffectiveIssueDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssuesForFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
+import org.sonarsource.sonarlint.core.rules.RuleDetails;
+import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
+import org.sonarsource.sonarlint.core.rules.RuleNotFoundException;
+import org.sonarsource.sonarlint.core.rules.RulesService;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
@@ -61,6 +69,7 @@ import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
+import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
@@ -92,10 +101,14 @@ public class IssueService {
   private final ApplicationEventPublisher eventPublisher;
   private final FindingReportingService findingReportingService;
   private final SeverityModeService severityModeService;
+  private final PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository;
+  private final RulesService rulesService;
+  private final TaintVulnerabilityTrackingService taintVulnerabilityTrackingService;
 
   public IssueService(ConfigurationRepository configurationRepository, ServerApiProvider serverApiProvider, StorageService storageService,
     LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
-    ApplicationEventPublisher eventPublisher, FindingReportingService findingReportingService, SeverityModeService severityModeService) {
+    ApplicationEventPublisher eventPublisher, FindingReportingService findingReportingService, SeverityModeService severityModeService,
+    PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, RulesService rulesService, TaintVulnerabilityTrackingService taintVulnerabilityTrackingService) {
     this.configurationRepository = configurationRepository;
     this.serverApiProvider = serverApiProvider;
     this.storageService = storageService;
@@ -104,6 +117,9 @@ public class IssueService {
     this.eventPublisher = eventPublisher;
     this.findingReportingService = findingReportingService;
     this.severityModeService = severityModeService;
+    this.previouslyRaisedFindingsRepository = previouslyRaisedFindingsRepository;
+    this.rulesService = rulesService;
+    this.taintVulnerabilityTrackingService = taintVulnerabilityTrackingService;
   }
 
   public void changeStatus(String configurationScopeId, String issueKey, ResolutionStatus newStatus, boolean isTaintIssue, SonarLintCancelMonitor cancelMonitor) {
@@ -324,6 +340,45 @@ public class IssueService {
     var localOnlyIssueStore = localOnlyIssueStorageService.get();
     removeIssueOnServer(localOnlyIssueStore, configurationScopeId, issueUuid, cancelMonitor);
     return localOnlyIssueStorageService.get().removeIssue(issueUuid);
+  }
+
+  public EffectiveIssueDetailsDto getEffectiveIssueDetails(String configurationScopeId, UUID findingId, SonarLintCancelMonitor cancelMonitor)
+    throws IssueNotFoundException, RuleNotFoundException {
+    var maybeIssue =
+      previouslyRaisedFindingsRepository.getRaisedIssueWithScopeAndId(configurationScopeId, findingId);
+    var maybeHotspot = previouslyRaisedFindingsRepository.getRaisedHotspotWithScopeAndId(configurationScopeId, findingId);
+    var maybeTaint = taintVulnerabilityTrackingService.getTaintVulnerability(configurationScopeId, findingId, cancelMonitor);
+
+    if (maybeIssue.isPresent()) {
+      return getFindingDetails(maybeIssue.get(), configurationScopeId, cancelMonitor);
+    } else if (maybeHotspot.isPresent()) {
+      return getFindingDetails(maybeHotspot.get(), configurationScopeId, cancelMonitor);
+    } else if (maybeTaint.isPresent()) {
+      return getTaintDetails(maybeTaint.get(), configurationScopeId, cancelMonitor);
+    }
+    throw new IssueNotFoundException("Failed to retrieve finding details. Finding with key '"
+      + findingId + "' not found.", findingId);
+  }
+
+  private EffectiveIssueDetailsDto getFindingDetails(RaisedFindingDto finding, String configurationScopeId, SonarLintCancelMonitor cancelMonitor) throws RuleNotFoundException {
+    var ruleKey = finding.getRuleKey();
+    var ruleDetails = rulesService.getRuleDetails(configurationScopeId, ruleKey, cancelMonitor);
+    var ruleDetailsEnrichedWithActualIssueSeverity = RuleDetails.merging(ruleDetails, finding);
+    var effectiveRuleDetails = RuleDetailsAdapter.transform(ruleDetailsEnrichedWithActualIssueSeverity, finding.getRuleDescriptionContextKey());
+    return new EffectiveIssueDetailsDto(ruleKey, effectiveRuleDetails.getName(), effectiveRuleDetails.getLanguage(),
+      // users cannot customize vulnerability probability
+      effectiveRuleDetails.getVulnerabilityProbability(),
+      effectiveRuleDetails.getDescription(), effectiveRuleDetails.getParams(), finding.getSeverityMode(), finding.getRuleDescriptionContextKey());
+  }
+
+  private EffectiveIssueDetailsDto getTaintDetails(TaintVulnerabilityDto finding, String configurationScopeId, SonarLintCancelMonitor cancelMonitor) throws RuleNotFoundException {
+    var ruleKey = finding.getRuleKey();
+    var ruleDetails = rulesService.getRuleDetails(configurationScopeId, ruleKey, cancelMonitor);
+    var ruleDetailsEnrichedWithActualIssueSeverity = RuleDetails.merging(ruleDetails, finding);
+    var effectiveRuleDetails = RuleDetailsAdapter.transform(ruleDetailsEnrichedWithActualIssueSeverity, finding.getRuleDescriptionContextKey());
+    return new EffectiveIssueDetailsDto(ruleKey, effectiveRuleDetails.getName(), effectiveRuleDetails.getLanguage(),
+      effectiveRuleDetails.getVulnerabilityProbability(),
+      effectiveRuleDetails.getDescription(), effectiveRuleDetails.getParams(), finding.getSeverityMode(), finding.getRuleDescriptionContextKey());
   }
 
   @EventListener

@@ -59,7 +59,7 @@ class RulesRpcServiceDelegate extends AbstractRpcServiceDelegate implements Rule
 
   @Override
   public CompletableFuture<GetStandaloneRuleDescriptionResponse> getStandaloneRuleDetails(GetStandaloneRuleDescriptionParams params) {
-    return requestAsync(cancelMonitor -> getBean(RulesService.class).getStandaloneRuleDetails(params.getRuleKey()));
+    return requestAsync(cancelMonitor -> getBean(RulesService.class).getStandaloneRuleDescription(params.getRuleKey()));
   }
 
   @Override

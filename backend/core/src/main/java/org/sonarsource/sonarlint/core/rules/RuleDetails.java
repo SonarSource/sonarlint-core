@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.rules;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -29,14 +30,16 @@ import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
-import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
+import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleParamDefinition;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
@@ -61,7 +64,8 @@ public class RuleDetails {
   private final VulnerabilityProbability vulnerabilityProbability;
 
   public RuleDetails(String key, SonarLanguage language, String name, String htmlDescription, Map<String, List<DescriptionSection>> descriptionSectionsByKey,
-    IssueSeverity defaultSeverity, RuleType type, @Nullable CleanCodeAttribute cleanCodeAttribute, Map<SoftwareQuality, ImpactSeverity> defaultImpacts,
+    @Nullable IssueSeverity defaultSeverity, @Nullable RuleType type, @Nullable CleanCodeAttribute cleanCodeAttribute,
+    Map<SoftwareQuality, ImpactSeverity> defaultImpacts,
     @Nullable String extendedDescription, Collection<EffectiveRuleParam> params, Set<String> educationPrincipleKeys,
     @Nullable VulnerabilityProbability vulnerabilityProbability) {
     this.key = key;
@@ -152,6 +156,54 @@ public class RuleDetails {
       Collections.emptyList(), templateRuleDefFromPlugin.getEducationPrincipleKeys(), templateRuleDefFromPlugin.getVulnerabilityProbability().orElse(null));
   }
 
+  public static RuleDetails merging(RuleDetails serverActiveRuleDetails, RaisedFindingDto raisedFindingDto) {
+    var isMQRMode = raisedFindingDto.getSeverityMode().isRight();
+    var softwareImpacts = new EnumMap<SoftwareQuality, ImpactSeverity>(SoftwareQuality.class);
+    if (isMQRMode) {
+      raisedFindingDto.getSeverityMode().getRight().getImpacts().forEach(
+        i -> softwareImpacts.put(SoftwareQuality.valueOf(i.getSoftwareQuality().name()),
+          ImpactSeverity.valueOf(i.getImpactSeverity().name()))
+      );
+    }
+    return new RuleDetails(serverActiveRuleDetails.getKey(),
+      serverActiveRuleDetails.getLanguage(),
+      serverActiveRuleDetails.getName(),
+      serverActiveRuleDetails.getHtmlDescription(),
+      serverActiveRuleDetails.getDescriptionSectionsByKey(),
+      isMQRMode ? null : IssueSeverity.valueOf(raisedFindingDto.getSeverityMode().getLeft().getSeverity().toString()),
+      isMQRMode ? null : RuleType.valueOf(raisedFindingDto.getSeverityMode().getLeft().getType().toString()),
+      isMQRMode ? CleanCodeAttribute.valueOf(raisedFindingDto.getSeverityMode().getRight().getCleanCodeAttribute().name()) : null,
+      softwareImpacts,
+      serverActiveRuleDetails.getExtendedDescription(),
+      serverActiveRuleDetails.getParams(),
+      serverActiveRuleDetails.educationPrincipleKeys,
+      serverActiveRuleDetails.getVulnerabilityProbability());
+  }
+
+  public static RuleDetails merging(RuleDetails serverActiveRuleDetails, TaintVulnerabilityDto taintVulnerabilityDto) {
+    var isMQRMode = taintVulnerabilityDto.getSeverityMode().isRight();
+    EnumMap<SoftwareQuality, ImpactSeverity> softwareImpacts = new EnumMap<>(SoftwareQuality.class);
+    if (isMQRMode) {
+      taintVulnerabilityDto.getSeverityMode().getRight().getImpacts().forEach(
+        i -> softwareImpacts.put(SoftwareQuality.valueOf(i.getSoftwareQuality().name()),
+          ImpactSeverity.valueOf(i.getImpactSeverity().name()))
+      );
+    }
+    return new RuleDetails(serverActiveRuleDetails.getKey(),
+      serverActiveRuleDetails.getLanguage(),
+      serverActiveRuleDetails.getName(),
+      serverActiveRuleDetails.getHtmlDescription(),
+      serverActiveRuleDetails.getDescriptionSectionsByKey(),
+      isMQRMode ? null : IssueSeverity.valueOf(taintVulnerabilityDto.getSeverityMode().getLeft().getSeverity().toString()),
+      isMQRMode ? null : RuleType.valueOf(taintVulnerabilityDto.getSeverityMode().getLeft().getType().toString()),
+      isMQRMode ? CleanCodeAttribute.valueOf(taintVulnerabilityDto.getSeverityMode().getRight().getCleanCodeAttribute().name()) : null,
+      softwareImpacts,
+      serverActiveRuleDetails.getExtendedDescription(),
+      serverActiveRuleDetails.getParams(),
+      serverActiveRuleDetails.educationPrincipleKeys,
+      serverActiveRuleDetails.getVulnerabilityProbability());
+  }
+
   public String getKey() {
     return key;
   }
@@ -180,10 +232,12 @@ public class RuleDetails {
     return descriptionSectionsByKey;
   }
 
+  @CheckForNull
   public IssueSeverity getDefaultSeverity() {
     return defaultSeverity;
   }
 
+  @CheckForNull
   public RuleType getType() {
     return type;
   }

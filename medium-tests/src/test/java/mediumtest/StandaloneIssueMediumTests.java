@@ -29,6 +29,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -42,6 +43,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.GetEffectiveIssueDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDefinitionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.UpdateStandaloneRulesConfigurationParams;
@@ -62,6 +64,7 @@ import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.C;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
@@ -531,6 +534,58 @@ class StandaloneIssueMediumTests {
       .containsOnly(
         tuple("java:S1220", null, IssueSeverity.MINOR),
         tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), IssueSeverity.MINOR));
+  }
+
+  @Test
+  void it_should_get_issue_details_for_standalone_issue(@TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "secret.py",
+      "KEY = \"AKIAIGKECZXA7AEIJLMQ\"");
+    var fileUri = filePath.toUri();
+    client = newFakeClient()
+      .withInitialFs(CONFIGURATION_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIGURATION_SCOPE_ID, false, null, filePath, null, null, true)))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.TEXT)
+      .build(client);
+    var analysisId = UUID.randomUUID();
+
+    backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), false, System.currentTimeMillis())).join();
+    await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIGURATION_SCOPE_ID).get(fileUri)).isNotEmpty());
+
+    var issueId = client.getRaisedIssuesForScopeId(CONFIGURATION_SCOPE_ID).get(fileUri).get(0).getId();
+    var result = backend.getIssueService().getEffectiveIssueDetails(new GetEffectiveIssueDetailsParams(CONFIGURATION_SCOPE_ID, issueId)).join();
+
+    assertThat(result.getDetails()).isNotNull();
+    // standalone mode should have Clean Code attribute
+    assertThat(result.getDetails().getSeverityDetails().isRight()).isTrue();
+    assertThat(result.getDetails().getSeverityDetails().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.CONVENTIONAL);
+    assertThat(result.getDetails().getRuleKey()).isEqualTo("secrets:S6290");
+    assertThat(result.getDetails().getName()).isEqualTo("Amazon Web Services credentials should not be disclosed");
+    assertThat(result.getDetails().getRuleDescriptionContextKey()).isNull();
+    assertThat(result.getDetails().getVulnerabilityProbability()).isNull();
+    assertThat(result.getDetails().getDescription().isLeft()).isTrue();
+    assertThat(result.getDetails().getLanguage().name()).isEqualTo("SECRETS");
+  }
+
+  @Test
+  void it_should_not_get_issue_details_for_non_existent_issue(@TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "secret.py",
+      "KEY = \"AKIAIGKECZXA7AEIJLMQ\"");
+    var fileUri = filePath.toUri();
+    client = newFakeClient()
+      .withInitialFs(CONFIGURATION_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIGURATION_SCOPE_ID, false, null, filePath, null, null, true)))
+      .build();
+    backend = newBackend()
+      .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.TEXT)
+      .build(client);
+
+    var issueId = UUID.randomUUID();
+    var params = new GetEffectiveIssueDetailsParams(CONFIGURATION_SCOPE_ID, issueId);
+    var issueService = backend.getIssueService();
+    var detailsFuture = issueService.getEffectiveIssueDetails(params);
+    assertThrows(CompletionException.class, detailsFuture::join);
   }
 
   // SLCORE-251
