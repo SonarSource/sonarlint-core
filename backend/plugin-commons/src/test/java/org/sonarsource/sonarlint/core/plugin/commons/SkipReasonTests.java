@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.plugin.commons;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason.IncompatiblePluginApi;
-import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason.IncompatiblePluginVersion;
 import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason.LanguagesNotEnabled;
 import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason.UnsatisfiedDependency;
 import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason.UnsatisfiedRuntimeRequirement;
@@ -68,24 +67,6 @@ class SkipReasonTests {
       .hasSameHashCodeAs(new UnsatisfiedDependency("foo"))
       // To String
       .hasToString("UnsatisfiedDependency [dependencyKey=foo]");
-  }
-
-  @Test
-  void testIncompatiblePluginVersion_getters_equals_hashcode_tostring() {
-    var underTest = new IncompatiblePluginVersion("1.0");
-    // Getters
-    assertThat(underTest.getMinVersion()).isEqualTo("1.0");
-    assertThat(underTest)
-      // Equals
-      .isEqualTo(underTest)
-      .isNotEqualTo(IncompatiblePluginApi.INSTANCE)
-      .isNotEqualTo(new IncompatiblePluginVersion("2.0"))
-      .isEqualTo(new IncompatiblePluginVersion("1.0"))
-      // HashCode
-      .hasSameHashCodeAs(underTest)
-      .hasSameHashCodeAs(new IncompatiblePluginVersion("1.0"))
-      // To String
-      .hasToString("IncompatiblePluginVersion [minVersion=1.0]");
   }
 
   @Test

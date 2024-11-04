@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.sonarsource.sonarlint.core.commons.PluginsMinVersions;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -40,7 +39,6 @@ public class PluginsSynchronizer {
 
   private final Set<String> sonarSourceDisabledPluginKeys;
   private final ConnectionStorage storage;
-  private final PluginsMinVersions pluginsMinVersions = new PluginsMinVersions();
   private Set<String> embeddedPluginKeys;
 
   public PluginsSynchronizer(Set<SonarLanguage> enabledLanguages, ConnectionStorage storage, Set<String> embeddedPluginKeys) {
@@ -96,13 +94,6 @@ public class PluginsSynchronizer {
     }
     if (sonarSourceDisabledPluginKeys.contains(serverPlugin.getKey())) {
       LOG.debug("[SYNC] Code analyzer '{}' is disabled in SonarLint (language not enabled). Skip downloading it.", serverPlugin.getKey());
-      return false;
-    }
-    var pluginVersion = VersionUtils.getJarVersion(serverPlugin.getFilename());
-    if (!pluginsMinVersions.isVersionSupported(serverPlugin.getKey(), pluginVersion)) {
-      var minimumVersion = pluginsMinVersions.getMinimumVersion(serverPlugin.getKey());
-      LOG.debug("[SYNC] Code analyzer '{}' version '{}' is not supported (minimal version is '{}'). Skip downloading it.",
-        serverPlugin.getKey(), pluginVersion, minimumVersion);
       return false;
     }
     return true;

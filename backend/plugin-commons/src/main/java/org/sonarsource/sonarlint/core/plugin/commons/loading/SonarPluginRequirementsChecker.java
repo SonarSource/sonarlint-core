@@ -26,7 +26,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.PluginsMinVersions;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -41,15 +40,13 @@ public class SonarPluginRequirementsChecker {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final String OLD_SONARTS_PLUGIN_KEY = "typescript";
 
-  private final PluginsMinVersions pluginMinVersions;
   private final Version implementedPluginApiVersion;
 
   public SonarPluginRequirementsChecker() {
-    this(new PluginsMinVersions(), ApiVersions.loadSonarPluginApiVersion());
+    this(ApiVersions.loadSonarPluginApiVersion());
   }
 
-  SonarPluginRequirementsChecker(PluginsMinVersions pluginMinVersions, org.sonar.api.utils.Version pluginApiVersion) {
-    this.pluginMinVersions = pluginMinVersions;
+  SonarPluginRequirementsChecker(org.sonar.api.utils.Version pluginApiVersion) {
     this.implementedPluginApiVersion = Version.create(pluginApiVersion.toString());
   }
 
@@ -103,12 +100,6 @@ public class SonarPluginRequirementsChecker {
       LOG.debug("Plugin '{}' requires plugin API {} while SonarLint supports only up to {}. Skip loading it.", plugin.getName(),
         plugin.getMinimalSqVersion(), implementedPluginApiVersion.removeQualifier().toString());
       return new PluginRequirementsCheckResult(plugin, SkipReason.IncompatiblePluginApi.INSTANCE);
-    }
-    var pluginMinVersion = pluginMinVersions.getMinimumVersion(pluginKey);
-    if (pluginMinVersion != null && !pluginMinVersions.isVersionSupported(pluginKey, plugin.getVersion())) {
-      LOG.debug("Plugin '{}' version '{}' is not supported (minimal version is '{}'). Skip loading it.", plugin.getName(), plugin.getVersion(),
-        pluginMinVersion);
-      return new PluginRequirementsCheckResult(plugin, new SkipReason.IncompatiblePluginVersion(pluginMinVersion));
     }
     var jreMinVersion = plugin.getJreMinVersion();
     if (jreMinVersion != null && !jreCurrentVersion.satisfiesMinRequirement(jreMinVersion)) {

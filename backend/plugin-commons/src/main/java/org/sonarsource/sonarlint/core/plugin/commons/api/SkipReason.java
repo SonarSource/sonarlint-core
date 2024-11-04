@@ -123,43 +123,6 @@ public interface SkipReason {
 
   }
 
-  class IncompatiblePluginVersion implements SkipReason {
-    private final String minVersion;
-
-    public IncompatiblePluginVersion(String minVersion) {
-      this.minVersion = minVersion;
-    }
-
-    public String getMinVersion() {
-      return minVersion;
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(minVersion);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (this == obj) {
-        return true;
-      }
-      if (!(obj instanceof IncompatiblePluginVersion)) {
-        return false;
-      }
-      var other = (IncompatiblePluginVersion) obj;
-      return Objects.equals(minVersion, other.minVersion);
-    }
-
-    @Override
-    public String toString() {
-      var builder = new StringBuilder();
-      builder.append("IncompatiblePluginVersion [minVersion=").append(minVersion).append("]");
-      return builder.toString();
-    }
-
-  }
-
   class UnsatisfiedRuntimeRequirement implements SkipReason {
     public enum RuntimeRequirement {
       JRE,
