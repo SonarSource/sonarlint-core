@@ -55,16 +55,16 @@ public class RuleSetChangedEvent implements SonarServerEvent {
     private final IssueSeverity severity;
     private final Map<String, String> parameters;
     private final String templateKey;
-    private final List<ImpactPayload> impacts;
+    private final List<ImpactPayload> overridenImpacts;
 
     public ActiveRule(String key, String languageKey, IssueSeverity severity, Map<String, String> parameters,
-      @Nullable String templateKey, List<ImpactPayload> impacts) {
+      @Nullable String templateKey, List<ImpactPayload> overridenImpacts) {
       this.key = key;
       this.languageKey = languageKey;
       this.severity = severity;
       this.parameters = parameters;
       this.templateKey = templateKey;
-      this.impacts = impacts;
+      this.overridenImpacts = overridenImpacts;
     }
 
     public String getKey() {
@@ -89,7 +89,7 @@ public class RuleSetChangedEvent implements SonarServerEvent {
     }
 
     public List<ImpactPayload> getOverriddenImpacts() {
-      return impacts;
+      return overridenImpacts;
     }
   }
 }
