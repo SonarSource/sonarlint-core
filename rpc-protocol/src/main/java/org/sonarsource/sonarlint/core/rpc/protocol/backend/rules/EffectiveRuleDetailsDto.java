@@ -87,10 +87,9 @@ public class EffectiveRuleDetailsDto {
       this.severityDetails.getLeft().getType() : null;
   }
 
-  @CheckForNull
   public List<ImpactDto> getDefaultImpacts() {
     return this.severityDetails.isRight() ?
-      this.severityDetails.getRight().getImpacts() : null;
+      this.severityDetails.getRight().getImpacts() : List.of();
   }
 
   @CheckForNull
