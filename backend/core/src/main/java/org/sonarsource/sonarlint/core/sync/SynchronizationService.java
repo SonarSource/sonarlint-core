@@ -252,6 +252,9 @@ public class SynchronizationService {
 
   @EventListener
   public void onBindingChanged(BindingConfigChangedEvent event) {
+    if (!fullSynchronizationEnabled) {
+      return;
+    }
     var configScopeId = event.getConfigScopeId();
     scopeSynchronizationTimestampRepository.clearLastSynchronizationTimestamp(configScopeId);
     if (event.getPreviousConfig().isBound()) {

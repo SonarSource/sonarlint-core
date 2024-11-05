@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -115,20 +116,23 @@ public class PluginsStorage {
       rootPath.resolve(plugin.getFilename()));
   }
 
-  public void cleanUp() {
-    rwLock.write(() -> {
-      var unknownFiles = getUnknownFiles();
-      LOG.debug("Cleanup of the plugin storage in folder {}, {} unknown files", rootPath, unknownFiles.size());
-      unknownFiles.forEach(f -> LOG.debug(f.getAbsolutePath()));
-      unknownFiles.forEach(FileUtils::deleteQuietly);
-    });
+  public void cleanUpUnknownPlugins(List<ServerPlugin> serverPluginsExpectedInStorage) {
+    var expectedPluginPaths = serverPluginsExpectedInStorage.stream().map(plugin -> rootPath.resolve(plugin.getFilename())).collect(Collectors.toSet());
+    rwLock.write(() -> deleteFiles(getUnknownFiles(expectedPluginPaths)));
   }
 
-  private List<File> getUnknownFiles() {
+  private void deleteFiles(List<File> unknownFiles) {
+    if (!unknownFiles.isEmpty()) {
+      LOG.debug("Cleaning up the plugins storage {}, removing {} unknown files:", rootPath, unknownFiles.size());
+      unknownFiles.forEach(f -> LOG.debug(f.getAbsolutePath()));
+      unknownFiles.forEach(FileUtils::deleteQuietly);
+    }
+  }
+
+  private List<File> getUnknownFiles(Set<Path> knownPluginsPaths) {
     if (!Files.exists(rootPath)) {
       return Collections.emptyList();
     }
-    var knownPluginsPaths = getStoredPlugins().stream().map(StoredPlugin::getJarPath).collect(Collectors.toSet());
     LOG.debug("Known plugin paths: {}", knownPluginsPaths);
     try (Stream<Path> pathsInDir = Files.list(rootPath)) {
       var paths = pathsInDir.collect(Collectors.toList());
