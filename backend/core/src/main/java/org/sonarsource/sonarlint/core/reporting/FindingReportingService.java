@@ -34,6 +34,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
@@ -200,5 +201,27 @@ public class FindingReportingService {
       updatedFindings.put(uri, updatedFindingsForFile);
     });
     return updatedFindings;
+  }
+
+  @CheckForNull
+  public RaisedIssueDto findReportedIssue(UUID issueId, NewCodeDefinition newCodeDefinition, boolean isMQRMode) {
+    for (var findingsForFile: issuesPerFileUri.values()) {
+      var optFinding = findingsForFile.stream().filter(issue -> issue.getId().equals(issueId)).findFirst();
+      if (optFinding.isPresent()) {
+        return toRaisedIssueDto(optFinding.get(), newCodeDefinition, isMQRMode);
+      }
+    }
+    return null;
+  }
+
+  @CheckForNull
+  public RaisedHotspotDto findReportedHotspot(UUID hotspotId, NewCodeDefinition newCodeDefinition, boolean isMQRMode) {
+    for (var findingsForFile: securityHotspotsPerFileUri.values()) {
+      var optFinding = findingsForFile.stream().filter(hotspot -> hotspot.getId().equals(hotspotId)).findFirst();
+      if (optFinding.isPresent()) {
+        return toRaisedHotspotDto(optFinding.get(), newCodeDefinition, isMQRMode);
+      }
+    }
+    return null;
   }
 }
