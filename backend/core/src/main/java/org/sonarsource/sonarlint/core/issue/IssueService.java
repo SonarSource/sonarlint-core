@@ -36,6 +36,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
+import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.Transition;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -45,9 +46,9 @@ import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.local.only.XodusLocalOnlyIssueStore;
 import org.sonarsource.sonarlint.core.mode.SeverityModeService;
+import org.sonarsource.sonarlint.core.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.reporting.FindingReportingService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.repository.reporting.PreviouslyRaisedFindingsRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.EffectiveIssueDetailsDto;
@@ -101,14 +102,14 @@ public class IssueService {
   private final ApplicationEventPublisher eventPublisher;
   private final FindingReportingService findingReportingService;
   private final SeverityModeService severityModeService;
-  private final PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository;
+  private final NewCodeService newCodeService;
   private final RulesService rulesService;
   private final TaintVulnerabilityTrackingService taintVulnerabilityTrackingService;
 
   public IssueService(ConfigurationRepository configurationRepository, ServerApiProvider serverApiProvider, StorageService storageService,
     LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
     ApplicationEventPublisher eventPublisher, FindingReportingService findingReportingService, SeverityModeService severityModeService,
-    PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, RulesService rulesService, TaintVulnerabilityTrackingService taintVulnerabilityTrackingService) {
+    NewCodeService newCodeService, RulesService rulesService, TaintVulnerabilityTrackingService taintVulnerabilityTrackingService) {
     this.configurationRepository = configurationRepository;
     this.serverApiProvider = serverApiProvider;
     this.storageService = storageService;
@@ -117,7 +118,7 @@ public class IssueService {
     this.eventPublisher = eventPublisher;
     this.findingReportingService = findingReportingService;
     this.severityModeService = severityModeService;
-    this.previouslyRaisedFindingsRepository = previouslyRaisedFindingsRepository;
+    this.newCodeService = newCodeService;
     this.rulesService = rulesService;
     this.taintVulnerabilityTrackingService = taintVulnerabilityTrackingService;
   }
@@ -344,15 +345,21 @@ public class IssueService {
 
   public EffectiveIssueDetailsDto getEffectiveIssueDetails(String configurationScopeId, UUID findingId, SonarLintCancelMonitor cancelMonitor)
     throws IssueNotFoundException, RuleNotFoundException {
-    var maybeIssue =
-      previouslyRaisedFindingsRepository.getRaisedIssueWithScopeAndId(configurationScopeId, findingId);
-    var maybeHotspot = previouslyRaisedFindingsRepository.getRaisedHotspotWithScopeAndId(configurationScopeId, findingId);
+    var effectiveBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
+    String connectionId = null;
+    if (effectiveBinding.isPresent()) {
+      connectionId = effectiveBinding.get().getConnectionId();
+    }
+    var isMQRMode = severityModeService.isMQRModeForConnection(connectionId);
+    var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId).orElseGet(NewCodeDefinition::withAlwaysNew);
+    var maybeIssue = findingReportingService.findReportedIssue(findingId, newCodeDefinition, isMQRMode);
+    var maybeHotspot = findingReportingService.findReportedHotspot(findingId, newCodeDefinition, isMQRMode);
     var maybeTaint = taintVulnerabilityTrackingService.getTaintVulnerability(configurationScopeId, findingId, cancelMonitor);
 
-    if (maybeIssue.isPresent()) {
-      return getFindingDetails(maybeIssue.get(), configurationScopeId, cancelMonitor);
-    } else if (maybeHotspot.isPresent()) {
-      return getFindingDetails(maybeHotspot.get(), configurationScopeId, cancelMonitor);
+    if (maybeIssue != null) {
+      return getFindingDetails(maybeIssue, configurationScopeId, cancelMonitor);
+    } else if (maybeHotspot != null) {
+      return getFindingDetails(maybeHotspot, configurationScopeId, cancelMonitor);
     } else if (maybeTaint.isPresent()) {
       return getTaintDetails(maybeTaint.get(), configurationScopeId, cancelMonitor);
     }
