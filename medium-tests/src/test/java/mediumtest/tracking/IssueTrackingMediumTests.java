@@ -746,12 +746,11 @@ class IssueTrackingMediumTests {
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
     backend = newBackend()
-      .withSonarCloudConnection(connectionId, orgKey, true,
-        storage -> storage.withPlugin(TestPlugin.XML))
+      .withSonarCloudConnection(connectionId, orgKey, true, storage -> {})
       .withFullSynchronization()
       .withSonarCloudUrl(server.baseUrl())
       .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
-      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .build(client);
 
     backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID,

@@ -279,6 +279,28 @@ class PluginSynchronizationMediumTests {
     });
   }
 
+  @Test
+  void it_should_clean_up_plugins_that_are_no_longer_relevant() {
+    var server = newSonarQubeServer("10.3")
+      .withPlugin(TestPlugin.PHP)
+      .withProject("projectKey", project -> project.withBranch("main"))
+      .start();
+    var client = newFakeClient().build();
+    backend = newBackend()
+      .withSonarQubeConnection("connectionId", server, storage -> storage.withPlugin(TestPlugin.JAVA))
+      .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
+      .withEnabledLanguageInStandaloneMode(Language.PHP)
+      .withFullSynchronization()
+      .build(client);
+
+    waitAtMost(3, SECONDS).untilAsserted(() -> {
+      assertThat(getPluginsStorageFolder().toFile().listFiles())
+        .extracting(File::getName)
+        .containsOnly(PluginsStorage.PLUGIN_REFERENCES_PB, TestPlugin.PHP.getPath().getFileName().toString());
+      assertThat(client.getLogMessages()).contains("Cleaning up the plugins storage " + getPluginsStorageFolder() + ", removing 1 unknown files:");
+    });
+  }
+
   @NotNull
   private Map<String, PluginReference> readPluginReferences(Path filePath) {
     return ProtobufFileUtil.readFile(filePath, Sonarlint.PluginReferences.parser()).getPluginsByKeyMap();

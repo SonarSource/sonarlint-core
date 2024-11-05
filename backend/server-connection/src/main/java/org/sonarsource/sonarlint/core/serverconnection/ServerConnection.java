@@ -48,7 +48,6 @@ public class ServerConnection {
     this.storage = storageFacade.connection(connectionId);
     serverInfoSynchronizer = new ServerInfoSynchronizer(storage);
     this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguagesToSync, embeddedPluginKeys, serverInfoSynchronizer, storage);
-    storage.plugins().cleanUp();
   }
 
   public PluginSynchronizationSummary sync(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
