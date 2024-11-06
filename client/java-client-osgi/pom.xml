@@ -137,6 +137,8 @@
               <includes>
                 <include>com.google.gson.**</include>
                 <include>org.eclipse.lsp4j.**</include>
+                <include>org.eclipse.jgit.**</include>
+                <include>org.slf4j.**</include>
               </includes>
             </relocation>
           </relocations>
