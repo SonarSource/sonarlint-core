@@ -154,6 +154,8 @@
               <includes>
                 <include>com.google.gson.**</include>
                 <include>org.eclipse.lsp4j.**</include>
+                <include>org.eclipse.jgit.**</include>
+                <include>org.slf4j.**</include>
               </includes>
             </relocation>
           </relocations>
@@ -164,6 +166,8 @@
               <artifact>*:*</artifact>
               <excludes>
                 <exclude>module-info.class</exclude>
+                <exclude>logback-shared.xml</exclude>
+                <exclude>sl_core_version.txt</exclude>
                 <exclude>META-INF/*.SF</exclude>
                 <exclude>META-INF/*.DSA</exclude>
                 <exclude>META-INF/*.RSA</exclude>
