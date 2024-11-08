@@ -62,7 +62,7 @@ public class OrganizationsCache {
       .entrySet()
       .stream()
       .sorted(Comparator.comparing(Map.Entry<OrganizationDto, Double>::getValue).reversed()
-        .thenComparing(Comparator.comparing(e -> e.getKey().getName(), String.CASE_INSENSITIVE_ORDER)))
+        .thenComparing(e -> e.getKey().getName(), String.CASE_INSENSITIVE_ORDER))
       .limit(10)
       .map(Map.Entry::getKey)
       .collect(Collectors.toList());

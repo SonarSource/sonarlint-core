@@ -84,7 +84,7 @@ class HotspotLocalDetectionSupportMediumTests {
 
     assertThat(checkResponse)
       .extracting(CheckLocalDetectionSupportedResponse::isSupported, CheckLocalDetectionSupportedResponse::getReason)
-      .containsExactly(false, "The project is not bound, please bind it to SonarQube 9.9+ or SonarCloud");
+      .containsExactly(false, "The project is not bound, please bind it to SonarQube (Server, Cloud)");
   }
 
   @Test
