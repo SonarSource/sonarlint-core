@@ -52,6 +52,7 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.TarGzUtils;
 import org.sonarsource.sonarlint.core.serverconnection.storage.UuidBinding;
 
 import static java.util.Objects.requireNonNull;
+import static org.sonarsource.sonarlint.core.storage.XodusPurgeUtils.purgeOldTemporaryFiles;
 
 public class XodusLocalOnlyIssueStore {
 
@@ -85,7 +86,7 @@ public class XodusLocalOnlyIssueStore {
 
   public XodusLocalOnlyIssueStore(Path backupDir, Path workDir) throws IOException {
     xodusDbDir = Files.createTempDirectory(workDir, LOCAL_ONLY_ISSUE);
-    purgeOldTemporaryFiles(workDir);
+    purgeOldTemporaryFiles(workDir, PURGE_NUMBER_OF_DAYS, LOCAL_ONLY_ISSUE + "*");
     backupFile = backupDir.resolve(BACKUP_TAR_GZ);
     if (Files.isRegularFile(backupFile)) {
       LOG.debug("Restoring previous local-only issue database from {}", backupFile);
@@ -102,23 +103,6 @@ public class XodusLocalOnlyIssueStore {
       entityStore.registerCustomPropertyType(txn, UUID.class, new UuidBinding());
       entityStore.registerCustomPropertyType(txn, IssueStatus.class, new IssueStatusBinding());
     });
-  }
-
-  private static void purgeOldTemporaryFiles(Path workDir) {
-    if (Files.exists(workDir)) {
-      try (var stream = Files.newDirectoryStream(workDir, LOCAL_ONLY_ISSUE + "*")) {
-        for (var path : stream) {
-          var file = path.toFile();
-          var diff = new Date().getTime() - file.lastModified();
-          if (diff > PURGE_NUMBER_OF_DAYS * 24 * 60 * 60 * 1000) {
-            FileUtils.deleteQuietly(file);
-            LOG.debug("Successfully purged " + path);
-          }
-        }
-      } catch (Exception e) {
-        LOG.error("Unable to purge old temporary files for findings");
-      }
-    }
   }
 
   public List<LocalOnlyIssue> loadForFile(String configurationScopeId, Path filePath) {
