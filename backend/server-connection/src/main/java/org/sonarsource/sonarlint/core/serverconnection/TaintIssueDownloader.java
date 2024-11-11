@@ -177,7 +177,7 @@ public class TaintIssueDownloader {
     if (!protoImpact.hasSeverity() || protoImpact.getSeverity() == Common.ImpactSeverity.UNKNOWN_IMPACT_SEVERITY) {
       throw new IllegalArgumentException("Unknown or missing impact severity");
     }
-    return ImpactSeverity.valueOf(protoImpact.getSeverity().name());
+    return ImpactSeverity.mapSeverity(protoImpact.getSeverity().name());
   }
 
   private static List<ServerTaintIssue.Flow> convertFlows(SourceApi sourceApi, List<Flow> flowsList, Map<String, Path> componentPathsByKey,

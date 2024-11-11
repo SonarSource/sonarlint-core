@@ -24,5 +24,15 @@ public enum ImpactSeverity {
   LOW,
   MEDIUM,
   HIGH,
-  BLOCKER
+  BLOCKER;
+
+  public static ImpactSeverity mapSeverity(String severity) {
+    if ("BLOCKER".equals(severity) || "ImpactSeverity_BLOCKER".equals(severity)) {
+      return ImpactSeverity.BLOCKER;
+    } else if ("INFO".equals(severity) || "ImpactSeverity_INFO".equals(severity)) {
+      return ImpactSeverity.INFO;
+    } else {
+      return ImpactSeverity.valueOf(severity);
+    }
+  }
 }

@@ -350,44 +350,42 @@ class TaintIssueDownloaderTests {
     assertThat(cleanCodeAttribute).isNull();
   }
 
-  void parse_software_quality() {
-    var impact = Common.Impact.newBuilder().setSoftwareQuality(Common.SoftwareQuality.SECURITY).build();
+  @Test
+  void parse_software_quality_and_impact_severity() {
+    var impact = Common.Impact.newBuilder().setSoftwareQuality(Common.SoftwareQuality.SECURITY).setSeverity(Common.ImpactSeverity.MEDIUM).build();
     assertThat(parseProtoSoftwareQuality(impact)).isEqualTo(SoftwareQuality.SECURITY);
+    assertThat(parseProtoImpactSeverity(impact)).isEqualTo(ImpactSeverity.MEDIUM);
   }
 
-  void parse_software_quality_missing() {
-    var impact = Common.Impact.newBuilder().build();
-    assertThatThrownBy(() -> parseProtoSoftwareQuality(impact))
-      .isInstanceOf(IllegalArgumentException.class)
-      .hasMessage("Unknown or missing software quality");
+  @Test
+  void parse_software_quality_and_impact_severity_info() {
+    var impact = Common.Impact.newBuilder().setSoftwareQuality(Common.SoftwareQuality.SECURITY).setSeverity(Common.ImpactSeverity.ImpactSeverity_INFO).build();
+    assertThat(parseProtoSoftwareQuality(impact)).isEqualTo(SoftwareQuality.SECURITY);
+    assertThat(parseProtoImpactSeverity(impact)).isEqualTo(ImpactSeverity.INFO);
   }
 
+  @Test
+  void parse_software_quality_and_impact_severity_blocker() {
+    var impact = Common.Impact.newBuilder().setSoftwareQuality(Common.SoftwareQuality.SECURITY).setSeverity(Common.ImpactSeverity.ImpactSeverity_BLOCKER).build();
+    assertThat(parseProtoSoftwareQuality(impact)).isEqualTo(SoftwareQuality.SECURITY);
+    assertThat(parseProtoImpactSeverity(impact)).isEqualTo(ImpactSeverity.BLOCKER);
+  }
+
+  @Test
   void parse_software_quality_unknown() {
-    var impact = Common.Impact.newBuilder().setSoftwareQuality(Common.SoftwareQuality.UNKNOWN_IMPACT_QUALITY).build();
+    var impact = Common.Impact.newBuilder().setSoftwareQuality(Common.SoftwareQuality.UNKNOWN_IMPACT_QUALITY).setSeverity(Common.ImpactSeverity.HIGH).build();
     assertThatThrownBy(() -> parseProtoSoftwareQuality(impact))
       .isInstanceOf(IllegalArgumentException.class)
       .hasMessage("Unknown or missing software quality");
   }
 
-  void parse_impact_severity() {
-    var impact = Common.Impact.newBuilder().setSeverity(Common.ImpactSeverity.LOW).build();
-    assertThat(parseProtoImpactSeverity(impact)).isEqualTo(ImpactSeverity.LOW);
-  }
-
-  void parse_impact_severity_missing() {
-    var impact = Common.Impact.newBuilder().build();
-    assertThatThrownBy(() -> parseProtoImpactSeverity(impact))
-      .isInstanceOf(IllegalArgumentException.class)
-      .hasMessage("Unknown or missing impact severity");
-  }
-
+  @Test
   void parse_impact_severity_unknown() {
-    var impact = Common.Impact.newBuilder().setSeverity(Common.ImpactSeverity.UNKNOWN_IMPACT_SEVERITY).build();
+    var impact = Common.Impact.newBuilder().setSeverity(Common.ImpactSeverity.UNKNOWN_IMPACT_SEVERITY).setSoftwareQuality(Common.SoftwareQuality.MAINTAINABILITY).build();
     assertThatThrownBy(() -> parseProtoImpactSeverity(impact))
       .isInstanceOf(IllegalArgumentException.class)
       .hasMessage("Unknown or missing impact severity");
   }
-
 
   private static void assertTextRange(@Nullable TextRangeWithHash textRangeWithHash, int startLine, int startLineOffset,
     int endLine, int endLineOffset, String hash) {

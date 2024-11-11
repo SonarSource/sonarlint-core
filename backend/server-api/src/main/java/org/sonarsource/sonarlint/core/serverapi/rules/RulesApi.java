@@ -77,7 +77,7 @@ public class RulesApi {
       var cleanCodeAttribute = Enums.getIfPresent(CleanCodeAttribute.class, rule.getCleanCodeAttribute().name()).orNull();
       var impacts = rule.getImpacts().getImpactsList().stream().collect(toMap(
         impact -> SoftwareQuality.valueOf(impact.getSoftwareQuality().name()),
-        impact -> ImpactSeverity.valueOf(impact.getSeverity().name())));
+        impact -> ImpactSeverity.mapSeverity(impact.getSeverity().name())));
       return Optional.of(new ServerRule(rule.getName(), IssueSeverity.valueOf(rule.getSeverity()), RuleType.valueOf(rule.getType().name()), rule.getLang(), rule.getHtmlDesc(),
         convertDescriptionSections(rule),
         rule.getHtmlNote(), Set.copyOf(rule.getEducationPrinciples().getEducationPrinciplesList()), cleanCodeAttribute, impacts));
@@ -123,7 +123,7 @@ public class RulesApi {
           ar.getParamsList().stream().collect(toMap(Rules.Active.Param::getKey, Rules.Active.Param::getValue)),
           ruleTemplatesByRuleKey.get(ruleKey),
           ar.getImpacts().getImpactsList().stream()
-            .map(impact -> new ImpactPayload(impact.getSoftwareQuality().toString(), impact.getSeverity().name()))
+            .map(impact -> new ImpactPayload(impact.getSoftwareQuality().toString(), ImpactSeverity.mapSeverity(impact.getSeverity().name()).name()))
             .collect(Collectors.toList())));
 
       },
