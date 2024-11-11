@@ -51,9 +51,12 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.TarGzUtils;
 import org.sonarsource.sonarlint.core.serverconnection.storage.UuidBinding;
 
 import static java.util.Objects.requireNonNull;
+import static org.sonarsource.sonarlint.core.storage.XodusPurgeUtils.purgeOldTemporaryFiles;
 
 public class XodusLocalOnlyIssueStore {
 
+  private static final String LOCAL_ONLY_ISSUE = "xodus-local-only-issue-store";
+  private static final Integer PURGE_NUMBER_OF_DAYS = 3;
   private static final String CONFIGURATION_SCOPE_ID_ENTITY_TYPE = "Scope";
   private static final String CONFIGURATION_SCOPE_ID_TO_FILES_LINK_NAME = "files";
   private static final String FILE_ENTITY_TYPE = "File";
@@ -81,7 +84,8 @@ public class XodusLocalOnlyIssueStore {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   public XodusLocalOnlyIssueStore(Path backupDir, Path workDir) throws IOException {
-    xodusDbDir = Files.createTempDirectory(workDir, "xodus-local-only-issue-store");
+    xodusDbDir = Files.createTempDirectory(workDir, LOCAL_ONLY_ISSUE);
+    purgeOldTemporaryFiles(workDir, PURGE_NUMBER_OF_DAYS, LOCAL_ONLY_ISSUE + "*");
     backupFile = backupDir.resolve(BACKUP_TAR_GZ);
     if (Files.isRegularFile(backupFile)) {
       LOG.debug("Restoring previous local-only issue database from {}", backupFile);

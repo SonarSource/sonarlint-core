@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.local.only;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -171,6 +172,19 @@ class XodusKnownFindingsStoreTests {
 
     var storedSecurityHotspot = store.loadSecurityHotspotsForFile("wrongConfigScopeId", Path.of("file/path"));
     assertThat(storedSecurityHotspot).isEmpty();
+  }
+
+  @Test
+  void should_purge_old_folders() throws IOException {
+    store.close();
+    var oldFile = Files.createTempFile(workDir, "known-findings-store", UUID.randomUUID().toString());
+    var file = oldFile.toFile();
+    var oneWeekAgo = System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000;
+    file.setLastModified(oneWeekAgo);
+
+    store = new XodusKnownFindingsStore(backupDir, workDir);
+
+    assertThat(Files.exists(oldFile)).isFalse();
   }
 
   @NotNull

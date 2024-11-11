@@ -48,9 +48,12 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.TarGzUtils;
 import org.sonarsource.sonarlint.core.serverconnection.storage.UuidBinding;
 
 import static java.util.Objects.requireNonNull;
+import static org.sonarsource.sonarlint.core.storage.XodusPurgeUtils.purgeOldTemporaryFiles;
 
 public class XodusKnownFindingsStore {
 
+  private static final String KNOWN_FINDINGS_STORE = "known-findings-store";
+  private static final Integer PURGE_NUMBER_OF_DAYS = 3;
   private static final String CONFIGURATION_SCOPE_ID_ENTITY_TYPE = "Scope";
   private static final String CONFIGURATION_SCOPE_ID_TO_FILES_LINK_NAME = "files";
   private static final String FILE_ENTITY_TYPE = "File";
@@ -78,7 +81,8 @@ public class XodusKnownFindingsStore {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   public XodusKnownFindingsStore(Path backupDir, Path workDir) throws IOException {
-    xodusDbDir = Files.createTempDirectory(workDir, "known-findings-store");
+    xodusDbDir = Files.createTempDirectory(workDir, KNOWN_FINDINGS_STORE);
+    purgeOldTemporaryFiles(workDir, PURGE_NUMBER_OF_DAYS, KNOWN_FINDINGS_STORE + "*");
     backupFile = backupDir.resolve(BACKUP_TAR_GZ);
     if (Files.isRegularFile(backupFile)) {
       LOG.debug("Restoring previous known findings database from {}", backupFile);
