@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -51,6 +52,8 @@ import static java.util.Objects.requireNonNull;
 
 public class XodusKnownFindingsStore {
 
+  private static final String KNOWN_FINDINGS_STORE = "known-findings-store";
+  private static final Integer PURGE_NUMBER_OF_DAYS = 3;
   private static final String CONFIGURATION_SCOPE_ID_ENTITY_TYPE = "Scope";
   private static final String CONFIGURATION_SCOPE_ID_TO_FILES_LINK_NAME = "files";
   private static final String FILE_ENTITY_TYPE = "File";
@@ -78,7 +81,8 @@ public class XodusKnownFindingsStore {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   public XodusKnownFindingsStore(Path backupDir, Path workDir) throws IOException {
-    xodusDbDir = Files.createTempDirectory(workDir, "known-findings-store");
+    xodusDbDir = Files.createTempDirectory(workDir, KNOWN_FINDINGS_STORE);
+    purgeOldTemporaryFiles(workDir);
     backupFile = backupDir.resolve(BACKUP_TAR_GZ);
     if (Files.isRegularFile(backupFile)) {
       LOG.debug("Restoring previous known findings database from {}", backupFile);
@@ -94,6 +98,23 @@ public class XodusKnownFindingsStore {
       entityStore.registerCustomPropertyType(txn, Instant.class, new InstantBinding());
       entityStore.registerCustomPropertyType(txn, UUID.class, new UuidBinding());
     });
+  }
+
+  private static void purgeOldTemporaryFiles(Path workDir) {
+    if (Files.exists(workDir)) {
+      try (var stream = Files.newDirectoryStream(workDir, KNOWN_FINDINGS_STORE + "*")) {
+        for (var path : stream) {
+          var file = path.toFile();
+          var diff = new Date().getTime() - file.lastModified();
+          if (diff > PURGE_NUMBER_OF_DAYS * 24 * 60 * 60 * 1000) {
+            FileUtils.deleteQuietly(file);
+            LOG.debug("Successfully purged " + path);
+          }
+        }
+      } catch (Exception e) {
+        LOG.error("Unable to purge old temporary files for findings");
+      }
+    }
   }
 
   public List<KnownFinding> loadIssuesForFile(String configurationScopeId, Path filePath) {

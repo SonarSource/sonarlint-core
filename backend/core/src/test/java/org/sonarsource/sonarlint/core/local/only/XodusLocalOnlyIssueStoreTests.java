@@ -20,7 +20,9 @@
 package org.sonarsource.sonarlint.core.local.only;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -135,5 +137,17 @@ class XodusLocalOnlyIssueStoreTests {
     assertThat(store.loadForFile("configScopeId",  Path.of("file/path"))).isEmpty();
   }
 
+  @Test
+  void should_purge_old_folders() throws IOException {
+    store.close();
+    var oldFile = Files.createTempFile(workDir, "xodus-local-only-issue-store", UUID.randomUUID().toString());
+    var file = oldFile.toFile();
+    var oneWeekAgo = System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000;
+    file.setLastModified(oneWeekAgo);
+
+    store = new XodusLocalOnlyIssueStore(backupDir, workDir);
+
+    assertThat(Files.exists(oldFile)).isFalse();
+  }
 
 }
