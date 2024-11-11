@@ -163,21 +163,11 @@ public class RuleDetails {
 
     for (ImpactPayload impact : overriddenImpacts) {
       var quality = SoftwareQuality.valueOf(impact.getSoftwareQuality());
-      var severity = mapSeverity(impact.getSeverity());
+      var severity = ImpactSeverity.mapSeverity(impact.getSeverity());
       mergedImpacts.computeIfPresent(quality, (k, v) -> severity);
     }
 
     return Collections.unmodifiableMap(mergedImpacts);
-  }
-
-  private static ImpactSeverity mapSeverity(String severity) {
-    if ("BLOCKER".equals(severity) || "ImpactSeverity_BLOCKER".equals(severity)) {
-      return ImpactSeverity.BLOCKER;
-    } else if ("INFO".equals(severity) || "ImpactSeverity_INFO".equals(severity)) {
-      return ImpactSeverity.INFO;
-    } else {
-      return ImpactSeverity.valueOf(severity);
-    }
   }
 
   public static RuleDetails merging(RuleDetails serverActiveRuleDetails, RaisedFindingDto raisedFindingDto) {
