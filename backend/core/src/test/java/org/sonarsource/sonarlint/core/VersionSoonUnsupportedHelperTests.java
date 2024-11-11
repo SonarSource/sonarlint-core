@@ -39,6 +39,7 @@ import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnection
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiErrorHandlingWrapper;
 import org.sonarsource.sonarlint.core.serverconnection.ServerConnection;
 import org.sonarsource.sonarlint.core.serverconnection.VersionUtils;
 import org.sonarsource.sonarlint.core.sync.SynchronizationService;
@@ -66,7 +67,7 @@ class VersionSoonUnsupportedHelperTests {
   private static final SonarCloudConnectionConfiguration SC_CONNECTION = new SonarCloudConnectionConfiguration(SonarCloudActiveEnvironment.PRODUCTION_URI, SC_CONNECTION_ID, "https://sonarcloud.com", true);
 
   private final SonarLintRpcClient client = mock(SonarLintRpcClient.class);
-  private final ServerApiProvider serverApiProvider = mock(ServerApiProvider.class);
+  private final ConnectionManager connectionManager = mock(ConnectionManager.class);
   private final SynchronizationService synchronizationService = mock(SynchronizationService.class);
 
   private ConfigurationRepository configRepository;
@@ -77,7 +78,7 @@ class VersionSoonUnsupportedHelperTests {
   void init() {
     configRepository = new ConfigurationRepository();
     connectionRepository = new ConnectionConfigurationRepository();
-    underTest = new VersionSoonUnsupportedHelper(client, configRepository, serverApiProvider, connectionRepository, synchronizationService);
+    underTest = new VersionSoonUnsupportedHelper(client, configRepository, connectionManager, connectionRepository, synchronizationService);
   }
 
   @Test
@@ -87,10 +88,12 @@ class VersionSoonUnsupportedHelperTests {
     configRepository.addOrReplace(new ConfigurationScope(CONFIG_SCOPE_ID_2, null, false, ""), bindingConfiguration);
     connectionRepository.addOrReplace(SQ_CONNECTION);
     var serverApi = mock(ServerApi.class);
-    when(serverApiProvider.getServerApi(SQ_CONNECTION_ID)).thenReturn(Optional.of(serverApi));
+    when(connectionManager.getServerApi(SQ_CONNECTION_ID)).thenReturn(Optional.of(serverApi));
+    var serverApiWrapper = new ServerApiErrorHandlingWrapper(serverApi, () -> {
+    });
     var serverConnection = mock(ServerConnection.class);
-    when(serverConnection.readOrSynchronizeServerVersion(eq(serverApi), any(SonarLintCancelMonitor.class))).thenReturn(VersionUtils.getMinimalSupportedVersion());
-    when(synchronizationService.getServerConnection(SQ_CONNECTION_ID, serverApi)).thenReturn(serverConnection);
+    when(serverConnection.readOrSynchronizeServerVersion(eq(serverApiWrapper), any(SonarLintCancelMonitor.class))).thenReturn(VersionUtils.getMinimalSupportedVersion());
+    when(synchronizationService.getServerConnection(SQ_CONNECTION_ID)).thenReturn(serverConnection);
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID, CONFIG_SCOPE_ID_2)));
 
@@ -107,15 +110,20 @@ class VersionSoonUnsupportedHelperTests {
     connectionRepository.addOrReplace(SQ_CONNECTION);
     connectionRepository.addOrReplace(SQ_CONNECTION_2);
     var serverApi = mock(ServerApi.class);
+    var serverApiWrapper = new ServerApiErrorHandlingWrapper(serverApi, () -> {
+    });
     var serverApi2 = mock(ServerApi.class);
-    when(serverApiProvider.getServerApi(SQ_CONNECTION_ID)).thenReturn(Optional.of(serverApi));
-    when(serverApiProvider.getServerApi(SQ_CONNECTION_ID_2)).thenReturn(Optional.of(serverApi2));
+    var serverApiWrapper2 = new ServerApiErrorHandlingWrapper(serverApi2, () -> {
+    });
+    when(connectionManager.getServerApi(SQ_CONNECTION_ID)).thenReturn(Optional.of(serverApi));
+    when(connectionManager.getServerApi(SQ_CONNECTION_ID_2)).thenReturn(Optional.of(serverApi2));
     var serverConnection = mock(ServerConnection.class);
-    when(serverConnection.readOrSynchronizeServerVersion(eq(serverApi), any(SonarLintCancelMonitor.class))).thenReturn(VersionUtils.getMinimalSupportedVersion());
+    when(serverConnection.readOrSynchronizeServerVersion(eq(serverApiWrapper), any(SonarLintCancelMonitor.class))).thenReturn(VersionUtils.getMinimalSupportedVersion());
+
     var serverConnection2 = mock(ServerConnection.class);
-    when(serverConnection2.readOrSynchronizeServerVersion(eq(serverApi2), any(SonarLintCancelMonitor.class))).thenReturn(Version.create(VersionUtils.getMinimalSupportedVersion() + ".9"));
-    when(synchronizationService.getServerConnection(SQ_CONNECTION_ID, serverApi)).thenReturn(serverConnection);
-    when(synchronizationService.getServerConnection(SQ_CONNECTION_ID_2, serverApi2)).thenReturn(serverConnection2);
+    when(serverConnection2.readOrSynchronizeServerVersion(eq(serverApiWrapper2), any(SonarLintCancelMonitor.class))).thenReturn(Version.create(VersionUtils.getMinimalSupportedVersion() + ".9"));
+    when(synchronizationService.getServerConnection(SQ_CONNECTION_ID)).thenReturn(serverConnection);
+    when(synchronizationService.getServerConnection(SQ_CONNECTION_ID_2)).thenReturn(serverConnection2);
 
     underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID, CONFIG_SCOPE_ID_2)));
 
@@ -137,10 +145,12 @@ class VersionSoonUnsupportedHelperTests {
   void should_trigger_notification_when_new_binding_to_previous_lts_detected() {
     connectionRepository.addOrReplace(SQ_CONNECTION);
     var serverApi = mock(ServerApi.class);
-    when(serverApiProvider.getServerApi(SQ_CONNECTION_ID)).thenReturn(Optional.of(serverApi));
+    when(connectionManager.getServerApi(SQ_CONNECTION_ID)).thenReturn(Optional.of(serverApi));
+    var serverApiWrapper = new ServerApiErrorHandlingWrapper(serverApi, () -> {
+    });
     var serverConnection = mock(ServerConnection.class);
-    when(serverConnection.readOrSynchronizeServerVersion(eq(serverApi), any(SonarLintCancelMonitor.class))).thenReturn(VersionUtils.getMinimalSupportedVersion());
-    when(synchronizationService.getServerConnection(SQ_CONNECTION_ID, serverApi)).thenReturn(serverConnection);
+    when(serverConnection.readOrSynchronizeServerVersion(eq(serverApiWrapper), any(SonarLintCancelMonitor.class))).thenReturn(VersionUtils.getMinimalSupportedVersion());
+    when(synchronizationService.getServerConnection(SQ_CONNECTION_ID)).thenReturn(serverConnection);
 
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID, null,
       new BindingConfiguration(SQ_CONNECTION_ID, "", false)));
@@ -153,10 +163,12 @@ class VersionSoonUnsupportedHelperTests {
   void should_trigger_once_when_same_binding_to_previous_lts_detected_twice() {
     connectionRepository.addOrReplace(SQ_CONNECTION);
     var serverApi = mock(ServerApi.class);
-    when(serverApiProvider.getServerApi(SQ_CONNECTION_ID)).thenReturn(Optional.of(serverApi));
+    var serverApiWrapper = new ServerApiErrorHandlingWrapper(serverApi, () -> {
+    });
+    when(connectionManager.getServerApi(SQ_CONNECTION_ID)).thenReturn(Optional.of(serverApi));
     var serverConnection = mock(ServerConnection.class);
-    when(serverConnection.readOrSynchronizeServerVersion(eq(serverApi), any(SonarLintCancelMonitor.class))).thenReturn(VersionUtils.getMinimalSupportedVersion());
-    when(synchronizationService.getServerConnection(SQ_CONNECTION_ID, serverApi)).thenReturn(serverConnection);
+    when(serverConnection.readOrSynchronizeServerVersion(eq(serverApiWrapper), any(SonarLintCancelMonitor.class))).thenReturn(VersionUtils.getMinimalSupportedVersion());
+    when(synchronizationService.getServerConnection(SQ_CONNECTION_ID)).thenReturn(serverConnection);
 
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID, null,
       new BindingConfiguration(SQ_CONNECTION_ID, "", false)));
@@ -171,10 +183,12 @@ class VersionSoonUnsupportedHelperTests {
   void should_trigger_notification_when_new_binding_to_in_between_lts_detected() {
     connectionRepository.addOrReplace(SQ_CONNECTION);
     var serverApi = mock(ServerApi.class);
-    when(serverApiProvider.getServerApi(SQ_CONNECTION_ID)).thenReturn(Optional.of(serverApi));
+    var serverApiWrapper = new ServerApiErrorHandlingWrapper(serverApi, () -> {
+    });
+    when(connectionManager.getServerApi(SQ_CONNECTION_ID)).thenReturn(Optional.of(serverApi));
     var serverConnection = mock(ServerConnection.class);
-    when(serverConnection.readOrSynchronizeServerVersion(eq(serverApi), any(SonarLintCancelMonitor.class))).thenReturn(Version.create(VersionUtils.getMinimalSupportedVersion().getName() + ".9"));
-    when(synchronizationService.getServerConnection(SQ_CONNECTION_ID, serverApi)).thenReturn(serverConnection);
+    when(serverConnection.readOrSynchronizeServerVersion(eq(serverApiWrapper), any(SonarLintCancelMonitor.class))).thenReturn(Version.create(VersionUtils.getMinimalSupportedVersion().getName() + ".9"));
+    when(synchronizationService.getServerConnection(SQ_CONNECTION_ID)).thenReturn(serverConnection);
 
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID, null,
       new BindingConfiguration(SQ_CONNECTION_ID, "", false)));
@@ -187,10 +201,12 @@ class VersionSoonUnsupportedHelperTests {
   void should_not_trigger_notification_when_new_binding_to_current_lts_detected() {
     connectionRepository.addOrReplace(SQ_CONNECTION);
     var serverApi = mock(ServerApi.class);
-    when(serverApiProvider.getServerApi(SQ_CONNECTION_ID)).thenReturn(Optional.of(serverApi));
+    var serverApiWrapper = new ServerApiErrorHandlingWrapper(serverApi, () -> {
+    });
+    when(connectionManager.getServerApi(SQ_CONNECTION_ID)).thenReturn(Optional.of(serverApi));
     var serverConnection = mock(ServerConnection.class);
-    when(serverConnection.readOrSynchronizeServerVersion(eq(serverApi), any(SonarLintCancelMonitor.class))).thenReturn(VersionUtils.getCurrentLts());
-    when(synchronizationService.getServerConnection(SQ_CONNECTION_ID, serverApi)).thenReturn(serverConnection);
+    when(serverConnection.readOrSynchronizeServerVersion(eq(serverApiWrapper), any(SonarLintCancelMonitor.class))).thenReturn(VersionUtils.getCurrentLts());
+    when(synchronizationService.getServerConnection(SQ_CONNECTION_ID)).thenReturn(serverConnection);
 
     underTest.bindingConfigChanged(new BindingConfigChangedEvent(CONFIG_SCOPE_ID, null,
       new BindingConfiguration(SQ_CONNECTION_ID, "", false)));

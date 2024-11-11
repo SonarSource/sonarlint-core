@@ -33,6 +33,7 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiErrorHandlingWrapper;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
@@ -59,14 +60,17 @@ class ServerIssueUpdaterTests {
   private final IssueDownloader downloader = mock(IssueDownloader.class);
   private final TaintIssueDownloader taintDownloader = mock(TaintIssueDownloader.class);
   private final ProjectServerIssueStore issueStore = mock(ProjectServerIssueStore.class);
-  private ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "", "");
+  private ProjectBinding projectBinding = new ProjectBinding(PROJECT_KEY, "connectionId", "connectionId");
 
   private ServerIssueUpdater updater;
   private ServerApi serverApi;
+  private ServerApiErrorHandlingWrapper serverApiWrapper;
 
   @BeforeEach
   void setUp() {
     serverApi = new ServerApi(mock(ServerApiHelper.class));
+    serverApiWrapper = new ServerApiErrorHandlingWrapper(serverApi, () -> {
+    });
     ConnectionStorage storage = mock(ConnectionStorage.class);
     var projectStorage = mock(SonarProjectStorage.class);
     when(storage.project(PROJECT_KEY)).thenReturn(projectStorage);
@@ -79,10 +83,10 @@ class ServerIssueUpdaterTests {
     var issue = aServerIssue();
     List<ServerIssue<?>> issues = Collections.singletonList(issue);
     var cancelMonitor = new SonarLintCancelMonitor();
-    when(downloader.downloadFromBatch(serverApi, "module:file", null, cancelMonitor)).thenReturn(issues);
+    when(downloader.downloadFromBatch(serverApiWrapper, "module:file", null, cancelMonitor)).thenReturn(issues);
     when(serverApi.isSonarCloud()).thenReturn(true);
 
-    updater.update(serverApi, projectBinding.projectKey(), "branch", cancelMonitor);
+    updater.update(serverApiWrapper, projectBinding.projectKey(), "branch", cancelMonitor);
 
     verify(issueStore).replaceAllIssuesOfBranch(eq("branch"), anyList());
   }
@@ -95,9 +99,9 @@ class ServerIssueUpdaterTests {
     var lastSync = Optional.<Instant>empty();
     when(issueStore.getLastIssueSyncTimestamp("master")).thenReturn(lastSync);
     var cancelMonitor = new SonarLintCancelMonitor();
-    when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", lastSync, cancelMonitor)).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
+    when(downloader.downloadFromPull(serverApiWrapper, projectBinding.projectKey(), "master", lastSync, cancelMonitor)).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
 
-    updater.update(serverApi, projectBinding.projectKey(), "master", cancelMonitor);
+    updater.update(serverApiWrapper, projectBinding.projectKey(), "master", cancelMonitor);
 
     verify(issueStore).mergeIssues(eq("master"), anyList(), anySet(), eq(queryTimestamp), anySet());
   }
@@ -113,9 +117,9 @@ class ServerIssueUpdaterTests {
     when(issueStore.getLastIssueSyncTimestamp("master")).thenReturn(lastSync);
     when(downloader.getEnabledLanguages()).thenReturn(Set.of(SonarLanguage.C, SonarLanguage.GO));
     var cancelMonitor = new SonarLintCancelMonitor();
-    when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", lastSync, cancelMonitor)).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
+    when(downloader.downloadFromPull(serverApiWrapper, projectBinding.projectKey(), "master", lastSync, cancelMonitor)).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
 
-    updater.update(serverApi, projectBinding.projectKey(), "master", cancelMonitor);
+    updater.update(serverApiWrapper, projectBinding.projectKey(), "master", cancelMonitor);
 
     verify(issueStore).mergeIssues(eq("master"), anyList(), anySet(), eq(queryTimestamp), anySet());
   }
@@ -131,9 +135,9 @@ class ServerIssueUpdaterTests {
     when(issueStore.getLastIssueEnabledLanguages("master")).thenReturn(lastIssueEnabledLanguages);
     when(downloader.getEnabledLanguages()).thenReturn(Set.of(SonarLanguage.C));
     var cancelMonitor = new SonarLintCancelMonitor();
-    when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty(), cancelMonitor)).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
-    updater.update(serverApi, projectBinding.projectKey(), "master", cancelMonitor);
-    verify(downloader).downloadFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty(), cancelMonitor);
+    when(downloader.downloadFromPull(serverApiWrapper, projectBinding.projectKey(), "master", Optional.empty(), cancelMonitor)).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
+    updater.update(serverApiWrapper, projectBinding.projectKey(), "master", cancelMonitor);
+    verify(downloader).downloadFromPull(serverApiWrapper, projectBinding.projectKey(), "master", Optional.empty(), cancelMonitor);
   }
 
   @Test
@@ -147,9 +151,9 @@ class ServerIssueUpdaterTests {
     when(issueStore.getLastIssueEnabledLanguages("master")).thenReturn(lastIssueEnabledLanguages);
     when(downloader.getEnabledLanguages()).thenReturn(Set.of(SonarLanguage.C));
     var cancelMonitor = new SonarLintCancelMonitor();
-    when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty(), cancelMonitor)).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
-    updater.update(serverApi, projectBinding.projectKey(), "master", cancelMonitor);
-    verify(downloader).downloadFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty(), cancelMonitor);
+    when(downloader.downloadFromPull(serverApiWrapper, projectBinding.projectKey(), "master", Optional.empty(), cancelMonitor)).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
+    updater.update(serverApiWrapper, projectBinding.projectKey(), "master", cancelMonitor);
+    verify(downloader).downloadFromPull(serverApiWrapper, projectBinding.projectKey(), "master", Optional.empty(), cancelMonitor);
   }
 
   @Test
@@ -163,9 +167,9 @@ class ServerIssueUpdaterTests {
     when(issueStore.getLastIssueEnabledLanguages("master")).thenReturn(lastIssueEnabledLanguages);
     when(downloader.getEnabledLanguages()).thenReturn(Set.of(SonarLanguage.C, SonarLanguage.GO));
     var cancelMonitor = new SonarLintCancelMonitor();
-    when(downloader.downloadFromPull(serverApi, projectBinding.projectKey(), "master", lastSync, cancelMonitor)).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
-    updater.update(serverApi, projectBinding.projectKey(), "master", cancelMonitor);
-    verify(downloader).downloadFromPull(serverApi, projectBinding.projectKey(), "master", lastSync, cancelMonitor);
+    when(downloader.downloadFromPull(serverApiWrapper, projectBinding.projectKey(), "master", lastSync, cancelMonitor)).thenReturn(new IssueDownloader.PullResult(queryTimestamp, issues, Set.of()));
+    updater.update(serverApiWrapper, projectBinding.projectKey(), "master", cancelMonitor);
+    verify(downloader).downloadFromPull(serverApiWrapper, projectBinding.projectKey(), "master", lastSync, cancelMonitor);
   }
 
   @Test
@@ -178,10 +182,10 @@ class ServerIssueUpdaterTests {
     when(issueStore.getLastTaintSyncTimestamp("master")).thenReturn(lastSync);
     when(issueStore.getLastTaintEnabledLanguages("master")).thenReturn(lastIssueEnabledLanguages);
     var cancelMonitor = new SonarLintCancelMonitor();
-    when(taintDownloader.downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty(), cancelMonitor)).thenReturn(new TaintIssueDownloader.PullTaintResult(queryTimestamp, issues, Set.of()));
+    when(taintDownloader.downloadTaintFromPull(serverApiWrapper, projectBinding.projectKey(), "master", Optional.empty(), cancelMonitor)).thenReturn(new TaintIssueDownloader.PullTaintResult(queryTimestamp, issues, Set.of()));
 
-    updater.syncTaints(serverApi, projectBinding.projectKey(), "master", Set.of(SonarLanguage.C), cancelMonitor);
-    verify(taintDownloader).downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty(), cancelMonitor);
+    updater.syncTaints(serverApiWrapper, projectBinding.projectKey(), "master", Set.of(SonarLanguage.C), cancelMonitor);
+    verify(taintDownloader).downloadTaintFromPull(serverApiWrapper, projectBinding.projectKey(), "master", Optional.empty(), cancelMonitor);
   }
 
   @Test
@@ -194,10 +198,10 @@ class ServerIssueUpdaterTests {
     when(issueStore.getLastTaintSyncTimestamp("master")).thenReturn(lastSync);
     when(issueStore.getLastTaintEnabledLanguages("master")).thenReturn(lastIssueEnabledLanguages);
     var cancelMonitor = new SonarLintCancelMonitor();
-    when(taintDownloader.downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty(), cancelMonitor)).thenReturn(new TaintIssueDownloader.PullTaintResult(queryTimestamp, issues, Set.of()));
+    when(taintDownloader.downloadTaintFromPull(serverApiWrapper, projectBinding.projectKey(), "master", Optional.empty(), cancelMonitor)).thenReturn(new TaintIssueDownloader.PullTaintResult(queryTimestamp, issues, Set.of()));
 
-    updater.syncTaints(serverApi, projectBinding.projectKey(), "master", Set.of(SonarLanguage.C), cancelMonitor);
-    verify(taintDownloader).downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", Optional.empty(), cancelMonitor);
+    updater.syncTaints(serverApiWrapper, projectBinding.projectKey(), "master", Set.of(SonarLanguage.C), cancelMonitor);
+    verify(taintDownloader).downloadTaintFromPull(serverApiWrapper, projectBinding.projectKey(), "master", Optional.empty(), cancelMonitor);
   }
 
   @Test
@@ -210,17 +214,17 @@ class ServerIssueUpdaterTests {
     when(issueStore.getLastTaintSyncTimestamp("master")).thenReturn(lastSync);
     when(issueStore.getLastTaintEnabledLanguages("master")).thenReturn(lastIssueEnabledLanguages);
     var cancelMonitor = new SonarLintCancelMonitor();
-    when(taintDownloader.downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", lastSync, cancelMonitor)).thenReturn(new TaintIssueDownloader.PullTaintResult(queryTimestamp, issues, Set.of()));
+    when(taintDownloader.downloadTaintFromPull(serverApiWrapper, projectBinding.projectKey(), "master", lastSync, cancelMonitor)).thenReturn(new TaintIssueDownloader.PullTaintResult(queryTimestamp, issues, Set.of()));
 
-    updater.syncTaints(serverApi, projectBinding.projectKey(), "master", Set.of(SonarLanguage.C, SonarLanguage.GO), cancelMonitor);
-    verify(taintDownloader).downloadTaintFromPull(serverApi, projectBinding.projectKey(), "master", lastSync, cancelMonitor);
+    updater.syncTaints(serverApiWrapper, projectBinding.projectKey(), "master", Set.of(SonarLanguage.C, SonarLanguage.GO), cancelMonitor);
+    verify(taintDownloader).downloadTaintFromPull(serverApiWrapper, projectBinding.projectKey(), "master", lastSync, cancelMonitor);
   }
 
   @Test
   void update_file_issues_for_unknown_file() {
-    projectBinding = new ProjectBinding(PROJECT_KEY, "", "ide_prefix");
+    projectBinding = new ProjectBinding(PROJECT_KEY, "connectionId", "ide_prefix");
 
-    updater.updateFileIssuesIfNeeded(serverApi, PROJECT_KEY, Path.of("not_ide_prefix"), null, new SonarLintCancelMonitor());
+    updater.updateFileIssuesIfNeeded(serverApiWrapper, PROJECT_KEY, Path.of("not_ide_prefix"), null, new SonarLintCancelMonitor());
 
     verifyNoInteractions(downloader);
     verifyNoInteractions(issueStore);
@@ -230,10 +234,10 @@ class ServerIssueUpdaterTests {
   void error_downloading_file_issues() {
     var cancelMonitor = new SonarLintCancelMonitor();
     when(serverApi.isSonarCloud()).thenReturn(true);
-    when(downloader.downloadFromBatch(serverApi, "module:file", null, cancelMonitor)).thenThrow(IllegalArgumentException.class);
+    when(downloader.downloadFromBatch(serverApiWrapper, "module:file", null, cancelMonitor)).thenThrow(IllegalArgumentException.class);
     var filePath = Path.of("file");
 
-    assertThrows(DownloadException.class, () -> updater.updateFileIssuesIfNeeded(serverApi, PROJECT_KEY, filePath, null, cancelMonitor));
+    assertThrows(DownloadException.class, () -> updater.updateFileIssuesIfNeeded(serverApiWrapper, PROJECT_KEY, filePath, null, cancelMonitor));
   }
 
   @Test
@@ -243,16 +247,16 @@ class ServerIssueUpdaterTests {
     when(serverApi.isSonarCloud()).thenReturn(true);
 
     var cancelMonitor = new SonarLintCancelMonitor();
-    when(downloader.downloadFromBatch(serverApi, projectBinding.projectKey() + ":src/main/Foo.java", null, cancelMonitor)).thenReturn(issues);
+    when(downloader.downloadFromBatch(serverApiWrapper, projectBinding.projectKey() + ":src/main/Foo.java", null, cancelMonitor)).thenReturn(issues);
 
-    updater.updateFileIssuesIfNeeded(serverApi, PROJECT_KEY, Path.of("src/main/Foo.java"), "branch", cancelMonitor);
+    updater.updateFileIssuesIfNeeded(serverApiWrapper, PROJECT_KEY, Path.of("src/main/Foo.java"), "branch", cancelMonitor);
 
     verify(issueStore).replaceAllIssuesOfFile(eq("branch"), eq(Path.of("src/main/Foo.java")), anyList());
   }
 
   @Test
   void dont_update_file_issues_with_pull() {
-    updater.updateFileIssuesIfNeeded(serverApi, PROJECT_KEY, Path.of("src/main/Foo.java"), "branch", new SonarLintCancelMonitor());
+    updater.updateFileIssuesIfNeeded(serverApiWrapper, PROJECT_KEY, Path.of("src/main/Foo.java"), "branch", new SonarLintCancelMonitor());
 
     verify(issueStore, never()).replaceAllIssuesOfFile(eq("branch"), any(), anyList());
   }

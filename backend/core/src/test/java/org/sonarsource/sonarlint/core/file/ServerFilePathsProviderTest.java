@@ -30,27 +30,23 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiErrorHandlingWrapper;
 import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class ServerFilePathsProviderTest {
@@ -62,10 +58,10 @@ class ServerFilePathsProviderTest {
   public static final String PROJECT_KEY = "projectKey";
 
   private Path cacheDirectory;
-  private final ServerApiProvider serverApiProvider = mock(ServerApiProvider.class);
+  private final ConnectionManager connectionManager = mock(ConnectionManager.class);
   private final ServerApi serverApi_A = mock(ServerApi.class);
   private final ServerApi serverApi_B = mock(ServerApi.class);
-  private final SonarLintCancelMonitor cancelMonitor =mock(SonarLintCancelMonitor.class);
+  private final SonarLintCancelMonitor cancelMonitor = mock(SonarLintCancelMonitor.class);
   private final ComponentApi componentApi_A = mock(ComponentApi.class);
   private final ComponentApi componentApi_B = mock(ComponentApi.class);
   private ServerFilePathsProvider underTest;
@@ -74,15 +70,17 @@ class ServerFilePathsProviderTest {
   void before(@TempDir Path storageDir) throws IOException {
     cacheDirectory = storageDir.resolve("cache");
     Files.createDirectories(cacheDirectory);
+    when(connectionManager.getServerApiWrapperOrThrow(CONNECTION_A)).thenReturn(new ServerApiErrorHandlingWrapper(serverApi_A, () -> {}));
+    when(connectionManager.getServerApiWrapperOrThrow(CONNECTION_B)).thenReturn(new ServerApiErrorHandlingWrapper(serverApi_B, () -> {}));
+    when(connectionManager.hasConnection(CONNECTION_A)).thenReturn(true);
+    when(connectionManager.hasConnection(CONNECTION_B)).thenReturn(true);
 
-    when(serverApiProvider.getServerApi(CONNECTION_A)).thenReturn(Optional.of(serverApi_A));
-    when(serverApiProvider.getServerApi(CONNECTION_B)).thenReturn(Optional.of(serverApi_B));
     when(serverApi_A.component()).thenReturn(componentApi_A);
     when(serverApi_B.component()).thenReturn(componentApi_B);
     mockServerFilePaths(componentApi_A, "pathA", "pathB");
     mockServerFilePaths(componentApi_B, "pathC", "pathD");
 
-    underTest = new ServerFilePathsProvider(serverApiProvider, storageDir);
+    underTest = new ServerFilePathsProvider(connectionManager, storageDir);
 
     cacheDirectory = storageDir.resolve("cache");
   }
@@ -100,7 +98,7 @@ class ServerFilePathsProviderTest {
 
   @Test
   void log_when_connection_not_exist() {
-    when(serverApiProvider.getServerApi(anyString())).thenReturn(Optional.empty());
+    when(connectionManager.hasConnection("conId")).thenReturn(false);
 
     underTest.getServerPaths(new Binding("conId", null), cancelMonitor);
 
@@ -123,9 +121,6 @@ class ServerFilePathsProviderTest {
   @Test
   void fetch_from_in_memory_for_the_second_attempt() throws IOException {
     underTest.getServerPaths(new Binding(CONNECTION_A, PROJECT_KEY), cancelMonitor);
-
-    verify(componentApi_A, times(1)).getAllFileKeys(PROJECT_KEY, cancelMonitor);
-    verifyNoMoreInteractions(componentApi_A);
     FileUtils.deleteDirectory(cacheDirectory.toFile());
 
     underTest.getServerPaths(new Binding(CONNECTION_A, PROJECT_KEY), cancelMonitor);
@@ -162,7 +157,7 @@ class ServerFilePathsProviderTest {
 
   @Test
   void shouldLogAndIgnoreOtherErrors() {
-    when(serverApi_A.component().getAllFileKeys(PROJECT_KEY, cancelMonitor)).thenAnswer(invocation -> {
+    when(serverApi_A.component()).thenAnswer(invocation -> {
       throw new IllegalStateException();
     });
 

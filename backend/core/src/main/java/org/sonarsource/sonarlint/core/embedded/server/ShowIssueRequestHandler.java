@@ -41,7 +41,7 @@ import org.apache.hc.core5.http.io.HttpRequestHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.net.URIBuilder;
-import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
@@ -59,7 +59,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.FlowDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.LocationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
-import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
 import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
@@ -73,18 +72,18 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 public class ShowIssueRequestHandler implements HttpRequestHandler {
 
   private final SonarLintRpcClient client;
-  private final ServerApiProvider serverApiProvider;
+  private final ConnectionManager connectionManager;
   private final TelemetryService telemetryService;
   private final RequestHandlerBindingAssistant requestHandlerBindingAssistant;
   private final PathTranslationService pathTranslationService;
   private final String sonarCloudUrl;
   private final SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService;
 
-  public ShowIssueRequestHandler(SonarLintRpcClient client, ServerApiProvider serverApiProvider, TelemetryService telemetryService,
+  public ShowIssueRequestHandler(SonarLintRpcClient client, ConnectionManager connectionManager, TelemetryService telemetryService,
     RequestHandlerBindingAssistant requestHandlerBindingAssistant, PathTranslationService pathTranslationService, SonarCloudActiveEnvironment sonarCloudActiveEnvironment,
     SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService) {
     this.client = client;
-    this.serverApiProvider = serverApiProvider;
+    this.connectionManager = connectionManager;
     this.telemetryService = telemetryService;
     this.requestHandlerBindingAssistant = requestHandlerBindingAssistant;
     this.pathTranslationService = pathTranslationService;
@@ -144,7 +143,7 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
 
   private void showIssueForScope(String connectionId, String configScopeId, String issueKey, String projectKey,
     String branch, @Nullable String pullRequest, SonarLintCancelMonitor cancelMonitor) {
-    var issueDetailsOpt = tryFetchIssue(connectionId, issueKey, projectKey, branch, pullRequest, cancelMonitor);
+    var issueDetailsOpt = connectionManager.getServerApiWrapperOrThrow(connectionId).tryFetchIssue(issueKey, projectKey, branch, pullRequest, cancelMonitor);
     if (issueDetailsOpt.isPresent()) {
       pathTranslationService.getOrComputePathTranslation(configScopeId)
         .ifPresent(translation -> client.showIssue(getShowIssueParams(issueDetailsOpt.get(), connectionId, configScopeId, branch, pullRequest, translation, cancelMonitor)));
@@ -161,7 +160,8 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
         var locationComponent = issueDetails.componentsList.stream().filter(component -> component.getKey().equals(location.getComponent())).findFirst();
         var filePath = locationComponent.map(Issues.Component::getPath).orElse("");
         var locationTextRange = location.getTextRange();
-        var codeSnippet = tryFetchCodeSnippet(connectionId, locationComponent.map(Issues.Component::getKey).orElse(""), locationTextRange, branch, pullRequest, cancelMonitor);
+        var codeSnippet = connectionManager.getServerApiWrapperOrThrow(connectionId).tryFetchCodeSnippet(locationComponent.map(Issues.Component::getKey).orElse(""),
+          locationTextRange, branch, pullRequest, cancelMonitor);
         var locationTextRangeDto = new TextRangeDto(locationTextRange.getStartLine(), locationTextRange.getStartOffset(),
           locationTextRange.getEndLine(), locationTextRange.getEndOffset());
         return new LocationDto(locationTextRangeDto, location.getMsg(), translation.serverToIdePath(Paths.get(filePath)), codeSnippet.orElse(""));
@@ -181,22 +181,6 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
 
   static boolean isIssueTaint(String ruleKey) {
     return RulesApi.TAINT_REPOS.stream().anyMatch(ruleKey::startsWith);
-  }
-
-  private Optional<IssueApi.ServerIssueDetails> tryFetchIssue(String connectionId, String issueKey, String projectKey, String branch, @Nullable String pullRequest,
-    SonarLintCancelMonitor cancelMonitor) {
-    var serverApi = serverApiProvider.getServerApiOrThrow(connectionId);
-    return serverApi.issue().fetchServerIssue(issueKey, projectKey, branch, pullRequest, cancelMonitor);
-  }
-
-  private Optional<String> tryFetchCodeSnippet(String connectionId, String fileKey, Common.TextRange textRange, String branch, @Nullable String pullRequest,
-    SonarLintCancelMonitor cancelMonitor) {
-    var serverApi = serverApiProvider.getServerApi(connectionId);
-    if (serverApi.isEmpty() || fileKey.isEmpty()) {
-      // should not happen since we found the connection just before, improve the design ?
-      return Optional.empty();
-    }
-    return serverApi.get().issue().getCodeSnippet(fileKey, textRange, branch, pullRequest, cancelMonitor);
   }
 
   @VisibleForTesting

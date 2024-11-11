@@ -42,7 +42,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
-import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -59,6 +59,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.ShowIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiErrorHandlingWrapper;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
@@ -111,21 +112,21 @@ class ShowIssueRequestHandlerTests {
     issueApi = mock(IssueApi.class);
     var serverApi = mock(ServerApi.class);
     when(serverApi.issue()).thenReturn(issueApi);
-    var serverApiProvider = mock(ServerApiProvider.class);
-    when(serverApiProvider.getServerApiOrThrow(any())).thenReturn(serverApi);
-    when(serverApiProvider.getServerApi(any())).thenReturn(Optional.of(serverApi));
+    var serverApiWrapper = new ServerApiErrorHandlingWrapper(serverApi, () -> {});
+    var connectionManager = mock(ConnectionManager.class);
+    when(connectionManager.getServerApiWrapperOrThrow(any())).thenReturn(serverApiWrapper);
     branchesStorage = mock(ProjectBranchesStorage.class);
     var storageService = mock(StorageService.class);
     var sonarStorage = mock(SonarProjectStorage.class);
     var eventPublisher = mock(ApplicationEventPublisher.class);
-    var sonarProjectBranchesSynchronizationService = spy(new SonarProjectBranchesSynchronizationService(storageService, serverApiProvider
+    var sonarProjectBranchesSynchronizationService = spy(new SonarProjectBranchesSynchronizationService(storageService, connectionManager
       , eventPublisher));
     doReturn(new ProjectBranches(Set.of(), "main")).when(sonarProjectBranchesSynchronizationService).getProjectBranches(any(), any(),
       any());
     when(storageService.binding(any())).thenReturn(sonarStorage);
     when(sonarStorage.branches()).thenReturn(branchesStorage);
 
-    showIssueRequestHandler = spy(new ShowIssueRequestHandler(sonarLintRpcClient, serverApiProvider, telemetryService,
+    showIssueRequestHandler = spy(new ShowIssueRequestHandler(sonarLintRpcClient, connectionManager, telemetryService,
       new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintRpcClient,
         connectionConfigurationRepository, configurationRepository, userTokenService,
         sonarCloudActiveEnvironment), pathTranslationService, sonarCloudActiveEnvironment, sonarProjectBranchesSynchronizationService));

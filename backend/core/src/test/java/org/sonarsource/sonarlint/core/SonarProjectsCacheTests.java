@@ -30,6 +30,7 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiErrorHandlingWrapper;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -82,13 +83,14 @@ class SonarProjectsCacheTests {
       return PROJECT_NAME_2;
     }
   };
-  private final ServerApiProvider serverApiProvider = mock(ServerApiProvider.class);
+  private final ConnectionManager connectionManager = mock(ConnectionManager.class);
   private final ServerApi serverApi = mock(ServerApi.class, Mockito.RETURNS_DEEP_STUBS);
-  private final SonarProjectsCache underTest = new SonarProjectsCache(serverApiProvider);
+  private final SonarProjectsCache underTest = new SonarProjectsCache(connectionManager);
 
   @BeforeEach
   public void setup() {
-    when(serverApiProvider.getServerApi(SQ_1)).thenReturn(Optional.of(serverApi));
+    when(connectionManager.getServerApi(SQ_1)).thenReturn(Optional.of(serverApi));
+    when(connectionManager.tryGetServerApiWrapper(SQ_1)).thenReturn(Optional.of(new ServerApiErrorHandlingWrapper(serverApi, () -> {})));
   }
 
   @Test

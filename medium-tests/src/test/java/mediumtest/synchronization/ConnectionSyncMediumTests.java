@@ -26,6 +26,8 @@ import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
@@ -136,6 +138,41 @@ class ConnectionSyncMediumTests {
       "Synchronizing connection 'connectionId' after credentials changed",
       "Synchronizing project branches for project 'projectKey'"));
   }
+
+  @ParameterizedTest
+  @ValueSource(ints = {401, 403})
+  void it_should_notify_client_if_invalid_token(Integer status) {
+    var client = newFakeClient()
+      .withCredentials(CONNECTION_ID, "user", "pw")
+      .build();
+    when(client.getClientLiveDescription()).thenReturn(this.getClass().getName());
+
+    var introductionDate = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+    var server = newSonarQubeServer()
+      .withProject("projectKey",
+        project -> project.withBranch("main",
+          branch -> branch.withTaintIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, introductionDate, new TextRange(1, 2, 3, 4),
+            RuleType.VULNERABILITY)))
+      .start();
+
+    server.getMockServer().stubFor(get("/api/system/status").willReturn(aResponse().withStatus(status)));
+
+    backend = newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage.withPlugin(TestPlugin.JAVA))
+      .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, "projectKey")
+      .withEnabledLanguageInStandaloneMode(JAVA)
+      .withProjectSynchronization()
+      .withFullSynchronization()
+      .build(client);
+    await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Error during synchronization"));
+
+    server.registerSystemApiResponses();
+
+    backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams(CONNECTION_ID));
+
+    await().untilAsserted(() -> assertThat(client.getConnectionIdsWithInvalidToken()).containsExactly(CONNECTION_ID));
+  }
+
 
   private EffectiveRuleDetailsDto getEffectiveRuleDetails(String configScopeId, String ruleKey) {
     return getEffectiveRuleDetails(configScopeId, ruleKey, null);

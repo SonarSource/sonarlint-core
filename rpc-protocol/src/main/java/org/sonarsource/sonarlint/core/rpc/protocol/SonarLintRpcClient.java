@@ -73,6 +73,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgress
 import org.sonarsource.sonarlint.core.rpc.protocol.client.promotion.PromoteExtraEnabledLanguagesInConnectedModeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.InvalidTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.taint.vulnerability.DidChangeTaintVulnerabilitiesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 
@@ -346,4 +347,13 @@ public interface SonarLintRpcClient {
    */
   @JsonRequest
   CompletableFuture<GetFileExclusionsResponse> getFileExclusions(GetFileExclusionsParams params);
+
+  /**
+   * Called when the backend trying to access the server web API and gets an error related to the token. E.g. unauthorized, forbidden, etc.
+   * Client should offer user to fix the problem. For example, create and provide a new token, change permissions for corresponding user.
+   * @param params will contain a connection ID if it's possible to identify the connection
+   */
+  @JsonNotification
+  default void invalidToken(InvalidTokenParams params) {
+  }
 }

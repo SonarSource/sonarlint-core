@@ -219,4 +219,7 @@ public interface SonarLintRpcClientDelegate {
   default Set<String> getFileExclusions(String configurationScopeId) throws ConfigScopeNotFoundException {
     return Collections.emptySet();
   }
+
+  default void invalidToken(@Nullable String connectionId) {
+  }
 }

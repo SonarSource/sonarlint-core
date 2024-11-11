@@ -38,7 +38,7 @@ import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.jetbrains.annotations.NotNull;
-import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.branch.MatchedSonarProjectBranchChangedEvent;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.Binding;
@@ -58,7 +58,7 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
-import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiErrorHandlingWrapper;
 import org.sonarsource.sonarlint.core.serverconnection.ServerConnection;
 import org.sonarsource.sonarlint.core.serverconnection.SonarServerSettingsChangedEvent;
 import org.sonarsource.sonarlint.core.storage.StorageService;
@@ -80,7 +80,7 @@ public class SynchronizationService {
   private final SonarLintRpcClient client;
   private final ConfigurationRepository configurationRepository;
   private final LanguageSupportRepository languageSupportRepository;
-  private final ServerApiProvider serverApiProvider;
+  private final ConnectionManager connectionManager;
   private final TaskManager taskManager;
   private final StorageService storageService;
   private final Set<String> connectedModeEmbeddedPluginKeys;
@@ -101,14 +101,14 @@ public class SynchronizationService {
   private final Set<String> ignoreBranchEventForScopes = ConcurrentHashMap.newKeySet();
 
   public SynchronizationService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
-    ServerApiProvider serverApiProvider, StorageService storageService, InitializeParams params, TaintSynchronizationService taintSynchronizationService,
+    ConnectionManager connectionManager, StorageService storageService, InitializeParams params, TaintSynchronizationService taintSynchronizationService,
     IssueSynchronizationService issueSynchronizationService, HotspotSynchronizationService hotspotSynchronizationService,
     SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService, SonarProjectBranchTrackingService sonarProjectBranchTrackingService,
     PluginsRepository pluginsRepository, ApplicationEventPublisher applicationEventPublisher) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
-    this.serverApiProvider = serverApiProvider;
+    this.connectionManager = connectionManager;
     this.taskManager = new TaskManager(client);
     this.storageService = storageService;
     this.connectedModeEmbeddedPluginKeys = params.getConnectedModeEmbeddedPluginPathsByKey().keySet();
@@ -178,17 +178,19 @@ public class SynchronizationService {
     if (boundScopeBySonarProject.isEmpty()) {
       return;
     }
-    serverApiProvider.getServerApi(connectionId).ifPresent(serverApi -> {
+    if (connectionManager.hasConnection(connectionId)) {
+      var serverApiWrapper = connectionManager.getServerApiWrapperOrThrow(connectionId);
       var subProgressGap = progressGap / boundScopeBySonarProject.size();
       var subProgress = progress;
       for (var entry : boundScopeBySonarProject.entrySet()) {
-        synchronizeProjectWithProgress(serverApi, connectionId, entry.getKey(), entry.getValue(), notifier, cancelMonitor, synchronizedConfScopeIds, subProgress);
+        synchronizeProjectWithProgress(serverApiWrapper, connectionId, entry.getKey(), entry.getValue(), notifier, cancelMonitor, synchronizedConfScopeIds, subProgress);
         subProgress += subProgressGap;
       }
-    });
+    }
   }
 
-  private void synchronizeProjectWithProgress(ServerApi serverApi, String connectionId, String sonarProjectKey, Collection<BoundScope> boundScopes, ProgressNotifier notifier,
+  private void synchronizeProjectWithProgress(ServerApiErrorHandlingWrapper serverApiWrapper, String connectionId, String sonarProjectKey,
+    Collection<BoundScope> boundScopes, ProgressNotifier notifier,
     SonarLintCancelMonitor cancelMonitor, Set<String> synchronizedConfigScopeIds, float subProgress) {
     var allScopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, sonarProjectKey);
     var allScopesByOptBranch = allScopes.stream()
@@ -199,17 +201,18 @@ public class SynchronizationService {
         if (shouldSynchronizeBranch(branchBinding)) {
           branchSynchronizationTimestampRepository.setLastSynchronizationTimestampToNow(branchBinding);
           notifier.notify("Synchronizing project '" + sonarProjectKey + "'...", (int) subProgress);
-          issueSynchronizationService.syncServerIssuesForProject(serverApi, connectionId, sonarProjectKey, branchName, cancelMonitor);
-          taintSynchronizationService.synchronizeTaintVulnerabilities(serverApi, connectionId, sonarProjectKey, branchName, cancelMonitor);
-          hotspotSynchronizationService.syncServerHotspotsForProject(serverApi, connectionId, sonarProjectKey, branchName, cancelMonitor);
+          issueSynchronizationService.syncServerIssuesForProject(serverApiWrapper, connectionId, sonarProjectKey, branchName,
+            connectionManager.isSonarCloud(connectionId), cancelMonitor);
+          taintSynchronizationService.synchronizeTaintVulnerabilities(serverApiWrapper, connectionId, sonarProjectKey, branchName, cancelMonitor);
+          hotspotSynchronizationService.syncServerHotspotsForProject(serverApiWrapper, connectionId, sonarProjectKey, branchName, cancelMonitor);
           synchronizedConfigScopeIds.addAll(boundScopes.stream().map(BoundScope::getConfigScopeId).collect(toSet()));
         }
       }));
   }
 
   @NotNull
-  public ServerConnection getServerConnection(String connectionId, ServerApi serverApi) {
-    return new ServerConnection(storageService.getStorageFacade(), connectionId, serverApi.isSonarCloud(),
+  public ServerConnection getServerConnection(String connectionId) {
+    return new ServerConnection(storageService.getStorageFacade(), connectionId,
       languageSupportRepository.getEnabledLanguagesInConnectedMode(), connectedModeEmbeddedPluginKeys);
   }
 
@@ -291,11 +294,14 @@ public class SynchronizationService {
   private void synchronizeConnectionAndProjectsIfNeededAsync(String connectionId, Collection<BoundScope> boundScopes) {
     var cancelMonitor = new SonarLintCancelMonitor();
     cancelMonitor.watchForShutdown(scheduledSynchronizer);
-    scheduledSynchronizer.submit(() -> serverApiProvider.getServerApi(connectionId)
-      .ifPresent(serverApi -> synchronizeConnectionAndProjectsIfNeededSync(connectionId, serverApi, boundScopes, cancelMonitor)));
+    if (connectionManager.hasConnection(connectionId)) {
+      scheduledSynchronizer.submit(() ->
+        synchronizeConnectionAndProjectsIfNeededSync(connectionId, connectionManager.getServerApiWrapperOrThrow(connectionId), boundScopes, cancelMonitor));
+    }
   }
 
-  private void synchronizeConnectionAndProjectsIfNeededSync(String connectionId, ServerApi serverApi, Collection<BoundScope> boundScopes, SonarLintCancelMonitor cancelMonitor) {
+  private void synchronizeConnectionAndProjectsIfNeededSync(String connectionId, ServerApiErrorHandlingWrapper serverApiWrapper, Collection<BoundScope> boundScopes,
+    SonarLintCancelMonitor cancelMonitor) {
     var scopesToSync = boundScopes.stream().filter(this::shouldSynchronizeScope).collect(toList());
     if (scopesToSync.isEmpty()) {
       return;
@@ -303,10 +309,10 @@ public class SynchronizationService {
     scopesToSync.forEach(scope -> scopeSynchronizationTimestampRepository.setLastSynchronizationTimestampToNow(scope.getConfigScopeId()));
     // We will already trigger a sync of the project storage so we can temporarily ignore branch changed event for these config scopes
     ignoreBranchEventForScopes.addAll(scopesToSync.stream().map(BoundScope::getConfigScopeId).collect(toSet()));
-    var serverConnection = getServerConnection(connectionId, serverApi);
+    var serverConnection = getServerConnection(connectionId);
     try {
       LOG.debug("Synchronizing storage of connection '{}'", connectionId);
-      var summary = serverConnection.sync(serverApi, cancelMonitor);
+      var summary = serverConnection.sync(serverApiWrapper, cancelMonitor);
       if (summary.anyPluginSynchronized()) {
         // TODO re-review this solution before merging
         pluginsRepository.unload(connectionId);
@@ -319,7 +325,7 @@ public class SynchronizationService {
       scopesPerProjectKey.forEach((projectKey, configScopeIds) -> {
         bindingSynchronizationTimestampRepository.setLastSynchronizationTimestampToNow(new Binding(connectionId, projectKey));
         LOG.debug("Synchronizing storage of Sonar project '{}' for connection '{}'", projectKey, connectionId);
-        var analyzerConfigUpdateSummary = serverConnection.sync(serverApi, projectKey, cancelMonitor);
+        var analyzerConfigUpdateSummary = serverConnection.sync(serverApiWrapper, projectKey, cancelMonitor);
         // XXX we might want to group those 2 events under one
         if (!analyzerConfigUpdateSummary.getUpdatedSettingsValueByKey().isEmpty()) {
           applicationEventPublisher.publishEvent(

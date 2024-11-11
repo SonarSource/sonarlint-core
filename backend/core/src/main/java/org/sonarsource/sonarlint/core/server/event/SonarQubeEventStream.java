@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.server.event;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Consumer;
-import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.serverapi.push.SonarServerEvent;
 import org.sonarsource.sonarlint.core.serverapi.stream.EventStream;
@@ -32,13 +32,13 @@ public class SonarQubeEventStream {
   private final Set<String> subscribedProjectKeys = new LinkedHashSet<>();
   private final Set<SonarLanguage> enabledLanguages;
   private final String connectionId;
-  private final ServerApiProvider serverApiProvider;
+  private final ConnectionManager connectionManager;
   private final Consumer<SonarServerEvent> eventConsumer;
 
-  public SonarQubeEventStream(Set<SonarLanguage> enabledLanguages, String connectionId, ServerApiProvider serverApiProvider, Consumer<SonarServerEvent> eventConsumer) {
+  public SonarQubeEventStream(Set<SonarLanguage> enabledLanguages, String connectionId, ConnectionManager connectionManager, Consumer<SonarServerEvent> eventConsumer) {
     this.enabledLanguages = enabledLanguages;
     this.connectionId = connectionId;
-    this.serverApiProvider = serverApiProvider;
+    this.connectionManager = connectionManager;
     this.eventConsumer = eventConsumer;
   }
 
@@ -66,14 +66,10 @@ public class SonarQubeEventStream {
   }
 
   private void attemptSubscription(Set<String> projectKeys) {
-    if (!enabledLanguages.isEmpty()) {
-      serverApiProvider.getServerApi(connectionId)
-        .ifPresent(serverApi -> eventStream = serverApi.push().subscribe(projectKeys, enabledLanguages, e -> notifyHandlers(e, eventConsumer)));
+    if (!enabledLanguages.isEmpty() && connectionManager.hasConnection(connectionId)) {
+      var serverApiWrapper = connectionManager.getServerApiWrapperOrThrow(connectionId);
+      eventStream =  serverApiWrapper.attemptSubscription(projectKeys, enabledLanguages, eventConsumer);
     }
-  }
-
-  private static void notifyHandlers(SonarServerEvent sonarServerEvent, Consumer<SonarServerEvent> clientEventConsumer) {
-    clientEventConsumer.accept(sonarServerEvent);
   }
 
   private void cancelSubscription() {

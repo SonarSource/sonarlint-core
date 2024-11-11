@@ -32,7 +32,7 @@ import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiErrorHandlingWrapper;
 import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
 
 public class PluginsSynchronizer {
@@ -49,7 +49,7 @@ public class PluginsSynchronizer {
     this.embeddedPluginKeys = embeddedPluginKeys;
   }
 
-  public PluginSynchronizationSummary synchronize(ServerApi serverApi, boolean useSecretsFromServer, SonarLintCancelMonitor cancelMonitor) {
+  public PluginSynchronizationSummary synchronize(ServerApiErrorHandlingWrapper serverApiWrapper, boolean useSecretsFromServer, SonarLintCancelMonitor cancelMonitor) {
     if (useSecretsFromServer) {
       var embeddedPluginKeysCopy = new HashSet<>(embeddedPluginKeys);
       embeddedPluginKeysCopy.remove(SonarLanguage.SECRETS.getPluginKey());
@@ -57,7 +57,7 @@ public class PluginsSynchronizer {
     }
 
     var storedPluginsByKey = storage.plugins().getStoredPluginsByKey();
-    var serverPlugins = serverApi.plugins().getInstalled(cancelMonitor);
+    var serverPlugins = serverApiWrapper.getInstalledPlugins(cancelMonitor);
     var downloadSkipReasonByServerPlugin = serverPlugins.stream()
       .collect(Collectors.toMap(Function.identity(), plugin -> determineIfShouldSkipDownload(plugin, storedPluginsByKey)));
 
@@ -75,20 +75,20 @@ public class PluginsSynchronizer {
       storage.plugins().cleanUpUnknownPlugins(serverPluginsExpectedInStorage);
       return new PluginSynchronizationSummary(false);
     }
-    downloadAll(serverApi, pluginsToDownload, cancelMonitor);
+    downloadAll(serverApiWrapper, pluginsToDownload, cancelMonitor);
     storage.plugins().cleanUpUnknownPlugins(serverPluginsExpectedInStorage);
     return new PluginSynchronizationSummary(true);
   }
 
-  private void downloadAll(ServerApi serverApi, List<ServerPlugin> pluginsToDownload, SonarLintCancelMonitor cancelMonitor) {
+  private void downloadAll(ServerApiErrorHandlingWrapper serverApiWrapper, List<ServerPlugin> pluginsToDownload, SonarLintCancelMonitor cancelMonitor) {
     for (ServerPlugin p : pluginsToDownload) {
-      downloadPlugin(serverApi, p, cancelMonitor);
+      downloadPlugin(serverApiWrapper, p, cancelMonitor);
     }
   }
 
-  private void downloadPlugin(ServerApi serverApi, ServerPlugin plugin, SonarLintCancelMonitor cancelMonitor) {
+  private void downloadPlugin(ServerApiErrorHandlingWrapper serverApiWrapper, ServerPlugin plugin, SonarLintCancelMonitor cancelMonitor) {
     LOG.info("[SYNC] Downloading plugin '{}'", plugin.getFilename());
-    serverApi.plugins().getPlugin(plugin.getKey(), pluginBinary -> storage.plugins().store(plugin, pluginBinary), cancelMonitor);
+    serverApiWrapper.getPlugin(plugin.getKey(), pluginBinary -> storage.plugins().store(plugin, pluginBinary), cancelMonitor);
   }
 
   private Optional<DownloadSkipReason> determineIfShouldSkipDownload(ServerPlugin serverPlugin, Map<String, StoredPlugin> storedPluginsByKey) {

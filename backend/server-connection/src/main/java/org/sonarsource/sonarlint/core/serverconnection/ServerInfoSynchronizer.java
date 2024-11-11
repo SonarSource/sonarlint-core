@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiErrorHandlingWrapper;
 
 public class ServerInfoSynchronizer {
   private static final String MQR_MODE_SETTING = "sonar.multi-quality-mode.enabled";
@@ -33,27 +33,27 @@ public class ServerInfoSynchronizer {
     this.storage = storage;
   }
 
-  public StoredServerInfo readOrSynchronizeServerInfo(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
+  public StoredServerInfo readOrSynchronizeServerInfo(ServerApiErrorHandlingWrapper serverApiWrapper, SonarLintCancelMonitor cancelMonitor) {
     return storage.serverInfo().read()
       .orElseGet(() -> {
-        synchronize(serverApi, cancelMonitor);
+        synchronize(serverApiWrapper, cancelMonitor);
         return storage.serverInfo().read().get();
       });
   }
 
-  public void synchronize(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
-    var serverStatus = serverApi.system().getStatus(cancelMonitor);
-    var serverVersionAndStatusChecker = new ServerVersionAndStatusChecker(serverApi);
+  public void synchronize(ServerApiErrorHandlingWrapper serverApiWrapper, SonarLintCancelMonitor cancelMonitor) {
+    var serverStatus = serverApiWrapper.getSystemStatus(cancelMonitor);
+    var serverVersionAndStatusChecker = new ServerVersionAndStatusChecker(serverApiWrapper);
     serverVersionAndStatusChecker.checkVersionAndStatus(cancelMonitor);
-    var isMQRMode = retrieveMQRMode(serverApi, serverStatus.getVersion(), cancelMonitor);
+    var isMQRMode = retrieveMQRMode(serverApiWrapper, serverStatus.getVersion(), cancelMonitor);
     storage.serverInfo().store(serverStatus, isMQRMode);
   }
 
   @Nullable
-  private static Boolean retrieveMQRMode(ServerApi serverApi, String serverVersion, SonarLintCancelMonitor cancelMonitor) {
+  private static Boolean retrieveMQRMode(ServerApiErrorHandlingWrapper serverApiWrapper, String serverVersion, SonarLintCancelMonitor cancelMonitor) {
     var version = Version.create(serverVersion);
-    if (!serverApi.isSonarCloud() && version.compareToIgnoreQualifier(Version.create(MQR_MODE_SETTING_MIN_VERSION)) >= 0) {
-      var mqrModeResponse = serverApi.settings().getGlobalSetting(MQR_MODE_SETTING, cancelMonitor);
+    if (!serverApiWrapper.isSonarCloud() && version.compareToIgnoreQualifier(Version.create(MQR_MODE_SETTING_MIN_VERSION)) >= 0) {
+      var mqrModeResponse = serverApiWrapper.getGlobalSetting(MQR_MODE_SETTING, cancelMonitor);
       if (mqrModeResponse != null) {
         return Boolean.parseBoolean(mqrModeResponse);
       }

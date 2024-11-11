@@ -21,20 +21,19 @@ package org.sonarsource.sonarlint.core.serverconnection;
 
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiErrorHandlingWrapper;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnsupportedServerException;
 import org.sonarsource.sonarlint.core.serverapi.system.ServerStatusInfo;
-import org.sonarsource.sonarlint.core.serverapi.system.SystemApi;
 
 public class ServerVersionAndStatusChecker {
 
   private static final String MIN_SQ_VERSION = "9.9";
-  private final SystemApi systemApi;
   private final boolean isSonarCloud;
+  private final ServerApiErrorHandlingWrapper serverApiWrapper  ;
 
-  public ServerVersionAndStatusChecker(ServerApi serverApi) {
-    this.systemApi = serverApi.system();
-    this.isSonarCloud = serverApi.isSonarCloud();
+  public ServerVersionAndStatusChecker(ServerApiErrorHandlingWrapper serverApiWrapper) {
+    this.isSonarCloud = serverApiWrapper.isSonarCloud();
+    this.serverApiWrapper = serverApiWrapper;
   }
 
   /**
@@ -45,7 +44,7 @@ public class ServerVersionAndStatusChecker {
    * @throws IllegalStateException      If server is not ready
    */
   public void checkVersionAndStatus(SonarLintCancelMonitor cancelMonitor) {
-    var serverStatus = systemApi.getStatus(cancelMonitor);
+    var serverStatus = serverApiWrapper.getSystemStatus(cancelMonitor);
     if (isSonarCloud) {
       checkServerUp(serverStatus);
     } else {

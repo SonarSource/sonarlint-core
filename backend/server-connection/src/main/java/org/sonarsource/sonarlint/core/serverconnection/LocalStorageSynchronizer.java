@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiErrorHandlingWrapper;
 import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfile;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 
@@ -42,21 +42,23 @@ public class LocalStorageSynchronizer {
   private final ServerInfoSynchronizer serverInfoSynchronizer;
   private final PluginsSynchronizer pluginsSynchronizer;
 
-  public LocalStorageSynchronizer(Set<SonarLanguage> enabledLanguages, Set<String> embeddedPluginKeys, ServerInfoSynchronizer serverInfoSynchronizer, ConnectionStorage storage) {
+  public LocalStorageSynchronizer(Set<SonarLanguage> enabledLanguages, Set<String> embeddedPluginKeys, ServerInfoSynchronizer serverInfoSynchronizer,
+    ConnectionStorage storage) {
     this.enabledLanguageKeys = enabledLanguages.stream().map(SonarLanguage::getSonarLanguageKey).collect(toSet());
     this.storage = storage;
     this.pluginsSynchronizer = new PluginsSynchronizer(enabledLanguages, storage, embeddedPluginKeys);
     this.serverInfoSynchronizer = serverInfoSynchronizer;
   }
 
-  public PluginSynchronizationSummary synchronizeServerInfosAndPlugins(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
-    serverInfoSynchronizer.synchronize(serverApi, cancelMonitor);
+  public PluginSynchronizationSummary synchronizeServerInfosAndPlugins(ServerApiErrorHandlingWrapper serverApiWrapper, SonarLintCancelMonitor cancelMonitor) {
+    serverInfoSynchronizer.synchronize(serverApiWrapper, cancelMonitor);
     var version = storage.serverInfo().read().orElseThrow().getVersion();
-    // On SonarQube server 10.4+ and SonarQube Cloud, we need to use the server's text analyzer
-    // to support commercial rules (SQC and SQS 10.8+ DE+) and custom secrets (SQS 10.4+ EE+)
-    var useSecretsFromServer = serverApi.isSonarCloud()
+    // INFO: In order to download `sonar-text` alongside `sonar-text-enterprise` on SQ 10.4+ we have to change the
+    //       plug-in synchronizer to work correctly the moment the connection is established and the plug-ins are
+    //       downloaded for the first time and also everytime the plug-ins are refreshed (e.g. after IDE restart).
+    var supportsCustomSecrets = !serverApiWrapper.isSonarCloud()
       || version.compareToIgnoreQualifier(CUSTOM_SECRETS_MIN_SQ_VERSION) >= 0;
-    return pluginsSynchronizer.synchronize(serverApi, useSecretsFromServer, cancelMonitor);
+    return pluginsSynchronizer.synchronize(serverApiWrapper, supportsCustomSecrets, cancelMonitor);
   }
 
   private static AnalyzerSettingsUpdateSummary diffAnalyzerConfiguration(AnalyzerConfiguration original, AnalyzerConfiguration updated) {
@@ -70,8 +72,8 @@ public class LocalStorageSynchronizer {
     return new AnalyzerSettingsUpdateSummary(updatedSettingsValueByKey);
   }
 
-  public AnalyzerSettingsUpdateSummary synchronizeAnalyzerConfig(ServerApi serverApi, String projectKey, SonarLintCancelMonitor cancelMonitor) {
-    var updatedAnalyzerConfiguration = downloadAnalyzerConfig(serverApi, projectKey, cancelMonitor);
+  public AnalyzerSettingsUpdateSummary synchronizeAnalyzerConfig(ServerApiErrorHandlingWrapper serverApiWrapper, String projectKey, SonarLintCancelMonitor cancelMonitor) {
+    var updatedAnalyzerConfiguration = downloadAnalyzerConfig(serverApiWrapper, projectKey, cancelMonitor);
     AnalyzerSettingsUpdateSummary configUpdateSummary;
     try {
       var originalAnalyzerConfiguration = storage.project(projectKey).analyzerConfiguration().read();
@@ -82,12 +84,12 @@ public class LocalStorageSynchronizer {
 
     storage.project(projectKey).analyzerConfiguration().store(updatedAnalyzerConfiguration);
     var version = storage.serverInfo().read().orElseThrow().getVersion();
-    serverApi.newCodeApi().getNewCodeDefinition(projectKey, null, version, cancelMonitor)
+    serverApiWrapper.getNewCodeDefinition(projectKey, version, cancelMonitor)
       .ifPresent(ncd -> storage.project(projectKey).newCodeDefinition().store(ncd));
     return configUpdateSummary;
   }
 
-  private AnalyzerConfiguration downloadAnalyzerConfig(ServerApi serverApi, String projectKey, SonarLintCancelMonitor cancelMonitor) {
+  private AnalyzerConfiguration downloadAnalyzerConfig(ServerApiErrorHandlingWrapper serverApiWrapper, String projectKey, SonarLintCancelMonitor cancelMonitor) {
     LOG.info("[SYNC] Synchronizing analyzer configuration for project '{}'", projectKey);
     Map<String, RuleSet> currentRuleSets;
     int currentSchemaVersion;
@@ -101,14 +103,15 @@ public class LocalStorageSynchronizer {
     }
     var shouldForceRuleSetUpdate = outdatedSchema(currentSchemaVersion);
     var currentRuleSetsFinal = currentRuleSets;
-    var settings = new Settings(serverApi.settings().getProjectSettings(projectKey, cancelMonitor));
-    var ruleSetsByLanguageKey = serverApi.qualityProfile().getQualityProfiles(projectKey, cancelMonitor).stream()
+    var settings = new Settings(serverApiWrapper.getSettings(projectKey, cancelMonitor));
+
+    var ruleSetsByLanguageKey = serverApiWrapper.getQualityProfiles(projectKey, cancelMonitor).stream()
       .filter(qualityProfile -> enabledLanguageKeys.contains(qualityProfile.getLanguage()))
-      .collect(Collectors.toMap(QualityProfile::getLanguage, profile -> toRuleSet(serverApi, currentRuleSetsFinal, profile, shouldForceRuleSetUpdate, cancelMonitor)));
+      .collect(Collectors.toMap(QualityProfile::getLanguage, profile -> toRuleSet(serverApiWrapper, currentRuleSetsFinal, profile, shouldForceRuleSetUpdate, cancelMonitor)));
     return new AnalyzerConfiguration(settings, ruleSetsByLanguageKey, AnalyzerConfiguration.CURRENT_SCHEMA_VERSION);
   }
 
-  private static RuleSet toRuleSet(ServerApi serverApi, Map<String, RuleSet> currentRuleSets, QualityProfile profile, boolean forceUpdate,
+  private static RuleSet toRuleSet(ServerApiErrorHandlingWrapper serverApiWrapper, Map<String, RuleSet> currentRuleSets, QualityProfile profile, boolean forceUpdate,
     SonarLintCancelMonitor cancelMonitor) {
     var language = profile.getLanguage();
     if (forceUpdate ||
@@ -116,7 +119,7 @@ public class LocalStorageSynchronizer {
       profileModifiedSinceLastSync(currentRuleSets, profile, language)) {
       var profileKey = profile.getKey();
       LOG.info("[SYNC] Fetching rule set for language '{}' from profile '{}'", language, profileKey);
-      var profileActiveRules = serverApi.rules().getAllActiveRules(profileKey, cancelMonitor);
+      var profileActiveRules = serverApiWrapper.getAllActiveRules(profileKey, cancelMonitor);
       return new RuleSet(profileActiveRules, profile.getRulesUpdatedAt());
     } else {
       LOG.info("[SYNC] Active rules for '{}' are up-to-date", language);

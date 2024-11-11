@@ -27,22 +27,21 @@ import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiErrorHandlingWrapper;
 
 public class ServerConnection {
   private static final Version CLEAN_CODE_TAXONOMY_MIN_SQ_VERSION = Version.create("10.2");
 
   private final Set<SonarLanguage> enabledLanguagesToSync;
   private final LocalStorageSynchronizer storageSynchronizer;
-  private final boolean isSonarCloud;
   private final ServerInfoSynchronizer serverInfoSynchronizer;
   private final ConnectionStorage storage;
 
-  public ServerConnection(Path globalStorageRoot, String connectionId, boolean isSonarCloud, Set<SonarLanguage> enabledLanguages, Set<String> embeddedPluginKeys, Path workDir) {
-    this(StorageFacadeCache.get().getOrCreate(globalStorageRoot, workDir), connectionId, isSonarCloud, enabledLanguages, embeddedPluginKeys);
+  public ServerConnection(Path globalStorageRoot, String connectionId, Set<SonarLanguage> enabledLanguages, Set<String> embeddedPluginKeys, Path workDir) {
+    this(StorageFacadeCache.get().getOrCreate(globalStorageRoot, workDir), connectionId, enabledLanguages, embeddedPluginKeys);
   }
 
-  public ServerConnection(StorageFacade storageFacade, String connectionId, boolean isSonarCloud, Set<SonarLanguage> enabledLanguages, Set<String> embeddedPluginKeys) {
-    this.isSonarCloud = isSonarCloud;
+  public ServerConnection(StorageFacade storageFacade, String connectionId, Set<SonarLanguage> enabledLanguages, Set<String> embeddedPluginKeys) {
     this.enabledLanguagesToSync = enabledLanguages.stream().filter(SonarLanguage::shouldSyncInConnectedMode).collect(Collectors.toCollection(LinkedHashSet::new));
 
     this.storage = storageFacade.connection(connectionId);
@@ -50,16 +49,16 @@ public class ServerConnection {
     this.storageSynchronizer = new LocalStorageSynchronizer(enabledLanguagesToSync, embeddedPluginKeys, serverInfoSynchronizer, storage);
   }
 
-  public PluginSynchronizationSummary sync(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
-    return storageSynchronizer.synchronizeServerInfosAndPlugins(serverApi, cancelMonitor);
+  public PluginSynchronizationSummary sync(ServerApiErrorHandlingWrapper serverApiWrapper, SonarLintCancelMonitor cancelMonitor) {
+    return storageSynchronizer.synchronizeServerInfosAndPlugins(serverApiWrapper, cancelMonitor);
   }
 
-  public AnalyzerSettingsUpdateSummary sync(ServerApi serverApi, String projectKey, SonarLintCancelMonitor cancelMonitor) {
-    return storageSynchronizer.synchronizeAnalyzerConfig(serverApi, projectKey, cancelMonitor);
+  public AnalyzerSettingsUpdateSummary sync(ServerApiErrorHandlingWrapper serverApiWrapper, String projectKey, SonarLintCancelMonitor cancelMonitor) {
+    return storageSynchronizer.synchronizeAnalyzerConfig(serverApiWrapper, projectKey, cancelMonitor);
   }
 
-  public Version readOrSynchronizeServerVersion(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
-    return serverInfoSynchronizer.readOrSynchronizeServerInfo(serverApi, cancelMonitor).getVersion();
+  public Version readOrSynchronizeServerVersion(ServerApiErrorHandlingWrapper serverApiWrapper, SonarLintCancelMonitor cancelMonitor) {
+    return serverInfoSynchronizer.readOrSynchronizeServerInfo(serverApiWrapper, cancelMonitor).getVersion();
   }
 
   public Set<SonarLanguage> getEnabledLanguagesToSync() {

@@ -43,8 +43,10 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpConnectionListener;
+import org.sonarsource.sonarlint.core.serverapi.exception.ForbiddenException;
 import org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
+import org.sonarsource.sonarlint.core.serverapi.exception.UnauthorizedException;
 
 /**
  * Wrapper around HttpClient to avoid repetitive code, like support of pagination, and log timing of requests
@@ -138,11 +140,12 @@ public class ServerApiHelper {
   public static RuntimeException handleError(HttpClient.Response toBeClosed) {
     try (var failedResponse = toBeClosed) {
       if (failedResponse.code() == HttpURLConnection.HTTP_UNAUTHORIZED) {
-        return new IllegalStateException("Not authorized. Please check server credentials.");
+        return new UnauthorizedException("Not authorized. Please check server credentials.");
       }
       if (failedResponse.code() == HttpURLConnection.HTTP_FORBIDDEN) {
         // Details are in response content
-        return new IllegalStateException(tryParseAsJsonError(failedResponse));
+        var message = tryParseAsJsonError(failedResponse);
+        return new ForbiddenException(message != null ? message : "Forbidden. Please check server credentials.");
       }
       if (failedResponse.code() == HttpURLConnection.HTTP_NOT_FOUND) {
         return new NotFoundException(formatHttpFailedResponse(failedResponse, null));

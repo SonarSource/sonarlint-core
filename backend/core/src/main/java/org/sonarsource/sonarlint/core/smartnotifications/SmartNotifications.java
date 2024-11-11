@@ -34,7 +34,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -47,8 +47,7 @@ import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurat
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
-import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverapi.developers.DevelopersApi;
+import org.sonarsource.sonarlint.core.serverapi.developers.Event;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.websocket.WebSocketService;
@@ -63,7 +62,7 @@ public class SmartNotifications {
 
   private final ConfigurationRepository configurationRepository;
   private final ConnectionConfigurationRepository connectionRepository;
-  private final ServerApiProvider serverApiProvider;
+  private final ConnectionManager connectionManager;
   private final SonarLintRpcClient client;
   private final TelemetryService telemetryService;
   private final WebSocketService webSocketService;
@@ -72,11 +71,11 @@ public class SmartNotifications {
   private final LastEventPolling lastEventPollingService;
   private ExecutorServiceShutdownWatchable<ScheduledExecutorService> smartNotificationsPolling;
 
-  public SmartNotifications(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository, ServerApiProvider serverApiProvider,
+  public SmartNotifications(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository, ConnectionManager connectionManager,
     SonarLintRpcClient client, StorageService storageService, TelemetryService telemetryService, WebSocketService webSocketService, InitializeParams params) {
     this.configurationRepository = configurationRepository;
     this.connectionRepository = connectionRepository;
-    this.serverApiProvider = serverApiProvider;
+    this.connectionManager = connectionManager;
     this.client = client;
     this.telemetryService = telemetryService;
     this.webSocketService = webSocketService;
@@ -100,24 +99,23 @@ public class SmartNotifications {
     var boundScopeByConnectionAndSonarProject = configurationRepository.getBoundScopeByConnectionAndSonarProject();
     boundScopeByConnectionAndSonarProject.forEach((connectionId, boundScopesByProject) -> {
       var connection = connectionRepository.getConnectionById(connectionId);
-      if (connection != null && !connection.isDisableNotifications() && !shouldSkipPolling(connection)) {
-        serverApiProvider.getServerApi(connectionId).ifPresent(serverApi -> manageNotificationsForConnection(serverApi, boundScopesByProject, connection, cancelMonitor));
+      if (connection != null && !connection.isDisableNotifications() && !shouldSkipPolling(connection) && connectionManager.hasConnection(connectionId)) {
+        manageNotificationsForConnection(boundScopesByProject, connection, cancelMonitor);
       }
     });
   }
 
-  private void manageNotificationsForConnection(ServerApi serverApi, Map<String, Collection<BoundScope>> boundScopesPerProjectKey,
+  private void manageNotificationsForConnection(Map<String, Collection<BoundScope>> boundScopesPerProjectKey,
     AbstractConnectionConfiguration connection, SonarLintCancelMonitor cancelMonitor) {
-    var developersApi = serverApi.developers();
     var connectionId = connection.getConnectionId();
-    var isSupported = isConnectionIdSupported.computeIfAbsent(connectionId, v -> developersApi.isSupported(cancelMonitor));
+    var serverApiWrapper = connectionManager.getServerApiWrapperOrThrow(connectionId);
+    var isSupported = isConnectionIdSupported.computeIfAbsent(connectionId, v -> serverApiWrapper.isSmartNotificationsSupported(cancelMonitor));
     if (Boolean.TRUE.equals(isSupported)) {
       var projectKeysByLastEventPolling = boundScopesPerProjectKey.keySet().stream()
         .collect(Collectors.toMap(Function.identity(),
           p -> getLastNotificationTime(lastEventPollingService.getLastEventPolling(connectionId, p))));
-
-      var notifications = retrieveServerNotifications(developersApi, projectKeysByLastEventPolling, cancelMonitor);
-
+      var events = serverApiWrapper.getDevEvents(projectKeysByLastEventPolling, cancelMonitor);
+      var notifications = toServerNotifications(events);
       for (var n : notifications) {
         var scopeIds = boundScopesPerProjectKey.get(n.projectKey()).stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet());
         var smartNotification = new ShowSmartNotificationParams(n.message(), n.link(), scopeIds,
@@ -147,10 +145,8 @@ public class SmartNotifications {
     return lastTime.isAfter(oneDayAgo) ? lastTime : oneDayAgo;
   }
 
-  private static List<ServerNotification> retrieveServerNotifications(DevelopersApi developersApi,
-    Map<String, ZonedDateTime> projectKeysByLastEventPolling, SonarLintCancelMonitor cancelMonitor) {
-    return developersApi.getEvents(projectKeysByLastEventPolling, cancelMonitor)
-      .stream().map(e -> new ServerNotification(
+  private static List<ServerNotification> toServerNotifications(List<Event> events) {
+    return events.stream().map(e -> new ServerNotification(
         e.getCategory(),
         e.getMessage(),
         e.getLink(),

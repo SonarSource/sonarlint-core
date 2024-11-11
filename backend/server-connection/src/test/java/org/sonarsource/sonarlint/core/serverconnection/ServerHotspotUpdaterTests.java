@@ -31,6 +31,8 @@ import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiErrorHandlingWrapper;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
@@ -53,11 +55,17 @@ class ServerHotspotUpdaterTests {
 
   private ServerHotspotUpdater updater;
   private HotspotApi hotspotApi;
+  private ServerApi serverApi;
+  private ServerApiErrorHandlingWrapper serverApiWrapper;
   private HotspotDownloader hotspotDownloader;
 
   @BeforeEach
   void setUp() {
     hotspotApi = mock(HotspotApi.class);
+    serverApi = mock(ServerApi.class);
+    when(serverApi.hotspot()).thenReturn(hotspotApi);
+    serverApiWrapper = new ServerApiErrorHandlingWrapper(serverApi, () -> {
+    });
     hotspotDownloader = mock(HotspotDownloader.class);
     ConnectionStorage storage = mock(ConnectionStorage.class);
     var projectStorage = mock(SonarProjectStorage.class);
@@ -72,10 +80,10 @@ class ServerHotspotUpdaterTests {
     var hotspotKey = "hotspotKey";
     var hotspots = List.of(aServerHotspot(hotspotKey));
     var cancelMonitor = new SonarLintCancelMonitor();
-    when(hotspotDownloader.downloadFromPull(hotspotApi, PROJECT_KEY, "branch", Optional.empty(), cancelMonitor))
+    when(hotspotDownloader.downloadFromPull(serverApiWrapper, PROJECT_KEY, "branch", Optional.empty(), cancelMonitor))
       .thenReturn(new HotspotDownloader.PullResult(timestamp, hotspots, Set.of()));
 
-    updater.sync(hotspotApi, PROJECT_KEY, "branch", Set.of(SonarLanguage.C), cancelMonitor);
+    updater.sync(serverApiWrapper, PROJECT_KEY, "branch", Set.of(SonarLanguage.C), cancelMonitor);
 
     var hotspotCaptor = ArgumentCaptor.forClass(List.class);
     verify(issueStore).mergeHotspots(eq("branch"), hotspotCaptor.capture(), eq(Set.of()), eq(timestamp), eq(Set.of(SonarLanguage.C)));
@@ -91,19 +99,19 @@ class ServerHotspotUpdaterTests {
     var hotspotKey = "hotspotKey";
     var hotspots = List.of(aServerHotspot(hotspotKey));
     var cancelMonitor = new SonarLintCancelMonitor();
-    when(hotspotDownloader.downloadFromPull(hotspotApi, PROJECT_KEY, "branch", Optional.of(timestamp), cancelMonitor))
+    when(hotspotDownloader.downloadFromPull(serverApiWrapper, PROJECT_KEY, "branch", Optional.of(timestamp), cancelMonitor))
       .thenReturn(new HotspotDownloader.PullResult(timestamp, hotspots, Set.of()));
     when(issueStore.getLastHotspotEnabledLanguages("branch")).thenReturn(lastHotspotEnabledLanguages);
     when(issueStore.getLastHotspotSyncTimestamp("branch")).thenReturn(Optional.of(timestamp));
 
-    updater.sync(hotspotApi, PROJECT_KEY, "branch", Set.of(SonarLanguage.C, SonarLanguage.GO), cancelMonitor);
+    updater.sync(serverApiWrapper, PROJECT_KEY, "branch", Set.of(SonarLanguage.C, SonarLanguage.GO), cancelMonitor);
 
     var hotspotCaptor = ArgumentCaptor.forClass(List.class);
     verify(issueStore).mergeHotspots(eq("branch"), hotspotCaptor.capture(), eq(Set.of()), eq(timestamp), anySet());
     assertThat(hotspotCaptor.getValue()).hasSize(1);
     var capturedHotspot = (ServerHotspot) (hotspotCaptor.getValue().get(0));
     assertThat(capturedHotspot.getKey()).isEqualTo(hotspotKey);
-    verify(hotspotDownloader).downloadFromPull(hotspotApi, projectBinding.projectKey(), "branch", Optional.of(timestamp), cancelMonitor);
+    verify(hotspotDownloader).downloadFromPull(serverApiWrapper, projectBinding.projectKey(), "branch", Optional.of(timestamp), cancelMonitor);
   }
 
   @Test
@@ -113,19 +121,19 @@ class ServerHotspotUpdaterTests {
     var hotspotKey = "hotspotKey";
     var hotspots = List.of(aServerHotspot(hotspotKey));
     var cancelMonitor = new SonarLintCancelMonitor();
-    when(hotspotDownloader.downloadFromPull(hotspotApi, PROJECT_KEY, "branch", Optional.empty(), cancelMonitor))
+    when(hotspotDownloader.downloadFromPull(serverApiWrapper, PROJECT_KEY, "branch", Optional.empty(), cancelMonitor))
       .thenReturn(new HotspotDownloader.PullResult(timestamp, hotspots, Set.of()));
     when(issueStore.getLastHotspotEnabledLanguages("branch")).thenReturn(lastHotspotEnabledLanguages);
     when(issueStore.getLastHotspotSyncTimestamp("branch")).thenReturn(Optional.of(timestamp));
 
-    updater.sync(hotspotApi, PROJECT_KEY, "branch", Set.of(SonarLanguage.C, SonarLanguage.GO), cancelMonitor);
+    updater.sync(serverApiWrapper, PROJECT_KEY, "branch", Set.of(SonarLanguage.C, SonarLanguage.GO), cancelMonitor);
 
     var hotspotCaptor = ArgumentCaptor.forClass(List.class);
     verify(issueStore).mergeHotspots(eq("branch"), hotspotCaptor.capture(), eq(Set.of()), eq(timestamp), anySet());
     assertThat(hotspotCaptor.getValue()).hasSize(1);
     var capturedHotspot = (ServerHotspot) (hotspotCaptor.getValue().get(0));
     assertThat(capturedHotspot.getKey()).isEqualTo(hotspotKey);
-    verify(hotspotDownloader).downloadFromPull(hotspotApi, projectBinding.projectKey(), "branch", Optional.empty(), cancelMonitor);
+    verify(hotspotDownloader).downloadFromPull(serverApiWrapper, projectBinding.projectKey(), "branch", Optional.empty(), cancelMonitor);
   }
 
   @Test
@@ -135,18 +143,18 @@ class ServerHotspotUpdaterTests {
     var hotspotKey = "hotspotKey";
     var hotspots = List.of(aServerHotspot(hotspotKey));
     var cancelMonitor = new SonarLintCancelMonitor();
-    when(hotspotDownloader.downloadFromPull(hotspotApi, PROJECT_KEY, "branch", Optional.empty(), cancelMonitor))
+    when(hotspotDownloader.downloadFromPull(serverApiWrapper, PROJECT_KEY, "branch", Optional.empty(), cancelMonitor))
       .thenReturn(new HotspotDownloader.PullResult(timestamp, hotspots, Set.of()));
     when(issueStore.getLastHotspotEnabledLanguages("branch")).thenReturn(lastHotspotEnabledLanguages);
     when(issueStore.getLastHotspotSyncTimestamp("branch")).thenReturn(Optional.of(timestamp));
 
-    updater.sync(hotspotApi, PROJECT_KEY, "branch", Set.of(SonarLanguage.C, SonarLanguage.GO), cancelMonitor);
+    updater.sync(serverApiWrapper, PROJECT_KEY, "branch", Set.of(SonarLanguage.C, SonarLanguage.GO), cancelMonitor);
 
     var hotspotCaptor = ArgumentCaptor.forClass(List.class);
     verify(issueStore).mergeHotspots(eq("branch"), hotspotCaptor.capture(), eq(Set.of()), eq(timestamp), anySet());
     assertThat(hotspotCaptor.getValue()).hasSize(1);
     var capturedHotspot = (ServerHotspot) (hotspotCaptor.getValue().get(0));
     assertThat(capturedHotspot.getKey()).isEqualTo(hotspotKey);
-    verify(hotspotDownloader).downloadFromPull(hotspotApi, projectBinding.projectKey(), "branch", Optional.empty(), cancelMonitor);
+    verify(hotspotDownloader).downloadFromPull(serverApiWrapper, projectBinding.projectKey(), "branch", Optional.empty(), cancelMonitor);
   }
 }
