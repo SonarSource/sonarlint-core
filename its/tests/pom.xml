@@ -35,12 +35,6 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.sonarsource.sonarlint.core</groupId>
-      <artifactId>sonarlint-analysis-engine</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
     <!-- This dependency needs to go first for the Loggers class from plugin-commons to be used before the one from the plugin-api -->
     <dependency>
       <groupId>org.sonarsource.sonarlint.core</groupId>
