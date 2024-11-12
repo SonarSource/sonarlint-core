@@ -109,7 +109,7 @@ class FileExclusionTests extends AbstractConnectedTests {
 
     backend = clientLauncher.getServerProxy();
     try {
-      var featureFlags = new FeatureFlagsDto(true, true, true, false, true, true, false, true, false, false);
+      var featureFlags = new FeatureFlagsDto(true, true, true, false, true, true, false, true, false, false, false);
       var enabledLanguages = Set.of(JAVA);
       backend.initialize(
           new InitializeParams(IT_CLIENT_INFO,

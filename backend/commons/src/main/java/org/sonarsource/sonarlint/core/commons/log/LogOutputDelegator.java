@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.commons.log;
 
+import io.sentry.Sentry;
 import java.util.Optional;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -42,6 +43,7 @@ class LogOutputDelegator {
   void log(@Nullable String formattedMessage, Level level, @Nullable Throwable t) {
     String stacktrace = null;
     if (t != null) {
+      Sentry.captureException(t);
       stacktrace = LogOutput.stackTraceToString(t);
     }
     if (formattedMessage != null || t != null) {
