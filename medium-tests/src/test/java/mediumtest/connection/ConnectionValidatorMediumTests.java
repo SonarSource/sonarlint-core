@@ -128,7 +128,7 @@ class ConnectionValidatorMediumTests {
     var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarQubeConnectionDto(serverMock.baseUrl(), Either.forLeft(new TokenDto(null))))).join();
 
     assertThat(response.isSuccess()).isFalse();
-    assertThat(response.getMessage()).isEqualTo("SonarQube server has version 6.7. Version should be greater or equal to 9.9");
+    assertThat(response.getMessage()).isEqualTo("Your SonarQube Server instance has version 6.7. Version should be greater or equal to 9.9");
   }
 
   @Test

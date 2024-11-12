@@ -239,7 +239,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .succeedsWithin(Duration.ofSeconds(2))
       .extracting(CheckStatusChangePermittedResponse::isPermitted, CheckStatusChangePermittedResponse::getNotPermittedReason,
         CheckStatusChangePermittedResponse::getAllowedStatuses)
-      .containsExactly(false, "Marking a local-only issue as resolved requires SonarQube 10.2+", List.of());
+      .containsExactly(false, "Marking a local-only issue as resolved requires SonarQube Server 10.2+", List.of());
   }
 
   @Test
@@ -265,7 +265,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .succeedsWithin(Duration.ofSeconds(2))
       .extracting(CheckStatusChangePermittedResponse::isPermitted, CheckStatusChangePermittedResponse::getNotPermittedReason,
         CheckStatusChangePermittedResponse::getAllowedStatuses)
-      .containsExactly(false, "Marking a local-only issue as resolved requires SonarQube 10.2+", List.of());
+      .containsExactly(false, "Marking a local-only issue as resolved requires SonarQube Server 10.2+", List.of());
   }
 
   @Test

@@ -68,7 +68,7 @@ public class ServerVersionAndStatusChecker {
   }
 
   private static String unsupportedVersion(ServerStatusInfo serverStatus) {
-    return "SonarQube server has version " + serverStatus.getVersion() + ". Version should be greater or equal to " + MIN_SQ_VERSION;
+    return "Your SonarQube Server instance has version " + serverStatus.getVersion() + ". Version should be greater or equal to " + MIN_SQ_VERSION;
   }
 
   private static String serverNotReady(ServerStatusInfo serverStatus) {
