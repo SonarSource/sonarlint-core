@@ -28,6 +28,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.SonarProjectBr
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.ConfigurationRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.UserTokenRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.dogfooding.DogfoodingRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.FileRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -91,6 +92,9 @@ public interface SonarLintRpcServer {
 
   @JsonDelegate
   TaintVulnerabilityTrackingRpcService getTaintVulnerabilityTrackingService();
+
+  @JsonDelegate
+  DogfoodingRpcService getDogfoodingService();
 
   @JsonRequest
   CompletableFuture<Void> shutdown();

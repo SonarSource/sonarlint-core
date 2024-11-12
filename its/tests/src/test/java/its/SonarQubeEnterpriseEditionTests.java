@@ -417,7 +417,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     backend = clientLauncher.getServerProxy();
     try {
       var languages = Set.of(JAVA, COBOL, C, TSQL, APEX, SECRETS, JCL);
-      var featureFlags = new FeatureFlagsDto(true, true, true, false, true, false, false, true, false, true);
+      var featureFlags = new FeatureFlagsDto(true, true, true, false, true, false, false, true, false, true, false);
       backend.initialize(
           new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(), null, featureFlags,
             sonarUserHome.resolve("storage"),

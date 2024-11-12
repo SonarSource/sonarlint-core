@@ -1,8 +1,23 @@
+# 10.13
+
+## Breaking changes
+
+* New feature flag `enableMonitoring` in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto` allows clients to opt into monitoring with Sentry
+
+## New features
+
+* Introduce `org.sonarsource.sonarlint.core.rpc.protocol.backend.dogfooding.DogfoodingRpcService.isDogfoodingEnvironment` method to allow clients to know if it is running in a dogfooding environment
+  * Will return `true` if `SONARSOURCE_DOGFOODING` environment variable is set and equals `"1"`
+  * Will return `false` in all other cases
+* Introduce opt-in monitoring via Sentry
+  * As a first step, the monitoring service is only initialized in dogfooding environments when the feature flag is set
+  * All logging events sent to the client at the `ERROR` level are reported as monitoring events
+
 # 10.12
 
 ## Breaking changes
 
-* Adapt org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams.languageSpecificRequirements to accept org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.JsTsRequirementsDto instead of clientNodeJsPath
+* Adapt `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams.languageSpecificRequirements to accept org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.JsTsRequirementsDto` instead of `clientNodeJsPath`
 
 ## New features
 
