@@ -20,18 +20,11 @@
 package org.sonarsource.sonarlint.core.commons.log;
 
 import java.util.Optional;
-import java.util.regex.Pattern;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput.Level;
 
 class LogOutputDelegator {
-
-  /**
-   * Temporary until the actual log is removed from sonar-analyzer-commons
-   * See SLCORE-520
-   */
-  private static final Pattern SKIPPED_MESSAGE_PATTERN = Pattern.compile("^Skipping section '.*?' for rule '.*?', content is empty$");
 
   private final InheritableThreadLocal<LogOutput> target = new InheritableThreadLocal<>();
 
@@ -42,9 +35,6 @@ class LogOutputDelegator {
       return noLogOutputConfigured;
     });
     if (output != null) {
-      if (formattedMessage != null && level == Level.DEBUG && SKIPPED_MESSAGE_PATTERN.matcher(formattedMessage).matches()) {
-        return;
-      }
       output.log(formattedMessage, level, stackTrace);
     }
   }

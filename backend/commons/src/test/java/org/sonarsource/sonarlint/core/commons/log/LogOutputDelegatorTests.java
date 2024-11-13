@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.commons.log;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatchers;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput.Level;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -69,14 +68,6 @@ class LogOutputDelegatorTests {
   void handle_nulls() {
     delegator.setTarget(output);
     delegator.log(null, Level.ERROR, (Throwable) null);
-    verifyNoInteractions(output);
-  }
-
-  @Test
-  void should_not_log_skipped_message() {
-    var messageToSkip = "Skipping section 'introduction' for rule 'S123', content is empty";
-    delegator.setTarget(output);
-    delegator.log(messageToSkip, Level.DEBUG, (Throwable) null);
     verifyNoInteractions(output);
   }
 }
