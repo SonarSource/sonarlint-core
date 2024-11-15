@@ -21,8 +21,12 @@ package mediumtest.fixtures.storage;
 
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.Map;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 
 public class ServerIssueFixtures {
@@ -89,12 +93,13 @@ public class ServerIssueFixtures {
     }
   }
 
-  public static abstract class AbstractServerIssueBuilder<T extends AbstractServerIssueBuilder<T>> {
+  public abstract static class AbstractServerIssueBuilder<T extends AbstractServerIssueBuilder<T>> {
     protected final String key;
     protected boolean resolved = false;
     protected Instant introductionDate = Instant.now();
     protected RuleType ruleType = RuleType.BUG;
     protected IssueSeverity issueSeverity;
+    protected Map<SoftwareQuality, ImpactSeverity> impacts = Collections.emptyMap();
 
     protected AbstractServerIssueBuilder(String key) {
       this.key = key;
@@ -122,6 +127,11 @@ public class ServerIssueFixtures {
 
     public T withSeverity(IssueSeverity issueSeverity) {
       this.issueSeverity = issueSeverity;
+      return (T) this;
+    }
+
+    public T withImpacts(Map<SoftwareQuality, ImpactSeverity> impacts) {
+      this.impacts = impacts;
       return (T) this;
     }
   }

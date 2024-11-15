@@ -31,6 +31,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,8 +44,10 @@ import org.jetbrains.annotations.NotNull;
 import org.sonar.scanner.protocol.Constants;
 import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
@@ -289,6 +292,13 @@ public class ServerFixture {
           return this;
         }
 
+        public ServerProjectBranchBuilder withIssue(String issueKey, String ruleKey, String message, String author, String filePath,
+          String hash, Constants.Severity severity, RuleType ruleType, String status, String resolution, Instant creationDate, TextRange textRange,
+          Map<SoftwareQuality, ImpactSeverity> impacts) {
+          this.issues.add(new ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, creationDate, textRange, ruleType, hash, severity, impacts));
+          return this;
+        }
+
         public ServerProjectBranchBuilder withSourceFile(String componentKey, UnaryOperator<ServerSourceFileBuilder> sourceFileBuilder) {
           var builder = new ServerSourceFileBuilder();
           this.sourceFileByComponentKey.put(componentKey, sourceFileBuilder.apply(builder));
@@ -346,7 +356,14 @@ public class ServerFixture {
           private String hash;
           private Constants.Severity severity;
           private boolean manualSeverity = false;
+          private Map<SoftwareQuality, ImpactSeverity> impacts;
 
+          private ServerIssue(String issueKey, String ruleKey, String message, String author, String filePath, String status,
+            String resolution, Instant introductionDate, TextRange textRange, RuleType ruleType, String hash, Constants.Severity severity,
+            Map<SoftwareQuality, ImpactSeverity> impacts) {
+            this(issueKey, ruleKey, message, author, filePath, status, resolution, introductionDate, textRange, ruleType, hash, severity);
+            this.impacts = impacts;
+          }
 
           private ServerIssue(String issueKey, String ruleKey, String message, String author, String filePath, String status,
             String resolution, Instant introductionDate, TextRange textRange, RuleType ruleType, String hash, Constants.Severity severity) {
@@ -370,6 +387,7 @@ public class ServerFixture {
             this.ruleType = ruleType;
             this.hash = "hash";
             this.severity = Constants.Severity.BLOCKER;
+            this.impacts = Collections.emptyMap();
           }
 
           public String getFilePath() {
@@ -755,7 +773,11 @@ public class ServerFixture {
                 .addIssues(
                   Issues.Issue.newBuilder()
                     .setKey(issue.getKey()).setRule(issue.getRule()).setCreationDate(issue.getCreationDate()).setMessage(issue.getMessage())
-                    .setTextRange(issue.getTextRange()).setComponent(issue.getComponent()).build())
+                    .setTextRange(issue.getTextRange()).setComponent(issue.getComponent())
+                    .addAllImpacts(issue.getImpactsList().stream().map(i -> Common.Impact.newBuilder()
+                      .setSoftwareQuality(i.getSoftwareQuality())
+                      .setSeverity(i.getSeverity())
+                      .build()).collect(toList())).build())
                 .addAllComponents(
                   issuesPerFilePath.keySet().stream().map(issues -> Issues.Component.newBuilder().setPath(issues).setKey(projectKey + ":" + issues).build()).collect(toList()))
                 .setRules(Issues.SearchWsResponse.newBuilder().getRulesBuilder().addRules(Common.Rule.newBuilder().setKey(issue.getRule()).build()))
@@ -807,24 +829,26 @@ public class ServerFixture {
     private static Map<String, List<Issues.Issue>> getIssuesPerFilePath(String projectKey, ServerBuilder.ServerProjectBuilder.ServerProjectBranchBuilder pullRequestOrBranch) {
       return Stream.concat(pullRequestOrBranch.issues.stream(), pullRequestOrBranch.taintIssues.stream())
         .collect(groupingBy(ServerBuilder.ServerProjectBuilder.ServerProjectBranchBuilder.ServerIssue::getFilePath,
-          mapping(issue -> {
-            var builder = Issues.Issue.newBuilder()
-              .setKey(issue.issueKey)
-              .setComponent(projectKey + ":" + issue.filePath)
-              .setRule(issue.ruleKey)
-              .setMessage(issue.message)
-              .setTextRange(Common.TextRange.newBuilder()
-                .setStartLine(issue.textRange.getStartLine())
-                .setStartOffset(issue.textRange.getStartLineOffset())
-                .setEndLine(issue.textRange.getEndLine())
-                .setEndOffset(issue.textRange.getEndLineOffset())
-                .build())
-              .setCreationDate(DATETIME_FORMATTER.format(issue.introductionDate))
-              .setStatus(issue.status)
-              .setAssignee(issue.author)
-              .setType(Common.RuleType.valueOf(issue.ruleType.name()));
-            return builder.build();
-          }, toList())));
+          mapping(issue -> Issues.Issue.newBuilder()
+            .setKey(issue.issueKey)
+            .setComponent(projectKey + ":" + issue.filePath)
+            .setRule(issue.ruleKey)
+            .setMessage(issue.message)
+            .setTextRange(Common.TextRange.newBuilder()
+              .setStartLine(issue.textRange.getStartLine())
+              .setStartOffset(issue.textRange.getStartLineOffset())
+              .setEndLine(issue.textRange.getEndLine())
+              .setEndOffset(issue.textRange.getEndLineOffset())
+              .build())
+            .setCreationDate(DATETIME_FORMATTER.format(issue.introductionDate))
+            .setStatus(issue.status)
+            .setAssignee(issue.author)
+            .setType(Common.RuleType.valueOf(issue.ruleType.name()))
+            .addAllImpacts(issue.impacts.entrySet().stream().map(i -> Common.Impact.newBuilder()
+              .setSoftwareQuality(Common.SoftwareQuality.valueOf(i.getKey().name()))
+              .setSeverity(Common.ImpactSeverity.valueOf(i.getValue().name()))
+              .build()).collect(toList()))
+            .build(), toList())));
     }
 
     private void registerApiHotspotsPullResponses() {
@@ -949,20 +973,25 @@ public class ServerFixture {
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
         var branchParameter = branchName == null ? "" : "&branchName=" + branchName;
         var timestamp = Issues.IssuesPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
-        var issuesArray = branch.issues.stream().map(issue -> Issues.IssueLite.newBuilder()
-          .setKey(issue.issueKey)
-          .setRuleKey(issue.ruleKey)
-          .setType(Common.RuleType.BUG)
-          .setUserSeverity(Common.Severity.MAJOR)
-          .setMainLocation(Issues.Location.newBuilder().setFilePath(issue.filePath).setMessage(issue.message)
-            .setTextRange(Issues.TextRange.newBuilder()
-              .setStartLine(issue.textRange.getStartLine())
-              .setStartLineOffset(issue.textRange.getStartLineOffset())
-              .setEndLine(issue.textRange.getEndLine())
-              .setEndLineOffset(issue.textRange.getEndLineOffset())
-              .setHash("hash")))
-          .setCreationDate(123456789L)
-          .build()).toArray(Issues.IssueLite[]::new);
+        var issuesArray = branch.issues.stream().map(issue ->
+          Issues.IssueLite.newBuilder()
+            .setKey(issue.issueKey)
+            .setRuleKey(issue.ruleKey)
+            .setType(Common.RuleType.BUG)
+            .setUserSeverity(Common.Severity.MAJOR)
+            .setMainLocation(Issues.Location.newBuilder().setFilePath(issue.filePath).setMessage(issue.message)
+              .setTextRange(Issues.TextRange.newBuilder()
+                .setStartLine(issue.textRange.getStartLine())
+                .setStartLineOffset(issue.textRange.getStartLineOffset())
+                .setEndLine(issue.textRange.getEndLine())
+                .setEndLineOffset(issue.textRange.getEndLineOffset())
+                .setHash("hash")))
+            .setCreationDate(123456789L)
+            .addAllImpacts(issue.impacts.entrySet().stream().map(i -> Common.Impact.newBuilder()
+              .setSoftwareQuality(Common.SoftwareQuality.valueOf(i.getKey().name()))
+              .setSeverity(Common.ImpactSeverity.valueOf(i.getValue().name()))
+              .build()).collect(toList()))
+            .build()).toArray(Issues.IssueLite[]::new);
         var messages = new Message[issuesArray.length + 1];
         messages[0] = timestamp;
         System.arraycopy(issuesArray, 0, messages, 1, issuesArray.length);

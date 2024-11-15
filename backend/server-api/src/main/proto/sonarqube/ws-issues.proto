@@ -98,6 +98,7 @@ message IssueLite {
   optional sonarqube.ws.commons.RuleType type = 6;
   optional Location mainLocation = 7;
   optional bool closed = 8;
+  repeated sonarqube.ws.commons.Impact impacts = 9;
 }
 
 // Response of GET api/issues/pull_taint

@@ -63,7 +63,7 @@ public class ServerTaintIssueFixtures {
     }
   }
 
-  public static abstract class AbstractServerTaintIssueBuilder<T extends AbstractServerTaintIssueBuilder<T>> {
+  public abstract static class AbstractServerTaintIssueBuilder<T extends AbstractServerTaintIssueBuilder<T>> {
     protected final String key;
     protected boolean resolved = false;
     protected Instant introductionDate = Instant.now();

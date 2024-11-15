@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import mockwebserver3.MockResponse;
@@ -29,8 +30,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonar.scanner.protocol.Constants.Severity;
 import org.sonar.scanner.protocol.input.ScannerInput;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -202,6 +205,33 @@ class IssueDownloaderTests {
 
     var serverIssue = result.getChangedIssues().get(0);
     assertThat(serverIssue.getUserSeverity()).isEqualTo(IssueSeverity.MAJOR);
+  }
+
+  @Test
+  void test_download_one_issue_pull_ws_with_user_impacts() {
+    var timestamp = Issues.IssuesPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
+    var issue = IssueLite.newBuilder()
+      .setKey("uuid")
+      .setRuleKey("sonarjava:S123")
+      .setType(Common.RuleType.BUG)
+      .setMainLocation(Location.newBuilder().setFilePath("foo/bar/Hello.java").setMessage("Primary message")
+        .setTextRange(Issues.TextRange.newBuilder().setStartLine(1).setStartLineOffset(2).setEndLine(3)
+          .setEndLineOffset(4).setHash("hash")))
+      .setCreationDate(123456789L)
+      .addImpacts(Common.Impact.newBuilder()
+        .setSoftwareQuality(Common.SoftwareQuality.SECURITY)
+        .setSeverity(Common.ImpactSeverity.HIGH)
+        .build())
+      .build();
+
+    mockServer.addProtobufResponseDelimited("/api/issues/pull?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java", timestamp, issue);
+
+    var result = underTest.downloadFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty(), new SonarLintCancelMonitor());
+    assertThat(result.getChangedIssues()).hasSize(1);
+    assertThat(result.getClosedIssueKeys()).isEmpty();
+
+    var serverIssue = result.getChangedIssues().get(0);
+    assertThat(serverIssue.getImpacts()).isEqualTo(Map.of(SoftwareQuality.SECURITY, ImpactSeverity.HIGH));
   }
 
   @Test

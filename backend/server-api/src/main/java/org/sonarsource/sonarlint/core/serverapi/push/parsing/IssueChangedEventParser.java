@@ -20,13 +20,19 @@
 package org.sonarsource.sonarlint.core.serverapi.push.parsing;
 
 import com.google.gson.Gson;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
+import org.sonarsource.sonarlint.core.serverapi.push.parsing.common.ImpactPayload;
 
 import static org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils.isBlank;
 
@@ -44,10 +50,25 @@ public class IssueChangedEventParser implements EventParser<IssueChangedEvent> {
     }
     return Optional.of(new IssueChangedEvent(
       payload.projectKey,
-      payload.issues.stream().map(issueChange -> issueChange.issueKey).collect(Collectors.toList()),
+      payload.issues.stream()
+        .map(issueChange ->
+          new IssueChangedEvent.Issue(issueChange.issueKey, issueChange.branchName, adapt(issueChange.impacts))
+        )
+        .collect(Collectors.toList()),
       payload.userSeverity != null ? IssueSeverity.valueOf(payload.userSeverity) : null,
       payload.userType != null ? RuleType.valueOf(payload.userType) : null,
       payload.resolved));
+  }
+
+  public static Map<SoftwareQuality, ImpactSeverity> adapt(@Nullable ImpactPayload[] payloads) {
+    if (payloads == null) {
+      return Map.of();
+    }
+    return Arrays.stream(payloads)
+      .collect(Collectors.toMap(
+        payload -> SoftwareQuality.valueOf(payload.getSoftwareQuality()),
+        payload -> ImpactSeverity.valueOf(payload.getSeverity())
+      ));
   }
 
   private static class IssueChangedEventPayload {
@@ -65,6 +86,8 @@ public class IssueChangedEventParser implements EventParser<IssueChangedEvent> {
     private static class ChangedIssuePayload {
       private String issueKey;
       private String branchName;
+      @Nullable
+      private ImpactPayload[] impacts;
 
       private boolean isInvalid() {
         return isBlank(issueKey) || isBlank(branchName);

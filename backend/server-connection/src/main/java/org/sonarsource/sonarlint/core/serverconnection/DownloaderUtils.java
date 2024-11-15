@@ -17,25 +17,30 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection.issues;
+package org.sonarsource.sonarlint.core.serverconnection;
 
-import java.nio.file.Path;
-import java.time.Instant;
-import java.util.Map;
-import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
-import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 
-/**
- * Issues reported at file level.
- */
-public class FileLevelServerIssue extends ServerIssue<FileLevelServerIssue> {
+public class DownloaderUtils {
 
-  public FileLevelServerIssue(String key, boolean resolved, String ruleKey, String message, Path filePath, Instant creationDate, @Nullable IssueSeverity userSeverity,
-    RuleType type, Map<SoftwareQuality, ImpactSeverity> impacts) {
-    super(key, resolved, ruleKey, message, filePath, creationDate, userSeverity, type, impacts);
+  private DownloaderUtils() {
+    // Utility class
+  }
+
+  public static SoftwareQuality parseProtoSoftwareQuality(Common.Impact protoImpact) {
+    if (!protoImpact.hasSoftwareQuality() || protoImpact.getSoftwareQuality() == Common.SoftwareQuality.UNKNOWN_IMPACT_QUALITY) {
+      throw new IllegalArgumentException("Unknown or missing software quality");
+    }
+    return SoftwareQuality.valueOf(protoImpact.getSoftwareQuality().name());
+  }
+
+  public static ImpactSeverity parseProtoImpactSeverity(Common.Impact protoImpact) {
+    if (!protoImpact.hasSeverity() || protoImpact.getSeverity() == Common.ImpactSeverity.UNKNOWN_IMPACT_SEVERITY) {
+      throw new IllegalArgumentException("Unknown or missing impact severity");
+    }
+    return ImpactSeverity.mapSeverity(protoImpact.getSeverity().name());
   }
 
 }

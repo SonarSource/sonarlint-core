@@ -53,10 +53,10 @@ import testutils.MockWebServerExtensionWithProtobuf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
+import static org.sonarsource.sonarlint.core.serverconnection.DownloaderUtils.parseProtoImpactSeverity;
+import static org.sonarsource.sonarlint.core.serverconnection.DownloaderUtils.parseProtoSoftwareQuality;
 import static org.sonarsource.sonarlint.core.serverconnection.TaintIssueDownloader.hash;
 import static org.sonarsource.sonarlint.core.serverconnection.TaintIssueDownloader.parseProtoCleanCodeAttribute;
-import static org.sonarsource.sonarlint.core.serverconnection.TaintIssueDownloader.parseProtoImpactSeverity;
-import static org.sonarsource.sonarlint.core.serverconnection.TaintIssueDownloader.parseProtoSoftwareQuality;
 
 class TaintIssueDownloaderTests {
   @RegisterExtension

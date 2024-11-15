@@ -47,7 +47,8 @@ public class ServerIssueFixtures {
       Instant.now(),
       IssueSeverity.MINOR,
       RuleType.BUG,
-      1);
+      1,
+      Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.HIGH));
   }
 
   public static FileLevelServerIssue aFileLevelServerIssue() {
@@ -59,7 +60,8 @@ public class ServerIssueFixtures {
       Path.of("file/path"),
       Instant.now(),
       IssueSeverity.MINOR,
-      RuleType.BUG);
+      RuleType.BUG,
+      Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.HIGH));
   }
 
   public static RangeLevelServerIssue aServerIssue() {
@@ -72,7 +74,8 @@ public class ServerIssueFixtures {
       Instant.now(),
       IssueSeverity.MINOR,
       RuleType.BUG,
-      new TextRangeWithHash(1, 2, 3, 4, "ab12"));
+      new TextRangeWithHash(1, 2, 3, 4, "ab12"),
+      Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.HIGH));
   }
 
   public static ServerTaintIssue aServerTaintIssue() {

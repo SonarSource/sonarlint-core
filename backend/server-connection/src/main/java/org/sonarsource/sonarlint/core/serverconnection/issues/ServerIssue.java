@@ -21,10 +21,13 @@ package org.sonarsource.sonarlint.core.serverconnection.issues;
 
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Map;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 
 public abstract class ServerIssue<G extends ServerIssue<G>> implements ServerFinding {
   private String key;
@@ -35,8 +38,10 @@ public abstract class ServerIssue<G extends ServerIssue<G>> implements ServerFin
   private Instant creationDate;
   private IssueSeverity userSeverity;
   private RuleType type;
+  private Map<SoftwareQuality, ImpactSeverity> impacts;
 
-  protected ServerIssue(String key, boolean resolved, String ruleKey, String message, Path filePath, Instant creationDate, @Nullable IssueSeverity userSeverity, RuleType type) {
+  protected ServerIssue(String key, boolean resolved, String ruleKey, String message, Path filePath, Instant creationDate, @Nullable IssueSeverity userSeverity, RuleType type,
+    Map<SoftwareQuality, ImpactSeverity> impacts) {
     this.key = key;
     this.resolved = resolved;
     this.ruleKey = ruleKey;
@@ -45,6 +50,7 @@ public abstract class ServerIssue<G extends ServerIssue<G>> implements ServerFin
     this.creationDate = creationDate;
     this.userSeverity = userSeverity;
     this.type = type;
+    this.impacts = impacts;
   }
 
   public String getKey() {
@@ -79,6 +85,10 @@ public abstract class ServerIssue<G extends ServerIssue<G>> implements ServerFin
 
   public RuleType getType() {
     return type;
+  }
+
+  public Map<SoftwareQuality, ImpactSeverity> getImpacts() {
+    return impacts;
   }
 
   public G setKey(String key) {
@@ -118,6 +128,11 @@ public abstract class ServerIssue<G extends ServerIssue<G>> implements ServerFin
 
   public G setResolved(boolean resolved) {
     this.resolved = resolved;
+    return (G) this;
+  }
+
+  public G setImpacts(Map<SoftwareQuality, ImpactSeverity> impacts) {
+    this.impacts = impacts;
     return (G) this;
   }
 
