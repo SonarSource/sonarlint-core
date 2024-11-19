@@ -715,8 +715,11 @@ class SonarCloudTests extends AbstractConnectedTests {
   private static List<RawIssueDto> analyze(String projectKey, String fileName, String configScopeId, String ... properties) {
     final var baseDir = Paths.get("projects/" + projectKey).toAbsolutePath();
     final var filePath = baseDir.resolve(fileName);
-    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(),
-      List.of(new ClientFileDto(filePath.toUri(), Path.of(fileName), configScopeId, false, null, filePath, null, null, true))));
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(
+      List.of(new ClientFileDto(filePath.toUri(), Path.of(fileName), configScopeId, false, null, filePath, null, null, true)),
+      List.of(),
+      List.of()
+    ));
 
     var analyzeResponse = backend.getAnalysisService().analyzeFiles(
       new AnalyzeFilesParams(configScopeId, UUID.randomUUID(), List.of(filePath.toUri()), toMap(properties), System.currentTimeMillis())

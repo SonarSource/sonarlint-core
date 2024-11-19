@@ -90,7 +90,7 @@ class ConnectionSuggestionMediumTests {
     backend = newBackend()
       .build(fakeClient);
 
-    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(fileDto), Collections.emptyList(), Collections.emptyList()));
 
     ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
     verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
@@ -122,7 +122,7 @@ class ConnectionSuggestionMediumTests {
 
     backend = newBackend().build(fakeClient);
 
-    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(fileDto), Collections.emptyList(), Collections.emptyList()));
 
     await().pollDelay(Duration.ofMillis(300)).untilAsserted(() -> assertThat(fakeClient.getSuggestionsByConfigScope()).isEmpty());
   }
@@ -146,7 +146,7 @@ class ConnectionSuggestionMediumTests {
 
     backend = newBackend().build(fakeClient);
 
-    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(fileDto), Collections.emptyList(), Collections.emptyList()));
 
     await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(fakeClient.getSuggestionsByConfigScope()).hasSize(1));
   }
@@ -166,7 +166,7 @@ class ConnectionSuggestionMediumTests {
     backend = newBackend()
       .build(fakeClient);
 
-    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(fileDto), Collections.emptyList(), Collections.emptyList()));
 
     ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
     verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
@@ -199,7 +199,7 @@ class ConnectionSuggestionMediumTests {
     backend = newBackend()
       .build(fakeClient);
 
-    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(fileDto), Collections.emptyList(), Collections.emptyList()));
 
     ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
     verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
@@ -226,7 +226,7 @@ class ConnectionSuggestionMediumTests {
     backend = newBackend()
       .build(fakeClient);
 
-    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(fileDto), Collections.emptyList(), Collections.emptyList()));
 
     ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
     verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
@@ -253,7 +253,7 @@ class ConnectionSuggestionMediumTests {
     backend = newBackend()
       .build(fakeClient);
 
-    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(fileDto), Collections.emptyList(), Collections.emptyList()));
 
     ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
     verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
@@ -393,7 +393,7 @@ class ConnectionSuggestionMediumTests {
     backend = newBackend()
       .build(fakeClient);
 
-    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(fileDto), Collections.emptyList(), Collections.emptyList()));
 
     ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
     verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());
@@ -422,7 +422,7 @@ class ConnectionSuggestionMediumTests {
     backend = newBackend()
       .build(fakeClient);
 
-    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(), List.of(fileDto)));
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(fileDto), Collections.emptyList(), Collections.emptyList()));
 
     ArgumentCaptor<Map<String, List<ConnectionSuggestionDto>>> suggestionCaptor = ArgumentCaptor.forClass(Map.class);
     verify(fakeClient, timeout(5000)).suggestConnection(suggestionCaptor.capture());

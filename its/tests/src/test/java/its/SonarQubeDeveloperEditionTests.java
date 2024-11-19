@@ -1405,8 +1405,11 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   private List<RawIssueDto> analyzeFile(String configScopeId, String baseDir, String filePathStr, String... properties) {
     var filePath = Path.of("projects").resolve(baseDir).resolve(filePathStr);
     var fileUri = filePath.toUri();
-    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(),
-      List.of(new ClientFileDto(fileUri, Path.of(filePathStr), configScopeId, false, null, filePath.toAbsolutePath(), null, null, true))));
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(
+      List.of(new ClientFileDto(fileUri, Path.of(filePathStr), configScopeId, false, null, filePath.toAbsolutePath(), null, null, true)),
+      List.of(),
+      List.of()
+    ));
 
     var analyzeResponse = backend.getAnalysisService().analyzeFiles(
       new AnalyzeFilesParams(configScopeId, UUID.randomUUID(), List.of(fileUri), toMap(properties), System.currentTimeMillis())
