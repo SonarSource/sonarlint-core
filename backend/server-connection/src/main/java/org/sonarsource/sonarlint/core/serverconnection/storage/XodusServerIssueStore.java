@@ -77,6 +77,7 @@ import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint.TextRange
 
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
+import static org.sonarsource.sonarlint.core.commons.storage.XodusPurgeUtils.purgeOldTemporaryFiles;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.StorageUtils.deserializeLanguages;
 
 public class XodusServerIssueStore implements ProjectServerIssueStore {
@@ -91,6 +92,8 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
+  private static final String SERVER_ISSUE_STORE = "xodus-issue-store";
+  private static final Integer PURGE_NUMBER_OF_DAYS = 3;
   private static final String BRANCH_ENTITY_TYPE = "Branch";
   private static final String FILE_ENTITY_TYPE = "File";
   private static final String ISSUE_ENTITY_TYPE = "Issue";
@@ -149,7 +152,8 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   XodusServerIssueStore(Path backupDir, Path workDir, StoreTransactionalExecutable afterInit) throws IOException {
-    xodusDbDir = Files.createTempDirectory(workDir, "xodus-issue-store");
+    xodusDbDir = Files.createTempDirectory(workDir, SERVER_ISSUE_STORE);
+    purgeOldTemporaryFiles(workDir, PURGE_NUMBER_OF_DAYS, SERVER_ISSUE_STORE + "*");
     backupFile = backupDir.resolve(BACKUP_TAR_GZ);
     if (Files.isRegularFile(backupFile)) {
       LOG.debug("Restoring previous server issue database from {}", backupFile);

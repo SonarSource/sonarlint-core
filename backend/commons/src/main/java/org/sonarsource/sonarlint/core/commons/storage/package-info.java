@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Server API
+ * SonarLint Core - Commons
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,32 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverapi.push.parsing.common;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.commons.storage;
 
-public class ImpactPayload {
-
-  private String softwareQuality;
-  private String severity;
-
-  public ImpactPayload(String softwareQuality, String severity) {
-    this.softwareQuality = softwareQuality;
-    this.severity = severity;
-  }
-
-  public String getSoftwareQuality() {
-    return softwareQuality;
-  }
-
-  public void setSoftwareQuality(String softwareQuality) {
-    this.softwareQuality = softwareQuality;
-  }
-
-  public String getSeverity() {
-    return severity;
-  }
-
-  public void setSeverity(String severity) {
-    this.severity = severity;
-  }
-
-}
+import javax.annotation.ParametersAreNonnullByDefault;
