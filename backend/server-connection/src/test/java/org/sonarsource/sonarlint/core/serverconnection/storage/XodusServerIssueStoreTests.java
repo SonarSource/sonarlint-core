@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -873,5 +874,18 @@ class XodusServerIssueStoreTests {
       .replaceAllIssuesOfBranch("branch", List.of(aServerIssue().setFilePath(filePath).setCreationDate(creationDate)));
 
     assertThat(store.containsIssue("key_not_found")).isFalse();
+  }
+
+  @Test
+  void should_purge_old_folders() throws IOException {
+    store.close();
+    var oldFile = Files.createTempFile(workDir, "xodus-issue-store", UUID.randomUUID().toString());
+    var file = oldFile.toFile();
+    var oneWeekAgo = System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000;
+    file.setLastModified(oneWeekAgo);
+
+    store = new XodusServerIssueStore(backupDir, workDir);
+
+    assertThat(Files.exists(oldFile)).isFalse();
   }
 }

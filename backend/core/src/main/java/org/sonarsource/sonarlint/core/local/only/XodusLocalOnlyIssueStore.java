@@ -51,7 +51,7 @@ import org.sonarsource.sonarlint.core.serverconnection.storage.TarGzUtils;
 import org.sonarsource.sonarlint.core.serverconnection.storage.UuidBinding;
 
 import static java.util.Objects.requireNonNull;
-import static org.sonarsource.sonarlint.core.storage.XodusPurgeUtils.purgeOldTemporaryFiles;
+import static org.sonarsource.sonarlint.core.commons.storage.XodusPurgeUtils.purgeOldTemporaryFiles;
 
 public class XodusLocalOnlyIssueStore {
 
