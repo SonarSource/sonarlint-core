@@ -49,8 +49,8 @@ public class PluginsSynchronizer {
     this.embeddedPluginKeys = embeddedPluginKeys;
   }
 
-  public PluginSynchronizationSummary synchronize(ServerApi serverApi, boolean supportsCustomSecrets, SonarLintCancelMonitor cancelMonitor) {
-    if (supportsCustomSecrets) {
+  public PluginSynchronizationSummary synchronize(ServerApi serverApi, boolean useSecretsFromServer, SonarLintCancelMonitor cancelMonitor) {
+    if (useSecretsFromServer) {
       var embeddedPluginKeysCopy = new HashSet<>(embeddedPluginKeys);
       embeddedPluginKeysCopy.remove(SonarLanguage.SECRETS.getPluginKey());
       embeddedPluginKeys = embeddedPluginKeysCopy;

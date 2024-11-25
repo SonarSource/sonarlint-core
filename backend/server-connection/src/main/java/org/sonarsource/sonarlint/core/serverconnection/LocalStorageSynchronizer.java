@@ -52,12 +52,11 @@ public class LocalStorageSynchronizer {
   public PluginSynchronizationSummary synchronizeServerInfosAndPlugins(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
     serverInfoSynchronizer.synchronize(serverApi, cancelMonitor);
     var version = storage.serverInfo().read().orElseThrow().getVersion();
-    // INFO: In order to download `sonar-text` alongside `sonar-text-enterprise` on SQ 10.4+ we have to change the
-    //       plug-in synchronizer to work correctly the moment the connection is established and the plug-ins are
-    //       downloaded for the first time and also everytime the plug-ins are refreshed (e.g. after IDE restart).
-    var supportsCustomSecrets = !serverApi.isSonarCloud()
+    // On SonarQube server 10.4+ and SonarQube Cloud, we need to use the server's text analyzer
+    // to support commercial rules (SQC and SQS 10.8+ DE+) and custom secrets (SQS 10.4+ EE+)
+    var useSecretsFromServer = serverApi.isSonarCloud()
       && version.compareToIgnoreQualifier(CUSTOM_SECRETS_MIN_SQ_VERSION) >= 0;
-    return pluginsSynchronizer.synchronize(serverApi, supportsCustomSecrets, cancelMonitor);
+    return pluginsSynchronizer.synchronize(serverApi, useSecretsFromServer, cancelMonitor);
   }
 
   private static AnalyzerSettingsUpdateSummary diffAnalyzerConfiguration(AnalyzerConfiguration original, AnalyzerConfiguration updated) {
