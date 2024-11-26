@@ -40,7 +40,6 @@ import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
-import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
@@ -73,7 +72,6 @@ class ShowFixSuggestionRequestHandlerTests {
   private SonarLintRpcClient sonarLintRpcClient;
   private FeatureFlagsDto featureFlagsDto;
   private InitializeParams initializeParams;
-  private SonarProjectBranchTrackingService sonarProjectBranchTrackingService;
   private ShowFixSuggestionRequestHandler showFixSuggestionRequestHandler;
   private TelemetryService telemetryService;
 
@@ -81,20 +79,19 @@ class ShowFixSuggestionRequestHandlerTests {
   void setup() {
     connectionConfigurationRepository = mock(ConnectionConfigurationRepository.class);
     configurationRepository = mock(ConfigurationRepository.class);
-    BindingSuggestionProvider bindingSuggestionProvider = mock(BindingSuggestionProvider.class);
-    BindingCandidatesFinder bindingCandidatesFinder = mock(BindingCandidatesFinder.class);
+    var bindingSuggestionProvider = mock(BindingSuggestionProvider.class);
+    var bindingCandidatesFinder = mock(BindingCandidatesFinder.class);
     sonarLintRpcClient = mock(SonarLintRpcClient.class);
-    PathTranslationService pathTranslationService = mock(PathTranslationService.class);
-    UserTokenService userTokenService = mock(UserTokenService.class);
+    var pathTranslationService = mock(PathTranslationService.class);
+    var userTokenService = mock(UserTokenService.class);
     featureFlagsDto = mock(FeatureFlagsDto.class);
     when(featureFlagsDto.canOpenFixSuggestion()).thenReturn(true);
     initializeParams = mock(InitializeParams.class);
-    sonarProjectBranchTrackingService = mock(SonarProjectBranchTrackingService.class);
     when(initializeParams.getFeatureFlags()).thenReturn(featureFlagsDto);
-    SonarCloudActiveEnvironment sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
+    var sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
     telemetryService = mock(TelemetryService.class);
 
-    showFixSuggestionRequestHandler = new ShowFixSuggestionRequestHandler(sonarLintRpcClient, telemetryService, sonarProjectBranchTrackingService, initializeParams,
+    showFixSuggestionRequestHandler = new ShowFixSuggestionRequestHandler(sonarLintRpcClient, telemetryService, initializeParams,
       new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintRpcClient, connectionConfigurationRepository, configurationRepository, userTokenService, sonarCloudActiveEnvironment), pathTranslationService, sonarCloudActiveEnvironment);
   }
 

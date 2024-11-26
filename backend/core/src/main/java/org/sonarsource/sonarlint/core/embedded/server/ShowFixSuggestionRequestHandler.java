@@ -46,7 +46,6 @@ import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.net.URIBuilder;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
-import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -77,18 +76,16 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
 
   private final SonarLintRpcClient client;
   private final TelemetryService telemetryService;
-  private final SonarProjectBranchTrackingService branchTrackingService;
   private final boolean canOpenFixSuggestion;
   private final RequestHandlerBindingAssistant requestHandlerBindingAssistant;
   private final PathTranslationService pathTranslationService;
   private final String sonarCloudUrl;
 
-  public ShowFixSuggestionRequestHandler(SonarLintRpcClient client, TelemetryService telemetryService, SonarProjectBranchTrackingService branchTrackingService,
+  public ShowFixSuggestionRequestHandler(SonarLintRpcClient client, TelemetryService telemetryService,
     InitializeParams params, RequestHandlerBindingAssistant requestHandlerBindingAssistant,
     PathTranslationService pathTranslationService, SonarCloudActiveEnvironment sonarCloudActiveEnvironment) {
     this.client = client;
     this.telemetryService = telemetryService;
-    this.branchTrackingService = branchTrackingService;
     this.canOpenFixSuggestion = params.getFeatureFlags().canOpenFixSuggestion();
     this.requestHandlerBindingAssistant = requestHandlerBindingAssistant;
     this.pathTranslationService = pathTranslationService;
