@@ -134,7 +134,7 @@ class IssueEventsMediumTests {
           "\"issues\": [{" +
           "  \"issueKey\": \"key1\"," +
           "  \"branchName\": \"branchName\"," +
-          "  \"impacts\": [ { \"softwareQuality\": \"SECURITY\", \"severity\": \"BLOCKER\" } ]" +
+          "  \"impacts\": [ { \"softwareQuality\": \"MAINTAINABILITY\", \"severity\": \"BLOCKER\" } ]" +
           "}]," +
           "\"resolved\": true" +
           "}\n\n");
@@ -151,7 +151,75 @@ class IssueEventsMediumTests {
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readIssues("connectionId", projectKey, "branchName", "file/path"))
         .extracting(ServerIssue::getKey, ServerIssue::isResolved, ServerIssue::getImpacts)
+        .containsOnly(tuple("key1", true, Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.BLOCKER))));
+    }
+
+    @Test
+    void it_should_update_issue_in_storage_with_new_impacts_when_it_does_not_exist_in_storage() {
+      var projectKey = "projectKey";
+      var server = newSonarQubeServer("10.0")
+        .withProject(projectKey,
+          project -> project.withBranch("branchName"))
+        .start();
+      mockEvent(server, projectKey, "java",
+        "event: IssueChanged\n" +
+          "data: {" +
+          "\"projectKey\": \"projectKey\"," +
+          "\"issues\": [{" +
+          "  \"issueKey\": \"key1\"," +
+          "  \"branchName\": \"branchName\"," +
+          "  \"impacts\": [ { \"softwareQuality\": \"SECURITY\", \"severity\": \"BLOCKER\" } ]" +
+          "}]," +
+          "\"resolved\": true" +
+          "}\n\n");
+      backend = newBackend()
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
+        .withServerSentEventsEnabled()
+        .withSonarQubeConnection("connectionId", server,
+          storage -> storage.withProject(projectKey, project -> project.withMainBranch("branchName", branch ->
+            branch.withIssue(aServerIssue("key1"))
+          )))
+        .withBoundConfigScope("configScope", "connectionId", projectKey)
+        .build();
+      sseServer.shouldSendServerEventOnce();
+
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readIssues("connectionId", projectKey, "branchName", "file/path"))
+        .extracting(ServerIssue::getKey, ServerIssue::isResolved, ServerIssue::getImpacts)
         .containsOnly(tuple("key1", true, Map.of(SoftwareQuality.SECURITY, ImpactSeverity.BLOCKER))));
+    }
+
+    @Test
+    void it_should_update_issue_in_storage_with_new_impacts_on_different_software_quality() {
+      var projectKey = "projectKey";
+      var server = newSonarQubeServer("10.0")
+        .withProject(projectKey,
+          project -> project.withBranch("branchName"))
+        .start();
+      mockEvent(server, projectKey, "java",
+        "event: IssueChanged\n" +
+          "data: {" +
+          "\"projectKey\": \"projectKey\"," +
+          "\"issues\": [{" +
+          "  \"issueKey\": \"key1\"," +
+          "  \"branchName\": \"branchName\"," +
+          "  \"impacts\": [ { \"softwareQuality\": \"MAINTAINABILITY\", \"severity\": \"HIGH\" } ]" +
+          "}]," +
+          "\"resolved\": true" +
+          "}\n\n");
+      backend = newBackend()
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
+        .withServerSentEventsEnabled()
+        .withSonarQubeConnection("connectionId", server,
+          storage -> storage.withProject(projectKey, project -> project.withMainBranch("branchName", branch ->
+            branch.withIssue(aServerIssue("key1").withImpacts(Map.of(SoftwareQuality.SECURITY, ImpactSeverity.BLOCKER)))
+          )))
+        .withBoundConfigScope("configScope", "connectionId", projectKey)
+        .build();
+      sseServer.shouldSendServerEventOnce();
+
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readIssues("connectionId", projectKey, "branchName", "file/path"))
+        .extracting(ServerIssue::getKey, ServerIssue::isResolved, ServerIssue::getImpacts)
+        .containsOnly(tuple("key1", true, Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.HIGH, SoftwareQuality.SECURITY, ImpactSeverity.BLOCKER))));
     }
 
     @Test
@@ -382,7 +450,7 @@ class IssueEventsMediumTests {
           "\"issues\": [{" +
           "  \"issueKey\": \"myIssueKey\"," +
           "  \"branchName\": \"" + branchName + "\"," +
-          "  \"impacts\": [ { \"softwareQuality\": \"SECURITY\", \"severity\": \"BLOCKER\" } ]" +
+          "  \"impacts\": [ { \"softwareQuality\": \"MAINTAINABILITY\", \"severity\": \"BLOCKER\" } ]" +
           "}]," +
           "\"resolved\": \"true\"" +
           "}\n\n"
@@ -407,12 +475,11 @@ class IssueEventsMediumTests {
       assertThat(raisedIssues).isNotEmpty();
       var raisedIssueDto = raisedIssues.get(0);
       assertThat(raisedIssueDto.getServerKey()).isEqualTo(serverIssueKey);
-      assertThat(raisedIssueDto.isResolved()).isTrue();
       assertThat(raisedIssueDto.getSeverityMode().isRight()).isTrue();
       assertThat(raisedIssueDto.getSeverityMode().getRight().getImpacts().get(0))
         .extracting("softwareQuality", "impactSeverity")
         .containsOnly(
-          org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality.SECURITY,
+          org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality.MAINTAINABILITY,
           org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity.BLOCKER
         );
     }

@@ -158,13 +158,15 @@ public class RuleDetails {
 
   public static Map<SoftwareQuality, ImpactSeverity> mergeImpacts(Map<SoftwareQuality, ImpactSeverity> defaultImpacts,
     List<ImpactPayload> overriddenImpacts) {
-    if (defaultImpacts.isEmpty()) return Collections.emptyMap();
-    var mergedImpacts = new EnumMap<>(defaultImpacts);
+    var mergedImpacts = new EnumMap<SoftwareQuality, ImpactSeverity>(SoftwareQuality.class);
+    if (!defaultImpacts.isEmpty()) {
+      mergedImpacts = new EnumMap<>(defaultImpacts);
+    }
 
-    for (ImpactPayload impact : overriddenImpacts) {
+    for (var impact : overriddenImpacts) {
       var quality = SoftwareQuality.valueOf(impact.getSoftwareQuality());
       var severity = ImpactSeverity.mapSeverity(impact.getSeverity());
-      mergedImpacts.computeIfPresent(quality, (k, v) -> severity);
+      mergedImpacts.put(quality, severity);
     }
 
     return Collections.unmodifiableMap(mergedImpacts);

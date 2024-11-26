@@ -70,7 +70,7 @@ public class ServerIssueFixtures {
     }
 
     public ServerIssue build() {
-      return new ServerIssue(key, resolved, ruleKey, message, Path.of(filePath).toString(), introductionDate, issueSeverity, ruleType, textRangeWithHash);
+      return new ServerIssue(key, resolved, ruleKey, message, Path.of(filePath).toString(), introductionDate, issueSeverity, ruleType, textRangeWithHash, impacts);
     }
   }
 
@@ -89,7 +89,7 @@ public class ServerIssueFixtures {
     }
 
     public ServerIssue build() {
-      return new ServerIssue(key, resolved, "ruleKey", "message", Path.of("file/path").toString(), introductionDate, issueSeverity, ruleType, lineNumber, lineHash);
+      return new ServerIssue(key, resolved, "ruleKey", "message", Path.of("file/path").toString(), introductionDate, issueSeverity, ruleType, lineNumber, lineHash, impacts);
     }
   }
 
@@ -149,8 +149,10 @@ public class ServerIssueFixtures {
     public final TextRangeWithHash textRangeWithHash;
     public final Integer lineNumber;
     public final String lineHash;
+    public final Map<SoftwareQuality, ImpactSeverity> impacts;
 
-    public ServerIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant introductionDate, IssueSeverity userSeverity, RuleType ruleType, TextRangeWithHash textRangeWithHash) {
+    public ServerIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant introductionDate, IssueSeverity userSeverity, RuleType ruleType, TextRangeWithHash textRangeWithHash,
+      Map<SoftwareQuality, ImpactSeverity> impacts) {
       this.key = key;
       this.resolved = resolved;
       this.ruleKey = ruleKey;
@@ -162,9 +164,11 @@ public class ServerIssueFixtures {
       this.textRangeWithHash = textRangeWithHash;
       this.lineNumber = null;
       this.lineHash = null;
+      this.impacts = impacts;
     }
 
-    public ServerIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant introductionDate, IssueSeverity userSeverity, RuleType ruleType, int lineNumber, String lineHash) {
+    public ServerIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant introductionDate, IssueSeverity userSeverity, RuleType ruleType,
+      int lineNumber, String lineHash, Map<SoftwareQuality, ImpactSeverity> impacts) {
       this.key = key;
       this.resolved = resolved;
       this.ruleKey = ruleKey;
@@ -176,6 +180,7 @@ public class ServerIssueFixtures {
       this.textRangeWithHash = null;
       this.lineNumber = lineNumber;
       this.lineHash = lineHash;
+      this.impacts = impacts;
     }
 
     public String getFilePath() {

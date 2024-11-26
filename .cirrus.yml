@@ -188,7 +188,7 @@ qa_task:
           SONARCLOUD_IT_PASSWORD: VAULT[development/team/sonarlint/kv/data/sonarcloud-it data.password]
           QA_CATEGORY: SonarCloud
       -  env:
-          SQ_VERSION: "DEV[10.8]"
+          SQ_VERSION: "DEV"
           JDK_VERSION: "17"
           CATEGORY: "-DexcludedGroups=SonarCloud"
           QA_CATEGORY: SQDogfood

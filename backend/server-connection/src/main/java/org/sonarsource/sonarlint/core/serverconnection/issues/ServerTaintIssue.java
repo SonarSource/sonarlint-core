@@ -47,11 +47,11 @@ public class ServerTaintIssue implements ServerFinding {
   private RuleType type;
   private List<Flow> flows = new ArrayList<>();
   private TextRangeWithHash textRange;
+  private Map<SoftwareQuality, ImpactSeverity> impacts;
   @Nullable
   private final String ruleDescriptionContextKey;
   @Nullable
   private final CleanCodeAttribute cleanCodeAttribute;
-  private final Map<SoftwareQuality, ImpactSeverity> impacts;
 
   public ServerTaintIssue(UUID id, String key, boolean resolved, String ruleKey, String message, Path filePath, Instant creationDate, IssueSeverity severity, RuleType type,
                           @Nullable TextRangeWithHash textRange, @Nullable String ruleDescriptionContextKey, @Nullable CleanCodeAttribute cleanCodeAttribute,
@@ -137,6 +137,11 @@ public class ServerTaintIssue implements ServerFinding {
 
   public ServerTaintIssue setResolved(boolean resolved) {
     this.resolved = resolved;
+    return this;
+  }
+
+  public ServerTaintIssue setImpacts(Map<SoftwareQuality, ImpactSeverity> impacts) {
+    this.impacts = impacts;
     return this;
   }
 
