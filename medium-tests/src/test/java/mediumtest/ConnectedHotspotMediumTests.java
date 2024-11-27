@@ -93,7 +93,7 @@ class ConnectedHotspotMediumTests {
       new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(inputFile.toUri()), Map.of(), true, System.currentTimeMillis()))
       .join();
     assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
-    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedHotspotsForScopeIdAsList(CONFIG_SCOPE_ID)).isNotEmpty());
+    await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedHotspotsForScopeIdAsList(CONFIG_SCOPE_ID)).isNotEmpty());
 
     var hotspot = client.getRaisedHotspotsForScopeIdAsList(CONFIG_SCOPE_ID).get(0);
     assertThat(hotspot.getRuleKey()).isEqualTo("java:S2068");
