@@ -64,6 +64,7 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
 import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -116,9 +117,9 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
               var storedBranches = branchesStorage.read();
               branchToMatch = storedBranches.getMainBranchName();
             } else {
-              client.showMessage(new ShowMessageParams(MessageType.ERROR, "Could not determine the current branch. " +
-                "Please make sure you are bound to your SonarQube project and try again."));
-              return;
+              var serverApi = serverApiProvider.getServerApiOrThrow(connectionId);
+              var branches = SonarProjectBranchesSynchronizationService.getProjectBranches(serverApi, showIssueQuery.projectKey, cancelMonitor);
+              branchToMatch = branches.getMainBranchName();
             }
           }
           var localBranchMatchesRequesting = client.matchProjectBranch(new MatchProjectBranchParams(configScopeId, branchToMatch)).join().isBranchMatched();
