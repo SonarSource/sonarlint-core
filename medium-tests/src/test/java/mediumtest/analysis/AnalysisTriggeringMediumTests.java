@@ -82,7 +82,8 @@ class AnalysisTriggeringMediumTests {
         + "</project>");
     var fileUri = filePath.toUri();
     var client = newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
+        null, filePath, null, null, true)))
       .build();
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
@@ -100,7 +101,7 @@ class AnalysisTriggeringMediumTests {
           .containsExactly("Replace \"pom.version\" with \"project.version\".");
       });
   }
-  
+
   @Test
   void it_should_not_fail_an_analysis_of_windows_shortcut_file_and_skip_the_file_analysis() {
     var baseDir = new File("src/test/projects/windows-shortcut").getAbsoluteFile().toPath();
@@ -111,8 +112,10 @@ class AnalysisTriggeringMediumTests {
     var client = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
         new ClientFileDto(actualFile.toUri(), baseDir.relativize(actualFile), CONFIG_SCOPE_ID, false, null, actualFile, null, null, true),
-        new ClientFileDto(windowsShortcut.toUri(), baseDir.relativize(windowsShortcut), CONFIG_SCOPE_ID, false, null, windowsShortcut, null, null, true),
-        new ClientFileDto(fakeWindowsShortcut.toUri(), baseDir.relativize(fakeWindowsShortcut), CONFIG_SCOPE_ID, false, null, fakeWindowsShortcut, null, null, true)))
+        new ClientFileDto(windowsShortcut.toUri(), baseDir.relativize(windowsShortcut), CONFIG_SCOPE_ID, false, null, windowsShortcut,
+          null, null, true),
+        new ClientFileDto(fakeWindowsShortcut.toUri(), baseDir.relativize(fakeWindowsShortcut), CONFIG_SCOPE_ID, false, null,
+          fakeWindowsShortcut, null, null, true)))
       .build();
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
@@ -168,7 +171,8 @@ class AnalysisTriggeringMediumTests {
     var filePath = createFile(baseDir, "pom.xml", "");
     var fileUri = filePath.toUri();
     var client = newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
+        null, filePath, null, null, true)))
       .build();
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
@@ -182,14 +186,18 @@ class AnalysisTriggeringMediumTests {
     reset(client);
 
     backend.getFileService()
-      .didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(),
-        List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+      .didUpdateFileSystem(new DidUpdateFileSystemParams(
+        Collections.emptyList(),
+        List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, "<?xml version=\"1.0\" " +
+          "encoding=\"UTF-8\"?>\n"
           + "<project>\n"
           + "  <modelVersion>4.0.0</modelVersion>\n"
           + "  <groupId>com.foo</groupId>\n"
           + "  <artifactId>bar</artifactId>\n"
           + "  <version>${pom.version}</version>\n"
-          + "</project>", null, true))));
+          + "</project>", null, true)),
+        Collections.emptyList()
+      ));
 
     publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
     assertThat(publishedIssues)
@@ -204,7 +212,8 @@ class AnalysisTriggeringMediumTests {
     var filePath = createFile(baseDir, "pom.xml", "");
     var fileUri = filePath.toUri();
     var client = newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
+        null, filePath, null, null, true)))
       .build();
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
@@ -219,14 +228,18 @@ class AnalysisTriggeringMediumTests {
     backend.getFileService().didCloseFile(new DidCloseFileParams(CONFIG_SCOPE_ID, fileUri));
 
     backend.getFileService()
-      .didUpdateFileSystem(new DidUpdateFileSystemParams(Collections.emptyList(),
-        List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+      .didUpdateFileSystem(new DidUpdateFileSystemParams(
+        List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, "<?xml version=\"1.0\" " +
+          "encoding=\"UTF-8\"?>\n"
           + "<project>\n"
           + "  <modelVersion>4.0.0</modelVersion>\n"
           + "  <groupId>com.foo</groupId>\n"
           + "  <artifactId>bar</artifactId>\n"
           + "  <version>${pom.version}</version>\n"
-          + "</project>", null, true))));
+          + "</project>", null, true)),
+        Collections.emptyList(),
+        Collections.emptyList()
+      ));
 
     verify(client, timeout(500).times(0)).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(false), any());
   }
@@ -242,7 +255,8 @@ class AnalysisTriggeringMediumTests {
       + "</project>");
     var fileUri = filePath.toUri();
     var client = newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
+        null, filePath, null, null, true)))
       .build();
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
@@ -271,7 +285,8 @@ class AnalysisTriggeringMediumTests {
       + "</project>");
     var fileUri = filePath.toUri();
     var client = newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
+        null, filePath, null, null, true)))
       .build();
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
@@ -284,7 +299,8 @@ class AnalysisTriggeringMediumTests {
       .hasEntrySatisfying(fileUri, issues -> assertThat(issues).isEmpty());
     reset(client);
 
-    backend.getRulesService().updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("xml:S3420", new StandaloneRuleConfigDto(true, Map.of()))));
+    backend.getRulesService().updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("xml:S3420",
+      new StandaloneRuleConfigDto(true, Map.of()))));
 
     publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
     assertThat(publishedIssues)
@@ -305,7 +321,8 @@ class AnalysisTriggeringMediumTests {
       + "</project>");
     var fileUri = filePath.toUri();
     var client = newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
+        null, filePath, null, null, true)))
       .build();
     backend = newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
@@ -318,7 +335,8 @@ class AnalysisTriggeringMediumTests {
       .hasEntrySatisfying(fileUri, issues -> assertThat(issues).extracting(RaisedFindingDto::getRuleKey).containsOnly("xml:S3421"));
     reset(client);
 
-    backend.getRulesService().updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("xml:S3421", new StandaloneRuleConfigDto(false, Map.of()))));
+    backend.getRulesService().updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("xml:S3421",
+      new StandaloneRuleConfigDto(false, Map.of()))));
 
     //No new analysis triggered
     verify(client, never()).log(any());

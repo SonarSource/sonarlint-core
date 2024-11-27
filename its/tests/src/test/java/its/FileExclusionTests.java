@@ -158,7 +158,7 @@ class FileExclusionTests extends AbstractConnectedTests {
     var filePath = Path.of("src/main/java/foo/Foo.java");
     var clientFileDto = new ClientFileDto(filePath.toUri(), filePath, configScopeId, null, StandardCharsets.UTF_8.name(),
       filePath.toAbsolutePath(), null, null, true);
-    var didUpdateFileSystemParams = new DidUpdateFileSystemParams(List.of(), List.of(clientFileDto));
+    var didUpdateFileSystemParams = new DidUpdateFileSystemParams(List.of(clientFileDto), List.of(), List.of());
     backend.getFileService().didUpdateFileSystem(didUpdateFileSystemParams);
 
     // Firstly check file is included

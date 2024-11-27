@@ -132,19 +132,33 @@ public class ClientFileSystemService {
         removed.add(clientFile);
       }
     });
+
     var added = new ArrayList<ClientFile>();
-    var updated = new ArrayList<ClientFile>();
-    params.getAddedOrChangedFiles().forEach(clientFileDto -> {
+    params.getAddedFiles().forEach(clientFileDto -> {
       var clientFile = fromDto(clientFileDto);
       var previousFile = filesByUri.put(clientFileDto.getUri(), clientFile);
-      if (previousFile != null) {
-        updated.add(clientFile);
-      } else{
+      // We only send send the ADDED event for files that were actually added (not existing before)
+      if (previousFile == null) {
         added.add(clientFile);
       }
       var byScope = filesByConfigScopeIdCache.get(clientFileDto.getConfigScopeId());
       byScope.put(clientFileDto.getUri(), clientFile);
     });
+
+    var updated = new ArrayList<ClientFile>();
+    params.getChangedFiles().forEach(clientFileDto -> {
+      var clientFile = fromDto(clientFileDto);
+      var previousFile = filesByUri.put(clientFileDto.getUri(), clientFile);
+      // Modifying an unknown file is equals to adding it
+      if (previousFile != null) {
+        updated.add(clientFile);
+      } else {
+        added.add(clientFile);
+      }
+      var byScope = filesByConfigScopeIdCache.get(clientFileDto.getConfigScopeId());
+      byScope.put(clientFileDto.getUri(), clientFile);
+    });
+
     eventPublisher.publishEvent(new FileSystemUpdatedEvent(removed, added, updated));
   }
 

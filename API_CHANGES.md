@@ -1,3 +1,10 @@
+# 11.11
+
+## Breaking changes
+
+* Signature of `org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams#DidUpdateFileSystemParams` was changed
+  * Parameter `addedOrChangedFiles` was split into `addedFiles` and `changedFiles`
+
 # 10.10
 
 ## New features

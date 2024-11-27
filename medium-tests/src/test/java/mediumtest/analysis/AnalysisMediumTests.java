@@ -391,8 +391,12 @@ class AnalysisMediumTests {
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
       new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, false, CONFIG_SCOPE_ID, null))));
     backend.getFileService().didUpdateFileSystem(
-      new DidUpdateFileSystemParams(List.of(), List.of(new ClientFileDto(fileIssueUri, baseDir.relativize(fileIssue), CONFIG_SCOPE_ID, false, null, fileIssue, null, null, true),
-        new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef), CONFIG_SCOPE_ID, false, null, fileFuncDef, null, null, true))));
+      new DidUpdateFileSystemParams(
+        List.of(new ClientFileDto(fileIssueUri, baseDir.relativize(fileIssue), CONFIG_SCOPE_ID, false, null, fileIssue, null, null, true),
+        new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef), CONFIG_SCOPE_ID, false, null, fileFuncDef, null, null, true)),
+        List.of(),
+        List.of()
+      ));
 
     result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId,
       List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
@@ -482,8 +486,12 @@ class AnalysisMediumTests {
       "def foo(a):\n" +
         "    print(a)\n");
     var fileFuncDefUri = fileFuncDef.toUri();
-    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(),
-      List.of(new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef), CONFIG_SCOPE_ID, false, null, fileFuncDef, null, null, true))));
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(
+      List.of(new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef), CONFIG_SCOPE_ID, false, null, fileFuncDef, null, null,
+        true)),
+      List.of(),
+      List.of()
+    ));
 
     parentConfigScopeResult = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID,
       analysisId, List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
@@ -530,7 +538,7 @@ class AnalysisMediumTests {
     assertThat(rawIssue.getRuleKey()).isEqualTo("python:S930");
 
     removeFile(baseDir, "fileFuncDef.py");
-    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(fileFuncDefUri), List.of()));
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(), List.of(), List.of(fileFuncDefUri)));
 
     result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId,
       List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();
@@ -574,9 +582,12 @@ class AnalysisMediumTests {
     assertThat(rawIssue.getRuleKey()).isEqualTo("python:S930");
 
     editFile(baseDir, "fileFuncDef.py", "");
-    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(),
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(
       List.of(new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef),
-        CONFIG_SCOPE_ID, false, null, fileFuncDef, "", null, true))));
+        CONFIG_SCOPE_ID, false, null, fileFuncDef, "", null, true)),
+      List.of(),
+      List.of()
+    ));
 
     result = backend.getAnalysisService().analyzeFiles(new AnalyzeFilesParams(CONFIG_SCOPE_ID, analysisId,
       List.of(fileIssueUri), Map.of(), System.currentTimeMillis())).join();

@@ -25,20 +25,25 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 
 public class DidUpdateFileSystemParams {
 
+  private final List<ClientFileDto> addedFiles;
+  private final List<ClientFileDto> changedFiles;
   private final List<URI> removedFiles;
 
-  private final List<ClientFileDto> addedOrChangedFiles;
-
-  public DidUpdateFileSystemParams(List<URI> removedFiles, List<ClientFileDto> addedOrChangedFiles) {
+  public DidUpdateFileSystemParams(List<ClientFileDto> addedFiles, List<ClientFileDto> changedFiles, List<URI> removedFiles) {
+    this.addedFiles = addedFiles;
+    this.changedFiles = changedFiles;
     this.removedFiles = removedFiles;
-    this.addedOrChangedFiles = addedOrChangedFiles;
   }
 
+  public List<ClientFileDto> getAddedFiles() {
+    return addedFiles;
+  }
+
+  public List<ClientFileDto> getChangedFiles() {
+    return changedFiles;
+  }
   public List<URI> getRemovedFiles() {
     return removedFiles;
   }
 
-  public List<ClientFileDto> getAddedOrChangedFiles() {
-    return addedOrChangedFiles;
-  }
 }
