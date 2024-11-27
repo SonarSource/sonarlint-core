@@ -63,6 +63,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionReceivedParams;
+import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -80,16 +81,19 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
   private final RequestHandlerBindingAssistant requestHandlerBindingAssistant;
   private final PathTranslationService pathTranslationService;
   private final String sonarCloudUrl;
+  private final SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService;
 
   public ShowFixSuggestionRequestHandler(SonarLintRpcClient client, TelemetryService telemetryService,
     InitializeParams params, RequestHandlerBindingAssistant requestHandlerBindingAssistant,
-    PathTranslationService pathTranslationService, SonarCloudActiveEnvironment sonarCloudActiveEnvironment) {
+    PathTranslationService pathTranslationService, SonarCloudActiveEnvironment sonarCloudActiveEnvironment,
+    SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService) {
     this.client = client;
     this.telemetryService = telemetryService;
     this.canOpenFixSuggestion = params.getFeatureFlags().canOpenFixSuggestion();
     this.requestHandlerBindingAssistant = requestHandlerBindingAssistant;
     this.pathTranslationService = pathTranslationService;
     this.sonarCloudUrl = sonarCloudActiveEnvironment.getUri().toString();
+    this.sonarProjectBranchesSynchronizationService = sonarProjectBranchesSynchronizationService;
   }
 
   @Override
@@ -110,9 +114,13 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
       showFixSuggestionQuery.projectKey,
       (connectionId, configScopeId, cancelMonitor) -> {
         if (configScopeId != null) {
-          var localBranchMatchesRequesting = client.matchProjectBranch(new MatchProjectBranchParams(configScopeId, showFixSuggestionQuery.branch)).join().isBranchMatched();
+          var branchToMatch = showFixSuggestionQuery.branch;
+          if (branchToMatch == null) {
+            branchToMatch = sonarProjectBranchesSynchronizationService.findMainBranch(connectionId, showFixSuggestionQuery.projectKey, cancelMonitor);
+          }
+          var localBranchMatchesRequesting = client.matchProjectBranch(new MatchProjectBranchParams(configScopeId, branchToMatch)).join().isBranchMatched();
           if (!localBranchMatchesRequesting) {
-            client.showMessage(new ShowMessageParams(MessageType.ERROR, "Attempted to show a fix suggestion from branch '" + showFixSuggestionQuery.branch + "', " +
+            client.showMessage(new ShowMessageParams(MessageType.ERROR, "Attempted to show a fix suggestion from branch '" + branchToMatch + "', " +
               "which is different from the currently checked-out branch.\nPlease switch to the correct branch and try again."));
             return;
           }
@@ -192,6 +200,7 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
     private final String serverUrl;
     private final String projectKey;
     private final String issueKey;
+    @Nullable
     private final String branch;
     @Nullable
     private final String tokenName;
@@ -202,7 +211,7 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
     private final boolean isSonarCloud;
     private final FixSuggestionPayload fixSuggestion;
 
-    public ShowFixSuggestionQuery(@Nullable String serverUrl, String projectKey, String issueKey, String branch,
+    public ShowFixSuggestionQuery(@Nullable String serverUrl, String projectKey, String issueKey, @Nullable String branch,
       @Nullable String tokenName, @Nullable String tokenValue, @Nullable String organizationKey, boolean isSonarCloud,
       FixSuggestionPayload fixSuggestion) {
       this.serverUrl = serverUrl;
@@ -217,7 +226,7 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
     }
 
     public boolean isValid() {
-      return isNotBlank(projectKey) && isNotBlank(issueKey) && isNotBlank(branch)
+      return isNotBlank(projectKey) && isNotBlank(issueKey)
         && (isSonarCloud || isNotBlank(serverUrl))
         && (!isSonarCloud || isNotBlank(organizationKey))
         && fixSuggestion.isValid() && isTokenValid();
@@ -251,6 +260,7 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
       return issueKey;
     }
 
+    @Nullable
     public String getBranch() {
       return branch;
     }

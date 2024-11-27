@@ -64,8 +64,6 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBranches;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBranchesStorage;
-import org.sonarsource.sonarlint.core.serverconnection.SonarProjectStorage;
-import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.usertoken.UserTokenService;
@@ -113,17 +111,13 @@ class ShowIssueRequestHandlerTests {
     var serverApiProvider = mock(ServerApiProvider.class);
     when(serverApiProvider.getServerApiOrThrow(any())).thenReturn(serverApi);
     when(serverApiProvider.getServerApi(any())).thenReturn(Optional.of(serverApi));
-    var storageService = mock(StorageService.class);
     branchesStorage = mock(ProjectBranchesStorage.class);
-    var sonarStorage = mock(SonarProjectStorage.class);
-    when(sonarStorage.branches()).thenReturn(branchesStorage);
-    when(storageService.binding(any())).thenReturn(sonarStorage);
     var sonarProjectBranchesSynchronizationService = mock(SonarProjectBranchesSynchronizationService.class);
     when(sonarProjectBranchesSynchronizationService.getProjectBranches(any(), any(), any())).thenReturn(new ProjectBranches(Set.of(), "main"));
 
     showIssueRequestHandler = spy(new ShowIssueRequestHandler(sonarLintRpcClient, serverApiProvider, telemetryService,
       new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintRpcClient, connectionConfigurationRepository, configurationRepository, userTokenService,
-        sonarCloudActiveEnvironment), pathTranslationService, sonarCloudActiveEnvironment, storageService, sonarProjectBranchesSynchronizationService));
+        sonarCloudActiveEnvironment), pathTranslationService, sonarCloudActiveEnvironment, sonarProjectBranchesSynchronizationService));
   }
 
   @Test

@@ -43,7 +43,6 @@ import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.net.URIBuilder;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
-import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
@@ -63,7 +62,6 @@ import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
-import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
@@ -80,19 +78,17 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
   private final RequestHandlerBindingAssistant requestHandlerBindingAssistant;
   private final PathTranslationService pathTranslationService;
   private final String sonarCloudUrl;
-  private final StorageService storageService;
   private final SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService;
 
   public ShowIssueRequestHandler(SonarLintRpcClient client, ServerApiProvider serverApiProvider, TelemetryService telemetryService,
     RequestHandlerBindingAssistant requestHandlerBindingAssistant, PathTranslationService pathTranslationService, SonarCloudActiveEnvironment sonarCloudActiveEnvironment,
-    StorageService storageService, SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService) {
+    SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService) {
     this.client = client;
     this.serverApiProvider = serverApiProvider;
     this.telemetryService = telemetryService;
     this.requestHandlerBindingAssistant = requestHandlerBindingAssistant;
     this.pathTranslationService = pathTranslationService;
     this.sonarCloudUrl = sonarCloudActiveEnvironment.getUri().toString();
-    this.storageService = storageService;
     this.sonarProjectBranchesSynchronizationService = sonarProjectBranchesSynchronizationService;
   }
 
@@ -114,15 +110,7 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
         if (configScopeId != null) {
           var branchToMatch = showIssueQuery.branch;
           if (branchToMatch == null) {
-            var branchesStorage = storageService.binding(new Binding(connectionId, showIssueQuery.projectKey)).branches();
-            if (branchesStorage.exists()) {
-              var storedBranches = branchesStorage.read();
-              branchToMatch = storedBranches.getMainBranchName();
-            } else {
-              var serverApi = serverApiProvider.getServerApiOrThrow(connectionId);
-              var branches = sonarProjectBranchesSynchronizationService.getProjectBranches(serverApi, showIssueQuery.projectKey, cancelMonitor);
-              branchToMatch = branches.getMainBranchName();
-            }
+            branchToMatch = sonarProjectBranchesSynchronizationService.findMainBranch(connectionId, showIssueQuery.projectKey, cancelMonitor);
           }
           var localBranchMatchesRequesting = client.matchProjectBranch(new MatchProjectBranchParams(configScopeId, branchToMatch)).join().isBranchMatched();
           if (!localBranchMatchesRequesting) {

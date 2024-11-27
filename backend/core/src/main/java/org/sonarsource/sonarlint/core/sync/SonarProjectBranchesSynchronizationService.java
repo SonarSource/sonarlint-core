@@ -23,6 +23,7 @@ import java.util.Optional;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -72,6 +73,18 @@ public class SonarProjectBranchesSynchronizationService {
     var mainBranch = allBranches.stream().filter(ServerBranch::isMain).findFirst().map(ServerBranch::getName)
       .orElseThrow(() -> new IllegalStateException("No main branch for project '" + projectKey + "'"));
     return new ProjectBranches(allBranches.stream().map(ServerBranch::getName).collect(toSet()), mainBranch);
+  }
+
+  public String findMainBranch(String connectionId, String projectKey, SonarLintCancelMonitor cancelMonitor) {
+    var branchesStorage = storageService.binding(new Binding(connectionId, projectKey)).branches();
+    if (branchesStorage.exists()) {
+      var storedBranches = branchesStorage.read();
+      return storedBranches.getMainBranchName();
+    } else {
+      var serverApi = serverApiProvider.getServerApiOrThrow(connectionId);
+      var branches = getProjectBranches(serverApi, projectKey, cancelMonitor);
+      return branches.getMainBranchName();
+    }
   }
 
 }
