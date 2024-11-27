@@ -165,7 +165,6 @@ class OpenIssueInIdeMediumTests {
         TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
       .contains(1, 0, 3, 4);
     assertThat(issueDetails.getCodeSnippet()).isEqualTo("source\ncode\nfile");
-    assertThat(issueDetails.getPullRequest()).isNull();
   }
 
   @Test
@@ -199,7 +198,6 @@ class OpenIssueInIdeMediumTests {
         TextRangeDto::getEndLine, TextRangeDto::getEndLineOffset)
       .contains(1, 0, 3, 4);
     assertThat(issueDetails.getCodeSnippet()).isEqualTo("source\ncode\nfile");
-    assertThat(issueDetails.getPullRequest()).isEqualTo("1234");
   }
 
   @Test
