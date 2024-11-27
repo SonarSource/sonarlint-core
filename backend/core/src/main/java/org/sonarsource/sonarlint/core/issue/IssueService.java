@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.issue;
 
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +37,7 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.Binding;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.Transition;
@@ -54,11 +57,13 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChan
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.EffectiveIssueDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssuesForFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
 import org.sonarsource.sonarlint.core.rules.RuleDetails;
 import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
 import org.sonarsource.sonarlint.core.rules.RuleNotFoundException;
@@ -416,7 +421,7 @@ public class IssueService {
     var resolved = event.getResolved();
     var userSeverity = event.getUserSeverity();
     var userType = event.getUserType();
-    var impactedIssueKeys = Set.copyOf(event.getImpactedIssueKeys());
+    var impactedIssueKeys = event.getImpactedIssues().stream().map(IssueChangedEvent.Issue::getIssueKey).collect(Collectors.toSet());
     if (resolved != null) {
       UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder().withResolution(resolved).buildIssue();
       updatedIssue = updateIssue(updatedIssue, impactedIssueKeys, issueUpdater);
@@ -429,15 +434,34 @@ public class IssueService {
       UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder().withType(RuleType.valueOf(userType.name())).buildIssue();
       updatedIssue = updateIssue(updatedIssue, impactedIssueKeys, issueUpdater);
     }
-    // TODO: Adapt with CCA/Impacts from the event
-    UnaryOperator<RaisedIssueDto> issueUpdater;
-    if (isMQRMode) {
-      issueUpdater = it -> it.builder().withMQRModeDetails(it.getCleanCodeAttribute(), it.getImpacts()).buildIssue();
-    } else {
-      issueUpdater = it -> it.builder().withStandardModeDetails(it.getSeverity(), it.getType()).buildIssue();
+    for (var issue : event.getImpactedIssues()) {
+      if (!issue.getImpacts().isEmpty() && isMQRMode) {
+        var impacts = issue.getImpacts().entrySet().stream()
+          .map(impact ->
+            new ImpactDto(
+              SoftwareQuality.valueOf(impact.getKey().name()),
+              org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity.valueOf(impact.getValue().name())
+            )
+          ).collect(Collectors.toList());
+        UnaryOperator<RaisedIssueDto> issueUpdater =
+          it -> it.builder().withMQRModeDetails(
+            it.getCleanCodeAttribute(),
+            mergeImpacts(it.getSeverityMode().getRight().getImpacts(), impacts)
+          ).buildIssue();
+        updatedIssue = updateIssue(updatedIssue, impactedIssueKeys, issueUpdater);
+      }
+
     }
-    updatedIssue = updateIssue(updatedIssue, impactedIssueKeys, issueUpdater);
     return updatedIssue;
+  }
+
+  private static List<ImpactDto> mergeImpacts(List<ImpactDto> currentImpacts, List<ImpactDto> overriddenImpacts) {
+    for (var impact : overriddenImpacts) {
+      currentImpacts.removeIf(i -> i.getSoftwareQuality().equals(impact.getSoftwareQuality()));
+      currentImpacts.add(new ImpactDto(impact.getSoftwareQuality(), impact.getImpactSeverity()));
+    }
+
+    return currentImpacts;
   }
 
   private static RaisedIssueDto updateIssue(RaisedIssueDto issue, Set<String> impactedIssueKeys, UnaryOperator<RaisedIssueDto> issueUpdater) {
@@ -450,20 +474,41 @@ public class IssueService {
 
   private void updateProjectIssueStorage(String connectionId, IssueChangedEvent event) {
     var findingsStorage = storageService.connection(connectionId).project(event.getProjectKey()).findings();
-    event.getImpactedIssueKeys().forEach(issueKey -> findingsStorage.updateIssue(issueKey, issue -> {
+    event.getImpactedIssues().forEach(issue -> findingsStorage.updateIssue(issue.getIssueKey(), storedIssue -> {
       var userSeverity = event.getUserSeverity();
       if (userSeverity != null) {
-        issue.setUserSeverity(userSeverity);
+        storedIssue.setUserSeverity(userSeverity);
       }
       var userType = event.getUserType();
       if (userType != null) {
-        issue.setType(userType);
+        storedIssue.setType(userType);
       }
       var resolved = event.getResolved();
       if (resolved != null) {
-        issue.setResolved(resolved);
+        storedIssue.setResolved(resolved);
+      }
+      var impacts = issue.getImpacts();
+      if (!impacts.isEmpty()) {
+        storedIssue.setImpacts(mergeImpacts(storedIssue.getImpacts(), impacts));
       }
     }));
+  }
+
+  private static Map<org.sonarsource.sonarlint.core.commons.SoftwareQuality, ImpactSeverity> mergeImpacts(
+    Map<org.sonarsource.sonarlint.core.commons.SoftwareQuality, ImpactSeverity> defaultImpacts,
+    Map<org.sonarsource.sonarlint.core.commons.SoftwareQuality, ImpactSeverity> overriddenImpacts) {
+    var mergedImpacts = new EnumMap<org.sonarsource.sonarlint.core.commons.SoftwareQuality, ImpactSeverity>(org.sonarsource.sonarlint.core.commons.SoftwareQuality.class);
+    if (!defaultImpacts.isEmpty()) {
+      mergedImpacts = new EnumMap<>(defaultImpacts);
+    }
+
+    for (var entry : overriddenImpacts.entrySet()) {
+      var quality = org.sonarsource.sonarlint.core.commons.SoftwareQuality.valueOf(entry.getKey().name());
+      var severity = ImpactSeverity.mapSeverity(entry.getValue().name());
+      mergedImpacts.put(quality, severity);
+    }
+
+    return Collections.unmodifiableMap(mergedImpacts);
   }
 
   private static Optional<UUID> asUUID(String key) {

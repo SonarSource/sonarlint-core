@@ -257,6 +257,7 @@ public class ProjectStorageFixture {
                     issueEntity.setProperty("endLineOffset", textRange.getEndLineOffset());
                     issueEntity.setBlobString("rangeHash", textRange.getHash());
                   }
+                  issueEntity.setBlob("impacts", toProtoImpact(issue.impacts));
 
                   issueEntity.setLink("file", fileEntity);
                   fileEntity.addLink("issues", issueEntity);

@@ -25,6 +25,6 @@ public enum IssueSeverity {
   MINOR,
   MAJOR,
   CRITICAL,
-  BLOCKER;
+  BLOCKER
 
 }

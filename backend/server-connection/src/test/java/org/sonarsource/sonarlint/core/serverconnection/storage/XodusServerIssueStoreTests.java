@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
@@ -33,7 +34,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
@@ -113,6 +116,7 @@ class XodusServerIssueStoreTests {
     assertThat(savedIssue.getUserSeverity()).isEqualTo(IssueSeverity.MINOR);
     assertThat(savedIssue.getType()).isEqualTo(RuleType.BUG);
     assertThat(((LineLevelServerIssue) savedIssue).getLine()).isEqualTo(1);
+    assertThat(savedIssue.getImpacts()).isEqualTo(Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.HIGH));
   }
 
   @Test
@@ -138,6 +142,7 @@ class XodusServerIssueStoreTests {
     assertThat(((RangeLevelServerIssue) savedIssue).getTextRange().getEndLine()).isEqualTo(3);
     assertThat(((RangeLevelServerIssue) savedIssue).getTextRange().getEndLineOffset()).isEqualTo(4);
     assertThat(((RangeLevelServerIssue) savedIssue).getTextRange().getHash()).isEqualTo("ab12");
+    assertThat(savedIssue.getImpacts()).isEqualTo(Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.HIGH));
   }
 
   @Test
@@ -171,6 +176,7 @@ class XodusServerIssueStoreTests {
         l -> l.getTextRange().getStartLineOffset(), l -> l.getTextRange().getEndLine(), l -> l.getTextRange().getEndLineOffset())
       .containsOnly(tuple(filePath, "flow message", "myFlowRangeHash", 5, 6, 7, 8));
     assertThat(savedIssue.getRuleDescriptionContextKey()).isEqualTo("context");
+    assertThat(savedIssue.getImpacts()).isEqualTo(Map.of(SoftwareQuality.SECURITY, ImpactSeverity.HIGH));
   }
 
   @Test

@@ -196,8 +196,10 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     var creationDate = (Instant) requireNonNull(storedIssue.getProperty(CREATION_DATE_PROPERTY_NAME));
     var userSeverity = (IssueSeverity) storedIssue.getProperty(USER_SEVERITY_PROPERTY_NAME);
     var type = (RuleType) requireNonNull(storedIssue.getProperty(TYPE_PROPERTY_NAME));
+    var impacts = readImpacts(storedIssue.getBlob(IMPACTS_BLOB_NAME));
+    var effectiveFilePath = Path.of(filePath);
     if (startLine == null) {
-      return new FileLevelServerIssue(key, resolved, ruleKey, msg, Path.of(filePath), creationDate, userSeverity, type);
+      return new FileLevelServerIssue(key, resolved, ruleKey, msg, effectiveFilePath, creationDate, userSeverity, type, impacts);
     } else {
       var rangeHash = storedIssue.getBlobString(RANGE_HASH_PROPERTY_NAME);
       if (rangeHash != null) {
@@ -210,11 +212,12 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
           resolved,
           ruleKey,
           msg,
-          Path.of(filePath),
+          effectiveFilePath,
           creationDate,
           userSeverity,
           type,
-          textRange);
+          textRange,
+          impacts);
       } else {
         return new LineLevelServerIssue(
           key,
@@ -222,11 +225,12 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
           ruleKey,
           msg,
           storedIssue.getBlobString(LINE_HASH_PROPERTY_NAME),
-          Path.of(filePath),
+          effectiveFilePath,
           creationDate,
           userSeverity,
           type,
-          (Integer) storedIssue.getProperty(START_LINE_PROPERTY_NAME));
+          (Integer) storedIssue.getProperty(START_LINE_PROPERTY_NAME),
+          impacts);
       }
     }
   }
@@ -653,6 +657,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       issueEntity.setProperty(END_LINE_OFFSET_PROPERTY_NAME, textRange.getEndLineOffset());
       issueEntity.setBlobString(RANGE_HASH_PROPERTY_NAME, textRange.getHash());
     }
+    issueEntity.setBlob(IMPACTS_BLOB_NAME, toProtoImpact(issue.getImpacts()));
   }
 
   private static void updateOrCreateTaintIssue(Entity branchEntity, Entity fileEntity, ServerTaintIssue issue, StoreTransaction transaction) {

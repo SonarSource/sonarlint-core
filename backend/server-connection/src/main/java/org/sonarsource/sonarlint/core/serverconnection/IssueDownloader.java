@@ -22,14 +22,18 @@ package org.sonarsource.sonarlint.core.serverconnection;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonar.scanner.protocol.input.ScannerInput;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -43,6 +47,8 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIs
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 
 import static java.util.function.Predicate.not;
+import static org.sonarsource.sonarlint.core.serverconnection.DownloaderUtils.parseProtoImpactSeverity;
+import static org.sonarsource.sonarlint.core.serverconnection.DownloaderUtils.parseProtoSoftwareQuality;
 
 public class IssueDownloader {
 
@@ -119,12 +125,13 @@ public class IssueDownloader {
     var creationDate = Instant.ofEpochMilli(batchIssueFromWs.getCreationDate());
     var userSeverity = batchIssueFromWs.getManualSeverity() ? IssueSeverity.valueOf(batchIssueFromWs.getSeverity().name()) : null;
     var ruleType = RuleType.valueOf(batchIssueFromWs.getType());
+    var impacts = Collections.<SoftwareQuality, ImpactSeverity>emptyMap();
     if (batchIssueFromWs.hasLine()) {
       return new LineLevelServerIssue(batchIssueFromWs.getKey(), batchIssueFromWs.hasResolution(), ruleKey, batchIssueFromWs.getMsg(), batchIssueFromWs.getChecksum(), filePath,
-        creationDate, userSeverity, ruleType, batchIssueFromWs.getLine());
+        creationDate, userSeverity, ruleType, batchIssueFromWs.getLine(), impacts);
     } else {
       return new FileLevelServerIssue(batchIssueFromWs.getKey(), batchIssueFromWs.hasResolution(), ruleKey, batchIssueFromWs.getMsg(), filePath, creationDate, userSeverity,
-        ruleType);
+        ruleType, impacts);
     }
   }
 
@@ -135,13 +142,18 @@ public class IssueDownloader {
     var creationDate = Instant.ofEpochMilli(liteIssueFromWs.getCreationDate());
     var userSeverity = liteIssueFromWs.hasUserSeverity() ? IssueSeverity.valueOf(liteIssueFromWs.getUserSeverity().name()) : null;
     var ruleType = RuleType.valueOf(liteIssueFromWs.getType().name());
+    var impacts = liteIssueFromWs.getImpactsList().stream()
+      .map(i -> Map.entry(
+        parseProtoSoftwareQuality(i),
+        parseProtoImpactSeverity(i)))
+      .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     if (mainLocation.hasTextRange()) {
       return new RangeLevelServerIssue(liteIssueFromWs.getKey(), liteIssueFromWs.getResolved(), liteIssueFromWs.getRuleKey(), mainLocation.getMessage(),
         filePath, creationDate, userSeverity,
-        ruleType, toServerIssueTextRange(mainLocation.getTextRange()));
+        ruleType, toServerIssueTextRange(mainLocation.getTextRange()), impacts);
     } else {
       return new FileLevelServerIssue(liteIssueFromWs.getKey(), liteIssueFromWs.getResolved(), liteIssueFromWs.getRuleKey(), mainLocation.getMessage(),
-        filePath, creationDate, userSeverity, ruleType);
+        filePath, creationDate, userSeverity, ruleType, impacts);
     }
   }
 

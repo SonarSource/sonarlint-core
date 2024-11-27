@@ -58,6 +58,8 @@ import org.sonarsource.sonarlint.core.serverapi.util.ServerApiUtils;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 
 import static java.util.function.Predicate.not;
+import static org.sonarsource.sonarlint.core.serverconnection.DownloaderUtils.parseProtoImpactSeverity;
+import static org.sonarsource.sonarlint.core.serverconnection.DownloaderUtils.parseProtoSoftwareQuality;
 
 public class TaintIssueDownloader {
 
@@ -162,22 +164,6 @@ public class TaintIssueDownloader {
       return null;
     }
     return CleanCodeAttribute.valueOf(taintVulnerabilityFromWs.getCleanCodeAttribute().name());
-  }
-
-  @VisibleForTesting
-  static SoftwareQuality parseProtoSoftwareQuality(Common.Impact protoImpact) {
-    if (!protoImpact.hasSoftwareQuality() || protoImpact.getSoftwareQuality() == Common.SoftwareQuality.UNKNOWN_IMPACT_QUALITY) {
-      throw new IllegalArgumentException("Unknown or missing software quality");
-    }
-    return SoftwareQuality.valueOf(protoImpact.getSoftwareQuality().name());
-  }
-
-  @VisibleForTesting
-  static ImpactSeverity parseProtoImpactSeverity(Common.Impact protoImpact) {
-    if (!protoImpact.hasSeverity() || protoImpact.getSeverity() == Common.ImpactSeverity.UNKNOWN_IMPACT_SEVERITY) {
-      throw new IllegalArgumentException("Unknown or missing impact severity");
-    }
-    return ImpactSeverity.mapSeverity(protoImpact.getSeverity().name());
   }
 
   private static List<ServerTaintIssue.Flow> convertFlows(SourceApi sourceApi, List<Flow> flowsList, Map<String, Path> componentPathsByKey,

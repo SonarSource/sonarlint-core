@@ -20,21 +20,24 @@
 package org.sonarsource.sonarlint.core.serverapi.push;
 
 import java.util.List;
+import java.util.Map;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 
 public class IssueChangedEvent implements SonarProjectEvent {
   private final String projectKey;
-  private final List<String> impactedIssueKeys;
+  private final List<Issue> impactedIssues;
   private final IssueSeverity userSeverity;
   private final RuleType userType;
   private final Boolean resolved;
 
-  public IssueChangedEvent(String projectKey, List<String> impactedIssueKeys, @Nullable IssueSeverity userSeverity, @Nullable RuleType userType, @Nullable Boolean resolved) {
+  public IssueChangedEvent(String projectKey, List<Issue> impactedIssues, @Nullable IssueSeverity userSeverity, @Nullable RuleType userType, @Nullable Boolean resolved) {
     this.projectKey = projectKey;
-    this.impactedIssueKeys = impactedIssueKeys;
+    this.impactedIssues = impactedIssues;
     this.userSeverity = userSeverity;
     this.userType = userType;
     this.resolved = resolved;
@@ -45,8 +48,8 @@ public class IssueChangedEvent implements SonarProjectEvent {
     return projectKey;
   }
 
-  public List<String> getImpactedIssueKeys() {
-    return impactedIssueKeys;
+  public List<Issue> getImpactedIssues() {
+    return impactedIssues;
   }
 
   /**
@@ -71,5 +74,29 @@ public class IssueChangedEvent implements SonarProjectEvent {
   @CheckForNull
   public Boolean getResolved() {
     return resolved;
+  }
+
+  public static class Issue {
+    private final String issueKey;
+    private final String branchName;
+    private final Map<SoftwareQuality, ImpactSeverity> impacts;
+
+    public Issue(String issueKey, String branchName, Map<SoftwareQuality, ImpactSeverity> impacts) {
+      this.issueKey = issueKey;
+      this.branchName = branchName;
+      this.impacts = impacts;
+    }
+
+    public String getIssueKey() {
+      return issueKey;
+    }
+
+    public String getBranchName() {
+      return branchName;
+    }
+
+    public Map<SoftwareQuality, ImpactSeverity> getImpacts() {
+      return impacts;
+    }
   }
 }

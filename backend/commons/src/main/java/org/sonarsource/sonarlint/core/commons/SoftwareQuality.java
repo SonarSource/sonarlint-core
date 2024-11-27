@@ -22,6 +22,5 @@ package org.sonarsource.sonarlint.core.commons;
 public enum SoftwareQuality {
   MAINTAINABILITY,
   RELIABILITY,
-  SECURITY;
-
+  SECURITY
 }

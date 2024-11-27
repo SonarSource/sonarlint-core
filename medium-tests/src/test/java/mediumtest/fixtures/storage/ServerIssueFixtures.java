@@ -21,8 +21,12 @@ package mediumtest.fixtures.storage;
 
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.Map;
+import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.RuleType;
+import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 
 public class ServerIssueFixtures {
@@ -66,7 +70,7 @@ public class ServerIssueFixtures {
     }
 
     public ServerIssue build() {
-      return new ServerIssue(key, resolved, ruleKey, message, Path.of(filePath).toString(), introductionDate, issueSeverity, ruleType, textRangeWithHash);
+      return new ServerIssue(key, resolved, ruleKey, message, Path.of(filePath).toString(), introductionDate, issueSeverity, ruleType, textRangeWithHash, impacts);
     }
   }
 
@@ -85,16 +89,17 @@ public class ServerIssueFixtures {
     }
 
     public ServerIssue build() {
-      return new ServerIssue(key, resolved, "ruleKey", "message", Path.of("file/path").toString(), introductionDate, issueSeverity, ruleType, lineNumber, lineHash);
+      return new ServerIssue(key, resolved, "ruleKey", "message", Path.of("file/path").toString(), introductionDate, issueSeverity, ruleType, lineNumber, lineHash, impacts);
     }
   }
 
-  public static abstract class AbstractServerIssueBuilder<T extends AbstractServerIssueBuilder<T>> {
+  public abstract static class AbstractServerIssueBuilder<T extends AbstractServerIssueBuilder<T>> {
     protected final String key;
     protected boolean resolved = false;
     protected Instant introductionDate = Instant.now();
     protected RuleType ruleType = RuleType.BUG;
     protected IssueSeverity issueSeverity;
+    protected Map<SoftwareQuality, ImpactSeverity> impacts = Collections.emptyMap();
 
     protected AbstractServerIssueBuilder(String key) {
       this.key = key;
@@ -124,6 +129,11 @@ public class ServerIssueFixtures {
       this.issueSeverity = issueSeverity;
       return (T) this;
     }
+
+    public T withImpacts(Map<SoftwareQuality, ImpactSeverity> impacts) {
+      this.impacts = impacts;
+      return (T) this;
+    }
   }
 
   public static class ServerIssue {
@@ -139,8 +149,10 @@ public class ServerIssueFixtures {
     public final TextRangeWithHash textRangeWithHash;
     public final Integer lineNumber;
     public final String lineHash;
+    public final Map<SoftwareQuality, ImpactSeverity> impacts;
 
-    public ServerIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant introductionDate, IssueSeverity userSeverity, RuleType ruleType, TextRangeWithHash textRangeWithHash) {
+    public ServerIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant introductionDate, IssueSeverity userSeverity, RuleType ruleType, TextRangeWithHash textRangeWithHash,
+      Map<SoftwareQuality, ImpactSeverity> impacts) {
       this.key = key;
       this.resolved = resolved;
       this.ruleKey = ruleKey;
@@ -152,9 +164,11 @@ public class ServerIssueFixtures {
       this.textRangeWithHash = textRangeWithHash;
       this.lineNumber = null;
       this.lineHash = null;
+      this.impacts = impacts;
     }
 
-    public ServerIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant introductionDate, IssueSeverity userSeverity, RuleType ruleType, int lineNumber, String lineHash) {
+    public ServerIssue(String key, boolean resolved, String ruleKey, String message, String filePath, Instant introductionDate, IssueSeverity userSeverity, RuleType ruleType,
+      int lineNumber, String lineHash, Map<SoftwareQuality, ImpactSeverity> impacts) {
       this.key = key;
       this.resolved = resolved;
       this.ruleKey = ruleKey;
@@ -166,6 +180,7 @@ public class ServerIssueFixtures {
       this.textRangeWithHash = null;
       this.lineNumber = lineNumber;
       this.lineHash = lineHash;
+      this.impacts = impacts;
     }
 
     public String getFilePath() {
