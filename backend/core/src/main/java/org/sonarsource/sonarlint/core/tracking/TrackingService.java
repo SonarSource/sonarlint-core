@@ -228,7 +228,7 @@ public class TrackingService {
   private static TrackedIssue updateTrackedIssueWithServerData(TrackedIssue trackedIssue, ServerIssue<?> serverIssue) {
     var serverSeverity = serverIssue.getUserSeverity();
     var severity = serverSeverity != null ? serverSeverity : trackedIssue.getSeverity();
-    var impacts = serverIssue.getImpacts() != null ? serverIssue.getImpacts() : trackedIssue.getImpacts();
+    var impacts = serverIssue.getImpacts().isEmpty() ? trackedIssue.getImpacts() : serverIssue.getImpacts();
     return new TrackedIssue(trackedIssue.getId(), trackedIssue.getMessage(), serverIssue.getCreationDate(),
       serverIssue.isResolved(), severity, serverIssue.getType(), serverIssue.getRuleKey(), trackedIssue.getTextRangeWithHash(),
       trackedIssue.getLineWithHash(), serverIssue.getKey(), impacts, trackedIssue.getFlows(),
