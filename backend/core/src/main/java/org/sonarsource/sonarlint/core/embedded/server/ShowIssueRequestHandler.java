@@ -126,8 +126,8 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
           }
           var localBranchMatchesRequesting = client.matchProjectBranch(new MatchProjectBranchParams(configScopeId, branchToMatch)).join().isBranchMatched();
           if (!localBranchMatchesRequesting) {
-            client.showMessage(new ShowMessageParams(MessageType.ERROR, "Attempted to show a fix suggestion for a different branch than the one currently checked out." +
-              "\nPlease make sure the correct branch is checked out and try again."));
+            client.showMessage(new ShowMessageParams(MessageType.ERROR, "Attempted to show an issue from branch '" + branchToMatch + "', " +
+              "which is different from the currently checked-out branch.\nPlease switch to the correct branch and try again."));
             return;
           }
           showIssueForScope(connectionId, configScopeId, showIssueQuery.issueKey, showIssueQuery.projectKey, branchToMatch,

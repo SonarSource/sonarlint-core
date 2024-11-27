@@ -112,8 +112,8 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
         if (configScopeId != null) {
           var localBranchMatchesRequesting = client.matchProjectBranch(new MatchProjectBranchParams(configScopeId, showFixSuggestionQuery.branch)).join().isBranchMatched();
           if (!localBranchMatchesRequesting) {
-            client.showMessage(new ShowMessageParams(MessageType.ERROR, "Attempted to show a fix suggestion for a different branch than the one currently checked out." +
-              "\nPlease make sure the correct branch is checked out and try again."));
+            client.showMessage(new ShowMessageParams(MessageType.ERROR, "Attempted to show a fix suggestion from branch '" + showFixSuggestionQuery.branch + "', " +
+              "which is different from the currently checked-out branch.\nPlease switch to the correct branch and try again."));
             return;
           }
           showFixSuggestionForScope(configScopeId, showFixSuggestionQuery.issueKey, showFixSuggestionQuery.fixSuggestion);

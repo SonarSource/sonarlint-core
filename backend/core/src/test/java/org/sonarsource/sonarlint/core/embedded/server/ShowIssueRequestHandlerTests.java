@@ -356,8 +356,8 @@ class ShowIssueRequestHandlerTests {
 
     await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> verify(sonarLintRpcClient).showMessage(showMessageArgumentCaptor.capture()));
     assertThat(showMessageArgumentCaptor.getValue().getType()).isEqualTo(MessageType.ERROR);
-    assertThat(showMessageArgumentCaptor.getValue().getText()).isEqualTo("Attempted to show a fix suggestion for a different branch than the one currently checked out.\n" +
-      "Please make sure the correct branch is checked out and try again.");
+    assertThat(showMessageArgumentCaptor.getValue().getText()).isEqualTo("Attempted to show an issue from branch 'branch', " +
+      "which is different from the currently checked-out branch.\nPlease switch to the correct branch and try again.");
     verify(sonarLintRpcClient).matchProjectBranch(any());
     verifyNoMoreInteractions(sonarLintRpcClient);
   }
