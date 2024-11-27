@@ -4,6 +4,8 @@
 
 * Signature of `org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams#DidUpdateFileSystemParams` was changed
   * Parameter `addedOrChangedFiles` was split into `addedFiles` and `changedFiles`
+* Removed parameter `branch` from `org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueDetailsDto` as it should not be used anymore by the client.
+  This is used as part of the Open in IDE feature, and SLCORE is now checking for branches.
 
 # 10.10
 

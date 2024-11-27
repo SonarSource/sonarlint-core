@@ -66,6 +66,7 @@ import org.sonarsource.sonarlint.core.serverconnection.ProjectBranches;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBranchesStorage;
 import org.sonarsource.sonarlint.core.serverconnection.SonarProjectStorage;
 import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.usertoken.UserTokenService;
 
@@ -76,7 +77,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -118,10 +118,12 @@ class ShowIssueRequestHandlerTests {
     var sonarStorage = mock(SonarProjectStorage.class);
     when(sonarStorage.branches()).thenReturn(branchesStorage);
     when(storageService.binding(any())).thenReturn(sonarStorage);
+    var sonarProjectBranchesSynchronizationService = mock(SonarProjectBranchesSynchronizationService.class);
+    when(sonarProjectBranchesSynchronizationService.getProjectBranches(any(), any(), any())).thenReturn(new ProjectBranches(Set.of(), "main"));
 
     showIssueRequestHandler = spy(new ShowIssueRequestHandler(sonarLintRpcClient, serverApiProvider, telemetryService,
       new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintRpcClient, connectionConfigurationRepository, configurationRepository, userTokenService,
-        sonarCloudActiveEnvironment), pathTranslationService, sonarCloudActiveEnvironment, storageService));
+        sonarCloudActiveEnvironment), pathTranslationService, sonarCloudActiveEnvironment, storageService, sonarProjectBranchesSynchronizationService));
   }
 
   @Test
@@ -385,11 +387,11 @@ class ShowIssueRequestHandlerTests {
 
     showIssueRequestHandler.handle(request, response, context);
 
-    verify(sonarLintRpcClient, timeout(10_000)).showIssue(any());
+    await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> verify(sonarLintRpcClient).showIssue(any()));
   }
 
   @Test
-  void should_cancel_flow_when_main_branch_is_not_provided_and_main_branch_not_found() throws HttpException, IOException {
+  void should_find_main_branch_when_not_provided_and_not_stored() throws HttpException, IOException {
     var request = new BasicClassicHttpRequest("GET", "/sonarlint/api/issues/show" +
       "?server=https%3A%2F%2Fnext.sonarqube.com%2Fsonarqube" +
       "&project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
@@ -405,15 +407,14 @@ class ShowIssueRequestHandlerTests {
     when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope", "connectionId", "projectKey")));
     when(sonarLintRpcClient.matchProjectBranch(any())).thenReturn(CompletableFuture.completedFuture(new MatchProjectBranchResponse(true)));
     when(branchesStorage.exists()).thenReturn(false);
+    var serverIssueDetails = mock(IssueApi.ServerIssueDetails.class);
+    when(issueApi.fetchServerIssue(any(), any(), any(), any(), any())).thenReturn(Optional.of(serverIssueDetails));
+    var issueDetails = mock(IssueDetailsDto.class);
+    doReturn(new ShowIssueParams("configScope", issueDetails)).when(showIssueRequestHandler).getShowIssueParams(any(), any(), any(), any(), any(), any(), any());
 
     showIssueRequestHandler.handle(request, response, context);
-    var showMessageArgumentCaptor = ArgumentCaptor.forClass(ShowMessageParams.class);
 
-    await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> verify(sonarLintRpcClient).showMessage(showMessageArgumentCaptor.capture()));
-    assertThat(showMessageArgumentCaptor.getValue().getType()).isEqualTo(MessageType.ERROR);
-    assertThat(showMessageArgumentCaptor.getValue().getText()).isEqualTo("Could not determine the current branch. " +
-      "Please make sure you are bound to your SonarQube project and try again.");
-    verifyNoMoreInteractions(sonarLintRpcClient);
+    await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> verify(sonarLintRpcClient).showIssue(any()));
   }
 
 }

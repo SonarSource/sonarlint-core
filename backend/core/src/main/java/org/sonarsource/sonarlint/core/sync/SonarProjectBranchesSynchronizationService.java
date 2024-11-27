@@ -66,7 +66,7 @@ public class SonarProjectBranchesSynchronizationService {
     });
   }
 
-  public static ProjectBranches getProjectBranches(ServerApi serverApi, String projectKey, SonarLintCancelMonitor cancelMonitor) {
+  public ProjectBranches getProjectBranches(ServerApi serverApi, String projectKey, SonarLintCancelMonitor cancelMonitor) {
     LOG.info("Synchronizing project branches for project '{}'", projectKey);
     var allBranches = serverApi.branches().getAllBranches(projectKey, cancelMonitor);
     var mainBranch = allBranches.stream().filter(ServerBranch::isMain).findFirst().map(ServerBranch::getName)

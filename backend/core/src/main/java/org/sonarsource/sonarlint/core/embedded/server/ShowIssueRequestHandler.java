@@ -79,19 +79,21 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
   private final TelemetryService telemetryService;
   private final RequestHandlerBindingAssistant requestHandlerBindingAssistant;
   private final PathTranslationService pathTranslationService;
-  private final StorageService storageService;
   private final String sonarCloudUrl;
+  private final StorageService storageService;
+  private final SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService;
 
   public ShowIssueRequestHandler(SonarLintRpcClient client, ServerApiProvider serverApiProvider, TelemetryService telemetryService,
     RequestHandlerBindingAssistant requestHandlerBindingAssistant, PathTranslationService pathTranslationService, SonarCloudActiveEnvironment sonarCloudActiveEnvironment,
-    StorageService storageService) {
+    StorageService storageService, SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService) {
     this.client = client;
     this.serverApiProvider = serverApiProvider;
     this.telemetryService = telemetryService;
     this.requestHandlerBindingAssistant = requestHandlerBindingAssistant;
     this.pathTranslationService = pathTranslationService;
-    this.storageService = storageService;
     this.sonarCloudUrl = sonarCloudActiveEnvironment.getUri().toString();
+    this.storageService = storageService;
+    this.sonarProjectBranchesSynchronizationService = sonarProjectBranchesSynchronizationService;
   }
 
   @Override
@@ -118,7 +120,7 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
               branchToMatch = storedBranches.getMainBranchName();
             } else {
               var serverApi = serverApiProvider.getServerApiOrThrow(connectionId);
-              var branches = SonarProjectBranchesSynchronizationService.getProjectBranches(serverApi, showIssueQuery.projectKey, cancelMonitor);
+              var branches = sonarProjectBranchesSynchronizationService.getProjectBranches(serverApi, showIssueQuery.projectKey, cancelMonitor);
               branchToMatch = branches.getMainBranchName();
             }
           }
@@ -186,7 +188,7 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
     var isTaint = isIssueTaint(issueDetails.ruleKey);
 
     return new ShowIssueParams(configScopeId, new IssueDetailsDto(textRangeDto, issueDetails.ruleKey, issueDetails.key, translation.serverToIdePath(issueDetails.path),
-      branch, pullRequest, issueDetails.message, issueDetails.creationDate, issueDetails.codeSnippet, isTaint,
+      pullRequest, issueDetails.message, issueDetails.creationDate, issueDetails.codeSnippet, isTaint,
       flowLocations));
   }
 

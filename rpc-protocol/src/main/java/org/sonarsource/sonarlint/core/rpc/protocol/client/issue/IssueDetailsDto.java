@@ -29,7 +29,6 @@ public class IssueDetailsDto {
   private final String issueKey;
   private final String ruleKey;
   private final Path ideFilePath;
-  private final String branch;
   @Nullable
   private final String pullRequest;
   private final String message;
@@ -40,13 +39,12 @@ public class IssueDetailsDto {
   private final TextRangeDto textRange;
 
   public IssueDetailsDto(TextRangeDto textRange, String ruleKey, String issueKey,
-    Path ideFilePath, String branch, @Nullable String pullRequest, String message, String creationDate,
+    Path ideFilePath, @Nullable String pullRequest, String message, String creationDate,
     String codeSnippet, boolean isTaint, List<FlowDto> flows) {
     this.issueKey = issueKey;
     this.ruleKey = ruleKey;
     this.textRange = textRange;
     this.ideFilePath = ideFilePath;
-    this.branch = branch;
     this.pullRequest = pullRequest;
     this.message = message;
     this.creationDate = creationDate;
@@ -73,10 +71,6 @@ public class IssueDetailsDto {
 
   public Path getIdeFilePath() {
     return ideFilePath;
-  }
-
-  public String getBranch() {
-    return branch;
   }
 
   @Nullable
