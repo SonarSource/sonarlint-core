@@ -47,6 +47,7 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarCloudConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarQubeConnectionParams;
@@ -61,6 +62,7 @@ import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
+import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -76,15 +78,18 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
   private final RequestHandlerBindingAssistant requestHandlerBindingAssistant;
   private final PathTranslationService pathTranslationService;
   private final String sonarCloudUrl;
+  private final SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService;
 
   public ShowIssueRequestHandler(SonarLintRpcClient client, ServerApiProvider serverApiProvider, TelemetryService telemetryService,
-    RequestHandlerBindingAssistant requestHandlerBindingAssistant, PathTranslationService pathTranslationService, SonarCloudActiveEnvironment sonarCloudActiveEnvironment) {
+    RequestHandlerBindingAssistant requestHandlerBindingAssistant, PathTranslationService pathTranslationService, SonarCloudActiveEnvironment sonarCloudActiveEnvironment,
+    SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService) {
     this.client = client;
     this.serverApiProvider = serverApiProvider;
     this.telemetryService = telemetryService;
     this.requestHandlerBindingAssistant = requestHandlerBindingAssistant;
     this.pathTranslationService = pathTranslationService;
     this.sonarCloudUrl = sonarCloudActiveEnvironment.getUri().toString();
+    this.sonarProjectBranchesSynchronizationService = sonarProjectBranchesSynchronizationService;
   }
 
   @Override
@@ -103,7 +108,17 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
       showIssueQuery.projectKey,
       (connectionId, configScopeId, cancelMonitor) -> {
         if (configScopeId != null) {
-          showIssueForScope(connectionId, configScopeId, showIssueQuery.issueKey, showIssueQuery.projectKey, showIssueQuery.branch,
+          var branchToMatch = showIssueQuery.branch;
+          if (branchToMatch == null) {
+            branchToMatch = sonarProjectBranchesSynchronizationService.findMainBranch(connectionId, showIssueQuery.projectKey, cancelMonitor);
+          }
+          var localBranchMatchesRequesting = client.matchProjectBranch(new MatchProjectBranchParams(configScopeId, branchToMatch)).join().isBranchMatched();
+          if (!localBranchMatchesRequesting) {
+            client.showMessage(new ShowMessageParams(MessageType.ERROR, "Attempted to show an issue from branch '" + branchToMatch + "', " +
+              "which is different from the currently checked-out branch.\nPlease switch to the correct branch and try again."));
+            return;
+          }
+          showIssueForScope(connectionId, configScopeId, showIssueQuery.issueKey, showIssueQuery.projectKey, branchToMatch,
             showIssueQuery.pullRequest, cancelMonitor);
         }
       });
@@ -161,8 +176,7 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
     var isTaint = isIssueTaint(issueDetails.ruleKey);
 
     return new ShowIssueParams(configScopeId, new IssueDetailsDto(textRangeDto, issueDetails.ruleKey, issueDetails.key, translation.serverToIdePath(issueDetails.path),
-      branch, pullRequest, issueDetails.message, issueDetails.creationDate, issueDetails.codeSnippet, isTaint,
-      flowLocations));
+      issueDetails.message, issueDetails.creationDate, issueDetails.codeSnippet, isTaint, flowLocations));
   }
 
   static boolean isIssueTaint(String ruleKey) {
@@ -206,6 +220,7 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
     private final String serverUrl;
     private final String projectKey;
     private final String issueKey;
+    @Nullable
     private final String branch;
     @Nullable
     private final String pullRequest;
@@ -217,7 +232,7 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
     private final String organizationKey;
     private final boolean isSonarCloud;
 
-    public ShowIssueQuery(@Nullable String serverUrl, String projectKey, String issueKey, String branch, @Nullable String pullRequest,
+    public ShowIssueQuery(@Nullable String serverUrl, String projectKey, String issueKey, @Nullable String branch, @Nullable String pullRequest,
       @Nullable String tokenName, @Nullable String tokenValue, @Nullable String organizationKey, boolean isSonarCloud) {
       this.serverUrl = serverUrl;
       this.projectKey = projectKey;
@@ -231,7 +246,7 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
     }
 
     public boolean isValid() {
-      return isNotBlank(projectKey) && isNotBlank(issueKey) && isNotBlank(branch)
+      return isNotBlank(projectKey) && isNotBlank(issueKey)
         && (isSonarCloud || isNotBlank(serverUrl))
         && (!isSonarCloud || isNotBlank(organizationKey))
         && isPullRequestParamValid() && isTokenValid();
@@ -272,6 +287,7 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
       return issueKey;
     }
 
+    @Nullable
     public String getBranch() {
       return branch;
     }
