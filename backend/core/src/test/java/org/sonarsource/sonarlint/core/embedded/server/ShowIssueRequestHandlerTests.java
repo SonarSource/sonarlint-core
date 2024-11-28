@@ -64,9 +64,12 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBranches;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBranchesStorage;
+import org.sonarsource.sonarlint.core.serverconnection.SonarProjectStorage;
+import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.usertoken.UserTokenService;
+import org.springframework.context.ApplicationEventPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -112,11 +115,19 @@ class ShowIssueRequestHandlerTests {
     when(serverApiProvider.getServerApiOrThrow(any())).thenReturn(serverApi);
     when(serverApiProvider.getServerApi(any())).thenReturn(Optional.of(serverApi));
     branchesStorage = mock(ProjectBranchesStorage.class);
-    var sonarProjectBranchesSynchronizationService = mock(SonarProjectBranchesSynchronizationService.class);
-    when(sonarProjectBranchesSynchronizationService.getProjectBranches(any(), any(), any())).thenReturn(new ProjectBranches(Set.of(), "main"));
+    var storageService = mock(StorageService.class);
+    var sonarStorage = mock(SonarProjectStorage.class);
+    var eventPublisher = mock(ApplicationEventPublisher.class);
+    var sonarProjectBranchesSynchronizationService = spy(new SonarProjectBranchesSynchronizationService(storageService, serverApiProvider
+      , eventPublisher));
+    doReturn(new ProjectBranches(Set.of(), "main")).when(sonarProjectBranchesSynchronizationService).getProjectBranches(any(), any(),
+      any());
+    when(storageService.binding(any())).thenReturn(sonarStorage);
+    when(sonarStorage.branches()).thenReturn(branchesStorage);
 
     showIssueRequestHandler = spy(new ShowIssueRequestHandler(sonarLintRpcClient, serverApiProvider, telemetryService,
-      new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintRpcClient, connectionConfigurationRepository, configurationRepository, userTokenService,
+      new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintRpcClient,
+        connectionConfigurationRepository, configurationRepository, userTokenService,
         sonarCloudActiveEnvironment), pathTranslationService, sonarCloudActiveEnvironment, sonarProjectBranchesSynchronizationService));
   }
 
@@ -295,7 +306,8 @@ class ShowIssueRequestHandlerTests {
 
   @Test
   void should_validate_issue_query_for_sq() {
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", null, null, null, false).isValid()).isTrue();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", null, null, null,
+      false).isValid()).isTrue();
     assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "", "pullRequest", null, null, null, false).isValid()).isTrue();
     assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", null, "pullRequest", null, null, null, false).isValid()).isTrue();
 
@@ -305,18 +317,26 @@ class ShowIssueRequestHandlerTests {
     assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "", "", null, null, null, false).isValid()).isFalse();
     assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", null, null, null, null, false).isValid()).isTrue();
 
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "name", null, null, false).isValid()).isFalse();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", null, "value", null, false).isValid()).isFalse();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "name", "", null, false).isValid()).isFalse();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "", "value", null, false).isValid()).isFalse();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "name", "value", null, false).isValid()).isTrue();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "name", null, null,
+      false).isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", null, "value", null,
+      false).isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "name", "", null,
+      false).isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "", "value", null,
+      false).isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "name", "value", null
+      , false).isValid()).isTrue();
   }
 
   @Test
   void should_validate_issue_query_for_sc() {
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery(null, "project", "issue", "branch", "pullRequest", "name", "value", "organizationKey", true).isValid()).isTrue();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery(null, "project", "issue", "", "pullRequest", "name", "value", "organizationKey", true).isValid()).isTrue();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery(null, "project", "issue", null, "pullRequest", "name", "value", "organizationKey", true).isValid()).isTrue();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery(null, "project", "issue", "branch", "pullRequest", "name", "value",
+      "organizationKey", true).isValid()).isTrue();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery(null, "project", "issue", "", "pullRequest", "name", "value", "organizationKey"
+      , true).isValid()).isTrue();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery(null, "project", "issue", null, "pullRequest", "name", "value",
+      "organizationKey", true).isValid()).isTrue();
 
     assertThat(new ShowIssueRequestHandler.ShowIssueQuery(null, "project", "issue", "branch", "pullRequest", "name", "value", null, true).isValid()).isFalse();
   }
@@ -342,7 +362,8 @@ class ShowIssueRequestHandlerTests {
 
     when(connectionConfigurationRepository.findByOrganization(any())).thenReturn(List.of(
       new SonarCloudConnectionConfiguration(PRODUCTION_URI, "name", "organizationKey", false)));
-    when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope", "connectionId", "projectKey")));
+    when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope"
+      , "connectionId", "projectKey")));
     when(sonarLintRpcClient.matchProjectBranch(any())).thenReturn(CompletableFuture.completedFuture(new MatchProjectBranchResponse(false)));
 
     showIssueRequestHandler.handle(request, response, context);
@@ -370,14 +391,16 @@ class ShowIssueRequestHandlerTests {
 
     when(connectionConfigurationRepository.findByOrganization(any())).thenReturn(List.of(
       new SonarCloudConnectionConfiguration(PRODUCTION_URI, "name", "organizationKey", false)));
-    when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope", "connectionId", "projectKey")));
+    when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope"
+      , "connectionId", "projectKey")));
     when(sonarLintRpcClient.matchProjectBranch(any())).thenReturn(CompletableFuture.completedFuture(new MatchProjectBranchResponse(true)));
     when(branchesStorage.exists()).thenReturn(true);
     when(branchesStorage.read()).thenReturn(new ProjectBranches(Set.of(), "main"));
     var serverIssueDetails = mock(IssueApi.ServerIssueDetails.class);
     when(issueApi.fetchServerIssue(any(), any(), any(), any(), any())).thenReturn(Optional.of(serverIssueDetails));
     var issueDetails = mock(IssueDetailsDto.class);
-    doReturn(new ShowIssueParams("configScope", issueDetails)).when(showIssueRequestHandler).getShowIssueParams(any(), any(), any(), any(), any(), any(), any());
+    doReturn(new ShowIssueParams("configScope", issueDetails)).when(showIssueRequestHandler).getShowIssueParams(any(), any(), any(),
+      any(), any(), any(), any());
 
     showIssueRequestHandler.handle(request, response, context);
 
@@ -398,13 +421,15 @@ class ShowIssueRequestHandlerTests {
 
     when(connectionConfigurationRepository.findByOrganization(any())).thenReturn(List.of(
       new SonarCloudConnectionConfiguration(PRODUCTION_URI, "name", "organizationKey", false)));
-    when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope", "connectionId", "projectKey")));
+    when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope"
+      , "connectionId", "projectKey")));
     when(sonarLintRpcClient.matchProjectBranch(any())).thenReturn(CompletableFuture.completedFuture(new MatchProjectBranchResponse(true)));
     when(branchesStorage.exists()).thenReturn(false);
     var serverIssueDetails = mock(IssueApi.ServerIssueDetails.class);
     when(issueApi.fetchServerIssue(any(), any(), any(), any(), any())).thenReturn(Optional.of(serverIssueDetails));
     var issueDetails = mock(IssueDetailsDto.class);
-    doReturn(new ShowIssueParams("configScope", issueDetails)).when(showIssueRequestHandler).getShowIssueParams(any(), any(), any(), any(), any(), any(), any());
+    doReturn(new ShowIssueParams("configScope", issueDetails)).when(showIssueRequestHandler).getShowIssueParams(any(), any(), any(),
+      any(), any(), any(), any());
 
     showIssueRequestHandler.handle(request, response, context);
 
