@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.sonarsource.parent</groupId>
     <artifactId>parent</artifactId>
-    <version>80.0.0.2205</version>
+    <version>82.0.0.2314</version>
     <relativePath/>
   </parent>
   <groupId>org.sonarsource.sonarlint.core</groupId>
@@ -48,6 +48,8 @@
   </modules>
 
   <properties>
+    <license.name>GNU LGPL v3</license.name>
+    
     <maven.compiler.release>11</maven.compiler.release>
     <sonar-plugin-api.version>10.11.0.2468</sonar-plugin-api.version>
     <sonar-markdown.version>9.4.0.54424</sonar-markdown.version>
