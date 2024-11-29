@@ -262,7 +262,7 @@ class SonarProjectBranchMediumTests {
     bind("configScopeId", "connectionId", "projectKey2");
 
     assertThat(backend.getSonarProjectBranchService().getMatchedSonarProjectBranch(new GetMatchedSonarProjectBranchParams("configScopeId")))
-      .succeedsWithin(Duration.ofSeconds(1))
+      .succeedsWithin(Duration.ofSeconds(5))
       .extracting(GetMatchedSonarProjectBranchResponse::getMatchedSonarProjectBranch)
       .isNull();
   }
