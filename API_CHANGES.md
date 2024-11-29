@@ -5,6 +5,8 @@
 * Signature of `org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams#DidUpdateFileSystemParams` was changed
   * Parameter `addedOrChangedFiles` was split into `addedFiles` and `changedFiles`
 * Removed parameter `branch` and `pullRequest` from `org.sonarsource.sonarlint.core.rpc.protocol.client.issue.IssueDetailsDto` as it should not be used anymore by the client.
+* Add new client method `org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate#invalidToken`
+  * It is called when the token is invalid and the client should notify the user about it
 
 # 10.10
 
