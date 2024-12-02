@@ -6,8 +6,6 @@ env:
   ARTIFACTORY_PRIVATE_USERNAME: vault-${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-private-reader
   ARTIFACTORY_PRIVATE_PASSWORD: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-private-reader access_token]
   ARTIFACTORY_ACCESS_TOKEN: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-private-reader access_token]
-  SONAR_HOST_URL: VAULT[development/kv/data/next data.url]
-  SONAR_TOKEN: VAULT[development/kv/data/next data.token]
 
 auto_cancellation: $CIRRUS_BRANCH != $CIRRUS_DEFAULT_BRANCH
 
@@ -77,6 +75,8 @@ build_task:
     ARTIFACTORY_DEPLOY_PASSWORD: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-qa-deployer access_token]
     SIGN_KEY: VAULT[development/kv/data/sign data.key]
     PGP_PASSPHRASE: VAULT[development/kv/data/sign data.passphrase]
+    SONAR_HOST_URL: "not_used_but_needed_by_regular_mvn_build_deploy_analyze"
+    SONAR_TOKEN: "not_used_but_needed_by_regular_mvn_build_deploy_analyze"
   eks_container:
     <<: *CONTAINER_DEFINITION
     memory: 2G
@@ -98,6 +98,8 @@ test_linux_task:
   env:
     JDK_VERSION: "17"
     DEPLOY_PULL_REQUEST: "false"
+    SONAR_HOST_URL: VAULT[development/kv/data/next data.url]
+    SONAR_TOKEN: VAULT[development/kv/data/next data.token]
   <<: *MAVEN_CACHE_DEFINITION
   script:
     - source cirrus-env QA
