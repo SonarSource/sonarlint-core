@@ -155,7 +155,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
   public static final String CONNECTION_ID = "orchestrator";
   public static final String CONNECTION_ID_WRONG_CREDENTIALS = "wrong-credentials";
-  private static final String SCANNER_VERSION = "6.0.0.4432";
 
   @RegisterExtension
   static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
@@ -1396,7 +1395,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   private void analyzeProject(String projectDirName, String projectKey, String... properties) {
     var projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
     ORCHESTRATOR.executeBuild(SonarScanner.create(projectDir.toFile())
-      .setScannerVersion(SCANNER_VERSION)
       .setProjectKey(projectKey)
       .setSourceDirs("src")
       .setProperties(properties)
