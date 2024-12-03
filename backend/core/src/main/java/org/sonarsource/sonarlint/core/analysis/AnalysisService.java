@@ -648,7 +648,8 @@ public class AnalysisService {
     var analyzeCommand = new AnalyzeCommand(configurationScopeId, analysisConfig,
       issue -> streamIssue(configurationScopeId, analysisId, issue, ruleDetailsCache, raisedIssues, enableTracking), SonarLintLogger.getTargetForCopy());
     var rpcProgressMonitor = new RpcProgressMonitor(client, cancelMonitor, configurationScopeId, analysisId);
-    return analysisEngine.post(analyzeCommand, rpcProgressMonitor)
+    LOG.info("[MOSTAFA] async command about to be added to the queue " + analysisId.toString());
+    var res = analysisEngine.post(analyzeCommand, rpcProgressMonitor)
       .whenComplete((results, error) -> {
         long endTime = System.currentTimeMillis();
         if (error == null) {
@@ -663,6 +664,8 @@ public class AnalysisService {
           LOG.error("Error during analysis", error);
         }
       });
+    LOG.info("[MOSTAFA] async command added to the queue" + analysisId.toString());
+    return res;
   }
 
   private static void logSummary(ArrayList<RawIssue> rawIssues, long analysisDuration) {
