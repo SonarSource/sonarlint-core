@@ -23,16 +23,12 @@ import java.util.Deque;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-
 public class SonarLintCancelMonitor {
 
   private boolean canceled;
   private final Deque<Runnable> downstreamCancelAction = new ConcurrentLinkedDeque<>();
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   public synchronized void cancel() {
-//    LOG.info("[MOSTAFA] SonarLintCancelMonitor::cancel");
     canceled = true;
     downstreamCancelAction.forEach(Runnable::run);
     downstreamCancelAction.clear();
