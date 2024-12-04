@@ -227,7 +227,8 @@ class OpenHotspotInIdeMediumTests {
       .withEmbeddedServer()
       .build(fakeClient);
 
-    var statusCode = requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithoutHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
+    var statusCode = requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithoutHotspot.baseUrl()) + "&project=projectKey&hotspot=key",
+      serverWithoutHotspot.baseUrl());
     assertThat(statusCode).isEqualTo(200);
 
     verify(fakeClient, timeout(2000)).showMessage(MessageType.ERROR, "Could not show the hotspot. See logs for more details");
@@ -248,25 +249,28 @@ class OpenHotspotInIdeMediumTests {
     assertThat(statusCode).isEqualTo(400);
   }
 
+  private int requestGetOpenHotspotWithParams(String query, String baseUrl) {
+    return requestOpenHotspotWithParams(query, "GET", baseUrl, HttpRequest.BodyPublishers.noBody());
+  }
+
   private int requestGetOpenHotspotWithParams(String query) {
-    return requestOpenHotspotWithParams(query, "GET", HttpRequest.BodyPublishers.noBody());
+    return requestOpenHotspotWithParams(query, "GET", serverWithHotspot.baseUrl(), HttpRequest.BodyPublishers.noBody());
   }
 
   private int requestPostOpenHotspotWithParams(String query) {
-    return requestOpenHotspotWithParams(query, "POST", HttpRequest.BodyPublishers.ofString(""));
+    return requestOpenHotspotWithParams(query, "POST", serverWithHotspot.baseUrl(), HttpRequest.BodyPublishers.ofString(""));
   }
 
-  private int requestOpenHotspotWithParams(String query, String method, HttpRequest.BodyPublisher bodyPublisher) {
+  private int requestOpenHotspotWithParams(String query, String method, String baseUrl, HttpRequest.BodyPublisher bodyPublisher) {
     var request = HttpRequest.newBuilder()
       .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/hotspots/show?" + query))
+      .header("Origin", baseUrl)
       .method(method, bodyPublisher)
       .build();
-    HttpResponse<String> response = null;
+    HttpResponse<String> response;
     try {
       response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    } catch (InterruptedException e) {
+    } catch (IOException | InterruptedException e) {
       throw new RuntimeException(e);
     }
     return response.statusCode();

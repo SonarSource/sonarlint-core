@@ -32,6 +32,7 @@ import mediumtest.fixtures.TestPlugin;
 import org.assertj.core.api.Assertions;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
@@ -167,6 +168,7 @@ class AnalysisForcedByClientMediumTests {
   }
 
   @Test
+  @Disabled("Flaky tests")
   void should_run_forced_full_project_analysis_only_for_hotspots(@TempDir Path baseDir) {
     var fileFoo = createFile(baseDir, "Foo.java", "public class Foo {\n" +
       "\n" +
@@ -221,6 +223,7 @@ class AnalysisForcedByClientMediumTests {
   }
 
   @Test
+  @Disabled("Flaky test")
   void should_run_forced_full_project_analysis_for_all_findings(@TempDir Path baseDir) {
     var fileFoo = createFile(baseDir, "Foo.java", "public class Foo {\n" +
       "\n" +

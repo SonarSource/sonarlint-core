@@ -35,6 +35,7 @@ import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -48,6 +49,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreat
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.FixSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 
 import static mediumtest.fixtures.ServerFixture.newSonarCloudServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
@@ -63,6 +65,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
+import static testutils.AnalysisUtils.createFile;
 
 class OpenFixSuggestionInIdeMediumTests {
 
@@ -77,7 +80,7 @@ class OpenFixSuggestionInIdeMediumTests {
   private static final String ORG_KEY = "orgKey";
   private static final String FIX_PAYLOAD = "{\n" +
     "\"fileEdit\": {\n" +
-    "\"path\": \"src/main/java/Main.java\",\n" +
+    "\"path\": \"Main.java\",\n" +
     "\"changes\": [{\n" +
     "\"beforeLineRange\": {\n" +
     "\"startLine\": 0,\n" +
@@ -106,8 +109,11 @@ class OpenFixSuggestionInIdeMediumTests {
   }
 
   @Test
-  void it_should_update_the_telemetry_on_show_issue() throws Exception {
-    var fakeClient = newFakeClient().build();
+  void it_should_update_the_telemetry_on_show_issue(@TempDir Path baseDir) throws Exception {
+    var inputFile = createFile(baseDir, "Main.java", "");
+    var fakeClient = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, List.of(new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)))
+      .build();
     backend = newBackend()
       .withSonarCloudUrl(scServer.baseUrl())
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
@@ -130,8 +136,11 @@ class OpenFixSuggestionInIdeMediumTests {
   }
 
   @Test
-  void it_should_open_a_fix_suggestion_in_ide() throws Exception {
-    var fakeClient = newFakeClient().build();
+  void it_should_open_a_fix_suggestion_in_ide(@TempDir Path baseDir) throws Exception {
+    var inputFile = createFile(baseDir, "Main.java", "");
+    var fakeClient = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, List.of(new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)))
+      .build();
     backend = newBackend()
       .withSonarCloudUrl(scServer.baseUrl())
       .withSonarCloudConnection(CONNECTION_ID, ORG_KEY)
@@ -152,7 +161,7 @@ class OpenFixSuggestionInIdeMediumTests {
     assertThat(fixSuggestion).isNotNull();
     assertThat(fixSuggestion.suggestionId()).isEqualTo("eb93b2b4-f7b0-4b5c-9460-50893968c264");
     assertThat(fixSuggestion.explanation()).isEqualTo("Modifying the variable name is good");
-    assertThat(fixSuggestion.fileEdit().idePath().toString()).contains(pathTranslation.serverToIdePath(Paths.get("src/main/java/Main.java")).toString());
+    assertThat(fixSuggestion.fileEdit().idePath().toString()).contains(pathTranslation.serverToIdePath(Paths.get("Main.java")).toString());
     assertThat(fixSuggestion.fileEdit().changes()).hasSize(1);
     var change = fixSuggestion.fileEdit().changes().get(0);
     assertThat(change.before()).isEmpty();
@@ -162,8 +171,11 @@ class OpenFixSuggestionInIdeMediumTests {
   }
 
   @Test
-  void it_should_assist_creating_the_binding_if_scope_not_bound() throws Exception {
-    var fakeClient = newFakeClient().build();
+  void it_should_assist_creating_the_binding_if_scope_not_bound(@TempDir Path baseDir) throws Exception {
+    var inputFile = createFile(baseDir, "Main.java", "");
+    var fakeClient = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, List.of(new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)))
+      .build();
     mockAssistCreatingConnection(fakeClient, CONNECTION_ID);
     mockAssistBinding(fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
@@ -182,8 +194,11 @@ class OpenFixSuggestionInIdeMediumTests {
   }
 
   @Test
-  void it_should_not_assist_binding_if_multiple_suggestions() throws Exception {
-    var fakeClient = newFakeClient().build();
+  void it_should_not_assist_binding_if_multiple_suggestions(@TempDir Path baseDir) throws Exception {
+    var inputFile = createFile(baseDir, "Main.java", "");
+    var fakeClient = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, List.of(new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)))
+      .build();
     mockAssistCreatingConnection(fakeClient, CONNECTION_ID);
     mockAssistBinding(fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
     backend = newBackend()
@@ -203,8 +218,11 @@ class OpenFixSuggestionInIdeMediumTests {
   }
 
   @Test
-  void it_should_assist_binding_if_multiple_suggestions_but_scopes_are_parent_and_child() throws Exception {
-    var fakeClient = newFakeClient().build();
+  void it_should_assist_binding_if_multiple_suggestions_but_scopes_are_parent_and_child(@TempDir Path baseDir) throws Exception {
+    var inputFile = createFile(baseDir, "Main.java", "");
+    var fakeClient = newFakeClient()
+      .withInitialFs("configScopeParent", List.of(new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), "configScopeParent", false, null, inputFile, null, null, true)))
+      .build();
     mockAssistCreatingConnection(fakeClient, CONNECTION_ID);
     mockAssistBinding(fakeClient, "configScopeParent", CONNECTION_ID, PROJECT_KEY);
     backend = newBackend()
@@ -223,8 +241,11 @@ class OpenFixSuggestionInIdeMediumTests {
   }
 
   @Test
-  void it_should_assist_creating_the_connection_when_no_sc_connection() throws Exception {
-    var fakeClient = newFakeClient().build();
+  void it_should_assist_creating_the_connection_when_no_sc_connection(@TempDir Path baseDir) throws Exception {
+    var inputFile = createFile(baseDir, "Main.java", "");
+    var fakeClient = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, List.of(new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)))
+      .build();
     mockAssistCreatingConnection(fakeClient, CONNECTION_ID);
     mockAssistBinding(fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
@@ -304,6 +325,62 @@ class OpenFixSuggestionInIdeMediumTests {
     var statusCode = executeOpenFixSuggestionRequestWithoutToken(ISSUE_KEY, "", "", "", "");
 
     assertThat(statusCode).isEqualTo(400);
+  }
+
+  @Test
+  void it_should_fail_when_origin_is_missing() throws IOException, InterruptedException {
+    var fakeClient = newFakeClient().build();
+    backend = newBackend()
+      .withSonarCloudUrl(scServer.baseUrl())
+      .withSonarCloudConnection(CONNECTION_ID, ORG_KEY)
+      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
+      .withEmbeddedServer()
+      .withOpenFixSuggestion()
+      .build(fakeClient);
+    HttpRequest request = HttpRequest.newBuilder()
+      .uri(URI.create(
+        "http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/fix/show?server=" + scServer.baseUrl() + "&issue=" + ISSUE_KEY +
+          "&project=" + PROJECT_KEY + "&branch=" + BRANCH_NAME + "&organizationKey=" + ORG_KEY
+      ))
+      .POST(HttpRequest.BodyPublishers.ofString(FIX_PAYLOAD)).build();
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+    var statusCode = response.statusCode();
+
+    assertThat(statusCode).isEqualTo(400);
+  }
+
+  @Test
+  void it_should_fail_when_origin_does_not_match(@TempDir Path baseDir) throws Exception {
+    var inputFile = createFile(baseDir, "Main.java", "");
+    var fakeClient = newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, List.of(new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)))
+      .build();
+    backend = newBackend()
+      .withSonarCloudUrl(scServer.baseUrl())
+      .withSonarCloudConnection(CONNECTION_ID, ORG_KEY)
+      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
+      .withEmbeddedServer()
+      .withOpenFixSuggestion()
+      .build(fakeClient);
+    HttpRequest request = HttpRequest.newBuilder()
+      .uri(URI.create(
+        "http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/fix/show?server=" + scServer.baseUrl() + "&issue=" + ISSUE_KEY +
+          "&project=" + PROJECT_KEY + "&branch=" + BRANCH_NAME + "&organizationKey=" + ORG_KEY
+      ))
+      .header("Origin", "malicious")
+      .POST(HttpRequest.BodyPublishers.ofString(FIX_PAYLOAD)).build();
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+    var statusCode = response.statusCode();
+
+    assertThat(statusCode).isEqualTo(200);
+
+    ArgumentCaptor<LogParams> captor = ArgumentCaptor.captor();
+    verify(fakeClient, after(500).atLeastOnce()).log(captor.capture());
+    assertThat(captor.getAllValues())
+      .extracting(LogParams::getMessage)
+      .containsAnyOf("The origin 'malicious' is not trusted, this could be a malicious request");
   }
 
   private Object executeOpenFixSuggestionRequestWithToken(String payload, String issueKey, String projectKey, String branchName, String orgKey,
