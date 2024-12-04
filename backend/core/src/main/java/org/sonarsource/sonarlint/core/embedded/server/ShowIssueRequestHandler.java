@@ -94,8 +94,10 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
 
   @Override
   public void handle(ClassicHttpRequest request, ClassicHttpResponse response, HttpContext context) throws HttpException, IOException {
+    var originHeader = request.getHeader("Origin");
+    var origin = originHeader != null ? originHeader.getValue() : null;
     var showIssueQuery = extractQuery(request);
-    if (!Method.GET.isSame(request.getMethod()) || !showIssueQuery.isValid()) {
+    if (origin == null || !Method.GET.isSame(request.getMethod()) || !showIssueQuery.isValid()) {
       response.setCode(HttpStatus.SC_BAD_REQUEST);
       return;
     }
@@ -106,7 +108,8 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
     requestHandlerBindingAssistant.assistConnectionAndBindingIfNeededAsync(
       serverConnectionParams,
       showIssueQuery.projectKey,
-      (connectionId, configScopeId, cancelMonitor) -> {
+      origin,
+      (connectionId, boundScopes, configScopeId, cancelMonitor) -> {
         if (configScopeId != null) {
           var branchToMatch = showIssueQuery.branch;
           if (branchToMatch == null) {

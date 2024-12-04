@@ -73,16 +73,18 @@ public class ShowHotspotRequestHandler implements HttpRequestHandler {
 
   @Override
   public void handle(ClassicHttpRequest request, ClassicHttpResponse response, HttpContext context) throws HttpException, IOException {
+    var originHeader = request.getHeader("Origin");
+    var origin = originHeader != null ? originHeader.getValue() : null;
     var showHotspotQuery = extractQuery(request);
-    if (!Method.GET.isSame(request.getMethod()) || !showHotspotQuery.isValid()) {
+    if (origin == null || !Method.GET.isSame(request.getMethod()) || !showHotspotQuery.isValid()) {
       response.setCode(HttpStatus.SC_BAD_REQUEST);
       return;
     }
     telemetryService.showHotspotRequestReceived();
     var sonarQubeConnectionParams = new SonarQubeConnectionParams(showHotspotQuery.serverUrl, null, null);
     var connectionParams = new AssistCreatingConnectionParams(sonarQubeConnectionParams);
-    requestHandlerBindingAssistant.assistConnectionAndBindingIfNeededAsync(connectionParams, showHotspotQuery.projectKey,
-      (connectionId, configScopeId, cancelMonitor) -> {
+    requestHandlerBindingAssistant.assistConnectionAndBindingIfNeededAsync(connectionParams, showHotspotQuery.projectKey, origin,
+      (connectionId, boundScopes, configScopeId, cancelMonitor) -> {
         if (configScopeId != null) {
           showHotspotForScope(connectionId, configScopeId, showHotspotQuery.hotspotKey, cancelMonitor);
         }

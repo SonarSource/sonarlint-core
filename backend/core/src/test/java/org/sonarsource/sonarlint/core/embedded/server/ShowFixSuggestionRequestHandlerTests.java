@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.embedded.server;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -46,6 +47,8 @@ import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
+import org.sonarsource.sonarlint.core.fs.ClientFile;
+import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
@@ -79,6 +82,8 @@ class ShowFixSuggestionRequestHandlerTests {
   private InitializeParams initializeParams;
   private ShowFixSuggestionRequestHandler showFixSuggestionRequestHandler;
   private TelemetryService telemetryService;
+  private ClientFile clientFile;
+  private FilePathTranslation filePathTranslation;
 
   @BeforeEach
   void setup() {
@@ -87,7 +92,7 @@ class ShowFixSuggestionRequestHandlerTests {
     var bindingSuggestionProvider = mock(BindingSuggestionProvider.class);
     var bindingCandidatesFinder = mock(BindingCandidatesFinder.class);
     sonarLintRpcClient = mock(SonarLintRpcClient.class);
-    var filePathTranslation = mock(FilePathTranslation.class);
+    filePathTranslation = mock(FilePathTranslation.class);
     var pathTranslationService = mock(PathTranslationService.class);
     when(pathTranslationService.getOrComputePathTranslation(any())).thenReturn(Optional.of(filePathTranslation));
     var userTokenService = mock(UserTokenService.class);
@@ -99,10 +104,16 @@ class ShowFixSuggestionRequestHandlerTests {
     telemetryService = mock(TelemetryService.class);
     var sonarProjectBranchesSynchronizationService = mock(SonarProjectBranchesSynchronizationService.class);
     when(sonarProjectBranchesSynchronizationService.getProjectBranches(any(), any(), any())).thenReturn(new ProjectBranches(Set.of(), "main"));
+    clientFile = mock(ClientFile.class);
+    var clientFs = mock(ClientFileSystemService.class);
+    when(clientFs.getFiles(any())).thenReturn(List.of(clientFile));
+    var connectionConfiguration = mock(ConnectionConfigurationRepository.class);
+    when(connectionConfiguration.hasConnectionWithOrigin(PRODUCTION_URI.toString())).thenReturn(true);
 
     showFixSuggestionRequestHandler = new ShowFixSuggestionRequestHandler(sonarLintRpcClient, telemetryService, initializeParams,
       new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintRpcClient, connectionConfigurationRepository,
-        configurationRepository, userTokenService, sonarCloudActiveEnvironment), pathTranslationService, sonarCloudActiveEnvironment, sonarProjectBranchesSynchronizationService);
+        configurationRepository, userTokenService, sonarCloudActiveEnvironment, connectionConfiguration), pathTranslationService,
+      sonarCloudActiveEnvironment, sonarProjectBranchesSynchronizationService, clientFs);
   }
 
   @Test
@@ -162,7 +173,7 @@ class ShowFixSuggestionRequestHandlerTests {
       "\"suggestionId\": \"eb93b2b4-f7b0-4b5c-9460-50893968c264\",\n" +
       "\"explanation\": \"Modifying the variable name is good\"\n" +
       "}\n"));
-    var showFixSuggestionQuery = showFixSuggestionRequestHandler.extractQuery(request);
+    var showFixSuggestionQuery = showFixSuggestionRequestHandler.extractQuery(request, request.getHeader("Origin").getValue());
     assertThat(showFixSuggestionQuery.getServerUrl()).isEqualTo("https://sonarcloud.io");
     assertThat(showFixSuggestionQuery.getProjectKey()).isEqualTo("org.sonarsource.sonarlint.core:sonarlint-core-parent");
     assertThat(showFixSuggestionQuery.getIssueKey()).isEqualTo("AX2VL6pgAvx3iwyNtLyr");
@@ -204,7 +215,7 @@ class ShowFixSuggestionRequestHandlerTests {
       "\"suggestionId\": \"eb93b2b4-f7b0-4b5c-9460-50893968c264\",\n" +
       "\"explanation\": \"Modifying the variable name is good\"\n" +
       "}\n"));
-    var showFixSuggestionQuery = showFixSuggestionRequestHandler.extractQuery(request);
+    var showFixSuggestionQuery = showFixSuggestionRequestHandler.extractQuery(request, request.getHeader("Origin").getValue());
     assertThat(showFixSuggestionQuery.getServerUrl()).isEqualTo("https://sonarcloud.io");
     assertThat(showFixSuggestionQuery.getProjectKey()).isEqualTo("org.sonarsource.sonarlint.core:sonarlint-core-parent");
     assertThat(showFixSuggestionQuery.getIssueKey()).isEqualTo("AX2VL6pgAvx3iwyNtLyr");
@@ -294,6 +305,8 @@ class ShowFixSuggestionRequestHandlerTests {
     var response = mock(ClassicHttpResponse.class);
     var context = mock(HttpContext.class);
 
+    when(clientFile.getUri()).thenReturn(URI.create("file:///src/main/java/Main.java"));
+    when(filePathTranslation.serverToIdePath(any())).thenReturn(Path.of("src/main/java/Main.java"));
     when(connectionConfigurationRepository.findByOrganization(any())).thenReturn(List.of(
       new SonarCloudConnectionConfiguration(PRODUCTION_URI, "name", "organizationKey", false)));
     when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope", "connectionId", "projectKey")));
@@ -302,6 +315,35 @@ class ShowFixSuggestionRequestHandlerTests {
     showFixSuggestionRequestHandler.handle(request, response, context);
 
     await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> verify(sonarLintRpcClient).showFixSuggestion(any()));
+  }
+
+  @Test
+  void should_verify_missing_origin() throws HttpException, IOException {
+    var request = new BasicClassicHttpRequest("POST", "/sonarlint/api/fix/show" +
+      "?project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
+      "&issue=AX2VL6pgAvx3iwyNtLyr&branch=branch" +
+      "&organizationKey=sample-organization");
+    request.setEntity(new StringEntity("{\n" +
+      "\"fileEdit\": {\n" +
+      "\"path\": \"src/main/java/Main.java\",\n" +
+      "\"changes\": [{\n" +
+      "\"beforeLineRange\": {\n" +
+      "\"startLine\": 0,\n" +
+      "\"endLine\": 1\n" +
+      "},\n" +
+      "\"before\": \"\",\n" +
+      "\"after\": \"var fix = 1;\"\n" +
+      "}]\n" +
+      "},\n" +
+      "\"suggestionId\": \"eb93b2b4-f7b0-4b5c-9460-50893968c264\",\n" +
+      "\"explanation\": \"Modifying the variable name is good\"\n" +
+      "}\n"));
+    var response = mock(ClassicHttpResponse.class);
+    var context = mock(HttpContext.class);
+
+    showFixSuggestionRequestHandler.handle(request, response, context);
+
+    verifyNoMoreInteractions(sonarLintRpcClient);
   }
 
   private static ShowFixSuggestionRequestHandler.FixSuggestionPayload generateFixSuggestionPayload() {

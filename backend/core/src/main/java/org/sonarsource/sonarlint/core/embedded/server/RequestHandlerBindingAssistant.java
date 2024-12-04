@@ -20,10 +20,14 @@
 package org.sonarsource.sonarlint.core.embedded.server;
 
 import com.google.common.util.concurrent.MoreExecutors;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
@@ -32,6 +36,7 @@ import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
+import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -78,13 +83,13 @@ public class RequestHandlerBindingAssistant {
   }
 
   interface Callback {
-    void andThen(String connectionId, @Nullable String configurationScopeId, SonarLintCancelMonitor cancelMonitor);
+    void andThen(String connectionId, Collection<String> boundScopes, @Nullable String configurationScopeId, SonarLintCancelMonitor cancelMonitor);
   }
 
-  void assistConnectionAndBindingIfNeededAsync(AssistCreatingConnectionParams connectionParams, String projectKey, Callback callback) {
+  void assistConnectionAndBindingIfNeededAsync(AssistCreatingConnectionParams connectionParams, String projectKey, String origin, Callback callback) {
     var cancelMonitor = new SonarLintCancelMonitor();
     cancelMonitor.watchForShutdown(executorService);
-    executorService.submit(() -> assistConnectionAndBindingIfNeeded(connectionParams, projectKey, callback, cancelMonitor));
+    executorService.submit(() -> assistConnectionAndBindingIfNeeded(connectionParams, projectKey, origin, callback, cancelMonitor));
   }
 
   private void assistConnectionAndBindingIfNeeded(AssistCreatingConnectionParams connectionParams, String projectKey, String origin,
@@ -102,19 +107,22 @@ public class RequestHandlerBindingAssistant {
           var assistNewConnectionResult = assistCreatingConnectionAndWaitForRepositoryUpdate(connectionParams, cancelMonitor);
           var assistNewBindingResult = assistBindingAndWaitForRepositoryUpdate(assistNewConnectionResult.getNewConnectionId(), isSonarCloud,
             projectKey, cancelMonitor);
-          callback.andThen(assistNewConnectionResult.getNewConnectionId(), assistNewBindingResult.getConfigurationScopeId(), cancelMonitor);
+          var boundScopes = new HashSet<String>();
+          if (assistNewBindingResult.getConfigurationScopeId() != null) {
+            boundScopes.add(assistNewBindingResult.getConfigurationScopeId());
+          }
+          callback.andThen(assistNewConnectionResult.getNewConnectionId(), boundScopes, assistNewBindingResult.getConfigurationScopeId(), cancelMonitor);
         } finally {
           endFullBindingProcess();
         }
       } else {
-        // Should we check that the origin is matching the serverUrl URI?
         var isOriginTrusted = repository.hasConnectionWithOrigin(origin);
         if (isOriginTrusted) {
           // we pick the first connection but this could lead to issues later if there were several matches (make the user select the right
           // one?)
           assistBindingIfNeeded(connectionsMatchingOrigin.get(0).getConnectionId(), isSonarCloud, projectKey, callback, cancelMonitor);
         } else {
-          LOG.warn("The origin " + origin + " is not trusted, this could be a malicious request");
+          LOG.warn("The origin '" + origin + "' is not trusted, this could be a malicious request");
           client.showMessage(new ShowMessageParams(MessageType.ERROR, "SonarQube for IDE received a non-trusted request and could not proceed with it. " +
             "See logs for more details."));
         }
@@ -153,10 +161,15 @@ public class RequestHandlerBindingAssistant {
     var scopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, projectKey);
     if (scopes.isEmpty()) {
       var assistNewBindingResult = assistBindingAndWaitForRepositoryUpdate(connectionId, isSonarCloud, projectKey, cancelMonitor);
-      callback.andThen(connectionId, assistNewBindingResult.getConfigurationScopeId(), cancelMonitor);
+      var boundScopes = new HashSet<String>();
+      if (assistNewBindingResult.getConfigurationScopeId() != null) {
+        boundScopes.add(assistNewBindingResult.getConfigurationScopeId());
+      }
+      callback.andThen(connectionId, boundScopes, assistNewBindingResult.getConfigurationScopeId(), cancelMonitor);
     } else {
+      var boundScopes = scopes.stream().map(BoundScope::getConfigScopeId).filter(Objects::nonNull).collect(Collectors.toSet());
       // we pick the first bound scope but this could lead to issues later if there were several matches (make the user select the right one?)
-      callback.andThen(connectionId, scopes.iterator().next().getConfigScopeId(), cancelMonitor);
+      callback.andThen(connectionId, boundScopes, scopes.iterator().next().getConfigScopeId(), cancelMonitor);
     }
   }
 

@@ -35,6 +35,7 @@ import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.Method;
 import org.apache.hc.core5.http.ProtocolException;
 import org.apache.hc.core5.http.message.BasicClassicHttpRequest;
+import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -124,11 +125,13 @@ class ShowIssueRequestHandlerTests {
       any());
     when(storageService.binding(any())).thenReturn(sonarStorage);
     when(sonarStorage.branches()).thenReturn(branchesStorage);
+    var connectionConfiguration = mock(ConnectionConfigurationRepository.class);
+    when(connectionConfiguration.hasConnectionWithOrigin(PRODUCTION_URI.toString())).thenReturn(true);
 
     showIssueRequestHandler = spy(new ShowIssueRequestHandler(sonarLintRpcClient, serverApiProvider, telemetryService,
       new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintRpcClient,
         connectionConfigurationRepository, configurationRepository, userTokenService,
-        sonarCloudActiveEnvironment), pathTranslationService, sonarCloudActiveEnvironment, sonarProjectBranchesSynchronizationService));
+        sonarCloudActiveEnvironment, connectionConfiguration), pathTranslationService, sonarCloudActiveEnvironment, sonarProjectBranchesSynchronizationService));
   }
 
   @Test
@@ -207,6 +210,7 @@ class ShowIssueRequestHandlerTests {
   void should_trigger_telemetry() throws HttpException, IOException, URISyntaxException {
     var request = mock(ClassicHttpRequest.class);
     when(request.getUri()).thenReturn(URI.create("http://localhost:8000/issue?project=pk&issue=ik&branch=b&server=s"));
+    when(request.getHeader("Origin")).thenReturn(new BasicHeader("Origin", "s"));
     when(request.getMethod()).thenReturn(Method.GET.name());
     var response = mock(ClassicHttpResponse.class);
     var context = mock(HttpContext.class);
@@ -434,6 +438,22 @@ class ShowIssueRequestHandlerTests {
     showIssueRequestHandler.handle(request, response, context);
 
     await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> verify(sonarLintRpcClient).showIssue(any()));
+  }
+
+  @Test
+  void should_verify_missing_origin() throws HttpException, IOException {
+    var request = new BasicClassicHttpRequest("GET", "/sonarlint/api/issues/show" +
+      "?server=https%3A%2F%2Fnext.sonarqube.com%2Fsonarqube" +
+      "&project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
+      "&issue=AX2VL6pgAvx3iwyNtLyr&tokenName=abc" +
+      "&organizationKey=sample-organization" +
+      "&tokenValue=123");
+    var response = mock(ClassicHttpResponse.class);
+    var context = mock(HttpContext.class);
+
+    showIssueRequestHandler.handle(request, response, context);
+
+    verifyNoMoreInteractions(sonarLintRpcClient);
   }
 
 }
