@@ -43,6 +43,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingP
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSuggestionFoundParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.usertoken.UserTokenService;
 
 @Named
@@ -58,10 +60,11 @@ public class RequestHandlerBindingAssistant {
   private final UserTokenService userTokenService;
   private final ExecutorServiceShutdownWatchable<?> executorService;
   private final String sonarCloudUrl;
+  private final ConnectionConfigurationRepository repository;
 
   public RequestHandlerBindingAssistant(BindingSuggestionProvider bindingSuggestionProvider, BindingCandidatesFinder bindingCandidatesFinder,
     SonarLintRpcClient client, ConnectionConfigurationRepository connectionConfigurationRepository, ConfigurationRepository configurationRepository,
-    UserTokenService userTokenService, SonarCloudActiveEnvironment sonarCloudActiveEnvironment) {
+    UserTokenService userTokenService, SonarCloudActiveEnvironment sonarCloudActiveEnvironment, ConnectionConfigurationRepository repository) {
     this.bindingSuggestionProvider = bindingSuggestionProvider;
     this.bindingCandidatesFinder = bindingCandidatesFinder;
     this.client = client;
@@ -71,6 +74,7 @@ public class RequestHandlerBindingAssistant {
     this.executorService = new ExecutorServiceShutdownWatchable<>(new ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS,
       new LinkedBlockingQueue<>(), r -> new Thread(r, "Show Issue or Hotspot Request Handler")));
     this.sonarCloudUrl = sonarCloudActiveEnvironment.getUri().toString();
+    this.repository = repository;
   }
 
   interface Callback {
@@ -83,7 +87,7 @@ public class RequestHandlerBindingAssistant {
     executorService.submit(() -> assistConnectionAndBindingIfNeeded(connectionParams, projectKey, callback, cancelMonitor));
   }
 
-  private void assistConnectionAndBindingIfNeeded(AssistCreatingConnectionParams connectionParams, String projectKey,
+  private void assistConnectionAndBindingIfNeeded(AssistCreatingConnectionParams connectionParams, String projectKey, String origin,
     Callback callback, SonarLintCancelMonitor cancelMonitor) {
     var serverUrl = getServerUrl(connectionParams);
     LOG.debug("Assist connection and binding if needed for project {} and server {}", projectKey, serverUrl);
@@ -103,9 +107,17 @@ public class RequestHandlerBindingAssistant {
           endFullBindingProcess();
         }
       } else {
-        // we pick the first connection but this could lead to issues later if there were several matches (make the user select the right
-        // one?)
-        assistBindingIfNeeded(connectionsMatchingOrigin.get(0).getConnectionId(), isSonarCloud, projectKey, callback, cancelMonitor);
+        // Should we check that the origin is matching the serverUrl URI?
+        var isOriginTrusted = repository.hasConnectionWithOrigin(origin);
+        if (isOriginTrusted) {
+          // we pick the first connection but this could lead to issues later if there were several matches (make the user select the right
+          // one?)
+          assistBindingIfNeeded(connectionsMatchingOrigin.get(0).getConnectionId(), isSonarCloud, projectKey, callback, cancelMonitor);
+        } else {
+          LOG.warn("The origin " + origin + " is not trusted, this could be a malicious request");
+          client.showMessage(new ShowMessageParams(MessageType.ERROR, "SonarQube for IDE received a non-trusted request and could not proceed with it. " +
+            "See logs for more details."));
+        }
       }
     } catch (Exception e) {
       LOG.error("Unable to show issue", e);
