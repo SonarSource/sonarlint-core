@@ -64,6 +64,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientCons
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.JsTsRequirementsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSpecificRequirements;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarCloudAlternativeEnvironmentDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SslConfigurationDto;
@@ -469,7 +470,7 @@ public class SonarLintBackendFixture {
             featureFlags,
             storageRoot, workDir, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
             enabledLanguages, extraEnabledLanguagesInConnectedMode, disabledPluginKeysForAnalysis, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
-            standaloneConfigByKey, isFocusOnNewCode, new LanguageSpecificRequirements(clientNodeJsPath, null), automaticAnalysisEnabled, telemetryMigration))
+            standaloneConfigByKey, isFocusOnNewCode, new LanguageSpecificRequirements(new JsTsRequirementsDto(clientNodeJsPath, null), null), automaticAnalysisEnabled, telemetryMigration))
           .get();
         sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
         return sonarLintBackend;
