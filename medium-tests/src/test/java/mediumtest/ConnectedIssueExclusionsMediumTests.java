@@ -90,7 +90,7 @@ class ConnectedIssueExclusionsMediumTests {
   @AfterAll
   static void stop() {
     if (backend != null) {
-      backend.shutdown();
+      backend.shutdown().join();
       backend = null;
     }
   }
