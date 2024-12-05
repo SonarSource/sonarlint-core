@@ -181,4 +181,10 @@ public class AnalysisEngineCache {
     }
   }
 
+  public void unregisterModule(String scopeId) {
+    var analysisEngine = getAnalysisEngineIfStarted(scopeId);
+    if (analysisEngine != null && configurationRepository.isLeafConfigScope(scopeId)) {
+      analysisEngine.getModuleRegistry().unregisterModule(scopeId);
+    }
+  }
 }

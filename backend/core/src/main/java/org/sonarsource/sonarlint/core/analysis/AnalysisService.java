@@ -490,7 +490,9 @@ public class AnalysisService {
 
   @EventListener
   public void onConfigurationScopeRemoved(ConfigurationScopeRemovedEvent event) {
-    analysisReadinessByConfigScopeId.remove(event.getRemovedConfigurationScopeId());
+    var removedConfigurationScopeId = event.getRemovedConfigurationScopeId();
+    analysisReadinessByConfigScopeId.remove(removedConfigurationScopeId);
+    engineCache.unregisterModule(removedConfigurationScopeId);
   }
 
   @EventListener
