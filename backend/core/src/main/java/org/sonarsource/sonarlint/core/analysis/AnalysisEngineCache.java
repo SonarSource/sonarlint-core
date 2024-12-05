@@ -156,7 +156,7 @@ public class AnalysisEngineCache {
 
   @PreDestroy
   public void shutdown() {
-    stopAllGracefully();
+    stopAll();
   }
 
   private synchronized void stopEngineGracefully(String event) {
@@ -172,6 +172,15 @@ public class AnalysisEngineCache {
       this.standaloneEngine = null;
     }
     connectedEnginesByConnectionId.forEach((connectionId, engine) -> engine.finishGracefully());
+    connectedEnginesByConnectionId.clear();
+  }
+
+  private synchronized void stopAll() {
+    if (this.standaloneEngine != null) {
+      this.standaloneEngine.stop();
+      this.standaloneEngine = null;
+    }
+    connectedEnginesByConnectionId.forEach((connectionId, engine) -> engine.stop());
     connectedEnginesByConnectionId.clear();
   }
 
