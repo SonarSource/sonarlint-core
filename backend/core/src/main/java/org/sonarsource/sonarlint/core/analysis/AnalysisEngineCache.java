@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
@@ -75,6 +76,13 @@ public class AnalysisEngineCache {
     }
   }
 
+  @CheckForNull
+  public AnalysisEngine getAnalysisEngineIfStarted(String configurationScopeId) {
+    return configurationRepository.getEffectiveBinding(configurationScopeId)
+      .map(binding -> getConnectedEngineIfStarted(binding.getConnectionId()))
+      .orElseGet(this::getStandaloneEngineIfStarted);
+  }
+
   public AnalysisEngine getOrCreateAnalysisEngine(String configurationScopeId) {
     return configurationRepository.getEffectiveBinding(configurationScopeId)
       .map(binding -> getOrCreateConnectedEngine(binding.getConnectionId()))
@@ -86,10 +94,20 @@ public class AnalysisEngineCache {
       k -> createEngine(pluginsService.getPlugins(connectionId), pluginsService.getEffectivePathToCsharpAnalyzer(connectionId)));
   }
 
+  @CheckForNull
+  private synchronized AnalysisEngine getConnectedEngineIfStarted(String connectionId) {
+    return connectedEnginesByConnectionId.get(connectionId);
+  }
+
   private synchronized AnalysisEngine getOrCreateStandaloneEngine() {
     if (standaloneEngine == null) {
       standaloneEngine = createEngine(pluginsService.getEmbeddedPlugins(), csharpOssPluginPath);
     }
+    return standaloneEngine;
+  }
+
+  @CheckForNull
+  private synchronized AnalysisEngine getStandaloneEngineIfStarted() {
     return standaloneEngine;
   }
 
@@ -155,8 +173,8 @@ public class AnalysisEngineCache {
   }
 
   public void registerModuleIfLeafConfigScope(String scopeId) {
-    if (configurationRepository.isLeafConfigScope(scopeId)) {
-      var analysisEngine = getOrCreateAnalysisEngine(scopeId);
+    var analysisEngine = getAnalysisEngineIfStarted(scopeId);
+    if (analysisEngine != null && configurationRepository.isLeafConfigScope(scopeId)) {
       var backendModuleFileSystem = new BackendModuleFileSystem(clientFileSystemService, scopeId);
       var clientModuleInfo = new ClientModuleInfo(scopeId, backendModuleFileSystem);
       analysisEngine.getModuleRegistry().registerModule(clientModuleInfo);

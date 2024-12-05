@@ -564,9 +564,11 @@ public class AnalysisService {
   private void sendModuleEvents(List<ClientFile> filesToProcess, ModuleFileEvent.Type type) {
     var filesByScopeId = filesToProcess.stream().collect(groupingBy(ClientFile::getConfigScopeId));
     filesByScopeId.forEach((scopeId, files) -> {
-      var engine = engineCache.getOrCreateAnalysisEngine(scopeId);
-      files.forEach(file -> engine.post(new NotifyModuleEventCommand(scopeId,
-        ClientModuleFileEvent.of(new BackendInputFile(file), type)), new ProgressMonitor(null)).join());
+      var engine = engineCache.getAnalysisEngineIfStarted(scopeId);
+      if (engine != null) {
+        files.forEach(file -> engine.post(new NotifyModuleEventCommand(scopeId,
+          ClientModuleFileEvent.of(new BackendInputFile(file), type)), new ProgressMonitor(null)).join());
+      }
     });
   }
 
