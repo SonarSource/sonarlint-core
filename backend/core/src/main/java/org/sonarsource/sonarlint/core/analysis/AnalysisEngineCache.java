@@ -30,7 +30,10 @@ import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
+import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
+import org.sonarsource.sonarlint.core.analysis.command.UnregisterModuleCommand;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
@@ -177,14 +180,14 @@ public class AnalysisEngineCache {
     if (analysisEngine != null && configurationRepository.isLeafConfigScope(scopeId)) {
       var backendModuleFileSystem = new BackendModuleFileSystem(clientFileSystemService, scopeId);
       var clientModuleInfo = new ClientModuleInfo(scopeId, backendModuleFileSystem);
-      analysisEngine.getModuleRegistry().registerModule(clientModuleInfo);
+      analysisEngine.post(new RegisterModuleCommand(clientModuleInfo), new ProgressMonitor(null));
     }
   }
 
   public void unregisterModule(String scopeId) {
     var analysisEngine = getAnalysisEngineIfStarted(scopeId);
     if (analysisEngine != null && configurationRepository.isLeafConfigScope(scopeId)) {
-      analysisEngine.getModuleRegistry().unregisterModule(scopeId);
+      analysisEngine.post(new UnregisterModuleCommand(scopeId), new ProgressMonitor(null));
     }
   }
 }
