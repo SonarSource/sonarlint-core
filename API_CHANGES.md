@@ -1,4 +1,16 @@
-# 11.11
+# 10.12
+
+## Breaking changes
+
+* Adapt org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams.languageSpecificRequirements to accept org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.JsTsRequirementsDto instead of clientNodeJsPath
+
+## New features
+
+* Introduce `bundlePath` initialization parameter in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.JsTsRequirementsDto` to allow clients to provide the path to the unzipped es-lint bridge bundle
+  * The path will be passed down to the Js/Ts/CSS analyzer and will indicate that the analyzer does not need to unzip the bundle itself, thus reducing the usage of the `.sonarlint` temporary storage
+  * Provide `null` to keep the previous behavior
+
+# 10.11
 
 ## Breaking changes
 
