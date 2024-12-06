@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.analysis;
 
 import com.google.common.util.concurrent.MoreExecutors;
+import io.sentry.Sentry;
 import java.net.URI;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
@@ -632,6 +633,9 @@ public class AnalysisService {
 
   public CompletableFuture<AnalysisResults> analyze(SonarLintCancelMonitor cancelMonitor, String configurationScopeId, UUID analysisId, List<URI> filePathsToAnalyze,
     Map<String, String> extraProperties, long startTime, boolean enableTracking, boolean shouldFetchServerIssues, boolean hotspotsOnly) {
+    LOG.info("Sending Sentry message");
+    Sentry.init("https://ad1c1fe3cb2b12fc2d191ecd25f89866@o1316750.ingest.us.sentry.io/4508201175089152");
+    Sentry.captureException(new Exception("Test Error From SLCore"));
     var analysisEngine = engineCache.getOrCreateAnalysisEngine(configurationScopeId);
     var analysisConfig = getAnalysisConfigForEngine(configurationScopeId, filePathsToAnalyze, extraProperties, hotspotsOnly);
 
