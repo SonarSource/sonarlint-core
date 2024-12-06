@@ -132,8 +132,8 @@ public class HotspotApi {
     return url.toString();
   }
 
-  public boolean supportHotspotsPull(Supplier<Version> serverVersion) {
-    return supportHotspotsPull(helper.isSonarCloud(), serverVersion.get());
+  public boolean supportHotspotsPull(Version serverVersion) {
+    return supportHotspotsPull(helper.isSonarCloud(), serverVersion);
   }
 
   public static boolean supportHotspotsPull(boolean isSonarCloud, Version serverVersion) {

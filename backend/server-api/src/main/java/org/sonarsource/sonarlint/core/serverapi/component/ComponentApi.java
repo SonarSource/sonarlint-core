@@ -38,7 +38,7 @@ public class ComponentApi {
     this.helper = helper;
   }
 
-  public List<String> getAllFileKeys(String projectKey, SonarLintCancelMonitor cancelMonitor) {
+    public List<String> getAllFileKeys(String projectKey, SonarLintCancelMonitor cancelMonitor) {
     var path = buildAllFileKeysPath(projectKey);
     List<String> files = new ArrayList<>();
 

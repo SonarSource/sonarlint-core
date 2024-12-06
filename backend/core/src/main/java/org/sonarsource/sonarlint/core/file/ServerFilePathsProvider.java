@@ -44,10 +44,9 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 
 import static java.util.stream.Collectors.toList;
 
@@ -56,13 +55,13 @@ import static java.util.stream.Collectors.toList;
 public class ServerFilePathsProvider {
   private static final Logger LOG = LoggerFactory.getLogger(ServerFilePathsProvider.class);
 
-  private final ServerApiProvider serverApiProvider;
+  private final ConnectionManager connectionManager;
   private final Map<Binding, Path> cachedResponseFilePathByBinding = new HashMap<>();
   private final Path cacheDirectoryPath;
   private final Cache<Binding, List<Path>> temporaryInMemoryFilePathCacheByBinding;
 
-  public ServerFilePathsProvider(ServerApiProvider serverApiProvider, Path storageRoot) {
-    this.serverApiProvider = serverApiProvider;
+  public ServerFilePathsProvider(ConnectionManager connectionManager, Path storageRoot) {
+    this.connectionManager = connectionManager;
     this.cacheDirectoryPath = storageRoot.resolve("cache");
     this.temporaryInMemoryFilePathCacheByBinding = CacheBuilder.newBuilder()
       .expireAfterWrite(Duration.of(1, ChronoUnit.MINUTES))
@@ -104,13 +103,16 @@ public class ServerFilePathsProvider {
   }
 
   private Optional<List<Path>> fetchPathsFromServer(Binding binding, SonarLintCancelMonitor cancelMonitor) {
-    var serverApiOpt = serverApiProvider.getServerApi(binding.getConnectionId());
-    if (serverApiOpt.isEmpty()) {
+    if (!connectionManager.hasConnection(binding.getConnectionId())) {
       LOG.debug("Connection '{}' does not exist", binding.getConnectionId());
       return Optional.empty();
     }
     try {
-      List<Path> paths = fetchPathsFromServer(serverApiOpt.get(), binding.getSonarProjectKey(), cancelMonitor);
+      var serverApiWrapper = connectionManager.getServerApiWrapperOrThrow(binding.getConnectionId());
+      var paths = serverApiWrapper.getAllFileKeys(binding.getSonarProjectKey(), cancelMonitor).stream()
+        .map(fileKey -> StringUtils.substringAfterLast(fileKey, ":"))
+        .map(Paths::get)
+        .collect(toList());
       cacheServerPaths(binding, paths);
       return Optional.of(paths);
     } catch (CancellationException e) {
@@ -132,13 +134,6 @@ public class ServerFilePathsProvider {
 
   private void putToInMemoryCache(Binding binding, List<Path> paths) {
     temporaryInMemoryFilePathCacheByBinding.put(binding, paths);
-  }
-
-  private static List<Path> fetchPathsFromServer(ServerApi serverApi, String projectKey, SonarLintCancelMonitor cancelMonitor) {
-    return serverApi.component().getAllFileKeys(projectKey, cancelMonitor).stream()
-      .map(fileKey -> StringUtils.substringAfterLast(fileKey, ":"))
-      .map(Paths::get)
-      .collect(toList());
   }
 
   private void cacheServerPaths(Binding binding, List<Path> paths) {

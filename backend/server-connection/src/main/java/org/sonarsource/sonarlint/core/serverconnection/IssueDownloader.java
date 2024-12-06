@@ -37,7 +37,7 @@ import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiErrorHandlingWrapper;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues.IssueLite;
 import org.sonarsource.sonarlint.core.serverapi.rules.RulesApi;
@@ -71,12 +71,10 @@ public class IssueDownloader {
    * @param cancelMonitor
    * @return List of issues. It can be empty but never null.
    */
-  public List<ServerIssue<?>> downloadFromBatch(ServerApi serverApi, String key, @Nullable String branchName, SonarLintCancelMonitor cancelMonitor) {
-    var issueApi = serverApi.issue();
+  public List<ServerIssue<?>> downloadFromBatch(ServerApiErrorHandlingWrapper serverApiWrapper, String key, @Nullable String branchName, SonarLintCancelMonitor cancelMonitor) {
 
+    var batchIssues = serverApiWrapper.downloadAllFromBatchIssues(key, branchName, cancelMonitor);
     List<ServerIssue<?>> result = new ArrayList<>();
-
-    var batchIssues = issueApi.downloadAllFromBatchIssues(key, branchName, cancelMonitor);
 
     for (ScannerInput.ServerIssue batchIssue : batchIssues) {
       // We ignore project level issues
@@ -95,10 +93,10 @@ public class IssueDownloader {
    * @param branchName name of the branch.
    * @return List of issues. It can be empty but never null.
    */
-  public PullResult downloadFromPull(ServerApi serverApi, String projectKey, String branchName, Optional<Instant> lastSync, SonarLintCancelMonitor cancelMonitor) {
-    var issueApi = serverApi.issue();
+  public PullResult downloadFromPull(ServerApiErrorHandlingWrapper serverApiWrapper, String projectKey, String branchName,
+    Optional<Instant> lastSync, SonarLintCancelMonitor cancelMonitor) {
 
-    var apiResult = issueApi.pullIssues(projectKey, branchName, enabledLanguages, lastSync.map(Instant::toEpochMilli).orElse(null), cancelMonitor);
+    var apiResult = serverApiWrapper.pullIssues(projectKey, branchName, enabledLanguages, lastSync.map(Instant::toEpochMilli).orElse(null), cancelMonitor);
     // Ignore project level issues
     List<ServerIssue<?>> changedIssues = apiResult.getIssues()
       .stream()

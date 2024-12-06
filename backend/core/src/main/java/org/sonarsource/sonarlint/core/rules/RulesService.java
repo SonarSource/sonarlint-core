@@ -38,7 +38,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.analysis.RuleDetailsForAnalysis;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
@@ -84,7 +84,7 @@ public class RulesService {
 
   private static final Logger LOG = LoggerFactory.getLogger(RulesService.class);
   public static final String IN_EMBEDDED_RULES = "' in embedded rules";
-  private final ServerApiProvider serverApiProvider;
+  private final ConnectionManager connectionManager;
   private final ConfigurationRepository configurationRepository;
   private final RulesRepository rulesRepository;
   private final StorageService storageService;
@@ -95,17 +95,17 @@ public class RulesService {
   private final SeverityModeService severityModeService;
 
   @Inject
-  public RulesService(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository,
+  public RulesService(ConnectionManager connectionManager, ConfigurationRepository configurationRepository, RulesRepository rulesRepository,
     StorageService storageService, InitializeParams params,
     ApplicationEventPublisher eventPublisher, SeverityModeService severityModeService) {
-    this(serverApiProvider, configurationRepository, rulesRepository, storageService, eventPublisher,
+    this(connectionManager, configurationRepository, rulesRepository, storageService, eventPublisher,
       params.getStandaloneRuleConfigByKey(), severityModeService);
   }
 
-  RulesService(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository,
+  RulesService(ConnectionManager connectionManager, ConfigurationRepository configurationRepository, RulesRepository rulesRepository,
     StorageService storageService, ApplicationEventPublisher eventPublisher,
     @Nullable Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey, SeverityModeService severityModeService) {
-    this.serverApiProvider = serverApiProvider;
+    this.connectionManager = connectionManager;
     this.configurationRepository = configurationRepository;
     this.rulesRepository = rulesRepository;
     this.storageService = storageService;
@@ -139,10 +139,7 @@ public class RulesService {
 
   public RuleDetails getActiveRuleForBinding(String ruleKey, Binding binding, SonarLintCancelMonitor cancelMonitor) {
     var connectionId = binding.getConnectionId();
-    var serverApi = serverApiProvider.getServerApi(connectionId);
-    if (serverApi.isEmpty()) {
-      throw unknownConnection(connectionId);
-    }
+    connectionManager.throwIfNoConnection(connectionId);
 
     var serverUsesStandardSeverityMode = !severityModeService.isMQRModeForConnection(connectionId);
 
@@ -171,16 +168,15 @@ public class RulesService {
   private RuleDetails hydrateDetailsWithServer(String connectionId, ServerActiveRule activeRuleFromStorage, boolean skipCleanCodeTaxonomy, SonarLintCancelMonitor cancelMonitor) {
     var ruleKey = activeRuleFromStorage.getRuleKey();
     var templateKey = activeRuleFromStorage.getTemplateKey();
-    var serverApi = serverApiProvider.getServerApiOrThrow(connectionId);
     if (StringUtils.isNotBlank(templateKey)) {
       var templateRule = rulesRepository.getRule(connectionId, templateKey);
       if (templateRule.isEmpty()) {
         throw ruleDefinitionNotFound(templateKey);
       }
-      var serverRule = fetchRuleFromServer(connectionId, ruleKey, serverApi, cancelMonitor);
+      var serverRule = fetchRuleFromServer(connectionId, ruleKey, cancelMonitor);
       return RuleDetails.merging(activeRuleFromStorage, serverRule, templateRule.get(), skipCleanCodeTaxonomy);
     } else {
-      var serverRule = fetchRuleFromServer(connectionId, ruleKey, serverApi, cancelMonitor);
+      var serverRule = fetchRuleFromServer(connectionId, ruleKey, cancelMonitor);
       var ruleDefFromPluginOpt = rulesRepository.getRule(connectionId, ruleKey);
       return ruleDefFromPluginOpt
         .map(ruleDefFromPlugin -> RuleDetails.merging(serverRule, ruleDefFromPlugin, skipCleanCodeTaxonomy))
@@ -188,14 +184,15 @@ public class RulesService {
     }
   }
 
-  @NotNull
-  private static ResponseErrorException unknownConnection(String connectionId) {
-    var error = new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND, "Connection with ID '" + connectionId + "' does not exist", connectionId);
-    return new ResponseErrorException(error);
+  public ServerRule fetchRuleFromServer(String connectionId, String ruleKey, SonarLintCancelMonitor cancelMonitor) {
+    var serverApiWrapper = connectionManager.getServerApiWrapperOrThrow(connectionId);
+    return serverApiWrapper.tryFetchRule(ruleKey, cancelMonitor).orElseThrow(() -> ruleNotFoundOnServer(ruleKey, connectionId));
   }
 
-  private static ServerRule fetchRuleFromServer(String connectionId, String ruleKey, ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
-    return serverApi.rules().getRule(ruleKey, cancelMonitor).orElseThrow(() -> ruleNotFoundOnServer(ruleKey, connectionId));
+  private static ResponseErrorException ruleNotFoundOnServer(String ruleKey, String connectionId) {
+    var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' on server '" + connectionId + "'",
+      new Object[] {connectionId, ruleKey});
+    return new ResponseErrorException(error);
   }
 
   private static ResponseErrorException ruleDefinitionNotFound(String templateKey) {
@@ -210,11 +207,7 @@ public class RulesService {
     return new ResponseErrorException(error);
   }
 
-  private static ResponseErrorException ruleNotFoundOnServer(String ruleKey, String connectionId) {
-    var error = new ResponseError(SonarLintRpcErrorCode.RULE_NOT_FOUND, COULD_NOT_FIND_RULE + ruleKey + "' on server '" + connectionId + "'",
-      new Object[] {connectionId, ruleKey});
-    return new ResponseErrorException(error);
-  }
+
 
   private ServerActiveRule tryConvertDeprecatedKeys(ServerActiveRule possiblyDeprecatedActiveRuleFromStorage, String connectionId) {
     Optional<SonarLintRuleDefinition> ruleOrTemplateDefinition;

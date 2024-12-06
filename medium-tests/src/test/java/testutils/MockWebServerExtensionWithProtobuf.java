@@ -28,9 +28,7 @@ import javax.annotation.Nullable;
 import mockwebserver3.MockResponse;
 import okio.Buffer;
 import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
-import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
-import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -64,14 +62,6 @@ public class MockWebServerExtensionWithProtobuf extends MockWebServerExtension {
     } catch (IOException e) {
       throw new IllegalStateException("failed to write message: " + message, e);
     }
-  }
-
-  public ServerApiHelper serverApiHelper() {
-    return serverApiHelper(null);
-  }
-
-  public ServerApiHelper serverApiHelper(@Nullable String organizationKey) {
-    return new ServerApiHelper(endpointParams(organizationKey), HttpClientProvider.forTesting().getHttpClient());
   }
 
   public EndpointParams endpointParams() {

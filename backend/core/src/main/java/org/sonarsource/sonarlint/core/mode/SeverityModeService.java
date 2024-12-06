@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.mode;
 import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
 import org.sonarsource.sonarlint.core.storage.StorageService;
@@ -34,18 +34,18 @@ public class SeverityModeService {
   private static final String MIN_MQR_MODE_SUPPORT_VERSION = "10.2";
 
   private final StorageService storageService;
-  private final ServerApiProvider serverApiProvider;
+  private final ConnectionManager connectionManager;
 
-  public SeverityModeService(StorageService storageService, ServerApiProvider serverApiProvider) {
+  public SeverityModeService(StorageService storageService, ConnectionManager connectionManager) {
     this.storageService = storageService;
-    this.serverApiProvider = serverApiProvider;
+    this.connectionManager = connectionManager;
   }
 
   public boolean isMQRModeForConnection(@Nullable String connectionId) {
     if (connectionId == null) {
       return true;
     }
-    var isSonarCloud = serverApiProvider.getServerApiOrThrow(connectionId).isSonarCloud();
+    var isSonarCloud = connectionManager.isSonarCloud(connectionId);
     if (isSonarCloud) {
       return true;
     }

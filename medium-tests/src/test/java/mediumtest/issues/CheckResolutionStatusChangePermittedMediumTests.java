@@ -82,7 +82,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .withThrowableOfType(ExecutionException.class)
       .havingCause()
       .isInstanceOf(ResponseErrorException.class)
-      .withMessage("Connection 'connectionId' is gone");
+      .withMessage("Connection with ID 'connectionId' does not exist");
   }
 
   @Test

@@ -25,6 +25,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiErrorHandlingWrapper;
 import testutils.MockWebServerExtensionWithProtobuf;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,7 +41,8 @@ class ServerVersionAndStatusCheckerTests {
 
   @BeforeEach
   void setUp() {
-    underTest = new ServerVersionAndStatusChecker(new ServerApi(mockServer.serverApiHelper()));
+    underTest = new ServerVersionAndStatusChecker(new ServerApiErrorHandlingWrapper(new ServerApi(mockServer.serverApiHelper()), () -> {
+    }));
   }
 
   @Test
@@ -63,7 +65,8 @@ class ServerVersionAndStatusCheckerTests {
 
   @Test
   void shouldNotFailWhenIncompatibleVersionSc() {
-    underTest = new ServerVersionAndStatusChecker(new ServerApi(mockServer.serverApiHelper("orgKey")));
+    underTest = new ServerVersionAndStatusChecker(new ServerApiErrorHandlingWrapper(new ServerApi(mockServer.serverApiHelper("orgKey")), () -> {
+    }));
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}");
 
     var throwable = catchThrowable(() -> underTest.checkVersionAndStatus(new SonarLintCancelMonitor()));
