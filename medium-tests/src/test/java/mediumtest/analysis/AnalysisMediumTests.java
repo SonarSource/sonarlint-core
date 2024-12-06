@@ -611,6 +611,41 @@ class AnalysisMediumTests {
   }
 
   @Test
+  void should_set_js_internal_bundlePath_if_provided(@TempDir Path baseDir) {
+    var client = newFakeClient().build();
+    backend = newBackend()
+      .withEslintBridgeServerBundlePath(baseDir.resolve("eslint-bridge"))
+      .build(client);
+
+    var analysisProperties = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).join().getAnalysisProperties();
+
+    assertThat(analysisProperties).containsEntry("sonar.js.internal.bundlePath", baseDir.resolve("eslint-bridge").toString());
+  }
+
+  @Test
+  void should_not_set_js_internal_bundlePath_when_not_provided() {
+    var client = newFakeClient().build();
+    backend = newBackend()
+      .build(client);
+
+    var analysisProperties = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).join().getAnalysisProperties();
+
+    assertThat(analysisProperties).doesNotContainKey("sonar.js.internal.bundlePath");
+  }
+
+  @Test
+  void should_not_set_js_internal_bundlePath_when_no_language_specific_requirements() {
+    var client = newFakeClient().build();
+    backend = newBackend()
+      .withNoLanguageSpecificRequirements()
+      .build(client);
+
+    var analysisProperties = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).join().getAnalysisProperties();
+
+    assertThat(analysisProperties).doesNotContainKey("sonar.js.internal.bundlePath");
+  }
+
+  @Test
   void it_should_skip_analysis_and_keep_rules_if_disabled_language_for_analysis(@TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml",
       "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
