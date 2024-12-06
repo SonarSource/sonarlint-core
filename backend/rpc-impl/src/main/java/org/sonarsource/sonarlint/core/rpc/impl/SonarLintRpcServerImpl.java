@@ -288,14 +288,6 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     return getInitializedApplicationContext().getBean(EmbeddedServer.class).getPort();
   }
 
-  public HttpClient getHttpClientNoAuth() {
-    return getInitializedApplicationContext().getBean(ConnectionAwareHttpClientProvider.class).getHttpClient();
-  }
-
-  public HttpClient getHttpClient(String connectionId) {
-    return getInitializedApplicationContext().getBean(ConnectionAwareHttpClientProvider.class).getHttpClient(connectionId);
-  }
-
   public LocalOnlyIssueStorageService getLocalOnlyIssueStorageService() {
     return getInitializedApplicationContext().getBean(LocalOnlyIssueStorageService.class);
   }

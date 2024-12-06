@@ -45,14 +45,14 @@ public class ConnectionAwareHttpClientProvider {
     return httpClientProvider.getHttpClient();
   }
 
-  public HttpClient getHttpClient(String connectionId) {
+  public HttpClient getHttpClient(String connectionId, boolean shouldUseBearer) {
     var credentials = queryClientForConnectionCredentials(connectionId);
     if (credentials.isEmpty()) {
       // Fallback on client with no authentication
       return httpClientProvider.getHttpClient();
     }
     return credentials.get().map(
-      tokenDto -> httpClientProvider.getHttpClientWithPreemptiveAuth(tokenDto.getToken()),
+      tokenDto -> httpClientProvider.getHttpClientWithPreemptiveAuth(tokenDto.getToken(), shouldUseBearer),
       userPass -> httpClientProvider.getHttpClientWithPreemptiveAuth(userPass.getUsername(), userPass.getPassword()));
   }
 
