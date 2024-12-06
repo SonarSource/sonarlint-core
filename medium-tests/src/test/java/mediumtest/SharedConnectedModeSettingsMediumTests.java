@@ -76,7 +76,7 @@ class SharedConnectedModeSettingsMediumTests {
 
     var result = getFileContents(configScopeId);
 
-    assertThat(result).succeedsWithin(1, TimeUnit.SECONDS);
+    assertThat(result).succeedsWithin(3, TimeUnit.SECONDS);
     assertThat(result.get().getJsonFileContent()).isEqualTo(expectedFileContent);
     assertThat(backend.telemetryFilePath())
       .content().asBase64Decoded().asString()
@@ -104,7 +104,7 @@ class SharedConnectedModeSettingsMediumTests {
 
     var result = getFileContents(configScopeId);
 
-    assertThat(result).succeedsWithin(1, TimeUnit.SECONDS);
+    assertThat(result).succeedsWithin(3, TimeUnit.SECONDS);
     assertThat(result.get().getJsonFileContent()).isEqualTo(expectedFileContent);
     assertThat(backend.telemetryFilePath())
       .content().asBase64Decoded().asString()

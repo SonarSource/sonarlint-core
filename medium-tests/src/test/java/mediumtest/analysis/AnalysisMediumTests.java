@@ -306,7 +306,7 @@ class AnalysisMediumTests {
 
     verify(client).startProgress(refEq(new StartProgressParams(analysisId.toString(), CONFIG_SCOPE_ID, "Analyzing 1 file", null, true, false)));
     var reportProgressCaptor = ArgumentCaptor.forClass(ReportProgressParams.class);
-    verify(client).reportProgress(reportProgressCaptor.capture());
+    verify(client, timeout(500)).reportProgress(reportProgressCaptor.capture());
     assertThat(reportProgressCaptor.getValue())
       .usingRecursiveComparison()
       .isEqualTo(new ReportProgressParams(analysisId.toString(), new ProgressEndNotification()));

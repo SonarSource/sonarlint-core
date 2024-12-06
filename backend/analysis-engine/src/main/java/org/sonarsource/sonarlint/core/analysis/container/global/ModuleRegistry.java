@@ -19,13 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.global;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
-import org.sonarsource.sonarlint.core.analysis.api.ClientModulesProvider;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentContainer;
@@ -36,11 +37,9 @@ public class ModuleRegistry {
   private final ConcurrentHashMap<Object, ModuleContainer> moduleContainersByKey = new ConcurrentHashMap<>();
   private final SpringComponentContainer parent;
 
-  public ModuleRegistry(SpringComponentContainer parent, @Nullable ClientModulesProvider modulesProvider) {
+  public ModuleRegistry(SpringComponentContainer parent, Supplier<List<ClientModuleInfo>> modulesProvider) {
     this.parent = parent;
-    if (modulesProvider != null) {
-      modulesProvider.getModules().forEach(this::registerModule);
-    }
+    modulesProvider.get().forEach(this::registerModule);
   }
 
   public ModuleContainer registerModule(ClientModuleInfo moduleInfo) {

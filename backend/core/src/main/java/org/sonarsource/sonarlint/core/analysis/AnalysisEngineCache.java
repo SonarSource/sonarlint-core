@@ -25,11 +25,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
+import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
+import org.sonarsource.sonarlint.core.analysis.command.UnregisterModuleCommand;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
@@ -75,6 +79,13 @@ public class AnalysisEngineCache {
     }
   }
 
+  @CheckForNull
+  public AnalysisEngine getAnalysisEngineIfStarted(String configurationScopeId) {
+    return configurationRepository.getEffectiveBinding(configurationScopeId)
+      .map(binding -> getConnectedEngineIfStarted(binding.getConnectionId()))
+      .orElseGet(this::getStandaloneEngineIfStarted);
+  }
+
   public AnalysisEngine getOrCreateAnalysisEngine(String configurationScopeId) {
     return configurationRepository.getEffectiveBinding(configurationScopeId)
       .map(binding -> getOrCreateConnectedEngine(binding.getConnectionId()))
@@ -86,10 +97,20 @@ public class AnalysisEngineCache {
       k -> createEngine(pluginsService.getPlugins(connectionId), pluginsService.getEffectivePathToCsharpAnalyzer(connectionId)));
   }
 
+  @CheckForNull
+  private synchronized AnalysisEngine getConnectedEngineIfStarted(String connectionId) {
+    return connectedEnginesByConnectionId.get(connectionId);
+  }
+
   private synchronized AnalysisEngine getOrCreateStandaloneEngine() {
     if (standaloneEngine == null) {
       standaloneEngine = createEngine(pluginsService.getEmbeddedPlugins(), csharpOssPluginPath);
     }
+    return standaloneEngine;
+  }
+
+  @CheckForNull
+  private synchronized AnalysisEngine getStandaloneEngineIfStarted() {
     return standaloneEngine;
   }
 
@@ -135,7 +156,7 @@ public class AnalysisEngineCache {
 
   @PreDestroy
   public void shutdown() {
-    stopAllGracefully();
+    stopAll();
   }
 
   private synchronized void stopEngineGracefully(String event) {
@@ -154,13 +175,28 @@ public class AnalysisEngineCache {
     connectedEnginesByConnectionId.clear();
   }
 
+  private synchronized void stopAll() {
+    if (this.standaloneEngine != null) {
+      this.standaloneEngine.stop();
+      this.standaloneEngine = null;
+    }
+    connectedEnginesByConnectionId.forEach((connectionId, engine) -> engine.stop());
+    connectedEnginesByConnectionId.clear();
+  }
+
   public void registerModuleIfLeafConfigScope(String scopeId) {
-    if (configurationRepository.isLeafConfigScope(scopeId)) {
-      var analysisEngine = getOrCreateAnalysisEngine(scopeId);
+    var analysisEngine = getAnalysisEngineIfStarted(scopeId);
+    if (analysisEngine != null && configurationRepository.isLeafConfigScope(scopeId)) {
       var backendModuleFileSystem = new BackendModuleFileSystem(clientFileSystemService, scopeId);
       var clientModuleInfo = new ClientModuleInfo(scopeId, backendModuleFileSystem);
-      analysisEngine.getModuleRegistry().registerModule(clientModuleInfo);
+      analysisEngine.post(new RegisterModuleCommand(clientModuleInfo), new ProgressMonitor(null));
     }
   }
 
+  public void unregisterModule(String scopeId) {
+    var analysisEngine = getAnalysisEngineIfStarted(scopeId);
+    if (analysisEngine != null && configurationRepository.isLeafConfigScope(scopeId)) {
+      analysisEngine.post(new UnregisterModuleCommand(scopeId), new ProgressMonitor(null));
+    }
+  }
 }

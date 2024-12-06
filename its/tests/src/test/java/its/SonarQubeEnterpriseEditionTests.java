@@ -97,7 +97,6 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
   private static final String PROJECT_KEY_TSQL = "sample-tsql";
   private static final String PROJECT_KEY_APEX = "sample-apex";
   private static final String PROJECT_KEY_CUSTOM_SECRETS = "sample-custom-secrets";
-  private static final String CONFIG_SCOPE_ID = "my-ide-project-name";
 
   @RegisterExtension
   static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
@@ -179,8 +178,8 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
       startBackend(Map.of());
     }
 
-    void start(String projectKey) {
-      bindProject("project-" + projectKey, projectKey);
+    void start(String configScopeId, String projectKey) {
+      bindProject(configScopeId, "project-" + projectKey, projectKey);
     }
 
     @AfterEach
@@ -190,7 +189,8 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
     @Test
     void analysisC_old_build_wrapper_prop(@TempDir File buildWrapperOutput) throws Exception {
-      start(PROJECT_KEY_C);
+      String configScopeId = "analysisC_old_build_wrapper_prop";
+      start(configScopeId, PROJECT_KEY_C);
 
       var buildWrapperContent = "{\"version\":0,\"captures\":[" +
         "{" +
@@ -211,7 +211,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
       FileUtils.write(new File(buildWrapperOutput, "build-wrapper-dump.json"), buildWrapperContent, StandardCharsets.UTF_8);
 
-      var rawIssues = analyzeFile(PROJECT_KEY_C, "src/file.c", "sonar.cfamily.build-wrapper-output", buildWrapperOutput.getAbsolutePath());
+      var rawIssues = analyzeFile(configScopeId, PROJECT_KEY_C, "src/file.c", "sonar.cfamily.build-wrapper-output", buildWrapperOutput.getAbsolutePath());
 
       assertThat(rawIssues)
         .extracting(RawIssueDto::getRuleKey)
@@ -222,7 +222,8 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     // New property was introduced in SonarCFamily 6.18 part of SQ 8.8
     @OnlyOnSonarQube(from = "8.8")
     void analysisC_new_prop() {
-      start(PROJECT_KEY_C);
+      String configScopeId = "analysisC_old_build_wrapper_prop";
+      start(configScopeId, PROJECT_KEY_C);
 
       var buildWrapperContent = "{\"version\":0,\"captures\":[" +
         "{" +
@@ -241,7 +242,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
         Paths.get("projects/" + PROJECT_KEY_C).toAbsolutePath().toString().replace("\\", "\\\\") +
         "\",\"executable\":\"compiler\",\"cmd\":[\"cc\",\"src/file.c\"]}]}";
 
-      var rawIssues = analyzeFile(PROJECT_KEY_C, "src/file.c", "sonar.cfamily.build-wrapper-content", buildWrapperContent);
+      var rawIssues = analyzeFile(configScopeId, PROJECT_KEY_C, "src/file.c", "sonar.cfamily.build-wrapper-content", buildWrapperContent);
 
       assertThat(rawIssues)
         .extracting(RawIssueDto::getRuleKey)
@@ -250,9 +251,10 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
 
     @Test
     void analysisCobol() {
-      start(PROJECT_KEY_COBOL);
+      String configScopeId = "analysisCobol";
+      start(configScopeId, PROJECT_KEY_COBOL);
 
-      var rawIssues = analyzeFile(PROJECT_KEY_COBOL, "src/Custmnt2.cbl", "sonar.cobol.file.suffixes", "cbl");
+      var rawIssues = analyzeFile(configScopeId, PROJECT_KEY_COBOL, "src/Custmnt2.cbl", "sonar.cobol.file.suffixes", "cbl");
 
       assertThat(rawIssues).hasSize(1);
     }
@@ -260,27 +262,30 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     @Test
     @OnlyOnSonarQube(from = "10.5")
     void analysisJCL() {
-      start(PROJECT_KEY_JCL);
+      String configScopeId = "analysisJCL";
+      start(configScopeId, PROJECT_KEY_JCL);
 
-      var rawIssues = analyzeFile(PROJECT_KEY_JCL, "GAM0VCDB.jcl");
+      var rawIssues = analyzeFile(configScopeId, PROJECT_KEY_JCL, "GAM0VCDB.jcl");
 
       assertThat(rawIssues).hasSize(6);
     }
 
     @Test
     void analysisTsql() {
-      start(PROJECT_KEY_TSQL);
+      String configScopeId = "analysisTsql";
+      start(configScopeId, PROJECT_KEY_TSQL);
 
-      var rawIssues = analyzeFile(PROJECT_KEY_TSQL, "src/file.tsql");
+      var rawIssues = analyzeFile(configScopeId, PROJECT_KEY_TSQL, "src/file.tsql");
 
       assertThat(rawIssues).hasSize(1);
     }
 
     @Test
     void analysisApex() {
-      start(PROJECT_KEY_APEX);
+      String configScopeId = "analysisApex";
+      start(configScopeId, PROJECT_KEY_APEX);
 
-      var rawIssues = analyzeFile(PROJECT_KEY_APEX, "src/file.cls");
+      var rawIssues = analyzeFile(configScopeId, PROJECT_KEY_APEX, "src/file.cls");
 
       assertThat(rawIssues).hasSize(1);
     }
@@ -288,9 +293,10 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     @Test
     @OnlyOnSonarQube(from = "10.4")
     void analysisCustomSecrets() {
-      start(PROJECT_KEY_CUSTOM_SECRETS);
+      var configScopeId = "analysisCustomSecrets";
+      start(configScopeId, PROJECT_KEY_CUSTOM_SECRETS);
 
-      var rawIssues = analyzeFile(PROJECT_KEY_CUSTOM_SECRETS, "src/file.md");
+      var rawIssues = analyzeFile(configScopeId, PROJECT_KEY_CUSTOM_SECRETS, "src/file.md");
 
       assertThat(rawIssues)
         .extracting(RawIssueDto::getRuleKey, RawIssueDto::getPrimaryMessage)
@@ -306,7 +312,6 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     @BeforeAll
     void setup() throws IOException {
       startBackend(Map.of("cpp", PluginLocator.getCppPluginPath()));
-      bindProject("project-" + PROJECT_KEY_C, PROJECT_KEY_C);
     }
 
     /**
@@ -316,6 +321,8 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
      */
     @Test
     void analysisWithDeprecatedRuleKey() {
+      var configScopeId = "analysisWithDeprecatedRuleKey";
+      bindProject(configScopeId, "project-" + PROJECT_KEY_C, PROJECT_KEY_C);
       var buildWrapperContent = "{\"version\":0,\"captures\":[" +
         "{" +
         "\"compiler\": \"clang\"," +
@@ -333,7 +340,7 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
         Paths.get("projects/" + PROJECT_KEY_C).toAbsolutePath().toString().replace("\\", "\\\\") +
         "\",\"executable\":\"compiler\",\"cmd\":[\"cc\",\"src/file.c\"]}]}";
 
-      var rawIssues = analyzeFile(PROJECT_KEY_C, "src/file.c", "sonar.cfamily.build-wrapper-content", buildWrapperContent);
+      var rawIssues = analyzeFile(configScopeId, PROJECT_KEY_C, "src/file.c", "sonar.cfamily.build-wrapper-content", buildWrapperContent);
 
       assertThat(rawIssues)
         .extracting(RawIssueDto::getRuleKey)
@@ -341,28 +348,28 @@ class SonarQubeEnterpriseEditionTests extends AbstractConnectedTests {
     }
   }
 
-  private static void bindProject(String projectName, String projectKey) {
+  private static void bindProject(String configScopeId, String projectName, String projectKey) {
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
-      List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, projectName,
+      List.of(new ConfigurationScopeDto(configScopeId, null, true, projectName,
         new BindingConfigurationDto(CONNECTION_ID, projectKey, true)))));
-    await().atMost(30, SECONDS).untilAsserted(() -> assertThat(analysisReadinessByConfigScopeId).containsEntry(CONFIG_SCOPE_ID, true));
+    await().atMost(30, SECONDS).untilAsserted(() -> assertThat(analysisReadinessByConfigScopeId).containsEntry(configScopeId, true));
   }
 
-  private List<RawIssueDto> analyzeFile(String projectDir, String filePathStr, String... properties) {
+  private List<RawIssueDto> analyzeFile(String configScopeId, String projectDir, String filePathStr, String... properties) {
     var filePath = Path.of("projects").resolve(projectDir).resolve(filePathStr);
     var fileUri = filePath.toUri();
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(
-      List.of(new ClientFileDto(fileUri, Path.of(filePathStr), CONFIG_SCOPE_ID, false, null, filePath.toAbsolutePath(), null, null, true)),
+      List.of(new ClientFileDto(fileUri, Path.of(filePathStr), configScopeId, false, null, filePath.toAbsolutePath(), null, null, true)),
       List.of(),
       List.of()
     ));
 
     var analyzeResponse = backend.getAnalysisService().analyzeFiles(
-      new AnalyzeFilesParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), toMap(properties), System.currentTimeMillis())
+      new AnalyzeFilesParams(configScopeId, UUID.randomUUID(), List.of(fileUri), toMap(properties), System.currentTimeMillis())
     ).join();
 
     assertThat(analyzeResponse.getFailedAnalysisFiles()).isEmpty();
-    var raisedIssues = ((MockSonarLintRpcClientDelegate) client).getRaisedIssues(CONFIG_SCOPE_ID);
+    var raisedIssues = ((MockSonarLintRpcClientDelegate) client).getRaisedIssues(configScopeId);
     return raisedIssues != null ? raisedIssues : List.of();
   }
 

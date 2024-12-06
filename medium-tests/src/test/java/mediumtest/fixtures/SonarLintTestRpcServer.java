@@ -22,7 +22,6 @@ package mediumtest.fixtures;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
 import org.apache.commons.io.FileUtils;
-import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
@@ -202,15 +201,4 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
   public int getEmbeddedServerPort() {
     return serverUsingJava.getEmbeddedServerPort();
   }
-
-  @Deprecated(forRemoval = true)
-  public HttpClient getHttpClientNoAuth() {
-    return serverUsingJava.getHttpClientNoAuth();
-  }
-
-  @Deprecated(forRemoval = true)
-  public HttpClient getHttpClient(String connectionId) {
-    return serverUsingJava.getHttpClient(connectionId);
-  }
-
 }
