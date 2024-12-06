@@ -49,7 +49,7 @@ class ServerApiProviderTests {
     var endpointParams = mock(EndpointParams.class);
     when(connectionRepository.getEndpointParams("sq1")).thenReturn(Optional.of(endpointParams));
     var httpClient = mock(HttpClient.class);
-    when(awareHttpClientProvider.getHttpClient("sq1")).thenReturn(httpClient);
+    when(awareHttpClientProvider.getHttpClient("sq1", false)).thenReturn(httpClient);
 
     var serverApi = underTest.getServerApi("sq1");
 
@@ -59,7 +59,7 @@ class ServerApiProviderTests {
   @Test
   void getServerApi_for_sonarqube_notConnected() {
     var httpClient = mock(HttpClient.class);
-    when(httpClientProvider.getHttpClientWithPreemptiveAuth("token")).thenReturn(httpClient);
+    when(httpClientProvider.getHttpClientWithPreemptiveAuth("token", false)).thenReturn(httpClient);
 
     var serverApi = underTest.getServerApi("sq_notConnected", null, "token");
     assertThat(serverApi.isSonarCloud()).isFalse();
@@ -70,7 +70,7 @@ class ServerApiProviderTests {
     var endpointParams = mock(EndpointParams.class);
     when(connectionRepository.getEndpointParams("sc1")).thenReturn(Optional.of(endpointParams));
     var httpClient = mock(HttpClient.class);
-    when(awareHttpClientProvider.getHttpClient("sc1")).thenReturn(httpClient);
+    when(awareHttpClientProvider.getHttpClient("sc1", true)).thenReturn(httpClient);
 
     var serverApi = underTest.getServerApi("sc1");
 
@@ -80,7 +80,7 @@ class ServerApiProviderTests {
   @Test
   void getServerApi_for_sonarcloud_with_trailing_slash_notConnected() {
     var httpClient = mock(HttpClient.class);
-    when(httpClientProvider.getHttpClientWithPreemptiveAuth("token")).thenReturn(httpClient);
+    when(httpClientProvider.getHttpClientWithPreemptiveAuth("token", true)).thenReturn(httpClient);
 
     var serverApi = underTest.getServerApi("https://sonarcloud.io/", "organization", "token");
     assertThat(serverApi.isSonarCloud()).isTrue();
@@ -89,7 +89,7 @@ class ServerApiProviderTests {
   @Test
   void getServerApi_for_sonarcloud_notConnected() {
     var httpClient = mock(HttpClient.class);
-    when(httpClientProvider.getHttpClientWithPreemptiveAuth("token")).thenReturn(httpClient);
+    when(httpClientProvider.getHttpClientWithPreemptiveAuth("token", true)).thenReturn(httpClient);
 
     var serverApi = underTest.getServerApi("https://sonarcloud.io", "organization", "token");
     assertThat(serverApi.isSonarCloud()).isTrue();
@@ -99,7 +99,7 @@ class ServerApiProviderTests {
   void getServerApi_returns_empty_if_connection_doesnt_exists() {
     when(connectionRepository.getConnectionById("sc1")).thenReturn(null);
     var httpClient = mock(HttpClient.class);
-    when(awareHttpClientProvider.getHttpClient("sc1")).thenReturn(httpClient);
+    when(awareHttpClientProvider.getHttpClient("sc1", true)).thenReturn(httpClient);
 
     var serverApi = underTest.getServerApi("sc1");
 
@@ -109,7 +109,7 @@ class ServerApiProviderTests {
   @Test
   void getServerApi_returns_empty_if_client_cant_provide_httpclient() {
     when(connectionRepository.getConnectionById("sc1")).thenReturn(new SonarCloudConnectionConfiguration(URI.create("http://server1"), "sc1", "myorg", true));
-    when(awareHttpClientProvider.getHttpClient("sc1")).thenReturn(null);
+    when(awareHttpClientProvider.getHttpClient("sc1", true)).thenReturn(null);
 
     var serverApi = underTest.getServerApi("sc1");
 
