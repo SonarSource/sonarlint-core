@@ -63,8 +63,9 @@ class ConnectionSyncMediumTests {
       .build();
     when(client.getClientLiveDescription()).thenReturn(this.getClass().getName());
 
+    var server = newSonarQubeServer().start();
     backend = newBackend()
-      .withSonarQubeConnection(CONNECTION_ID, storage -> storage.withPlugin(TestPlugin.JAVA))
+      .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage.withPlugin(TestPlugin.JAVA))
       .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, "projectKey")
       .withEnabledLanguageInStandaloneMode(JAVA)
       .build(client);
@@ -89,8 +90,9 @@ class ConnectionSyncMediumTests {
       .build();
     when(client.getClientLiveDescription()).thenReturn(this.getClass().getName());
 
+    var server = newSonarQubeServer().start();
     backend = newBackend()
-      .withSonarQubeConnection(CONNECTION_ID, storage -> storage.withPlugin(TestPlugin.JAVA))
+      .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage.withPlugin(TestPlugin.JAVA))
       .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, "projectKey")
       .withEnabledLanguageInStandaloneMode(JAVA)
       .build(client);
@@ -126,7 +128,7 @@ class ConnectionSyncMediumTests {
       .withProjectSynchronization()
       .withFullSynchronization()
       .build(client);
-    await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Error during synchronization"));
+    await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Error while checking if soon unsupported"));
 
     server.registerSystemApiResponses();
 

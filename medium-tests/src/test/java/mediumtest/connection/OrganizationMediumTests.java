@@ -21,6 +21,7 @@ package mediumtest.connection;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.SonarLintTestRpcServer;
@@ -93,6 +94,9 @@ class OrganizationMediumTests {
           .setDescription("orgDesc2")
           .build())
         .build()))));
+    sonarcloudMock.stubFor(get("/api/system/status")
+      .willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"8.0\",\"status\": " +
+        "\"UP\"}")));
     sonarcloudMock.stubFor(get("/api/organizations/search.protobuf?member=true&ps=500&p=2")
       .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Organizations.SearchWsResponse.newBuilder().build()))));
 
@@ -104,7 +108,7 @@ class OrganizationMediumTests {
         tuple("orgKey2", "orgName2", "orgDesc2"));
 
     sonarcloudMock.verify(getRequestedFor(urlEqualTo("/api/organizations/search.protobuf?member=true&ps=500&p=1"))
-      .withHeader("Authorization", equalTo("Basic " + Base64.getEncoder().encodeToString("token:".getBytes(StandardCharsets.UTF_8)))));
+      .withHeader("Authorization", equalTo("Bearer token")));
   }
 
   @Test
