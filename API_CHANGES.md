@@ -2,7 +2,7 @@
 
 ## Breaking changes
 
-* Adapt org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams.languageSpecificRequirements to accept org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.JsTsRequirementsDto instead of clientNodeJsPath
+* Adapt `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams.languageSpecificRequirements` to accept `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.JsTsRequirementsDto` instead of `clientNodeJsPath`
 
 ## New features
 
