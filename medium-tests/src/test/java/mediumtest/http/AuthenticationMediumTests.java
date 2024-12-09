@@ -21,7 +21,6 @@ package mediumtest.http;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -75,6 +74,9 @@ class AuthenticationMediumTests {
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .build(fakeClient);
+    sonarqubeMock.stubFor(get("/api/system/status")
+      .willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"10.8\",\"status\": " +
+        "\"UP\"}")));
     sonarqubeMock.stubFor(get("/api/rules/show.protobuf?key=python:S139")
       .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Rules.ShowResponse.newBuilder()
         .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlDesc(

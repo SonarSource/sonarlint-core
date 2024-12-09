@@ -99,7 +99,6 @@ public class VersionSoonUnsupportedHelper {
       }
     });
     oneConfigScopeIdPerConnection.forEach(this::queueCheckIfSoonUnsupported);
-
   }
 
   private void queueCheckIfSoonUnsupported(String connectionId, String configScopeId) {

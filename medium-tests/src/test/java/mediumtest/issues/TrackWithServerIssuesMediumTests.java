@@ -93,8 +93,9 @@ class TrackWithServerIssuesMediumTests {
 
   @Test
   void it_should_track_local_only_issues() {
+    var server = newSonarQubeServer().start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId")
+      .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
       .build();
 
@@ -114,8 +115,9 @@ class TrackWithServerIssuesMediumTests {
 
   @Test
   void it_should_track_issues_for_unknown_branch() {
+    var server = newSonarQubeServer().start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId")
+      .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
       .build();
 

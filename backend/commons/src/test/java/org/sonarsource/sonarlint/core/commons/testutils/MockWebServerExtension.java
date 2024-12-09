@@ -42,6 +42,9 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
   @Override
   public void beforeEach(ExtensionContext context) {
     start();
+    // Most test cases have a call to this endpoint when initializing the data
+    // This is due to queueCheckIfSoonUnsupported when a config scope is added
+    addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"99.9\",\"status\": \"UP\"}");
   }
 
   public void start() {
