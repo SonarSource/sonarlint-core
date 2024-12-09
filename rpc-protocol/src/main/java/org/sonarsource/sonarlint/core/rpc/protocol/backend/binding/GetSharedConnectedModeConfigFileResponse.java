@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.binding;
 
 public class GetSharedConnectedModeConfigFileResponse {
-  private String jsonFileContent;
+  private final String jsonFileContent;
 
   public GetSharedConnectedModeConfigFileResponse(String jsonFileContent) {
     this.jsonFileContent = jsonFileContent;
@@ -28,9 +28,5 @@ public class GetSharedConnectedModeConfigFileResponse {
 
   public String getJsonFileContent() {
     return jsonFileContent;
-  }
-
-  public void setJsonFileContent(String jsonFileContent) {
-    this.jsonFileContent = jsonFileContent;
   }
 }

@@ -128,14 +128,8 @@ public class AnalysisEngine {
     globalAnalysisContainer.stopComponents();
   }
 
-  // Visible for medium tests
-  public ModuleRegistry getModuleRegistry() {
+  private ModuleRegistry getModuleRegistry() {
     return globalAnalysisContainer.getModuleRegistry();
-  }
-
-  // Visible for medium tests
-  public GlobalAnalysisContainer getGlobalAnalysisContainer() {
-    return globalAnalysisContainer;
   }
 
   public static class AsyncCommand<T> {

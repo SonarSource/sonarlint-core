@@ -23,7 +23,9 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
@@ -36,7 +38,7 @@ public class AnalysisEngineConfiguration {
   private final Map<String, String> extraProperties;
   private final Path nodeJsPath;
   private final long clientPid;
-  private final ClientModulesProvider modulesProvider;
+  private final Supplier<List<ClientModuleInfo>> modulesProvider;
 
   private AnalysisEngineConfiguration(Builder builder) {
     this.workDir = builder.workDir;
@@ -58,7 +60,7 @@ public class AnalysisEngineConfiguration {
     return clientPid;
   }
 
-  public ClientModulesProvider getModulesProvider() {
+  public Supplier<List<ClientModuleInfo>> getModulesProvider() {
     return modulesProvider;
   }
 
@@ -75,7 +77,7 @@ public class AnalysisEngineConfiguration {
     private Map<String, String> extraProperties = Collections.emptyMap();
     private Path nodeJsPath;
     private long clientPid;
-    private ClientModulesProvider modulesProvider;
+    private Supplier<List<ClientModuleInfo>> modulesProvider;
 
     private Builder() {
 
@@ -110,7 +112,7 @@ public class AnalysisEngineConfiguration {
       return this;
     }
 
-    public Builder setModulesProvider(ClientModulesProvider modulesProvider) {
+    public Builder setModulesProvider(Supplier<List<ClientModuleInfo>> modulesProvider) {
       this.modulesProvider = modulesProvider;
       return this;
     }

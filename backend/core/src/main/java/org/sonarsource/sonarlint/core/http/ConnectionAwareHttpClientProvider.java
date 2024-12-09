@@ -41,10 +41,6 @@ public class ConnectionAwareHttpClientProvider {
     this.httpClientProvider = httpClientProvider;
   }
 
-  public HttpClient getHttpClient() {
-    return httpClientProvider.getHttpClient();
-  }
-
   public HttpClient getHttpClient(String connectionId) {
     var credentials = queryClientForConnectionCredentials(connectionId);
     if (credentials.isEmpty()) {
