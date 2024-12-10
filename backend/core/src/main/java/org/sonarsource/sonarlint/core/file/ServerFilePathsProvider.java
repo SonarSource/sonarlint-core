@@ -103,15 +103,17 @@ public class ServerFilePathsProvider {
   }
 
   private Optional<List<Path>> fetchPathsFromServer(Binding binding, SonarLintCancelMonitor cancelMonitor) {
-    var serverApiOpt = serverApiProvider.getServerApi(binding.getConnectionId());
-    if (serverApiOpt.isEmpty()) {
+    var connectionOpt = serverApiProvider.tryGetConnection(binding.getConnectionId());
+    if (connectionOpt.isEmpty()) {
       LOG.debug("Connection '{}' does not exist", binding.getConnectionId());
       return Optional.empty();
     }
     try {
-      List<Path> paths = fetchPathsFromServer(serverApiOpt.get(), binding.getSonarProjectKey(), cancelMonitor);
-      cacheServerPaths(binding, paths);
-      return Optional.of(paths);
+      return serverApiProvider.withValidConnectionFlatMapOptionalAndReturn(binding.getConnectionId(), serverApi -> {
+        List<Path> paths =  fetchPathsFromServer(serverApi, binding.getSonarProjectKey(), cancelMonitor);
+        cacheServerPaths(binding, paths);
+        return Optional.of(paths);
+      });
     } catch (CancellationException e) {
       throw e;
     } catch (Exception e) {

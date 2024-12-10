@@ -105,12 +105,7 @@ public class ShowHotspotRequestHandler implements HttpRequestHandler {
   }
 
   private Optional<ServerHotspotDetails> tryFetchHotspot(String connectionId, String hotspotKey, SonarLintCancelMonitor cancelMonitor) {
-    var serverApi = serverApiProvider.getServerApi(connectionId);
-    if (serverApi.isEmpty()) {
-      // should not happen since we found the connection just before, improve the design ?
-      return Optional.empty();
-    }
-    return serverApi.get().hotspot().fetch(hotspotKey, cancelMonitor);
+    return serverApiProvider.withValidConnectionFlatMapOptionalAndReturn(connectionId,api -> api.hotspot().fetch(hotspotKey, cancelMonitor));
   }
 
   private static HotspotDetailsDto adapt(String hotspotKey, ServerHotspotDetails hotspot, FilePathTranslation translation) {

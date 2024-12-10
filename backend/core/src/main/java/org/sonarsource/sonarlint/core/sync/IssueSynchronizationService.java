@@ -65,8 +65,8 @@ public class IssueSynchronizationService {
   }
 
   public void fetchProjectIssues(Binding binding, String activeBranch, SonarLintCancelMonitor cancelMonitor) {
-    serverApiProvider.getServerApi(binding.getConnectionId())
-      .ifPresent(serverApi -> downloadServerIssuesForProject(binding.getConnectionId(), serverApi, binding.getSonarProjectKey(), activeBranch, cancelMonitor));
+    serverApiProvider.withValidConnection(binding.getConnectionId(), serverApi ->
+      downloadServerIssuesForProject(binding.getConnectionId(), serverApi, binding.getSonarProjectKey(), activeBranch, cancelMonitor));
   }
 
   private void downloadServerIssuesForProject(String connectionId, ServerApi serverApi, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
@@ -78,8 +78,8 @@ public class IssueSynchronizationService {
   }
 
   public void fetchFileIssues(Binding binding, Path serverFileRelativePath, String activeBranch, SonarLintCancelMonitor cancelMonitor) {
-    serverApiProvider.getServerApi(binding.getConnectionId())
-      .ifPresent(serverApi -> downloadServerIssuesForFile(binding.getConnectionId(), serverApi, binding.getSonarProjectKey(), serverFileRelativePath, activeBranch, cancelMonitor));
+    serverApiProvider.withValidConnection(binding.getConnectionId(), serverApi ->
+      downloadServerIssuesForFile(binding.getConnectionId(), serverApi, binding.getSonarProjectKey(), serverFileRelativePath, activeBranch, cancelMonitor));
   }
 
   public void downloadServerIssuesForFile(String connectionId, ServerApi serverApi, String projectKey, Path serverFileRelativePath, String branchName,

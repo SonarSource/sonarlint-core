@@ -43,11 +43,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
-import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.connection.ServerConnection;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -83,6 +83,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment.PRODUCTION_URI;
+import static testutils.TestUtils.mockServerApiProvider;
 
 class ShowIssueRequestHandlerTests {
 
@@ -95,7 +96,6 @@ class ShowIssueRequestHandlerTests {
   private ProjectBranchesStorage branchesStorage;
   private IssueApi issueApi;
   private TelemetryService telemetryService;
-
   @BeforeEach
   void setup() {
     connectionConfigurationRepository = mock(ConnectionConfigurationRepository.class);
@@ -112,15 +112,16 @@ class ShowIssueRequestHandlerTests {
     issueApi = mock(IssueApi.class);
     var serverApi = mock(ServerApi.class);
     when(serverApi.issue()).thenReturn(issueApi);
-    var serverApiProvider = mock(ServerApiProvider.class);
-    when(serverApiProvider.getServerApiOrThrow(any())).thenReturn(serverApi);
-    when(serverApiProvider.getServerApi(any())).thenReturn(Optional.of(serverApi));
+    var connection = new ServerConnection("connectionId", serverApi, sonarLintRpcClient);
+    var serverApiProvider = mockServerApiProvider();
+    doReturn(Optional.of(connection)).when(serverApiProvider).tryGetConnection(any());
+    doReturn(connection).when(serverApiProvider).getConnectionOrThrow(any());
+    doReturn(Optional.of(serverApi)).when(serverApiProvider).getServerApi(any());
     branchesStorage = mock(ProjectBranchesStorage.class);
     var storageService = mock(StorageService.class);
     var sonarStorage = mock(SonarProjectStorage.class);
     var eventPublisher = mock(ApplicationEventPublisher.class);
-    var sonarProjectBranchesSynchronizationService = spy(new SonarProjectBranchesSynchronizationService(storageService, serverApiProvider
-      , eventPublisher));
+    var sonarProjectBranchesSynchronizationService = spy(new SonarProjectBranchesSynchronizationService(storageService, serverApiProvider, eventPublisher));
     doReturn(new ProjectBranches(Set.of(), "main")).when(sonarProjectBranchesSynchronizationService).getProjectBranches(any(), any(),
       any());
     when(storageService.binding(any())).thenReturn(sonarStorage);

@@ -188,18 +188,14 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
 
   private Optional<IssueApi.ServerIssueDetails> tryFetchIssue(String connectionId, String issueKey, String projectKey, String branch, @Nullable String pullRequest,
     SonarLintCancelMonitor cancelMonitor) {
-    var serverApi = serverApiProvider.getServerApiOrThrow(connectionId);
-    return serverApi.issue().fetchServerIssue(issueKey, projectKey, branch, pullRequest, cancelMonitor);
+    return serverApiProvider.withValidConnectionFlatMapOptionalAndReturn(connectionId,
+      serverApi -> serverApi.issue().fetchServerIssue(issueKey, projectKey, branch, pullRequest, cancelMonitor));
   }
 
   private Optional<String> tryFetchCodeSnippet(String connectionId, String fileKey, Common.TextRange textRange, String branch, @Nullable String pullRequest,
     SonarLintCancelMonitor cancelMonitor) {
-    var serverApi = serverApiProvider.getServerApi(connectionId);
-    if (serverApi.isEmpty() || fileKey.isEmpty()) {
-      // should not happen since we found the connection just before, improve the design ?
-      return Optional.empty();
-    }
-    return serverApi.get().issue().getCodeSnippet(fileKey, textRange, branch, pullRequest, cancelMonitor);
+    return serverApiProvider.withValidConnectionFlatMapOptionalAndReturn(connectionId,
+      api -> api.issue().getCodeSnippet(fileKey, textRange, branch, pullRequest, cancelMonitor));
   }
 
   @VisibleForTesting

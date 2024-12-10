@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleDefinitionDto;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.common.ImpactPayload;
@@ -42,20 +41,18 @@ class RulesServiceTests {
   private RulesRepository rulesRepository;
   private RulesExtractionHelper extractionHelper;
   private ConfigurationRepository configurationRepository;
-  private ConnectionConfigurationRepository connectionConfigurationRepository;
 
   @BeforeEach
   void prepare() {
     extractionHelper = mock(RulesExtractionHelper.class);
     configurationRepository = mock(ConfigurationRepository.class);
-    connectionConfigurationRepository = mock(ConnectionConfigurationRepository.class);
     rulesRepository = new RulesRepository(extractionHelper, configurationRepository);
   }
 
   @Test
   void it_should_return_all_embedded_rules_from_the_repository() {
     when(extractionHelper.extractEmbeddedRules()).thenReturn(List.of(aRule()));
-    var rulesService = new RulesService(null, null, rulesRepository, null, null, Map.of(), null, connectionConfigurationRepository);
+    var rulesService = new RulesService(null, null, rulesRepository, null, null, Map.of(), null);
 
     var embeddedRules = rulesService.listAllStandaloneRulesDefinitions().values();
 

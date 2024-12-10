@@ -73,8 +73,8 @@ public class HotspotSynchronizationService {
   }
 
   public void fetchProjectHotspots(Binding binding, String activeBranch, SonarLintCancelMonitor cancelMonitor) {
-    serverApiProvider.getServerApi(binding.getConnectionId())
-      .ifPresent(serverApi -> downloadAllServerHotspots(binding.getConnectionId(), serverApi, binding.getSonarProjectKey(), activeBranch, cancelMonitor));
+    serverApiProvider.withValidConnection(binding.getConnectionId(), serverApi ->
+      downloadAllServerHotspots(binding.getConnectionId(), serverApi, binding.getSonarProjectKey(), activeBranch, cancelMonitor));
   }
 
   private void downloadAllServerHotspots(String connectionId, ServerApi serverApi, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
@@ -87,8 +87,8 @@ public class HotspotSynchronizationService {
   }
 
   public void fetchFileHotspots(Binding binding, String activeBranch, Path serverFilePath, SonarLintCancelMonitor cancelMonitor) {
-    serverApiProvider.getServerApi(binding.getConnectionId())
-      .ifPresent(serverApi -> downloadAllServerHotspotsForFile(binding.getConnectionId(), serverApi, binding.getSonarProjectKey(), serverFilePath, activeBranch, cancelMonitor));
+    serverApiProvider.withValidConnection(binding.getConnectionId(), serverApi ->
+      downloadAllServerHotspotsForFile(binding.getConnectionId(), serverApi, binding.getSonarProjectKey(), serverFilePath, activeBranch, cancelMonitor));
   }
 
   private void downloadAllServerHotspotsForFile(String connectionId, ServerApi serverApi, String projectKey, Path serverRelativeFilePath, String branchName,

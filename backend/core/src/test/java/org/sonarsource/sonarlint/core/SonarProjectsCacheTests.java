@@ -27,6 +27,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.connection.ServerConnection;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -35,10 +36,12 @@ import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static testutils.TestUtils.mockServerApiProvider;
 
 class SonarProjectsCacheTests {
   @RegisterExtension
@@ -82,13 +85,15 @@ class SonarProjectsCacheTests {
       return PROJECT_NAME_2;
     }
   };
-  private final ServerApiProvider serverApiProvider = mock(ServerApiProvider.class);
+  private final ServerApiProvider serverApiProvider = mockServerApiProvider();
   private final ServerApi serverApi = mock(ServerApi.class, Mockito.RETURNS_DEEP_STUBS);
   private final SonarProjectsCache underTest = new SonarProjectsCache(serverApiProvider);
 
   @BeforeEach
   public void setup() {
-    when(serverApiProvider.getServerApi(SQ_1)).thenReturn(Optional.of(serverApi));
+    doReturn(Optional.of(serverApi)).when(serverApiProvider).getServerApi(SQ_1);
+    var serverConnection = new ServerConnection(SQ_1, serverApi, null);
+    doReturn(Optional.of(serverConnection)).when(serverApiProvider).tryGetConnection(SQ_1);
   }
 
   @Test

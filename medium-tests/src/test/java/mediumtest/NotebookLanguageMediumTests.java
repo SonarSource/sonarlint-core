@@ -22,14 +22,15 @@ package mediumtest;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.serverconnection.ServerConnection;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidChangeCredentialsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 class NotebookLanguageMediumTests {
   @RegisterExtension
@@ -40,18 +41,22 @@ class NotebookLanguageMediumTests {
 
   @SonarLintTest
   void should_not_enable_sync_for_notebook_python_language(SonarLintTestHarness harness) {
-    var fakeClient = harness.newFakeClient()
+    client = harness.newFakeClient()
       .build();
     var backend = harness.newBackend()
       .withStorage(CONNECTION_ID, s -> s.withPlugins(TestPlugin.JAVASCRIPT, TestPlugin.JAVA)
         .withProject("test-project")
         .withProject(JAVA_MODULE_KEY))
-      .build(fakeClient);
+      .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, JAVA_MODULE_KEY)
+      .withEnabledLanguageInStandaloneMode(Language.JAVA)
+      .withEnabledLanguageInStandaloneMode(Language.JS)
+      .withEnabledLanguageInStandaloneMode(Language.IPYTHON)
+      .withFullSynchronization()
+      .build(client);
 
-    var serverConnection = new ServerConnection(backend.getStorageRoot(), CONNECTION_ID, false, Set.of(SonarLanguage.JAVA, SonarLanguage.JS,
-      SonarLanguage.IPYTHON), Set.of(), backend.getWorkDir());
+    backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams(CONNECTION_ID));
 
-    assertThat(serverConnection.getEnabledLanguagesToSync()).containsOnly(SonarLanguage.JAVA, SonarLanguage.JS);
+    await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("[SYNC] Languages enabled for synchronization: [java, js]"));
   }
 
 }
