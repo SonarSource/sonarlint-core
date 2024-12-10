@@ -30,7 +30,9 @@ import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.storage.StorageService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -43,7 +45,10 @@ class ServerApiProviderTests {
   private final ConnectionConfigurationRepository connectionRepository = mock(ConnectionConfigurationRepository.class);
   private final ConnectionAwareHttpClientProvider awareHttpClientProvider = mock(ConnectionAwareHttpClientProvider.class);
   private final HttpClientProvider httpClientProvider = mock(HttpClientProvider.class);
-  private final ServerApiProvider underTest = new ServerApiProvider(connectionRepository, awareHttpClientProvider, httpClientProvider, SonarCloudActiveEnvironment.prod());
+  private final SonarLintRpcClient client = mock(SonarLintRpcClient.class);
+  private final StorageService storageService = mock(StorageService.class);
+  private final ServerApiProvider underTest = new ServerApiProvider(connectionRepository, awareHttpClientProvider, httpClientProvider,
+    SonarCloudActiveEnvironment.prod(), storageService, client);
 
   @Test
   void getServerApi_for_sonarqube() {

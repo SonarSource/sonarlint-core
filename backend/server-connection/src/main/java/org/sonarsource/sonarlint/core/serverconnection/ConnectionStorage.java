@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.sonarsource.sonarlint.core.serverconnection.storage.PluginsStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerInfoStorage;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ServerIssueStoresManager;
+import org.sonarsource.sonarlint.core.serverconnection.storage.WebApiErrorNotificationsStorage;
 
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 
@@ -34,6 +35,7 @@ public class ConnectionStorage {
   private final Map<String, SonarProjectStorage> sonarProjectStorageByKey = new ConcurrentHashMap<>();
   private final Path projectsStorageRoot;
   private final PluginsStorage pluginsStorage;
+  private final WebApiErrorNotificationsStorage webApiErrorNotificationsStorage;
   private final Path connectionStorageRoot;
 
   public ConnectionStorage(Path globalStorageRoot, Path workDir, String connectionId) {
@@ -41,6 +43,7 @@ public class ConnectionStorage {
     this.projectsStorageRoot = connectionStorageRoot.resolve("projects");
     this.serverIssueStoresManager = new ServerIssueStoresManager(projectsStorageRoot, workDir);
     this.serverInfoStorage = new ServerInfoStorage(connectionStorageRoot);
+    this.webApiErrorNotificationsStorage = new WebApiErrorNotificationsStorage(connectionStorageRoot);
     this.pluginsStorage = new PluginsStorage(connectionStorageRoot);
   }
 
@@ -51,6 +54,10 @@ public class ConnectionStorage {
   public SonarProjectStorage project(String sonarProjectKey) {
     return sonarProjectStorageByKey.computeIfAbsent(sonarProjectKey,
       k -> new SonarProjectStorage(projectsStorageRoot, serverIssueStoresManager, sonarProjectKey));
+  }
+
+  public WebApiErrorNotificationsStorage webApiErrorNotifications() {
+    return webApiErrorNotificationsStorage;
   }
 
   public PluginsStorage plugins() {

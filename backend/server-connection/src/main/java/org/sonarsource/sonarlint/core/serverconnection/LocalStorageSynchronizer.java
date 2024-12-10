@@ -89,6 +89,7 @@ public class LocalStorageSynchronizer {
 
   private AnalyzerConfiguration downloadAnalyzerConfig(ServerApi serverApi, String projectKey, SonarLintCancelMonitor cancelMonitor) {
     LOG.info("[SYNC] Synchronizing analyzer configuration for project '{}'", projectKey);
+    LOG.info("[SYNC] Languages enabled for synchronization: {}", enabledLanguageKeys);
     Map<String, RuleSet> currentRuleSets;
     int currentSchemaVersion;
     try {

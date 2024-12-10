@@ -24,6 +24,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -48,6 +49,7 @@ import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.connection.ServerConnection;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -67,6 +69,7 @@ import org.sonarsource.sonarlint.core.serverconnection.ProjectBranches;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBranchesStorage;
 import org.sonarsource.sonarlint.core.serverconnection.SonarProjectStorage;
 import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.sync.LastWebApiErrorNotificationService;
 import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.usertoken.UserTokenService;
@@ -75,6 +78,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -95,6 +99,7 @@ class ShowIssueRequestHandlerTests {
   private ProjectBranchesStorage branchesStorage;
   private IssueApi issueApi;
   private TelemetryService telemetryService;
+  private final LastWebApiErrorNotificationService lastWebApiErrorNotificationService = mock(LastWebApiErrorNotificationService.class);
 
   @BeforeEach
   void setup() {
@@ -112,15 +117,17 @@ class ShowIssueRequestHandlerTests {
     issueApi = mock(IssueApi.class);
     var serverApi = mock(ServerApi.class);
     when(serverApi.issue()).thenReturn(issueApi);
+    when(lastWebApiErrorNotificationService.getLastWebApiErrorNotification(anyString())).thenReturn(ZonedDateTime.now());
+    var connection = new ServerConnection("connectionId", serverApi, lastWebApiErrorNotificationService, sonarLintRpcClient);
     var serverApiProvider = mock(ServerApiProvider.class);
-    when(serverApiProvider.getServerApiOrThrow(any())).thenReturn(serverApi);
+    when(serverApiProvider.tryGetConnection(any())).thenReturn(Optional.of(connection));
+    when(serverApiProvider.getConnectionOrThrow(any())).thenReturn(connection);
     when(serverApiProvider.getServerApi(any())).thenReturn(Optional.of(serverApi));
     branchesStorage = mock(ProjectBranchesStorage.class);
     var storageService = mock(StorageService.class);
     var sonarStorage = mock(SonarProjectStorage.class);
     var eventPublisher = mock(ApplicationEventPublisher.class);
-    var sonarProjectBranchesSynchronizationService = spy(new SonarProjectBranchesSynchronizationService(storageService, serverApiProvider
-      , eventPublisher));
+    var sonarProjectBranchesSynchronizationService = spy(new SonarProjectBranchesSynchronizationService(storageService, serverApiProvider, eventPublisher));
     doReturn(new ProjectBranches(Set.of(), "main")).when(sonarProjectBranchesSynchronizationService).getProjectBranches(any(), any(),
       any());
     when(storageService.binding(any())).thenReturn(sonarStorage);

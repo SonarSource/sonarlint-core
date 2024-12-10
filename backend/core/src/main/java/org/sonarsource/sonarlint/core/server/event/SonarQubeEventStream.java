@@ -67,8 +67,9 @@ public class SonarQubeEventStream {
 
   private void attemptSubscription(Set<String> projectKeys) {
     if (!enabledLanguages.isEmpty()) {
-      serverApiProvider.getServerApi(connectionId)
-        .ifPresent(serverApi -> eventStream = serverApi.push().subscribe(projectKeys, enabledLanguages, e -> notifyHandlers(e, eventConsumer)));
+      serverApiProvider.tryGetConnection(connectionId)
+        .ifPresent(connection -> eventStream = connection.withClientApiAndReturn(serverApi ->
+          serverApi.push().subscribe(projectKeys, enabledLanguages, e -> notifyHandlers(e, eventConsumer))));
     }
   }
 
