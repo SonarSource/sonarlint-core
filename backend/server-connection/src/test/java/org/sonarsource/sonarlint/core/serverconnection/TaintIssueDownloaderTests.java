@@ -39,6 +39,7 @@ import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiErrorHandlingWrapper;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.Flow;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.Paging;
@@ -72,6 +73,7 @@ class TaintIssueDownloaderTests {
   @RegisterExtension
   static MockWebServerExtensionWithProtobuf mockServer = new MockWebServerExtensionWithProtobuf();
   private ServerApi serverApi;
+  private ServerApiErrorHandlingWrapper serverApiWrapper;
 
   private TaintIssueDownloader underTest;
 
@@ -79,6 +81,8 @@ class TaintIssueDownloaderTests {
   void prepare() {
     underTest = new TaintIssueDownloader(Set.of(SonarLanguage.JAVA));
     serverApi = new ServerApi(mockServer.serverApiHelper());
+    serverApiWrapper = new ServerApiErrorHandlingWrapper(serverApi, () -> {
+    });
   }
 
   @Test
@@ -162,7 +166,7 @@ class TaintIssueDownloaderTests {
       issueSearchResponse);
     mockServer.addStringResponse("/api/sources/raw?key=" + URLEncoder.encode(FILE_1_KEY, StandardCharsets.UTF_8), "Even\nBefore My\n\tCode\n  Snippet And\n After");
 
-    var issues = underTest.downloadTaintFromIssueSearch(serverApi, DUMMY_KEY, null, new SonarLintCancelMonitor());
+    var issues = underTest.downloadTaintFromIssueSearch(serverApiWrapper, DUMMY_KEY, null, new SonarLintCancelMonitor());
 
     assertThat(issues).hasSize(1);
 
@@ -226,7 +230,7 @@ class TaintIssueDownloaderTests {
     mockServer.addProtobufResponse(
       "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=VULNERABILITY&componentKeys=dummyKey&rules=javasecurity%3AS789&branch=branchName&ps=500&p=1", response);
 
-    var issues = underTest.downloadTaintFromIssueSearch(serverApi, DUMMY_KEY, "branchName", new SonarLintCancelMonitor());
+    var issues = underTest.downloadTaintFromIssueSearch(serverApiWrapper, DUMMY_KEY, "branchName", new SonarLintCancelMonitor());
 
     assertThat(issues).hasSize(1);
   }
@@ -271,7 +275,7 @@ class TaintIssueDownloaderTests {
 
     mockServer.addProtobufResponseDelimited("/api/issues/pull_taint?projectKey=" + DUMMY_KEY + "&branchName=myBranch&languages=java", timestamp, taint1, taintNoRange);
 
-    var result = underTest.downloadTaintFromPull(serverApi, DUMMY_KEY, "myBranch", Optional.empty(), new SonarLintCancelMonitor());
+    var result = underTest.downloadTaintFromPull(serverApiWrapper, DUMMY_KEY, "myBranch", Optional.empty(), new SonarLintCancelMonitor());
     assertThat(result.getQueryTimestamp()).isEqualTo(Instant.ofEpochMilli(123L));
 
     assertThat(result.getChangedTaintIssues()).hasSize(2);

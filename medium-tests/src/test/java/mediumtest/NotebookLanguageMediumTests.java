@@ -64,7 +64,7 @@ class NotebookLanguageMediumTests {
 
   @Test
   void should_not_enable_sync_for_notebook_python_language() {
-    var serverConnection = new ServerConnection(backend.getStorageRoot(), CONNECTION_ID, false, Set.of(SonarLanguage.JAVA, SonarLanguage.JS,
+    var serverConnection = new ServerConnection(backend.getStorageRoot(), CONNECTION_ID, Set.of(SonarLanguage.JAVA, SonarLanguage.JS,
       SonarLanguage.IPYTHON), Set.of(), backend.getWorkDir());
     assertThat(serverConnection.getEnabledLanguagesToSync()).containsOnly(SonarLanguage.JAVA, SonarLanguage.JS);
   }

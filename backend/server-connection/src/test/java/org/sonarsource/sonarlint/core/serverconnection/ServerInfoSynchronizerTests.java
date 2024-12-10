@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiErrorHandlingWrapper;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Settings;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
@@ -65,7 +66,8 @@ class ServerInfoSynchronizerTests {
     Files.createDirectory(connectionPath);
     ProtobufFileUtil.writeToFile(Sonarlint.ServerInfo.newBuilder().setVersion("1.0.0").build(), connectionPath.resolve("server_info.pb"));
 
-    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor());
+    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApiErrorHandlingWrapper(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), () -> {
+    }), new SonarLintCancelMonitor());
 
     assertThat(storedServerInfo)
       .extracting(StoredServerInfo::getVersion)
@@ -81,7 +83,8 @@ class ServerInfoSynchronizerTests {
         .setValue("true"))
       .build());
 
-    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor());
+    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApiErrorHandlingWrapper(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), () -> {
+    }), new SonarLintCancelMonitor());
 
     assertThat(storedServerInfo)
       .extracting(StoredServerInfo::getVersion, StoredServerInfo::getSeverityMode)
@@ -97,7 +100,8 @@ class ServerInfoSynchronizerTests {
         .setValue("true"))
       .build());
 
-    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor());
+    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApiErrorHandlingWrapper(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), () -> {
+    }), new SonarLintCancelMonitor());
 
     assertThat(storedServerInfo)
       .extracting(StoredServerInfo::getVersion, StoredServerInfo::getSeverityMode)
@@ -113,7 +117,8 @@ class ServerInfoSynchronizerTests {
         .setValue("false"))
       .build());
 
-    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor());
+    var storedServerInfo = synchronizer.readOrSynchronizeServerInfo(new ServerApiErrorHandlingWrapper(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), () -> {
+    }), new SonarLintCancelMonitor());
 
     assertThat(storedServerInfo)
       .extracting(StoredServerInfo::getVersion, StoredServerInfo::getSeverityMode)
@@ -124,7 +129,8 @@ class ServerInfoSynchronizerTests {
   void it_should_fail_when_server_is_down() {
     mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"DOWN\"}");
 
-    var throwable = catchThrowable(() -> synchronizer.readOrSynchronizeServerInfo(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), new SonarLintCancelMonitor()));
+    var throwable = catchThrowable(() -> synchronizer.readOrSynchronizeServerInfo(new ServerApiErrorHandlingWrapper(new ServerApi(mockServer.endpointParams(), HttpClientProvider.forTesting().getHttpClient()), () -> {
+    }), new SonarLintCancelMonitor()));
 
     assertThat(throwable)
       .isInstanceOf(IllegalStateException.class)

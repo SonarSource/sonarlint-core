@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.usertoken;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.RevokeTokenParams;
@@ -32,17 +32,16 @@ public class UserTokenService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final ServerApiProvider serverApiProvider;
+  private final ConnectionManager connectionManager;
 
-  public UserTokenService(ServerApiProvider serverApiProvider) {
-    this.serverApiProvider = serverApiProvider;
+  public UserTokenService(ConnectionManager connectionManager) {
+    this.connectionManager = connectionManager;
   }
 
   public void revokeToken(RevokeTokenParams params, SonarLintCancelMonitor cancelMonitor) {
     LOG.debug(String.format("Revoking token '%s'", params.getTokenName()));
-    serverApiProvider.getServerApi(params.getBaseUrl(), null, params.getTokenValue())
-      .userTokens()
-      .revoke(params.getTokenName(), cancelMonitor);
+    connectionManager.getServerApiWrapper(params.getBaseUrl(), null, params.getTokenValue())
+      .revokeToken(params.getTokenName(), cancelMonitor);
   }
 
 }

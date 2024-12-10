@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.net.URI;
 import java.util.Optional;
 import javax.annotation.Nullable;
@@ -26,42 +27,63 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.InvalidTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.ServerApiErrorHandlingWrapper;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
+import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
 
 import static org.apache.commons.lang.StringUtils.removeEnd;
 
 @Named
 @Singleton
-public class ServerApiProvider {
-
+public class ConnectionManager {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final ConnectionConfigurationRepository connectionRepository;
   private final ConnectionAwareHttpClientProvider awareHttpClientProvider;
   private final HttpClientProvider httpClientProvider;
   private final URI sonarCloudUri;
+  private final SonarLintRpcClient client;
 
-  public ServerApiProvider(ConnectionConfigurationRepository connectionRepository, ConnectionAwareHttpClientProvider awareHttpClientProvider, HttpClientProvider httpClientProvider,
-    SonarCloudActiveEnvironment sonarCloudActiveEnvironment) {
+  public ConnectionManager(ConnectionConfigurationRepository connectionRepository, ConnectionAwareHttpClientProvider awareHttpClientProvider,
+    HttpClientProvider httpClientProvider, SonarCloudActiveEnvironment sonarCloudActiveEnvironment, SonarLintRpcClient client) {
     this.connectionRepository = connectionRepository;
     this.awareHttpClientProvider = awareHttpClientProvider;
     this.httpClientProvider = httpClientProvider;
     this.sonarCloudUri = sonarCloudActiveEnvironment.getUri();
+    this.client = client;
   }
 
-  public Optional<ServerApi> getServerApi(String connectionId) {
+  public boolean hasConnection(String connectionId) {
+    return getServerApi(connectionId).isPresent();
+  }
+
+  public Optional<ServerApiErrorHandlingWrapper> tryGetServerApiWrapper(String connectionId) {
+    return getServerApi(connectionId).map( serverApi -> wrapWithConnection(serverApi, connectionId));
+  }
+
+  public ServerApiErrorHandlingWrapper getServerApiWrapper(String baseUrl, @Nullable String organization, String token) {
+    return wrap(getServerApi(baseUrl, organization, token));
+  }
+
+  @VisibleForTesting
+  Optional<ServerApi> getServerApi(String connectionId) {
     var params = connectionRepository.getEndpointParams(connectionId);
     if (params.isEmpty()) {
       LOG.debug("Connection '{}' is gone", connectionId);
@@ -70,36 +92,28 @@ public class ServerApiProvider {
     return Optional.of(new ServerApi(params.get(), awareHttpClientProvider.getHttpClient(connectionId)));
   }
 
-  public ServerApi getServerApi(String baseUrl, @Nullable String organization, String token) {
+  @VisibleForTesting
+  ServerApi getServerApi(String baseUrl, @Nullable String organization, String token) {
     var params = new EndpointParams(baseUrl, removeEnd(sonarCloudUri.toString(), "/").equals(removeEnd(baseUrl, "/")), organization);
     return new ServerApi(params, httpClientProvider.getHttpClientWithPreemptiveAuth(token));
-  }
-
-  public ServerApi getServerApiOrThrow(String connectionId) {
-    var params = connectionRepository.getEndpointParams(connectionId);
-    if (params.isEmpty()) {
-      var error = new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND, "Connection '" + connectionId + "' is gone", connectionId);
-      throw new ResponseErrorException(error);
-    }
-    return new ServerApi(params.get(), awareHttpClientProvider.getHttpClient(connectionId));
   }
 
   /**
    * Used to do SonarCloud requests before knowing the organization
    */
-  public ServerApi getForSonarCloudNoOrg(Either<TokenDto, UsernamePasswordDto> credentials) {
+  public ServerApiErrorHandlingWrapper getForSonarCloudNoOrg(Either<TokenDto, UsernamePasswordDto> credentials) {
     var endpointParams = new EndpointParams(sonarCloudUri.toString(), true, null);
     var httpClient = getClientFor(credentials);
-    return new ServerApi(new ServerApiHelper(endpointParams, httpClient));
+    return wrap(new ServerApi(new ServerApiHelper(endpointParams, httpClient)));
   }
 
-  public ServerApi getForTransientConnection(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection) {
+  public ServerApiErrorHandlingWrapper getForTransientConnection(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection) {
     var endpointParams = transientConnection.map(
       sq -> new EndpointParams(sq.getServerUrl(), false, null),
       sc -> new EndpointParams(sonarCloudUri.toString(), true, sc.getOrganization()));
     var httpClient = getClientFor(transientConnection
       .map(TransientSonarQubeConnectionDto::getCredentials, TransientSonarCloudConnectionDto::getCredentials));
-    return new ServerApi(new ServerApiHelper(endpointParams, httpClient));
+    return wrap(new ServerApi(new ServerApiHelper(endpointParams, httpClient)));
   }
 
   private HttpClient getClientFor(Either<TokenDto, UsernamePasswordDto> credentials) {
@@ -108,4 +122,48 @@ public class ServerApiProvider {
       userPass -> httpClientProvider.getHttpClientWithPreemptiveAuth(userPass.getUsername(), userPass.getPassword()));
   }
 
+  private void notifyClientAboutWrongToken(@Nullable String connectionId) {
+    client.invalidToken(new InvalidTokenParams(connectionId));
+  }
+
+  private ServerApiErrorHandlingWrapper wrap(ServerApi serverApi) {
+    return new ServerApiErrorHandlingWrapper(serverApi, () -> notifyClientAboutWrongToken(null));
+  }
+
+  private ServerApiErrorHandlingWrapper wrapWithConnection(ServerApi serverApi, String connectionId) {
+    return new ServerApiErrorHandlingWrapper(serverApi, () -> notifyClientAboutWrongToken(connectionId));
+  }
+
+  public boolean isSonarCloud(String connectionId) {
+    return getServerApiWrapperOrThrow(connectionId).isSonarCloud();
+  }
+
+  public Version getSonarServerVersion(String connectionId, ConnectionStorage storage, SonarLintCancelMonitor cancelMonitor) {
+    var serverApiWrapper = getServerApiWrapperOrThrow(connectionId);
+    var serverInfoSynchronizer = new ServerInfoSynchronizer(storage);
+    return serverInfoSynchronizer.readOrSynchronizeServerInfo(serverApiWrapper, cancelMonitor).getVersion();
+  }
+
+  public void throwIfNoConnection(String connectionId) {
+    if (getServerApi(connectionId).isEmpty()) {
+      throw unknownConnection(connectionId);
+    }
+  }
+
+  public ServerApiErrorHandlingWrapper getServerApiWrapperOrThrow(String connectionId) {
+    return wrapWithConnection(getServerApiOrThrow(connectionId), connectionId);
+  }
+
+  private static ResponseErrorException unknownConnection(String connectionId) {
+    var error = new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND, "Connection with ID '" + connectionId + "' does not exist", connectionId);
+    return new ResponseErrorException(error);
+  }
+
+  private ServerApi getServerApiOrThrow(String connectionId) {
+    var params = connectionRepository.getEndpointParams(connectionId);
+    if (params.isEmpty()) {
+      throw unknownConnection(connectionId);
+    }
+    return new ServerApi(params.get(), awareHttpClientProvider.getHttpClient(connectionId));
+  }
 }
