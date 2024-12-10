@@ -140,12 +140,12 @@ public class HotspotService {
       LOG.debug("No binding for config scope {}", configurationScopeId);
       return;
     }
-    var connectionOpt = serverApiProvider.getServerApi(effectiveBindingOpt.get().getConnectionId());
+    var connectionOpt = serverApiProvider.tryGetConnection(effectiveBindingOpt.get().getConnectionId());
     if (connectionOpt.isEmpty()) {
       LOG.debug("Connection {} is gone", effectiveBindingOpt.get().getConnectionId());
       return;
     }
-    connectionOpt.get().hotspot().changeStatus(hotspotKey, newStatus, cancelMonitor);
+    connectionOpt.get().withClientApi(serverApi -> serverApi.hotspot().changeStatus(hotspotKey, newStatus, cancelMonitor));
     saveStatusInStorage(effectiveBindingOpt.get(), hotspotKey, newStatus);
     telemetryService.hotspotStatusChanged();
   }

@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -36,6 +37,7 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProjectDto;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.springframework.context.event.EventListener;
 
@@ -120,7 +122,8 @@ public class SonarProjectsCache {
       return singleProjectsCache.get(new SonarProjectKey(connectionId, sonarProjectKey), () -> {
         LOG.debug("Query project '{}' on connection '{}'...", sonarProjectKey, connectionId);
         try {
-          return serverApiProvider.getServerApi(connectionId).flatMap(s -> s.component().getProject(sonarProjectKey, cancelMonitor));
+          return serverApiProvider.tryGetConnection(connectionId)
+            .flatMap(connection -> connection.withClientApiAndReturn(s -> s.component().getProject(sonarProjectKey, cancelMonitor)));
         } catch (Exception e) {
           LOG.error("Error while querying project '{}' from connection '{}'", sonarProjectKey, connectionId, e);
           return Optional.empty();
@@ -137,7 +140,9 @@ public class SonarProjectsCache {
         LOG.debug("Load projects from connection '{}'...", connectionId);
         List<ServerProject> projects;
         try {
-          projects = serverApiProvider.getServerApi(connectionId).map(s -> s.component().getAllProjects(cancelMonitor)).orElse(List.of());
+          projects = serverApiProvider.tryGetConnection(connectionId)
+            .map(connection -> connection.withClientApiAndReturn(s -> s.component().getAllProjects(cancelMonitor)))
+            .orElse(List.of());
         } catch (Exception e) {
           LOG.error("Error while querying projects from connection '{}'", connectionId, e);
           return new TextSearchIndex<>();

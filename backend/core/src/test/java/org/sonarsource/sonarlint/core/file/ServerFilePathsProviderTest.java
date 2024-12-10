@@ -41,6 +41,7 @@ import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.connection.ServerConnectionWrapper;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi;
 
@@ -77,6 +78,8 @@ class ServerFilePathsProviderTest {
 
     when(serverApiProvider.getServerApi(CONNECTION_A)).thenReturn(Optional.of(serverApi_A));
     when(serverApiProvider.getServerApi(CONNECTION_B)).thenReturn(Optional.of(serverApi_B));
+    when(serverApiProvider.tryGetConnection(CONNECTION_A)).thenReturn(Optional.of(new ServerConnectionWrapper(CONNECTION_A, serverApi_A, null)));
+    when(serverApiProvider.tryGetConnection(CONNECTION_B)).thenReturn(Optional.of(new ServerConnectionWrapper(CONNECTION_B, serverApi_B, null)));
     when(serverApi_A.component()).thenReturn(componentApi_A);
     when(serverApi_B.component()).thenReturn(componentApi_B);
     mockServerFilePaths(componentApi_A, "pathA", "pathB");
