@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -109,9 +108,9 @@ public class VersionSoonUnsupportedHelper {
       try {
         var connection = connectionRepository.getConnectionById(connectionId);
         if (connection != null && connection.getKind() == ConnectionKind.SONARQUBE) {
-          var serverApi = serverApiProvider.getServerApi(connectionId);
-          if (serverApi.isPresent()) {
-            var version = synchronizationService.getServerConnection(connectionId, serverApi.get()).readOrSynchronizeServerVersion(serverApi.get(), cancelMonitor);
+          var serverConnectionOpt = serverApiProvider.tryGetConnection(connectionId);
+          serverConnectionOpt.ifPresent(serverConnectionWrapper -> serverConnectionWrapper.withClientApi(serverApi -> {
+            var version = synchronizationService.getServerConnection(connectionId, serverApi).readOrSynchronizeServerVersion(serverApi, cancelMonitor);
             var isCached = cacheConnectionIdPerVersion.containsKey(connectionId) && cacheConnectionIdPerVersion.get(connectionId).compareTo(version) == 0;
             if (!isCached && VersionUtils.isVersionSupportedDuringGracePeriod(version)) {
               client.showSoonUnsupportedMessage(
@@ -125,7 +124,7 @@ public class VersionSoonUnsupportedHelper {
                 connection.getConnectionId(), version.getName()));
             }
             cacheConnectionIdPerVersion.put(connectionId, version);
-          }
+          }));
         }
       } catch (Exception e) {
         LOG.error("Error while checking if soon unsupported", e);

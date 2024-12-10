@@ -178,14 +178,14 @@ public class SynchronizationService {
     if (boundScopeBySonarProject.isEmpty()) {
       return;
     }
-    serverApiProvider.getServerApi(connectionId).ifPresent(serverApi -> {
+    serverApiProvider.tryGetConnection(connectionId).ifPresent(connection -> connection.withClientApi(serverApi -> {
       var subProgressGap = progressGap / boundScopeBySonarProject.size();
       var subProgress = progress;
       for (var entry : boundScopeBySonarProject.entrySet()) {
         synchronizeProjectWithProgress(serverApi, connectionId, entry.getKey(), entry.getValue(), notifier, cancelMonitor, synchronizedConfScopeIds, subProgress);
         subProgress += subProgressGap;
       }
-    });
+    }));
   }
 
   private void synchronizeProjectWithProgress(ServerApi serverApi, String connectionId, String sonarProjectKey, Collection<BoundScope> boundScopes, ProgressNotifier notifier,
@@ -291,8 +291,9 @@ public class SynchronizationService {
   private void synchronizeConnectionAndProjectsIfNeededAsync(String connectionId, Collection<BoundScope> boundScopes) {
     var cancelMonitor = new SonarLintCancelMonitor();
     cancelMonitor.watchForShutdown(scheduledSynchronizer);
-    scheduledSynchronizer.submit(() -> serverApiProvider.getServerApi(connectionId)
-      .ifPresent(serverApi -> synchronizeConnectionAndProjectsIfNeededSync(connectionId, serverApi, boundScopes, cancelMonitor)));
+    scheduledSynchronizer.submit(() -> serverApiProvider.tryGetConnection(connectionId)
+      .ifPresent(connection -> connection.withClientApi(serverApi ->
+        synchronizeConnectionAndProjectsIfNeededSync(connectionId, serverApi, boundScopes, cancelMonitor))));
   }
 
   private void synchronizeConnectionAndProjectsIfNeededSync(String connectionId, ServerApi serverApi, Collection<BoundScope> boundScopes, SonarLintCancelMonitor cancelMonitor) {

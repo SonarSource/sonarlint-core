@@ -113,6 +113,7 @@ public class ServerFixture {
     private ServerStatus serverStatus = ServerStatus.UP;
     private boolean smartNotificationsSupported;
     private final List<String> tokensRegistered = new ArrayList<>();
+    private Integer statusCode = 200;
 
     public ServerBuilder(ServerKind serverKind, @Nullable String organizationKey, @Nullable String version) {
       this.serverKind = serverKind;
@@ -166,8 +167,14 @@ public class ServerFixture {
       return this;
     }
 
+    public ServerBuilder withResponseCode(Integer status) {
+      this.statusCode = status;
+      return this;
+    }
+
     public Server start() {
-      var server = new Server(serverKind, serverStatus, organizationKey, version, projectByProjectKey, smartNotificationsSupported, pluginsByKey, qualityProfilesByKey, tokensRegistered);
+      var server = new Server(serverKind, serverStatus, organizationKey, version, projectByProjectKey, smartNotificationsSupported, pluginsByKey,
+        qualityProfilesByKey, tokensRegistered, statusCode);
       server.start();
       return server;
     }
@@ -515,11 +522,12 @@ public class ServerFixture {
     private final Map<String, ServerBuilder.ServerPluginBuilder> pluginsByKey;
     private final Map<String, ServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey;
     private final List<String> tokensRegistered;
+    private final Integer statusCode;
 
     public Server(ServerKind serverKind, ServerStatus serverStatus, @Nullable String organizationKey, @Nullable String version,
       Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey,
       boolean smartNotificationsSupported, Map<String, ServerBuilder.ServerPluginBuilder> pluginsByKey,
-      Map<String, ServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey, List<String> tokensRegistered) {
+      Map<String, ServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey, List<String> tokensRegistered, Integer statusCode) {
       this.serverKind = serverKind;
       this.serverStatus = serverStatus;
       this.organizationKey = organizationKey;
@@ -529,6 +537,7 @@ public class ServerFixture {
       this.pluginsByKey = pluginsByKey;
       this.qualityProfilesByKey = qualityProfilesByKey;
       this.tokensRegistered = tokensRegistered;
+      this.statusCode = statusCode;
     }
 
     public void start() {
@@ -568,7 +577,7 @@ public class ServerFixture {
 
     public void registerSystemApiResponses() {
       mockServer.stubFor(get("/api/system/status")
-        .willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"" + version + "\",\"status\": " +
+        .willReturn(aResponse().withStatus(statusCode).withBody("{\"id\": \"20160308094653\",\"version\": \"" + version + "\",\"status\": " +
           "\"" + serverStatus + "\"}")));
     }
 
@@ -579,7 +588,7 @@ public class ServerFixture {
 
     private void registerPluginsInstalledResponses() {
       mockServer.stubFor(get("/api/plugins/installed")
-        .willReturn(aResponse().withStatus(200).withBody("{\"plugins\": [" +
+        .willReturn(aResponse().withStatus(statusCode).withBody("{\"plugins\": [" +
           pluginsByKey.entrySet().stream().map(
               entry -> {
                 var pluginKey = entry.getKey();
@@ -597,7 +606,7 @@ public class ServerFixture {
         try {
           var pluginContent = Files.exists(plugin.jarPath) ? Files.readAllBytes(plugin.jarPath) : new byte[0];
           mockServer.stubFor(get("/api/plugins/download?plugin=" + pluginKey)
-            .willReturn(aResponse().withStatus(200).withBody(pluginContent)));
+            .willReturn(aResponse().withStatus(statusCode).withBody(pluginContent)));
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
@@ -611,7 +620,7 @@ public class ServerFixture {
           urlBuilder.append("&organization=").append(organizationKey);
         }
         mockServer.stubFor(get(urlBuilder.toString())
-          .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Qualityprofiles.SearchWsResponse.newBuilder().addAllProfiles(
+          .willReturn(aResponse().withStatus(statusCode).withResponseBody(protobufBody(Qualityprofiles.SearchWsResponse.newBuilder().addAllProfiles(
             project.qualityProfileKeys.stream().map(qualityProfileKey -> {
               var qualityProfile = qualityProfilesByKey.get(qualityProfileKey);
               return Qualityprofiles.SearchWsResponse.QualityProfile.newBuilder()
@@ -636,7 +645,7 @@ public class ServerFixture {
         }
         url += "&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY,SECURITY_HOTSPOT&s=key&ps=500&p=1";
         mockServer.stubFor(get(url)
-          .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Rules.SearchResponse.newBuilder()
+          .willReturn(aResponse().withStatus(statusCode).withResponseBody(protobufBody(Rules.SearchResponse.newBuilder()
             .addAllRules(qualityProfile.activeRulesByKey.entrySet().stream().map(entry -> Rules.Rule.newBuilder()
               .setKey(entry.getKey())
               .setSeverity(entry.getValue().issueSeverity.name())
@@ -656,7 +665,7 @@ public class ServerFixture {
       }
       url += "&f=repo&s=key&ps=500&p=1";
       mockServer.stubFor(get(url)
-        .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Rules.SearchResponse.newBuilder()
+        .willReturn(aResponse().withStatus(statusCode).withResponseBody(protobufBody(Rules.SearchResponse.newBuilder()
           .addAllRules(taintActiveRulesByKey.entrySet().stream().map(entry -> Rules.Rule.newBuilder()
             .setKey(entry.getKey())
             .setSeverity(entry.getValue().issueSeverity.name())
@@ -674,7 +683,7 @@ public class ServerFixture {
         var rule = entry.getValue();
         var rulesShowUrl = "/api/rules/show.protobuf?key=" + ruleKey;
         mockServer.stubFor(get(rulesShowUrl)
-          .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Rules.ShowResponse.newBuilder()
+          .willReturn(aResponse().withStatus(statusCode).withResponseBody(protobufBody(Rules.ShowResponse.newBuilder()
             .setRule(Rules.Rule.newBuilder()
               .setKey(ruleKey)
               .setName("fakeName")
@@ -694,7 +703,7 @@ public class ServerFixture {
 
     private void registerProjectBranchesApiResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> mockServer.stubFor(get("/api/project_branches/list.protobuf?project=" + projectKey)
-        .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(ProjectBranches.ListWsResponse.newBuilder()
+        .willReturn(aResponse().withStatus(statusCode).withResponseBody(protobufBody(ProjectBranches.ListWsResponse.newBuilder()
           .addAllBranches(project.branchesByName.keySet().stream()
             .filter(Objects::nonNull)
             .map(branchName -> ProjectBranches.Branch.newBuilder().setName(branchName).setIsMain(project.mainBranchName.equals(branchName)).setType(Common.BranchType.LONG).build())
@@ -911,7 +920,7 @@ public class ServerFixture {
     }
 
     private void registerHotspotsStatusChangeApiResponses() {
-      mockServer.stubFor(post("/api/hotspots/change_status").willReturn(aResponse().withStatus(200)));
+      mockServer.stubFor(post("/api/hotspots/change_status").willReturn(aResponse().withStatus(statusCode)));
     }
 
     private void registerIssuesApiResponses() {
@@ -962,11 +971,11 @@ public class ServerFixture {
     }
 
     private void registerIssuesStatusChangeApiResponses() {
-      mockServer.stubFor(post("/api/issues/do_transition").willReturn(aResponse().withStatus(200)));
+      mockServer.stubFor(post("/api/issues/do_transition").willReturn(aResponse().withStatus(statusCode)));
     }
 
     private void registerAddIssueCommentApiResponses() {
-      mockServer.stubFor(post("/api/issues/add_comment").willReturn(aResponse().withStatus(200)));
+      mockServer.stubFor(post("/api/issues/add_comment").willReturn(aResponse().withStatus(statusCode)));
     }
 
     private void registerApiIssuesPullResponses() {
@@ -1031,7 +1040,7 @@ public class ServerFixture {
     }
 
     private void registerIssueAnticipateTransitionResponses() {
-      mockServer.stubFor(post("/api/issues/anticipated_transitions?projectKey=projectKey").willReturn(aResponse().withStatus(200)));
+      mockServer.stubFor(post("/api/issues/anticipated_transitions?projectKey=projectKey").willReturn(aResponse().withStatus(statusCode)));
     }
 
     private void registerSourceApiResponses() {
@@ -1053,7 +1062,7 @@ public class ServerFixture {
 
     private void registerDevelopersApiResponses() {
       if (smartNotificationsSupported) {
-        mockServer.stubFor(get("/api/developers/search_events?projects=&from=").willReturn(aResponse().withStatus(200)));
+        mockServer.stubFor(get("/api/developers/search_events?projects=&from=").willReturn(aResponse().withStatus(statusCode)));
       }
     }
 
@@ -1142,7 +1151,7 @@ public class ServerFixture {
     }
 
     private void registerTokenApiResponse() {
-      tokensRegistered.forEach(tokenName -> mockServer.stubFor(post("/api/user_tokens/revoke").withRequestBody(WireMock.containing("name=" + tokenName)).willReturn(aResponse().withStatus(200))));
+      tokensRegistered.forEach(tokenName -> mockServer.stubFor(post("/api/user_tokens/revoke").withRequestBody(WireMock.containing("name=" + tokenName)).willReturn(aResponse().withStatus(statusCode))));
     }
 
     public void shutdown() {

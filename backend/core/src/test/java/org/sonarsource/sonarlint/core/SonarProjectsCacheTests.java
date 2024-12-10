@@ -27,6 +27,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.connection.ServerConnectionWrapper;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -89,6 +90,7 @@ class SonarProjectsCacheTests {
   @BeforeEach
   public void setup() {
     when(serverApiProvider.getServerApi(SQ_1)).thenReturn(Optional.of(serverApi));
+    when(serverApiProvider.tryGetConnection(SQ_1)).thenReturn(Optional.of(new ServerConnectionWrapper(SQ_1, serverApi, null)));
   }
 
   @Test

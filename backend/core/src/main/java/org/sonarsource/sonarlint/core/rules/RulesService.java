@@ -139,8 +139,9 @@ public class RulesService {
 
   public RuleDetails getActiveRuleForBinding(String ruleKey, Binding binding, SonarLintCancelMonitor cancelMonitor) {
     var connectionId = binding.getConnectionId();
-    var serverApi = serverApiProvider.getServerApi(connectionId);
-    if (serverApi.isEmpty()) {
+    // TODO maybe use get connection or throw
+    var connectionOpt = serverApiProvider.tryGetConnection(connectionId);
+    if (connectionOpt.isEmpty()) {
       throw unknownConnection(connectionId);
     }
 

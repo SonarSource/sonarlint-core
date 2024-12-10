@@ -48,6 +48,7 @@ import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.connection.ServerConnectionWrapper;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -112,15 +113,17 @@ class ShowIssueRequestHandlerTests {
     issueApi = mock(IssueApi.class);
     var serverApi = mock(ServerApi.class);
     when(serverApi.issue()).thenReturn(issueApi);
+    var connection = new ServerConnectionWrapper("connectionId", serverApi, sonarLintRpcClient);
     var serverApiProvider = mock(ServerApiProvider.class);
+    when(serverApiProvider.tryGetConnection(any())).thenReturn(Optional.of(connection));
+    when(serverApiProvider.getConnectionOrThrow(any())).thenReturn(connection);
     when(serverApiProvider.getServerApiOrThrow(any())).thenReturn(serverApi);
     when(serverApiProvider.getServerApi(any())).thenReturn(Optional.of(serverApi));
     branchesStorage = mock(ProjectBranchesStorage.class);
     var storageService = mock(StorageService.class);
     var sonarStorage = mock(SonarProjectStorage.class);
     var eventPublisher = mock(ApplicationEventPublisher.class);
-    var sonarProjectBranchesSynchronizationService = spy(new SonarProjectBranchesSynchronizationService(storageService, serverApiProvider
-      , eventPublisher));
+    var sonarProjectBranchesSynchronizationService = spy(new SonarProjectBranchesSynchronizationService(storageService, serverApiProvider, eventPublisher));
     doReturn(new ProjectBranches(Set.of(), "main")).when(sonarProjectBranchesSynchronizationService).getProjectBranches(any(), any(),
       any());
     when(storageService.binding(any())).thenReturn(sonarStorage);

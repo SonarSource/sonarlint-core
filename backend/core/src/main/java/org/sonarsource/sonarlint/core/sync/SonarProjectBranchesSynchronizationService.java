@@ -52,7 +52,7 @@ public class SonarProjectBranchesSynchronizationService {
   }
 
   public void sync(String connectionId, String sonarProjectKey, SonarLintCancelMonitor cancelMonitor) {
-    serverApiProvider.getServerApi(connectionId).ifPresent(serverApi -> {
+    serverApiProvider.tryGetConnection(connectionId).ifPresent( connection -> connection.withClientApi(serverApi -> {
       var branchesStorage = storageService.getStorageFacade().connection(connectionId).project(sonarProjectKey).branches();
       Optional<ProjectBranches> oldBranches = Optional.empty();
       if (branchesStorage.exists()) {
@@ -64,7 +64,7 @@ public class SonarProjectBranchesSynchronizationService {
         LOG.debug("Project branches changed for project '{}'", sonarProjectKey);
         eventPublisher.publishEvent(new SonarProjectBranchesChangedEvent(connectionId, sonarProjectKey));
       }
-    });
+    }));
   }
 
   public ProjectBranches getProjectBranches(ServerApi serverApi, String projectKey, SonarLintCancelMonitor cancelMonitor) {

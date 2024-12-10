@@ -21,16 +21,21 @@ package org.sonarsource.sonarlint.core;
 
 import java.net.URI;
 import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.connection.ConnectionManager;
+import org.sonarsource.sonarlint.core.connection.ServerConnectionWrapper;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
@@ -45,19 +50,21 @@ import static org.apache.commons.lang.StringUtils.removeEnd;
 
 @Named
 @Singleton
-public class ServerApiProvider {
+public class ServerApiProvider implements ConnectionManager {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final ConnectionConfigurationRepository connectionRepository;
   private final ConnectionAwareHttpClientProvider awareHttpClientProvider;
   private final HttpClientProvider httpClientProvider;
+  private final SonarLintRpcClient client;
   private final URI sonarCloudUri;
 
   public ServerApiProvider(ConnectionConfigurationRepository connectionRepository, ConnectionAwareHttpClientProvider awareHttpClientProvider, HttpClientProvider httpClientProvider,
-    SonarCloudActiveEnvironment sonarCloudActiveEnvironment) {
+    SonarCloudActiveEnvironment sonarCloudActiveEnvironment, SonarLintRpcClient client) {
     this.connectionRepository = connectionRepository;
     this.awareHttpClientProvider = awareHttpClientProvider;
     this.httpClientProvider = httpClientProvider;
+    this.client = client;
     this.sonarCloudUri = sonarCloudActiveEnvironment.getUri();
   }
 
@@ -108,4 +115,35 @@ public class ServerApiProvider {
       userPass -> httpClientProvider.getHttpClientWithPreemptiveAuth(userPass.getUsername(), userPass.getPassword()));
   }
 
+  @Override
+  public ServerConnectionWrapper getConnectionOrThrow(String connectionId) {
+    var serverApi = getServerApiOrThrow(connectionId);
+    return new ServerConnectionWrapper(connectionId, serverApi, client);
+  }
+
+  @Override
+  public Optional<ServerConnectionWrapper> tryGetConnection(String connectionId) {
+    return getServerApi(connectionId).map(serverApi -> new ServerConnectionWrapper(connectionId, serverApi, client));
+  }
+
+  @Override
+  public ServerApi getTransientConnection(String token,@Nullable String organization,  String baseUrl) {
+    return getServerApi(baseUrl, organization, token);
+  }
+
+  @Override
+  public Optional<ServerConnectionWrapper> getValidConnection(String connectionId) {
+    return tryGetConnection(connectionId).filter(ServerConnectionWrapper::isValid);
+  }
+
+  @Override
+  public void withValidConnection(String connectionId, Consumer<ServerConnectionWrapper> serverConnectionCall) {
+    // wrap the consumer call which is web API call and handle the connection state to avoid spamming the server with notifications
+    getValidConnection(connectionId).ifPresent(serverConnectionCall);
+  }
+
+  @Override
+  public <T> Optional<T> withValidConnectionAndReturn(String connectionId, Function<ServerConnectionWrapper, Optional<T>> serverConnectionCall) {
+    return Optional.empty();
+  }
 }
