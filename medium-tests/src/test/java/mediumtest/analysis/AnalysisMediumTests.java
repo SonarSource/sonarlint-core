@@ -229,8 +229,9 @@ class AnalysisMediumTests {
     var client = newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
+    server = newSonarQubeServer().start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId",
+      .withSonarQubeConnection("connectionId", server,
         storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "BLOCKER"))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
@@ -804,7 +805,7 @@ class AnalysisMediumTests {
     var connectionId = "connectionId";
     var projectKey2 = "projectKey-2";
     var connectionId2 = "connectionId-2";
-    var server = newSonarQubeServer().withSmartNotificationsSupported(false).start();
+    server = newSonarQubeServer().withSmartNotificationsSupported(false).start();
     backend = newBackend()
       .withSonarQubeConnection(connectionId, server,
         storage -> storage.withPlugin(TestPlugin.XML).withProject(projectKey,
@@ -874,7 +875,7 @@ class AnalysisMediumTests {
     var connectionId = "connectionId";
     var projectKey2 = "projectKey-2";
     var connectionId2 = "connectionId-2";
-    var server = newSonarQubeServer().withSmartNotificationsSupported(false).start();
+    server = newSonarQubeServer().withSmartNotificationsSupported(false).start();
     backend = newBackend()
       .withSonarQubeConnection(connectionId, server,
         storage -> storage.withPlugin(TestPlugin.XML).withProject(projectKey,

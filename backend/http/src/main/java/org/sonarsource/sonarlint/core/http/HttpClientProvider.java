@@ -136,15 +136,15 @@ public class HttpClientProvider {
   }
 
   public HttpClient getHttpClient() {
-    return new ApacheHttpClientAdapter(sharedClient, null, null);
+    return ApacheHttpClientAdapter.withoutCredentials(sharedClient);
   }
 
   public HttpClient getHttpClientWithPreemptiveAuth(String username, @Nullable String password) {
-    return new ApacheHttpClientAdapter(sharedClient, username, password);
+    return ApacheHttpClientAdapter.withUsernamePassword(sharedClient, username, password);
   }
 
-  public HttpClient getHttpClientWithPreemptiveAuth(String token) {
-    return new ApacheHttpClientAdapter(sharedClient, token, null);
+  public HttpClient getHttpClientWithPreemptiveAuth(String token, boolean shouldUseBearer) {
+    return ApacheHttpClientAdapter.withToken(sharedClient, token, shouldUseBearer);
   }
 
   public WebSocketClient getWebSocketClient(String token) {

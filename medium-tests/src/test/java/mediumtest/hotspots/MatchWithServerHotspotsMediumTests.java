@@ -82,8 +82,9 @@ class MatchWithServerHotspotsMediumTests {
 
   @Test
   void it_should_track_local_only_hotspots() {
+    server = newSonarQubeServer().start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId")
+      .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
@@ -103,8 +104,9 @@ class MatchWithServerHotspotsMediumTests {
 
   @Test
   void it_should_track_hotspots_for_unknown_branch() {
+    server = newSonarQubeServer().start();
     backend = newBackend()
-      .withSonarQubeConnection("connectionId")
+      .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 

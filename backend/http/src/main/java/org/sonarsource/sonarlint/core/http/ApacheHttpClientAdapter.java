@@ -47,7 +47,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 class ApacheHttpClientAdapter implements HttpClient {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-
+  private static final String AUTHORIZATION_HEADER = "Authorization";
   private static final Timeout STREAM_CONNECTION_REQUEST_TIMEOUT = Timeout.ofSeconds(10);
   private static final Timeout STREAM_CONNECTION_TIMEOUT = Timeout.ofMinutes(1);
   private final CloseableHttpAsyncClient apacheClient;
@@ -55,12 +55,14 @@ class ApacheHttpClientAdapter implements HttpClient {
   private final String usernameOrToken;
   @Nullable
   private final String password;
+  private final boolean shouldUseBearer;
   private boolean connected = false;
 
-  ApacheHttpClientAdapter(CloseableHttpAsyncClient apacheClient, @Nullable String usernameOrToken, @Nullable String password) {
+  private ApacheHttpClientAdapter(CloseableHttpAsyncClient apacheClient, @Nullable String usernameOrToken, @Nullable String password, boolean shouldUseBearer) {
     this.apacheClient = apacheClient;
     this.usernameOrToken = usernameOrToken;
     this.password = password;
+    this.shouldUseBearer = shouldUseBearer;
   }
 
   @Override
@@ -109,7 +111,11 @@ class ApacheHttpClientAdapter implements HttpClient {
       .build());
 
     if (usernameOrToken != null) {
-      request.setHeader("Authorization", basic(usernameOrToken, Objects.requireNonNullElse(password, "")));
+      if (shouldUseBearer) {
+        request.setHeader(AUTHORIZATION_HEADER, bearer(usernameOrToken));
+      } else {
+        request.setHeader(AUTHORIZATION_HEADER, basic(usernameOrToken, Objects.requireNonNullElse(password, "")));
+      }
     }
     request.setHeader("Accept", "text/event-stream");
     connected = false;
@@ -246,7 +252,11 @@ class ApacheHttpClientAdapter implements HttpClient {
   private CompletableFuture<Response> executeAsync(SimpleHttpRequest httpRequest) {
     try {
       if (usernameOrToken != null) {
-        httpRequest.setHeader("Authorization", basic(usernameOrToken, Objects.requireNonNullElse(password, "")));
+        if (shouldUseBearer) {
+          httpRequest.setHeader(AUTHORIZATION_HEADER, bearer(usernameOrToken));
+        } else {
+          httpRequest.setHeader(AUTHORIZATION_HEADER, basic(usernameOrToken, Objects.requireNonNullElse(password, "")));
+        }
       }
       return new CompletableFutureWrappingFuture(httpRequest);
     } catch (Exception e) {
@@ -258,6 +268,10 @@ class ApacheHttpClientAdapter implements HttpClient {
     var usernameAndPassword = String.format("%s:%s", username, password);
     var encoded = Base64.getEncoder().encodeToString(usernameAndPassword.getBytes(StandardCharsets.UTF_8));
     return String.format("Basic %s", encoded);
+  }
+
+  private static String bearer(String token) {
+    return String.format("Bearer %s", token);
   }
 
   public static class HttpAsyncRequest implements AsyncRequest {
@@ -275,7 +289,18 @@ class ApacheHttpClientAdapter implements HttpClient {
         // ignore errors
       }
     }
+  }
 
+  public static ApacheHttpClientAdapter withoutCredentials(CloseableHttpAsyncClient apacheClient) {
+    return new ApacheHttpClientAdapter(apacheClient, null, null, false);
+  }
+
+  public static ApacheHttpClientAdapter withUsernamePassword(CloseableHttpAsyncClient apacheClient, String username, @Nullable String password) {
+    return new ApacheHttpClientAdapter(apacheClient, username, password, false);
+  }
+
+  public static ApacheHttpClientAdapter withToken(CloseableHttpAsyncClient apacheClient, String token, boolean shouldUseBearer) {
+    return new ApacheHttpClientAdapter(apacheClient, token, null, shouldUseBearer);
   }
 
 }

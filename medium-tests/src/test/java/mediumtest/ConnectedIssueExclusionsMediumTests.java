@@ -40,6 +40,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 
+import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -73,8 +74,9 @@ class ConnectedIssueExclusionsMediumTests {
         new ClientFileDto(inputFile2.toUri(), baseDir.relativize(inputFile2), JAVA_MODULE_KEY, false, null, inputFile2, null, null, true)
       ))
       .build();
+    var server = newSonarQubeServer().start();
     backend = newBackend()
-      .withSonarQubeConnection(CONNECTION_ID, storage -> storage
+      .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage
         .withPlugin(TestPlugin.JAVA)
         .withProject("test-project")
         .withProject(JAVA_MODULE_KEY, project -> project

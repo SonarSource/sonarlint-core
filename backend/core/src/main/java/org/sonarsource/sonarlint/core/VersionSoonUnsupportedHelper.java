@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -99,7 +98,6 @@ public class VersionSoonUnsupportedHelper {
       }
     });
     oneConfigScopeIdPerConnection.forEach(this::queueCheckIfSoonUnsupported);
-
   }
 
   private void queueCheckIfSoonUnsupported(String connectionId, String configScopeId) {
@@ -109,7 +107,7 @@ public class VersionSoonUnsupportedHelper {
       try {
         var connection = connectionRepository.getConnectionById(connectionId);
         if (connection != null && connection.getKind() == ConnectionKind.SONARQUBE) {
-          var serverApi = serverApiProvider.getServerApi(connectionId);
+          var serverApi = serverApiProvider.getServerApiWithoutCredentials(connectionId);
           if (serverApi.isPresent()) {
             var version = synchronizationService.getServerConnection(connectionId, serverApi.get()).readOrSynchronizeServerVersion(serverApi.get(), cancelMonitor);
             var isCached = cacheConnectionIdPerVersion.containsKey(connectionId) && cacheConnectionIdPerVersion.get(connectionId).compareTo(version) == 0;

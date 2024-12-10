@@ -20,10 +20,8 @@
 package org.sonarsource.sonarlint.core.http;
 
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.concurrent.ExecutionException;
-import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;

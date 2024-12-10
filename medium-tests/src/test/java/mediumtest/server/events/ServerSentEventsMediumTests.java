@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 import mediumtest.fixtures.ServerFixture;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -92,6 +93,13 @@ class ServerSentEventsMediumTests {
   static WireMockExtension sonarServerMock = WireMockExtension.newInstance()
     .options(wireMockConfig().dynamicPort())
     .build();
+
+  @BeforeEach
+  void init() {
+    sonarServerMock.stubFor(get("/api/system/status")
+      .willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"10.8\",\"status\": " +
+        "\"UP\"}")));
+  }
 
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {

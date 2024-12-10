@@ -201,4 +201,5 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
   public int getEmbeddedServerPort() {
     return serverUsingJava.getEmbeddedServerPort();
   }
+
 }
