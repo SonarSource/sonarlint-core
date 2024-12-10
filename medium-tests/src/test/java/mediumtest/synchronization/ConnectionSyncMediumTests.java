@@ -147,13 +147,7 @@ class ConnectionSyncMediumTests {
       .build();
     when(client.getClientLiveDescription()).thenReturn(this.getClass().getName());
 
-    var introductionDate = Instant.now().truncatedTo(ChronoUnit.MILLIS);
-    var server = newSonarQubeServer()
-      .withProject("projectKey",
-        project -> project.withBranch("main",
-          branch -> branch.withTaintIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, introductionDate, new TextRange(1, 2, 3, 4),
-            RuleType.VULNERABILITY)))
-      .start();
+    var server = newSonarQubeServer().start();
 
     server.getMockServer().stubFor(get("/api/system/status").willReturn(aResponse().withStatus(status)));
 
