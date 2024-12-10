@@ -66,7 +66,7 @@ public class TaintSynchronizationService {
   }
 
   public void synchronizeTaintVulnerabilities(String connectionId, String projectKey, SonarLintCancelMonitor cancelMonitor) {
-    serverApiProvider.getServerApi(connectionId).ifPresent(serverApi -> {
+    serverApiProvider.withValidConnection(connectionId, serverApi -> {
       var allScopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, projectKey);
       var allScopesByOptBranch = allScopes.stream()
         .collect(groupingBy(b -> branchTrackingService.awaitEffectiveSonarProjectBranch(b.getConfigScopeId())));

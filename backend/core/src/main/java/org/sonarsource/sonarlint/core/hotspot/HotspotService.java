@@ -128,8 +128,8 @@ public class HotspotService {
   public CheckStatusChangePermittedResponse checkStatusChangePermitted(String connectionId, String hotspotKey, SonarLintCancelMonitor cancelMonitor) {
     // fixme add getConnectionByIdOrThrow
     var connection = connectionRepository.getConnectionById(connectionId);
-    var serverApi = serverApiProvider.getServerApiOrThrow(connectionId);
-    var r = serverApi.hotspot().show(hotspotKey, cancelMonitor);
+    var r = serverApiProvider.getConnectionOrThrow(connectionId)
+      .withClientApiAndReturn(serverApi -> serverApi.hotspot().show(hotspotKey, cancelMonitor));
     var allowedStatuses = HotspotReviewStatus.allowedStatusesOn(connection.getKind());
     // canChangeStatus is false when the 'Administer Hotspots' permission is missing
     // normally the 'Browse' permission is also required, but we assume it's present as the client knows the hotspot key
@@ -151,14 +151,11 @@ public class HotspotService {
       LOG.debug("No binding for config scope {}", configurationScopeId);
       return;
     }
-    var connectionOpt = serverApiProvider.getServerApi(effectiveBindingOpt.get().getConnectionId());
-    if (connectionOpt.isEmpty()) {
-      LOG.debug("Connection {} is gone", effectiveBindingOpt.get().getConnectionId());
-      return;
-    }
-    connectionOpt.get().hotspot().changeStatus(hotspotKey, newStatus, cancelMonitor);
-    saveStatusInStorage(effectiveBindingOpt.get(), hotspotKey, newStatus);
-    telemetryService.hotspotStatusChanged();
+    serverApiProvider.withValidConnection(effectiveBindingOpt.get().getConnectionId(), serverApi -> {
+      serverApi.hotspot().changeStatus(hotspotKey, newStatus, cancelMonitor);
+      saveStatusInStorage(effectiveBindingOpt.get(), hotspotKey, newStatus);
+      telemetryService.hotspotStatusChanged();
+    });
   }
 
   private void saveStatusInStorage(Binding binding, String hotspotKey, HotspotReviewStatus newStatus) {

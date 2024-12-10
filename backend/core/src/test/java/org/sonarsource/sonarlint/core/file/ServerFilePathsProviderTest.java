@@ -41,6 +41,7 @@ import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.connection.ServerConnection;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi;
 
@@ -52,6 +53,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static testutils.TestUtils.mockServerApiProvider;
 
 class ServerFilePathsProviderTest {
   @RegisterExtension
@@ -62,7 +64,7 @@ class ServerFilePathsProviderTest {
   public static final String PROJECT_KEY = "projectKey";
 
   private Path cacheDirectory;
-  private final ServerApiProvider serverApiProvider = mock(ServerApiProvider.class);
+  private final ServerApiProvider serverApiProvider = mockServerApiProvider();
   private final ServerApi serverApi_A = mock(ServerApi.class);
   private final ServerApi serverApi_B = mock(ServerApi.class);
   private final SonarLintCancelMonitor cancelMonitor =mock(SonarLintCancelMonitor.class);
@@ -77,6 +79,12 @@ class ServerFilePathsProviderTest {
 
     when(serverApiProvider.getServerApi(CONNECTION_A)).thenReturn(Optional.of(serverApi_A));
     when(serverApiProvider.getServerApi(CONNECTION_B)).thenReturn(Optional.of(serverApi_B));
+    var serverConnectionA = new ServerConnection(CONNECTION_A, serverApi_A, null);
+    var serverConnectionB = new ServerConnection(CONNECTION_B, serverApi_B, null);
+    doReturn(Optional.of(serverConnectionA)).when(serverApiProvider).getValidConnection(CONNECTION_A);
+    doReturn(Optional.of(serverConnectionB)).when(serverApiProvider).getValidConnection(CONNECTION_B);
+    doReturn(Optional.of(serverConnectionA)).when(serverApiProvider).tryGetConnection(CONNECTION_A);
+    doReturn(Optional.of(serverConnectionB)).when(serverApiProvider).tryGetConnection(CONNECTION_B);
     when(serverApi_A.component()).thenReturn(componentApi_A);
     when(serverApi_B.component()).thenReturn(componentApi_B);
     mockServerFilePaths(componentApi_A, "pathA", "pathB");
