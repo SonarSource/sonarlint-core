@@ -19,25 +19,28 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
 
+import java.nio.file.Path;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
-public class LanguageSpecificRequirements {
-  private final JsTsRequirementsDto jsTsRequirements;
-  private final OmnisharpRequirementsDto omnisharpRequirements;
+public class JsTsRequirementsDto {
+  @Nullable
+  private final Path clientNodeJsPath;
+  @Nullable
+  private final Path bundlePath;
 
-  public LanguageSpecificRequirements(@Nullable JsTsRequirementsDto jsTsRequirements, @Nullable OmnisharpRequirementsDto omnisharpRequirements) {
-    this.jsTsRequirements = jsTsRequirements;
-    this.omnisharpRequirements = omnisharpRequirements;
+  public JsTsRequirementsDto(@Nullable Path clientNodeJsPath, @Nullable Path bundlePath) {
+    this.clientNodeJsPath = clientNodeJsPath;
+    this.bundlePath = bundlePath;
   }
 
   @CheckForNull
-  public JsTsRequirementsDto getJsTsRequirements() {
-    return jsTsRequirements;
+  public Path getClientNodeJsPath() {
+    return clientNodeJsPath;
   }
 
   @CheckForNull
-  public OmnisharpRequirementsDto getOmnisharpRequirements() {
-    return omnisharpRequirements;
+  public Path getBundlePath() {
+    return bundlePath;
   }
 }

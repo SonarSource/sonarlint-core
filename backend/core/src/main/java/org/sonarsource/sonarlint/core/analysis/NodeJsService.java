@@ -53,7 +53,8 @@ public class NodeJsService {
 
   public NodeJsService(InitializeParams initializeParams, ApplicationEventPublisher eventPublisher) {
     var languageSpecificRequirements = initializeParams.getLanguageSpecificRequirements();
-    this.clientNodeJsPath = languageSpecificRequirements == null ? null : languageSpecificRequirements.getClientNodeJsPath();
+    this.clientNodeJsPath = languageSpecificRequirements == null || languageSpecificRequirements.getJsTsRequirements() == null ?
+      null : languageSpecificRequirements.getJsTsRequirements().getClientNodeJsPath();
     this.eventPublisher = eventPublisher;
   }
 

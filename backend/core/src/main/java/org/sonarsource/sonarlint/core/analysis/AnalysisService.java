@@ -137,6 +137,7 @@ import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.getVSCCha
 public class AnalysisService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private static final String SONAR_INTERNAL_BUNDLE_PATH_ANALYSIS_PROP = "sonar.js.internal.bundlePath";
 
   private final SonarLintRpcClient client;
   private final ConfigurationRepository configurationRepository;
@@ -158,6 +159,7 @@ public class AnalysisService {
   private final OpenFilesRepository openFilesRepository;
   private final ClientFileSystemService clientFileSystemService;
   private boolean automaticAnalysisEnabled;
+  private final Path esLintBridgeServerPath;
   private final ScheduledExecutorService scheduledAnalysisExecutor = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "SonarLint Analysis Executor"));
 
   public AnalysisService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
@@ -185,6 +187,8 @@ public class AnalysisService {
     this.openFilesRepository = openFilesRepository;
     this.automaticAnalysisEnabled = initializeParams.isAutomaticAnalysisEnabled();
     this.clientFileSystemService = clientFileSystemService;
+    this.esLintBridgeServerPath = initializeParams.getLanguageSpecificRequirements() != null && initializeParams.getLanguageSpecificRequirements().getJsTsRequirements() != null ?
+      initializeParams.getLanguageSpecificRequirements().getJsTsRequirements().getBundlePath() : null;
   }
 
   public List<String> getSupportedFilePatterns(String configScopeId) {
@@ -249,6 +253,10 @@ public class AnalysisService {
     var bindingOpt = configurationRepository.getEffectiveBinding(configScopeId);
     var activeNodeJs = nodeJsService.getActiveNodeJs();
     var userAnalysisProperties = userAnalysisPropertiesRepository.getUserProperties(configScopeId);
+    // if client (IDE) has specified a bundle path, use it
+    if (this.esLintBridgeServerPath != null) {
+      userAnalysisProperties.put(SONAR_INTERNAL_BUNDLE_PATH_ANALYSIS_PROP, this.esLintBridgeServerPath.toString());
+    }
     var nodeJsDetailsDto = activeNodeJs == null ? null : new NodeJsDetailsDto(activeNodeJs.getPath(), activeNodeJs.getVersion().toString());
     return bindingOpt.map(binding -> {
       var serverProperties = storageService.binding(binding).analyzerConfiguration().read().getSettings().getAll();

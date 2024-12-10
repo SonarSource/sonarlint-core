@@ -64,6 +64,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientCons
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.JsTsRequirementsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSpecificRequirements;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarCloudAlternativeEnvironmentDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SslConfigurationDto;
@@ -149,6 +150,7 @@ public class SonarLintBackendFixture {
     private boolean enableDataflowBugDetection;
 
     private Path clientNodeJsPath;
+    private Path eslintBridgeServerBundlePath;
     private String sonarCloudUrl;
     private String sonarCloudWebSocketsUrl;
     private Duration responseTimeout;
@@ -157,6 +159,7 @@ public class SonarLintBackendFixture {
     private String keyStoreType;
     private boolean automaticAnalysisEnabled = true;
     private TelemetryMigrationDto telemetryMigration;
+    private LanguageSpecificRequirements languageSpecificRequirements;
 
     public SonarLintBackendBuilder withSonarQubeConnection() {
       return withSonarQubeConnection("connectionId");
@@ -397,6 +400,18 @@ public class SonarLintBackendFixture {
 
     public SonarLintBackendBuilder withClientNodeJsPath(Path path) {
       clientNodeJsPath = path;
+      languageSpecificRequirements = new LanguageSpecificRequirements(new JsTsRequirementsDto(clientNodeJsPath, null), null);
+      return this;
+    }
+
+    public SonarLintBackendBuilder withEslintBridgeServerBundlePath(Path path) {
+      eslintBridgeServerBundlePath = path;
+      languageSpecificRequirements = new LanguageSpecificRequirements(new JsTsRequirementsDto(null, eslintBridgeServerBundlePath), null);
+      return this;
+    }
+
+    public SonarLintBackendBuilder withNoLanguageSpecificRequirements() {
+      languageSpecificRequirements = null;
       return this;
     }
 
@@ -469,7 +484,7 @@ public class SonarLintBackendFixture {
             featureFlags,
             storageRoot, workDir, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
             enabledLanguages, extraEnabledLanguagesInConnectedMode, disabledPluginKeysForAnalysis, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
-            standaloneConfigByKey, isFocusOnNewCode, new LanguageSpecificRequirements(clientNodeJsPath, null), automaticAnalysisEnabled, telemetryMigration))
+            standaloneConfigByKey, isFocusOnNewCode, languageSpecificRequirements, automaticAnalysisEnabled, telemetryMigration))
           .get();
         sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
         return sonarLintBackend;
