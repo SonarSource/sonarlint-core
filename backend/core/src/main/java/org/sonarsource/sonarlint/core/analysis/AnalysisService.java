@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.analysis;
 
 import com.google.common.util.concurrent.MoreExecutors;
+import io.sentry.Sentry;
 import java.net.URI;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
@@ -674,6 +675,8 @@ public class AnalysisService {
         } else {
           LOG.error("Error during analysis", error);
         }
+        var testException = new Exception();
+        Sentry.captureException(testException);
       });
   }
 
