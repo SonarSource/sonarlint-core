@@ -171,6 +171,9 @@ public class ServerApiHelper {
     }
     var obj = JsonParser.parseString(content).getAsJsonObject();
     var errors = obj.getAsJsonArray("errors");
+    if (errors == null) {
+      return null;
+    }
     List<String> errorMessages = new ArrayList<>();
     for (JsonElement e : errors) {
       errorMessages.add(e.getAsJsonObject().get("msg").getAsString());

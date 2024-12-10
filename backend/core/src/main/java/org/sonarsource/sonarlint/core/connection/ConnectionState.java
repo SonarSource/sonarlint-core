@@ -20,5 +20,5 @@
 package org.sonarsource.sonarlint.core.connection;
 
 public enum ConnectionState {
-  ACTIVE, INVALID_CREDENTIALS, MISSING_PERMISSION, NETWORK_ERROR
+  NEVER_USED, ACTIVE, INVALID_CREDENTIALS, MISSING_PERMISSION, NETWORK_ERROR
 }

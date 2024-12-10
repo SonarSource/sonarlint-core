@@ -147,9 +147,9 @@ class ConnectionSyncMediumTests {
       .build();
     when(client.getClientLiveDescription()).thenReturn(this.getClass().getName());
 
-    var server = newSonarQubeServer().start();
-
-    server.getMockServer().stubFor(get("/api/system/status").willReturn(aResponse().withStatus(status)));
+    var server = newSonarQubeServer()
+      .withResponseCode(status)
+      .start();
 
     backend = newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage.withPlugin(TestPlugin.JAVA))
@@ -159,8 +159,6 @@ class ConnectionSyncMediumTests {
       .withFullSynchronization()
       .build(client);
     await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Error during synchronization"));
-
-    server.registerSystemApiResponses();
 
     backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams(CONNECTION_ID));
 

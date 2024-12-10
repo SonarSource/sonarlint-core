@@ -101,7 +101,7 @@ public class SmartNotifications {
     boundScopeByConnectionAndSonarProject.forEach((connectionId, boundScopesByProject) -> {
       var connection = connectionRepository.getConnectionById(connectionId);
       if (connection != null && !connection.isDisableNotifications() && !shouldSkipPolling(connection)) {
-        serverApiProvider.tryGetConnection(connectionId).ifPresent(serverConnection ->
+        serverApiProvider.withValidConnection(connectionId, serverConnection ->
           serverConnection.withClientApi(serverApi -> manageNotificationsForConnection(serverApi, boundScopesByProject, connection, cancelMonitor)));
       }
     });

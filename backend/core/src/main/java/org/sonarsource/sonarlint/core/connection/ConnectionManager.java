@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.connection;
 
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 
@@ -28,6 +29,7 @@ public interface ConnectionManager {
   ServerConnectionWrapper getConnectionOrThrow(String connectionId);
   Optional<ServerConnectionWrapper> tryGetConnection(String connectionId);
   ServerApi getTransientConnection(String token, @Nullable String organization, String baseUrl); // or return TransientConnection
-  ServerConnectionWrapper getValidConnection(String connectionId) throws ServerConnectionInvalidException;
-  void withValidConnection(String connectionId, Consumer<ServerConnectionWrapper> serverConnectionConsumer) throws ServerConnectionInvalidException;
+  Optional<ServerConnectionWrapper> getValidConnection(String connectionId);
+  void withValidConnection(String connectionId, Consumer<ServerConnectionWrapper> serverConnectionCall);
+  <T> Optional<T> withValidConnectionAndReturn(String connectionId, Function<ServerConnectionWrapper, Optional<T>> serverConnectionCall);
 }

@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core;
 import java.net.URI;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -30,7 +31,6 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.connection.ConnectionManager;
 import org.sonarsource.sonarlint.core.connection.ServerConnectionWrapper;
-import org.sonarsource.sonarlint.core.connection.ServerConnectionInvalidException;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
@@ -132,12 +132,18 @@ public class ServerApiProvider implements ConnectionManager {
   }
 
   @Override
-  public ServerConnectionWrapper getValidConnection(String connectionId) throws ServerConnectionInvalidException {
-    return null;
+  public Optional<ServerConnectionWrapper> getValidConnection(String connectionId) {
+    return tryGetConnection(connectionId).filter(ServerConnectionWrapper::isValid);
   }
 
   @Override
-  public void withValidConnection(String connectionId, Consumer<ServerConnectionWrapper> serverConnectionConsumer) throws ServerConnectionInvalidException {
-    // wrap the consumer call which is web API call and handle the connection state to avoid spaming the server with notifications
+  public void withValidConnection(String connectionId, Consumer<ServerConnectionWrapper> serverConnectionCall) {
+    // wrap the consumer call which is web API call and handle the connection state to avoid spamming the server with notifications
+    getValidConnection(connectionId).ifPresent(serverConnectionCall);
+  }
+
+  @Override
+  public <T> Optional<T> withValidConnectionAndReturn(String connectionId, Function<ServerConnectionWrapper, Optional<T>> serverConnectionCall) {
+    return Optional.empty();
   }
 }

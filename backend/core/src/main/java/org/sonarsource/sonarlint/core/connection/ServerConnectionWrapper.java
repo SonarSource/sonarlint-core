@@ -32,7 +32,7 @@ public class ServerConnectionWrapper {
   private final String connectionId;
   private final ServerApi serverApi;
   private final SonarLintRpcClient client;
-  private ConnectionState state;
+  private ConnectionState state = ConnectionState.NEVER_USED;
 
   public ServerConnectionWrapper(String connectionId, ServerApi serverApi, SonarLintRpcClient client) {
     this.connectionId = connectionId;
@@ -44,13 +44,20 @@ public class ServerConnectionWrapper {
     return serverApi.isSonarCloud();
   }
 
+  public boolean isValid() {
+    return state == ConnectionState.NEVER_USED || state == ConnectionState.ACTIVE;
+  }
+
   public <T> T withClientApiAndReturn(Function<ServerApi, T> serverApiConsumer) {
     try {
       var result = serverApiConsumer.apply(serverApi);
       state = ConnectionState.ACTIVE;
       return result;
-    } catch (ForbiddenException | UnauthorizedException e) {
+    } catch (ForbiddenException e) {
       state = ConnectionState.INVALID_CREDENTIALS;
+      client.invalidToken(new InvalidTokenParams(connectionId));
+    } catch (UnauthorizedException e) {
+      state = ConnectionState.MISSING_PERMISSION;
       client.invalidToken(new InvalidTokenParams(connectionId));
     }
     return null;
@@ -60,8 +67,11 @@ public class ServerConnectionWrapper {
     try {
       serverApiConsumer.accept(serverApi);
       state = ConnectionState.ACTIVE;
-    } catch (ForbiddenException | UnauthorizedException e) {
+    } catch (ForbiddenException e) {
       state = ConnectionState.INVALID_CREDENTIALS;
+      client.invalidToken(new InvalidTokenParams(connectionId));
+    } catch (UnauthorizedException e) {
+      state = ConnectionState.MISSING_PERMISSION;
       client.invalidToken(new InvalidTokenParams(connectionId));
     }
   }
@@ -70,8 +80,12 @@ public class ServerConnectionWrapper {
     try {
       serverApiConsumer.accept(serverApi);
       state = ConnectionState.ACTIVE;
-    } catch (ForbiddenException | UnauthorizedException e) {
+    } catch (ForbiddenException e) {
       state = ConnectionState.INVALID_CREDENTIALS;
+      client.invalidToken(new InvalidTokenParams(connectionId));
+      throw e;
+    } catch (UnauthorizedException e) {
+      state = ConnectionState.MISSING_PERMISSION;
       client.invalidToken(new InvalidTokenParams(connectionId));
       throw e;
     }
