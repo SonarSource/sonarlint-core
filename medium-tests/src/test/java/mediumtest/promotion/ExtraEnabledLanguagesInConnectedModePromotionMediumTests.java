@@ -38,6 +38,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 
+import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.mockito.ArgumentMatchers.anySet;
@@ -83,9 +84,10 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
     var fakeClient = newFakeClient()
       .withInitialFs("configScopeId", tempDir, List.of(new ClientFileDto(abapFile.toUri(), tempDir.relativize(abapFile), "configScopeId", false, null, abapFile, null, null, true)))
       .build();
+    var server = newSonarQubeServer().start();
     backend = newBackend()
       .withExtraEnabledLanguagesInConnectedMode(Language.ABAP)
-      .withSonarQubeConnection("connectionId", storage -> storage.withProject("projectKey"))
+      .withSonarQubeConnection("connectionId", server, storage -> storage.withProject("projectKey"))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withEmbeddedServer()
       .withTelemetryEnabled()

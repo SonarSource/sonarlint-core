@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core;
 
 import java.net.URI;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -47,9 +48,15 @@ class ServerApiProviderTests {
   @Test
   void getServerApi_for_sonarqube() {
     var endpointParams = mock(EndpointParams.class);
+    when(endpointParams.getBaseUrl()).thenReturn("");
     when(connectionRepository.getEndpointParams("sq1")).thenReturn(Optional.of(endpointParams));
     var httpClient = mock(HttpClient.class);
     when(awareHttpClientProvider.getHttpClient("sq1", false)).thenReturn(httpClient);
+    when(awareHttpClientProvider.getHttpClient()).thenReturn(httpClient);
+    var httpResponse = mock(HttpClient.Response.class);
+    when(httpResponse.isSuccessful()).thenReturn(true);
+    when(httpResponse.bodyAsString()).thenReturn("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}");
+    when(httpClient.getAsync("/api/system/status")).thenReturn(CompletableFuture.completedFuture(httpResponse));
 
     var serverApi = underTest.getServerApi("sq1");
 
@@ -60,6 +67,11 @@ class ServerApiProviderTests {
   void getServerApi_for_sonarqube_notConnected() {
     var httpClient = mock(HttpClient.class);
     when(httpClientProvider.getHttpClientWithPreemptiveAuth("token", false)).thenReturn(httpClient);
+    when(awareHttpClientProvider.getHttpClient()).thenReturn(httpClient);
+    var httpResponse = mock(HttpClient.Response.class);
+    when(httpResponse.isSuccessful()).thenReturn(true);
+    when(httpResponse.bodyAsString()).thenReturn("{\"id\": \"20160308094653\",\"version\": \"10.0\",\"status\": \"UP\"}");
+    when(httpClient.getAsync("sq_notConnected/api/system/status")).thenReturn(CompletableFuture.completedFuture(httpResponse));
 
     var serverApi = underTest.getServerApi("sq_notConnected", null, "token");
     assertThat(serverApi.isSonarCloud()).isFalse();
@@ -68,9 +80,15 @@ class ServerApiProviderTests {
   @Test
   void getServerApi_for_sonarcloud() {
     var endpointParams = mock(EndpointParams.class);
+    when(endpointParams.getBaseUrl()).thenReturn("");
     when(connectionRepository.getEndpointParams("sc1")).thenReturn(Optional.of(endpointParams));
     var httpClient = mock(HttpClient.class);
     when(awareHttpClientProvider.getHttpClient("sc1", true)).thenReturn(httpClient);
+    when(awareHttpClientProvider.getHttpClient()).thenReturn(httpClient);
+    var httpResponse = mock(HttpClient.Response.class);
+    when(httpResponse.isSuccessful()).thenReturn(true);
+    when(httpResponse.bodyAsString()).thenReturn("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}");
+    when(httpClient.getAsync("/api/system/status")).thenReturn(CompletableFuture.completedFuture(httpResponse));
 
     var serverApi = underTest.getServerApi("sc1");
 

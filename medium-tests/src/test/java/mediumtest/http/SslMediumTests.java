@@ -97,6 +97,9 @@ class SslMediumTests {
 
     @BeforeEach
     void prepare() {
+      sonarcloudMock.stubFor(get("/api/system/status")
+        .willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"8.0\",\"status\": " +
+          "\"UP\"}")));
       sonarcloudMock.stubFor(get("/api/organizations/search.protobuf?organizations=myOrg&ps=500&p=1")
         .willReturn(aResponse().withStatus(200)
           .withResponseBody(protobufBody(Organizations.SearchWsResponse.newBuilder()
@@ -180,6 +183,9 @@ class SslMediumTests {
 
     @BeforeEach
     void prepare() {
+      sonarcloudMock.stubFor(get("/api/system/status")
+        .willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"8.0\",\"status\": " +
+          "\"UP\"}")));
       sonarcloudMock.stubFor(get("/api/organizations/search.protobuf?organizations=myOrg&ps=500&p=1")
         .willReturn(aResponse().withStatus(200)
           .withResponseBody(protobufBody(Organizations.SearchWsResponse.newBuilder()

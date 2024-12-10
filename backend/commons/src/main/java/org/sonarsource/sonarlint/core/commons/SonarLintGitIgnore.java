@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.commons;
 
-import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Path;
 import org.eclipse.jgit.ignore.IgnoreNode;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;

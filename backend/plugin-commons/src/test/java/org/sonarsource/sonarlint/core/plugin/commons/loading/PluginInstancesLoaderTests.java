@@ -41,7 +41,6 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.groups.Tuple.tuple;
-import static org.mockito.Mockito.mock;
 
 class PluginInstancesLoaderTests {
   @RegisterExtension

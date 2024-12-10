@@ -47,8 +47,6 @@ class OrganizationApiTests {
   void testListUserOrganizationWithMoreThan20Pages() {
     var underTest = new OrganizationApi(new ServerApiHelper(mockServer.endpointParams("myOrg"), HttpClientProvider.forTesting().getHttpClient()));
 
-    mockServer.addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}");
-
     for (var i = 0; i < 21; i++) {
       mockOrganizationsPage(i + 1, 10500);
     }
@@ -60,10 +58,6 @@ class OrganizationApiTests {
 
   @Test
   void should_get_organization_details() {
-    mockServer.addStringResponse("/api/system/status", "{" +
-      "\"status\": \"UP\"," +
-      "\"version\": \"20.0.0\"" +
-      "}");
     mockServer.addProtobufResponse("/api/organizations/search.protobuf?organizations=org%3Akey&ps=500&p=1", SearchWsResponse.newBuilder()
       .addOrganizations(Organization.newBuilder()
         .setKey("orgKey")

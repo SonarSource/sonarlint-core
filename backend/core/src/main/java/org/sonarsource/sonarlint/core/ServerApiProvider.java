@@ -63,6 +63,15 @@ public class ServerApiProvider {
     this.sonarCloudUri = sonarCloudActiveEnvironment.getUri();
   }
 
+  public Optional<ServerApi> getServerApiWithoutCredentials(String connectionId) {
+    var params = connectionRepository.getEndpointParams(connectionId);
+    if (params.isEmpty()) {
+      LOG.debug("Connection '{}' is gone", connectionId);
+      return Optional.empty();
+    }
+    return Optional.of(new ServerApi(params.get(), awareHttpClientProvider.getHttpClient()));
+  }
+
   public Optional<ServerApi> getServerApi(String connectionId) {
     var params = connectionRepository.getEndpointParams(connectionId);
     if (params.isEmpty()) {
@@ -74,6 +83,9 @@ public class ServerApiProvider {
   }
 
   private boolean checkIfBearerIsSupported(EndpointParams params) {
+    if (params.isSonarCloud()) {
+      return true;
+    }
     var httpClient = awareHttpClientProvider.getHttpClient();
     var cancelMonitor = new SonarLintCancelMonitor();
     var serverApi = new ServerApi(params, httpClient);
@@ -84,7 +96,8 @@ public class ServerApiProvider {
 
   public ServerApi getServerApi(String baseUrl, @Nullable String organization, String token) {
     var params = new EndpointParams(baseUrl, removeEnd(sonarCloudUri.toString(), "/").equals(removeEnd(baseUrl, "/")), organization);
-    return new ServerApi(params, httpClientProvider.getHttpClientWithPreemptiveAuth(token, true));
+    var isBearerSupported = checkIfBearerIsSupported(params);
+    return new ServerApi(params, httpClientProvider.getHttpClientWithPreemptiveAuth(token, isBearerSupported));
   }
 
   public ServerApi getServerApiOrThrow(String connectionId) {

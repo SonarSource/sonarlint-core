@@ -30,6 +30,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.Tra
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -136,7 +137,8 @@ class ConnectionValidatorMediumTests {
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withStatus(400)));
 
-    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarQubeConnectionDto(serverMock.baseUrl(), Either.forLeft(new TokenDto(null))))).join();
+    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarQubeConnectionDto(serverMock.baseUrl(),
+      Either.forRight(new UsernamePasswordDto("foo", "bar"))))).join();
 
     assertThat(response.isSuccess()).isFalse();
     assertThat(response.getMessage()).isEqualTo("Error 400 on " + serverMock.baseUrl() + "/api/system/status");
@@ -147,7 +149,8 @@ class ConnectionValidatorMediumTests {
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withBody("{\"id\": }")));
 
-    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarQubeConnectionDto(serverMock.baseUrl(), Either.forLeft(new TokenDto(null))))).join();
+    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarQubeConnectionDto(serverMock.baseUrl(),
+      Either.forRight(new UsernamePasswordDto("foo", "bar"))))).join();
 
     assertThat(response.isSuccess()).isFalse();
     assertThat(response.getMessage()).isEqualTo("Unable to parse server infos from: {\"id\": }");

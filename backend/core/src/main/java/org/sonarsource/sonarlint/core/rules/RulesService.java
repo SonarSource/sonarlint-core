@@ -48,6 +48,7 @@ import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.mode.SeverityModeService;
 import org.sonarsource.sonarlint.core.reporting.FindingReportingService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -93,18 +94,20 @@ public class RulesService {
   private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfig = new ConcurrentHashMap<>();
   private FindingReportingService findingReportingService;
   private final SeverityModeService severityModeService;
+  private final ConnectionConfigurationRepository connectionConfigurationRepository;
 
   @Inject
   public RulesService(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository,
-    StorageService storageService, InitializeParams params,
-    ApplicationEventPublisher eventPublisher, SeverityModeService severityModeService) {
+    StorageService storageService, InitializeParams params, ApplicationEventPublisher eventPublisher,
+    SeverityModeService severityModeService, ConnectionConfigurationRepository connectionConfigurationRepository) {
     this(serverApiProvider, configurationRepository, rulesRepository, storageService, eventPublisher,
-      params.getStandaloneRuleConfigByKey(), severityModeService);
+      params.getStandaloneRuleConfigByKey(), severityModeService, connectionConfigurationRepository);
   }
 
   RulesService(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository,
     StorageService storageService, ApplicationEventPublisher eventPublisher,
-    @Nullable Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey, SeverityModeService severityModeService) {
+    @Nullable Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey, SeverityModeService severityModeService,
+    ConnectionConfigurationRepository connectionConfigurationRepository) {
     this.serverApiProvider = serverApiProvider;
     this.configurationRepository = configurationRepository;
     this.rulesRepository = rulesRepository;
@@ -114,6 +117,7 @@ public class RulesService {
     if (standaloneRuleConfigByKey != null) {
       this.standaloneRuleConfig.putAll(standaloneRuleConfigByKey);
     }
+    this.connectionConfigurationRepository = connectionConfigurationRepository;
   }
 
   public EffectiveRuleDetailsDto getEffectiveRuleDetails(String configurationScopeId, String ruleKey, @Nullable String contextKey,
@@ -139,8 +143,9 @@ public class RulesService {
 
   public RuleDetails getActiveRuleForBinding(String ruleKey, Binding binding, SonarLintCancelMonitor cancelMonitor) {
     var connectionId = binding.getConnectionId();
-    var serverApi = serverApiProvider.getServerApi(connectionId);
-    if (serverApi.isEmpty()) {
+
+    var endpointParams = connectionConfigurationRepository.getEndpointParams(connectionId);
+    if (endpointParams.isEmpty()) {
       throw unknownConnection(connectionId);
     }
 

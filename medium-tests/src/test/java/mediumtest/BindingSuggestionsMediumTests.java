@@ -31,6 +31,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -75,6 +76,13 @@ class BindingSuggestionsMediumTests {
     .build();
 
   private SonarLintRpcServer backend;
+
+  @BeforeEach
+  void init() {
+    sonarqubeMock.stubFor(get("/api/system/status")
+      .willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"10.8\",\"status\": " +
+        "\"UP\"}")));
+  }
 
   @AfterEach
   void stop() throws ExecutionException, InterruptedException, TimeoutException {

@@ -140,7 +140,7 @@ class EffectiveRulesMediumTests {
   void it_should_return_rule_loaded_from_server_plugin_when_project_is_bound_and_project_storage_does_not_exist() {
     backend = newBackend()
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .withSonarQubeConnection("connectionId", storage -> storage.withPlugin(TestPlugin.JAVA))
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withPlugin(TestPlugin.JAVA))
       .withEnabledLanguageInStandaloneMode(JAVA)
       .build();
 
@@ -462,7 +462,7 @@ class EffectiveRulesMediumTests {
   @Test
   void it_should_split_security_hotspots_rule_description_and_adapt_title() {
     backend = newBackend()
-      .withSonarQubeConnection("connectionId")
+      .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .withSecurityHotspotsEnabled()
