@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Commons
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,25 +17,26 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.monitoring;
+package org.sonarsource.sonarlint.core.commons.monitoring;
 
 import io.sentry.Sentry;
+import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.commons.lang3.SystemUtils;
 import org.sonarsource.sonarlint.core.commons.SonarLintCoreVersion;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 
 @Named
 @Singleton
 public class MonitoringService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private InitializeParams initializeParams;
-  private DogfoodEnvironmentDetectionService dogfoodEnvDetectionService;
+  private final MonitoringInitializationParams initializeParams;
+  private final DogfoodEnvironmentDetectionService dogfoodEnvDetectionService;
 
-  public MonitoringService(InitializeParams initializeParams, DogfoodEnvironmentDetectionService dogfoodEnvDetectionService) {
+  @Inject
+  public MonitoringService(MonitoringInitializationParams initializeParams, DogfoodEnvironmentDetectionService dogfoodEnvDetectionService) {
     this.initializeParams = initializeParams;
     this.dogfoodEnvDetectionService = dogfoodEnvDetectionService;
 
@@ -43,10 +44,10 @@ public class MonitoringService {
   }
 
   public void init() {
-    var productKey = initializeParams.getTelemetryConstantAttributes().getProductKey();
+    var productKey = initializeParams.getProductKey();
     var environment = "dogfood";
-    var sonarQubeForIDEVersion = initializeParams.getTelemetryConstantAttributes().getProductVersion();
-    var ideVersion = initializeParams.getTelemetryConstantAttributes().getIdeVersion();
+    var sonarQubeForIDEVersion = initializeParams.getSonarQubeForIdeVersion();
+    var ideVersion = initializeParams.getIdeVersion();
     var releaseVersion = SonarLintCoreVersion.get();
     var platform = SystemUtils.OS_NAME;
     var architecture = SystemUtils.OS_ARCH;

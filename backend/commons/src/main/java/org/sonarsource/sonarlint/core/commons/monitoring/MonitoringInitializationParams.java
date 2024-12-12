@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Commons
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,18 +17,28 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.monitoring;
+package org.sonarsource.sonarlint.core.commons.monitoring;
 
-import javax.inject.Named;
-import javax.inject.Singleton;
-import org.apache.commons.lang3.SystemUtils;
+public class MonitoringInitializationParams {
+  private final String productKey;
+  private final String sonarQubeForIdeVersion;
+  private final String ideVersion;
 
-@Named
-@Singleton
-public class DogfoodEnvironmentDetectionService {
-  private static final String SONARSOURCE_DOGFOODING_ENV_VAR_KEY = "SONARSOURCE_DOGFOODING";
+  public MonitoringInitializationParams(String productKey, String sonarQubeForIdeVersion, String ideVersion) {
+    this.productKey = productKey;
+    this.sonarQubeForIdeVersion = sonarQubeForIdeVersion;
+    this.ideVersion = ideVersion;
+  }
 
-  public boolean isDogfoodEnvironment() {
-    return "1".equals(SystemUtils.getEnvironmentVariable(SONARSOURCE_DOGFOODING_ENV_VAR_KEY, "0"));
+  public String getProductKey() {
+    return productKey;
+  }
+
+  public String getSonarQubeForIdeVersion() {
+    return sonarQubeForIdeVersion;
+  }
+
+  public String getIdeVersion() {
+    return ideVersion;
   }
 }

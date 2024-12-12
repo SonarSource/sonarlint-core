@@ -50,6 +50,9 @@ import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.analysis.UserAnalysisPropertiesRepository;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
+import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
+import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringInitializationParams;
+import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.embedded.server.GeneratedUserTokenHandler;
@@ -76,8 +79,6 @@ import org.sonarsource.sonarlint.core.issue.IssueService;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.mode.SeverityModeService;
-import org.sonarsource.sonarlint.core.monitoring.DogfoodEnvironmentDetectionService;
-import org.sonarsource.sonarlint.core.monitoring.MonitoringService;
 import org.sonarsource.sonarlint.core.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
@@ -239,6 +240,13 @@ public class SonarLintSpringAppConfig {
     ProxySelector proxySelector, CredentialsProvider proxyCredentialsProvider) {
     return new HttpClientProvider(params.getClientConstantInfo().getUserAgent(), adapt(params.getHttpConfiguration(), sonarlintUserHome), askClientCertificatePredicate,
       proxySelector, proxyCredentialsProvider);
+  }
+
+  @Bean
+  MonitoringInitializationParams provideMonitoringInitParams(InitializeParams params) {
+    return new MonitoringInitializationParams(params.getTelemetryConstantAttributes().getProductKey(),
+      params.getTelemetryConstantAttributes().getProductVersion(),
+      params.getTelemetryConstantAttributes().getIdeVersion());
   }
 
   private static HttpConfig adapt(HttpConfigurationDto dto, @Nullable Path sonarlintUserHome) {
