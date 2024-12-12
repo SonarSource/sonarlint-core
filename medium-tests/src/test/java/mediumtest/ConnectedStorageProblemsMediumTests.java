@@ -33,6 +33,7 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 
+import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
 import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
 import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -58,8 +59,9 @@ class ConnectedStorageProblemsMediumTests {
         new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)
       ))
       .build();
+    var server = newSonarQubeServer().start();
     var backend = newBackend()
-      .withSonarQubeConnection(CONNECTION_ID, storage -> storage
+      .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage
         .withPlugin(TestPlugin.JAVA)
         .withPlugin(SonarLanguage.JS.getPluginKey(), createFakePlugin(), "hash")
         .withProject(CONFIG_SCOPE_ID,

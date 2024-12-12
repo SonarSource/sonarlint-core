@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

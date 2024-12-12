@@ -39,6 +39,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.Tra
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
 import static mediumtest.fixtures.ServerFixture.newSonarCloudServer;
 import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
@@ -193,7 +194,7 @@ class ConnectionSetupMediumTests {
     backend = newBackend().build(fakeClient);
 
     var connectionResponse = backend.getConnectionService()
-      .validateConnection(new ValidateConnectionParams(new TransientSonarQubeConnectionDto("http://notexists", Either.forLeft(new TokenDto("foo"))))).get();
+      .validateConnection(new ValidateConnectionParams(new TransientSonarQubeConnectionDto("http://notexists", Either.forRight(new UsernamePasswordDto("foo", "bar"))))).get();
 
     assertThat(connectionResponse.isSuccess()).isFalse();
     assertThat(connectionResponse.getMessage()).contains("notexists");

@@ -42,6 +42,8 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
   @Override
   public void beforeEach(ExtensionContext context) {
     start();
+    // Most test cases have a call to this endpoint when initializing the data, to decide whether to use Bearer or Basic scheme
+    addStringResponse("/api/system/status", "{\"id\": \"20160308094653\",\"version\": \"99.9\",\"status\": \"UP\"}");
   }
 
   public void start() {

@@ -76,6 +76,13 @@ class ProxyMediumTests {
 
   @BeforeEach
   void configureProxy(TestInfo info) {
+    sonarqubeMock.stubFor(get("/api/system/status")
+      .willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"10.8\",\"status\": " +
+        "\"UP\"}")));
+    proxyMock.stubFor(get("/api/system/status")
+      .willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"10.8\",\"status\": " +
+        "\"UP\"}")));
+
     if (info.getTags().contains(PROXY_AUTH_ENABLED)) {
       proxyMock.stubFor(get(urlMatching("/api/rules/.*"))
         .inScenario("Proxy Auth")
