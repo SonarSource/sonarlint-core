@@ -64,11 +64,6 @@ public class MonitoringService {
         sentryOptions.setTag("platform", platform);
         sentryOptions.setTag("architecture", architecture);
         sentryOptions.addInAppInclude("org.sonarsource.sonarlint");
-
-        sentryOptions.setBeforeSend((event, hint) -> {
-          LOG.debug("Sending Sentry event" + event);
-          return event;
-        });
       });
     }
   }

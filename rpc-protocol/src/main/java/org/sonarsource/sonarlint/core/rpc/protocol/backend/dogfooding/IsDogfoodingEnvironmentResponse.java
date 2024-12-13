@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Commons
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2024 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,18 +17,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons.monitoring;
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.dogfooding;
 
-import javax.inject.Named;
-import javax.inject.Singleton;
-import org.apache.commons.lang3.SystemUtils;
+public class IsDogfoodingEnvironmentResponse {
+  private final boolean isDogfoodingEnvironment;
 
-@Named
-@Singleton
-public class DogfoodEnvironmentDetectionService {
-  public static final String SONARSOURCE_DOGFOODING_ENV_VAR_KEY = "SONARSOURCE_DOGFOODING";
+  public IsDogfoodingEnvironmentResponse(boolean isDogfoodingEnvironment) {
+    this.isDogfoodingEnvironment = isDogfoodingEnvironment;
+  }
 
-  public boolean isDogfoodEnvironment() {
-    return "1".equals(SystemUtils.getEnvironmentVariable(SONARSOURCE_DOGFOODING_ENV_VAR_KEY, "0"));
+  public boolean isDogfoodingEnvironment() {
+    return isDogfoodingEnvironment;
   }
 }
