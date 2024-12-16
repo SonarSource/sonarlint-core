@@ -65,8 +65,13 @@ class RulesApiTests {
             .setSeverity("MINOR")
             .setType(Common.RuleType.VULNERABILITY)
             .setLang(SonarLanguage.PYTHON.getSonarLanguageKey())
-            .setHtmlDesc("htmlDesc")
             .setHtmlNote("htmlNote")
+            .setDescriptionSections(Rules.Rule.DescriptionSections.newBuilder()
+              .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
+                .setKey("default")
+                .setContent("desc")
+                .build())
+              .build())
             .setCleanCodeAttribute(Common.CleanCodeAttribute.COMPLETE)
             .setImpacts(Rules.Rule.Impacts.newBuilder().addImpacts(Common.Impact.newBuilder().setSeverity(Common.ImpactSeverity.HIGH).setSoftwareQuality(Common.SoftwareQuality.MAINTAINABILITY).build()).build())
             .build())
@@ -76,8 +81,9 @@ class RulesApiTests {
 
     var rule = rulesApi.getRule("java:S1234", new SonarLintCancelMonitor()).get();
 
-    assertThat(rule).extracting("name", "severity", "type", "language", "htmlDesc", "htmlNote", "cleanCodeAttribute", "impacts")
-      .contains("name", IssueSeverity.MINOR, RuleType.VULNERABILITY, SonarLanguage.PYTHON, "htmlDesc", "htmlNote", CleanCodeAttribute.COMPLETE, Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.HIGH));
+    assertThat(rule).extracting("name", "severity", "type", "language", "htmlNote", "cleanCodeAttribute", "impacts")
+      .contains("name", IssueSeverity.MINOR, RuleType.VULNERABILITY, SonarLanguage.PYTHON, "htmlNote", CleanCodeAttribute.COMPLETE, Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.HIGH));
+    assertThat(rule.getDescriptionSections().get(0).getHtmlContent()).isEqualTo("desc");
   }
 
   @Test
@@ -89,7 +95,6 @@ class RulesApiTests {
             .setSeverity("MINOR")
             .setType(Common.RuleType.VULNERABILITY)
             .setLang(SonarLanguage.PYTHON.getSonarLanguageKey())
-            .setHtmlDesc("htmlDesc")
             .setDescriptionSections(Rules.Rule.DescriptionSections.newBuilder()
               .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder().setKey("sectionKey").setContent("htmlContent").build())
               .addDescriptionSections(
@@ -106,8 +111,8 @@ class RulesApiTests {
 
     var rule = rulesApi.getRule("java:S1234", new SonarLintCancelMonitor()).get();
 
-    assertThat(rule).extracting("name", "severity", "type", "language", "htmlDesc", "htmlNote", "cleanCodeAttribute", "impacts")
-      .contains("name", IssueSeverity.MINOR, RuleType.VULNERABILITY, SonarLanguage.PYTHON, "htmlDesc", "htmlNote", CleanCodeAttribute.CONVENTIONAL, Map.of(SoftwareQuality.RELIABILITY, ImpactSeverity.LOW));
+    assertThat(rule).extracting("name", "severity", "type", "language","htmlNote", "cleanCodeAttribute", "impacts")
+      .contains("name", IssueSeverity.MINOR, RuleType.VULNERABILITY, SonarLanguage.PYTHON, "htmlNote", CleanCodeAttribute.CONVENTIONAL, Map.of(SoftwareQuality.RELIABILITY, ImpactSeverity.LOW));
 
     var sections = rule.getDescriptionSections();
     assertThat(sections).hasSize(2);
@@ -131,8 +136,13 @@ class RulesApiTests {
             .setSeverity("MAJOR")
             .setType(Common.RuleType.VULNERABILITY)
             .setLang(SonarLanguage.PYTHON.getSonarLanguageKey())
-            .setHtmlDesc("htmlDesc")
             .setHtmlNote("htmlNote")
+            .setDescriptionSections(Rules.Rule.DescriptionSections.newBuilder()
+              .addDescriptionSections(Rules.Rule.DescriptionSection.newBuilder()
+                .setKey("default")
+                .setContent("desc")
+                  .build())
+              .build())
             .build())
         .build());
 
@@ -140,8 +150,9 @@ class RulesApiTests {
 
     var rule = rulesApi.getRule("java:S1234", new SonarLintCancelMonitor()).get();
 
-    assertThat(rule).extracting("name", "severity", "type", "language", "htmlDesc", "htmlNote")
-      .contains("name", IssueSeverity.MAJOR, RuleType.VULNERABILITY, SonarLanguage.PYTHON, "htmlDesc", "htmlNote");
+    assertThat(rule).extracting("name", "severity", "type", "language", "htmlNote")
+      .contains("name", IssueSeverity.MAJOR, RuleType.VULNERABILITY, SonarLanguage.PYTHON, "htmlNote");
+    assertThat(rule.getDescriptionSections().get(0).getHtmlContent()).isEqualTo("desc");
   }
 
   @Test
