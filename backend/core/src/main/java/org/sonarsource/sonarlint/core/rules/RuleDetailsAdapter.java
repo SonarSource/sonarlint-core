@@ -104,8 +104,13 @@ public class RuleDetailsAdapter {
 
   private static RuleMonolithicDescriptionDto transformMonolithicDescription(RuleDetails ruleDetails) {
     var htmlSnippets = new ArrayList<String>();
-    htmlSnippets.add(ruleDetails.getHtmlDescription());
-    htmlSnippets.add(ruleDetails.getExtendedDescription());
+    if (!ruleDetails.getDescriptionSectionsByKey().isEmpty()) {
+      // The rule has only `default` section
+      htmlSnippets.addAll(ruleDetails.getDescriptionSectionsByKey().get("default").stream().map(RuleDetails.DescriptionSection::getHtmlContent).collect(Collectors.toList()));
+    } else {
+      htmlSnippets.add(ruleDetails.getHtmlDescription());
+      htmlSnippets.add(ruleDetails.getExtendedDescription());
+    }
     htmlSnippets.add(getCleanCodePrinciplesContent(ruleDetails.getCleanCodePrincipleKeys()));
     return new RuleMonolithicDescriptionDto(concat(htmlSnippets));
   }
