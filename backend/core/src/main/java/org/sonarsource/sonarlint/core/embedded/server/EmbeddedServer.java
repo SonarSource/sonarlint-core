@@ -33,8 +33,8 @@ import org.apache.hc.core5.http.impl.bootstrap.ServerBootstrap;
 import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.io.CloseMode;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 
 @Named
 @Singleton
@@ -93,6 +93,7 @@ public class EmbeddedServer {
           .register("/sonarlint/api/hotspots/show", showHotspotRequestHandler)
           .register("/sonarlint/api/issues/show", showIssueRequestHandler)
           .register("/sonarlint/api/fix/show", showFixSuggestionRequestHandler)
+          .addFilterLast("CSP", new CspFilter())
           .create();
         startedServer.start();
         port = triedPort;

@@ -37,6 +37,8 @@ import static org.mockito.Mockito.when;
 
 class EmbeddedServerMediumTests {
 
+  private SonarLintTestRpcServer backend;
+
   @AfterEach
   void tearDown() throws ExecutionException, InterruptedException {
     backend.shutdown().get();
@@ -47,14 +49,16 @@ class EmbeddedServerMediumTests {
     var fakeClient = newFakeClient().build();
     backend = newBackend().withEmbeddedServer().withClientName("ClientName").build(fakeClient);
 
+    var embeddedServerPort = backend.getEmbeddedServerPort();
     var request = HttpRequest.newBuilder()
-      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/status"))
+      .uri(URI.create("http://localhost:" + embeddedServerPort + "/sonarlint/api/status"))
       .GET().build();
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
     assertThat(response)
       .extracting(HttpResponse::statusCode, HttpResponse::body)
       .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"\",\"needsToken\":true,\"capabilities\":{\"canOpenFixSuggestion\":false}}");
+    assertCspResponseHeader(response, embeddedServerPort);
   }
 
   @Test
@@ -64,8 +68,9 @@ class EmbeddedServerMediumTests {
 
     backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").build(fakeClient);
 
+    var embeddedServerPort = backend.getEmbeddedServerPort();
     var request = HttpRequest.newBuilder()
-      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/status"))
+      .uri(URI.create("http://localhost:" + embeddedServerPort + "/sonarlint/api/status"))
       .header("Origin", "https://sonar")
       .GET().build();
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
@@ -73,6 +78,7 @@ class EmbeddedServerMediumTests {
     assertThat(response)
       .extracting(HttpResponse::statusCode, HttpResponse::body)
       .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"\",\"needsToken\":true,\"capabilities\":{\"canOpenFixSuggestion\":false}}");
+    assertCspResponseHeader(response, embeddedServerPort);
   }
 
   @Test
@@ -82,8 +88,9 @@ class EmbeddedServerMediumTests {
 
     backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").build(fakeClient);
 
+    var embeddedServerPort = backend.getEmbeddedServerPort();
     var request = HttpRequest.newBuilder()
-      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/status"))
+      .uri(URI.create("http://localhost:" + embeddedServerPort + "/sonarlint/api/status"))
       .header("Origin", "https://sonar.my")
       .GET().build();
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
@@ -91,6 +98,13 @@ class EmbeddedServerMediumTests {
     assertThat(response)
       .extracting(HttpResponse::statusCode, HttpResponse::body)
       .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"WorkspaceTitle\",\"needsToken\":false,\"capabilities\":{\"canOpenFixSuggestion\":false}}");
+
+    assertCspResponseHeader(response, embeddedServerPort);
+  }
+
+  private void assertCspResponseHeader(HttpResponse<String> response, int embeddedServerPort) {
+    assertThat(response.headers().map().get("Content-Security-Policy-Report-Only"))
+      .contains("connect-src 'self' http://localhost:" + embeddedServerPort + ";");
   }
 
   @Test
@@ -111,6 +125,7 @@ class EmbeddedServerMediumTests {
       .extracting("access-control-allow-methods", "access-control-allow-origin", "access-control-allow-private-network")
       .containsExactly(List.of("GET, POST, OPTIONS"), List.of("http://sonar.my"), List.of("true"));
     assertThat(response.statusCode()).isEqualTo(HttpStatus.OK_200);
+    assertThat(response.headers().map()).doesNotContainKey("Content-Security-Policy-Report-Only");
   }
 
   @Test
@@ -120,12 +135,13 @@ class EmbeddedServerMediumTests {
 
     backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").build(fakeClient);
 
+    var embeddedServerPort = backend.getEmbeddedServerPort();
     var requestToken = HttpRequest.newBuilder()
-      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
+      .uri(URI.create("http://localhost:" + embeddedServerPort + "/sonarlint/api/token"))
       .header("Origin", "https://sonar.my")
       .GET().build();
     var requestStatus = HttpRequest.newBuilder()
-      .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/status"))
+      .uri(URI.create("http://localhost:" + embeddedServerPort + "/sonarlint/api/status"))
       .header("Origin", "https://sonar.my")
       .DELETE().build();
     var responseToken = java.net.http.HttpClient.newHttpClient().send(requestToken, HttpResponse.BodyHandlers.ofString());
@@ -133,7 +149,7 @@ class EmbeddedServerMediumTests {
 
     assertThat(responseToken.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST_400);
     assertThat(responseStatus.statusCode()).isEqualTo(HttpStatus.BAD_REQUEST_400);
+    assertThat(responseToken.headers().map()).doesNotContainKey("Content-Security-Policy-Report-Only");
+    assertThat(responseStatus.headers().map()).doesNotContainKey("Content-Security-Policy-Report-Only");
   }
-
-  private SonarLintTestRpcServer backend;
 }
