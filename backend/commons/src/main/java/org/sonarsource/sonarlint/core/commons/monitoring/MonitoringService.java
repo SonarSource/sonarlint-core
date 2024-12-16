@@ -44,6 +44,11 @@ public class MonitoringService {
   }
 
   public void init() {
+    if (!initializeParams.isEnabled()) {
+      LOG.info("Monitoring is disabled by feature flag.");
+      return;
+    }
+
     var productKey = initializeParams.getProductKey();
     var environment = "dogfood";
     var sonarQubeForIDEVersion = initializeParams.getSonarQubeForIdeVersion();

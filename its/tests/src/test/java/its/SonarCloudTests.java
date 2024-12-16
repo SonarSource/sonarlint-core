@@ -170,7 +170,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
     backend = clientLauncher.getServerProxy();
     var languages = Set.of(JAVA, PHP, JS, PYTHON, HTML, RUBY, KOTLIN, SCALA, XML);
-    var featureFlags = new FeatureFlagsDto(false, true, true, false, true, true, false, true, false, true);
+    var featureFlags = new FeatureFlagsDto(false, true, true, false, true, true, false, true, false, true, false);
     backend.initialize(
       new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(), new SonarCloudAlternativeEnvironmentDto(SONARCLOUD_STAGING_URL, SONARCLOUD_WEBSOCKETS_STAGING_URL), featureFlags, sonarUserHome.resolve("storage"),
         sonarUserHome.resolve("work"), emptySet(), PluginLocator.getEmbeddedPluginsByKeyForTests(), languages, emptySet(), emptySet(), emptyList(),

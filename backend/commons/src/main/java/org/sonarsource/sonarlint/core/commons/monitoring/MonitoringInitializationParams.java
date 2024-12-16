@@ -20,14 +20,20 @@
 package org.sonarsource.sonarlint.core.commons.monitoring;
 
 public class MonitoringInitializationParams {
+  private final boolean enabled;
   private final String productKey;
   private final String sonarQubeForIdeVersion;
   private final String ideVersion;
 
-  public MonitoringInitializationParams(String productKey, String sonarQubeForIdeVersion, String ideVersion) {
+  public MonitoringInitializationParams(boolean enabled, String productKey, String sonarQubeForIdeVersion, String ideVersion) {
+    this.enabled = enabled;
     this.productKey = productKey;
     this.sonarQubeForIdeVersion = sonarQubeForIdeVersion;
     this.ideVersion = ideVersion;
+  }
+
+  public boolean isEnabled() {
+    return enabled;
   }
 
   public String getProductKey() {

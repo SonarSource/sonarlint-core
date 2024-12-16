@@ -244,7 +244,8 @@ public class SonarLintSpringAppConfig {
 
   @Bean
   MonitoringInitializationParams provideMonitoringInitParams(InitializeParams params) {
-    return new MonitoringInitializationParams(params.getTelemetryConstantAttributes().getProductKey(),
+    return new MonitoringInitializationParams(params.getFeatureFlags().isEnableMonitoring(),
+      params.getTelemetryConstantAttributes().getProductKey(),
       params.getTelemetryConstantAttributes().getProductVersion(),
       params.getTelemetryConstantAttributes().getIdeVersion());
   }
