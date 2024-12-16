@@ -109,8 +109,8 @@ public class RuleDetailsAdapter {
       htmlSnippets.addAll(ruleDetails.getDescriptionSectionsByKey().get("default").stream().map(RuleDetails.DescriptionSection::getHtmlContent).collect(Collectors.toList()));
     } else {
       htmlSnippets.add(ruleDetails.getHtmlDescription());
-      htmlSnippets.add(ruleDetails.getExtendedDescription());
     }
+    htmlSnippets.add(ruleDetails.getExtendedDescription());
     htmlSnippets.add(getCleanCodePrinciplesContent(ruleDetails.getCleanCodePrincipleKeys()));
     return new RuleMonolithicDescriptionDto(concat(htmlSnippets));
   }
