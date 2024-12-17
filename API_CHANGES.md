@@ -1,17 +1,26 @@
+# 10.13
+
+## New features
+
+* Introduce `org.sonarsource.sonarlint.core.rpc.protocol.backend.dogfooding.DogfoodingRpcService.isDogfoodingEnvironment` method to allow clients to know if it is running in a dogfooding environment
+  * Will return `true` if `SONARSOURCE_DOGFOODING` environment variable is set and equals `"1"`
+  * Will return `false` in all other cases
+* Introduce opt-in monitoring via Sentry
+  * The monitoring service is toggled by new feature flag `enableMonitoring` in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto`
+  * As a first step, the monitoring service is only initialized in dogfooding environments
+  * All logging events sent to the client at the `ERROR` level are reported as monitoring events
+
 # 10.12
 
 ## Breaking changes
 
-* Adapt org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams.languageSpecificRequirements to accept org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.JsTsRequirementsDto instead of clientNodeJsPath
+* Adapt `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams.languageSpecificRequirements to accept org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.JsTsRequirementsDto` instead of `clientNodeJsPath`
 
 ## New features
 
 * Introduce `bundlePath` initialization parameter in `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.JsTsRequirementsDto` to allow clients to provide the path to the unzipped es-lint bridge bundle
   * The path will be passed down to the Js/Ts/CSS analyzer and will indicate that the analyzer does not need to unzip the bundle itself, thus reducing the usage of the `.sonarlint` temporary storage
   * Provide `null` to keep the previous behavior
-* Introduce `org.sonarsource.sonarlint.core.rpc.protocol.backend.dogfooding.DogfoodingRpcService.isDogfoodingEnvironment` method to allow clients to know if it is running in a dogfooding environment
-  * Will return `true` if `SONARSOURCE_DOGFOOD` environment variable is set and equals "1"
-  * Will return `false` in all other cases
 
 # 10.11
 
