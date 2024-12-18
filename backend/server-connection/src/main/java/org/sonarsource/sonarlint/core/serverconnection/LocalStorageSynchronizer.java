@@ -54,9 +54,9 @@ public class LocalStorageSynchronizer {
     var version = storage.serverInfo().read().orElseThrow().getVersion();
     // On SonarQube server 10.4+ and SonarQube Cloud, we need to use the server's text analyzer
     // to support commercial rules (SQC and SQS 10.8+ DE+) and custom secrets (SQS 10.4+ EE+)
-    var useSecretsFromServer = serverApi.isSonarCloud()
-      || version.compareToIgnoreQualifier(CUSTOM_SECRETS_MIN_SQ_VERSION) >= 0;
-    return pluginsSynchronizer.synchronize(serverApi, useSecretsFromServer, cancelMonitor);
+    var useSecretsFromServer = serverApi.isSonarCloud() || version.compareToIgnoreQualifier(CUSTOM_SECRETS_MIN_SQ_VERSION) >= 0;
+    var usesIaCEnterprise = serverApi.isSonarCloud() || version.compareToIgnoreQualifier(PluginsSynchronizer.ENTERPRISE_IAC_MIN_SQ_VERSION) >= 0;
+    return pluginsSynchronizer.synchronize(serverApi, useSecretsFromServer, usesIaCEnterprise, cancelMonitor);
   }
 
   private static AnalyzerSettingsUpdateSummary diffAnalyzerConfiguration(AnalyzerConfiguration original, AnalyzerConfiguration updated) {
