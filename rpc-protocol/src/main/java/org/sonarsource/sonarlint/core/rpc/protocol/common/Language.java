@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.rpc.protocol.common;
 public enum Language {
 
   ABAP,
+  ANSIBLE,
   APEX,
   AZURERESOURCEMANAGER,
   C,
