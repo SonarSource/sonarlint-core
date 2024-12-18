@@ -68,7 +68,7 @@ public enum SonarLanguage {
   KUBERNETES("kubernetes", "iac", new String[0], "sonar.kubernetes.file.suffixes"),
   TERRAFORM("terraform", "iac", new String[]{".tf"}, "sonar.terraform.file.suffixes"),
   AZURERESOURCEMANAGER("azureresourcemanager", "iac", new String[]{".bicep"}, Constants.NO_PUBLIC_PROPERTY_PROVIDED_FOR_THIS_LANGUAGE),
-  ANSIBLE("ansible", "iac", new String[0], "sonar.ansible.file.suffixes");
+  ANSIBLE("ansible", "iacenterprise", new String[0], "sonar.ansible.file.suffixes");
   private final String sonarLanguageKey;
 
   /**
