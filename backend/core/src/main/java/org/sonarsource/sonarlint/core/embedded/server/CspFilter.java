@@ -23,6 +23,7 @@ import java.io.IOException;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpException;
+import org.apache.hc.core5.http.HttpStatus;
 import org.apache.hc.core5.http.io.HttpFilterChain;
 import org.apache.hc.core5.http.io.HttpFilterHandler;
 import org.apache.hc.core5.http.protocol.HttpContext;
@@ -40,7 +41,7 @@ class CspFilter implements HttpFilterHandler {
 
       @Override
       public void submitResponse(ClassicHttpResponse response) throws HttpException, IOException {
-        if (response.getCode() >= 400) {
+        if (response.getCode() >= HttpStatus.SC_BAD_REQUEST) {
           responseTrigger.submitResponse(response);
           return;
         }
