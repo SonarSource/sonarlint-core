@@ -61,7 +61,7 @@ class CspFilterTest {
   void it_should_add_csp_header_to_the_response_when_response_is_successful() throws HttpException, IOException {
     doAnswer(invocation -> {
       HttpFilterChain.ResponseTrigger trigger = invocation.getArgument(1);
-      ClassicHttpResponse mockResponse = new BasicClassicHttpResponse(200);
+      var mockResponse = new BasicClassicHttpResponse(200);
       trigger.submitResponse(mockResponse);
       trigger.sendInformation(mockResponse);
       return null;
@@ -69,9 +69,9 @@ class CspFilterTest {
 
     cspFilter.handle(mockRequest, mockResponseTrigger, mockContext, mockFilterChain);
 
-    ArgumentCaptor<ClassicHttpResponse> captor = ArgumentCaptor.forClass(ClassicHttpResponse.class);
+    var captor = ArgumentCaptor.forClass(ClassicHttpResponse.class);
     verify(mockResponseTrigger).submitResponse(captor.capture());
-    ClassicHttpResponse response = captor.getValue();
+    var response = captor.getValue();
     var cspHeader = response.getHeader("Content-Security-Policy-Report-Only").getValue();
 
     assertThat(cspHeader).isEqualTo("connect-src 'self' http://localhost:64120;");
@@ -83,16 +83,16 @@ class CspFilterTest {
   void it_should_not_add_csp_header_to_the_response_when_response_is_unsuccessful(String responseCode) throws HttpException, IOException {
     doAnswer(invocation -> {
       HttpFilterChain.ResponseTrigger trigger = invocation.getArgument(1);
-      ClassicHttpResponse mockResponse = new BasicClassicHttpResponse(Integer.parseInt(responseCode));
+      var mockResponse = new BasicClassicHttpResponse(Integer.parseInt(responseCode));
       trigger.submitResponse(mockResponse);
       return null;
     }).when(mockFilterChain).proceed(eq(mockRequest), any(), eq(mockContext));
 
     cspFilter.handle(mockRequest, mockResponseTrigger, mockContext, mockFilterChain);
 
-    ArgumentCaptor<ClassicHttpResponse> captor = ArgumentCaptor.forClass(ClassicHttpResponse.class);
+    var captor = ArgumentCaptor.forClass(ClassicHttpResponse.class);
     verify(mockResponseTrigger).submitResponse(captor.capture());
-    ClassicHttpResponse response = captor.getValue();
+    var response = captor.getValue();
     assertThat(response.getHeader("Content-Security-Policy-Report-Only")).isNull();
   }
 }
