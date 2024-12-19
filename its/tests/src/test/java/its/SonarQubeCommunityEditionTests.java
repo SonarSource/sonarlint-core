@@ -111,7 +111,7 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
     backend = clientLauncher.getServerProxy();
     try {
-      var featureFlags = new FeatureFlagsDto(true, true, true, false, true, true, false, true, false, true);
+      var featureFlags = new FeatureFlagsDto(true, true, true, false, true, true, false, true, false, true, false);
       var enabledLanguages = Set.of(JAVA);
       backend.initialize(
           new InitializeParams(IT_CLIENT_INFO,

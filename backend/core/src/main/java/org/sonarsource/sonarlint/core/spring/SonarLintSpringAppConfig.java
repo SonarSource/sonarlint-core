@@ -45,11 +45,14 @@ import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.TokenGeneratorHelper;
 import org.sonarsource.sonarlint.core.VersionSoonUnsupportedHelper;
 import org.sonarsource.sonarlint.core.analysis.AnalysisEngineCache;
-import org.sonarsource.sonarlint.core.analysis.UserAnalysisPropertiesRepository;
 import org.sonarsource.sonarlint.core.analysis.AnalysisService;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
+import org.sonarsource.sonarlint.core.analysis.UserAnalysisPropertiesRepository;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
+import org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService;
+import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringInitializationParams;
+import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
 import org.sonarsource.sonarlint.core.embedded.server.AwaitingUserTokenFutureRepository;
 import org.sonarsource.sonarlint.core.embedded.server.EmbeddedServer;
 import org.sonarsource.sonarlint.core.embedded.server.GeneratedUserTokenHandler;
@@ -191,7 +194,9 @@ import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_S
   FindingReportingService.class,
   PreviouslyRaisedFindingsRepository.class,
   UserAnalysisPropertiesRepository.class,
-  OpenFilesRepository.class
+  OpenFilesRepository.class,
+  DogfoodEnvironmentDetectionService.class,
+  MonitoringService.class
 })
 public class SonarLintSpringAppConfig {
 
@@ -235,6 +240,14 @@ public class SonarLintSpringAppConfig {
     ProxySelector proxySelector, CredentialsProvider proxyCredentialsProvider) {
     return new HttpClientProvider(params.getClientConstantInfo().getUserAgent(), adapt(params.getHttpConfiguration(), sonarlintUserHome), askClientCertificatePredicate,
       proxySelector, proxyCredentialsProvider);
+  }
+
+  @Bean
+  MonitoringInitializationParams provideMonitoringInitParams(InitializeParams params) {
+    return new MonitoringInitializationParams(params.getFeatureFlags().isEnableMonitoring(),
+      params.getTelemetryConstantAttributes().getProductKey(),
+      params.getTelemetryConstantAttributes().getProductVersion(),
+      params.getTelemetryConstantAttributes().getIdeVersion());
   }
 
   private static HttpConfig adapt(HttpConfigurationDto dto, @Nullable Path sonarlintUserHome) {
