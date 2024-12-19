@@ -25,8 +25,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import mediumtest.fixtures.SonarLintTestRpcServer;
-import mediumtest.fixtures.TestPlugin;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -39,18 +38,19 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParam
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
-import testutils.AnalysisUtils;
+import utils.AnalysisUtils;
+import utils.TestPlugin;
 
-import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
-import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
-import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
+import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static testutils.AnalysisUtils.getPublishedIssues;
+import static utils.AnalysisUtils.getPublishedIssues;
 
 class ClientFileExclusionsMediumTests {
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
@@ -100,13 +100,10 @@ class ClientFileExclusionsMediumTests {
     var publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
     assertThat(publishedIssues)
       .containsOnlyKeys(fileUri)
-      .hasEntrySatisfying(fileUri, issues -> {
-        assertThat(issues)
-          .extracting(RaisedIssueDto::getPrimaryMessage)
-          .containsExactly("Replace \"pom.version\" with \"project.version\".");
-      });
+      .hasEntrySatisfying(fileUri, issues -> assertThat(issues)
+        .extracting(RaisedIssueDto::getPrimaryMessage)
+        .containsExactly("Replace \"pom.version\" with \"project.version\"."));
   }
-
 
   @Test
   void it_should_not_analyze_non_user_defined_file_on_open(@TempDir Path baseDir) {
@@ -143,11 +140,9 @@ class ClientFileExclusionsMediumTests {
     var publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
     assertThat(publishedIssues)
       .containsOnlyKeys(fileUri)
-      .hasEntrySatisfying(fileUri, issues -> {
-        assertThat(issues)
-          .extracting(RaisedIssueDto::getPrimaryMessage)
-          .containsExactly("Replace \"pom.version\" with \"project.version\".");
-      });
+      .hasEntrySatisfying(fileUri, issues -> assertThat(issues)
+        .extracting(RaisedIssueDto::getPrimaryMessage)
+        .containsExactly("Replace \"pom.version\" with \"project.version\"."));
   }
 
   @Test

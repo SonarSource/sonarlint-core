@@ -20,14 +20,14 @@
 package mediumtest.analysis;
 
 import java.util.concurrent.ExecutionException;
-import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetSupportedFilePatternsParams;
+import utils.TestPlugin;
 
-import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
-import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 
@@ -69,9 +69,7 @@ class SupportedFilePatternsMediumTests {
     var client = newFakeClient().withMatchedBranch("configScopeId", "branchName").build();
     backend = newBackend()
       .withSonarQubeConnection("connectionId", storage -> storage.withPlugin(TestPlugin.JAVA)
-        .withProject("projectKey", (projectStorageBuilder -> {
-          projectStorageBuilder.withSetting("sonar.java.file.suffixes", ".foo, .bar");
-        })))
+        .withProject("projectKey", project -> project.withSetting("sonar.java.file.suffixes", ".foo, .bar")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withEnabledLanguageInStandaloneMode(JAVA)
       .build(client);
