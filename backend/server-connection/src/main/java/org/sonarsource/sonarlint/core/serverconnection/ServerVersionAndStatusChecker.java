@@ -29,7 +29,7 @@ import org.sonarsource.sonarlint.core.serverapi.system.SystemApi;
 public class ServerVersionAndStatusChecker {
 
   private static final String MIN_SQ_VERSION = "9.9";
-  private static final String MIN_SQ_VERSION_SUPPORTING_BEARER = "10.0";
+  private static final String MIN_SQ_VERSION_SUPPORTING_BEARER = "10.4";
   private final SystemApi systemApi;
   private final boolean isSonarCloud;
 

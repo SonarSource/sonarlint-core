@@ -119,7 +119,7 @@ class AuthenticationMediumTests {
   }
 
   @Test
-  void it_should_authenticate_preemptively_on_sonarqube_10_0_with_token_and_bearer_scheme() {
+  void it_should_authenticate_preemptively_on_sonarqube_10_4_with_token_and_bearer_scheme() {
     var fakeClient = newFakeClient()
       .withToken("connectionId", "myToken")
       .build();
@@ -135,7 +135,7 @@ class AuthenticationMediumTests {
         .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc from server").build())
         .build()))));
     sonarqubeMock.stubFor(get("/api/system/status")
-      .willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"10.0\",\"status\": " +
+      .willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"10.4\",\"status\": " +
         "\"UP\"}")));
 
     var details = getEffectiveRuleDetails("scopeId", "python:S139");
