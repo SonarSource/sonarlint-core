@@ -73,7 +73,6 @@ class AnalysisEngineMediumTests {
   void prepare(@TempDir Path workDir) throws IOException {
     var enabledLanguages = Set.of(SonarLanguage.PYTHON);
     var analysisGlobalConfig = AnalysisEngineConfiguration.builder()
-      .setModulesProvider(List::of)
       .setClientPid(1234L)
       .setWorkDir(workDir)
       .build();
