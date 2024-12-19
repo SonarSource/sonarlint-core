@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.commons.monitoring;
 
 import io.sentry.Sentry;
+import io.sentry.SentryOptions;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -44,32 +45,37 @@ public class MonitoringService {
   }
 
   public void init() {
+    var sentryConfiguration = getSentryConfiguration();
+
     if (!initializeParams.isEnabled()) {
       LOG.info("Monitoring is disabled by feature flag.");
       return;
     }
+    if (dogfoodEnvDetectionService.isDogfoodEnvironment()) {
+      LOG.info("Initializing Sentry");
+      Sentry.init(sentryConfiguration);
+    }
+  }
 
-    var productKey = initializeParams.getProductKey();
+  SentryOptions getSentryConfiguration() {
+    var releaseVersion = SonarLintCoreVersion.get();
     var environment = "dogfood";
+    var productKey = initializeParams.getProductKey();
     var sonarQubeForIDEVersion = initializeParams.getSonarQubeForIdeVersion();
     var ideVersion = initializeParams.getIdeVersion();
-    var releaseVersion = SonarLintCoreVersion.get();
     var platform = SystemUtils.OS_NAME;
     var architecture = SystemUtils.OS_ARCH;
 
-    if (dogfoodEnvDetectionService.isDogfoodEnvironment()) {
-      LOG.info("Initializing Sentry");
-      Sentry.init(sentryOptions -> {
-        sentryOptions.setDsn("https://ad1c1fe3cb2b12fc2d191ecd25f89866@o1316750.ingest.us.sentry.io/4508201175089152");
-        sentryOptions.setRelease(releaseVersion);
-        sentryOptions.setEnvironment(environment);
-        sentryOptions.setTag("productKey", productKey);
-        sentryOptions.setTag("sonarQubeForIDEVersion", sonarQubeForIDEVersion);
-        sentryOptions.setTag("ideVersion", ideVersion);
-        sentryOptions.setTag("platform", platform);
-        sentryOptions.setTag("architecture", architecture);
-        sentryOptions.addInAppInclude("org.sonarsource.sonarlint");
-      });
-    }
+    var sentryOptions = new SentryOptions();
+    sentryOptions.setDsn("https://ad1c1fe3cb2b12fc2d191ecd25f89866@o1316750.ingest.us.sentry.io/4508201175089152");
+    sentryOptions.setRelease(releaseVersion);
+    sentryOptions.setEnvironment(environment);
+    sentryOptions.setTag("productKey", productKey);
+    sentryOptions.setTag("sonarQubeForIDEVersion", sonarQubeForIDEVersion);
+    sentryOptions.setTag("ideVersion", ideVersion);
+    sentryOptions.setTag("platform", platform);
+    sentryOptions.setTag("architecture", architecture);
+    sentryOptions.addInAppInclude("org.sonarsource.sonarlint");
+    return sentryOptions;
   }
 }
