@@ -77,7 +77,7 @@ public class AnalysisEngineConfiguration {
     private Map<String, String> extraProperties = Collections.emptyMap();
     private Path nodeJsPath;
     private long clientPid;
-    private Supplier<List<ClientModuleInfo>> modulesProvider;
+    private Supplier<List<ClientModuleInfo>> modulesProvider = List::of;
 
     private Builder() {
 
