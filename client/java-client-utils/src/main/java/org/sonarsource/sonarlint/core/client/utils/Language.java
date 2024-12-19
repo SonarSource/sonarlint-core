@@ -56,7 +56,8 @@ public enum Language {
   DOCKER("Docker"),
   KUBERNETES("Kubernetes"),
   TERRAFORM("Terraform"),
-  AZURERESOURCEMANAGER("AzureResourceManager");
+  AZURERESOURCEMANAGER("AzureResourceManager"),
+  ANSIBLE("Ansible");
   private String label;
 
   Language(String label) {
@@ -141,6 +142,8 @@ public enum Language {
         return TERRAFORM;
       case AZURERESOURCEMANAGER:
         return AZURERESOURCEMANAGER;
+      case ANSIBLE:
+        return ANSIBLE;
       default:
         throw new IllegalArgumentException("Unknown language: " + rpcEnum);
     }
