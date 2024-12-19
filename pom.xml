@@ -45,6 +45,7 @@
     <module>medium-tests</module>
     <module>report-aggregate</module>
     <module>rpc-protocol</module>
+    <module>test-utils</module>
   </modules>
 
   <properties>

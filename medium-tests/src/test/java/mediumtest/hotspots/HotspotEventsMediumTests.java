@@ -29,9 +29,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import mediumtest.fixtures.ServerFixture;
-import mediumtest.fixtures.SonarLintTestRpcServer;
-import mediumtest.fixtures.TestPlugin;
+import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -39,6 +38,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
+import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -46,15 +46,15 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
-import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
-import testutils.sse.SSEServer;
+import org.sonarsource.sonarlint.core.test.utils.server.sse.SSEServer;
+import utils.TestPlugin;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
-import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
-import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
-import static mediumtest.fixtures.storage.ServerSecurityHotspotFixture.aServerHotspot;
+import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
+import static org.sonarsource.sonarlint.core.test.utils.storage.ServerSecurityHotspotFixture.aServerHotspot;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
@@ -62,7 +62,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
-import static testutils.AnalysisUtils.analyzeFileAndGetHotspots;
+import static utils.AnalysisUtils.analyzeFileAndGetHotspots;
 
 @ExtendWith(LogTestStartAndEnd.class)
 class HotspotEventsMediumTests {

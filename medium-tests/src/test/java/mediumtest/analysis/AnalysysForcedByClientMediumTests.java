@@ -26,9 +26,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import mediumtest.fixtures.ServerFixture;
-import mediumtest.fixtures.SonarLintTestRpcServer;
-import mediumtest.fixtures.TestPlugin;
+import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.assertj.core.api.Assertions;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.jupiter.api.AfterEach;
@@ -36,6 +35,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFileListParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFullProjectParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeOpenFilesParams;
@@ -43,11 +43,11 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeVCSCh
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
+import utils.TestPlugin;
 
-import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
-import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
-import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
+import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
@@ -58,7 +58,7 @@ import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRepository;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.modifyFile;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
-import static testutils.AnalysisUtils.createFile;
+import static utils.AnalysisUtils.createFile;
 
 @ExtendWith(LogTestStartAndEnd.class)
 class AnalysisForcedByClientMediumTests {

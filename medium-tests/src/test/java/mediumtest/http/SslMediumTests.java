@@ -32,7 +32,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import mediumtest.fixtures.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import nl.altindag.ssl.util.CertificateUtils;
 import nl.altindag.ssl.util.KeyStoreUtils;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
@@ -54,8 +54,8 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
-import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -63,7 +63,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static testutils.TestUtils.protobufBody;
+import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBody;
 
 class SslMediumTests {
 

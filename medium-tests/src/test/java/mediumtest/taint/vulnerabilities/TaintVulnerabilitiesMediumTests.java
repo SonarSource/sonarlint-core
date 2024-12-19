@@ -24,7 +24,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import mediumtest.fixtures.TestPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -37,11 +36,12 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.GetEffectiveIss
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
+import utils.TestPlugin;
 
-import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
-import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
-import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
-import static mediumtest.fixtures.storage.ServerTaintIssueFixtures.aServerTaintIssue;
+import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
+import static org.sonarsource.sonarlint.core.test.utils.storage.ServerTaintIssueFixtures.aServerTaintIssue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 

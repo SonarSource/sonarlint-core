@@ -39,7 +39,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfig
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
-import testutils.PluginLocator;
+import utils.PluginLocator;
 
 import static mediumtest.sloop.UnArchiveUtils.unarchiveDistribution;
 import static org.assertj.core.api.Assertions.assertThat;

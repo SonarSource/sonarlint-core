@@ -35,7 +35,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryC
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
-import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class InitializationMediumTests {

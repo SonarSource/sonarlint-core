@@ -26,8 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import mediumtest.fixtures.SonarLintTestRpcServer;
-import mediumtest.fixtures.TestPlugin;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.AssertionsForInterfaceTypes;
 import org.junit.jupiter.api.AfterAll;
@@ -39,15 +38,16 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFiles
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.GetEffectiveIssueDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
+import utils.TestPlugin;
 
-import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
-import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
-import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
+import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
-import static testutils.AnalysisUtils.createFile;
+import static utils.AnalysisUtils.createFile;
 
 class ConnectedIssueMediumTests {
   @RegisterExtension

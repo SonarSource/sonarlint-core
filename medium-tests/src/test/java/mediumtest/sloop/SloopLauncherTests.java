@@ -78,7 +78,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
-import testutils.PluginLocator;
+import utils.PluginLocator;
 
 import static mediumtest.sloop.UnArchiveUtils.unarchiveDistribution;
 import static org.assertj.core.api.Assertions.assertThat;

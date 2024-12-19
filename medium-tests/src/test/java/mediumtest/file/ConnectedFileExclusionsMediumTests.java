@@ -27,8 +27,8 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import mediumtest.fixtures.ServerFixture;
-import mediumtest.fixtures.SonarLintBackendFixture;
+import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,15 +44,15 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Settings;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
-import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
-import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
+import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
-import static testutils.TestUtils.protobufBody;
+import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBody;
 
 class ConnectedFileExclusionsMediumTests {
 

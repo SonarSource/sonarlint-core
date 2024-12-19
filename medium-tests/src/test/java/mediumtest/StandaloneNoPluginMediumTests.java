@@ -25,19 +25,19 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import mediumtest.fixtures.SonarLintBackendFixture;
-import mediumtest.fixtures.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 
-import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
-import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static testutils.AnalysisUtils.createFile;
+import static utils.AnalysisUtils.createFile;
 
 class StandaloneNoPluginMediumTests {
 

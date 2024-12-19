@@ -22,8 +22,7 @@ package mediumtest.analysis;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import mediumtest.fixtures.SonarLintTestRpcServer;
-import mediumtest.fixtures.TestPlugin;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.ActiveRuleDto;
@@ -32,8 +31,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.Bindin
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
+import utils.TestPlugin;
 
-import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 

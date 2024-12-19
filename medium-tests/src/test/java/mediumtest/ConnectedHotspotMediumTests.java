@@ -25,9 +25,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import mediumtest.fixtures.SonarLintBackendFixture;
-import mediumtest.fixtures.SonarLintTestRpcServer;
-import mediumtest.fixtures.TestPlugin;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -35,14 +34,15 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
+import utils.TestPlugin;
 
-import static mediumtest.fixtures.ServerFixture.newSonarQubeServer;
-import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
-import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
+import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
-import static testutils.AnalysisUtils.createFile;
+import static utils.AnalysisUtils.createFile;
 
 class ConnectedHotspotMediumTests {
   private SonarLintTestRpcServer backend;

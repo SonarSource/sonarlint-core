@@ -33,9 +33,8 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import mediumtest.fixtures.SonarLintBackendFixture;
-import mediumtest.fixtures.SonarLintTestRpcServer;
-import mediumtest.fixtures.TestPlugin;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -57,10 +56,11 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
+import utils.TestPlugin;
 
 import static java.util.Collections.emptyMap;
-import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
-import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
@@ -74,9 +74,9 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.PHP;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.PYTHON;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.TS;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.XML;
-import static testutils.AnalysisUtils.analyzeFileAndGetIssues;
-import static testutils.AnalysisUtils.analyzeFilesAndVerifyNoIssues;
-import static testutils.AnalysisUtils.createFile;
+import static utils.AnalysisUtils.analyzeFileAndGetIssues;
+import static utils.AnalysisUtils.analyzeFilesAndVerifyNoIssues;
+import static utils.AnalysisUtils.createFile;
 
 class StandaloneIssueMediumTests {
   private static SonarLintBackendFixture.FakeSonarLintRpcClient client;

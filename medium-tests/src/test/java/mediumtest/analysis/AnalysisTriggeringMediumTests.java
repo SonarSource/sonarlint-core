@@ -30,8 +30,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import mediumtest.fixtures.SonarLintTestRpcServer;
-import mediumtest.fixtures.TestPlugin;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -44,9 +43,10 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.UpdateStandalon
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
+import utils.TestPlugin;
 
-import static mediumtest.fixtures.SonarLintBackendFixture.newBackend;
-import static mediumtest.fixtures.SonarLintBackendFixture.newFakeClient;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
@@ -55,8 +55,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
-import static testutils.AnalysisUtils.createFile;
-import static testutils.AnalysisUtils.getPublishedIssues;
+import static utils.AnalysisUtils.createFile;
+import static utils.AnalysisUtils.getPublishedIssues;
 
 class AnalysisTriggeringMediumTests {
 
@@ -95,11 +95,9 @@ class AnalysisTriggeringMediumTests {
     var publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
     assertThat(publishedIssues)
       .containsOnlyKeys(fileUri)
-      .hasEntrySatisfying(fileUri, issues -> {
-        assertThat(issues)
-          .extracting(RaisedIssueDto::getPrimaryMessage)
-          .containsExactly("Replace \"pom.version\" with \"project.version\".");
-      });
+      .hasEntrySatisfying(fileUri, issues -> assertThat(issues)
+        .extracting(RaisedIssueDto::getPrimaryMessage)
+        .containsExactly("Replace \"pom.version\" with \"project.version\"."));
   }
 
   @Test
@@ -127,8 +125,7 @@ class AnalysisTriggeringMediumTests {
       assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isEmpty();
       assertThat(client.getLogMessages().stream()
         .filter(message -> message.startsWith("Filtered out URIs that are Windows shortcuts: "))
-        .collect(Collectors.toList())
-      ).isNotEmpty();
+        .collect(Collectors.toList())).isNotEmpty();
     });
 
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fakeWindowsShortcut.toUri()));
@@ -161,8 +158,7 @@ class AnalysisTriggeringMediumTests {
       assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isEmpty();
       assertThat(client.getLogMessages().stream()
         .filter(message -> message.startsWith("Filtered out URIs that are symbolic links: "))
-        .collect(Collectors.toList())
-      ).isNotEmpty();
+        .collect(Collectors.toList())).isNotEmpty();
     });
   }
 
@@ -196,8 +192,7 @@ class AnalysisTriggeringMediumTests {
           + "  <artifactId>bar</artifactId>\n"
           + "  <version>${pom.version}</version>\n"
           + "</project>", null, true)),
-        Collections.emptyList()
-      ));
+        Collections.emptyList()));
 
     publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
     assertThat(publishedIssues)
@@ -238,8 +233,7 @@ class AnalysisTriggeringMediumTests {
           + "  <version>${pom.version}</version>\n"
           + "</project>", null, true)),
         Collections.emptyList(),
-        Collections.emptyList()
-      ));
+        Collections.emptyList()));
 
     verify(client, timeout(500).times(0)).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(false), any());
   }
@@ -338,10 +332,10 @@ class AnalysisTriggeringMediumTests {
     backend.getRulesService().updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("xml:S3421",
       new StandaloneRuleConfigDto(false, Map.of()))));
 
-    //No new analysis triggered
+    // No new analysis triggered
     verify(client, never()).log(any());
 
-    //issues related to the disabled rule has been removed and reported
+    // issues related to the disabled rule has been removed and reported
     publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
     assertThat(publishedIssues)
       .containsOnlyKeys(fileUri)
