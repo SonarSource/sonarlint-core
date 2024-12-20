@@ -51,7 +51,7 @@
     <license.name>GNU LGPL v3</license.name>
     
     <maven.compiler.release>11</maven.compiler.release>
-    <sonar-plugin-api.version>10.11.0.2468</sonar-plugin-api.version>
+    <sonar-plugin-api.version>11.0.0.2664</sonar-plugin-api.version>
     <sonar-markdown.version>9.4.0.54424</sonar-markdown.version>
     <sonar-scanner-protocol.version>9.9.0.65466</sonar-scanner-protocol.version>
     <protobuf.version>4.28.2</protobuf.version>
