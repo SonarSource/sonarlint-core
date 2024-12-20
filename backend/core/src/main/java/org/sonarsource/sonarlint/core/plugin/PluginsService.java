@@ -177,20 +177,20 @@ public class PluginsService {
   }
 
   public boolean supportsIaCEnterprise(String connectionId) {
-    return isSonarQubeCloudOrVersionOlderThan(ENTERPRISE_IAC_MIN_SQ_VERSION, connectionId);
+    return isSonarQubeCloudOrVersionHigherThan(ENTERPRISE_IAC_MIN_SQ_VERSION, connectionId);
   }
 
   public boolean supportsCustomSecrets(String connectionId) {
-    return isSonarQubeCloudOrVersionOlderThan(CUSTOM_SECRETS_MIN_SQ_VERSION, connectionId);
+    return isSonarQubeCloudOrVersionHigherThan(CUSTOM_SECRETS_MIN_SQ_VERSION, connectionId);
   }
 
-  private boolean isSonarQubeCloudOrVersionOlderThan(Version version, String connectionId) {
+  private boolean isSonarQubeCloudOrVersionHigherThan(Version version, String connectionId) {
     var connection = connectionConfigurationRepository.getConnectionById(connectionId);
     if (connection == null) {
       // Connection is gone
       return false;
     }
-    // when storage is not present, assume that iac enterprise is not supported by server
+    // when storage is not present, assume that server version is lower than requested
     return connection.getKind() == ConnectionKind.SONARCLOUD || storageService.connection(connectionId).serverInfo().read()
       .map(serverInfo -> serverInfo.getVersion().compareToIgnoreQualifier(version) >= 0)
       .orElse(false);
