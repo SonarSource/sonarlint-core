@@ -1394,12 +1394,18 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
   private void analyzeProject(String projectDirName, String projectKey, String... properties) {
     var projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
-    ORCHESTRATOR.executeBuild(SonarScanner.create(projectDir.toFile())
+    var scanner = SonarScanner.create(projectDir.toFile())
       .setProjectKey(projectKey)
       .setSourceDirs("src")
-      .setProperties(properties)
-      .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
-      .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD));
+      .setProperties(properties);
+
+    if (ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 2)) {
+      scanner.setProperty("sonar.token", ORCHESTRATOR.getDefaultAdminToken());
+    } else {
+      scanner.setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
+        .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD);
+    }
+    ORCHESTRATOR.executeBuild(scanner);
   }
 
   private List<RawIssueDto> analyzeFile(String configScopeId, String baseDir, String filePathStr, String... properties) {
