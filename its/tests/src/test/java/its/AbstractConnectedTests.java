@@ -96,11 +96,22 @@ public abstract class AbstractConnectedTests {
   protected static void analyzeMavenProject(Orchestrator orchestrator, String projectDirName, Map<String, String> extraProperties) {
     var projectDir = Paths.get("projects/" + projectDirName).toAbsolutePath();
     var pom = projectDir.resolve("pom.xml");
-    orchestrator.executeBuild(MavenBuild.create(pom.toFile())
+    var mavenBuild = MavenBuild.create(pom.toFile())
       .setCleanPackageSonarGoals()
-      .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
-      .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD)
-      .setProperties(extraProperties));
+      .setProperties(extraProperties);
+
+    if (orchestrator.getServer().version().isGreaterThanOrEquals(10, 2)) {
+      mavenBuild
+        .setProperty("sonar.token", orchestrator.getDefaultAdminToken())
+        .setProperties(extraProperties);
+    } else {
+      // sonar.token is not supported for 9.9
+      mavenBuild
+        .setProperty("sonar.login", com.sonar.orchestrator.container.Server.ADMIN_LOGIN)
+        .setProperty("sonar.password", com.sonar.orchestrator.container.Server.ADMIN_PASSWORD);
+    }
+
+    orchestrator.executeBuild(mavenBuild);
   }
 
   protected QualityProfile getQualityProfile(WsClient adminWsClient, String qualityProfileName) {
