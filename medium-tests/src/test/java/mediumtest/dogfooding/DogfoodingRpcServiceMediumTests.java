@@ -22,6 +22,7 @@ package mediumtest.dogfooding;
 import java.util.concurrent.ExecutionException;
 import mediumtest.fixtures.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
@@ -38,6 +39,12 @@ class DogfoodingRpcServiceMediumTests {
   @SystemStub
   EnvironmentVariables environmentVariables;
   private SonarLintTestRpcServer backend;
+
+  @BeforeEach
+  void setUp() {
+    // this is to ignore env variable on dev machine in dogfooding mode and have green tests locally
+    environmentVariables.remove(SONARSOURCE_DOGFOODING_ENV_VAR_KEY);
+  }
 
   @AfterEach
   void stop() throws ExecutionException, InterruptedException {
