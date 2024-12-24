@@ -48,7 +48,6 @@ import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.mode.SeverityModeService;
 import org.sonarsource.sonarlint.core.reporting.FindingReportingService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
-import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -94,20 +93,18 @@ public class RulesService {
   private final Map<String, StandaloneRuleConfigDto> standaloneRuleConfig = new ConcurrentHashMap<>();
   private FindingReportingService findingReportingService;
   private final SeverityModeService severityModeService;
-  private final ConnectionConfigurationRepository connectionConfigurationRepository;
 
   @Inject
   public RulesService(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository,
     StorageService storageService, InitializeParams params, ApplicationEventPublisher eventPublisher,
-    SeverityModeService severityModeService, ConnectionConfigurationRepository connectionConfigurationRepository) {
+    SeverityModeService severityModeService) {
     this(serverApiProvider, configurationRepository, rulesRepository, storageService, eventPublisher,
-      params.getStandaloneRuleConfigByKey(), severityModeService, connectionConfigurationRepository);
+      params.getStandaloneRuleConfigByKey(), severityModeService);
   }
 
   RulesService(ServerApiProvider serverApiProvider, ConfigurationRepository configurationRepository, RulesRepository rulesRepository,
     StorageService storageService, ApplicationEventPublisher eventPublisher,
-    @Nullable Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey, SeverityModeService severityModeService,
-    ConnectionConfigurationRepository connectionConfigurationRepository) {
+    @Nullable Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey, SeverityModeService severityModeService) {
     this.serverApiProvider = serverApiProvider;
     this.configurationRepository = configurationRepository;
     this.rulesRepository = rulesRepository;
@@ -117,7 +114,6 @@ public class RulesService {
     if (standaloneRuleConfigByKey != null) {
       this.standaloneRuleConfig.putAll(standaloneRuleConfigByKey);
     }
-    this.connectionConfigurationRepository = connectionConfigurationRepository;
   }
 
   public EffectiveRuleDetailsDto getEffectiveRuleDetails(String configurationScopeId, String ruleKey, @Nullable String contextKey,
@@ -143,11 +139,7 @@ public class RulesService {
 
   public RuleDetails getActiveRuleForBinding(String ruleKey, Binding binding, SonarLintCancelMonitor cancelMonitor) {
     var connectionId = binding.getConnectionId();
-
-    var endpointParams = connectionConfigurationRepository.getEndpointParams(connectionId);
-    if (endpointParams.isEmpty()) {
-      throw unknownConnection(connectionId);
-    }
+    serverApiProvider.getConnectionOrThrow(connectionId);
 
     var serverUsesStandardSeverityMode = !severityModeService.isMQRModeForConnection(connectionId);
 
@@ -176,27 +168,21 @@ public class RulesService {
   private RuleDetails hydrateDetailsWithServer(String connectionId, ServerActiveRule activeRuleFromStorage, boolean skipCleanCodeTaxonomy, SonarLintCancelMonitor cancelMonitor) {
     var ruleKey = activeRuleFromStorage.getRuleKey();
     var templateKey = activeRuleFromStorage.getTemplateKey();
-    var serverApi = serverApiProvider.getServerApiOrThrow(connectionId);
+    var serverConnection = serverApiProvider.getConnectionOrThrow(connectionId);
     if (StringUtils.isNotBlank(templateKey)) {
       var templateRule = rulesRepository.getRule(connectionId, templateKey);
       if (templateRule.isEmpty()) {
         throw ruleDefinitionNotFound(templateKey);
       }
-      var serverRule = fetchRuleFromServer(connectionId, ruleKey, serverApi, cancelMonitor);
+      var serverRule = serverConnection.withClientApiAndReturn(serverApi -> fetchRuleFromServer(connectionId, ruleKey, serverApi, cancelMonitor));
       return RuleDetails.merging(activeRuleFromStorage, serverRule, templateRule.get(), skipCleanCodeTaxonomy);
     } else {
-      var serverRule = fetchRuleFromServer(connectionId, ruleKey, serverApi, cancelMonitor);
+      var serverRule = serverConnection.withClientApiAndReturn(serverApi -> fetchRuleFromServer(connectionId, ruleKey, serverApi, cancelMonitor));
       var ruleDefFromPluginOpt = rulesRepository.getRule(connectionId, ruleKey);
       return ruleDefFromPluginOpt
         .map(ruleDefFromPlugin -> RuleDetails.merging(serverRule, ruleDefFromPlugin, skipCleanCodeTaxonomy))
         .orElseGet(() -> RuleDetails.merging(activeRuleFromStorage, serverRule));
     }
-  }
-
-  @NotNull
-  private static ResponseErrorException unknownConnection(String connectionId) {
-    var error = new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND, "Connection with ID '" + connectionId + "' does not exist", connectionId);
-    return new ResponseErrorException(error);
   }
 
   private static ServerRule fetchRuleFromServer(String connectionId, String ruleKey, ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {

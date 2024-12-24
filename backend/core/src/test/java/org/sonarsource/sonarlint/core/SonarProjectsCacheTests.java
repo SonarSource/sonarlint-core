@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,10 +28,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.connection.ServerConnection;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
+import org.sonarsource.sonarlint.core.sync.LastWebApiErrorNotificationService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -88,7 +91,11 @@ class SonarProjectsCacheTests {
 
   @BeforeEach
   public void setup() {
+    var lastWebApiErrorNotificationService = mock(LastWebApiErrorNotificationService.class);
     when(serverApiProvider.getServerApi(SQ_1)).thenReturn(Optional.of(serverApi));
+    when(lastWebApiErrorNotificationService.getLastWebApiErrorNotification(SQ_1)).thenReturn(ZonedDateTime.now());
+    var serverConnection = new ServerConnection(SQ_1, serverApi, lastWebApiErrorNotificationService, null);
+    when(serverApiProvider.tryGetConnection(SQ_1)).thenReturn(Optional.of(serverConnection));
   }
 
   @Test

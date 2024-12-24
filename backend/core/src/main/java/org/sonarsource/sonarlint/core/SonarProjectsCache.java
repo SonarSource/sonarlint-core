@@ -120,7 +120,8 @@ public class SonarProjectsCache {
       return singleProjectsCache.get(new SonarProjectKey(connectionId, sonarProjectKey), () -> {
         LOG.debug("Query project '{}' on connection '{}'...", sonarProjectKey, connectionId);
         try {
-          return serverApiProvider.getServerApi(connectionId).flatMap(s -> s.component().getProject(sonarProjectKey, cancelMonitor));
+          return serverApiProvider.tryGetConnection(connectionId)
+            .flatMap(connection -> connection.withClientApiAndReturn(s -> s.component().getProject(sonarProjectKey, cancelMonitor)));
         } catch (Exception e) {
           LOG.error("Error while querying project '{}' from connection '{}'", sonarProjectKey, connectionId, e);
           return Optional.empty();
@@ -137,7 +138,9 @@ public class SonarProjectsCache {
         LOG.debug("Load projects from connection '{}'...", connectionId);
         List<ServerProject> projects;
         try {
-          projects = serverApiProvider.getServerApi(connectionId).map(s -> s.component().getAllProjects(cancelMonitor)).orElse(List.of());
+          projects = serverApiProvider.tryGetConnection(connectionId)
+            .map(connection -> connection.withClientApiAndReturn(s -> s.component().getAllProjects(cancelMonitor)))
+            .orElse(List.of());
         } catch (Exception e) {
           LOG.error("Error while querying projects from connection '{}'", connectionId, e);
           return new TextSearchIndex<>();

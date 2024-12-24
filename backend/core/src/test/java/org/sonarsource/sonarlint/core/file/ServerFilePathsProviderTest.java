@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -41,8 +42,10 @@ import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.connection.ServerConnection;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi;
+import org.sonarsource.sonarlint.core.sync.LastWebApiErrorNotificationService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -68,6 +71,7 @@ class ServerFilePathsProviderTest {
   private final SonarLintCancelMonitor cancelMonitor =mock(SonarLintCancelMonitor.class);
   private final ComponentApi componentApi_A = mock(ComponentApi.class);
   private final ComponentApi componentApi_B = mock(ComponentApi.class);
+  private final LastWebApiErrorNotificationService lastWebApiErrorNotificationService = mock(LastWebApiErrorNotificationService.class);
   private ServerFilePathsProvider underTest;
 
   @BeforeEach
@@ -75,8 +79,13 @@ class ServerFilePathsProviderTest {
     cacheDirectory = storageDir.resolve("cache");
     Files.createDirectories(cacheDirectory);
 
+    when(lastWebApiErrorNotificationService.getLastWebApiErrorNotification(anyString())).thenReturn(ZonedDateTime.now());
     when(serverApiProvider.getServerApi(CONNECTION_A)).thenReturn(Optional.of(serverApi_A));
     when(serverApiProvider.getServerApi(CONNECTION_B)).thenReturn(Optional.of(serverApi_B));
+    var serverConnectionA = new ServerConnection(CONNECTION_A, serverApi_A, lastWebApiErrorNotificationService, null);
+    var serverConnectionB = new ServerConnection(CONNECTION_B, serverApi_B, lastWebApiErrorNotificationService, null);
+    when(serverApiProvider.tryGetConnection(CONNECTION_A)).thenReturn(Optional.of(serverConnectionA));
+    when(serverApiProvider.tryGetConnection(CONNECTION_B)).thenReturn(Optional.of(serverConnectionB));
     when(serverApi_A.component()).thenReturn(componentApi_A);
     when(serverApi_B.component()).thenReturn(componentApi_B);
     mockServerFilePaths(componentApi_A, "pathA", "pathB");

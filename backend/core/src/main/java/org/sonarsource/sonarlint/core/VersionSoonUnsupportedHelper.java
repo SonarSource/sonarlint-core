@@ -107,23 +107,23 @@ public class VersionSoonUnsupportedHelper {
       try {
         var connection = connectionRepository.getConnectionById(connectionId);
         if (connection != null && connection.getKind() == ConnectionKind.SONARQUBE) {
-          var serverApi = serverApiProvider.getServerApiWithoutCredentials(connectionId);
-          if (serverApi.isPresent()) {
-            var version = synchronizationService.getServerConnection(connectionId, serverApi.get()).readOrSynchronizeServerVersion(serverApi.get(), cancelMonitor);
-            var isCached = cacheConnectionIdPerVersion.containsKey(connectionId) && cacheConnectionIdPerVersion.get(connectionId).compareTo(version) == 0;
-            if (!isCached && VersionUtils.isVersionSupportedDuringGracePeriod(version)) {
-              client.showSoonUnsupportedMessage(
-                new ShowSoonUnsupportedMessageParams(
-                  String.format(UNSUPPORTED_NOTIFICATION_ID, connectionId, version.getName()),
-                  configScopeId,
-                  String.format(NOTIFICATION_MESSAGE, version.getName(), connectionId, VersionUtils.getCurrentLts())
-                )
-              );
-              LOG.debug(String.format("Connection '%s' with version '%s' is detected to be soon unsupported",
-                connection.getConnectionId(), version.getName()));
-            }
-            cacheConnectionIdPerVersion.put(connectionId, version);
-          }
+          serverApiProvider.tryGetConnectionWithoutCredentials(connectionId)
+            .ifPresent(serverConnection -> serverConnection.withClientApi(serverApi -> {
+              var version = synchronizationService.readOrSynchronizeServerVersion(connectionId, serverApi, cancelMonitor);
+              var isCached = cacheConnectionIdPerVersion.containsKey(connectionId) && cacheConnectionIdPerVersion.get(connectionId).compareTo(version) == 0;
+              if (!isCached && VersionUtils.isVersionSupportedDuringGracePeriod(version)) {
+                client.showSoonUnsupportedMessage(
+                  new ShowSoonUnsupportedMessageParams(
+                    String.format(UNSUPPORTED_NOTIFICATION_ID, connectionId, version.getName()),
+                    configScopeId,
+                    String.format(NOTIFICATION_MESSAGE, version.getName(), connectionId, VersionUtils.getCurrentLts())
+                  )
+                );
+                LOG.debug(String.format("Connection '%s' with version '%s' is detected to be soon unsupported",
+                  connection.getConnectionId(), version.getName()));
+              }
+              cacheConnectionIdPerVersion.put(connectionId, version);
+            }));
         }
       } catch (Exception e) {
         LOG.error("Error while checking if soon unsupported", e);

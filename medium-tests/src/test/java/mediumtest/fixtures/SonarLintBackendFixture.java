@@ -627,6 +627,7 @@ public class SonarLintBackendFixture {
     Map<String, Map<URI, List<RaisedHotspotDto>>> raisedHotspotsByScopeId = new HashMap<>();
     Map<String, Map<String, String>> inferredAnalysisPropertiesByScopeId = new HashMap<>();
     Map<String, Boolean> analysisReadinessPerScopeId = new HashMap<>();
+    Set<String> connectionIdsWithInvalidToken = new HashSet<>();
 
     public FakeSonarLintRpcClient(Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId, boolean printLogsToStdOut,
       Map<String, String> matchedBranchPerScopeId, Map<String, Path> baseDirsByConfigScope, Map<String, List<ClientFileDto>> initialFilesByConfigScope, Map<String, Set<String>> fileExclusionsByConfigScope) {
@@ -693,6 +694,11 @@ public class SonarLintBackendFixture {
       } else {
         progressReport.complete();
       }
+    }
+
+    @Override
+    public void invalidToken(String connectionId) {
+      connectionIdsWithInvalidToken.add(connectionId);
     }
 
     public Map<String, ProgressReport> getProgressReportsByTaskId() {
@@ -895,6 +901,10 @@ public class SonarLintBackendFixture {
 
     public void waitForSynchronization() {
       verify(this, timeout(5000)).didSynchronizeConfigurationScopes(any());
+    }
+
+    public Set<String> getConnectionIdsWithInvalidToken() {
+      return connectionIdsWithInvalidToken;
     }
 
     public static class ProgressReport {
