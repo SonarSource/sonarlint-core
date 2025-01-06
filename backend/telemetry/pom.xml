@@ -62,11 +62,6 @@
       <artifactId>wiremock-jre8</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>uk.org.webcompere</groupId>
-      <artifactId>system-stubs-jupiter</artifactId>
-      <scope>test</scope>
-    </dependency>
     <!-- For Apache HTTPClient -->
     <dependency>
       <groupId>ch.qos.logback</groupId>
