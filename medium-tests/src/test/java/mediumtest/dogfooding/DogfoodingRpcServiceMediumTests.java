@@ -19,67 +19,58 @@
  */
 package mediumtest.dogfooding;
 
-import java.util.concurrent.ExecutionException;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.sonarsource.sonarlint.core.commons.monitoring.DogfoodEnvironmentDetectionService.SONARSOURCE_DOGFOODING_ENV_VAR_KEY;
 
 @ExtendWith(SystemStubsExtension.class)
 class DogfoodingRpcServiceMediumTests {
+
   @SystemStub
   EnvironmentVariables environmentVariables;
-  private SonarLintTestRpcServer backend;
 
   @BeforeEach
+  @AfterEach
   void setUp() {
     // this is to ignore env variable on dev machine in dogfooding mode and have green tests locally
     environmentVariables.remove(SONARSOURCE_DOGFOODING_ENV_VAR_KEY);
   }
 
-  @AfterEach
-  void stop() throws ExecutionException, InterruptedException {
-    if (backend != null) {
-      backend.shutdown().get();
-    }
-  }
-
-  @Test
-  void should_return_true_when_env_variable_is_set() {
+  @SonarLintTest
+  void should_return_true_when_env_variable_is_set(SonarLintTestHarness harness) {
     environmentVariables.set(SONARSOURCE_DOGFOODING_ENV_VAR_KEY, "1");
+    var backend = harness.newBackend().build();
 
-    backend = newBackend().build();
     var result = backend.getDogfoodingService().isDogfoodingEnvironment().join();
+
     assertTrue(result.isDogfoodingEnvironment());
-
-    environmentVariables.remove(SONARSOURCE_DOGFOODING_ENV_VAR_KEY);
   }
 
-  @Test
-  void should_return_false_when_env_var_is_absent() {
-    backend = newBackend().build();
+  @SonarLintTest
+  void should_return_false_when_env_var_is_absent(SonarLintTestHarness harness) {
+    var backend = harness.newBackend().build();
 
     var result = backend.getDogfoodingService().isDogfoodingEnvironment().join();
+
     assertFalse(result.isDogfoodingEnvironment());
   }
 
-  @Test
-  void should_return_false_when_env_var_is_false() {
-    backend = newBackend().build();
-
+  @SonarLintTest
+  void should_return_false_when_env_var_is_false(SonarLintTestHarness harness) {
+    var backend = harness.newBackend().build();
     environmentVariables.set(SONARSOURCE_DOGFOODING_ENV_VAR_KEY, "0");
-    var result = backend.getDogfoodingService().isDogfoodingEnvironment().join();
-    assertFalse(result.isDogfoodingEnvironment());
 
-    environmentVariables.remove(SONARSOURCE_DOGFOODING_ENV_VAR_KEY);
+    var result = backend.getDogfoodingService().isDogfoodingEnvironment().join();
+
+    assertFalse(result.isDogfoodingEnvironment());
   }
 }

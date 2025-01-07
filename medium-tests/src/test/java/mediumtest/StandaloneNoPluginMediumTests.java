@@ -23,18 +23,13 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static utils.AnalysisUtils.createFile;
@@ -42,30 +37,21 @@ import static utils.AnalysisUtils.createFile;
 class StandaloneNoPluginMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "configScopeId";
-  private SonarLintTestRpcServer backend;
-  private static SonarLintBackendFixture.FakeSonarLintRpcClient client;
 
-  @AfterEach
-  void stop() throws ExecutionException, InterruptedException {
-    if (backend != null) {
-      backend.shutdown().get();
-    }
-  }
-
-  @Test
-  void dont_fail_and_detect_language_even_if_no_plugin(@TempDir Path baseDir) {
+  @SonarLintTest
+  void dont_fail_and_detect_language_even_if_no_plugin(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var inputFile = createFile(baseDir, "Foo.java", "public class Foo {\n" +
       "\n" +
       "  void foo() {\n" +
       "    String password = \"blue\";\n" +
       "  }\n" +
       "}\n");
-    client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, List.of(
         new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)
       ))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSecurityHotspotsEnabled()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .build(client);

@@ -32,30 +32,27 @@ import java.util.Objects;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import nl.altindag.ssl.util.CertificateUtils;
 import nl.altindag.ssl.util.KeyStoreUtils;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.X509CertificateDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -71,15 +68,6 @@ class SslMediumTests {
 
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester(true);
-
-  private SonarLintTestRpcServer backend;
-
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    if (backend != null) {
-      backend.shutdown().get();
-    }
-  }
 
   @Nested
   // TODO Can be removed when switching to Java 16+ and changing sonarcloudMock and mockSonarCloudUrl() to static
@@ -116,10 +104,10 @@ class SslMediumTests {
             .build()))));
     }
 
-    @Test
-    void it_should_not_trust_server_self_signed_certificate_by_default() {
-      var fakeClient = newFakeClient().build();
-      backend = newBackend()
+    @SonarLintTest
+    void it_should_not_trust_server_self_signed_certificate_by_default(SonarLintTestHarness harness) {
+      var fakeClient = harness.newFakeClient().build();
+      var backend = harness.newBackend()
         .withSonarCloudUrl(sonarcloudMock.baseUrl())
         .build(fakeClient);
 
@@ -129,11 +117,11 @@ class SslMediumTests {
       assertThat(future).isCompletedExceptionally();
     }
 
-    @Test
-    void it_should_ask_user_only_once_if_server_certificate_is_trusted() throws ExecutionException, InterruptedException, KeyStoreException {
-      var fakeClient = newFakeClient().build();
+    @SonarLintTest
+    void it_should_ask_user_only_once_if_server_certificate_is_trusted(SonarLintTestHarness harness) throws ExecutionException, InterruptedException, KeyStoreException {
+      var fakeClient = harness.newFakeClient().build();
 
-      backend = newBackend()
+      var backend = harness.newBackend()
         .withSonarCloudUrl(sonarcloudMock.baseUrl())
         .build(fakeClient);
 
@@ -202,10 +190,10 @@ class SslMediumTests {
             .build()))));
     }
 
-    @Test
-    void it_should_fail_if_client_certificate_not_provided() {
-      var fakeClient = newFakeClient().build();
-      backend = newBackend()
+    @SonarLintTest
+    void it_should_fail_if_client_certificate_not_provided(SonarLintTestHarness harness) {
+      var fakeClient = harness.newFakeClient().build();
+      var backend = harness.newBackend()
         .withSonarCloudUrl(sonarcloudMock.baseUrl())
         .build(fakeClient);
 
@@ -220,10 +208,10 @@ class SslMediumTests {
 
     }
 
-    @Test
-    void it_should_succeed_if_client_certificate_provided() {
-      var fakeClient = newFakeClient().build();
-      backend = newBackend()
+    @SonarLintTest
+    void it_should_succeed_if_client_certificate_provided(SonarLintTestHarness harness) {
+      var fakeClient = harness.newFakeClient().build();
+      var backend = harness.newBackend()
         .withKeyStore(toPath(Objects.requireNonNull(SslMediumTests.class.getResource("/ssl/client.p12"))), "pwdClientCertP12", null)
         .withSonarCloudUrl(sonarcloudMock.baseUrl())
         .build(fakeClient);

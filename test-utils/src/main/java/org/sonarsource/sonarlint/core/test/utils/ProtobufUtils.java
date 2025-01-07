@@ -27,6 +27,10 @@ import java.io.IOException;
 
 public class ProtobufUtils {
 
+  private ProtobufUtils() {
+    // utility class
+  }
+
   public static Body protobufBody(Message message) {
     var baos = new ByteArrayOutputStream();
     try {

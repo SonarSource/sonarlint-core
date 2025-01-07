@@ -25,19 +25,17 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBody;
 
@@ -48,21 +46,16 @@ class TimeoutMediumTests {
     .options(wireMockConfig().dynamicPort())
     .build();
 
-  private SonarLintRpcServer backend;
-
   @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
+  void tearDown() {
     System.clearProperty("sonarlint.http.responseTimeout");
-    if (backend != null) {
-      backend.shutdown().get();
-    }
   }
 
-  @Test
-  void it_should_timeout_on_long_response() {
-    var fakeClient = newFakeClient()
+  @SonarLintTest
+  void it_should_timeout_on_long_response(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient()
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withHttpResponseTimeout(Duration.ofSeconds(1))
       .withSonarCloudUrl(sonarcloudMock.baseUrl())
       .build(fakeClient);
@@ -77,7 +70,7 @@ class TimeoutMediumTests {
             .build())
           .build()))));
 
-    var future = this.backend.getConnectionService().getOrganization(new GetOrganizationParams(Either.forLeft(new TokenDto("token")), "myOrg"));
+    var future = backend.getConnectionService().getOrganization(new GetOrganizationParams(Either.forLeft(new TokenDto("token")), "myOrg"));
 
     assertThat(future)
       .failsWithin(3, TimeUnit.SECONDS)

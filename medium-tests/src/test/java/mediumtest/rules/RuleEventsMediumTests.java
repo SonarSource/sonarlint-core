@@ -24,13 +24,9 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
-import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
@@ -40,14 +36,15 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
+import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
 import org.sonarsource.sonarlint.core.test.utils.server.sse.SSEServer;
 import utils.TestPlugin;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
@@ -63,20 +60,18 @@ class RuleEventsMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
   private static final SSEServer sseServer = new SSEServer();
-  private SonarLintTestRpcServer backend;
 
   @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
+  void tearDown() {
     sseServer.stop();
   }
 
   @Nested
   class WhenReceivingRuleSetChangedEvent {
-    //write a test just like this one without the impacts
-    @Test
-    void it_should_create_the_ruleset_storage_if_does_not_exist_without_impacts() {
-      var server = newSonarQubeServer("10.0")
+    // write a test just like this one without the impacts
+    @SonarLintTest
+    void it_should_create_the_ruleset_storage_if_does_not_exist_without_impacts(SonarLintTestHarness harness) {
+      var server = harness.newFakeSonarQubeServer("10.0")
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
         .start();
@@ -95,9 +90,9 @@ class RuleEventsMediumTests {
         "}]," +
         "\"deactivatedRules\": [\"java:S4321\"]" +
         "}\n\n");
-      var client = newFakeClient().build();
+      var client = harness.newFakeClient().build();
       when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
-      backend = newBackend()
+      var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", server)
@@ -105,15 +100,15 @@ class RuleEventsMediumTests {
         .build();
       sseServer.shouldSendServerEventOnce();
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets("connectionId", "projectKey"))
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets(backend, "connectionId", "projectKey"))
         .extractingByKey("java")
         .isEqualTo(Sonarlint.RuleSet.newBuilder()
           .addRule(Sonarlint.RuleSet.ActiveRule.newBuilder().setRuleKey("java:S0000").setSeverity("MAJOR").putParams("key1", "value1").build()).build()));
     }
 
-    @Test
-    void it_should_create_the_ruleset_storage_if_does_not_exist() {
-      var server = newSonarQubeServer("10.0")
+    @SonarLintTest
+    void it_should_create_the_ruleset_storage_if_does_not_exist(SonarLintTestHarness harness) {
+      var server = harness.newFakeSonarQubeServer("10.0")
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
         .start();
@@ -135,9 +130,9 @@ class RuleEventsMediumTests {
         "}]" +
         "}]" +
         "}\n\n");
-      var client = newFakeClient().build();
+      var client = harness.newFakeClient().build();
       when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
-      backend = newBackend()
+      var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", server)
@@ -145,7 +140,7 @@ class RuleEventsMediumTests {
         .build();
       sseServer.shouldSendServerEventOnce();
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets("connectionId", "projectKey"))
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets(backend, "connectionId", "projectKey"))
         .extractingByKey("java")
         .isEqualTo(Sonarlint.RuleSet.newBuilder()
           .addRule(Sonarlint.RuleSet.ActiveRule.newBuilder()
@@ -160,9 +155,9 @@ class RuleEventsMediumTests {
           .build()));
     }
 
-    @Test
-    void it_should_update_existing_rule_in_storage() {
-      var server = newSonarQubeServer("10.0")
+    @SonarLintTest
+    void it_should_update_existing_rule_in_storage(SonarLintTestHarness harness) {
+      var server = harness.newFakeSonarQubeServer("10.0")
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
         .start();
@@ -180,9 +175,9 @@ class RuleEventsMediumTests {
         "}]" +
         "}]" +
         "}\n\n");
-      var client = newFakeClient().build();
+      var client = harness.newFakeClient().build();
       when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
-      backend = newBackend()
+      var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", server, storage -> storage.withProject("projectKey",
@@ -192,15 +187,15 @@ class RuleEventsMediumTests {
         .build();
       sseServer.shouldSendServerEventOnce();
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets("connectionId", "projectKey"))
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets(backend, "connectionId", "projectKey"))
         .extractingByKey("java")
         .isEqualTo(Sonarlint.RuleSet.newBuilder()
           .addRule(Sonarlint.RuleSet.ActiveRule.newBuilder().setRuleKey("java:S0000").setSeverity("MAJOR").putParams("key1", "value1").build()).build()));
     }
 
-    @Test
-    void it_should_add_rule_to_existing_ruleset_in_storage() {
-      var server = newSonarQubeServer("10.0")
+    @SonarLintTest
+    void it_should_add_rule_to_existing_ruleset_in_storage(SonarLintTestHarness harness) {
+      var server = harness.newFakeSonarQubeServer("10.0")
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
         .start();
@@ -218,9 +213,9 @@ class RuleEventsMediumTests {
         "}]" +
         "}]" +
         "}\n\n");
-      var client = newFakeClient().build();
+      var client = harness.newFakeClient().build();
       when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
-      backend = newBackend()
+      var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", server, storage -> storage.withProject("projectKey",
@@ -230,15 +225,15 @@ class RuleEventsMediumTests {
         .build();
       sseServer.shouldSendServerEventOnce();
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets("connectionId", "projectKey"))
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets(backend, "connectionId", "projectKey"))
         .extractingByKey("java")
         .isEqualTo(Sonarlint.RuleSet.newBuilder()
           .addRule(Sonarlint.RuleSet.ActiveRule.newBuilder().setRuleKey("java:S0000").setSeverity("INFO").build())
           .addRule(Sonarlint.RuleSet.ActiveRule.newBuilder().setRuleKey("java:S0001").setSeverity("MAJOR").putParams("key1", "value1").build()).build()));
     }
 
-    @Test
-    void it_should_reanalyze_open_files_on_new_rules_enabled(@TempDir Path baseDir) {
+    @SonarLintTest
+    void it_should_reanalyze_open_files_on_new_rules_enabled(SonarLintTestHarness harness, @TempDir Path baseDir) {
       var filePath = createFile(baseDir, "Foo.java",
         "public class Foo {\n" +
           "\n" +
@@ -251,14 +246,13 @@ class RuleEventsMediumTests {
       var connectionId = "connectionId";
       var branchName = "branchName";
       var projectKey = "projectKey";
-      var client = newFakeClient()
+      var client = harness.newFakeClient()
         .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
         .build();
       when(client.matchSonarProjectBranch(eq(CONFIG_SCOPE_ID), eq("main"), eq(Set.of("main", branchName)), any())).thenReturn(branchName);
-      var server = newSonarQubeServer()
+      var server = harness.newFakeSonarQubeServer()
         .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java")
-          .withActiveRule("java:S1481", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR))
-        )
+          .withActiveRule("java:S1481", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
         .withProject(projectKey,
           project -> project
             .withQualityProfile("qpKey"))
@@ -275,9 +269,8 @@ class RuleEventsMediumTests {
           "\"severity\": \"MAJOR\"," +
           "\"params\": []" +
           "}]" +
-          "}\n\n"
-      );
-      backend = newBackend()
+          "}\n\n");
+      var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withFullSynchronization()
@@ -300,9 +293,9 @@ class RuleEventsMediumTests {
         .containsExactlyInAnyOrder("java:S1135", "java:S1481");
     }
 
-    @Test
-    void it_should_add_rule_to_new_ruleset_in_existing_storage() {
-      var server = newSonarQubeServer("10.0")
+    @SonarLintTest
+    void it_should_add_rule_to_new_ruleset_in_existing_storage(SonarLintTestHarness harness) {
+      var server = harness.newFakeSonarQubeServer("10.0")
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
         .start();
@@ -320,9 +313,9 @@ class RuleEventsMediumTests {
         "}]" +
         "}]" +
         "}\n\n");
-      var client = newFakeClient().build();
+      var client = harness.newFakeClient().build();
       when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
-      backend = newBackend()
+      var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", server, storage -> storage.withProject("projectKey",
@@ -332,15 +325,15 @@ class RuleEventsMediumTests {
         .build();
       sseServer.shouldSendServerEventOnce();
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets("connectionId", "projectKey"))
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets(backend, "connectionId", "projectKey"))
         .extractingByKey("cs")
         .isEqualTo(Sonarlint.RuleSet.newBuilder()
           .addRule(Sonarlint.RuleSet.ActiveRule.newBuilder().setRuleKey("cs:S0000").setSeverity("MAJOR").putParams("key1", "value1").build()).build()));
     }
 
-    @Test
-    void it_should_remove_deactivated_rule_from_existing_storage() {
-      var server = newSonarQubeServer("10.0")
+    @SonarLintTest
+    void it_should_remove_deactivated_rule_from_existing_storage(SonarLintTestHarness harness) {
+      var server = harness.newFakeSonarQubeServer("10.0")
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
         .start();
@@ -350,9 +343,9 @@ class RuleEventsMediumTests {
         "\"activatedRules\": []," +
         "\"deactivatedRules\": [\"java:S0000\"]" +
         "}\n\n");
-      var client = newFakeClient().build();
+      var client = harness.newFakeClient().build();
       when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
-      backend = newBackend()
+      var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", server, storage -> storage.withProject("projectKey",
@@ -362,14 +355,14 @@ class RuleEventsMediumTests {
         .build();
       sseServer.shouldSendServerEventOnce();
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets("connectionId", "projectKey"))
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets(backend, "connectionId", "projectKey"))
         .extractingByKey("java")
         .isEqualTo(Sonarlint.RuleSet.newBuilder().addRule(Sonarlint.RuleSet.ActiveRule.newBuilder().setRuleKey("java:S0001").setSeverity("INFO").build()).build()));
     }
 
-    @Test
-    void it_should_remove_ruleset_from_storage_when_deactivating_last_rule() {
-      var server = newSonarQubeServer("10.0")
+    @SonarLintTest
+    void it_should_remove_ruleset_from_storage_when_deactivating_last_rule(SonarLintTestHarness harness) {
+      var server = harness.newFakeSonarQubeServer("10.0")
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
         .start();
@@ -379,9 +372,9 @@ class RuleEventsMediumTests {
         "\"activatedRules\": []," +
         "\"deactivatedRules\": [\"java:S0000\"]" +
         "}\n\n");
-      var client = newFakeClient().build();
+      var client = harness.newFakeClient().build();
       when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
-      backend = newBackend()
+      var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", server, storage -> storage.withProject("projectKey",
@@ -391,12 +384,12 @@ class RuleEventsMediumTests {
         .build();
       sseServer.shouldSendServerEventOnce();
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets("connectionId", "projectKey"))
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets(backend, "connectionId", "projectKey"))
         .isEmpty());
     }
 
-    @Test
-    void it_should_re_raise_issues_without_deactivated_rules(@TempDir Path baseDir) {
+    @SonarLintTest
+    void it_should_re_raise_issues_without_deactivated_rules(SonarLintTestHarness harness, @TempDir Path baseDir) {
       var filePath = createFile(baseDir, "Foo.java",
         "public class Foo {\n" +
           "\n" +
@@ -411,17 +404,16 @@ class RuleEventsMediumTests {
       var connectionId = "connectionId";
       var branchName = "branchName";
       var projectKey = "projectKey";
-      var client = newFakeClient()
+      var client = harness.newFakeClient()
         .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
         .build();
       when(client.matchSonarProjectBranch(eq(CONFIG_SCOPE_ID), eq("main"), eq(Set.of("main", branchName)), any())).thenReturn(branchName);
-      var server = newSonarQubeServer()
+      var server = harness.newFakeSonarQubeServer()
         .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java")
           .withActiveRule("java:S1481", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR))
           .withActiveRule("java:S1135", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR))
           .withActiveRule("java:S1313", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR))
-          .withActiveRule("java:S2068", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR))
-        )
+          .withActiveRule("java:S2068", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
         .withProject(projectKey,
           project -> project
             .withQualityProfile("qpKey"))
@@ -434,9 +426,8 @@ class RuleEventsMediumTests {
           "\"projects\": [\"projectKey\"]," +
           "\"activatedRules\": []," +
           "\"deactivatedRules\": [\"java:S1481\", \"java:S1313\"]" +
-          "}\n\n"
-      );
-      backend = newBackend()
+          "}\n\n");
+      var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSecurityHotspotsEnabled()
@@ -465,7 +456,7 @@ class RuleEventsMediumTests {
     }
   }
 
-  private Map<String, Sonarlint.RuleSet> readRuleSets(String connectionId, String projectKey) {
+  private Map<String, Sonarlint.RuleSet> readRuleSets(SonarLintTestRpcServer backend, String connectionId, String projectKey) {
     var path = backend.getStorageRoot().resolve(encodeForFs(connectionId)).resolve("projects").resolve(encodeForFs(projectKey)).resolve("analyzer_config.pb");
     if (path.toFile().exists()) {
       return ProtobufFileUtil.readFile(path, Sonarlint.AnalyzerConfiguration.parser()).getRuleSetsByLanguageKeyMap();
@@ -478,7 +469,6 @@ class RuleEventsMediumTests {
     var sseServerUrl = sseServer.getUrl();
     server.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java")
       .willReturn(aResponse().proxiedFrom(sseServerUrl + "/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java")
-        .withStatus(200)
-      ));
+        .withStatus(200)));
   }
 }

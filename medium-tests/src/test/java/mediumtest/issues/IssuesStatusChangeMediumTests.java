@@ -29,11 +29,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.LineWithHash;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssueResolution;
@@ -46,42 +42,28 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenIssuePara
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LineWithHashDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlyIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesParams;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static mediumtest.fixtures.LocalOnlyIssueFixtures.aLocalOnlyIssueResolved;
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.ServerStatus.DOWN;
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
-import static org.sonarsource.sonarlint.core.test.utils.storage.ServerIssueFixtures.aServerIssue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
+import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.ServerStatus.DOWN;
+import static org.sonarsource.sonarlint.core.test.utils.storage.ServerIssueFixtures.aServerIssue;
 
 class IssuesStatusChangeMediumTests {
 
-  private SonarLintTestRpcServer backend;
-  private ServerFixture.Server server;
-
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
-    if (server != null) {
-      server.shutdown();
-      server = null;
-    }
-  }
-
-  @Test
-  void it_should_update_the_status_on_sonarqube_when_changing_the_status_on_a_server_matched_issue() {
+  @SonarLintTest
+  void it_should_update_the_status_on_sonarqube_when_changing_the_status_on_a_server_matched_issue(SonarLintTestHarness harness) {
     var serverIssue = aServerIssue("myIssueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")).withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
-    server = newSonarQubeServer().start();
-    backend = newBackend()
+    var server = harness.newFakeSonarQubeServer().start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage
         .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue)))
         .withServerVersion("9.8"))
@@ -100,10 +82,10 @@ class IssuesStatusChangeMediumTests {
     });
   }
 
-  @Test
-  void it_should_update_the_telemetry_when_changing_the_status_on_a_server_matched_issue() {
-    server = newSonarQubeServer().start();
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_update_the_telemetry_when_changing_the_status_on_a_server_matched_issue(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer().start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage
         .withProject("projectKey",
           project -> project.withMainBranch("main",
@@ -127,11 +109,11 @@ class IssuesStatusChangeMediumTests {
       .contains("\"issueStatusChangedRuleKeys\":[\"rule:key\"]");
   }
 
-  @Test
-  void it_should_fail_the_future_when_the_server_returns_an_error() {
+  @SonarLintTest
+  void it_should_fail_the_future_when_the_server_returns_an_error(SonarLintTestHarness harness) {
     var serverIssue = aServerIssue("myIssueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")).withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
-    server = newSonarQubeServer().withStatus(DOWN).start();
-    backend = newBackend()
+    var server = harness.newFakeSonarQubeServer().withStatus(DOWN).start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage
         .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue)))
         .withServerVersion("9.8"))
@@ -150,13 +132,13 @@ class IssuesStatusChangeMediumTests {
       });
   }
 
-  @Test
-  void it_should_update_local_only_storage_when_the_issue_exists_locally() throws ExecutionException, InterruptedException {
-    server = newSonarQubeServer()
+  @SonarLintTest
+  void it_should_update_local_only_storage_when_the_issue_exists_locally(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
+    var server = harness.newFakeSonarQubeServer()
       .withProject("projectKey")
       .start();
-    var client = newFakeClient().build();
-    backend = newBackend()
+    var client = harness.newFakeClient().build();
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl())
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
@@ -168,7 +150,7 @@ class IssuesStatusChangeMediumTests {
         List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
-    LocalOnlyIssueDto localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(Path.of("file/path")).get(0).getRight();
+    var localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(Path.of("file/path")).get(0).getRight();
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", localOnlyIssue.getId().toString(),
       ResolutionStatus.WONT_FIX, false));
@@ -180,13 +162,13 @@ class IssuesStatusChangeMediumTests {
     assertThat(issueLoaded.get(0).getResolution().getStatus()).isEqualTo(org.sonarsource.sonarlint.core.commons.IssueStatus.WONT_FIX);
   }
 
-  @Test
-  void it_should_sync_anticipated_transitions_with_sonarqube_when_the_issue_exists_locally() throws ExecutionException, InterruptedException {
-    server = newSonarQubeServer()
+  @SonarLintTest
+  void it_should_sync_anticipated_transitions_with_sonarqube_when_the_issue_exists_locally(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
+    var server = harness.newFakeSonarQubeServer()
       .withProject("projectKey")
       .start();
-    var client = newFakeClient().build();
-    backend = newBackend()
+    var client = harness.newFakeClient().build();
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl())
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
@@ -198,7 +180,7 @@ class IssuesStatusChangeMediumTests {
         List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
-    LocalOnlyIssueDto localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(Path.of("file/path")).get(0).getRight();
+    var localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(Path.of("file/path")).get(0).getRight();
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", localOnlyIssue.getId().toString(),
       ResolutionStatus.WONT_FIX, false));
@@ -213,14 +195,14 @@ class IssuesStatusChangeMediumTests {
     });
   }
 
-  @Test
-  void it_should_update_telemetry_when_changing_status_of_a_local_only_issue() throws ExecutionException, InterruptedException {
-    server = newSonarQubeServer()
+  @SonarLintTest
+  void it_should_update_telemetry_when_changing_status_of_a_local_only_issue(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
+    var server = harness.newFakeSonarQubeServer()
       .withProject("projectKey")
       .start();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
@@ -234,7 +216,7 @@ class IssuesStatusChangeMediumTests {
         List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
-    LocalOnlyIssueDto localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(Path.of("file/path")).get(0).getRight();
+    var localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(Path.of("file/path")).get(0).getRight();
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams("configScopeId", localOnlyIssue.getId().toString(),
       ResolutionStatus.WONT_FIX, false));
@@ -245,10 +227,10 @@ class IssuesStatusChangeMediumTests {
       .contains("\"issueStatusChangedRuleKeys\":[\"ruleKey\"]");
   }
 
-  @Test
-  void it_should_fail_when_the_issue_does_not_exists() {
-    server = newSonarQubeServer().withStatus(DOWN).start();
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_fail_when_the_issue_does_not_exists(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer().withStatus(DOWN).start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
@@ -263,10 +245,10 @@ class IssuesStatusChangeMediumTests {
       .withMessageContaining("Issue key myIssueKey was not found");
   }
 
-  @Test
-  void it_should_add_new_comment_to_server_issue() {
-    server = newSonarQubeServer().start();
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_add_new_comment_to_server_issue(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer().start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server,
         storage -> storage.withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(aServerIssue("myIssueKey")))))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
@@ -284,11 +266,11 @@ class IssuesStatusChangeMediumTests {
     });
   }
 
-  @Test
-  void it_should_add_new_comment_to_server_issue_with_uuid_key() {
+  @SonarLintTest
+  void it_should_add_new_comment_to_server_issue_with_uuid_key(SonarLintTestHarness harness) {
     var issueKey = UUID.randomUUID().toString();
-    server = newSonarQubeServer().start();
-    backend = newBackend()
+    var server = harness.newFakeSonarQubeServer().start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server,
         storage -> storage.withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(aServerIssue(issueKey)))))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
@@ -306,11 +288,11 @@ class IssuesStatusChangeMediumTests {
     });
   }
 
-  @Test
-  void it_should_add_new_comment_to_resolved_local_only_issue() {
-    server = newSonarQubeServer().start();
+  @SonarLintTest
+  void it_should_add_new_comment_to_resolved_local_only_issue(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer().start();
     var issueId = UUID.randomUUID();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId)))
       .build();
@@ -326,10 +308,10 @@ class IssuesStatusChangeMediumTests {
       .containsOnly("That's serious issue");
   }
 
-  @Test
-  void it_should_throw_if_server_response_is_not_OK_during_add_new_comment_to_issue() {
-    server = newSonarQubeServer().withStatus(DOWN).start();
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_throw_if_server_response_is_not_OK_during_add_new_comment_to_issue(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer().withStatus(DOWN).start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server,
         storage -> storage.withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(aServerIssue("myIssueKey")))))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
@@ -347,10 +329,10 @@ class IssuesStatusChangeMediumTests {
       });
   }
 
-  @Test
-  void it_should_throw_if_issue_is_unknown_when_adding_a_comment() {
-    server = newSonarQubeServer().start();
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_throw_if_issue_is_unknown_when_adding_a_comment(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer().start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
@@ -367,10 +349,10 @@ class IssuesStatusChangeMediumTests {
       });
   }
 
-  @Test
-  void it_should_throw_if_issue_with_uuid_key_is_unknown_when_adding_a_comment() {
-    server = newSonarQubeServer().start();
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_throw_if_issue_with_uuid_key_is_unknown_when_adding_a_comment(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer().start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
@@ -388,11 +370,11 @@ class IssuesStatusChangeMediumTests {
       });
   }
 
-  @Test
-  void it_should_reopen_issue_by_id() throws ExecutionException, InterruptedException {
-    server = newSonarQubeServer().start();
+  @SonarLintTest
+  void it_should_reopen_issue_by_id(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
+    var server = harness.newFakeSonarQubeServer().start();
     var issueId = UUID.randomUUID();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId)))
       .build();
@@ -407,13 +389,13 @@ class IssuesStatusChangeMediumTests {
     assertThat(storedIssues).isEmpty();
   }
 
-  @Test
-  void it_should_load_issues() {
-    server = newSonarQubeServer().start();
+  @SonarLintTest
+  void it_should_load_issues(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer().start();
     var issueId1 = UUID.randomUUID();
     var issueId2 = UUID.randomUUID();
     var otherFileIssueId = UUID.randomUUID();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey",
         storage -> storage
@@ -437,13 +419,13 @@ class IssuesStatusChangeMediumTests {
     assertThat(allIssues).extracting(LocalOnlyIssue::getId).containsOnly(issueId1, issueId2, otherFileIssueId);
   }
 
-  @Test
-  void it_should_reopen_all_issues_for_file() throws ExecutionException, InterruptedException {
-    server = newSonarQubeServer().start();
+  @SonarLintTest
+  void it_should_reopen_all_issues_for_file(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
+    var server = harness.newFakeSonarQubeServer().start();
     var issueId1 = UUID.randomUUID();
     var issueId2 = UUID.randomUUID();
     var otherFileIssueId = UUID.randomUUID();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey",
         storage -> storage
@@ -470,12 +452,12 @@ class IssuesStatusChangeMediumTests {
     assertThat(storedIssues).extracting(LocalOnlyIssue::getId).containsOnly(otherFileIssueId);
   }
 
-  @Test
-  void it_should_return_false_on_reopen_issue_with_invalid_id() throws ExecutionException, InterruptedException {
-    server = newSonarQubeServer().start();
+  @SonarLintTest
+  void it_should_return_false_on_reopen_issue_with_invalid_id(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
+    var server = harness.newFakeSonarQubeServer().start();
     var issueId = UUID.randomUUID();
     var invalidIssueId = "invalid-id";
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId)))
       .build();
@@ -488,12 +470,12 @@ class IssuesStatusChangeMediumTests {
     assertThat(storedIssues).extracting(LocalOnlyIssue::getId).containsOnly(issueId);
   }
 
-  @Test
-  void it_should_return_false_on_reopen_non_existing_issue() throws ExecutionException, InterruptedException {
-    server = newSonarQubeServer().start();
+  @SonarLintTest
+  void it_should_return_false_on_reopen_non_existing_issue(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
+    var server = harness.newFakeSonarQubeServer().start();
     var issueId = UUID.randomUUID();
     var nonExistingIssueId = UUID.randomUUID();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey", storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId)))
       .build();
@@ -508,12 +490,12 @@ class IssuesStatusChangeMediumTests {
       .containsOnly(issueId);
   }
 
-  @Test
-  void it_should_return_true_on_reopening_server_issue() throws ExecutionException, InterruptedException {
+  @SonarLintTest
+  void it_should_return_true_on_reopening_server_issue(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
     var serverIssue = aServerIssue("myIssueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")).withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG)
       .resolved();
-    server = newSonarQubeServer().start();
-    backend = newBackend()
+    var server = harness.newFakeSonarQubeServer().start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage
         .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue)))
         .withServerVersion("9.8"))

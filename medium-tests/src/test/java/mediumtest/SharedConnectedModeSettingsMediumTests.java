@@ -22,39 +22,30 @@ package mediumtest;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetSharedConnectedModeConfigFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetSharedConnectedModeConfigFileResponse;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarCloudServer;
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
 import static org.apache.commons.lang.StringUtils.removeEnd;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class SharedConnectedModeSettingsMediumTests {
-  private SonarLintTestRpcServer backend;
 
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
-  }
-
-  @Test
-  void should_throw_when_not_bound() {
+  @SonarLintTest
+  void should_throw_when_not_bound(SonarLintTestHarness harness) {
     var configScopeId = "file:///my/folder";
-    backend = newBackend()
+    var backend = harness.newBackend()
       .build();
 
-    var fileContents = getFileContents(configScopeId);
+    var fileContents = getFileContents(backend, configScopeId);
 
     assertThat(fileContents).failsWithin(1, TimeUnit.SECONDS);
   }
 
-  @Test
-  void should_return_sc_config_when_bound_to_sonarcloud() throws ExecutionException, InterruptedException {
+  @SonarLintTest
+  void should_return_sc_config_when_bound_to_sonarcloud(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
     var configScopeId = "file:///my/workspace/folder";
     var connectionId = "scConnection";
     var organizationKey = "myOrg";
@@ -65,16 +56,16 @@ class SharedConnectedModeSettingsMediumTests {
       "    \"projectKey\": \"%s\"\n" +
       "}", organizationKey, projectKey);
 
-    var server = newSonarCloudServer(organizationKey).start();
+    var server = harness.newFakeSonarCloudServer(organizationKey).start();
 
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarCloudUrl(server.baseUrl())
       .withSonarCloudConnection(connectionId, organizationKey)
       .withBoundConfigScope(configScopeId, connectionId, projectKey)
       .withTelemetryEnabled()
       .build();
 
-    var result = getFileContents(configScopeId);
+    var result = getFileContents(backend, configScopeId);
 
     assertThat(result).succeedsWithin(3, TimeUnit.SECONDS);
     assertThat(result.get().getJsonFileContent()).isEqualTo(expectedFileContent);
@@ -83,26 +74,26 @@ class SharedConnectedModeSettingsMediumTests {
       .contains("\"exportedConnectedModeCount\":1");
   }
 
-  @Test
-  void should_return_sq_config_when_bound_to_sonarqube() throws ExecutionException, InterruptedException {
+  @SonarLintTest
+  void should_return_sq_config_when_bound_to_sonarqube(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
     var configScopeId = "file:///my/workspace/folder";
     var connectionId = "scConnection";
     var projectKey = "projectKey";
 
-    var server = newSonarQubeServer().start();
+    var server = harness.newFakeSonarQubeServer().start();
 
     var expectedFileContent = String.format("{\n" +
       "    \"sonarQubeUri\": \"%s\",\n" +
       "    \"projectKey\": \"%s\"\n" +
       "}", removeEnd(server.baseUrl(), "/"), projectKey);
 
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection(connectionId, server)
       .withBoundConfigScope(configScopeId, connectionId, projectKey)
       .withTelemetryEnabled()
       .build();
 
-    var result = getFileContents(configScopeId);
+    var result = getFileContents(backend, configScopeId);
 
     assertThat(result).succeedsWithin(3, TimeUnit.SECONDS);
     assertThat(result.get().getJsonFileContent()).isEqualTo(expectedFileContent);
@@ -111,7 +102,7 @@ class SharedConnectedModeSettingsMediumTests {
       .contains("\"exportedConnectedModeCount\":1");
   }
 
-  private CompletableFuture<GetSharedConnectedModeConfigFileResponse> getFileContents(String configScopeId) {
+  private CompletableFuture<GetSharedConnectedModeConfigFileResponse> getFileContents(SonarLintTestRpcServer backend, String configScopeId) {
     return backend.getBindingService()
       .getSharedConnectedModeConfigFileContents(
         new GetSharedConnectedModeConfigFileParams(configScopeId));

@@ -21,19 +21,16 @@ package mediumtest.analysis;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.ActiveRuleDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
 
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -42,18 +39,10 @@ class RulesInConnectedModeMediumTests {
   private static final String CONFIG_SCOPE_ID = "config scope id";
   private static final String CONNECTION_ID = "myConnection";
   private static final String JAVA_MODULE_KEY = "sample-project";
-  private SonarLintTestRpcServer backend;
 
-  @AfterEach
-  void stopBackend() throws ExecutionException, InterruptedException {
-    if (backend != null) {
-      backend.shutdown().get();
-    }
-  }
-
-  @Test
-  void should_ignore_unknown_active_rule_parameters_and_convert_deprecated_keys() throws Exception {
-    backend = newBackend()
+  @SonarLintTest
+  void should_ignore_unknown_active_rule_parameters_and_convert_deprecated_keys(SonarLintTestHarness harness) throws Exception {
+    var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA)
       .withSonarQubeConnection(CONNECTION_ID)
       .withStorage(CONNECTION_ID, s -> s
@@ -82,9 +71,9 @@ class RulesInConnectedModeMediumTests {
         tuple("java:myCustomRule", "java", Map.of("message", "Needs to be reviewed", "regularExpression", ".*REVIEW.*"), "java:S124"));
   }
 
-  @Test
-  void hotspot_rules_should_be_active_when_feature_flag_is_enabled() throws Exception {
-    backend = newBackend()
+  @SonarLintTest
+  void hotspot_rules_should_be_active_when_feature_flag_is_enabled(SonarLintTestHarness harness) throws Exception {
+    var backend = harness.newBackend()
       .withSecurityHotspotsEnabled()
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .withSonarQubeConnection(CONNECTION_ID,
@@ -99,9 +88,9 @@ class RulesInConnectedModeMediumTests {
       .contains("java:S4792");
   }
 
-  @Test
-  void hotspot_rules_should_not_be_active_when_feature_flag_is_disabled() throws Exception {
-    backend = newBackend()
+  @SonarLintTest
+  void hotspot_rules_should_not_be_active_when_feature_flag_is_disabled(SonarLintTestHarness harness) throws Exception {
+    var backend = harness.newBackend()
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .withSonarQubeConnection(CONNECTION_ID,
         storage -> storage.withServerVersion("9.7").withProject(JAVA_MODULE_KEY, project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S4792", "INFO"))))
@@ -113,9 +102,9 @@ class RulesInConnectedModeMediumTests {
     assertThat(activeRules).isEmpty();
   }
 
-  @Test
-  void should_use_ipython_standalone_active_rules_in_connected_mode() throws Exception {
-    backend = newBackend()
+  @SonarLintTest
+  void should_use_ipython_standalone_active_rules_in_connected_mode(SonarLintTestHarness harness) throws Exception {
+    var backend = harness.newBackend()
       .withStandaloneEmbeddedPlugin(TestPlugin.PYTHON)
       .withEnabledLanguageInStandaloneMode(Language.IPYTHON)
       .withSonarQubeConnection(CONNECTION_ID,

@@ -23,39 +23,23 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckStatusChangePermittedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarCloudServer;
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class HotspotCheckStatusChangePermittedMediumTests {
 
-  private SonarLintRpcServer backend;
-  private ServerFixture.Server server;
+  @SonarLintTest
+  void it_should_fail_when_the_connection_is_unknown(SonarLintTestHarness harness) {
+    var backend = harness.newBackend().build();
 
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
-    if (server != null) {
-      server.shutdown();
-      server = null;
-    }
-  }
-
-  @Test
-  void it_should_fail_when_the_connection_is_unknown() {
-    backend = newBackend().build();
-
-    var response = checkStatusChangePermitted("connectionId");
+    var response = checkStatusChangePermitted(backend, "connectionId");
 
     assertThat(response)
       .failsWithin(Duration.ofSeconds(2))
@@ -65,15 +49,15 @@ class HotspotCheckStatusChangePermittedMediumTests {
       .withMessage("Connection 'connectionId' is gone");
   }
 
-  @Test
-  void it_should_return_3_statuses_for_sonarcloud() {
-    server = newSonarCloudServer().withProject("projectKey", project -> project.withDefaultBranch(branch -> branch.withHotspot("hotspotKey"))).start();
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_return_3_statuses_for_sonarcloud(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarCloudServer().withProject("projectKey", project -> project.withDefaultBranch(branch -> branch.withHotspot("hotspotKey"))).start();
+    var backend = harness.newBackend()
       .withSonarCloudUrl(server.baseUrl())
       .withSonarCloudConnection("connectionId", "orgKey")
       .build();
 
-    var response = checkStatusChangePermitted("connectionId");
+    var response = checkStatusChangePermitted(backend, "connectionId");
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
@@ -82,14 +66,14 @@ class HotspotCheckStatusChangePermittedMediumTests {
       .containsExactly(true, null, List.of(HotspotStatus.TO_REVIEW, HotspotStatus.FIXED, HotspotStatus.SAFE));
   }
 
-  @Test
-  void it_should_return_4_statuses_for_sonarqube() {
-    server = newSonarQubeServer().withProject("projectKey", project -> project.withDefaultBranch(branch -> branch.withHotspot("hotspotKey"))).start();
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_return_4_statuses_for_sonarqube(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer().withProject("projectKey", project -> project.withDefaultBranch(branch -> branch.withHotspot("hotspotKey"))).start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .build();
 
-    var response = checkStatusChangePermitted("connectionId");
+    var response = checkStatusChangePermitted(backend, "connectionId");
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
@@ -98,18 +82,18 @@ class HotspotCheckStatusChangePermittedMediumTests {
       .containsExactly(true, null, List.of(HotspotStatus.TO_REVIEW, HotspotStatus.ACKNOWLEDGED, HotspotStatus.FIXED, HotspotStatus.SAFE));
   }
 
-  @Test
-  void it_should_not_be_changeable_when_permission_missing() {
-    server = newSonarQubeServer()
+  @SonarLintTest
+  void it_should_not_be_changeable_when_permission_missing(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer()
       .withProject("projectKey",
         project -> project.withDefaultBranch(branch -> branch.withHotspot("hotspotKey",
           hotspot -> hotspot.withoutStatusChangePermission())))
       .start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .build();
 
-    var response = checkStatusChangePermitted("connectionId");
+    var response = checkStatusChangePermitted(backend, "connectionId");
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
@@ -119,7 +103,7 @@ class HotspotCheckStatusChangePermittedMediumTests {
         List.of(HotspotStatus.TO_REVIEW, HotspotStatus.ACKNOWLEDGED, HotspotStatus.FIXED, HotspotStatus.SAFE));
   }
 
-  private CompletableFuture<CheckStatusChangePermittedResponse> checkStatusChangePermitted(String connectionId) {
+  private CompletableFuture<CheckStatusChangePermittedResponse> checkStatusChangePermitted(SonarLintTestRpcServer backend, String connectionId) {
     return backend.getHotspotService().checkStatusChangePermitted(new CheckStatusChangePermittedParams(connectionId, "hotspotKey"));
   }
 }

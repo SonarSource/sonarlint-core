@@ -21,82 +21,64 @@ package mediumtest.connection;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetProjectNamesByKeyParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetProjectNamesByKeyResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarCloudServer;
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 
 class ConnectionGetProjectNameByKeyMediumTests {
-  private SonarLintRpcServer backend;
-  private ServerFixture.Server server;
 
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    if (backend != null) {
-      backend.shutdown().get();
-    }
-    if (server != null) {
-      server.shutdown();
-    }
-  }
+  @SonarLintTest
+  void it_should_return_null_if_no_projects_in_sonarqube(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer().start();
+    var backend = harness.newBackend().build();
 
-  @Test
-  void it_should_return_null_if_no_projects_in_sonarqube() {
-    server = newSonarQubeServer().start();
-    backend = newBackend().build();
-
-    var response = getProjectNamesByKey(new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto("token"))),
+    var response = getProjectNamesByKey(backend, new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto("token"))),
       List.of("myProject"));
 
     assertThat(response.getProjectNamesByKey().entrySet()).extracting(Map.Entry::getKey, Map.Entry::getValue)
       .containsExactlyInAnyOrder(tuple("myProject", null));
   }
 
-  @Test
-  void it_should_return_null_if_no_projects_in_sonarcloud_organization() {
-    server = newSonarCloudServer("myOrg").start();
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_return_null_if_no_projects_in_sonarcloud_organization(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarCloudServer("myOrg").start();
+    var backend = harness.newBackend()
       .withSonarCloudUrl(server.baseUrl())
       .build();
 
-    var response = getProjectNamesByKey(new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto("token"))), List.of(
+    var response = getProjectNamesByKey(backend, new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto("token"))), List.of(
       "myProject"));
 
     assertThat(response.getProjectNamesByKey().entrySet()).extracting(Map.Entry::getKey, Map.Entry::getValue)
       .containsExactlyInAnyOrder(tuple("myProject", null));
   }
 
-  @Test
-  void it_should_find_project_name_if_available_on_sonarqube() {
-    server = newSonarQubeServer()
+  @SonarLintTest
+  void it_should_find_project_name_if_available_on_sonarqube(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer()
       .withProject("project-foo1", project -> project.withName("My Company Project Foo 1"))
       .withProject("project-foo2", project -> project.withName("My Company Project Foo 2"))
       .withProject("project-foo3", project -> project.withName("My Company Project Foo 3"))
       .start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl())
       .build();
 
-    var response = getProjectNamesByKey(new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto("token"))),
+    var response = getProjectNamesByKey(backend, new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto("token"))),
       List.of("project-foo2", "project-foo3", "project-foo4"));
 
     assertThat(response.getProjectNamesByKey().entrySet()).extracting(Map.Entry::getKey, Map.Entry::getValue)
@@ -104,33 +86,33 @@ class ConnectionGetProjectNameByKeyMediumTests {
         "My Company Project Foo 3"));
   }
 
-  @Test
-  void it_should_find_project_names_if_available_on_sonarcloud() {
-    server = newSonarCloudServer("myOrg")
+  @SonarLintTest
+  void it_should_find_project_names_if_available_on_sonarcloud(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarCloudServer("myOrg")
       .withProject("projectKey1", project -> project.withName("MyProject1"))
       .withProject("projectKey2", project -> project.withName("MyProject2"))
       .withProject("projectKey3", project -> project.withName("MyProject3"))
       .start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarCloudUrl(server.baseUrl())
       .build();
 
-    var response = getProjectNamesByKey(new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto("token"))),
+    var response = getProjectNamesByKey(backend, new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto("token"))),
       List.of("projectKey2", "projectKey3", "projectKey4"));
 
     assertThat(response.getProjectNamesByKey().entrySet()).extracting(Map.Entry::getKey, Map.Entry::getValue)
       .containsExactlyInAnyOrder(tuple("projectKey4", null), tuple("projectKey2", "MyProject2"), tuple("projectKey3", "MyProject3"));
   }
 
-  @Test
-  void it_should_support_cancellation() {
+  @SonarLintTest
+  void it_should_support_cancellation(SonarLintTestHarness harness) {
     var myProjectKey = "myProjectKey";
-    server = newSonarQubeServer().start();
+    var server = harness.newFakeSonarQubeServer().start();
     server.getMockServer().stubFor(get("/api/components/show.protobuf?component=" + myProjectKey).willReturn(aResponse()
       .withStatus(200)
       .withFixedDelay(2000)));
-    var client = newFakeClient().build();
-    backend = newBackend().build(client);
+    var client = harness.newFakeClient().build();
+    var backend = harness.newBackend().build(client);
 
     var connectionDto = new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto(null)));
 
@@ -142,12 +124,11 @@ class ConnectionGetProjectNameByKeyMediumTests {
     await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Request cancelled"));
   }
 
-
-  private GetProjectNamesByKeyResponse getProjectNamesByKey(TransientSonarQubeConnectionDto connectionDto, List<String> projectKey) {
+  private GetProjectNamesByKeyResponse getProjectNamesByKey(SonarLintTestRpcServer backend, TransientSonarQubeConnectionDto connectionDto, List<String> projectKey) {
     return backend.getConnectionService().getProjectNamesByKey(new GetProjectNamesByKeyParams(connectionDto, projectKey)).join();
   }
 
-  private GetProjectNamesByKeyResponse getProjectNamesByKey(TransientSonarCloudConnectionDto connectionDto, List<String> projectKey) {
+  private GetProjectNamesByKeyResponse getProjectNamesByKey(SonarLintTestRpcServer backend, TransientSonarCloudConnectionDto connectionDto, List<String> projectKey) {
     return backend.getConnectionService().getProjectNamesByKey(new GetProjectNamesByKeyParams(connectionDto, projectKey)).join();
   }
 }

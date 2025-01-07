@@ -25,17 +25,11 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ClientTrackedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LineWithHashDto;
@@ -44,35 +38,24 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.MatchWithSer
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.MatchWithServerSecurityHotspotsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ServerMatchedSecurityHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
-import static org.sonarsource.sonarlint.core.test.utils.storage.ServerSecurityHotspotFixture.aServerHotspot;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.sonarsource.sonarlint.core.test.utils.storage.ServerSecurityHotspotFixture.aServerHotspot;
 
 class MatchWithServerHotspotsMediumTests {
 
-  private SonarLintRpcServer backend;
-  private ServerFixture.Server server;
-
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
-    if (server != null) {
-      server.shutdown();
-      server = null;
-    }
-  }
-
-  @Test
-  void it_should_not_track_server_hotspots_when_configuration_scope_is_not_bound() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_not_track_server_hotspots_when_configuration_scope_is_not_bound(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withUnboundConfigScope("configScopeId")
       .build();
 
     var response = matchWithServerHotspots(
-      new MatchWithServerSecurityHotspotsParams("configScopeId", Map.of(Path.of("filePath"), List.of(new ClientTrackedFindingDto(null, null, null, null, "ruleKey", "message"))), false));
+      backend, new MatchWithServerSecurityHotspotsParams("configScopeId", Map.of(Path.of("filePath"), List.of(new ClientTrackedFindingDto(null, null, null, null, "ruleKey", "message"))), false));
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
@@ -80,15 +63,15 @@ class MatchWithServerHotspotsMediumTests {
         .hasEntrySatisfying(Path.of("filePath"), hotspots -> assertThat(hotspots).hasSize(1).allSatisfy(hotspot -> assertThat(hotspot.isRight()).isTrue())));
   }
 
-  @Test
-  void it_should_track_local_only_hotspots() {
-    server = newSonarQubeServer().start();
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_track_local_only_hotspots(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer().start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
-    var response = matchWithServerHotspots(new MatchWithServerSecurityHotspotsParams("configScopeId",
+    var response = matchWithServerHotspots(backend, new MatchWithServerSecurityHotspotsParams("configScopeId",
       Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
@@ -102,15 +85,15 @@ class MatchWithServerHotspotsMediumTests {
         }));
   }
 
-  @Test
-  void it_should_track_hotspots_for_unknown_branch() {
-    server = newSonarQubeServer().start();
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_track_hotspots_for_unknown_branch(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer().start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
-    var response = matchWithServerHotspots(new MatchWithServerSecurityHotspotsParams("configScopeId",
+    var response = matchWithServerHotspots(backend, new MatchWithServerSecurityHotspotsParams("configScopeId",
       Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
@@ -124,20 +107,20 @@ class MatchWithServerHotspotsMediumTests {
         }));
   }
 
-  @Test
-  void it_should_track_with_a_known_server_hotspot_at_the_same_location() {
+  @SonarLintTest
+  void it_should_track_with_a_known_server_hotspot_at_the_same_location(SonarLintTestHarness harness) {
     var serverHotspot = aServerHotspot("hotspotKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")).withIntroductionDate(Instant.EPOCH.plusSeconds(1))
       .withStatus(HotspotReviewStatus.SAFE);
-    var client = newFakeClient().build();
-    server = newSonarQubeServer()
+    var client = harness.newFakeClient().build();
+    var server = harness.newFakeSonarQubeServer()
       .withProject("projectKey").start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server, storage -> storage
         .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withHotspot(serverHotspot))))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build(client);
 
-    var response = matchWithServerHotspots(new MatchWithServerSecurityHotspotsParams("configScopeId",
+    var response = matchWithServerHotspots(backend, new MatchWithServerSecurityHotspotsParams("configScopeId",
       Map.of(Path.of("file/path"), List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "ruleKey", "message"))),
       false));
 
@@ -149,22 +132,22 @@ class MatchWithServerHotspotsMediumTests {
             new ServerMatchedSecurityHotspotDto(null, "hotspotKey", 1000L, HotspotStatus.SAFE, true))))));
   }
 
-  @Test
-  void it_should_track_with_a_server_only_hotspot_when_fetching_from_legacy_server_requested() {
-    server = newSonarQubeServer("10.0").withProject("projectKey",
+  @SonarLintTest
+  void it_should_track_with_a_server_only_hotspot_when_fetching_from_legacy_server_requested(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer("10.0").withProject("projectKey",
         project -> project.withBranch("main", branch -> branch.withHotspot("hotspotKey",
           hotspot -> hotspot.withRuleKey("rule:key").withMessage("message").withFilePath("file/path").withAuthor("author").withStatus(HotspotReviewStatus.TO_REVIEW)
             .withCreationDate(Instant.ofEpochMilli(123456789))
             .withTextRange(new TextRange(1, 2, 3, 4)))))
       .start();
-    var client = newFakeClient().build();
-    backend = newBackend()
+    var client = harness.newFakeClient().build();
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server, storage -> storage.withServerVersion("10.0")
         .withProject("projectKey", project -> project.withMainBranch("main")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build(client);
 
-    var response = matchWithServerHotspots(new MatchWithServerSecurityHotspotsParams("configScopeId",
+    var response = matchWithServerHotspots(backend, new MatchWithServerSecurityHotspotsParams("configScopeId",
       Map.of(Path.of("file/path"),
         List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "rule:key", "message"))),
       true));
@@ -177,20 +160,20 @@ class MatchWithServerHotspotsMediumTests {
             new ServerMatchedSecurityHotspotDto(null, "hotspotKey", 123456000L, HotspotStatus.TO_REVIEW, true))))));
   }
 
-  @Test
-  void it_should_download_all_hotspots_at_once_when_tracking_hotspots_from_more_than_10_files() {
-    server = newSonarQubeServer("10.0").withProject("projectKey",
+  @SonarLintTest
+  void it_should_download_all_hotspots_at_once_when_tracking_hotspots_from_more_than_10_files(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer("10.0").withProject("projectKey",
         project -> project.withBranch("main",
           branch -> branch.withIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, Instant.now(), new TextRange(1, 2, 3, 4))))
       .start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl(), storage -> storage.withServerVersion("9.5"))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
     var hotspotsByServerRelativePath = IntStream.rangeClosed(1, 11).boxed().collect(Collectors.<Integer, Path, List<ClientTrackedFindingDto>>toMap(index -> Path.of("file/path" + index),
       i -> List.of(new ClientTrackedFindingDto(null, null, new TextRangeWithHashDto(1, 2, 3, 4, "hash"), new LineWithHashDto(1, "linehash"), "rule:key", "message"))));
 
-    var response = matchWithServerHotspots(new MatchWithServerSecurityHotspotsParams("configScopeId", hotspotsByServerRelativePath, true));
+    var response = matchWithServerHotspots(backend, new MatchWithServerSecurityHotspotsParams("configScopeId", hotspotsByServerRelativePath, true));
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(4))
@@ -198,7 +181,7 @@ class MatchWithServerHotspotsMediumTests {
         .hasSize(11));
   }
 
-  private CompletableFuture<MatchWithServerSecurityHotspotsResponse> matchWithServerHotspots(MatchWithServerSecurityHotspotsParams params) {
+  private CompletableFuture<MatchWithServerSecurityHotspotsResponse> matchWithServerHotspots(SonarLintTestRpcServer backend, MatchWithServerSecurityHotspotsParams params) {
     return backend.getSecurityHotspotMatchingService().matchWithServerSecurityHotspots(params);
   }
 }

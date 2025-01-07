@@ -26,11 +26,8 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
@@ -40,6 +37,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordA
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.ProxyDto;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -50,8 +50,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -62,7 +60,6 @@ import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBo
 class ProxyMediumTests {
 
   public static final String PROXY_AUTH_ENABLED = "proxy-auth";
-  private SonarLintTestRpcServer backend;
 
   @RegisterExtension
   static WireMockExtension sonarqubeMock = WireMockExtension.newInstance()
@@ -100,21 +97,14 @@ class ProxyMediumTests {
     }
   }
 
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    if (backend != null) {
-      backend.shutdown().get();
-    }
-  }
-
-  @Test
-  void it_should_honor_http_proxy_settings() {
-    var fakeClient = newFakeClient()
+  @SonarLintTest
+  void it_should_honor_http_proxy_settings(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient()
       .build();
 
     when(fakeClient.selectProxies(any())).thenReturn(List.of(new ProxyDto(Proxy.Type.HTTP, "localhost", proxyMock.getPort())));
 
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(SonarLanguage.PYTHON.getSonarLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
@@ -126,21 +116,21 @@ class ProxyMediumTests {
         .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc from server").build())
         .build()))));
 
-    var details = getEffectiveRuleDetails("scopeId", "python:S139");
+    var details = getEffectiveRuleDetails(backend, "scopeId", "python:S139");
 
     assertThat(details.getDescription().getLeft().getHtmlContent()).contains("extendedDesc from server");
 
     proxyMock.verify(getRequestedFor(urlEqualTo("/api/rules/show.protobuf?key=python:S139")));
   }
 
-  @Test
-  void it_should_honor_http_direct_proxy_settings() {
-    var fakeClient = newFakeClient()
+  @SonarLintTest
+  void it_should_honor_http_direct_proxy_settings(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient()
       .build();
 
     when(fakeClient.selectProxies(any())).thenReturn(List.of(ProxyDto.NO_PROXY));
 
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(SonarLanguage.PYTHON.getSonarLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
@@ -152,7 +142,7 @@ class ProxyMediumTests {
         .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc from server").build())
         .build()))));
 
-    var details = getEffectiveRuleDetails("scopeId", "python:S139");
+    var details = getEffectiveRuleDetails(backend, "scopeId", "python:S139");
 
     assertThat(details.getDescription().getLeft().getHtmlContent()).contains("extendedDesc from server");
 
@@ -160,18 +150,18 @@ class ProxyMediumTests {
     proxyMock.verify(0, getRequestedFor(urlEqualTo("/api/rules/show.protobuf?key=python:S139")));
   }
 
-  @Test
+  @SonarLintTest
   @Tag(PROXY_AUTH_ENABLED)
-  void it_should_honor_http_proxy_authentication() {
+  void it_should_honor_http_proxy_authentication(SonarLintTestHarness harness) {
     var proxyLogin = "proxyLogin";
     var proxyPassword = "proxyPassword";
-    var fakeClient = newFakeClient().build();
+    var fakeClient = harness.newFakeClient().build();
 
     when(fakeClient.selectProxies(any())).thenReturn(List.of(new ProxyDto(Proxy.Type.HTTP, "localhost", proxyMock.getPort())));
     when(fakeClient.getProxyPasswordAuthentication(anyString(), anyInt(), anyString(), anyString(), anyString(), any()))
       .thenReturn(new GetProxyPasswordAuthenticationResponse(proxyLogin, proxyPassword));
 
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(SonarLanguage.PYTHON.getSonarLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
@@ -183,7 +173,7 @@ class ProxyMediumTests {
         .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc from server").build())
         .build()))));
 
-    var details = getEffectiveRuleDetails("scopeId", "python:S139");
+    var details = getEffectiveRuleDetails(backend, "scopeId", "python:S139");
 
     assertThat(details.getDescription().getLeft().getHtmlContent()).contains("extendedDesc from server");
 
@@ -191,17 +181,17 @@ class ProxyMediumTests {
       .withHeader("Proxy-Authorization", equalTo("Basic " + Base64.getEncoder().encodeToString((proxyLogin + ":" + proxyPassword).getBytes(StandardCharsets.UTF_8)))));
   }
 
-  @Test
+  @SonarLintTest
   @Tag(PROXY_AUTH_ENABLED)
-  void it_should_honor_http_proxy_authentication_with_null_password() {
+  void it_should_honor_http_proxy_authentication_with_null_password(SonarLintTestHarness harness) {
     var proxyLogin = "proxyLogin";
-    var fakeClient = newFakeClient().build();
+    var fakeClient = harness.newFakeClient().build();
 
     when(fakeClient.selectProxies(any())).thenReturn(List.of(new ProxyDto(Proxy.Type.HTTP, "localhost", proxyMock.getPort())));
     when(fakeClient.getProxyPasswordAuthentication(anyString(), anyInt(), anyString(), anyString(), anyString(), any()))
       .thenReturn(new GetProxyPasswordAuthenticationResponse(proxyLogin, null));
 
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(SonarLanguage.PYTHON.getSonarLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
@@ -213,7 +203,7 @@ class ProxyMediumTests {
         .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc from server").build())
         .build()))));
 
-    var details = getEffectiveRuleDetails("scopeId", "python:S139");
+    var details = getEffectiveRuleDetails(backend, "scopeId", "python:S139");
 
     assertThat(details.getDescription().getLeft().getHtmlContent()).contains("extendedDesc from server");
 
@@ -221,17 +211,17 @@ class ProxyMediumTests {
       .withHeader("Proxy-Authorization", equalTo("Basic " + Base64.getEncoder().encodeToString((proxyLogin + ":").getBytes(StandardCharsets.UTF_8)))));
   }
 
-  @Test
+  @SonarLintTest
   @Tag(PROXY_AUTH_ENABLED)
-  void it_should_fail_if_proxy_port_is_smaller_than_valid_range() {
+  void it_should_fail_if_proxy_port_is_smaller_than_valid_range(SonarLintTestHarness harness) {
     var proxyLogin = "proxyLogin";
-    var fakeClient = newFakeClient().build();
+    var fakeClient = harness.newFakeClient().build();
 
     when(fakeClient.selectProxies(any())).thenReturn(List.of(new ProxyDto(Proxy.Type.HTTP, "localhost", -1)));
     when(fakeClient.getProxyPasswordAuthentication(anyString(), anyInt(), anyString(), anyString(), anyString(), any()))
       .thenReturn(new GetProxyPasswordAuthenticationResponse(proxyLogin, null));
 
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(SonarLanguage.PYTHON.getSonarLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
@@ -243,7 +233,7 @@ class ProxyMediumTests {
         .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc from server").build())
         .build()))));
 
-    var details = getEffectiveRuleDetails("scopeId", "python:S139");
+    var details = getEffectiveRuleDetails(backend, "scopeId", "python:S139");
 
     assertThat(details.getDescription().getLeft().getHtmlContent()).contains("extendedDesc from server");
 
@@ -256,17 +246,17 @@ class ProxyMediumTests {
       );
   }
 
-  @Test
+  @SonarLintTest
   @Tag(PROXY_AUTH_ENABLED)
-  void it_should_fail_if_proxy_port_is_higher_than_valid_range() {
+  void it_should_fail_if_proxy_port_is_higher_than_valid_range(SonarLintTestHarness harness) {
     var proxyLogin = "proxyLogin";
-    var fakeClient = newFakeClient().build();
+    var fakeClient = harness.newFakeClient().build();
 
     when(fakeClient.selectProxies(any())).thenReturn(List.of(new ProxyDto(Proxy.Type.HTTP, "localhost", 70000)));
     when(fakeClient.getProxyPasswordAuthentication(anyString(), anyInt(), anyString(), anyString(), anyString(), any()))
       .thenReturn(new GetProxyPasswordAuthenticationResponse(proxyLogin, null));
 
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(SonarLanguage.PYTHON.getSonarLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
@@ -278,7 +268,7 @@ class ProxyMediumTests {
         .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc from server").build())
         .build()))));
 
-    var details = getEffectiveRuleDetails("scopeId", "python:S139");
+    var details = getEffectiveRuleDetails(backend, "scopeId", "python:S139");
 
     assertThat(details.getDescription().getLeft().getHtmlContent()).contains("extendedDesc from server");
 
@@ -291,9 +281,9 @@ class ProxyMediumTests {
       );
   }
 
-  private EffectiveRuleDetailsDto getEffectiveRuleDetails(String configScopeId, String ruleKey) {
+  private EffectiveRuleDetailsDto getEffectiveRuleDetails(SonarLintTestRpcServer backend, String configScopeId, String ruleKey) {
     try {
-      return this.backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, ruleKey, null)).get().details();
+      return backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, ruleKey, null)).get().details();
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }

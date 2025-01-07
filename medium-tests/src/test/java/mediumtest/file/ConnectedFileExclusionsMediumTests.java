@@ -24,29 +24,25 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.FileStatusDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.GetFilesStatusParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Settings;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
+import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
@@ -60,8 +56,6 @@ class ConnectedFileExclusionsMediumTests {
   private static final String CONFIG_SCOPE_ID = "myProject1";
   private static final String PROJECT_KEY = "test-project-2";
 
-  private SonarLintRpcServer backend;
-  private ServerFixture.Server server;
   private String previousSyncPeriod;
 
   @BeforeEach
@@ -71,21 +65,17 @@ class ConnectedFileExclusionsMediumTests {
   }
 
   @AfterEach
-  void stop() throws ExecutionException, InterruptedException, TimeoutException {
+  void stop() {
     if (previousSyncPeriod != null) {
       System.setProperty("sonarlint.internal.synchronization.scope.period", previousSyncPeriod);
     } else {
       System.clearProperty("sonarlint.internal.synchronization.scope.period");
     }
-    backend.shutdown().get(5, TimeUnit.SECONDS);
-    if (server != null) {
-      server.shutdown();
-    }
   }
 
-  @Test
-  void fileInclusionsExclusions(@TempDir Path tmp) throws InterruptedException {
-    server = newSonarQubeServer()
+  @SonarLintTest
+  void fileInclusionsExclusions(SonarLintTestHarness harness, @TempDir Path tmp) throws InterruptedException {
+    var server = harness.newFakeSonarQubeServer()
       .withProject(PROJECT_KEY)
       .start();
 
@@ -98,13 +88,13 @@ class ConnectedFileExclusionsMediumTests {
     var testFile2 = tmp.resolve("test/foo2Test.xoo");
     var testFile2Dto = new ClientFileDto(testFile2.toUri(), tmp.resolve(testFile2), CONFIG_SCOPE_ID, true, StandardCharsets.UTF_8.name(), testFile2, null, null, true);
 
-    var fakeClient = newFakeClient()
+    var fakeClient = harness.newFakeClient()
       .printLogsToStdOut()
       .withInitialFs(CONFIG_SCOPE_ID,
         List.of(mainFile1Dto, mainFile2Dto, testFile1Dto, testFile2Dto))
       .build();
 
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection(MYSONAR, server)
       .withBoundConfigScope(CONFIG_SCOPE_ID, MYSONAR, PROJECT_KEY)
       .withFullSynchronization()
@@ -125,7 +115,7 @@ class ConnectedFileExclusionsMediumTests {
         tuple(testFile2.toUri(), false));
 
     mockSonarProjectSettings(server, Map.of("sonar.inclusions", "src/**"));
-    forceSyncOfConfigScope(fakeClient);
+    forceSyncOfConfigScope(backend, fakeClient);
 
     var future2 = backend.getFileService()
       .getFilesStatus(new GetFilesStatusParams(Map.of(CONFIG_SCOPE_ID, List.of(mainFile1.toUri(), mainFile2.toUri(), testFile1.toUri(), testFile2.toUri()))));
@@ -138,7 +128,7 @@ class ConnectedFileExclusionsMediumTests {
         tuple(testFile2.toUri(), false)));
 
     mockSonarProjectSettings(server, Map.of("sonar.inclusions", "file:**/src/**"));
-    forceSyncOfConfigScope(fakeClient);
+    forceSyncOfConfigScope(backend, fakeClient);
 
     var future3 = backend.getFileService()
       .getFilesStatus(new GetFilesStatusParams(Map.of(CONFIG_SCOPE_ID, List.of(mainFile1.toUri(), mainFile2.toUri(), testFile1.toUri(), testFile2.toUri()))));
@@ -151,7 +141,7 @@ class ConnectedFileExclusionsMediumTests {
         tuple(testFile2.toUri(), false)));
 
     mockSonarProjectSettings(server, Map.of("sonar.exclusions", "src/**"));
-    forceSyncOfConfigScope(fakeClient);
+    forceSyncOfConfigScope(backend, fakeClient);
 
     var future4 = backend.getFileService()
       .getFilesStatus(new GetFilesStatusParams(Map.of(CONFIG_SCOPE_ID, List.of(mainFile1.toUri(), mainFile2.toUri(), testFile1.toUri(), testFile2.toUri()))));
@@ -164,7 +154,7 @@ class ConnectedFileExclusionsMediumTests {
         tuple(testFile2.toUri(), false)));
 
     mockSonarProjectSettings(server, Map.of("sonar.test.inclusions", "test/**"));
-    forceSyncOfConfigScope(fakeClient);
+    forceSyncOfConfigScope(backend, fakeClient);
 
     var future5 = backend.getFileService()
       .getFilesStatus(new GetFilesStatusParams(Map.of(CONFIG_SCOPE_ID, List.of(mainFile1.toUri(), mainFile2.toUri(), testFile1.toUri(), testFile2.toUri()))));
@@ -177,7 +167,7 @@ class ConnectedFileExclusionsMediumTests {
         tuple(testFile2.toUri(), false)));
 
     mockSonarProjectSettings(server, Map.of("sonar.test.exclusions", "test/**"));
-    forceSyncOfConfigScope(fakeClient);
+    forceSyncOfConfigScope(backend, fakeClient);
 
     var future6 = backend.getFileService()
       .getFilesStatus(new GetFilesStatusParams(Map.of(CONFIG_SCOPE_ID, List.of(mainFile1.toUri(), mainFile2.toUri(), testFile1.toUri(), testFile2.toUri()))));
@@ -190,7 +180,7 @@ class ConnectedFileExclusionsMediumTests {
         tuple(testFile2.toUri(), true)));
 
     mockSonarProjectSettings(server, Map.of("sonar.inclusions", "file:**/src/**", "sonar.test.exclusions", "**/*Test.*"));
-    forceSyncOfConfigScope(fakeClient);
+    forceSyncOfConfigScope(backend, fakeClient);
 
     var future7 = backend.getFileService()
       .getFilesStatus(new GetFilesStatusParams(Map.of(CONFIG_SCOPE_ID, List.of(mainFile1.toUri(), mainFile2.toUri(), testFile1.toUri(), testFile2.toUri()))));
@@ -203,22 +193,22 @@ class ConnectedFileExclusionsMediumTests {
         tuple(testFile2.toUri(), true)));
   }
 
-  @Test
-  void it_should_not_try_to_compute_exclusions_when_storage_is_empty(@TempDir Path tmp) {
-    server = newSonarQubeServer()
+  @SonarLintTest
+  void it_should_not_try_to_compute_exclusions_when_storage_is_empty(SonarLintTestHarness harness, @TempDir Path tmp) {
+    var server = harness.newFakeSonarQubeServer()
       .withProject(PROJECT_KEY)
       .start();
 
     var mainFile1 = tmp.resolve("src/foo1.xoo");
     var mainFile1Dto = new ClientFileDto(mainFile1.toUri(), tmp.resolve(mainFile1), CONFIG_SCOPE_ID, false, StandardCharsets.UTF_8.name(), mainFile1, null, null, true);
 
-    var fakeClient = newFakeClient()
+    var fakeClient = harness.newFakeClient()
       .printLogsToStdOut()
       .withInitialFs(CONFIG_SCOPE_ID,
         List.of(mainFile1Dto))
       .build();
 
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection(MYSONAR, server)
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withFullSynchronization()
@@ -234,29 +224,29 @@ class ConnectedFileExclusionsMediumTests {
       .containsOnly(false);
   }
 
-  @Test
-  void it_should_fallback_to_default_charset_if_encoding_is_unknown(@TempDir Path tmp) throws InterruptedException {
-    server = newSonarQubeServer()
+  @SonarLintTest
+  void it_should_fallback_to_default_charset_if_encoding_is_unknown(SonarLintTestHarness harness, @TempDir Path tmp) throws InterruptedException {
+    var server = harness.newFakeSonarQubeServer()
       .withProject(PROJECT_KEY)
       .start();
 
     var mainFile1 = tmp.resolve("src/foo1.xoo");
     var mainFile1Dto = new ClientFileDto(mainFile1.toUri(), tmp.resolve(mainFile1), CONFIG_SCOPE_ID, false, "wrongCharset", mainFile1, "Toto", null, true);
 
-    var fakeClient = newFakeClient()
+    var fakeClient = harness.newFakeClient()
       .printLogsToStdOut()
       .withInitialFs(CONFIG_SCOPE_ID, List.of(mainFile1Dto))
       .build();
     mockSonarProjectSettings(server, Map.of("sonar.exclusions", "src/**"));
 
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection(MYSONAR, server)
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withFullSynchronization()
       .withProjectSynchronization()
       .build(fakeClient);
     mockSonarProjectSettings(server, Map.of("sonar.exclusions", "src/**"));
-    forceSyncOfConfigScope(fakeClient);
+    forceSyncOfConfigScope(backend, fakeClient);
 
     var response = backend.getFileService().getFilesStatus(new GetFilesStatusParams(Map.of(CONFIG_SCOPE_ID, List.of((mainFile1.toUri()))))).join();
 
@@ -265,7 +255,7 @@ class ConnectedFileExclusionsMediumTests {
       .containsOnly(true);
   }
 
-  private void forceSyncOfConfigScope(SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient) throws InterruptedException {
+  private void forceSyncOfConfigScope(SonarLintTestRpcServer backend, SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient) throws InterruptedException {
     Thread.sleep(100);
     Mockito.clearInvocations(fakeClient);
     backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID, new BindingConfigurationDto(null, null, true)));

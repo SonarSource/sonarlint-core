@@ -24,15 +24,9 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
-import org.assertj.core.api.Assertions;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
@@ -43,12 +37,11 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeVCSCh
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
 
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -64,32 +57,20 @@ import static utils.AnalysisUtils.createFile;
 class AnalysisForcedByClientMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
-  private SonarLintTestRpcServer backend;
-  private ServerFixture.Server serverWithHotspots;
 
-  @AfterEach
-  void stop() throws ExecutionException, InterruptedException {
-    if (backend != null) {
-      backend.shutdown().get();
-    }
-    if (serverWithHotspots != null) {
-      serverWithHotspots.shutdown();
-    }
-  }
-
-  @Test
-  void should_run_forced_analysis_for_list_of_files(@TempDir Path baseDir) {
+  @SonarLintTest
+  void should_run_forced_analysis_for_list_of_files(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath1 = createFile(baseDir, "Foo.java",
       "public interface Foo {}");
     var filePath2 = createFile(baseDir, "Bar.java",
       "public interface Bar {}");
     var fileUri1 = filePath1.toUri();
     var fileUri2 = filePath2.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri1, baseDir.relativize(filePath1), CONFIG_SCOPE_ID, false, null, filePath1, null, null, true),
         new ClientFileDto(fileUri2, baseDir.relativize(filePath2), CONFIG_SCOPE_ID, false, null, filePath2, null, null, true)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .build(client);
@@ -102,21 +83,21 @@ class AnalysisForcedByClientMediumTests {
     assertThat(raisedIssues).hasSize(2);
   }
 
-  @Test
-  void should_run_forced_analysis_for_open_files(@TempDir Path baseDir) {
+  @SonarLintTest
+  void should_run_forced_analysis_for_open_files(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath1 = createFile(baseDir, "Foo.java", "public interface Foo {}");
     var filePath2 = createFile(baseDir, "Bar.java", "public interface Bar {}");
     var filePath3 = createFile(baseDir, "Baz.java", "public interface Baz {}");
     var fileUri1 = filePath1.toUri();
     var fileUri2 = filePath2.toUri();
     var fileUri3 = filePath3.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
         new ClientFileDto(fileUri1, baseDir.relativize(filePath1), CONFIG_SCOPE_ID, false, null, filePath1, null, null, true),
         new ClientFileDto(fileUri2, baseDir.relativize(filePath2), CONFIG_SCOPE_ID, false, null, filePath2, null, null, true),
         new ClientFileDto(fileUri3, baseDir.relativize(filePath3), CONFIG_SCOPE_ID, false, null, filePath3, null, null, true)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .build(client);
@@ -130,8 +111,8 @@ class AnalysisForcedByClientMediumTests {
     assertThat(raisedIssues).hasSize(2);
   }
 
-  @Test
-  void should_run_forced_analysis_vcs_changed_files(@TempDir Path baseDir) throws IOException, GitAPIException {
+  @SonarLintTest
+  void should_run_forced_analysis_vcs_changed_files(SonarLintTestHarness harness, @TempDir Path baseDir) throws IOException, GitAPIException {
     var git = createRepository(baseDir);
 
     var fileFoo = createFile(baseDir, "Foo.java", "public interface Foo {}");
@@ -148,14 +129,14 @@ class AnalysisForcedByClientMediumTests {
     var fileBarUri = fileBar.toUri();
     var fileBazUri = fileBaz.toUri();
     var fileQuxUri = fileQux.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
         new ClientFileDto(fileFooUri, baseDir.relativize(fileFoo), CONFIG_SCOPE_ID, false, null, fileFoo, null, null, true),
         new ClientFileDto(fileBarUri, baseDir.relativize(fileBar), CONFIG_SCOPE_ID, false, null, fileBar, null, null, true),
         new ClientFileDto(fileBazUri, baseDir.relativize(fileBaz), CONFIG_SCOPE_ID, false, null, fileBaz, null, null, true),
         new ClientFileDto(fileQuxUri, baseDir.relativize(fileQux), CONFIG_SCOPE_ID, false, null, fileQux, null, null, true)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .build(client);
@@ -167,9 +148,9 @@ class AnalysisForcedByClientMediumTests {
     assertThat(raisedIssues).hasSize(3);
   }
 
-  @Test
+  @SonarLintTest
   @Disabled("Flaky tests")
-  void should_run_forced_full_project_analysis_only_for_hotspots(@TempDir Path baseDir) {
+  void should_run_forced_full_project_analysis_only_for_hotspots(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var fileFoo = createFile(baseDir, "Foo.java", "public class Foo {\n" +
       "\n" +
       "  void foo() {\n" +
@@ -183,7 +164,7 @@ class AnalysisForcedByClientMediumTests {
     var connectionId = "connectionId";
     var branchName = "branchName";
     var projectKey = "projectKey";
-    serverWithHotspots = newSonarQubeServer("10.4")
+    var serverWithHotspots = harness.newFakeSonarQubeServer("10.4")
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java")
         .withActiveRule("java:S2068", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
       .withProject(projectKey,
@@ -192,19 +173,19 @@ class AnalysisForcedByClientMediumTests {
           .withBranch(branchName))
       .withPlugin(TestPlugin.JAVA)
       .start();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
         new ClientFileDto(fileFooUri, baseDir.relativize(fileFoo), CONFIG_SCOPE_ID, false, null, fileFoo, null, null, true),
         new ClientFileDto(fileBarUri, baseDir.relativize(fileBar), CONFIG_SCOPE_ID, false, null, fileBar, null, null, true)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withFullSynchronization()
       .withSecurityHotspotsEnabled()
       .withSonarQubeConnection(connectionId, serverWithHotspots)
       .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
       .build(client);
-    await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> Assertions.assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
+    await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
 
     backend.getAnalysisService().analyzeFullProject(new AnalyzeFullProjectParams(CONFIG_SCOPE_ID, true));
     await().atMost(40, TimeUnit.SECONDS).untilAsserted(() ->
@@ -222,9 +203,9 @@ class AnalysisForcedByClientMediumTests {
     assertThat(raisedHotspotsForBar).isEmpty();
   }
 
-  @Test
+  @SonarLintTest
   @Disabled("Flaky test")
-  void should_run_forced_full_project_analysis_for_all_findings(@TempDir Path baseDir) {
+  void should_run_forced_full_project_analysis_for_all_findings(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var fileFoo = createFile(baseDir, "Foo.java", "public class Foo {\n" +
       "\n" +
       "  void foo() {\n" +
@@ -238,7 +219,7 @@ class AnalysisForcedByClientMediumTests {
     var connectionId = "connectionId";
     var branchName = "branchName";
     var projectKey = "projectKey";
-    serverWithHotspots = newSonarQubeServer("10.4")
+    var serverWithHotspots = harness.newFakeSonarQubeServer("10.4")
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java")
         .withActiveRule("java:S2068", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR))
         .withActiveRule("java:S1220", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
@@ -248,19 +229,19 @@ class AnalysisForcedByClientMediumTests {
           .withBranch(branchName))
       .withPlugin(TestPlugin.JAVA)
       .start();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
         new ClientFileDto(fileFooUri, baseDir.relativize(fileFoo), CONFIG_SCOPE_ID, false, null, fileFoo, null, null, true),
         new ClientFileDto(fileBarUri, baseDir.relativize(fileBar), CONFIG_SCOPE_ID, false, null, fileBar, null, null, true)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withFullSynchronization()
       .withSecurityHotspotsEnabled()
       .withSonarQubeConnection(connectionId, serverWithHotspots)
       .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
       .build(client);
-    await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> Assertions.assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
+    await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
 
     backend.getAnalysisService().analyzeFullProject(new AnalyzeFullProjectParams(CONFIG_SCOPE_ID, false));
     await().atMost(40, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).hasSize(2));
@@ -276,8 +257,8 @@ class AnalysisForcedByClientMediumTests {
     assertThat(raisedHotspotsForBar).isEmpty();
   }
 
-  @Test
-  void should_not_check_file_exclusions_for_forced_analysis(@TempDir Path baseDir) {
+  @SonarLintTest
+  void should_not_check_file_exclusions_for_forced_analysis(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml",
       "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         + "<project>\n"
@@ -287,11 +268,11 @@ class AnalysisForcedByClientMediumTests {
         + "  <version>${pom.version}</version>\n"
         + "</project>");
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .withFileExclusions(CONFIG_SCOPE_ID, Set.of("**/*.xml"))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .build(client);

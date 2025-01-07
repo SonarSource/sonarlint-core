@@ -24,65 +24,55 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.GetEffectiveIssueDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
 
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
-import static org.sonarsource.sonarlint.core.test.utils.storage.ServerTaintIssueFixtures.aServerTaintIssue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.sonarsource.sonarlint.core.test.utils.storage.ServerTaintIssueFixtures.aServerTaintIssue;
 
 class TaintVulnerabilitiesMediumTests {
 
-  private SonarLintRpcServer backend;
-
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
-  }
-
-  @Test
-  void it_should_return_no_taint_vulnerabilities_if_the_scope_is_not_bound() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_return_no_taint_vulnerabilities_if_the_scope_is_not_bound(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .build();
 
-    var taintVulnerabilities = listAllTaintVulnerabilities("configScopeId");
+    var taintVulnerabilities = listAllTaintVulnerabilities(backend, "configScopeId");
 
     assertThat(taintVulnerabilities).isEmpty();
   }
 
-  @Test
-  void it_should_return_no_taint_vulnerabilities_if_the_storage_is_empty() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_return_no_taint_vulnerabilities_if_the_storage_is_empty(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
-    var taintVulnerabilities = listAllTaintVulnerabilities("configScopeId");
+    var taintVulnerabilities = listAllTaintVulnerabilities(backend, "configScopeId");
 
     assertThat(taintVulnerabilities).isEmpty();
   }
 
-  @Test
-  void it_should_return_the_stored_taint_vulnerabilities() {
-    var server = newSonarQubeServer()
+  @SonarLintTest
+  void it_should_return_the_stored_taint_vulnerabilities(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer()
       .withProject("projectKey", project -> project.withBranch("main"))
       .start();
     var introductionDate = Instant.now().truncatedTo(ChronoUnit.MILLIS);
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server,
         storage -> storage.withProject("projectKey",
           project -> project.withMainBranch("main",
@@ -94,19 +84,18 @@ class TaintVulnerabilitiesMediumTests {
       .withFullSynchronization()
       .build();
 
-    await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(listAllTaintVulnerabilities("configScopeId"))
+    await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(listAllTaintVulnerabilities(backend, "configScopeId"))
       .extracting(TaintVulnerabilityDto::getIntroductionDate)
       .containsOnly(introductionDate));
   }
 
-  @Test
-  void it_should_return_taint_details() {
-    var client = newFakeClient().build();
+  @SonarLintTest
+  void it_should_return_taint_details(SonarLintTestHarness harness) {
+    var client = harness.newFakeClient().build();
 
-    var server = newSonarQubeServer()
+    var server = harness.newFakeSonarQubeServer()
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java").withActiveRule("javasecurity:S6549", activeRule -> activeRule
-        .withSeverity(org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.MAJOR)
-      ))
+        .withSeverity(org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.MAJOR)))
       .withProject("projectKey", project -> project.withBranch("main")
         .withQualityProfile("qpKey"))
       .withPlugin(TestPlugin.JAVA)
@@ -117,7 +106,7 @@ class TaintVulnerabilitiesMediumTests {
       .withType(RuleType.VULNERABILITY)
       .withIntroductionDate(introductionDate);
 
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withExtraEnabledLanguagesInConnectedMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server,
         storage -> storage.withProject("projectKey",
@@ -129,29 +118,29 @@ class TaintVulnerabilitiesMediumTests {
 
     client.waitForSynchronization();
 
-    await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(listAllTaintVulnerabilities("configScopeId"))
+    await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(listAllTaintVulnerabilities(backend, "configScopeId"))
       .extracting(TaintVulnerabilityDto::getIntroductionDate)
       .containsOnly(introductionDate));
-    var actualTaintId = listAllTaintVulnerabilities("configScopeId").get(0).getId();
+    var actualTaintId = listAllTaintVulnerabilities(backend, "configScopeId").get(0).getId();
 
     var taintDetails = backend.getIssueService().getEffectiveIssueDetails(new GetEffectiveIssueDetailsParams("configScopeId", actualTaintId)).join();
 
     assertThat(taintDetails).isNotNull();
   }
 
-  @Test
-  void it_should_refresh_taint_vulnerabilities_when_requested() {
-    var serverWithATaint = newSonarQubeServer()
+  @SonarLintTest
+  void it_should_refresh_taint_vulnerabilities_when_requested(SonarLintTestHarness harness) {
+    var serverWithATaint = harness.newFakeSonarQubeServer()
       .withProject("projectKey", project -> project.withBranch("main", branch -> branch.withTaintIssue("oldIssueKey", "rule:key", "message", "author", "file/path", "OPEN", null,
         Instant.now(), new TextRange(1, 2, 3, 4), RuleType.VULNERABILITY)))
       .start();
     var newestIntroductionDate = Instant.now().truncatedTo(ChronoUnit.MILLIS);
-    var serverWithAnotherTaint = newSonarQubeServer()
+    var serverWithAnotherTaint = harness.newFakeSonarQubeServer()
       .withProject("projectKey",
         project -> project.withBranch("main", branch -> branch.withTaintIssue("anotherIssueKey", "rule:key", "message", "author", "file/path", "OPEN", null,
           newestIntroductionDate, new TextRange(1, 2, 3, 4), RuleType.VULNERABILITY)))
       .start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", serverWithATaint,
         storage -> storage.withProject("projectKey",
@@ -159,19 +148,19 @@ class TaintVulnerabilitiesMediumTests {
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
       .build();
-    await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(listAllTaintVulnerabilities("configScopeId")).isNotEmpty());
+    await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(listAllTaintVulnerabilities(backend, "configScopeId")).isNotEmpty());
     // switch server to simulate a new dataset. Not ideal, should be handled differently
     backend.getConnectionService()
       .didUpdateConnections(new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto("connectionId", serverWithAnotherTaint.baseUrl(), true)), List.of()));
 
-    var taintVulnerabilities = refreshAndListAllTaintVulnerabilities("configScopeId");
+    var taintVulnerabilities = refreshAndListAllTaintVulnerabilities(backend, "configScopeId");
 
     assertThat(taintVulnerabilities)
       .extracting(TaintVulnerabilityDto::getIntroductionDate)
       .contains(newestIntroductionDate);
   }
 
-  private List<TaintVulnerabilityDto> listAllTaintVulnerabilities(String configScopeId) {
+  private List<TaintVulnerabilityDto> listAllTaintVulnerabilities(SonarLintTestRpcServer backend, String configScopeId) {
     try {
       return backend.getTaintVulnerabilityTrackingService().listAll(new ListAllParams(configScopeId)).get().getTaintVulnerabilities();
     } catch (InterruptedException | ExecutionException e) {
@@ -179,7 +168,7 @@ class TaintVulnerabilitiesMediumTests {
     }
   }
 
-  private List<TaintVulnerabilityDto> refreshAndListAllTaintVulnerabilities(String configScopeId) {
+  private List<TaintVulnerabilityDto> refreshAndListAllTaintVulnerabilities(SonarLintTestRpcServer backend, String configScopeId) {
     try {
       return backend.getTaintVulnerabilityTrackingService().listAll(new ListAllParams(configScopeId, true)).get().getTaintVulnerabilities();
     } catch (InterruptedException | ExecutionException e) {

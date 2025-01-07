@@ -21,32 +21,23 @@ package mediumtest.hotspots;
 
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
-import javax.annotation.Nullable;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckLocalDetectionSupportedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckLocalDetectionSupportedResponse;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(LogTestStartAndEnd.class)
 class HotspotLocalDetectionSupportMediumTests {
 
-  private SonarLintRpcServer backend;
-
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
-  }
-
-  @Test
-  void it_should_fail_when_the_configuration_scope_id_is_unknown() {
-    backend = newBackend().build();
+  @SonarLintTest
+  void it_should_fail_when_the_configuration_scope_id_is_unknown(SonarLintTestHarness harness) {
+    var backend = harness.newBackend().build();
 
     var future = backend.getHotspotService().checkLocalDetectionSupported(new CheckLocalDetectionSupportedParams("configScopeId"));
 
@@ -58,9 +49,9 @@ class HotspotLocalDetectionSupportMediumTests {
       .withMessage("The provided configuration scope does not exist: configScopeId");
   }
 
-  @Test
-  void it_should_fail_when_the_configuration_scope_is_bound_to_an_unknown_connection() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_fail_when_the_configuration_scope_is_bound_to_an_unknown_connection(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
@@ -74,54 +65,50 @@ class HotspotLocalDetectionSupportMediumTests {
       .withMessage("The provided configuration scope is bound to an unknown connection: connectionId");
   }
 
-  @Test
-  void it_should_not_support_local_detection_in_standalone_mode() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_not_support_local_detection_in_standalone_mode(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withUnboundConfigScope("configScopeId")
       .build();
 
-    var checkResponse = checkLocalDetectionSupported("configScopeId");
+    var checkResponse = checkLocalDetectionSupported(backend, "configScopeId");
 
     assertThat(checkResponse)
       .extracting(CheckLocalDetectionSupportedResponse::isSupported, CheckLocalDetectionSupportedResponse::getReason)
       .containsExactly(false, "The project is not bound, please bind it to SonarQube (Server, Cloud)");
   }
 
-  @Test
-  void it_should_support_local_detection_when_connected_to_sonarcloud() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_support_local_detection_when_connected_to_sonarcloud(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withSonarCloudConnection("connectionId", "orgKey")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
-    var checkResponse = checkLocalDetectionSupported("configScopeId");
+    var checkResponse = checkLocalDetectionSupported(backend, "configScopeId");
 
     assertThat(checkResponse)
       .extracting(CheckLocalDetectionSupportedResponse::isSupported, CheckLocalDetectionSupportedResponse::getReason)
       .containsExactly(true, null);
   }
 
-  @Test
-  void it_should_support_local_detection_when_connected_to_sonarqube() {
+  @SonarLintTest
+  void it_should_support_local_detection_when_connected_to_sonarqube(SonarLintTestHarness harness) {
     var configScopeId = "configScopeId";
-    bindToSonarQube(configScopeId, "9.9");
-
-    var checkResponse = checkLocalDetectionSupported(configScopeId);
-
-    assertThat(checkResponse)
-      .extracting(CheckLocalDetectionSupportedResponse::isSupported, CheckLocalDetectionSupportedResponse::getReason)
-      .containsExactly(true, null);
-  }
-
-  private void bindToSonarQube(String configScopeId, @Nullable String serverVersion) {
-    backend = newBackend()
-      .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion(serverVersion)
+    var backend = harness.newBackend()
+      .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("9.9")
         .withProject("projectKey"))
       .withBoundConfigScope(configScopeId, "connectionId", "projectKey")
       .build();
+
+    var checkResponse = checkLocalDetectionSupported(backend, configScopeId);
+
+    assertThat(checkResponse)
+      .extracting(CheckLocalDetectionSupportedResponse::isSupported, CheckLocalDetectionSupportedResponse::getReason)
+      .containsExactly(true, null);
   }
 
-  private CheckLocalDetectionSupportedResponse checkLocalDetectionSupported(String configScopeId) {
+  private CheckLocalDetectionSupportedResponse checkLocalDetectionSupported(SonarLintTestRpcServer backend, String configScopeId) {
     try {
       return backend.getHotspotService().checkLocalDetectionSupported(new CheckLocalDetectionSupportedParams(configScopeId)).get();
     } catch (InterruptedException | ExecutionException e) {

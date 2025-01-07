@@ -21,149 +21,145 @@ package mediumtest.synchronization;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.ServerStatus.DOWN;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
+import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.ServerStatus.DOWN;
 
 class ServerInfoSynchronizationMediumTests {
 
-  @Test
-  void it_should_pull_server_info_when_bound_configuration_scope_is_added() {
-    var server = newSonarQubeServer("10.3")
+  @SonarLintTest
+  void it_should_pull_server_info_when_bound_configuration_scope_is_added(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer("10.3")
       .withProject("projectKey", project -> project.withBranch("main"))
       .start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
       .withFullSynchronization()
       .build();
 
-    addConfigurationScope("configScopeId", "connectionId", "projectKey");
+    addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");
 
-    waitAtMost(3, SECONDS).untilAsserted(() -> assertThat(getServerInfoFile())
+    waitAtMost(3, SECONDS).untilAsserted(() -> assertThat(getServerInfoFile(backend))
       .exists()
       .extracting(this::readServerVersion, this::readServerMode)
       .containsExactly("10.3", null));
   }
 
-  @Test
-  void it_should_pull_old_server_info_and_mode_should_be_missing() {
-    var server = newSonarQubeServer("10.1")
+  @SonarLintTest
+  void it_should_pull_old_server_info_and_mode_should_be_missing(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer("10.1")
       .withProject("projectKey", project -> project.withBranch("main"))
       .start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
       .withFullSynchronization()
       .build();
 
-    addConfigurationScope("configScopeId", "connectionId", "projectKey");
+    addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");
 
-    waitAtMost(3, SECONDS).untilAsserted(() -> assertThat(getServerInfoFile())
+    waitAtMost(3, SECONDS).untilAsserted(() -> assertThat(getServerInfoFile(backend))
       .exists()
       .extracting(this::readServerVersion, this::readServerMode)
       .containsExactly("10.1", null));
   }
 
-  @Test
-  void it_should_synchronize_with_sonarcloud_and_mode_should_be_missing() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_synchronize_with_sonarcloud_and_mode_should_be_missing(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarCloudConnection("connectionId", "test")
       .withFullSynchronization()
       .build();
 
-    addConfigurationScope("configScopeId", "connectionId", "projectKey");
+    addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");
 
-    waitAtMost(3, SECONDS).untilAsserted(() -> assertThat(getServerInfoFile())
+    waitAtMost(3, SECONDS).untilAsserted(() -> assertThat(getServerInfoFile(backend))
       .exists()
       .extracting(this::readServerMode)
       .isNull());
   }
 
-  @Test
-  void it_should_synchronize_with_recent_sonarqube_and_return_mode() {
-    var server = newSonarQubeServer("10.8")
+  @SonarLintTest
+  void it_should_synchronize_with_recent_sonarqube_and_return_mode(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer("10.8")
       .withProject("projectKey", project -> project.withBranch("main"))
       .start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
       .withFullSynchronization()
       .build();
 
-    addConfigurationScope("configScopeId", "connectionId", "projectKey");
+    addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");
 
-    waitAtMost(3, SECONDS).untilAsserted(() -> assertThat(getServerInfoFile())
+    waitAtMost(3, SECONDS).untilAsserted(() -> assertThat(getServerInfoFile(backend))
       .exists()
       .extracting(this::readServerMode)
       .isEqualTo(true));
   }
 
-  @Test
-  void it_should_stop_synchronization_if_server_is_down() {
-    var server = newSonarQubeServer("10.3")
+  @SonarLintTest
+  void it_should_stop_synchronization_if_server_is_down(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer("10.3")
       .withStatus(DOWN)
       .withProject("projectKey", project -> project.withBranch("main"))
       .start();
-    var client = newFakeClient().build();
-    backend = newBackend()
+    var client = harness.newFakeClient().build();
+    var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
       .withFullSynchronization()
       .build(client);
 
-    addConfigurationScope("configScopeId", "connectionId", "projectKey");
+    addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
-      assertThat(getServerInfoFile()).doesNotExist();
+      assertThat(getServerInfoFile(backend)).doesNotExist();
       assertThat(client.getLogMessages()).contains("Error during synchronization");
     });
   }
 
-  @Test
-  void it_should_stop_synchronization_if_server_version_is_unsupported() {
-    var server = newSonarQubeServer("7.8")
+  @SonarLintTest
+  void it_should_stop_synchronization_if_server_version_is_unsupported(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer("7.8")
       .withProject("projectKey", project -> project.withBranch("main"))
       .start();
-    var client = newFakeClient().build();
-    backend = newBackend()
+    var client = harness.newFakeClient().build();
+    var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
       .withFullSynchronization()
       .build(client);
 
-    addConfigurationScope("configScopeId", "connectionId", "projectKey");
+    addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
-      assertThat(getServerInfoFile()).doesNotExist();
+      assertThat(getServerInfoFile(backend)).doesNotExist();
       assertThat(client.getLogMessages()).contains("Error during synchronization");
     });
   }
 
-  private void addConfigurationScope(String configScopeId, String connectionId, String projectKey) {
+  private void addConfigurationScope(SonarLintTestRpcServer backend, String configScopeId, String connectionId, String projectKey) {
     backend.getConfigurationService().didAddConfigurationScopes(
       new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto(configScopeId, null, true, "name", new BindingConfigurationDto(connectionId, projectKey, true)))));
   }
 
-  private Path getServerInfoFile() {
+  private Path getServerInfoFile(SonarLintTestRpcServer backend) {
     return backend.getStorageRoot().resolve(encodeForFs("connectionId")).resolve("server_info.pb");
   }
 
@@ -176,11 +172,4 @@ class ServerInfoSynchronizationMediumTests {
     var serverInfo = ProtobufFileUtil.readFile(protoFilePath, Sonarlint.ServerInfo.parser());
     return serverInfo.hasIsMqrMode() ? serverInfo.getIsMqrMode() : null;
   }
-
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
-  }
-
-  private SonarLintTestRpcServer backend;
 }

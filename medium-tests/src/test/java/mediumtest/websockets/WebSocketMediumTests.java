@@ -25,13 +25,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
@@ -44,20 +40,22 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.Did
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import org.sonarsource.sonarlint.core.test.utils.server.websockets.WebSocketConnection;
 import org.sonarsource.sonarlint.core.test.utils.server.websockets.WebSocketServer;
 
 import static java.util.Collections.emptyList;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.USER_AGENT_FOR_TESTS;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
-import static org.sonarsource.sonarlint.core.test.utils.storage.ServerIssueFixtures.aServerIssue;
-import static org.sonarsource.sonarlint.core.test.utils.storage.ServerSecurityHotspotFixture.aServerHotspot;
-import static org.sonarsource.sonarlint.core.test.utils.storage.ServerTaintIssueFixtures.aServerTaintIssue;
 import static mediumtest.websockets.WebSocketMediumTests.WebSocketPayloadBuilder.webSocketPayloadBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.USER_AGENT_FOR_TESTS;
+import static org.sonarsource.sonarlint.core.test.utils.storage.ServerIssueFixtures.aServerIssue;
+import static org.sonarsource.sonarlint.core.test.utils.storage.ServerSecurityHotspotFixture.aServerHotspot;
+import static org.sonarsource.sonarlint.core.test.utils.storage.ServerTaintIssueFixtures.aServerTaintIssue;
 
 class WebSocketMediumTests {
 
@@ -66,7 +64,6 @@ class WebSocketMediumTests {
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private WebSocketServer webSocketServer;
-  private SonarLintTestRpcServer backend;
 
   @BeforeEach
   void prepare() {
@@ -75,10 +72,7 @@ class WebSocketMediumTests {
   }
 
   @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    if (backend != null) {
-      backend.shutdown().get();
-    }
+  void tearDown() {
     if (webSocketServer != null) {
       webSocketServer.stop();
     }
@@ -86,63 +80,63 @@ class WebSocketMediumTests {
 
   @Nested
   class WhenScopeBound {
-    @Test
-    void should_create_connection_and_subscribe_to_events() {
-      var client = newFakeClient().withToken("connectionId", "token").build();
-      backend = newBackendWithWebSockets()
+    @SonarLintTest
+    void should_create_connection_and_subscribe_to_events(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient().withToken("connectionId", "token").build();
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withUnboundConfigScope("configScope")
         .build(client);
 
-      bind("configScope", "connectionId", "projectKey");
+      bind(backend, "configScope", "connectionId", "projectKey");
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::getAuthorizationHeader, WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
         .containsExactly(tuple("Bearer token", true, webSocketPayloadBuilder().subscribeWithProjectKey("projectKey").build())));
     }
 
-    @Test
-    void should_set_user_agent() {
-      var client = newFakeClient().withToken("connectionId", "token").build();
-      backend = newBackendWithWebSockets()
+    @SonarLintTest
+    void should_set_user_agent(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient().withToken("connectionId", "token").build();
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withUnboundConfigScope("configScope")
         .build(client);
 
-      bind("configScope", "connectionId", "projectKey");
+      bind(backend, "configScope", "connectionId", "projectKey");
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::getUserAgent)
         .containsExactly(USER_AGENT_FOR_TESTS));
     }
 
-    @Test
-    void should_not_create_websocket_connection_and_subscribe_when_bound_to_sonarqube() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_not_create_websocket_connection_and_subscribe_when_bound_to_sonarqube(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarQubeConnection("connectionId")
         .withUnboundConfigScope("configScope")
         .build(client);
 
-      bind("configScope", "connectionId", "projectKey");
+      bind(backend, "configScope", "connectionId", "projectKey");
 
       await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
     }
 
-    @Test
-    void should_unsubscribe_from_old_project_and_subscribe_to_new_project_when_key_changed() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_unsubscribe_from_old_project_and_subscribe_to_new_project_when_key_changed(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
-      bind("configScope", "connectionId", "newProjectKey");
+      bind(backend, "configScope", "connectionId", "newProjectKey");
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
@@ -150,19 +144,19 @@ class WebSocketMediumTests {
           "projectKey").subscribeWithProjectKey("newProjectKey").build())));
     }
 
-    @Test
-    void should_unsubscribe_from_old_project_and_not_subscribe_to_new_project_if_it_is_already_subscribed() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_unsubscribe_from_old_project_and_not_subscribe_to_new_project_if_it_is_already_subscribed(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope1", "connectionId", "projectKey1")
         .withBoundConfigScope("configScope2", "connectionId", "projectKey2")
         .build(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey2", "projectKey1");
 
-      bind("configScope1", "connectionId", "projectKey2");
+      bind(backend, "configScope1", "connectionId", "projectKey2");
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
@@ -170,37 +164,37 @@ class WebSocketMediumTests {
           webSocketPayloadBuilder().subscribeWithProjectKey("projectKey2", "projectKey1").unsubscribeWithProjectKey("projectKey1").build())));
     }
 
-    @Test
-    void should_not_open_connection_or_subscribe_if_notifications_disabled_on_connection() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_not_open_connection_or_subscribe_if_notifications_disabled_on_connection(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnection("connectionId", "orgKey", true, null)
         .withUnboundConfigScope("configScope")
         .build(client);
 
-      bind("configScope", "connectionId", "newProjectKey");
+      bind(backend, "configScope", "connectionId", "newProjectKey");
 
       await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
     }
 
-    @Test
-    void should_not_resubscribe_if_project_already_bound() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_not_resubscribe_if_project_already_bound(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnection("connectionId", "orgKey", true, null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
 
-      bind("configScope", "connectionId", "newProjectKey");
+      bind(backend, "configScope", "connectionId", "newProjectKey");
 
       await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
     }
 
-    private void bind(String configScopeId, String connectionId, String newProjectKey) {
+    private void bind(SonarLintTestRpcServer backend, String configScopeId, String connectionId, String newProjectKey) {
       backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId,
         new BindingConfigurationDto(connectionId, newProjectKey, true)));
     }
@@ -208,18 +202,18 @@ class WebSocketMediumTests {
 
   @Nested
   class WhenUnbindingScope {
-    @Test
-    void should_unsubscribe_bound_project() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_unsubscribe_bound_project(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
-      unbind("configScope");
+      unbind(backend, "configScope");
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
         assertThat(webSocketServer.getConnections())
@@ -229,40 +223,40 @@ class WebSocketMediumTests {
       });
     }
 
-    @Test
-    void should_not_unsubscribe_if_the_same_project_key_is_used_in_another_binding() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_not_unsubscribe_if_the_same_project_key_is_used_in_another_binding(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope1", "connectionId", "projectKey")
         .withBoundConfigScope("configScope2", "connectionId", "projectKey")
         .build(client);
 
-      unbind("configScope1");
+      unbind(backend, "configScope1");
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
         .containsExactly(tuple(true, webSocketPayloadBuilder().subscribeWithProjectKey("projectKey").build())));
     }
 
-    @Test
-    void should_not_unsubscribe_if_notifications_disabled_on_connection() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_not_unsubscribe_if_notifications_disabled_on_connection(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnection("connectionId", "orgKey", true, null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
 
-      unbind("configScope");
+      unbind(backend, "configScope");
 
       await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
     }
 
-    private void unbind(String configScope) {
+    private void unbind(SonarLintTestRpcServer backend, String configScope) {
       backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScope, new BindingConfigurationDto(null, null,
         true)));
     }
@@ -270,12 +264,12 @@ class WebSocketMediumTests {
 
   @Nested
   class WhenScopeAdded {
-    @Test
-    void should_subscribe_if_bound_to_sonarcloud() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_subscribe_if_bound_to_sonarcloud(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -287,12 +281,12 @@ class WebSocketMediumTests {
       });
     }
 
-    @Test
-    void should_not_subscribe_if_not_bound() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_not_subscribe_if_not_bound(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withUnboundConfigScope("configScope")
         .build(client);
@@ -300,12 +294,12 @@ class WebSocketMediumTests {
       await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
     }
 
-    @Test
-    void should_not_subscribe_if_bound_to_sonarqube() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_not_subscribe_if_bound_to_sonarqube(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      newBackendWithWebSockets(harness)
         .withSonarQubeConnection("connectionId")
         .withUnboundConfigScope("configScope")
         .build(client);
@@ -313,12 +307,12 @@ class WebSocketMediumTests {
       await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
     }
 
-    @Test
-    void should_not_subscribe_if_bound_to_sonarcloud_but_notifications_are_disabled() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_not_subscribe_if_bound_to_sonarcloud_but_notifications_are_disabled(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      newBackendWithWebSockets(harness)
         .withSonarCloudConnection("connectionId", "orgKey", true, null)
         .withUnboundConfigScope("configScope")
         .build(client);
@@ -329,12 +323,12 @@ class WebSocketMediumTests {
 
   @Nested
   class WhenScopeRemoved {
-    @Test
-    void should_unsubscribe_from_project() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_unsubscribe_from_project(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -350,13 +344,13 @@ class WebSocketMediumTests {
       });
     }
 
-    @Test
-    void should_not_unsubscribe_if_another_scope_is_bound_to_same_project() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_not_unsubscribe_if_another_scope_is_bound_to_same_project(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId1", "token1")
         .withToken("connectionId2", "token2")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId1", "orgKey1", null)
         .withSonarCloudConnectionAndNotifications("connectionId2", "orgKey2", null)
         .withBoundConfigScope("configScope1", "connectionId1", "projectKey")
@@ -371,12 +365,12 @@ class WebSocketMediumTests {
         .containsExactly(tuple(true, webSocketPayloadBuilder().subscribeWithProjectKey("projectKey").build())));
     }
 
-    @Test
-    void should_not_unsubscribe_if_connection_was_already_closed() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_not_unsubscribe_if_connection_was_already_closed(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -395,10 +389,10 @@ class WebSocketMediumTests {
 
   @Nested
   class WhenConnectionCredentialsChanged {
-    @Test
-    void should_close_and_reopen_connection_for_sonarcloud_if_already_open() {
-      var client = newFakeClient().withToken("connectionId", "firstToken").build();
-      backend = newBackendWithWebSockets()
+    @SonarLintTest
+    void should_close_and_reopen_connection_for_sonarcloud_if_already_open(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient().withToken("connectionId", "firstToken").build();
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -413,12 +407,12 @@ class WebSocketMediumTests {
           tuple("Bearer secondToken", true, webSocketPayloadBuilder().subscribeWithProjectKey("projectKey").build())));
     }
 
-    @Test
-    void should_do_nothing_for_sonarcloud_if_not_already_open() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_do_nothing_for_sonarcloud_if_not_already_open(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .build(client);
 
@@ -427,12 +421,12 @@ class WebSocketMediumTests {
       await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
     }
 
-    @Test
-    void should_do_nothing_for_sonarqube() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_do_nothing_for_sonarqube(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarQubeConnection("connectionId")
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -446,12 +440,12 @@ class WebSocketMediumTests {
   @Nested
   class WhenConnectionAdded {
 
-    @Test
-    void should_subscribe_all_projects_bound_to_added_connection() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_subscribe_all_projects_bound_to_added_connection(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
 
@@ -463,13 +457,13 @@ class WebSocketMediumTests {
         .containsExactly(tuple(true, webSocketPayloadBuilder().subscribeWithProjectKey("projectKey").build())));
     }
 
-    @Test
-    void should_log_failure_and_reconnect_later_if_server_unavailable() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_log_failure_and_reconnect_later_if_server_unavailable(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
       webSocketServer.stop();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
 
@@ -490,12 +484,12 @@ class WebSocketMediumTests {
 
   @Nested
   class WhenConnectionRemoved {
-    @Test
-    void should_close_connection() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_close_connection(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -508,13 +502,13 @@ class WebSocketMediumTests {
         .containsExactly(false));
     }
 
-    @Test
-    void should_not_close_connection_if_another_sonarcloud_connection_is_active() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_not_close_connection_if_another_sonarcloud_connection_is_active(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId1", "token1")
         .withToken("connectionId2", "token2")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId1", "orgKey1", null)
         .withSonarCloudConnectionAndNotifications("connectionId2", "orgKey2", null)
         .withBoundConfigScope("configScope1", "connectionId1", "projectKey1")
@@ -534,12 +528,12 @@ class WebSocketMediumTests {
 
   @Nested
   class WhenConnectionUpdated {
-    @Test
-    void should_do_nothing_for_sonarqube() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_do_nothing_for_sonarqube(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarQubeConnection("connectionId")
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -551,12 +545,12 @@ class WebSocketMediumTests {
       await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
     }
 
-    @Test
-    void should_do_nothing_when_no_project_bound_to_sonarcloud() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_do_nothing_when_no_project_bound_to_sonarcloud(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .build(client);
 
@@ -566,12 +560,12 @@ class WebSocketMediumTests {
       await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
     }
 
-    @Test
-    void should_close_websocket_if_notifications_disabled() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_close_websocket_if_notifications_disabled(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -585,13 +579,13 @@ class WebSocketMediumTests {
         .containsExactly(tuple(false, webSocketPayloadBuilder().subscribeWithProjectKey("projectKey").build())));
     }
 
-    @Test
-    void should_close_and_reopen_websocket_if_notifications_are_disabled_but_other_connection_is_active() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_close_and_reopen_websocket_if_notifications_are_disabled_but_other_connection_is_active(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId1", "token1")
         .withToken("connectionId2", "token2")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId1", "orgKey1", null)
         .withSonarCloudConnectionAndNotifications("connectionId2", "orgKey2", null)
         .withBoundConfigScope("configScope1", "connectionId1", "projectKey1")
@@ -609,12 +603,12 @@ class WebSocketMediumTests {
           tuple(true, webSocketPayloadBuilder().subscribeWithProjectKey("projectKey1").build())));
     }
 
-    @Test
-    void should_open_websocket_and_subscribe_to_all_bound_projects_if_enabled_notifications() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_open_websocket_and_subscribe_to_all_bound_projects_if_enabled_notifications(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnection("connectionId", "orgKey", true, null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -630,12 +624,12 @@ class WebSocketMediumTests {
 
   @Nested
   class WhenReceivingSmartNotificationEvent {
-    @Test
-    void should_forward_to_client_as_smart_notifications() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_forward_to_client_as_smart_notifications(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      newBackendWithWebSockets(harness)
         .withSmartNotifications()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -653,12 +647,12 @@ class WebSocketMediumTests {
         .containsExactly(tuple(Set.of("configScope"), "QUALITY_GATE", "lnk", "msg", "connectionId")));
     }
 
-    @Test
-    void should_forward_my_new_issues_to_client_as_smart_notifications() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_forward_my_new_issues_to_client_as_smart_notifications(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      newBackendWithWebSockets(harness)
         .withSmartNotifications()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -676,12 +670,12 @@ class WebSocketMediumTests {
         .containsExactly(tuple(Set.of("configScope"), "NEW_ISSUES", "lnk", "msg", "connectionId")));
     }
 
-    @Test
-    void should_not_forward_to_client_if_the_event_data_is_malformed() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_not_forward_to_client_if_the_event_data_is_malformed(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      newBackendWithWebSockets(harness)
         .withSmartNotifications()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -693,11 +687,35 @@ class WebSocketMediumTests {
       await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSmartNotificationsToShow()).isEmpty());
     }
 
-    void should_not_forward_to_client(String payload) {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_not_forward_to_client_if_the_message_is_missing(SonarLintTestHarness harness) {
+      should_not_forward_to_client(harness, "{\"event\": [\"QualityGateChanged\"], \"data\": {\"link\": \"lnk\", \"project\": \"projectKey\", \"date\": " +
+        "\"2023-07-19T15:08:01+0000\"}}");
+    }
+
+    @SonarLintTest
+    void should_not_forward_to_client_if_the_link_is_missing(SonarLintTestHarness harness) {
+      should_not_forward_to_client(harness, "{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": \"msg\", \"project\": \"projectKey\", \"date\": " +
+        "\"2023-07-19T15:08:01+0000\"}}");
+    }
+
+    @SonarLintTest
+    void should_not_forward_to_client_if_the_project_is_missing(SonarLintTestHarness harness) {
+      should_not_forward_to_client(harness, "{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"date\": " +
+        "\"2023-07-19T15:08:01+0000\"}}");
+    }
+
+    @SonarLintTest
+    void should_not_forward_to_client_if_the_date_is_missing(SonarLintTestHarness harness) {
+      should_not_forward_to_client(harness, "{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": " +
+        "\"projectKey\"}}");
+    }
+
+    void should_not_forward_to_client(SonarLintTestHarness harness, String payload) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      newBackendWithWebSockets(harness)
         .withSmartNotifications()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -708,42 +726,18 @@ class WebSocketMediumTests {
 
       await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSmartNotificationsToShow()).isEmpty());
     }
-
-    @Test
-    void should_not_forward_to_client_if_the_message_is_missing() {
-      should_not_forward_to_client("{\"event\": [\"QualityGateChanged\"], \"data\": {\"link\": \"lnk\", \"project\": \"projectKey\", \"date\": " +
-        "\"2023-07-19T15:08:01+0000\"}}");
-    }
-
-    @Test
-    void should_not_forward_to_client_if_the_link_is_missing() {
-      should_not_forward_to_client("{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": \"msg\", \"project\": \"projectKey\", \"date\": " +
-        "\"2023-07-19T15:08:01+0000\"}}");
-    }
-
-    @Test
-    void should_not_forward_to_client_if_the_project_is_missing() {
-      should_not_forward_to_client("{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"date\": " +
-        "\"2023-07-19T15:08:01+0000\"}}");
-    }
-
-    @Test
-    void should_not_forward_to_client_if_the_date_is_missing() {
-      should_not_forward_to_client("{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": \"msg\", \"link\": \"lnk\", \"project\": " +
-        "\"projectKey\"}}");
-    }
   }
 
   @Nested
   class WhenReceivingIssueChangedEvent {
-    @Test
-    void should_change_issue_status() {
+    @SonarLintTest
+    void should_change_issue_status(SonarLintTestHarness harness) {
       var serverIssue = aServerIssue("myIssueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))
         .withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
-      var client = newFakeClient()
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch("master", branch -> branch.withIssue(serverIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -771,14 +765,14 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isTrue());
     }
 
-    @Test
-    void should_not_change_issue_if_the_event_data_is_malformed() {
+    @SonarLintTest
+    void should_not_change_issue_if_the_event_data_is_malformed(SonarLintTestHarness harness) {
       var serverIssue = aServerIssue("myIssueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))
         .withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
-      var client = newFakeClient()
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch("master", branch -> branch.withIssue(serverIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -806,14 +800,14 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(1)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
     }
 
-    @Test
-    void should_change_issue_if_the_issue_key_is_missing() {
+    @SonarLintTest
+    void should_change_issue_if_the_issue_key_is_missing(SonarLintTestHarness harness) {
       var serverIssue = aServerIssue("myIssueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))
         .withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
-      var client = newFakeClient()
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch("master", branch -> branch.withIssue(serverIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -840,14 +834,14 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(1)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
     }
 
-    @Test
-    void should_not_change_issue_if_the_resolution_is_missing() {
+    @SonarLintTest
+    void should_not_change_issue_if_the_resolution_is_missing(SonarLintTestHarness harness) {
       var serverIssue = aServerIssue("myIssueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))
         .withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
-      var client = newFakeClient()
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch("master", branch -> branch.withIssue(serverIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -874,14 +868,14 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(1)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
     }
 
-    @Test
-    void should_not_change_issue_if_the_project_is_missing() {
+    @SonarLintTest
+    void should_not_change_issue_if_the_project_is_missing(SonarLintTestHarness harness) {
       var serverIssue = aServerIssue("myIssueKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))
         .withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
-      var client = newFakeClient()
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch("master", branch -> branch.withIssue(serverIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -911,12 +905,12 @@ class WebSocketMediumTests {
 
   @Nested
   class WhenReceivingTaintVulnerabilityRaisedEvent {
-    @Test
-    void should_create_taint_vulnerability() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_create_taint_vulnerability(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey"))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -981,12 +975,12 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey")).isTrue());
     }
 
-    @Test
-    void should_not_create_taint_vulnerability_event_data_is_malformed() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_not_create_taint_vulnerability_event_data_is_malformed(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey"))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -1054,14 +1048,14 @@ class WebSocketMediumTests {
 
   @Nested
   class WhenReceivingTaintVulnerabilityClosedEvent {
-    @Test
-    void should_remove_taint_vulnerability() {
+    @SonarLintTest
+    void should_remove_taint_vulnerability(SonarLintTestHarness harness) {
       var serverTaintIssue = aServerTaintIssue("taintKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))
         .withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
-      var client = newFakeClient()
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withTaintIssue(serverTaintIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -1083,14 +1077,14 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey")).isFalse());
     }
 
-    @Test
-    void should_not_remove_taint_vulnerability_event_data_is_malformed() {
+    @SonarLintTest
+    void should_not_remove_taint_vulnerability_event_data_is_malformed(SonarLintTestHarness harness) {
       var serverTaintIssue = aServerTaintIssue("taintKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))
         .withIntroductionDate(Instant.EPOCH.plusSeconds(1)).withType(RuleType.BUG);
-      var client = newFakeClient()
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withTaintIssue(serverTaintIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -1115,14 +1109,14 @@ class WebSocketMediumTests {
 
   @Nested
   class WhenReceivingSecurityHotspotChangedEvent {
-    @Test
-    void should_update_security_hotspot() {
+    @SonarLintTest
+    void should_update_security_hotspot(SonarLintTestHarness harness) {
       var serverHotspot = aServerHotspot("hotspotKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))
         .withIntroductionDate(Instant.EPOCH.plusSeconds(1));
-      var client = newFakeClient()
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withHotspot(serverHotspot))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -1149,14 +1143,14 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey").getStatus().isResolved()).isFalse());
     }
 
-    @Test
-    void should_not_update_security_hotspot_if_event_data_is_malformed() {
+    @SonarLintTest
+    void should_not_update_security_hotspot_if_event_data_is_malformed(SonarLintTestHarness harness) {
       var serverHotspot = aServerHotspot("hotspotKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))
         .withIntroductionDate(Instant.EPOCH.plusSeconds(1));
-      var client = newFakeClient()
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withHotspot(serverHotspot))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -1186,12 +1180,12 @@ class WebSocketMediumTests {
 
   @Nested
   class WhenReceivingSecurityHotspotRaisedEvent {
-    @Test
-    void should_create_new_security_hotspot() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_create_new_security_hotspot(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey"))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -1228,12 +1222,12 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey")).isNotNull());
     }
 
-    @Test
-    void should_not_create_security_hotspot_if_event_data_is_malformed() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_not_create_security_hotspot_if_event_data_is_malformed(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey"))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -1273,14 +1267,14 @@ class WebSocketMediumTests {
 
   @Nested
   class WhenReceivingSecurityHotspotClosedEvent {
-    @Test
-    void should_remove_security_hotspot() {
+    @SonarLintTest
+    void should_remove_security_hotspot(SonarLintTestHarness harness) {
       var serverHotspot = aServerHotspot("hotspotKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))
         .withIntroductionDate(Instant.EPOCH.plusSeconds(1));
-      var client = newFakeClient()
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withHotspot(serverHotspot))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -1303,14 +1297,14 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey")).isNull());
     }
 
-    @Test
-    void should_not_remove_security_hotspot() {
+    @SonarLintTest
+    void should_not_remove_security_hotspot(SonarLintTestHarness harness) {
       var serverHotspot = aServerHotspot("hotspotKey").withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash"))
         .withIntroductionDate(Instant.EPOCH.plusSeconds(1));
-      var client = newFakeClient()
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withHotspot(serverHotspot))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -1336,12 +1330,12 @@ class WebSocketMediumTests {
 
   @Nested
   class WhenReceivingUnexpectedEvents {
-    @Test
-    void should_ignore_if_the_event_type_is_unknown() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_ignore_if_the_event_type_is_unknown(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -1352,12 +1346,12 @@ class WebSocketMediumTests {
       await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSmartNotificationsToShow()).isEmpty());
     }
 
-    @Test
-    void should_ignore_if_the_event_is_malformed() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_ignore_if_the_event_is_malformed(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -1368,12 +1362,12 @@ class WebSocketMediumTests {
       await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSmartNotificationsToShow()).isEmpty());
     }
 
-    @Test
-    void should_not_forward_to_client_duplicated_event() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_not_forward_to_client_duplicated_event(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -1396,12 +1390,12 @@ class WebSocketMediumTests {
 
   @Nested
   class WhenWebSocketClosed {
-    @Test
-    void should_refresh_connection_if_closed_by_server() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_refresh_connection_if_closed_by_server(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build(client);
@@ -1414,12 +1408,12 @@ class WebSocketMediumTests {
         .contains(tuple(false, webSocketPayloadBuilder().subscribeWithProjectKey("projectKey").build()),
           tuple(true, webSocketPayloadBuilder().subscribeWithProjectKey("projectKey").build())));
     }
-    @Test
-    void should_send_one_subscribe_message_per_project_key_when_reopening_connection() {
-      var client = newFakeClient()
+    @SonarLintTest
+    void should_send_one_subscribe_message_per_project_key_when_reopening_connection(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
         .withToken("connectionId", "token")
         .build();
-      backend = newBackendWithWebSockets()
+      newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .withBoundConfigScope("configScope2", "connectionId", "projectKey")
@@ -1435,8 +1429,8 @@ class WebSocketMediumTests {
     }
   }
 
-  public SonarLintBackendFixture.SonarLintBackendBuilder newBackendWithWebSockets() {
-    return newBackend()
+  public SonarLintBackendFixture.SonarLintBackendBuilder newBackendWithWebSockets(SonarLintTestHarness harness) {
+    return harness.newBackend()
       .withServerSentEventsEnabled()
       .withSonarCloudWebSocketsUrl(webSocketServer.getUrl());
   }

@@ -26,16 +26,14 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
 
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static utils.AnalysisUtils.createFile;
@@ -44,8 +42,8 @@ class ConnectedStorageProblemsMediumTests {
   private static final String CONNECTION_ID = "localhost";
   private final String CONFIG_SCOPE_ID = "myProject";
 
-  @Test
-  void corrupted_plugin_should_not_prevent_startup(@TempDir Path baseDir) throws Exception {
+  @SonarLintTest
+  void corrupted_plugin_should_not_prevent_startup(SonarLintTestHarness harness, @TempDir Path baseDir) throws Exception {
     var inputFile = createFile(baseDir, "Foo.java",
       "public class Foo {\n"
         + "  public void foo() {\n"
@@ -54,13 +52,13 @@ class ConnectedStorageProblemsMediumTests {
         + "    System.out.println(\"Foo\"); //NOSONAR\n"
         + "  }\n"
         + "}");
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, List.of(
         new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)
       ))
       .build();
-    var server = newSonarQubeServer().start();
-    var backend = newBackend()
+    var server = harness.newFakeSonarQubeServer().start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage
         .withPlugin(TestPlugin.JAVA)
         .withPlugin(SonarLanguage.JS.getPluginKey(), createFakePlugin(), "hash")

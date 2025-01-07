@@ -24,15 +24,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -41,8 +41,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBody;
 
@@ -53,21 +51,12 @@ class AuthenticationMediumTests {
     .options(wireMockConfig().dynamicPort())
     .build();
 
-  private SonarLintRpcServer backend;
-
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    if (backend != null) {
-      backend.shutdown().get();
-    }
-  }
-
-  @Test
-  void it_should_authenticate_preemptively_on_sonarqube_with_login_password() {
-    var fakeClient = newFakeClient()
+  @SonarLintTest
+  void it_should_authenticate_preemptively_on_sonarqube_with_login_password(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient()
       .withCredentials("connectionId", "myLogin", "myPassword")
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(SonarLanguage.PYTHON.getSonarLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
@@ -82,7 +71,7 @@ class AuthenticationMediumTests {
         .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc from server").build())
         .build()))));
 
-    var details = getEffectiveRuleDetails("scopeId", "python:S139");
+    var details = getEffectiveRuleDetails(backend, "scopeId", "python:S139");
 
     assertThat(details.getDescription().getLeft().getHtmlContent()).contains("extendedDesc from server");
 
@@ -90,12 +79,12 @@ class AuthenticationMediumTests {
       .withHeader("Authorization", equalTo("Basic " + Base64.getEncoder().encodeToString("myLogin:myPassword".getBytes(StandardCharsets.UTF_8)))));
   }
 
-  @Test
-  void it_should_authenticate_preemptively_on_sonarqube_9_9_with_token_and_basic_scheme() {
-    var fakeClient = newFakeClient()
+  @SonarLintTest
+  void it_should_authenticate_preemptively_on_sonarqube_9_9_with_token_and_basic_scheme(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient()
       .withToken("connectionId", "myToken")
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(SonarLanguage.PYTHON.getSonarLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
@@ -110,7 +99,7 @@ class AuthenticationMediumTests {
       .willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": " +
         "\"UP\"}")));
 
-    var details = getEffectiveRuleDetails("scopeId", "python:S139");
+    var details = getEffectiveRuleDetails(backend, "scopeId", "python:S139");
 
     assertThat(details.getDescription().getLeft().getHtmlContent()).contains("extendedDesc from server");
 
@@ -118,12 +107,12 @@ class AuthenticationMediumTests {
       .withHeader("Authorization", equalTo("Basic " + Base64.getEncoder().encodeToString("myToken:".getBytes(StandardCharsets.UTF_8)))));
   }
 
-  @Test
-  void it_should_authenticate_preemptively_on_sonarqube_10_4_with_token_and_bearer_scheme() {
-    var fakeClient = newFakeClient()
+  @SonarLintTest
+  void it_should_authenticate_preemptively_on_sonarqube_10_4_with_token_and_bearer_scheme(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient()
       .withToken("connectionId", "myToken")
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet(SonarLanguage.PYTHON.getSonarLanguageKey(),
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
@@ -138,7 +127,7 @@ class AuthenticationMediumTests {
       .willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"10.4\",\"status\": " +
         "\"UP\"}")));
 
-    var details = getEffectiveRuleDetails("scopeId", "python:S139");
+    var details = getEffectiveRuleDetails(backend, "scopeId", "python:S139");
 
     assertThat(details.getDescription().getLeft().getHtmlContent()).contains("extendedDesc from server");
 
@@ -146,9 +135,9 @@ class AuthenticationMediumTests {
       .withHeader("Authorization", equalTo("Bearer myToken")));
   }
 
-  private EffectiveRuleDetailsDto getEffectiveRuleDetails(String configScopeId, String ruleKey) {
+  private EffectiveRuleDetailsDto getEffectiveRuleDetails(SonarLintTestRpcServer backend, String configScopeId, String ruleKey) {
     try {
-      return this.backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, ruleKey, null)).get().details();
+      return backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, ruleKey, null)).get().details();
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }

@@ -22,9 +22,6 @@ package mediumtest;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetStandaloneRuleDescriptionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ListAllStandaloneRulesDefinitionsResponse;
@@ -35,38 +32,35 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
 
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 class StandaloneRulesMediumTests {
 
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
-  }
-
-  @Test
-  void it_should_return_only_embedded_rules_of_enabled_languages() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_return_only_embedded_rules_of_enabled_languages(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .withStandaloneEmbeddedPlugin(TestPlugin.PHP)
       .build();
 
-    var allRules = listAllStandaloneRulesDefinitions().getRulesByKey().values();
+    var allRules = listAllStandaloneRulesDefinitions(backend).getRulesByKey().values();
 
     assertThat(allRules).extracting(RuleDefinitionDto::getLanguage).containsOnly(Language.PYTHON);
   }
 
-  @Test
-  void it_should_return_param_definition() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_return_param_definition(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .build();
 
-    var javaS1176 = listAllStandaloneRulesDefinitions().getRulesByKey().get("java:S1176");
+    var javaS1176 = listAllStandaloneRulesDefinitions(backend).getRulesByKey().get("java:S1176");
 
     assertThat(javaS1176.getParamsByKey()).containsOnlyKeys("exclusion", "forClasses");
     assertThat(javaS1176.getParamsByKey().get("forClasses"))
@@ -81,9 +75,9 @@ class StandaloneRulesMediumTests {
         "**.api.**");
   }
 
-  @Test
-  void it_should_return_rule_details_with_definition_and_description() throws ExecutionException, InterruptedException {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_return_rule_details_with_definition_and_description(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
+    var backend = harness.newBackend()
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .build();
 
@@ -99,38 +93,36 @@ class StandaloneRulesMediumTests {
       .startsWith("<p>Try to imagine using the standard Java API (Collections, JDBC, IO, …\u200B) without Javadoc.");
   }
 
-  @Test
-  void it_should_not_contain_rule_templates() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_not_contain_rule_templates(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .build();
 
-    var allRules = listAllStandaloneRulesDefinitions().getRulesByKey().values();
+    var allRules = listAllStandaloneRulesDefinitions(backend).getRulesByKey().values();
 
     assertThat(allRules).extracting(RuleDefinitionDto::getKey).isNotEmpty().doesNotContain("python:XPath");
     assertThat(backend.getRulesService().getStandaloneRuleDetails(new GetStandaloneRuleDescriptionParams("python:XPath"))).failsWithin(1, TimeUnit.MINUTES);
   }
 
-  @Test
-  void it_should_not_contain_hotspots_by_default() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_not_contain_hotspots_by_default(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .build();
 
-    var allRules = listAllStandaloneRulesDefinitions().getRulesByKey().values();
+    var allRules = listAllStandaloneRulesDefinitions(backend).getRulesByKey().values();
 
     assertThat(allRules).extracting(RuleDefinitionDto::getKey).isNotEmpty().doesNotContain("java:S1313");
     assertThat(backend.getRulesService().getStandaloneRuleDetails(new GetStandaloneRuleDescriptionParams("java:S1313"))).failsWithin(1, TimeUnit.MINUTES);
   }
 
-  private ListAllStandaloneRulesDefinitionsResponse listAllStandaloneRulesDefinitions() {
+  private ListAllStandaloneRulesDefinitionsResponse listAllStandaloneRulesDefinitions(SonarLintTestRpcServer backend) {
     try {
-      return this.backend.getRulesService().listAllStandaloneRulesDefinitions().get();
+      return backend.getRulesService().listAllStandaloneRulesDefinitions().get();
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }
   }
-
-  private SonarLintRpcServer backend;
 
 }

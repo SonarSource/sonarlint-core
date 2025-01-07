@@ -23,48 +23,32 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.ChangeHotspotStatusParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.ServerStatus.DOWN;
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarCloudServer;
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
+import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.ServerStatus.DOWN;
 
 class HotspotStatusChangeMediumTests {
 
-  private SonarLintTestRpcServer backend;
-  private ServerFixture.Server server;
-
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
-    if (server != null) {
-      server.shutdown();
-      server = null;
-    }
-  }
-
-  @Test
-  void it_should_fail_the_future_when_the_server_returns_an_error() {
-    server = newSonarQubeServer().withStatus(DOWN).start();
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_fail_the_future_when_the_server_returns_an_error(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer().withStatus(DOWN).start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
-    var response = setStatusToSafe("configScopeId", "hotspotKey");
+    var response = setStatusToSafe(backend, "configScopeId", "hotspotKey");
 
     assertThat(response)
       .failsWithin(Duration.ofSeconds(2))
@@ -73,37 +57,37 @@ class HotspotStatusChangeMediumTests {
       .isInstanceOf(ResponseErrorException.class);
   }
 
-  @Test
-  void it_should_do_nothing_when_the_configuration_scope_is_unknown() {
-    backend = newBackend().build();
+  @SonarLintTest
+  void it_should_do_nothing_when_the_configuration_scope_is_unknown(SonarLintTestHarness harness) {
+    var backend = harness.newBackend().build();
 
-    var response = setStatusToSafe("configScopeId", "hotspotKey");
+    var response = setStatusToSafe(backend, "configScopeId", "hotspotKey");
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
   }
 
-  @Test
-  void it_should_do_nothing_when_the_configuration_scope_bound_connection_is_unknown() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_do_nothing_when_the_configuration_scope_bound_connection_is_unknown(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
-    var response = setStatusToSafe("configScopeId", "hotspotKey");
+    var response = setStatusToSafe(backend, "configScopeId", "hotspotKey");
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
   }
 
-  @Test
-  void it_should_update_the_status_on_sonarcloud_through_the_web_api() {
-    server = newSonarCloudServer().start();
+  @SonarLintTest
+  void it_should_update_the_status_on_sonarcloud_through_the_web_api(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarCloudServer().start();
 
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarCloudUrl(server.baseUrl())
       .withSonarCloudConnection("connectionId", "orgKey")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
-    var response = setStatusToSafe("configScopeId", "hotspotKey");
+    var response = setStatusToSafe(backend, "configScopeId", "hotspotKey");
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     server.getMockServer()
@@ -112,15 +96,15 @@ class HotspotStatusChangeMediumTests {
         .withRequestBody(equalTo("hotspot=hotspotKey&status=REVIEWED&resolution=SAFE")));
   }
 
-  @Test
-  void it_should_update_the_status_on_sonarqube_through_the_web_api() {
-    server = newSonarQubeServer().start();
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_update_the_status_on_sonarqube_through_the_web_api(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer().start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
-    var response = setStatusToSafe("configScopeId", "hotspotKey");
+    var response = setStatusToSafe(backend, "configScopeId", "hotspotKey");
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     waitAtMost(2, SECONDS).untilAsserted(() -> server.getMockServer()
@@ -129,16 +113,16 @@ class HotspotStatusChangeMediumTests {
         .withRequestBody(equalTo("hotspot=hotspotKey&status=REVIEWED&resolution=SAFE"))));
   }
 
-  @Test
+  @SonarLintTest
   @Disabled("TODO")
-  void it_should_update_the_hotspot_status_in_the_storage() {
-    server = newSonarQubeServer().start();
-    backend = newBackend()
+  void it_should_update_the_hotspot_status_in_the_storage(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer().start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
 
-    var response = setStatusToSafe("configScopeId", "hotspotKey");
+    var response = setStatusToSafe(backend, "configScopeId", "hotspotKey");
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     server.getMockServer()
@@ -147,16 +131,16 @@ class HotspotStatusChangeMediumTests {
         .withRequestBody(equalTo("hotspot=hotspotKey&status=REVIEWED&resolution=SAFE")));
   }
 
-  @Test
-  void it_should_count_status_change_in_telemetry() {
-    server = newSonarQubeServer().start();
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_count_status_change_in_telemetry(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer().start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withTelemetryEnabled()
       .build();
 
-    var response = setStatusToSafe("configScopeId", "hotspotKey");
+    var response = setStatusToSafe(backend, "configScopeId", "hotspotKey");
 
     assertThat(response).succeedsWithin(Duration.ofSeconds(2));
     assertThat(backend.telemetryFilePath())
@@ -164,7 +148,7 @@ class HotspotStatusChangeMediumTests {
       .contains("\"hotspotStatusChangedCount\":1");
   }
 
-  private CompletableFuture<Void> setStatusToSafe(String configScopeId, String hotspotKey) {
+  private CompletableFuture<Void> setStatusToSafe(SonarLintTestRpcServer backend, String configScopeId, String hotspotKey) {
     return backend.getHotspotService().changeStatus(new ChangeHotspotStatusParams(configScopeId, hotspotKey, HotspotStatus.SAFE));
   }
 }

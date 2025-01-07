@@ -20,37 +20,19 @@
 package mediumtest;
 
 import java.time.Duration;
-import java.util.concurrent.ExecutionException;
-import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.RevokeTokenParams;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class UserTokenMediumTests {
 
-  private SonarLintTestRpcServer backend;
-  private ServerFixture.Server server;
-
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
-    if (server != null) {
-      server.shutdown();
-      server = null;
-    }
-  }
-
-  @Test
-  void test_revoke_user_token() {
-    var fakeClient = newFakeClient().build();
-    backend = newBackend().build(fakeClient);
+  @SonarLintTest
+  void test_revoke_user_token(SonarLintTestHarness harness) {
+    var backend = harness.newBackend().build();
     var tokenName = "tokenNameTest";
-    server = ServerFixture.newSonarQubeServer().withToken(tokenName).start();
+    var server = harness.newFakeSonarQubeServer().withToken(tokenName).start();
 
     assertThat(backend
       .getUserTokenService()
@@ -58,12 +40,11 @@ class UserTokenMediumTests {
       .succeedsWithin(Duration.ofSeconds(5));
   }
 
-  @Test
-  void test_revoke_unknown_user_token() {
-    var fakeClient = newFakeClient().build();
-    backend = newBackend().build(fakeClient);
+  @SonarLintTest
+  void test_revoke_unknown_user_token(SonarLintTestHarness harness) {
+    var backend = harness.newBackend().build();
     var tokenName = "tokenNameTest";
-    server = ServerFixture.newSonarQubeServer().start();
+    var server = harness.newFakeSonarQubeServer().start();
 
     assertThat(backend
       .getUserTokenService()

@@ -29,16 +29,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.sonar.scanner.protocol.Constants;
@@ -60,15 +54,14 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Qualityprofiles;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarCloudServer;
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
-import static org.sonarsource.sonarlint.core.test.utils.storage.ServerIssueFixtures.aServerIssue;
 import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -87,21 +80,14 @@ import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commitAt
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRepository;
 import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBody;
 import static org.sonarsource.sonarlint.core.test.utils.plugins.SonarPluginBuilder.newSonarPlugin;
+import static org.sonarsource.sonarlint.core.test.utils.storage.ServerIssueFixtures.aServerIssue;
 
 class IssueTrackingMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
-  private SonarLintTestRpcServer backend;
 
-  @AfterEach
-  void stop() throws ExecutionException, InterruptedException {
-    if (backend != null) {
-      backend.shutdown().get();
-    }
-  }
-
-  @Test
-  void it_should_raise_tracked_and_untracked_issues_in_standalone_mode(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_raise_tracked_and_untracked_issues_in_standalone_mode(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var ideFilePath = "Foo.java";
     var filePath = createFile(baseDir, ideFilePath,
       "package sonar;\n" +
@@ -114,10 +100,10 @@ class IssueTrackingMediumTests {
     var ruleKey = "java:S1134";
 
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection(connectionId, storage -> storage.withPlugin(TestPlugin.JAVA).withProject(projectKey,
         project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
           .withMainBranch(branchName)))
@@ -125,7 +111,7 @@ class IssueTrackingMediumTests {
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .build(client);
 
-    var firstAnalysisPublishedIssues = analyzeFileAndGetAllIssuesOfRule(fileUri, client, ruleKey);
+    var firstAnalysisPublishedIssues = analyzeFileAndGetAllIssuesOfRule(backend, fileUri, client, ruleKey);
 
     assertThat(firstAnalysisPublishedIssues).hasSize(1);
     changeFileContent(baseDir, ideFilePath,
@@ -134,15 +120,15 @@ class IssueTrackingMediumTests {
         "public interface Foo {\n" +
         "// FIXME bar baz\n" +
         "}");
-    var secondAnalysisPublishedIssues = analyzeFileAndGetAllIssuesOfRule(fileUri, client, ruleKey);
+    var secondAnalysisPublishedIssues = analyzeFileAndGetAllIssuesOfRule(backend, fileUri, client, ruleKey);
     assertThat(secondAnalysisPublishedIssues).hasSize(2);
 
     verifyClientLog(client, LogLevel.INFO, String.format("Git Repository not found for %s. The path %s is not in a Git repository", CONFIG_SCOPE_ID, baseDir));
   }
 
   @Disabled("https://sonarsource.atlassian.net/browse/SLCORE-873")
-  @Test
-  void it_should_raise_tracked_and_untracked_issues_after_match_with_server_issues(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_raise_tracked_and_untracked_issues_after_match_with_server_issues(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var ideFilePath = "Foo.java";
     var filePath = createFile(baseDir, ideFilePath,
       "// FIXME foo bar\n" +
@@ -155,10 +141,10 @@ class IssueTrackingMediumTests {
     var message = "Take the required action to fix the issue indicated by this comment.";
 
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    var server = newSonarQubeServer("9.9")
+    var server = harness.newFakeSonarQubeServer("9.9")
       .withProject("projectKey", project -> project.withBranch("main", branch -> branch
         .withIssue("uuid", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
@@ -166,7 +152,7 @@ class IssueTrackingMediumTests {
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
         .withActiveRule(ruleKey, activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
       .start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection(connectionId, server,
         storage -> storage.withPlugin(TestPlugin.JAVA).withProject(projectKey,
           project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
@@ -179,7 +165,7 @@ class IssueTrackingMediumTests {
         new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, CONFIG_SCOPE_ID,
           new BindingConfigurationDto(connectionId, projectKey, true)))));
 
-    var firstAnalysisPublishedIssues = analyzeFileAndGetAllIssues(fileUri, client);
+    var firstAnalysisPublishedIssues = analyzeFileAndGetAllIssues(backend, fileUri, client);
 
     assertThat(firstAnalysisPublishedIssues).hasSize(1);
     changeFileContent(baseDir, ideFilePath,
@@ -188,13 +174,13 @@ class IssueTrackingMediumTests {
         "public interface Foo {\n" +
         "// FIXME bar baz\n" +
         "}");
-    var secondAnalysisPublishedIssues = analyzeFileAndGetAllIssues(fileUri, client);
+    var secondAnalysisPublishedIssues = analyzeFileAndGetAllIssues(backend, fileUri, client);
     assertThat(secondAnalysisPublishedIssues).hasSize(2);
   }
 
   @Disabled("https://sonarsource.atlassian.net/browse/SLCORE-873")
-  @Test
-  void it_should_use_server_new_code_definition_for_server_issues_and_set_true_for_unmatched_issues(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_use_server_new_code_definition_for_server_issues_and_set_true_for_unmatched_issues(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var ideFilePath = "Foo.java";
     var filePath = createFile(baseDir, ideFilePath,
       "// FIXME foo bar\n" +
@@ -208,10 +194,10 @@ class IssueTrackingMediumTests {
     var message = "Take the required action to fix the issue indicated by this comment.";
 
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    var server = newSonarQubeServer("9.9")
+    var server = harness.newFakeSonarQubeServer("9.9")
       .withProject("projectKey", project -> project.withBranch("main", branch -> branch
         .withIssue("uuid1", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
@@ -223,7 +209,7 @@ class IssueTrackingMediumTests {
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
         .withActiveRule(ruleKey, activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
       .start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection(connectionId, server,
         storage -> storage.withPlugin(TestPlugin.JAVA).withProject(projectKey,
           project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
@@ -240,7 +226,7 @@ class IssueTrackingMediumTests {
           new BindingConfigurationDto(connectionId, projectKey, true)))));
     client.waitForSynchronization();
 
-    var issues = analyzeFileAndGetAllIssues(fileUri, client);
+    var issues = analyzeFileAndGetAllIssues(backend, fileUri, client);
     assertThat(issues).hasSize(2);
     assertThat(issues.stream().filter(raisedIssueDto -> raisedIssueDto.getServerKey().equals("uuid1")).findFirst().get().isOnNewCode()).isFalse();
     assertThat(issues.stream().filter(raisedIssueDto -> raisedIssueDto.getServerKey().equals("uuid2")).findFirst().get().isOnNewCode()).isTrue();
@@ -252,13 +238,13 @@ class IssueTrackingMediumTests {
         "public interface Foo {\n" +
         "// FIXME bar baz\n" +
         "}");
-    var secondAnalysisPublishedIssues = analyzeFileAndGetAllIssues(fileUri, client);
+    var secondAnalysisPublishedIssues = analyzeFileAndGetAllIssues(backend, fileUri, client);
     assertThat(secondAnalysisPublishedIssues).hasSize(3);
     assertThat(secondAnalysisPublishedIssues.stream().filter(raisedIssueDto -> Objects.isNull(raisedIssueDto.getServerKey())).findFirst().get().isOnNewCode()).isTrue();
   }
 
-  @Test
-  void it_should_use_git_blame_to_set_introduction_date_for_git_repos(@TempDir Path baseDir) throws IOException, GitAPIException {
+  @SonarLintTest
+  void it_should_use_git_blame_to_set_introduction_date_for_git_repos(SonarLintTestHarness harness, @TempDir Path baseDir) throws IOException, GitAPIException {
     var repository = createRepository(baseDir);
     var filePath = createFile(baseDir, "Foobar.java",
       "package sonar;\n" +
@@ -266,21 +252,21 @@ class IssueTrackingMediumTests {
         "{}");
     var commitDate = commit(repository, filePath.getFileName().toString());
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .build(client);
 
-    var issue = analyzeFileAndGetIssue(fileUri, client);
+    var issue = analyzeFileAndGetIssue(backend, client, fileUri);
 
     assertThat(issue.getIntroductionDate()).isEqualTo(commitDate.toInstant());
   }
 
-  @Test
-  void it_should_use_git_blame_to_set_introduction_date_for_git_repos_for_given_content(@TempDir Path baseDir) throws IOException, GitAPIException {
+  @SonarLintTest
+  void it_should_use_git_blame_to_set_introduction_date_for_git_repos_for_given_content(SonarLintTestHarness harness, @TempDir Path baseDir) throws IOException, GitAPIException {
     var repository = createRepository(baseDir);
     String committedFileContent = "package sonar;\n" +
       "public interface Foobar\n" +
@@ -293,16 +279,16 @@ class IssueTrackingMediumTests {
       "public interface Foobar\n" +
       "//TODO introduce new issue\n" +
       "{}";
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, unsavedFileContent, null, true)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .build(client);
 
     Instant analysisTime = Instant.now();
-    var issues = analyzeFileAndGetAllIssues(fileUri, client);
+    var issues = analyzeFileAndGetAllIssues(backend, fileUri, client);
 
     assertThat(issues)
       .extracting(raisedIssueDto -> raisedIssueDto.getIntroductionDate().isAfter(analysisTime), raisedIssueDto -> raisedIssueDto.getTextRange().getStartLine())
@@ -310,8 +296,8 @@ class IssueTrackingMediumTests {
   }
 
   @Disabled("https://sonarsource.atlassian.net/browse/SLCORE-873")
-  @Test
-  void it_should_track_issue_secondary_locations(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_track_issue_secondary_locations(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var ideFilePath = "Foo.java";
     var filePath = createFile(baseDir, ideFilePath,
       "package devoxx;\n" +
@@ -330,10 +316,10 @@ class IssueTrackingMediumTests {
     var message = "Define a constant instead of duplicating this literal \"action1\" 3 times.";
 
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    var server = newSonarQubeServer("9.9")
+    var server = harness.newFakeSonarQubeServer("9.9")
       .withProject("projectKey", project -> project.withBranch("main", branch -> branch
         .withIssue("uuid", "java:S1192", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
@@ -341,7 +327,7 @@ class IssueTrackingMediumTests {
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
         .withActiveRule(ruleKey, activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
       .start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection(connectionId, server,
         storage -> storage.withPlugin(TestPlugin.JAVA).withProject(projectKey,
           project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
@@ -354,7 +340,7 @@ class IssueTrackingMediumTests {
         new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, CONFIG_SCOPE_ID,
           new BindingConfigurationDto(connectionId, projectKey, true)))));
 
-    var firstPublishedIssue = analyzeFileAndGetIssue(fileUri, client);
+    var firstPublishedIssue = analyzeFileAndGetIssue(backend, client, fileUri);
 
     assertThat(firstPublishedIssue)
       .extracting("ruleKey", "primaryMessage", "severity", "type", "serverKey", "introductionDate",
@@ -389,8 +375,8 @@ class IssueTrackingMediumTests {
   }
 
   @Disabled("https://sonarsource.atlassian.net/browse/SLCORE-873")
-  @Test
-  void it_should_track_line_level_server_issue_on_same_line(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_track_line_level_server_issue_on_same_line(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var ideFilePath = "Foo.java";
     var filePath = createFile(baseDir, ideFilePath,
       "// FIXME foo bar\n" +
@@ -403,10 +389,10 @@ class IssueTrackingMediumTests {
     var message = "Take the required action to fix the issue indicated by this comment.";
 
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    var server = newSonarQubeServer("9.9")
+    var server = harness.newFakeSonarQubeServer("9.9")
       .withProject("projectKey", project -> project.withBranch("main", branch -> branch
         .withIssue("uuid", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
@@ -414,7 +400,7 @@ class IssueTrackingMediumTests {
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
         .withActiveRule(ruleKey, activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
       .start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection(connectionId, server,
         storage -> storage.withPlugin(TestPlugin.JAVA).withProject(projectKey,
           project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
@@ -427,7 +413,7 @@ class IssueTrackingMediumTests {
         new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, CONFIG_SCOPE_ID,
           new BindingConfigurationDto(connectionId, projectKey, true)))));
 
-    var firstPublishedIssue = analyzeFileAndGetIssue(fileUri, client);
+    var firstPublishedIssue = analyzeFileAndGetIssue(backend, client, fileUri);
 
     assertThat(firstPublishedIssue)
       .extracting("ruleKey", "primaryMessage", "severity", "type", "serverKey", "introductionDate",
@@ -436,8 +422,8 @@ class IssueTrackingMediumTests {
   }
 
   @Disabled("https://sonarsource.atlassian.net/browse/SLCORE-873")
-  @Test
-  void it_should_track_line_level_server_issue_on_different_line(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_track_line_level_server_issue_on_different_line(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var ideFilePath = "Foo.java";
     var filePath = createFile(baseDir, ideFilePath,
       "// FIXME foo bar\n" +
@@ -450,10 +436,10 @@ class IssueTrackingMediumTests {
     var message = "Take the required action to fix the issue indicated by this comment.";
 
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    var server = newSonarQubeServer("9.9")
+    var server = harness.newFakeSonarQubeServer("9.9")
       .withProject("projectKey", project -> project.withBranch("main", branch -> branch
         .withIssue("uuid", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
@@ -461,7 +447,7 @@ class IssueTrackingMediumTests {
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
         .withActiveRule(ruleKey, activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
       .start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection(connectionId, server,
         storage -> storage.withPlugin(TestPlugin.JAVA).withProject(projectKey,
           project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
@@ -473,7 +459,7 @@ class IssueTrackingMediumTests {
       .didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
         new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, CONFIG_SCOPE_ID,
           new BindingConfigurationDto(connectionId, projectKey, true)))));
-    var firstPublishedIssue = analyzeFileAndGetIssue(fileUri, client);
+    var firstPublishedIssue = analyzeFileAndGetIssue(backend, client, fileUri);
 
     assertThat(firstPublishedIssue)
       .extracting("ruleKey", "primaryMessage", "severity", "type", "serverKey", "introductionDate",
@@ -481,31 +467,31 @@ class IssueTrackingMediumTests {
       .containsExactly(ruleKey, message, IssueSeverity.BLOCKER, RuleType.BUG, "uuid", Instant.ofEpochMilli(123456789L), 1, 0, 1, 16);
   }
 
-  @Test
-  void it_should_track_file_level_issue(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_track_file_level_issue(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "Fubar.java",
       "public interface Fubar\n" +
         "{}");
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .build(client);
 
-    var firstPublishedIssue = analyzeFileAndGetIssue(fileUri, client);
+    var firstPublishedIssue = analyzeFileAndGetIssue(backend, client, fileUri);
 
-    var newPublishedIssue = analyzeFileAndGetIssue(fileUri, client);
+    var newPublishedIssue = analyzeFileAndGetIssue(backend, client, fileUri);
 
     assertThat(newPublishedIssue)
       .extracting(RaisedIssueDto::getId, RaisedIssueDto::getIntroductionDate)
       .containsExactly(firstPublishedIssue.getId(), firstPublishedIssue.getIntroductionDate());
   }
 
-  @Test
-  void it_should_test_quick_fixes(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_test_quick_fixes(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "FileHelper.java",
       "package myapp.helpers;\n" +
         "\n" +
@@ -519,15 +505,15 @@ class IssueTrackingMediumTests {
         "    }\n" +
         "}");
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .build(client);
 
-    var issues = analyzeFileAndGetAllIssues(fileUri, client);
+    var issues = analyzeFileAndGetAllIssues(backend, fileUri, client);
 
     assertThat(issues)
       .extracting("ruleKey", "primaryMessage", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
@@ -549,56 +535,56 @@ class IssueTrackingMediumTests {
     assertThat(textRange.getEndLineOffset()).isEqualTo(26);
   }
 
-  @Test
-  void it_should_start_tracking_an_issue_in_standalone_mode_when_detected_for_the_first_time(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_start_tracking_an_issue_in_standalone_mode_when_detected_for_the_first_time(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFileWithAnXmlIssue(baseDir);
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .build(client);
     var startTime = System.currentTimeMillis();
 
-    var publishedIssue = analyzeFileAndGetIssue(fileUri, client);
+    var publishedIssue = analyzeFileAndGetIssue(backend, client, fileUri);
 
     assertThat(publishedIssue)
       .extracting(RaisedIssueDto::getIntroductionDate, as(INSTANT))
       .isAfter(Instant.ofEpochMilli(startTime));
   }
 
-  @Test
-  void it_should_match_an_already_tracked_issue_in_standalone_mode_when_detected_for_the_second_time(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_match_an_already_tracked_issue_in_standalone_mode_when_detected_for_the_second_time(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFileWithAnXmlIssue(baseDir);
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .build(client);
 
-    var firstPublishedIssue = analyzeFileAndGetIssue(fileUri, client);
+    var firstPublishedIssue = analyzeFileAndGetIssue(backend, client, fileUri);
 
-    var newPublishedIssue = analyzeFileAndGetIssue(fileUri, client);
+    var newPublishedIssue = analyzeFileAndGetIssue(backend, client, fileUri);
 
     assertThat(newPublishedIssue)
       .extracting(RaisedIssueDto::getId, RaisedIssueDto::getIntroductionDate)
       .containsExactly(firstPublishedIssue.getId(), firstPublishedIssue.getIntroductionDate());
   }
 
-  @Test
-  void it_should_start_tracking_an_issue_in_connected_mode_when_detected_for_the_first_time(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_start_tracking_an_issue_in_connected_mode_when_detected_for_the_first_time(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFileWithAnXmlIssue(baseDir);
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    var server = newSonarQubeServer().start();
-    backend = newBackend()
+    var server = harness.newFakeSonarQubeServer().start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server,
         storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MINOR"))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
@@ -606,48 +592,48 @@ class IssueTrackingMediumTests {
       .build(client);
     var startTime = System.currentTimeMillis();
 
-    var publishedIssue = analyzeFileAndGetIssue(fileUri, client);
+    var publishedIssue = analyzeFileAndGetIssue(backend, client, fileUri);
 
     assertThat(publishedIssue)
       .extracting(RaisedIssueDto::getIntroductionDate, as(INSTANT))
       .isAfter(Instant.ofEpochMilli(startTime));
   }
 
-  @Test
-  void it_should_match_an_already_tracked_issue_in_connected_mode_when_detected_for_the_second_time(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_match_an_already_tracked_issue_in_connected_mode_when_detected_for_the_second_time(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFileWithAnXmlIssue(baseDir);
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    var server = newSonarQubeServer().start();
-    backend = newBackend()
+    var server = harness.newFakeSonarQubeServer().start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server,
         storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MINOR"))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
       .build(client);
 
-    var firstPublishedIssue = analyzeFileAndGetIssue(fileUri, client);
+    var firstPublishedIssue = analyzeFileAndGetIssue(backend, client, fileUri);
 
-    var newPublishedIssue = analyzeFileAndGetIssue(fileUri, client);
+    var newPublishedIssue = analyzeFileAndGetIssue(backend, client, fileUri);
 
     assertThat(newPublishedIssue)
       .extracting(RaisedIssueDto::getId, RaisedIssueDto::getIntroductionDate)
       .containsExactly(firstPublishedIssue.getId(), firstPublishedIssue.getIntroductionDate());
   }
 
-  @Test
-  void it_should_match_a_local_issue_with_a_server_issue_in_connected_mode_when_detected_for_the_first_time(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_match_a_local_issue_with_a_server_issue_in_connected_mode_when_detected_for_the_first_time(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFileWithAnXmlIssue(baseDir);
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
     var serverIssueIntroductionDate = Instant.ofEpochMilli(12345678);
-    var server = newSonarQubeServer()
+    var server = harness.newFakeSonarQubeServer()
       .withProject("projectKey").start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server,
         storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey",
           project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MINOR"))
@@ -662,27 +648,27 @@ class IssueTrackingMediumTests {
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
       .build(client);
 
-    var publishedIssue = analyzeFileAndGetIssue(fileUri, client);
+    var publishedIssue = analyzeFileAndGetIssue(backend, client, fileUri);
 
     assertThat(publishedIssue)
       .extracting(RaisedIssueDto::getServerKey, RaisedIssueDto::getIntroductionDate)
       .containsExactly("key", serverIssueIntroductionDate);
   }
 
-  @Test
-  void it_should_match_a_previously_tracked_issue_with_a_server_issue_when_binding(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_match_a_previously_tracked_issue_with_a_server_issue_when_binding(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFileWithAnXmlIssue(baseDir);
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
     var serverIssueIntroductionDate = Instant.ofEpochMilli(12345678);
-    var server = newSonarQubeServer()
+    var server = harness.newFakeSonarQubeServer()
       .withProject("projectKey")
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("xml")
         .withActiveRule("xml:S3421", activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
       .start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server,
         storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey",
           project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MINOR"))
@@ -697,7 +683,7 @@ class IssueTrackingMediumTests {
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .build(client);
 
-    var firstPublishedIssue = analyzeFileAndGetIssue(fileUri, client);
+    var firstPublishedIssue = analyzeFileAndGetIssue(backend, client, fileUri);
 
     backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID,
       new BindingConfigurationDto("connectionId", "projectKey", true)));
@@ -715,15 +701,15 @@ class IssueTrackingMediumTests {
           .build())
         .build()))));
 
-    var newPublishedIssue = analyzeFileAndGetIssue(fileUri, client);
+    var newPublishedIssue = analyzeFileAndGetIssue(backend, client, fileUri);
 
     assertThat(newPublishedIssue)
       .extracting(RaisedIssueDto::getId, RaisedIssueDto::getServerKey, RaisedIssueDto::getIntroductionDate)
       .containsExactly(firstPublishedIssue.getId(), "key", serverIssueIntroductionDate);
   }
 
-  @Test
-  void it_should_submit_server_path_to_sc_web_api(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_submit_server_path_to_sc_web_api(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var folder = createFolder(baseDir, "local/path/prefix");
     var filePath = createFile(baseDir, folder.resolve("pom.xml").toString(),
       "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
@@ -737,7 +723,7 @@ class IssueTrackingMediumTests {
     var orgKey = "myOrganization";
     var connectionId = "connectionId";
     var projectKey = "projectKey";
-    var server = newSonarCloudServer(orgKey)
+    var server = harness.newFakeSonarCloudServer(orgKey)
       .withProject(projectKey, project -> project
         .withFile("server/path/prefix/pom.xml")
           .withQualityProfile("qp")
@@ -746,10 +732,10 @@ class IssueTrackingMediumTests {
         .withActiveRule("xml:S3421", rule -> rule.withSeverity(IssueSeverity.MAJOR)))
       .withVersion("8.0.0.55884")
       .start();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarCloudConnection(connectionId, orgKey, true, storage -> {})
       .withFullSynchronization()
       .withSonarCloudUrl(server.baseUrl())
@@ -770,27 +756,27 @@ class IssueTrackingMediumTests {
       .contains("/batch/issues?key=projectKey%3Aserver%2Fpath%2Fprefix%2Fpom.xml&branch=main");
   }
 
-  @Test
-  void it_should_stream_issues(@TempDir Path baseDir) throws IOException, GitAPIException {
+  @SonarLintTest
+  void it_should_stream_issues(SonarLintTestHarness harness, @TempDir Path baseDir) throws IOException, GitAPIException {
     var repository = createRepository(baseDir);
     var filePath = createFile(baseDir, "Foo.java", "a");
     var introductionDate = Instant.now().minus(5, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
     var commitDate = commitAtDate(repository, introductionDate, filePath.getFileName().toString());
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
     var pluginPath = newSonarPlugin("java")
       .withSensor(IssueStreamingSensor.class)
       .withRulesDefinition(IssueStreamingRulesDefinition.class)
       .generate(baseDir);
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withStandaloneEmbeddedPlugin(pluginPath)
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .build(client);
 
-    analyzeFileAndGetAllIssues(fileUri, client);
+    analyzeFileAndGetAllIssues(backend, fileUri, client);
 
     ArgumentCaptor<Map<URI, List<RaisedIssueDto>>> intermediateIssuesByFileArgumentCaptor = ArgumentCaptor.forClass(Map.class);
     verify(client, times(2)).raiseIssues(eq(CONFIG_SCOPE_ID), intermediateIssuesByFileArgumentCaptor.capture(), eq(true), any());
@@ -812,29 +798,29 @@ class IssueTrackingMediumTests {
     assertThat(secondRaisedIntermediateIssuesByFile.get(fileUri)).usingRecursiveFieldByFieldElementComparatorIgnoringFields().isEqualTo(finalIssuesByFile.get(fileUri));
   }
 
-  @Test
-  void it_should_stream_issues_on_two_analyses_in_a_row(@TempDir Path baseDir) throws IOException, GitAPIException {
+  @SonarLintTest
+  void it_should_stream_issues_on_two_analyses_in_a_row(SonarLintTestHarness harness, @TempDir Path baseDir) throws IOException, GitAPIException {
     var repository = createRepository(baseDir);
     var filePath = createFile(baseDir, "Foo.java", "a");
     var introductionDate = Instant.now().minus(5, ChronoUnit.DAYS).truncatedTo(ChronoUnit.SECONDS);
     commitAtDate(repository, introductionDate, filePath.getFileName().toString());
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
     var pluginPath = newSonarPlugin("java")
       .withSensor(IssueStreamingSensor.class)
       .withRulesDefinition(IssueStreamingRulesDefinition.class)
       .generate(baseDir);
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withStandaloneEmbeddedPlugin(pluginPath)
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .build(client);
-    analyzeFileAndGetAllIssues(fileUri, client);
+    analyzeFileAndGetAllIssues(backend, fileUri, client);
     reset(client);
 
-    analyzeFileAndGetAllIssues(fileUri, client);
+    analyzeFileAndGetAllIssues(backend, fileUri, client);
 
     ArgumentCaptor<Map<URI, List<RaisedIssueDto>>> intermediateIssuesByFileArgumentCaptor = ArgumentCaptor.forClass(Map.class);
     verify(client, times(2)).raiseIssues(eq(CONFIG_SCOPE_ID), intermediateIssuesByFileArgumentCaptor.capture(), eq(true), any());
@@ -856,16 +842,16 @@ class IssueTrackingMediumTests {
     assertThat(secondRaisedIntermediateIssuesByFile.get(fileUri)).usingRecursiveFieldByFieldElementComparatorIgnoringFields().isEqualTo(finalIssuesByFile.get(fileUri));
   }
 
-  @Test
-  void it_should_include_a_file_without_issues_when_raising_issues(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_include_a_file_without_issues_when_raising_issues(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "Foo.java", "");
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
     var pluginPath = newSonarPlugin("java")
       .generate(baseDir);
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withStandaloneEmbeddedPlugin(pluginPath)
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
@@ -878,7 +864,7 @@ class IssueTrackingMediumTests {
     verify(client).raiseIssues(eq(CONFIG_SCOPE_ID), eq(Map.of(fileUri, List.of())), eq(false), any());
   }
 
-  private List<RaisedIssueDto> analyzeFileAndGetAllIssuesOfRule(URI fileUri, SonarLintRpcClientDelegate client, String ruleKey) {
+  private List<RaisedIssueDto> analyzeFileAndGetAllIssuesOfRule(SonarLintTestRpcServer backend, URI fileUri, SonarLintRpcClientDelegate client, String ruleKey) {
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
       new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true, System.currentTimeMillis()))
@@ -890,7 +876,7 @@ class IssueTrackingMediumTests {
     return raisedIssues.stream().filter(ri -> ri.getRuleKey().equals(ruleKey)).collect(Collectors.toList());
   }
 
-  private List<RaisedIssueDto> analyzeFileAndGetAllIssues(URI fileUri, SonarLintRpcClientDelegate client) {
+  private List<RaisedIssueDto> analyzeFileAndGetAllIssues(SonarLintTestRpcServer backend, URI fileUri, SonarLintRpcClientDelegate client) {
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
       new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true, System.currentTimeMillis())).join();
@@ -900,12 +886,8 @@ class IssueTrackingMediumTests {
     return publishedIssuesByFile.get(fileUri);
   }
 
-  private RaisedIssueDto analyzeFileAndGetIssue(URI fileUri, SonarLintRpcClientDelegate client) {
+  private RaisedIssueDto analyzeFileAndGetIssue(SonarLintTestRpcServer backend, SonarLintRpcClientDelegate client, URI fileUri) {
     var analysisId = UUID.randomUUID();
-    return analyzeFileAndGetIssue(fileUri, client, analysisId);
-  }
-
-  private RaisedIssueDto analyzeFileAndGetIssue(URI fileUri, SonarLintRpcClientDelegate client, @Nullable UUID analysisId) {
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
       new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), true, System.currentTimeMillis())).join();
     var publishedIssuesByFile = getPublishedIssues(client, analysisId);

@@ -23,11 +23,8 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
@@ -36,12 +33,12 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddCo
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
-import utils.MockWebServerExtensionWithProtobuf;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import org.sonarsource.sonarlint.core.test.utils.server.websockets.WebSocketServer;
+import utils.MockWebServerExtensionWithProtobuf;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
@@ -102,27 +99,23 @@ class SmartNotificationsMediumTests {
   @RegisterExtension
   private final MockWebServerExtensionWithProtobuf mockWebServerExtension2 = new MockWebServerExtensionWithProtobuf();
 
-  private SonarLintTestRpcServer backend;
   private WebSocketServer webSocketServer;
 
   @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    if (backend != null) {
-      backend.shutdown().get();
-    }
+  void tearDown() {
     if (webSocketServer != null) {
       webSocketServer.stop();
     }
   }
 
-  @Test
-  void it_should_send_notification_for_two_config_scope_with_same_binding() {
-    var fakeClient = newFakeClient().build();
+  @SonarLintTest
+  void it_should_send_notification_for_two_config_scope_with_same_binding(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient().build();
     mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
     mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +
       UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1);
 
-    backend = newBackend()
+    harness.newBackend()
       .withSonarQubeConnectionAndNotifications(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(),
         storage -> storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
       .withSonarQubeConnectionAndNotifications(CONNECTION_ID_2, mockWebServerExtension.endpointParams().getBaseUrl())
@@ -138,14 +131,14 @@ class SmartNotificationsMediumTests {
     assertThat(notificationsResult.element().getScopeIds()).hasSize(2).containsExactlyInAnyOrder("scopeId", "scopeId2");
   }
 
-  @Test
-  void it_should_send_notification_for_two_config_scope_with_inherited_binding() {
-    var fakeClient = newFakeClient().build();
+  @SonarLintTest
+  void it_should_send_notification_for_two_config_scope_with_inherited_binding(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient().build();
     mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
     mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +
       UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1);
 
-    backend = newBackend()
+    harness.newBackend()
       .withSonarQubeConnectionAndNotifications(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(),
         storage -> storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
       .withSonarQubeConnectionAndNotifications(CONNECTION_ID_2, mockWebServerExtension.endpointParams().getBaseUrl())
@@ -161,9 +154,9 @@ class SmartNotificationsMediumTests {
     assertThat(notificationsResult.element().getScopeIds()).hasSize(2).containsExactlyInAnyOrder("parentScopeId", "childScopeId");
   }
 
-  @Test
-  void it_should_send_notification_for_different_bindings() {
-    var fakeClient = newFakeClient().build();
+  @SonarLintTest
+  void it_should_send_notification_for_different_bindings(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient().build();
     mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
     mockWebServerExtension2.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
     var timestamp = UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER));
@@ -172,7 +165,7 @@ class SmartNotificationsMediumTests {
     mockWebServerExtension2.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY_2 + "," + PROJECT_KEY_4 + "&from=" +
       timestamp + "," + timestamp, EVENT_PROJECT_P2);
 
-    backend = newBackend()
+    harness.newBackend()
       .withSonarQubeConnectionAndNotifications(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(),
         storage -> storage
           .withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE))
@@ -205,14 +198,14 @@ class SmartNotificationsMediumTests {
       );
   }
 
-  @Test
-  void it_should_not_send_notification_with_unbound_config_scope() {
-    var fakeClient = newFakeClient().build();
+  @SonarLintTest
+  void it_should_not_send_notification_with_unbound_config_scope(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient().build();
     mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
     mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +
       UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1);
 
-    backend = newBackend()
+    harness.newBackend()
       .withSonarQubeConnectionAndNotifications(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(),
         storage -> storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
       .withUnboundConfigScope("scopeId")
@@ -227,14 +220,14 @@ class SmartNotificationsMediumTests {
     assertThat(notificationsResult.element().getScopeIds()).hasSize(1).contains("scopeId2");
   }
 
-  @Test
-  void it_should_send_notification_after_adding_removing_binding() {
-    var fakeClient = newFakeClient().build();
+  @SonarLintTest
+  void it_should_send_notification_after_adding_removing_binding(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient().build();
     mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
     mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +
       UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1);
 
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnectionAndNotifications(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(),
         storage -> storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
       .withBoundConfigScope("scopeId", CONNECTION_ID, PROJECT_KEY)
@@ -256,14 +249,14 @@ class SmartNotificationsMediumTests {
     assertThat(notificationsResult.element().getScopeIds()).hasSize(1).contains("scopeId");
   }
 
-  @Test
-  void it_should_send_notification_handled_by_sonarcloud_websocket_as_fallback() {
-    var fakeClient = newFakeClient().build();
+  @SonarLintTest
+  void it_should_send_notification_handled_by_sonarcloud_websocket_as_fallback(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient().build();
     mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
     mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +
       UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1);
 
-    backend = newBackend()
+    harness.newBackend()
       .withSonarCloudUrl(mockWebServerExtension.endpointParams().getBaseUrl())
       .withSonarCloudConnectionAndNotifications(CONNECTION_ID, "myOrg", storage -> storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
       .withBoundConfigScope("scopeId", CONNECTION_ID, PROJECT_KEY)
@@ -277,17 +270,17 @@ class SmartNotificationsMediumTests {
     assertThat(notificationsResult.element().getScopeIds()).hasSize(1).contains("scopeId");
   }
 
-  @Test
-  void it_should_skip_polling_notifications_when_sonarcloud_websocket_opened() {
+  @SonarLintTest
+  void it_should_skip_polling_notifications_when_sonarcloud_websocket_opened(SonarLintTestHarness harness) {
     webSocketServer = new WebSocketServer();
     webSocketServer.start();
-    var fakeClient = newFakeClient().withToken(CONNECTION_ID, "token")
+    var fakeClient = harness.newFakeClient().withToken(CONNECTION_ID, "token")
       .build();
     mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
     mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +
       UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1);
 
-    backend = newBackend()
+    harness.newBackend()
       .withSonarCloudUrl(mockWebServerExtension.endpointParams().getBaseUrl())
       .withSonarCloudWebSocketsUrl(webSocketServer.getUrl())
       .withSonarCloudConnectionAndNotifications(CONNECTION_ID, "myOrg", storage -> storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
@@ -310,14 +303,14 @@ class SmartNotificationsMediumTests {
     assertThat(notificationsResult.element().getScopeIds()).hasSize(1).contains("scopeId");
   }
 
-  @Test
-  void it_should_send_sonarqube_notification() {
-    var fakeClient = newFakeClient().build();
+  @SonarLintTest
+  void it_should_send_sonarqube_notification(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient().build();
     mockWebServerExtension.addResponse("/api/developers/search_events?projects=&from=", new MockResponse().setResponseCode(200));
     mockWebServerExtension.addStringResponse("/api/developers/search_events?projects=" + PROJECT_KEY + "&from=" +
       UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1);
 
-    backend = newBackend()
+    harness.newBackend()
       .withSonarQubeConnectionAndNotifications(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(),
         storage -> storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
       .withBoundConfigScope("scopeId", CONNECTION_ID, PROJECT_KEY)

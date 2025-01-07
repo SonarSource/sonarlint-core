@@ -28,14 +28,11 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
 import mockwebserver3.MockResponse;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
@@ -45,37 +42,30 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.LocalOnlyIss
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TrackWithServerIssuesParams;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.MockWebServerExtensionWithProtobuf;
 
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class CheckResolutionStatusChangePermittedMediumTests {
 
   private static final Path FILE_PATH = Path.of("file/path");
-  private SonarLintRpcServer backend;
-  private ServerFixture.Server server;
   @RegisterExtension
   public final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
 
   @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
-    if (server != null) {
-      server.shutdown();
-      server = null;
-    }
+  void tearDown() {
     mockWebServerExtension.shutdown();
   }
 
-  @Test
-  void it_should_fail_when_the_connection_is_unknown() {
-    backend = newBackend().build();
+  @SonarLintTest
+  void it_should_fail_when_the_connection_is_unknown(SonarLintTestHarness harness) {
+    var backend = harness.newBackend().build();
 
-    var response = checkStatusChangePermitted("connectionId", "issueKey");
+    var response = checkStatusChangePermitted(backend, "connectionId", "issueKey");
 
     assertThat(response)
       .failsWithin(Duration.ofSeconds(2))
@@ -85,14 +75,14 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .withMessage("Connection 'connectionId' is gone");
   }
 
-  @Test
-  void it_should_allow_2_statuses_when_user_has_permission_for_sonarqube_103() {
+  @SonarLintTest
+  void it_should_allow_2_statuses_when_user_has_permission_for_sonarqube_103(SonarLintTestHarness harness) {
     fakeServerWithIssue("issueKey", List.of("wontfix", "falsepositive"));
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
       .build();
 
-    var response = checkStatusChangePermitted("connectionId", "issueKey");
+    var response = checkStatusChangePermitted(backend, "connectionId", "issueKey");
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
@@ -101,14 +91,14 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .containsExactly(ResolutionStatus.WONT_FIX, ResolutionStatus.FALSE_POSITIVE);
   }
 
-  @Test
-  void it_should_allow_2_statuses_when_user_has_permission_for_sonarqube_104() {
+  @SonarLintTest
+  void it_should_allow_2_statuses_when_user_has_permission_for_sonarqube_104(SonarLintTestHarness harness) {
     fakeServerWithIssue("issueKey", List.of("accept", "falsepositive"));
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.4"))
       .build();
 
-    var response = checkStatusChangePermitted("connectionId", "issueKey");
+    var response = checkStatusChangePermitted(backend, "connectionId", "issueKey");
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
@@ -117,15 +107,15 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .containsExactly(ResolutionStatus.ACCEPT, ResolutionStatus.FALSE_POSITIVE);
   }
 
-  @Test
-  void it_should_allow_2_statuses_when_user_has_permission_for_sonarcloud() {
+  @SonarLintTest
+  void it_should_allow_2_statuses_when_user_has_permission_for_sonarcloud(SonarLintTestHarness harness) {
     fakeServerWithIssue("issueKey", "orgKey", List.of("wontfix", "falsepositive"));
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarCloudUrl(mockWebServerExtension.endpointParams().getBaseUrl())
       .withSonarCloudConnection("connectionId", "orgKey")
       .build();
 
-    var response = checkStatusChangePermitted("connectionId", "issueKey");
+    var response = checkStatusChangePermitted(backend, "connectionId", "issueKey");
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
@@ -134,15 +124,15 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .containsExactly(ResolutionStatus.WONT_FIX, ResolutionStatus.FALSE_POSITIVE);
   }
 
-  @Test
-  void it_should_fallback_to_server_check_if_the_issue_uuid_is_not_found_in_local_only_issues() {
+  @SonarLintTest
+  void it_should_fallback_to_server_check_if_the_issue_uuid_is_not_found_in_local_only_issues(SonarLintTestHarness harness) {
     var issueKey = UUID.randomUUID().toString();
     fakeServerWithIssue(issueKey, List.of("accept", "falsepositive"));
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.4"))
       .build();
 
-    var response = checkStatusChangePermitted("connectionId", issueKey);
+    var response = checkStatusChangePermitted(backend, "connectionId", issueKey);
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
@@ -151,14 +141,14 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .containsExactly(ResolutionStatus.ACCEPT, ResolutionStatus.FALSE_POSITIVE);
   }
 
-  @Test
-  void it_should_not_permit_status_change_when_issue_misses_required_transitions() {
+  @SonarLintTest
+  void it_should_not_permit_status_change_when_issue_misses_required_transitions(SonarLintTestHarness harness) {
     fakeServerWithIssue("issueKey", List.of("confirm"));
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
       .build();
 
-    var response = checkStatusChangePermitted("connectionId", "issueKey");
+    var response = checkStatusChangePermitted(backend, "connectionId", "issueKey");
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
@@ -167,14 +157,14 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .containsExactly(false, "Marking an issue as resolved requires the 'Administer Issues' permission", List.of());
   }
 
-  @Test
-  void it_should_fail_if_no_issue_is_returned_by_web_api() {
+  @SonarLintTest
+  void it_should_fail_if_no_issue_is_returned_by_web_api(SonarLintTestHarness harness) {
     fakeServerWithResponse("issueKey", null, Issues.SearchWsResponse.newBuilder().build());
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
       .build();
 
-    var response = checkStatusChangePermitted("connectionId", "issueKey");
+    var response = checkStatusChangePermitted(backend, "connectionId", "issueKey");
 
     assertThat(response)
       .failsWithin(Duration.ofSeconds(2))
@@ -185,13 +175,13 @@ class CheckResolutionStatusChangePermittedMediumTests {
       });
   }
 
-  @Test
-  void it_should_fail_if_web_api_returns_an_error() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_fail_if_web_api_returns_an_error(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
       .build();
 
-    var response = checkStatusChangePermitted("connectionId", "issueKey");
+    var response = checkStatusChangePermitted(backend, "connectionId", "issueKey");
 
     assertThat(response)
       .failsWithin(Duration.ofSeconds(2))
@@ -200,14 +190,14 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .isInstanceOf(ResponseErrorException.class);
   }
 
-  @Test
-  void it_should_fail_if_web_api_returns_unexpected_body() {
+  @SonarLintTest
+  void it_should_fail_if_web_api_returns_unexpected_body(SonarLintTestHarness harness) {
     fakeServerWithWrongBody("issueKey");
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
       .build();
 
-    var response = checkStatusChangePermitted("connectionId", "issueKey");
+    var response = checkStatusChangePermitted(backend, "connectionId", "issueKey");
 
     assertThat(response)
       .failsWithin(Duration.ofSeconds(2))
@@ -218,10 +208,10 @@ class CheckResolutionStatusChangePermittedMediumTests {
       });
   }
 
-  @Test
-  void it_should_not_permit_status_change_on_local_only_issues_for_sonarcloud() throws ExecutionException, InterruptedException {
-    var client = newFakeClient().build();
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_not_permit_status_change_on_local_only_issues_for_sonarcloud(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
+    var client = harness.newFakeClient().build();
+    var backend = harness.newBackend()
       .withSonarCloudConnection("connectionId", "orgKey", true, storage -> storage
         .withProject("projectKey", project -> project.withMainBranch("main")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
@@ -233,7 +223,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
     Thread.sleep(2000);
     var localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(FILE_PATH).get(0).getRight();
 
-    var response = checkStatusChangePermitted("connectionId", localOnlyIssue.getId().toString());
+    var response = checkStatusChangePermitted(backend, "connectionId", localOnlyIssue.getId().toString());
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
@@ -242,12 +232,12 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .containsExactly(false, "Marking a local-only issue as resolved requires SonarQube Server 10.2+", List.of());
   }
 
-  @Test
-  void it_should_not_permit_status_change_on_local_only_issues_for_sonarqube_prior_to_10_2() throws ExecutionException, InterruptedException {
-    var client = newFakeClient().build();
-    server = newSonarQubeServer()
+  @SonarLintTest
+  void it_should_not_permit_status_change_on_local_only_issues_for_sonarqube_prior_to_10_2(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
+    var client = harness.newFakeClient().build();
+    var server = harness.newFakeSonarQubeServer()
       .withProject("projectKey").start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server, storage -> storage.withServerVersion("10.1")
         .withProject("projectKey", project -> project.withMainBranch("main")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
@@ -259,7 +249,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
     Thread.sleep(2000);
     var localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(FILE_PATH).get(0).getRight();
 
-    var response = checkStatusChangePermitted("connectionId", localOnlyIssue.getId().toString());
+    var response = checkStatusChangePermitted(backend, "connectionId", localOnlyIssue.getId().toString());
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
@@ -268,12 +258,12 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .containsExactly(false, "Marking a local-only issue as resolved requires SonarQube Server 10.2+", List.of());
   }
 
-  @Test
-  void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_2_plus() throws ExecutionException, InterruptedException {
-    var client = newFakeClient().build();
-    server = newSonarQubeServer()
+  @SonarLintTest
+  void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_2_plus(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
+    var client = harness.newFakeClient().build();
+    var server = harness.newFakeSonarQubeServer()
       .withProject("projectKey").start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server, storage -> storage
         .withServerVersion("10.2")
         .withProject("projectKey", project -> project.withMainBranch("main")))
@@ -286,7 +276,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
 
     var localOnlyIssue = trackedIssues.get().getIssuesByIdeRelativePath().get(FILE_PATH).get(0).getRight();
 
-    var response = checkStatusChangePermitted("connectionId", localOnlyIssue.getId().toString());
+    var response = checkStatusChangePermitted(backend, "connectionId", localOnlyIssue.getId().toString());
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
@@ -295,11 +285,11 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .containsExactly(true, null, List.of(ResolutionStatus.WONT_FIX, ResolutionStatus.FALSE_POSITIVE));
   }
 
-  @Test
-  void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_4_plus() {
-    server = newSonarQubeServer()
+  @SonarLintTest
+  void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_4_plus(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer()
       .withProject("projectKey").start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server, storage -> storage.withServerVersion("10.4").withProject("projectKey", project -> project.withMainBranch("main")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .build();
@@ -314,7 +304,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       fail();
     }
 
-    var response = checkStatusChangePermitted("connectionId", localOnlyIssue.getId().toString());
+    var response = checkStatusChangePermitted(backend, "connectionId", localOnlyIssue.getId().toString());
 
     assertThat(response)
       .succeedsWithin(Duration.ofSeconds(2))
@@ -346,7 +336,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
     return "/api/issues/search.protobuf?issues=" + issueKey + "&additionalFields=transitions" + orgParam + "&ps=1&p=1";
   }
 
-  private CompletableFuture<CheckStatusChangePermittedResponse> checkStatusChangePermitted(String connectionId, String issueKey) {
+  private CompletableFuture<CheckStatusChangePermittedResponse> checkStatusChangePermitted(SonarLintTestRpcServer backend, String connectionId, String issueKey) {
     return backend.getIssueService().checkStatusChangePermitted(new CheckStatusChangePermittedParams(connectionId, issueKey));
   }
 }

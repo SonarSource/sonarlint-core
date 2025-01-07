@@ -27,13 +27,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
@@ -50,10 +44,12 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreat
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.FixSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
+import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
 
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarCloudServer;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
@@ -94,27 +90,14 @@ class OpenFixSuggestionInIdeMediumTests {
     "\"explanation\": \"Modifying the variable name is good\"\n" +
     "}\n";
 
-  private SonarLintTestRpcServer backend;
-  private ServerFixture.Server scServer = newSonarCloudServer(ORG_KEY)
-    .withProject(PROJECT_KEY, project -> project.withBranch(BRANCH_NAME))
-    .start();
-
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
-    if (scServer != null) {
-      scServer.shutdown();
-      scServer = null;
-    }
-  }
-
-  @Test
-  void it_should_update_the_telemetry_on_show_issue(@TempDir Path baseDir) throws Exception {
+  @SonarLintTest
+  void it_should_update_the_telemetry_on_show_issue(SonarLintTestHarness harness, @TempDir Path baseDir) throws Exception {
     var inputFile = createFile(baseDir, "Main.java", "");
-    var fakeClient = newFakeClient()
+    var fakeClient = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, List.of(new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
-    backend = newBackend()
+    var scServer = buildSonarCloudServer(harness).start();
+    var backend = harness.newBackend()
       .withSonarCloudUrl(scServer.baseUrl())
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withEmbeddedServer()
@@ -126,7 +109,7 @@ class OpenFixSuggestionInIdeMediumTests {
       .content().asBase64Decoded().asString()
       .contains("\"fixSuggestionReceivedCounter\":{}");
 
-    var statusCode = executeOpenFixSuggestionRequestWithoutToken(FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
+    var statusCode = executeOpenFixSuggestionRequestWithoutToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
 
     assertThat(statusCode).isEqualTo(200);
     await().atMost(2, TimeUnit.SECONDS)
@@ -135,13 +118,14 @@ class OpenFixSuggestionInIdeMediumTests {
         .contains("\"fixSuggestionReceivedCounter\":{\"eb93b2b4-f7b0-4b5c-9460-50893968c264\":{\"aiSuggestionsSource\":\"SONARCLOUD\",\"snippetsCount\":1}}"));
   }
 
-  @Test
-  void it_should_open_a_fix_suggestion_in_ide(@TempDir Path baseDir) throws Exception {
+  @SonarLintTest
+  void it_should_open_a_fix_suggestion_in_ide(SonarLintTestHarness harness, @TempDir Path baseDir) throws Exception {
     var inputFile = createFile(baseDir, "Main.java", "");
-    var fakeClient = newFakeClient()
+    var fakeClient = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, List.of(new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
-    backend = newBackend()
+    var scServer = buildSonarCloudServer(harness).start();
+    var backend = harness.newBackend()
       .withSonarCloudUrl(scServer.baseUrl())
       .withSonarCloudConnection(CONNECTION_ID, ORG_KEY)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
@@ -149,7 +133,7 @@ class OpenFixSuggestionInIdeMediumTests {
       .withOpenFixSuggestion()
       .build(fakeClient);
 
-    var statusCode = executeOpenFixSuggestionRequestWithoutToken(FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
+    var statusCode = executeOpenFixSuggestionRequestWithoutToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
     assertThat(statusCode).isEqualTo(200);
 
     ArgumentCaptor<FixSuggestionDto> captor = ArgumentCaptor.captor();
@@ -170,46 +154,48 @@ class OpenFixSuggestionInIdeMediumTests {
     assertThat(change.beforeLineRange().getEndLine()).isEqualTo(1);
   }
 
-  @Test
-  void it_should_assist_creating_the_binding_if_scope_not_bound(@TempDir Path baseDir) throws Exception {
+  @SonarLintTest
+  void it_should_assist_creating_the_binding_if_scope_not_bound(SonarLintTestHarness harness, @TempDir Path baseDir) throws Exception {
     var inputFile = createFile(baseDir, "Main.java", "");
-    var fakeClient = newFakeClient()
+    var fakeClient = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, List.of(new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
-    mockAssistCreatingConnection(fakeClient, CONNECTION_ID);
-    mockAssistBinding(fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
-    backend = newBackend()
+    var scServer = buildSonarCloudServer(harness).start();
+    var backend = harness.newBackend()
       .withSonarCloudUrl(scServer.baseUrl())
       .withUnboundConfigScope(CONFIG_SCOPE_ID, PROJECT_KEY)
       .withEmbeddedServer()
       .withOpenFixSuggestion()
       .build(fakeClient);
+    mockAssistCreatingConnection(backend, fakeClient, CONNECTION_ID);
+    mockAssistBinding(backend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
-    var statusCode = executeOpenFixSuggestionRequestWithoutToken(FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
+    var statusCode = executeOpenFixSuggestionRequestWithoutToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
     assertThat(statusCode).isEqualTo(200);
 
     verify(fakeClient, timeout(2000)).showFixSuggestion(eq(CONFIG_SCOPE_ID), eq(ISSUE_KEY), any());
     verify(fakeClient, never()).showMessage(any(), any());
   }
 
-  @Test
-  void it_should_not_assist_binding_if_multiple_suggestions(@TempDir Path baseDir) throws Exception {
+  @SonarLintTest
+  void it_should_not_assist_binding_if_multiple_suggestions(SonarLintTestHarness harness, @TempDir Path baseDir) throws Exception {
     var inputFile = createFile(baseDir, "Main.java", "");
-    var fakeClient = newFakeClient()
+    var fakeClient = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, List.of(new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
-    mockAssistCreatingConnection(fakeClient, CONNECTION_ID);
-    mockAssistBinding(fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
-    backend = newBackend()
+    var scServer = buildSonarCloudServer(harness).start();
+    var backend = harness.newBackend()
       .withSonarCloudUrl(scServer.baseUrl())
       .withUnboundConfigScope("configScopeA", PROJECT_KEY + " 1")
       .withUnboundConfigScope("configScopeB", PROJECT_KEY + " 2")
       .withEmbeddedServer()
       .withOpenFixSuggestion()
       .build(fakeClient);
+    mockAssistCreatingConnection(backend, fakeClient, CONNECTION_ID);
+    mockAssistBinding(backend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
-    var statusCode = executeOpenFixSuggestionRequestWithoutToken(FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
+    var statusCode = executeOpenFixSuggestionRequestWithoutToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
 
     assertThat(statusCode).isEqualTo(200);
     // Since noBindingSuggestionFound now has a NoBindingSuggestionFoundParams parameter, we can just check for any!
@@ -217,46 +203,48 @@ class OpenFixSuggestionInIdeMediumTests {
     verify(fakeClient, never()).showIssue(any(), any());
   }
 
-  @Test
-  void it_should_assist_binding_if_multiple_suggestions_but_scopes_are_parent_and_child(@TempDir Path baseDir) throws Exception {
+  @SonarLintTest
+  void it_should_assist_binding_if_multiple_suggestions_but_scopes_are_parent_and_child(SonarLintTestHarness harness, @TempDir Path baseDir) throws Exception {
     var inputFile = createFile(baseDir, "Main.java", "");
-    var fakeClient = newFakeClient()
+    var fakeClient = harness.newFakeClient()
       .withInitialFs("configScopeParent", List.of(new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), "configScopeParent", false, null, inputFile, null, null, true)))
       .build();
-    mockAssistCreatingConnection(fakeClient, CONNECTION_ID);
-    mockAssistBinding(fakeClient, "configScopeParent", CONNECTION_ID, PROJECT_KEY);
-    backend = newBackend()
+    var scServer = buildSonarCloudServer(harness).start();
+    var backend = harness.newBackend()
       .withSonarCloudUrl(scServer.baseUrl())
       .withUnboundConfigScope("configScopeParent", PROJECT_KEY)
       .withUnboundConfigScope("configScopeChild", PROJECT_KEY, "configScopeParent")
       .withEmbeddedServer()
       .withOpenFixSuggestion()
       .build(fakeClient);
+    mockAssistCreatingConnection(backend, fakeClient, CONNECTION_ID);
+    mockAssistBinding(backend, fakeClient, "configScopeParent", CONNECTION_ID, PROJECT_KEY);
 
-    var statusCode = executeOpenFixSuggestionRequestWithoutToken(FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
+    var statusCode = executeOpenFixSuggestionRequestWithoutToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
 
     assertThat(statusCode).isEqualTo(200);
     verify(fakeClient, timeout(2000)).showFixSuggestion(any(), any(), any());
     verify(fakeClient, never()).showMessage(any(), any());
   }
 
-  @Test
-  void it_should_assist_creating_the_connection_when_no_sc_connection(@TempDir Path baseDir) throws Exception {
+  @SonarLintTest
+  void it_should_assist_creating_the_connection_when_no_sc_connection(SonarLintTestHarness harness, @TempDir Path baseDir) throws Exception {
     var inputFile = createFile(baseDir, "Main.java", "");
-    var fakeClient = newFakeClient()
+    var fakeClient = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, List.of(new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
-    mockAssistCreatingConnection(fakeClient, CONNECTION_ID);
-    mockAssistBinding(fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
-    backend = newBackend()
+    var scServer = buildSonarCloudServer(harness).start();
+    var backend = harness.newBackend()
       .withSonarCloudUrl(scServer.baseUrl())
       .withUnboundConfigScope(CONFIG_SCOPE_ID, PROJECT_KEY)
       .withEmbeddedServer()
       .withOpenFixSuggestion()
       .build(fakeClient);
+    mockAssistCreatingConnection(backend, fakeClient, CONNECTION_ID);
+    mockAssistBinding(backend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
-    var statusCode = executeOpenFixSuggestionRequestWithToken(FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY, "token-name", "token-value");
+    var statusCode = executeOpenFixSuggestionRequestWithToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY, "token-name", "token-value");
     assertThat(statusCode).isEqualTo(200);
 
     verify(fakeClient, timeout(2000)).showFixSuggestion(eq(CONFIG_SCOPE_ID), eq(ISSUE_KEY), any());
@@ -271,19 +259,20 @@ class OpenFixSuggestionInIdeMediumTests {
       .containsExactly(tuple(ORG_KEY, "token-name", "token-value"));
   }
 
-  @Test
-  void it_should_revoke_token_when_exception_thrown_while_assist_creating_the_connection() throws Exception {
-    var fakeClient = newFakeClient().build();
+  @SonarLintTest
+  void it_should_revoke_token_when_exception_thrown_while_assist_creating_the_connection(SonarLintTestHarness harness) throws Exception {
+    var fakeClient = harness.newFakeClient().build();
     doThrow(RuntimeException.class).when(fakeClient).assistCreatingConnection(any(), any());
 
-    backend = newBackend()
+    var scServer = buildSonarCloudServer(harness).start();
+    var backend = harness.newBackend()
       .withSonarCloudUrl(scServer.baseUrl())
       .withUnboundConfigScope(CONFIG_SCOPE_ID, PROJECT_KEY)
       .withEmbeddedServer()
       .withOpenFixSuggestion()
       .build(fakeClient);
 
-    var statusCode = executeOpenFixSuggestionRequestWithToken(FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, "orgKey", "token-name", "token-value");
+    var statusCode = executeOpenFixSuggestionRequestWithToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, "orgKey", "token-name", "token-value");
     assertThat(statusCode).isEqualTo(200);
 
     ArgumentCaptor<LogParams> captor = ArgumentCaptor.captor();
@@ -293,44 +282,48 @@ class OpenFixSuggestionInIdeMediumTests {
       .containsAnyOf("Revoking token 'token-name'");
   }
 
-  @Test
-  void it_should_fail_request_when_issue_parameter_missing() throws Exception {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_fail_request_when_issue_parameter_missing(SonarLintTestHarness harness) throws Exception {
+    var backend = harness.newBackend()
       .withEmbeddedServer()
       .withOpenFixSuggestion()
       .build();
+    var scServer = buildSonarCloudServer(harness).start();
 
-    var statusCode = executeOpenFixSuggestionRequestWithoutToken(FIX_PAYLOAD, "", PROJECT_KEY, BRANCH_NAME, ORG_KEY);
+    var statusCode = executeOpenFixSuggestionRequestWithoutToken(backend, scServer, FIX_PAYLOAD, "", PROJECT_KEY, BRANCH_NAME, ORG_KEY);
 
     assertThat(statusCode).isEqualTo(400);
   }
 
-  @Test
-  void it_should_fail_request_when_feature_not_enabled() throws Exception {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_fail_request_when_feature_not_enabled(SonarLintTestHarness harness) throws Exception {
+    var backend = harness.newBackend()
       .withEmbeddedServer()
       .build();
+    var scServer = buildSonarCloudServer(harness).start();
 
-    var statusCode = executeOpenFixSuggestionRequestWithoutToken(FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
+    var statusCode = executeOpenFixSuggestionRequestWithoutToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
 
     assertThat(statusCode).isEqualTo(400);
   }
 
-  @Test
-  void it_should_fail_request_when_project_parameter_missing() throws IOException, InterruptedException {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_fail_request_when_project_parameter_missing(SonarLintTestHarness harness) throws IOException, InterruptedException {
+    var backend = harness.newBackend()
       .withEmbeddedServer()
       .build();
+    var scServer = buildSonarCloudServer(harness).start();
 
-    var statusCode = executeOpenFixSuggestionRequestWithoutToken(ISSUE_KEY, "", "", "", "");
+    var statusCode = executeOpenFixSuggestionRequestWithoutToken(backend, scServer, ISSUE_KEY, "", "", "", "");
 
     assertThat(statusCode).isEqualTo(400);
   }
 
-  @Test
-  void it_should_fail_when_origin_is_missing() throws IOException, InterruptedException {
-    var fakeClient = newFakeClient().build();
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_fail_when_origin_is_missing(SonarLintTestHarness harness) throws IOException, InterruptedException {
+    var fakeClient = harness.newFakeClient().build();
+    var scServer = buildSonarCloudServer(harness).start();
+    var backend = harness.newBackend()
       .withSonarCloudUrl(scServer.baseUrl())
       .withSonarCloudConnection(CONNECTION_ID, ORG_KEY)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
@@ -350,13 +343,14 @@ class OpenFixSuggestionInIdeMediumTests {
     assertThat(statusCode).isEqualTo(400);
   }
 
-  @Test
-  void it_should_fail_when_origin_does_not_match(@TempDir Path baseDir) throws Exception {
+  @SonarLintTest
+  void it_should_fail_when_origin_does_not_match(SonarLintTestHarness harness, @TempDir Path baseDir) throws Exception {
     var inputFile = createFile(baseDir, "Main.java", "");
-    var fakeClient = newFakeClient()
+    var fakeClient = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, List.of(new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
-    backend = newBackend()
+    var scServer = buildSonarCloudServer(harness).start();
+    var backend = harness.newBackend()
       .withSonarCloudUrl(scServer.baseUrl())
       .withSonarCloudConnection(CONNECTION_ID, ORG_KEY)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
@@ -383,22 +377,22 @@ class OpenFixSuggestionInIdeMediumTests {
       .containsAnyOf("The origin 'malicious' is not trusted, this could be a malicious request");
   }
 
-  private Object executeOpenFixSuggestionRequestWithToken(String payload, String issueKey, String projectKey, String branchName, String orgKey,
+  private Object executeOpenFixSuggestionRequestWithToken(SonarLintTestRpcServer backend, ServerFixture.Server scServer, String payload, String issueKey, String projectKey, String branchName, String orgKey,
     String tokenName, String tokenValue) throws IOException, InterruptedException {
-    HttpRequest request = openFixSuggestionRequest(payload, "&issue=" + issueKey, "&project=" + projectKey, "&branch=" + branchName,
+    HttpRequest request = openFixSuggestionRequest(backend, scServer, payload, "&issue=" + issueKey, "&project=" + projectKey, "&branch=" + branchName,
       "&organizationKey=" + orgKey, "&tokenName=" + tokenName, "&tokenValue=" + tokenValue);
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
     return response.statusCode();
   }
 
-  private Object executeOpenFixSuggestionRequestWithoutToken(String payload, String issueKey, String projectKey, String branchName, String orgKey) throws IOException, InterruptedException {
-    HttpRequest request = openFixSuggestionRequest(payload, "&issue=" + issueKey, "&project=" + projectKey, "&branch=" + branchName,
+  private Object executeOpenFixSuggestionRequestWithoutToken(SonarLintTestRpcServer backend, ServerFixture.Server scServer, String payload, String issueKey, String projectKey, String branchName, String orgKey) throws IOException, InterruptedException {
+    HttpRequest request = openFixSuggestionRequest(backend, scServer, payload, "&issue=" + issueKey, "&project=" + projectKey, "&branch=" + branchName,
       "&organizationKey=" + orgKey);
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
     return response.statusCode();
   }
 
-  private HttpRequest openFixSuggestionRequest(String payload, String... params) {
+  private HttpRequest openFixSuggestionRequest(SonarLintTestRpcServer backend, ServerFixture.Server scServer, String payload, String... params) {
     return HttpRequest.newBuilder()
       .uri(URI.create(
         "http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/fix/show?server=" + scServer.baseUrl() + String.join("", params)))
@@ -406,7 +400,7 @@ class OpenFixSuggestionInIdeMediumTests {
       .POST(HttpRequest.BodyPublishers.ofString(payload)).build();
   }
 
-  private void mockAssistBinding(SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient, String configScopeId, String connectionId,
+  private void mockAssistBinding(SonarLintTestRpcServer backend, SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient, String configScopeId, String connectionId,
     String sonarProjectKey) {
     doAnswer((Answer<AssistBindingResponse>) invocation -> {
       backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId,
@@ -415,12 +409,17 @@ class OpenFixSuggestionInIdeMediumTests {
     }).when(fakeClient).assistBinding(any(), any());
   }
 
-  private void mockAssistCreatingConnection(SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient, String connectionId) {
+  private void mockAssistCreatingConnection(SonarLintTestRpcServer backend, SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient, String connectionId) {
     doAnswer((Answer<AssistCreatingConnectionResponse>) invocation -> {
       backend.getConnectionService().didUpdateConnections(
         new DidUpdateConnectionsParams(Collections.emptyList(),
           List.of(new SonarCloudConnectionConfigurationDto(connectionId, ORG_KEY, true))));
       return new AssistCreatingConnectionResponse(connectionId);
     }).when(fakeClient).assistCreatingConnection(any(), any());
+  }
+
+  private static ServerFixture.ServerBuilder buildSonarCloudServer(SonarLintTestHarness harness) {
+    return harness.newFakeSonarCloudServer(ORG_KEY)
+      .withProject(PROJECT_KEY, project -> project.withBranch(BRANCH_NAME));
   }
 }

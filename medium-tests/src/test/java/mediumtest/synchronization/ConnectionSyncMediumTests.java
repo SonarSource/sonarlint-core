@@ -23,22 +23,19 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidChangeCredentialsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.when;
@@ -47,24 +44,16 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 class ConnectionSyncMediumTests {
   public static final String CONNECTION_ID = "connectionId";
   public static final String SCOPE_ID = "scopeId";
-  private SonarLintRpcServer backend;
 
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    if (backend != null) {
-      backend.shutdown().get();
-    }
-  }
-
-  @Test
-  void it_should_cache_extracted_rule_metadata_per_connection() {
-    var client = newFakeClient()
+  @SonarLintTest
+  void it_should_cache_extracted_rule_metadata_per_connection(SonarLintTestHarness harness) {
+    var client = harness.newFakeClient()
       .withCredentials(CONNECTION_ID, "user", "pw")
       .build();
     when(client.getClientLiveDescription()).thenReturn(this.getClass().getName());
 
-    var server = newSonarQubeServer().start();
-    backend = newBackend()
+    var server = harness.newFakeSonarQubeServer().start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage.withPlugin(TestPlugin.JAVA))
       .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, "projectKey")
       .withEnabledLanguageInStandaloneMode(JAVA)
@@ -74,45 +63,45 @@ class ConnectionSyncMediumTests {
     assertThat(client.getLogMessages()).doesNotContain("Extracting rules metadata for connection 'connectionId'");
 
     // Trigger lazy initialization of the rules metadata
-    getEffectiveRuleDetails(SCOPE_ID, "java:S106");
+    getEffectiveRuleDetails(backend, SCOPE_ID, "java:S106");
     await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Extracting rules metadata for connection 'connectionId'"));
 
     // Second call should not trigger init as results are already cached
     client.clearLogs();
 
-    getEffectiveRuleDetails(SCOPE_ID, "java:S106");
+    getEffectiveRuleDetails(backend, SCOPE_ID, "java:S106");
   }
 
-  @Test
-  void it_should_evict_cache_when_connection_is_removed() {
-    var client = newFakeClient()
+  @SonarLintTest
+  void it_should_evict_cache_when_connection_is_removed(SonarLintTestHarness harness) {
+    var client = harness.newFakeClient()
       .withCredentials(CONNECTION_ID, "user", "pw")
       .build();
     when(client.getClientLiveDescription()).thenReturn(this.getClass().getName());
 
-    var server = newSonarQubeServer().start();
-    backend = newBackend()
+    var server = harness.newFakeSonarQubeServer().start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage.withPlugin(TestPlugin.JAVA))
       .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, "projectKey")
       .withEnabledLanguageInStandaloneMode(JAVA)
       .build(client);
     await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Binding suggestion computation queued for config scopes 'scopeId'..."));
-    getEffectiveRuleDetails(SCOPE_ID, "java:S106");
+    getEffectiveRuleDetails(backend, SCOPE_ID, "java:S106");
 
     backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(), List.of()));
 
     await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Evict cached rules definitions for connection 'connectionId'"));
   }
 
-  @Test
-  void it_should_sync_when_credentials_are_updated() {
-    var client = newFakeClient()
+  @SonarLintTest
+  void it_should_sync_when_credentials_are_updated(SonarLintTestHarness harness) {
+    var client = harness.newFakeClient()
       .withCredentials(CONNECTION_ID, "user", "pw")
       .build();
     when(client.getClientLiveDescription()).thenReturn(this.getClass().getName());
 
     var introductionDate = Instant.now().truncatedTo(ChronoUnit.MILLIS);
-    var server = newSonarQubeServer()
+    var server = harness.newFakeSonarQubeServer()
       .withProject("projectKey",
         project -> project.withBranch("main",
           branch -> branch.withTaintIssue("issueKey", "rule:key", "message", "author", "file/path", "OPEN", null, introductionDate, new TextRange(1, 2, 3, 4),
@@ -121,7 +110,7 @@ class ConnectionSyncMediumTests {
 
     server.getMockServer().stubFor(get("/api/system/status").willReturn(aResponse().withStatus(401)));
 
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage.withPlugin(TestPlugin.JAVA))
       .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, "projectKey")
       .withEnabledLanguageInStandaloneMode(JAVA)
@@ -139,13 +128,9 @@ class ConnectionSyncMediumTests {
       "Synchronizing project branches for project 'projectKey'"));
   }
 
-  private EffectiveRuleDetailsDto getEffectiveRuleDetails(String configScopeId, String ruleKey) {
-    return getEffectiveRuleDetails(configScopeId, ruleKey, null);
-  }
-
-  private EffectiveRuleDetailsDto getEffectiveRuleDetails(String configScopeId, String ruleKey, String contextKey) {
+  private EffectiveRuleDetailsDto getEffectiveRuleDetails(SonarLintTestRpcServer backend, String configScopeId, String ruleKey) {
     try {
-      return this.backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, ruleKey, contextKey)).get().details();
+      return backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, ruleKey, null)).get().details();
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }
