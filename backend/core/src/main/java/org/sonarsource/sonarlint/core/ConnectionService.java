@@ -94,7 +94,8 @@ public class ConnectionService {
   }
 
   private SonarCloudConnectionConfiguration adapt(SonarCloudConnectionConfigurationDto scDto) {
-    return new SonarCloudConnectionConfiguration(sonarCloudUri, scDto.getConnectionId(), scDto.getOrganization(), scDto.isDisableNotifications());
+    return new SonarCloudConnectionConfiguration(sonarCloudUri, scDto.getConnectionId(),
+      scDto.getOrganization(), scDto.isDisableNotifications());
   }
 
   private static void putAndLogIfDuplicateId(Map<String, AbstractConnectionConfiguration> map, AbstractConnectionConfiguration config) {
