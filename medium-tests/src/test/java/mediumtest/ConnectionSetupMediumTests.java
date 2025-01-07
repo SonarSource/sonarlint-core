@@ -27,10 +27,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
-import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.check.CheckSmartNotificationsSupportedParams;
@@ -40,32 +36,23 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.V
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
+import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
 
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarCloudServer;
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 class ConnectionSetupMediumTests {
 
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
-    if (server != null) {
-      server.shutdown();
-    }
-  }
-
-  @Test
-  void it_should_open_the_sonarlint_auth_url_for_sonarcloud() throws IOException, InterruptedException {
-    var fakeClient = newFakeClient().build();
-    ServerFixture.Server scServer = newSonarCloudServer()
+  @SonarLintTest
+  void it_should_open_the_sonarlint_auth_url_for_sonarcloud(SonarLintTestHarness harness) throws IOException, InterruptedException {
+    var fakeClient = harness.newFakeClient().build();
+    ServerFixture.Server scServer = harness.newFakeSonarCloudServer()
       .start();
 
-    backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarCloudConnection("connectionId").build(fakeClient);
+    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").withSonarCloudConnection("connectionId").build(fakeClient);
 
     var futureResponse = backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(scServer.baseUrl()));
 
@@ -85,11 +72,11 @@ class ConnectionSetupMediumTests {
       .isEqualTo("value");
   }
 
-  @Test
-  void it_should_open_the_sonarlint_auth_url_for_sonarqube_9_7_plus() throws IOException, InterruptedException {
-    var fakeClient = newFakeClient().build();
-    server = newSonarQubeServer("9.9").start();
-    backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", server).build(fakeClient);
+  @SonarLintTest
+  void it_should_open_the_sonarlint_auth_url_for_sonarqube_9_7_plus(SonarLintTestHarness harness) throws IOException, InterruptedException {
+    var fakeClient = harness.newFakeClient().build();
+    var server = harness.newFakeSonarQubeServer("9.9").start();
+    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", server).build(fakeClient);
 
     var futureResponse = backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl()));
 
@@ -109,11 +96,11 @@ class ConnectionSetupMediumTests {
       .isEqualTo("value");
   }
 
-  @Test
-  void it_should_reject_tokens_from_missing_origin() throws IOException, InterruptedException {
-    var fakeClient = newFakeClient().build();
-    server = newSonarQubeServer("9.9").start();
-    backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", server).build(fakeClient);
+  @SonarLintTest
+  void it_should_reject_tokens_from_missing_origin(SonarLintTestHarness harness) throws IOException, InterruptedException {
+    var fakeClient = harness.newFakeClient().build();
+    var server = harness.newFakeSonarQubeServer("9.9").start();
+    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", server).build(fakeClient);
 
     backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl()));
 
@@ -127,11 +114,11 @@ class ConnectionSetupMediumTests {
     assertThat(response.statusCode()).isEqualTo(400);
   }
 
-  @Test
-  void it_should_reject_tokens_from_unexpected_origin() throws IOException, InterruptedException {
-    var fakeClient = newFakeClient().build();
-    server = newSonarQubeServer("9.9").start();
-    backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", server).build(fakeClient);
+  @SonarLintTest
+  void it_should_reject_tokens_from_unexpected_origin(SonarLintTestHarness harness) throws IOException, InterruptedException {
+    var fakeClient = harness.newFakeClient().build();
+    var server = harness.newFakeSonarQubeServer("9.9").start();
+    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", server).build(fakeClient);
 
     backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl()));
 
@@ -146,11 +133,11 @@ class ConnectionSetupMediumTests {
     assertThat(response.statusCode()).isEqualTo(403);
   }
 
-  @Test
-  void it_should_open_the_sonarlint_auth_url_without_port_for_sonarqube_9_7_plus_when_server_is_not_started() throws MalformedURLException {
-    var fakeClient = newFakeClient().build();
-    backend = newBackend().withClientName("ClientName").build(fakeClient);
-    server = newSonarQubeServer("9.9").start();
+  @SonarLintTest
+  void it_should_open_the_sonarlint_auth_url_without_port_for_sonarqube_9_7_plus_when_server_is_not_started(SonarLintTestHarness harness) throws MalformedURLException {
+    var fakeClient = harness.newFakeClient().build();
+    var backend = harness.newBackend().withClientName("ClientName").build(fakeClient);
+    var server = harness.newFakeSonarQubeServer("9.9").start();
 
     var futureResponse = backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl()));
 
@@ -161,10 +148,10 @@ class ConnectionSetupMediumTests {
     verify(fakeClient, timeout(3000)).openUrlInBrowser(new URL(server.url("/sonarlint/auth?ideName=ClientName")));
   }
 
-  @Test
-  void it_should_reject_incoming_user_token_with_wrong_http_method() throws IOException, InterruptedException {
-    var fakeClient = newFakeClient().build();
-    backend = newBackend().withEmbeddedServer().build(fakeClient);
+  @SonarLintTest
+  void it_should_reject_incoming_user_token_with_wrong_http_method(SonarLintTestHarness harness) throws IOException, InterruptedException {
+    var fakeClient = harness.newFakeClient().build();
+    var backend = harness.newBackend().withEmbeddedServer().build(fakeClient);
 
     var request = HttpRequest.newBuilder()
       .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
@@ -174,10 +161,10 @@ class ConnectionSetupMediumTests {
     assertThat(response.statusCode()).isEqualTo(400);
   }
 
-  @Test
-  void it_should_reject_incoming_user_token_with_wrong_body() throws IOException, InterruptedException {
-    var fakeClient = newFakeClient().build();
-    backend = newBackend().withEmbeddedServer().build(fakeClient);
+  @SonarLintTest
+  void it_should_reject_incoming_user_token_with_wrong_body(SonarLintTestHarness harness) throws IOException, InterruptedException {
+    var fakeClient = harness.newFakeClient().build();
+    var backend = harness.newBackend().withEmbeddedServer().build(fakeClient);
 
     var request = HttpRequest.newBuilder()
       .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
@@ -188,10 +175,10 @@ class ConnectionSetupMediumTests {
     assertThat(response.statusCode()).isEqualTo(400);
   }
 
-  @Test
-  void it_should_fail_to_validate_connection_if_host_not_found() throws InterruptedException, ExecutionException {
-    var fakeClient = newFakeClient().build();
-    backend = newBackend().build(fakeClient);
+  @SonarLintTest
+  void it_should_fail_to_validate_connection_if_host_not_found(SonarLintTestHarness harness) throws InterruptedException, ExecutionException {
+    var fakeClient = harness.newFakeClient().build();
+    var backend = harness.newBackend().build(fakeClient);
 
     var connectionResponse = backend.getConnectionService()
       .validateConnection(new ValidateConnectionParams(new TransientSonarQubeConnectionDto("http://notexists", Either.forRight(new UsernamePasswordDto("foo", "bar"))))).get();
@@ -200,10 +187,10 @@ class ConnectionSetupMediumTests {
     assertThat(connectionResponse.getMessage()).contains("notexists");
   }
 
-  @Test
-  void it_should_support_notifications_if_sonarcloud() throws ExecutionException, InterruptedException {
-    var fakeClient = newFakeClient().build();
-    backend = newBackend().build(fakeClient);
+  @SonarLintTest
+  void it_should_support_notifications_if_sonarcloud(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
+    var fakeClient = harness.newFakeClient().build();
+    var backend = harness.newBackend().build(fakeClient);
 
     var connectionResponse = backend.getConnectionService()
       .checkSmartNotificationsSupported(new CheckSmartNotificationsSupportedParams(
@@ -213,11 +200,11 @@ class ConnectionSetupMediumTests {
     assertThat(connectionResponse.isSuccess()).isTrue();
   }
 
-  @Test
-  void it_should_support_notifications_if_sonarqube_supports() throws ExecutionException, InterruptedException {
-    var fakeClient = newFakeClient().build();
-    server = newSonarQubeServer().withSmartNotificationsSupported(true).start();
-    backend = newBackend().withEmbeddedServer().withSonarQubeConnection("connectionId", server).build(fakeClient);
+  @SonarLintTest
+  void it_should_support_notifications_if_sonarqube_supports(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
+    var fakeClient = harness.newFakeClient().build();
+    var server = harness.newFakeSonarQubeServer().withSmartNotificationsSupported(true).start();
+    var backend = harness.newBackend().withEmbeddedServer().withSonarQubeConnection("connectionId", server).build(fakeClient);
 
     var connectionResponse = backend.getConnectionService()
       .checkSmartNotificationsSupported(new CheckSmartNotificationsSupportedParams(
@@ -227,11 +214,11 @@ class ConnectionSetupMediumTests {
     assertThat(connectionResponse.isSuccess()).isTrue();
   }
 
-  @Test
-  void it_should_not_support_notifications_if_sonarqube_does_not_support() throws ExecutionException, InterruptedException {
-    var fakeClient = newFakeClient().build();
-    server = newSonarQubeServer().withSmartNotificationsSupported(false).start();
-    backend = newBackend().withEmbeddedServer().withSonarQubeConnection("connectionId", server).build(fakeClient);
+  @SonarLintTest
+  void it_should_not_support_notifications_if_sonarqube_does_not_support(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
+    var fakeClient = harness.newFakeClient().build();
+    var server = harness.newFakeSonarQubeServer().withSmartNotificationsSupported(false).start();
+    var backend = harness.newBackend().withEmbeddedServer().withSonarQubeConnection("connectionId", server).build(fakeClient);
 
     var connectionResponse = backend.getConnectionService()
       .checkSmartNotificationsSupported(new CheckSmartNotificationsSupportedParams(
@@ -240,7 +227,4 @@ class ConnectionSetupMediumTests {
 
     assertThat(connectionResponse.isSuccess()).isFalse();
   }
-
-  private SonarLintTestRpcServer backend;
-  private ServerFixture.Server server;
 }

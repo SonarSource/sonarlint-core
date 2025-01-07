@@ -19,50 +19,40 @@
  */
 package mediumtest.newcode;
 
-import java.util.concurrent.ExecutionException;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 class NewCodeTelemetryMediumTests {
 
-  private SonarLintTestRpcServer backend;
-
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
-  }
-
-  @Test
-  void it_should_save_initial_value_when_focus_on_overall_code() {
-    backend = newBackend().withTelemetryEnabled().build();
+  @SonarLintTest
+  void it_should_save_initial_value_when_focus_on_overall_code(SonarLintTestHarness harness) {
+    var backend = harness.newBackend().withTelemetryEnabled().build();
 
     assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"isFocusOnNewCode\":false,\"codeFocusChangedCount\":0");
   }
 
-  @Test
-  void it_should_save_initial_value_when_focus_on_new_code() {
-    backend = newBackend().withTelemetryEnabled().withFocusOnNewCode().build();
+  @SonarLintTest
+  void it_should_save_initial_value_when_focus_on_new_code(SonarLintTestHarness harness) {
+    var backend = harness.newBackend().withTelemetryEnabled().withFocusOnNewCode().build();
 
     assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"isFocusOnNewCode\":true,\"codeFocusChangedCount\":0");
   }
 
-  @Test
-  void it_should_save_new_focus_and_increment_count_when_focusing_on_new_code() {
-    backend = newBackend().withTelemetryEnabled().build();
+  @SonarLintTest
+  void it_should_save_new_focus_and_increment_count_when_focusing_on_new_code(SonarLintTestHarness harness) {
+    var backend = harness.newBackend().withTelemetryEnabled().build();
 
     backend.getNewCodeService().didToggleFocus();
 
     await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"isFocusOnNewCode\":true,\"codeFocusChangedCount\":1"));
   }
 
-  @Test
-  void it_should_save_new_focus_and_increment_count_when_focusing_on_overall_code() {
-    backend = newBackend().withTelemetryEnabled().withFocusOnNewCode().build();
+  @SonarLintTest
+  void it_should_save_new_focus_and_increment_count_when_focusing_on_overall_code(SonarLintTestHarness harness) {
+    var backend = harness.newBackend().withTelemetryEnabled().withFocusOnNewCode().build();
 
     backend.getNewCodeService().didToggleFocus();
 

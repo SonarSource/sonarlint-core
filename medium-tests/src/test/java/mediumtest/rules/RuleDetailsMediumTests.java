@@ -19,37 +19,25 @@
  */
 package mediumtest.rules;
 
-import java.util.concurrent.ExecutionException;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
 
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarCloudServer;
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 
 class RuleDetailsMediumTests {
 
-  private SonarLintTestRpcServer backend;
-
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
-  }
-
-  @Test
-  void it_should_return_details_from_server_when_sonarqube() {
-    var server = newSonarQubeServer()
+  @SonarLintTest
+  void it_should_return_details_from_server_when_sonarqube(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer()
       .withProject("projectKey",
         project -> project.withBranch("branchName"))
       .start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.TEXT)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
       .withSonarQubeConnection("connectionId", server,
@@ -64,13 +52,13 @@ class RuleDetailsMediumTests {
       .isEqualTo(RuleType.VULNERABILITY);
   }
 
-  @Test
-  void it_should_return_details_from_server_when_sonarcloud() {
-    var server = newSonarCloudServer()
+  @SonarLintTest
+  void it_should_return_details_from_server_when_sonarcloud(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarCloudServer()
       .withProject("projectKey",
         project -> project.withBranch("branchName"))
       .start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarCloudUrl(server.baseUrl())
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.TEXT)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -85,13 +73,13 @@ class RuleDetailsMediumTests {
     assertThat(ruleDetails.getType()).isEqualTo(RuleType.VULNERABILITY);
   }
 
-  @Test
-  void it_should_return_details_from_the_embedded_ipython_rules_when_connected() {
-    var server = newSonarCloudServer()
+  @SonarLintTest
+  void it_should_return_details_from_the_embedded_ipython_rules_when_connected(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarCloudServer()
       .withProject("projectKey",
         project -> project.withBranch("branchName"))
       .start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarCloudUrl(server.baseUrl())
       .withStandaloneEmbeddedPlugin(TestPlugin.PYTHON)
       .withEnabledLanguageInStandaloneMode(Language.IPYTHON)

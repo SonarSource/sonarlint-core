@@ -27,12 +27,8 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeAutomaticAnalysisSettingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidCloseFileParams;
@@ -43,10 +39,10 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.UpdateStandalon
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
 
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
@@ -61,17 +57,9 @@ import static utils.AnalysisUtils.getPublishedIssues;
 class AnalysisTriggeringMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
-  private SonarLintTestRpcServer backend;
 
-  @AfterEach
-  void stop() throws ExecutionException, InterruptedException {
-    if (backend != null) {
-      backend.shutdown().get();
-    }
-  }
-
-  @Test
-  void it_should_analyze_file_on_open(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_analyze_file_on_open(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml",
       "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         + "<project>\n"
@@ -81,11 +69,11 @@ class AnalysisTriggeringMediumTests {
         + "  <version>${pom.version}</version>\n"
         + "</project>");
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
         null, filePath, null, null, true)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .build(client);
@@ -100,14 +88,14 @@ class AnalysisTriggeringMediumTests {
         .containsExactly("Replace \"pom.version\" with \"project.version\"."));
   }
 
-  @Test
-  void it_should_not_fail_an_analysis_of_windows_shortcut_file_and_skip_the_file_analysis() {
+  @SonarLintTest
+  void it_should_not_fail_an_analysis_of_windows_shortcut_file_and_skip_the_file_analysis(SonarLintTestHarness harness) {
     var baseDir = new File("src/test/projects/windows-shortcut").getAbsoluteFile().toPath();
     var actualFile = Paths.get(baseDir.toString(), "hello.py");
     var windowsShortcut = Paths.get(baseDir.toString(), "hello.py.lnk");
     var fakeWindowsShortcut = Paths.get(baseDir.toString(), "hello.py.fake.lnk");
 
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
         new ClientFileDto(actualFile.toUri(), baseDir.relativize(actualFile), CONFIG_SCOPE_ID, false, null, actualFile, null, null, true),
         new ClientFileDto(windowsShortcut.toUri(), baseDir.relativize(windowsShortcut), CONFIG_SCOPE_ID, false, null, windowsShortcut,
@@ -115,7 +103,7 @@ class AnalysisTriggeringMediumTests {
         new ClientFileDto(fakeWindowsShortcut.toUri(), baseDir.relativize(fakeWindowsShortcut), CONFIG_SCOPE_ID, false, null,
           fakeWindowsShortcut, null, null, true)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.TEXT)
       .build(client);
@@ -132,8 +120,8 @@ class AnalysisTriggeringMediumTests {
     await().during(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
   }
 
-  @Test
-  void it_should_not_fail_an_analysis_of_symlink_file_and_skip_the_file_analysis(@TempDir Path baseDir) throws IOException {
+  @SonarLintTest
+  void it_should_not_fail_an_analysis_of_symlink_file_and_skip_the_file_analysis(SonarLintTestHarness harness, @TempDir Path baseDir) throws IOException {
     var filePath = createFile(baseDir, "pom.xml",
       "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         + "<project>\n"
@@ -144,11 +132,11 @@ class AnalysisTriggeringMediumTests {
         + "</project>");
     var link = Paths.get(baseDir.toString(), "pom-link.xml");
     Files.createSymbolicLink(link, filePath);
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
         new ClientFileDto(link.toUri(), baseDir.relativize(link), CONFIG_SCOPE_ID, false, null, link, null, null, true)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .build(client);
@@ -162,15 +150,15 @@ class AnalysisTriggeringMediumTests {
     });
   }
 
-  @Test
-  void it_should_analyze_open_file_on_content_change(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_analyze_open_file_on_content_change(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml", "");
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
         null, filePath, null, null, true)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .build(client);
@@ -202,15 +190,15 @@ class AnalysisTriggeringMediumTests {
         .containsExactly("Replace \"pom.version\" with \"project.version\"."));
   }
 
-  @Test
-  void it_should_analyze_closed_file_on_content_change(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_analyze_closed_file_on_content_change(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml", "");
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
         null, filePath, null, null, true)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .build(client);
@@ -238,8 +226,8 @@ class AnalysisTriggeringMediumTests {
     verify(client, timeout(500).times(0)).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(false), any());
   }
 
-  @Test
-  void it_should_analyze_open_files_when_re_enabling_automatic_analysis(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_analyze_open_files_when_re_enabling_automatic_analysis(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
       + "<project>\n"
       + "  <modelVersion>4.0.0</modelVersion>\n"
@@ -248,11 +236,11 @@ class AnalysisTriggeringMediumTests {
       + "  <version>${pom.version}</version>\n"
       + "</project>");
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
         null, filePath, null, null, true)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .withAutomaticAnalysisEnabled(false)
@@ -269,8 +257,8 @@ class AnalysisTriggeringMediumTests {
         .containsExactly("Replace \"pom.version\" with \"project.version\"."));
   }
 
-  @Test
-  void it_should_analyze_open_files_when_enabling_rule(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_analyze_open_files_when_enabling_rule(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
       + "<project>\n"
       + "  <modelVersion>4.0.0</modelVersion>\n"
@@ -278,11 +266,11 @@ class AnalysisTriggeringMediumTests {
       + "  <artifactId>My_Project</artifactId>\n"
       + "</project>");
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
         null, filePath, null, null, true)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .build(client);
@@ -304,8 +292,8 @@ class AnalysisTriggeringMediumTests {
         .containsExactly("Update this \"artifactId\" to match the provided regular expression: '[a-z][a-z-0-9]+'"));
   }
 
-  @Test
-  void it_should_not_analyze_open_files_but_should_clear_and_report_issues_when_disabling_rule(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_not_analyze_open_files_but_should_clear_and_report_issues_when_disabling_rule(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
       + "<project>\n"
       + "  <modelVersion>4.0.0</modelVersion>\n"
@@ -314,11 +302,11 @@ class AnalysisTriggeringMediumTests {
       + "  <version>${pom.version}</version>\n"
       + "</project>");
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
         null, filePath, null, null, true)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .build(client);

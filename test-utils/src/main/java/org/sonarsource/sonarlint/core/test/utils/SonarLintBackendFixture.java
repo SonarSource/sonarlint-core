@@ -117,7 +117,11 @@ public class SonarLintBackendFixture {
   public static final String USER_AGENT_FOR_TESTS = "SonarLintBackendFixture";
 
   public static SonarLintBackendBuilder newBackend() {
-    return new SonarLintBackendBuilder();
+    return newBackend(null);
+  }
+
+  public static SonarLintBackendBuilder newBackend(Consumer<SonarLintTestRpcServer> onBuild) {
+    return new SonarLintBackendBuilder(onBuild);
   }
 
   public static SonarLintClientBuilder newFakeClient() {
@@ -125,6 +129,7 @@ public class SonarLintBackendFixture {
   }
 
   public static class SonarLintBackendBuilder {
+    private final Consumer<SonarLintTestRpcServer> onBuild;
     private final List<SonarQubeConnectionConfigurationDto> sonarQubeConnections = new ArrayList<>();
     private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections = new ArrayList<>();
     private final List<ConfigurationScopeDto> configurationScopes = new ArrayList<>();
@@ -163,6 +168,10 @@ public class SonarLintBackendFixture {
     private boolean automaticAnalysisEnabled = true;
     private TelemetryMigrationDto telemetryMigration;
     private LanguageSpecificRequirements languageSpecificRequirements;
+
+    public SonarLintBackendBuilder(Consumer<SonarLintTestRpcServer> onBuild) {
+      this.onBuild = onBuild;
+    }
 
     public SonarLintBackendBuilder withSonarQubeConnection() {
       return withSonarQubeConnection("connectionId");
@@ -495,6 +504,9 @@ public class SonarLintBackendFixture {
             standaloneConfigByKey, isFocusOnNewCode, languageSpecificRequirements, automaticAnalysisEnabled, telemetryMigration))
           .get();
         sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
+        if (onBuild != null) {
+          onBuild.accept(sonarLintBackend);
+        }
         return sonarLintBackend;
       } catch (Exception e) {
         throw new IllegalStateException("Cannot initialize the backend", e);

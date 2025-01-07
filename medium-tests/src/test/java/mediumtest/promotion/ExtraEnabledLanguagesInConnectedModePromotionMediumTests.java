@@ -26,10 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -37,10 +33,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFiles
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -51,21 +46,15 @@ import static org.mockito.Mockito.verify;
 class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester(true);
-  private SonarLintTestRpcServer backend;
 
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
-  }
-
-  @Test
-  void it_should_notify_clients_for_a_detected_language_that_is_enabled_only_in_connected_mode(@TempDir Path tempDir) throws IOException {
+  @SonarLintTest
+  void it_should_notify_clients_for_a_detected_language_that_is_enabled_only_in_connected_mode(SonarLintTestHarness harness, @TempDir Path tempDir) throws IOException {
     var abapFile = tempDir.resolve("file.abap");
     Files.createFile(abapFile);
-    var fakeClient = newFakeClient()
+    var fakeClient = harness.newFakeClient()
       .withInitialFs("configScopeId", tempDir, List.of(new ClientFileDto(abapFile.toUri(), tempDir.relativize(abapFile), "configScopeId", false, null, abapFile, null, null, true)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withExtraEnabledLanguagesInConnectedMode(Language.ABAP)
       .withUnboundConfigScope("configScopeId")
       .withEmbeddedServer()
@@ -77,15 +66,15 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
     verify(fakeClient).promoteExtraEnabledLanguagesInConnectedMode("configScopeId", Set.of(Language.ABAP));
   }
 
-  @Test
-  void it_should_not_notify_clients_when_already_in_connected_mode(@TempDir Path tempDir) throws IOException {
+  @SonarLintTest
+  void it_should_not_notify_clients_when_already_in_connected_mode(SonarLintTestHarness harness, @TempDir Path tempDir) throws IOException {
     var abapFile = tempDir.resolve("file.abap");
     Files.createFile(abapFile);
-    var fakeClient = newFakeClient()
+    var fakeClient = harness.newFakeClient()
       .withInitialFs("configScopeId", tempDir, List.of(new ClientFileDto(abapFile.toUri(), tempDir.relativize(abapFile), "configScopeId", false, null, abapFile, null, null, true)))
       .build();
-    var server = newSonarQubeServer().start();
-    backend = newBackend()
+    var server = harness.newFakeSonarQubeServer().start();
+    var backend = harness.newBackend()
       .withExtraEnabledLanguagesInConnectedMode(Language.ABAP)
       .withSonarQubeConnection("connectionId", server, storage -> storage.withProject("projectKey"))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
@@ -98,14 +87,14 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
     verify(fakeClient, after(200).never()).promoteExtraEnabledLanguagesInConnectedMode("configScopeId", Set.of(Language.ABAP));
   }
 
-  @Test
-  void it_should_not_notify_clients_when_detected_language_is_not_an_extra_language(@TempDir Path tempDir) throws IOException {
+  @SonarLintTest
+  void it_should_not_notify_clients_when_detected_language_is_not_an_extra_language(SonarLintTestHarness harness, @TempDir Path tempDir) throws IOException {
     var abapFile = tempDir.resolve("file.abap");
     Files.createFile(abapFile);
-    var fakeClient = newFakeClient()
+    var fakeClient = harness.newFakeClient()
       .withInitialFs("configScopeId", tempDir, List.of(new ClientFileDto(abapFile.toUri(), tempDir.relativize(abapFile), "configScopeId", false, null, abapFile, null, null, true)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.ABAP)
       .withUnboundConfigScope("configScopeId")
       .withEmbeddedServer()
@@ -117,14 +106,15 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
     verify(fakeClient, after(200).never()).promoteExtraEnabledLanguagesInConnectedMode("configScopeId", Set.of(Language.ABAP));
   }
 
-  @Test
-  void it_should_not_notify_clients_when_no_language_was_detected_during_analysis(@TempDir Path tempDir) throws IOException {
+  @SonarLintTest
+  void it_should_not_notify_clients_when_no_language_was_detected_during_analysis(SonarLintTestHarness harness, @TempDir Path tempDir) throws IOException {
     var randomFile = tempDir.resolve("file.abc");
     Files.createFile(randomFile);
-    var fakeClient = newFakeClient()
-      .withInitialFs("configScopeId", tempDir, List.of(new ClientFileDto(randomFile.toUri(), tempDir.relativize(randomFile), "configScopeId", false, null, randomFile, null, null, true)))
+    var fakeClient = harness.newFakeClient()
+      .withInitialFs("configScopeId", tempDir,
+        List.of(new ClientFileDto(randomFile.toUri(), tempDir.relativize(randomFile), "configScopeId", false, null, randomFile, null, null, true)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withUnboundConfigScope("configScopeId")
       .withEmbeddedServer()
       .withTelemetryEnabled()

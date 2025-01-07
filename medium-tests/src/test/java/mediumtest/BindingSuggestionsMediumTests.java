@@ -28,15 +28,10 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetBindingSuggestionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingSuggestionDto;
@@ -48,12 +43,12 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSys
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Components;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
@@ -75,8 +70,6 @@ class BindingSuggestionsMediumTests {
     .options(wireMockConfig().dynamicPort())
     .build();
 
-  private SonarLintRpcServer backend;
-
   @BeforeEach
   void init() {
     sonarqubeMock.stubFor(get("/api/system/status")
@@ -84,15 +77,10 @@ class BindingSuggestionsMediumTests {
         "\"UP\"}")));
   }
 
-  @AfterEach
-  void stop() throws ExecutionException, InterruptedException, TimeoutException {
-    backend.shutdown().get(5, TimeUnit.SECONDS);
-  }
-
-  @Test
-  void test_connection_added_should_suggest_binding_with_no_matches() {
-    var fakeClient = newFakeClient().build();
-    backend = newBackend()
+  @SonarLintTest
+  void test_connection_added_should_suggest_binding_with_no_matches(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient().build();
+    var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID, "My Project 1")
       .build(fakeClient);
     await().untilAsserted(() -> assertThat(fakeClient.getLogMessages()).contains("No connections configured, skipping binding suggestions."));
@@ -108,10 +96,10 @@ class BindingSuggestionsMediumTests {
     assertThat(bindingSuggestions.get(CONFIG_SCOPE_ID)).isEmpty();
   }
 
-  @Test
-  void test_connection_added_should_suggest_binding_with_matches() {
-    var fakeClient = newFakeClient().build();
-    backend = newBackend()
+  @SonarLintTest
+  void test_connection_added_should_suggest_binding_with_matches(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient().build();
+    var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID, "sonarlint-core")
       .build(fakeClient);
     await().untilAsserted(() -> assertThat(fakeClient.getLogMessages()).contains("No connections configured, skipping binding suggestions."));
@@ -138,10 +126,10 @@ class BindingSuggestionsMediumTests {
       .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, false));
   }
 
-  @Test
-  void test_project_added_should_suggest_binding_with_matches() {
-    var fakeClient = newFakeClient().build();
-    backend = newBackend()
+  @SonarLintTest
+  void test_project_added_should_suggest_binding_with_matches(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient().build();
+    var backend = harness.newBackend()
       .withSonarQubeConnection(MYSONAR, sonarqubeMock.baseUrl())
       .build(fakeClient);
 
@@ -170,16 +158,16 @@ class BindingSuggestionsMediumTests {
       .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, false));
   }
 
-  @Test
-  void test_uses_binding_clues_when_initializing_fs(@TempDir Path tmp) throws IOException {
+  @SonarLintTest
+  void test_uses_binding_clues_when_initializing_fs(SonarLintTestHarness harness, @TempDir Path tmp) throws IOException {
     var clue = tmp.resolve("sonar-project.properties");
     Files.writeString(clue, "sonar.projectKey=" + SLCORE_PROJECT_KEY + "\nsonar.projectName=" + SLCORE_PROJECT_NAME, StandardCharsets.UTF_8);
-    var fakeClient = newFakeClient()
+    var fakeClient = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID,
         List.of(new ClientFileDto(clue.toUri(), Paths.get("sonar-project.properties"), CONFIG_SCOPE_ID, null, StandardCharsets.UTF_8.name(), clue, null, null, true)))
       .build();
 
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection(MYSONAR, sonarqubeMock.baseUrl())
       .withSonarQubeConnection("another")
       .build(fakeClient);
@@ -208,12 +196,12 @@ class BindingSuggestionsMediumTests {
       .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, false));
   }
 
-  @Test
-  void test_uses_binding_clues_when_updating_fs(@TempDir Path tmp) throws IOException {
-    var fakeClient = newFakeClient()
+  @SonarLintTest
+  void test_uses_binding_clues_when_updating_fs(SonarLintTestHarness harness, @TempDir Path tmp) throws IOException {
+    var fakeClient = harness.newFakeClient()
       .build();
 
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection(MYSONAR, sonarqubeMock.baseUrl())
       .withSonarQubeConnection("another")
       .build(fakeClient);
@@ -256,10 +244,10 @@ class BindingSuggestionsMediumTests {
       .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, false));
   }
 
-  @Test
-  void test_binding_suggestion_via_service() throws ExecutionException, InterruptedException {
-    var fakeClient = newFakeClient().build();
-    backend = newBackend()
+  @SonarLintTest
+  void test_binding_suggestion_via_service(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
+    var fakeClient = harness.newFakeClient().build();
+    var backend = harness.newBackend()
       .withSonarQubeConnection(MYSONAR, sonarqubeMock.baseUrl())
       .build(fakeClient);
 
@@ -289,12 +277,12 @@ class BindingSuggestionsMediumTests {
       .containsExactly(tuple(MYSONAR, SLCORE_PROJECT_KEY, SLCORE_PROJECT_NAME, false));
   }
 
-  @Test
-  void test_uses_binding_clues_from_shared_configuration_when_updating_fs(@TempDir Path tmp) throws IOException {
-    var fakeClient = newFakeClient()
+  @SonarLintTest
+  void test_uses_binding_clues_from_shared_configuration_when_updating_fs(SonarLintTestHarness harness, @TempDir Path tmp) throws IOException {
+    var fakeClient = harness.newFakeClient()
       .build();
 
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection(MYSONAR, sonarqubeMock.baseUrl())
       .withSonarQubeConnection("another")
       .build(fakeClient);

@@ -25,10 +25,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleParamDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
@@ -40,10 +37,12 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.MockWebServerExtensionWithProtobuf;
 import utils.TestPlugin;
 
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
 import static org.apache.commons.lang3.StringUtils.abbreviate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -58,25 +57,18 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.BUG;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.VULNERABILITY;
 
 class EffectiveRulesMediumTests {
-  private SonarLintRpcServer backend;
+
   @RegisterExtension
   private final MockWebServerExtensionWithProtobuf mockWebServerExtension = new MockWebServerExtensionWithProtobuf();
 
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    if (backend != null) {
-      backend.shutdown().get();
-    }
-  }
-
-  @Test
-  void it_should_return_embedded_rule_when_project_is_not_bound() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_return_embedded_rule_when_project_is_not_bound(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withUnboundConfigScope("scopeId")
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .build();
 
-    var details = getEffectiveRuleDetails("scopeId", "python:S139");
+    var details = getEffectiveRuleDetails(backend, "scopeId", "python:S139");
 
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getCleanCodeAttribute, EffectiveRuleDetailsDto::getLanguage,
@@ -91,15 +83,15 @@ class EffectiveRulesMediumTests {
         "^#\\s*+([^\\s]++|fmt.*|type.*)$"));
   }
 
-  @Test
-  void it_should_consider_standalone_rule_config_for_effective_parameter_values() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_consider_standalone_rule_config_for_effective_parameter_values(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withUnboundConfigScope("scopeId")
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .withStandaloneRuleConfig("python:S139", true, Map.of("legalTrailingCommentPattern", "initialValue"))
       .build();
 
-    var detailsAfterInit = getEffectiveRuleDetails("scopeId", "python:S139");
+    var detailsAfterInit = getEffectiveRuleDetails(backend, "scopeId", "python:S139");
 
     assertThat(detailsAfterInit.getParams())
       .extracting(EffectiveRuleParamDto::getName, EffectiveRuleParamDto::getDescription, EffectiveRuleParamDto::getValue, EffectiveRuleParamDto::getDefaultValue)
@@ -111,7 +103,7 @@ class EffectiveRulesMediumTests {
     backend.getRulesService().updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("python:S139",
       new StandaloneRuleConfigDto(true, Map.of("legalTrailingCommentPattern", "updatedValue")))));
 
-    var detailsAfterUpdate = getEffectiveRuleDetails("scopeId", "python:S139");
+    var detailsAfterUpdate = getEffectiveRuleDetails(backend, "scopeId", "python:S139");
 
     assertThat(detailsAfterUpdate.getParams())
       .extracting(EffectiveRuleParamDto::getName, EffectiveRuleParamDto::getDescription, EffectiveRuleParamDto::getValue, EffectiveRuleParamDto::getDefaultValue)
@@ -121,9 +113,9 @@ class EffectiveRulesMediumTests {
         "^#\\s*+([^\\s]++|fmt.*|type.*)$"));
   }
 
-  @Test
-  void it_should_fail_when_rule_key_unknown_and_project_is_not_bound() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_fail_when_rule_key_unknown_and_project_is_not_bound(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withUnboundConfigScope("scopeId")
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .build();
@@ -136,15 +128,15 @@ class EffectiveRulesMediumTests {
       .withMessageContaining("Could not find rule 'python:SXXXX' in embedded rules");
   }
 
-  @Test
-  void it_should_return_rule_loaded_from_server_plugin_when_project_is_bound_and_project_storage_does_not_exist() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_return_rule_loaded_from_server_plugin_when_project_is_bound_and_project_storage_does_not_exist(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withPlugin(TestPlugin.JAVA))
       .withEnabledLanguageInStandaloneMode(JAVA)
       .build();
 
-    var details = getEffectiveRuleDetails("scopeId", "java:S106");
+    var details = getEffectiveRuleDetails(backend, "scopeId", "java:S106");
 
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getCleanCodeAttribute, EffectiveRuleDetailsDto::getLanguage,
@@ -154,9 +146,9 @@ class EffectiveRulesMediumTests {
     assertThat(details.getParams()).isEmpty();
   }
 
-  @Test
-  void it_should_merge_rule_from_storage_and_server_when_project_is_bound() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_merge_rule_from_storage_and_server_when_project_is_bound(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet("python",
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
@@ -167,7 +159,7 @@ class EffectiveRulesMediumTests {
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc").build())
       .build());
 
-    var details = getEffectiveRuleDetails("scopeId", "python:S139");
+    var details = getEffectiveRuleDetails(backend, "scopeId", "python:S139");
 
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getCleanCodeAttribute, EffectiveRuleDetailsDto::getLanguage,
@@ -177,9 +169,9 @@ class EffectiveRulesMediumTests {
     assertThat(details.getParams()).isEmpty();
   }
 
-  @Test
-  void it_should_merge_rule_from_storage_and_server_when_parent_project_is_bound() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_merge_rule_from_storage_and_server_when_parent_project_is_bound(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet("python",
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
@@ -191,7 +183,7 @@ class EffectiveRulesMediumTests {
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc").build())
       .build());
 
-    var details = getEffectiveRuleDetails("childScopeId", "python:S139");
+    var details = getEffectiveRuleDetails(backend, "childScopeId", "python:S139");
 
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getCleanCodeAttribute, EffectiveRuleDetailsDto::getLanguage,
@@ -201,11 +193,11 @@ class EffectiveRulesMediumTests {
     assertThat(details.getParams()).isEmpty();
   }
 
-  @Test
-  void it_return_single_section_from_server_when_project_is_bound() {
+  @SonarLintTest
+  void it_return_single_section_from_server_when_project_is_bound(SonarLintTestHarness harness) {
     var name = "name";
     var desc = "desc";
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet("js",
           ruleSet -> ruleSet.withActiveRule("jssecurity:S5696", "BLOCKER"))))
@@ -222,7 +214,7 @@ class EffectiveRulesMediumTests {
         .build())
       .build());
 
-    var details = getEffectiveRuleDetails("scopeId", "jssecurity:S5696");
+    var details = getEffectiveRuleDetails(backend, "scopeId", "jssecurity:S5696");
 
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
@@ -231,9 +223,9 @@ class EffectiveRulesMediumTests {
     assertThat(details.getParams()).isEmpty();
   }
 
-  @Test
-  void it_should_fail_to_merge_rule_from_storage_and_server_when_connection_is_unknown() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_fail_to_merge_rule_from_storage_and_server_when_connection_is_unknown(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withStorage("connectionId", storage -> storage.withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet("python",
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
@@ -248,9 +240,9 @@ class EffectiveRulesMediumTests {
       .withMessageContaining("Connection with ID 'connectionId' does not exist");
   }
 
-  @Test
-  void it_should_fail_to_merge_rule_from_storage_and_server_when_rule_does_not_exist_on_server() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_fail_to_merge_rule_from_storage_and_server_when_rule_does_not_exist_on_server(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet("python",
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
@@ -267,9 +259,9 @@ class EffectiveRulesMediumTests {
       });
   }
 
-  @Test
-  void it_should_merge_template_rule_from_storage_and_server_when_project_is_bound() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_merge_template_rule_from_storage_and_server_when_project_is_bound(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet("python",
           ruleSet -> ruleSet.withCustomActiveRule("python:custom", "python:CommentRegularExpression", "INFO", Map.of("message", "msg", "regularExpression", "regExp")))))
@@ -287,7 +279,7 @@ class EffectiveRulesMediumTests {
         .build())
       .build());
 
-    var details = getEffectiveRuleDetails("scopeId", "python:custom");
+    var details = getEffectiveRuleDetails(backend, "scopeId", "python:custom");
 
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getCleanCodeAttribute, EffectiveRuleDetailsDto::getLanguage,
@@ -296,9 +288,9 @@ class EffectiveRulesMediumTests {
     assertThat(details.getParams()).isEmpty();
   }
 
-  @Test
-  void it_should_merge_rule_from_storage_and_server_rule_when_rule_is_unknown_in_loaded_plugins() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_merge_rule_from_storage_and_server_rule_when_rule_is_unknown_in_loaded_plugins(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet("python",
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
@@ -316,7 +308,7 @@ class EffectiveRulesMediumTests {
         .build())
       .build());
 
-    var details = getEffectiveRuleDetails("scopeId", "python:S139");
+    var details = getEffectiveRuleDetails(backend, "scopeId", "python:S139");
 
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
@@ -325,11 +317,11 @@ class EffectiveRulesMediumTests {
     assertThat(details.getParams()).isEmpty();
   }
 
-  @Test
-  void it_should_merge_rule_from_storage_and_server_with_description_sections_when_project_is_bound_and_none_context() {
-    prepareForRuleDescriptionSectionsAndContext();
+  @SonarLintTest
+  void it_should_merge_rule_from_storage_and_server_with_description_sections_when_project_is_bound_and_none_context(SonarLintTestHarness harness) {
+    var backend = prepareForRuleDescriptionSectionsAndContext(harness);
 
-    var details = getEffectiveRuleDetails("scopeId", "python:S139");
+    var details = getEffectiveRuleDetails(backend, "scopeId", "python:S139");
 
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
@@ -352,11 +344,11 @@ class EffectiveRulesMediumTests {
         "htmlContent3extendedDesc<h3>Clean Code Principl...");
   }
 
-  @Test
-  void it_should_return_all_contexts_in_alphabetical_order_with_others_as_default_if_context_not_found() {
-    prepareForRuleDescriptionSectionsAndContext();
+  @SonarLintTest
+  void it_should_return_all_contexts_in_alphabetical_order_with_others_as_default_if_context_not_found(SonarLintTestHarness harness) {
+    var backend = prepareForRuleDescriptionSectionsAndContext(harness);
 
-    var details = getEffectiveRuleDetails("scopeId", "python:S139", "not_found");
+    var details = getEffectiveRuleDetails(backend, "scopeId", "python:S139", "not_found");
 
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
@@ -382,11 +374,11 @@ class EffectiveRulesMediumTests {
       .isEqualTo("others");
   }
 
-  @Test
-  void it_should_return_all_contexts_in_alphabetical_order_with_the_provided_context_as_default() {
-    prepareForRuleDescriptionSectionsAndContext();
+  @SonarLintTest
+  void it_should_return_all_contexts_in_alphabetical_order_with_the_provided_context_as_default(SonarLintTestHarness harness) {
+    var backend = prepareForRuleDescriptionSectionsAndContext(harness);
 
-    var details = getEffectiveRuleDetails("scopeId", "python:S139", "spring");
+    var details = getEffectiveRuleDetails(backend, "scopeId", "python:S139", "spring");
 
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getType, EffectiveRuleDetailsDto::getLanguage,
@@ -413,9 +405,9 @@ class EffectiveRulesMediumTests {
       .isEqualTo("spring");
   }
 
-  @Test
-  void it_should_add_a_more_info_tab_if_no_resource_section_exists_and_extended_description_exists() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_add_a_more_info_tab_if_no_resource_section_exists_and_extended_description_exists(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet("python",
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
@@ -436,7 +428,7 @@ class EffectiveRulesMediumTests {
         .build())
       .build());
 
-    var details = getEffectiveRuleDetails("scopeId", "python:S139");
+    var details = getEffectiveRuleDetails(backend, "scopeId", "python:S139");
 
     assertThat(details.getDescription().getRight().getTabs())
       .filteredOn(RuleDescriptionTabDto::getTitle, "More Info")
@@ -472,16 +464,16 @@ class EffectiveRulesMediumTests {
         "</p>");
   }
 
-  @Test
-  void it_should_split_security_hotspots_rule_description_and_adapt_title() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_split_security_hotspots_rule_description_and_adapt_title(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .withSecurityHotspotsEnabled()
       .build();
 
-    var details = getEffectiveRuleDetails("scopeId", "python:S4784");
+    var details = getEffectiveRuleDetails(backend, "scopeId", "python:S4784");
 
     assertThat(details.getDescription().isRight()).isTrue();
     assertThat(details.getDescription().getRight().getTabs())
@@ -490,8 +482,8 @@ class EffectiveRulesMediumTests {
       .contains("What's the risk?");
   }
 
-  private void prepareForRuleDescriptionSectionsAndContext() {
-    backend = newBackend()
+  private SonarLintTestRpcServer prepareForRuleDescriptionSectionsAndContext(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withProject("projectKey",
         projectStorage -> projectStorage.withRuleSet("python",
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
@@ -514,6 +506,7 @@ class EffectiveRulesMediumTests {
             .setKey("resources").setContent("htmlContent3").build()))
         .build())
       .build());
+    return backend;
   }
 
   private static List<String> flattenTabContent(RuleDescriptionTabDto tab) {
@@ -530,13 +523,13 @@ class EffectiveRulesMediumTests {
     return result;
   }
 
-  private EffectiveRuleDetailsDto getEffectiveRuleDetails(String configScopeId, String ruleKey) {
-    return getEffectiveRuleDetails(configScopeId, ruleKey, null);
+  private EffectiveRuleDetailsDto getEffectiveRuleDetails(SonarLintTestRpcServer backend, String configScopeId, String ruleKey) {
+    return getEffectiveRuleDetails(backend, configScopeId, ruleKey, null);
   }
 
-  private EffectiveRuleDetailsDto getEffectiveRuleDetails(String configScopeId, String ruleKey, String contextKey) {
+  private EffectiveRuleDetailsDto getEffectiveRuleDetails(SonarLintTestRpcServer backend, String configScopeId, String ruleKey, String contextKey) {
     try {
-      return this.backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, ruleKey, contextKey)).get().details();
+      return backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, ruleKey, contextKey)).get().details();
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }

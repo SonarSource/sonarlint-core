@@ -23,11 +23,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonar.scanner.protocol.Constants;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
@@ -38,12 +34,11 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParam
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.AnalysisUtils;
 import utils.TestPlugin;
 
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
@@ -54,24 +49,16 @@ import static utils.AnalysisUtils.getPublishedIssues;
 
 class ClientFileExclusionsMediumTests {
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
-  private SonarLintTestRpcServer backend;
 
-  @AfterEach
-  void stop() throws ExecutionException, InterruptedException {
-    if (backend != null) {
-      backend.shutdown().get();
-    }
-  }
-
-  @Test
-  void it_should_not_analyze_excluded_file_on_open(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_not_analyze_excluded_file_on_open(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createXmlFile(baseDir);
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .withFileExclusions(CONFIG_SCOPE_ID, Set.of("**/*.xml"))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .build(client);
@@ -82,15 +69,15 @@ class ClientFileExclusionsMediumTests {
       .untilAsserted(() -> verify(client, never()).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(false), any()));
   }
 
-  @Test
-  void it_should_analyze_not_excluded_file_on_open(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_analyze_not_excluded_file_on_open(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createXmlFile(baseDir);
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .withFileExclusions(CONFIG_SCOPE_ID, Set.of("**/*.java"))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .build(client);
@@ -105,14 +92,14 @@ class ClientFileExclusionsMediumTests {
         .containsExactly("Replace \"pom.version\" with \"project.version\"."));
   }
 
-  @Test
-  void it_should_not_analyze_non_user_defined_file_on_open(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_not_analyze_non_user_defined_file_on_open(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createXmlFile(baseDir);
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, false)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .build(client);
@@ -123,14 +110,14 @@ class ClientFileExclusionsMediumTests {
       .untilAsserted(() -> verify(client, never()).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(false), any()));
   }
 
-  @Test
-  void it_should_analyze_user_defined_file_on_open(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_analyze_user_defined_file_on_open(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createXmlFile(baseDir);
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .build(client);
@@ -145,8 +132,8 @@ class ClientFileExclusionsMediumTests {
         .containsExactly("Replace \"pom.version\" with \"project.version\"."));
   }
 
-  @Test
-  void it_should_not_exclude_client_defined_file_exclusion_in_connected_mode(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_not_exclude_client_defined_file_exclusion_in_connected_mode(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var ideFilePath = "Foo.java";
     var filePath = AnalysisUtils.createFile(baseDir, ideFilePath,
       "// FIXME foo bar\n" +
@@ -159,11 +146,11 @@ class ClientFileExclusionsMediumTests {
     var message = "Take the required action to fix the issue indicated by this comment.";
 
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .withFileExclusions(CONFIG_SCOPE_ID, Set.of("**/*.java"))
       .build();
-    var server = newSonarQubeServer()
+    var server = harness.newFakeSonarQubeServer()
       .withProject("projectKey", project -> project.withBranch("main", branch -> branch
         .withIssue("uuid", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
@@ -171,7 +158,7 @@ class ClientFileExclusionsMediumTests {
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
         .withActiveRule(ruleKey, activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
       .start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection(connectionId, server,
         storage -> storage.withPlugin(TestPlugin.JAVA).withProject(projectKey,
           project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
@@ -190,8 +177,8 @@ class ClientFileExclusionsMediumTests {
     assertThat(publishedIssues).isNotEmpty();
   }
 
-  @Test
-  void it_should_exclude_non_user_defined_files_in_connected_mode(@TempDir Path baseDir) {
+  @SonarLintTest
+  void it_should_exclude_non_user_defined_files_in_connected_mode(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var ideFilePath = "Foo.java";
     var filePath = AnalysisUtils.createFile(baseDir, ideFilePath,
       "// FIXME foo bar\n" +
@@ -204,10 +191,10 @@ class ClientFileExclusionsMediumTests {
     var message = "Take the required action to fix the issue indicated by this comment.";
 
     var fileUri = filePath.toUri();
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, false)))
       .build();
-    var server = newSonarQubeServer()
+    var server = harness.newFakeSonarQubeServer()
       .withProject("projectKey", project -> project.withBranch("main", branch -> branch
         .withIssue("uuid", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
@@ -215,7 +202,7 @@ class ClientFileExclusionsMediumTests {
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
         .withActiveRule(ruleKey, activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
       .start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection(connectionId, server,
         storage -> storage.withPlugin(TestPlugin.JAVA).withProject(projectKey,
           project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))

@@ -30,19 +30,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
+import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -59,17 +56,17 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnera
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.StandardModeDetails;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
+import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
 import org.sonarsource.sonarlint.core.test.utils.server.sse.SSEServer;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.jsonResponse;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.waitAtMost;
@@ -87,7 +84,6 @@ class ServerSentEventsMediumTests {
 
   @RegisterExtension
   SonarLintLogTester logTester = new SonarLintLogTester(true);
-  private SonarLintTestRpcServer backend;
 
   @RegisterExtension
   static WireMockExtension sonarServerMock = WireMockExtension.newInstance()
@@ -101,18 +97,11 @@ class ServerSentEventsMediumTests {
         "\"UP\"}")));
   }
 
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    if (backend != null) {
-      backend.shutdown().get();
-    }
-  }
-
   @Nested
   class WhenScopeBound {
-    @Test
-    void should_subscribe_for_events_if_connected_to_sonarqube() {
-      backend = newBackend()
+    @SonarLintTest
+    void should_subscribe_for_events_if_connected_to_sonarqube(SonarLintTestHarness harness) {
+      var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -120,15 +109,15 @@ class ServerSentEventsMediumTests {
         .withUnboundConfigScope("configScope")
         .build();
 
-      bind("configScope", "connectionId", "projectKey");
+      bind(backend, "configScope", "connectionId", "projectKey");
 
       await().atMost(Duration.ofSeconds(2))
         .untilAsserted(() -> assertThat(requestedPaths()).containsExactly("/api/push/sonarlint_events?projectKeys=projectKey&languages=java,js"));
     }
 
-    @Test
-    void should_not_subscribe_for_events_if_sonarcloud_connection() {
-      backend = newBackend()
+    @SonarLintTest
+    void should_not_subscribe_for_events_if_sonarcloud_connection(SonarLintTestHarness harness) {
+      var backend = harness.newBackend()
         .withSonarCloudUrl(sonarServerMock.baseUrl())
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -137,18 +126,14 @@ class ServerSentEventsMediumTests {
         .withUnboundConfigScope("configScope")
         .build();
 
-      bind("configScope", "connectionId", "projectKey");
+      bind(backend, "configScope", "connectionId", "projectKey");
 
       await().during(Duration.ofMillis(300)).until(() -> requestedPaths().isEmpty());
     }
 
-    private void bind(String configScopeId, String connectionId, String projectKey) {
-      backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(connectionId, projectKey, true)));
-    }
-
-    @Test
-    void should_not_resubscribe_for_events_if_sonarqube_connection_and_binding_is_the_same() {
-      backend = newBackend()
+    @SonarLintTest
+    void should_not_resubscribe_for_events_if_sonarqube_connection_and_binding_is_the_same(SonarLintTestHarness harness) {
+      var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -157,17 +142,21 @@ class ServerSentEventsMediumTests {
         .build();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(requestedPaths()).hasSize(1));
 
-      bind("configScope", "connectionId", "projectKey");
+      bind(backend, "configScope", "connectionId", "projectKey");
 
       await().during(Duration.ofMillis(300)).until(() -> requestedPaths().size() == 1);
+    }
+
+    private void bind(SonarLintTestRpcServer backend, String configScopeId, String connectionId, String projectKey) {
+      backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(connectionId, projectKey, true)));
     }
   }
 
   @Nested
   class WhenUnbindingScope {
-    @Test
-    void should_not_resubscribe_for_events_if_sonarqube_connection() {
-      backend = newBackend()
+    @SonarLintTest
+    void should_not_resubscribe_for_events_if_sonarqube_connection(SonarLintTestHarness harness) {
+      var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -176,14 +165,14 @@ class ServerSentEventsMediumTests {
         .build();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(requestedPaths()).hasSize(1));
 
-      unbind("configScope");
+      unbind(backend, "configScope");
 
       await().during(Duration.ofMillis(300)).until(() -> requestedPaths().size() == 1);
     }
 
-    @Test
-    void should_unsubscribe_for_events_if_sonarqube_connection_and_other_projects_bound() {
-      backend = newBackend()
+    @SonarLintTest
+    void should_unsubscribe_for_events_if_sonarqube_connection_and_other_projects_bound(SonarLintTestHarness harness) {
+      var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -193,7 +182,7 @@ class ServerSentEventsMediumTests {
         .build();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(requestedPaths()).hasSize(1));
 
-      unbind("configScope1");
+      unbind(backend, "configScope1");
 
       await().atMost(Duration.ofSeconds(2))
         .untilAsserted(() -> assertThat(requestedPaths()).containsOnly(
@@ -201,32 +190,32 @@ class ServerSentEventsMediumTests {
           "/api/push/sonarlint_events?projectKeys=projectKey2&languages=java,js"));
     }
 
-    private void unbind(String configScope) {
+    private void unbind(SonarLintTestRpcServer backend, String configScope) {
       backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScope, new BindingConfigurationDto(null, null, true)));
     }
   }
 
   @Nested
   class WhenScopeAdded {
-    @Test
-    void should_subscribe_if_bound_to_sonarqube() {
-      backend = newBackend()
+    @SonarLintTest
+    void should_subscribe_if_bound_to_sonarqube(SonarLintTestHarness harness) {
+      var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .build();
 
-      addConfigurationScope("configScope", "connectionId", "projectKey");
+      addConfigurationScope(backend, "configScope", "connectionId", "projectKey");
 
       await().atMost(Duration.ofSeconds(2))
         .untilAsserted(() -> assertThat(requestedPaths()).containsExactly("/api/push/sonarlint_events?projectKeys=projectKey&languages=java,js"));
     }
 
-    @Test
-    void should_log_subscription_errors() {
-      var client = newFakeClient().build();
-      backend = newBackend()
+    @SonarLintTest
+    void should_log_subscription_errors(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient().build();
+      var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -237,7 +226,7 @@ class ServerSentEventsMediumTests {
       sonarServerMock.stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java,js")
         .willReturn(jsonResponse("{\"errors\":[{\"msg\":\"Some error from server\"}]}", 400)));
 
-      addConfigurationScope("configScope", "connectionId", projectKey);
+      addConfigurationScope(backend, "configScope", "connectionId", projectKey);
 
       await().atMost(Duration.ofSeconds(2))
         .untilAsserted(() -> assertThat(requestedPaths()).containsExactly("/api/push/sonarlint_events?projectKeys=projectKey&languages=java,js"));
@@ -249,23 +238,23 @@ class ServerSentEventsMediumTests {
             "Received event-stream data while not connected: {\"errors\":[{\"msg\":\"Some error from server\"}]}"));
     }
 
-    @Test
-    void should_not_subscribe_if_not_bound() {
-      backend = newBackend()
+    @SonarLintTest
+    void should_not_subscribe_if_not_bound(SonarLintTestHarness harness) {
+      var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .build();
 
-      addConfigurationScope("configScope", null, null);
+      addConfigurationScope(backend, "configScope", null, null);
 
       await().during(Duration.ofMillis(300)).until(() -> requestedPaths().isEmpty());
     }
 
-    @Test
-    void should_not_subscribe_if_bound_to_sonarcloud() {
-      backend = newBackend()
+    @SonarLintTest
+    void should_not_subscribe_if_bound_to_sonarcloud(SonarLintTestHarness harness) {
+      var backend = harness.newBackend()
         .withSonarCloudUrl(sonarServerMock.baseUrl())
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -273,12 +262,12 @@ class ServerSentEventsMediumTests {
         .withSonarCloudConnection("connectionId")
         .build();
 
-      addConfigurationScope("configScope", "connectionId", "projectKey");
+      addConfigurationScope(backend, "configScope", "connectionId", "projectKey");
 
       await().during(Duration.ofMillis(300)).until(() -> requestedPaths().isEmpty());
     }
 
-    private void addConfigurationScope(String configScope, String connectionId, String projectKey) {
+    private void addConfigurationScope(SonarLintTestRpcServer backend, String configScope, String connectionId, String projectKey) {
       backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(
         List.of(new ConfigurationScopeDto(configScope, null, true, "name", new BindingConfigurationDto(connectionId, projectKey, true)))));
     }
@@ -287,9 +276,9 @@ class ServerSentEventsMediumTests {
   @Nested
   class WhenScopeRemoved {
 
-    @Test
-    void should_do_nothing_if_scope_was_not_bound() {
-      backend = newBackend()
+    @SonarLintTest
+    void should_do_nothing_if_scope_was_not_bound(SonarLintTestHarness harness) {
+      var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -297,14 +286,14 @@ class ServerSentEventsMediumTests {
         .withUnboundConfigScope("configScope")
         .build();
 
-      removeScope("configScope");
+      removeScope(backend, "configScope");
 
       await().during(Duration.ofMillis(300)).until(() -> requestedPaths().isEmpty());
     }
 
-    @Test
-    void should_do_nothing_if_scope_was_bound_to_sonarcloud() {
-      backend = newBackend()
+    @SonarLintTest
+    void should_do_nothing_if_scope_was_bound_to_sonarcloud(SonarLintTestHarness harness) {
+      var backend = harness.newBackend()
         .withSonarCloudUrl(sonarServerMock.baseUrl())
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -313,14 +302,14 @@ class ServerSentEventsMediumTests {
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build();
 
-      removeScope("configScope");
+      removeScope(backend, "configScope");
 
       await().during(Duration.ofMillis(300)).until(() -> requestedPaths().isEmpty());
     }
 
-    @Test
-    void should_close_connection_when_if_scope_was_bound_to_sonarcloud_and_no_other_project_interested() {
-      backend = newBackend()
+    @SonarLintTest
+    void should_close_connection_when_if_scope_was_bound_to_sonarcloud_and_no_other_project_interested(SonarLintTestHarness harness) {
+      var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -329,14 +318,14 @@ class ServerSentEventsMediumTests {
         .build();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(requestedPaths()).hasSize(1));
 
-      removeScope("configScope");
+      removeScope(backend, "configScope");
 
       await().during(Duration.ofMillis(300)).until(() -> requestedPaths().size() == 1);
     }
 
-    @Test
-    void should_keep_connection_if_scope_was_bound_to_sonarqube_and_another_scope_is_interested_in_the_same_project() {
-      backend = newBackend()
+    @SonarLintTest
+    void should_keep_connection_if_scope_was_bound_to_sonarqube_and_another_scope_is_interested_in_the_same_project(SonarLintTestHarness harness) {
+      var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -346,16 +335,16 @@ class ServerSentEventsMediumTests {
         .build();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(requestedPaths()).hasSize(1));
 
-      removeScope("configScope1");
+      removeScope(backend, "configScope1");
 
       await().atMost(Duration.ofSeconds(2))
         .untilAsserted(() -> assertThat(requestedPaths()).containsOnly(
           "/api/push/sonarlint_events?projectKeys=projectKey&languages=java,js"));
     }
 
-    @Test
-    void should_reopen_connection_if_scope_was_bound_to_sonarqube_and_another_scope_is_interested_in_a_different_project() {
-      backend = newBackend()
+    @SonarLintTest
+    void should_reopen_connection_if_scope_was_bound_to_sonarqube_and_another_scope_is_interested_in_a_different_project(SonarLintTestHarness harness) {
+      var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -365,7 +354,7 @@ class ServerSentEventsMediumTests {
         .build();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(requestedPaths()).hasSize(1));
 
-      removeScope("configScope1");
+      removeScope(backend, "configScope1");
 
       await().atMost(Duration.ofSeconds(2))
         .untilAsserted(() -> assertThat(requestedPaths()).containsOnly(
@@ -373,7 +362,7 @@ class ServerSentEventsMediumTests {
           "/api/push/sonarlint_events?projectKeys=projectKey2&languages=java,js"));
     }
 
-    private void removeScope(String configScope) {
+    private void removeScope(SonarLintTestRpcServer backend, String configScope) {
       backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(configScope));
     }
   }
@@ -381,9 +370,9 @@ class ServerSentEventsMediumTests {
   @Nested
   class WhenConnectionCredentialsChanged {
 
-    @Test
-    void should_resubscribe_if_sonarqube_connection_was_open() {
-      backend = newBackend()
+    @SonarLintTest
+    void should_resubscribe_if_sonarqube_connection_was_open(SonarLintTestHarness harness) {
+      var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -392,7 +381,7 @@ class ServerSentEventsMediumTests {
         .build();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(requestedPaths()).hasSize(1));
 
-      notifyCredentialsChanged("connectionId");
+      notifyCredentialsChanged(backend, "connectionId");
 
       await().atMost(Duration.ofSeconds(2))
         .untilAsserted(() -> assertThat(requestedPaths()).containsOnly(
@@ -400,9 +389,9 @@ class ServerSentEventsMediumTests {
           "/api/push/sonarlint_events?projectKeys=projectKey&languages=java,js"));
     }
 
-    @Test
-    void should_do_nothing_if_sonarcloud() {
-      backend = newBackend()
+    @SonarLintTest
+    void should_do_nothing_if_sonarcloud(SonarLintTestHarness harness) {
+      var backend = harness.newBackend()
         .withSonarCloudUrl(sonarServerMock.baseUrl())
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -411,26 +400,26 @@ class ServerSentEventsMediumTests {
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .build();
 
-      notifyCredentialsChanged("connectionId");
+      notifyCredentialsChanged(backend, "connectionId");
 
       await().during(Duration.ofMillis(300)).until(() -> requestedPaths().isEmpty());
     }
 
-    @Test
-    void should_do_nothing_if_sonarqube_connection_was_not_open() {
-      backend = newBackend()
+    @SonarLintTest
+    void should_do_nothing_if_sonarqube_connection_was_not_open(SonarLintTestHarness harness) {
+      var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .build();
 
-      notifyCredentialsChanged("connectionId");
+      notifyCredentialsChanged(backend, "connectionId");
 
       await().during(Duration.ofMillis(300)).until(() -> requestedPaths().isEmpty());
     }
 
-    private void notifyCredentialsChanged(String connectionId) {
+    private void notifyCredentialsChanged(SonarLintTestRpcServer backend, String connectionId) {
       backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams(connectionId));
     }
   }
@@ -438,9 +427,9 @@ class ServerSentEventsMediumTests {
   @Nested
   class WhenConnectionAdded {
 
-    @Test
-    void should_do_nothing_if_no_scope_is_bound() {
-      backend = newBackend()
+    @SonarLintTest
+    void should_do_nothing_if_no_scope_is_bound(SonarLintTestHarness harness) {
+      var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -453,9 +442,9 @@ class ServerSentEventsMediumTests {
       await().during(Duration.ofMillis(300)).until(() -> requestedPaths().isEmpty());
     }
 
-    @Test
-    void should_do_nothing_if_sonarcloud() {
-      backend = newBackend()
+    @SonarLintTest
+    void should_do_nothing_if_sonarcloud(SonarLintTestHarness harness) {
+      var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -468,9 +457,9 @@ class ServerSentEventsMediumTests {
       await().during(Duration.ofMillis(300)).until(() -> requestedPaths().isEmpty());
     }
 
-    @Test
-    void should_open_connection_when_bound_scope_exists() {
-      backend = newBackend()
+    @SonarLintTest
+    void should_open_connection_when_bound_scope_exists(SonarLintTestHarness harness) {
+      var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -488,9 +477,9 @@ class ServerSentEventsMediumTests {
   @Nested
   class WhenConnectionRemoved {
 
-    @Test
-    void should_do_nothing_if_sonarcloud() {
-      backend = newBackend()
+    @SonarLintTest
+    void should_do_nothing_if_sonarcloud(SonarLintTestHarness harness) {
+      var backend = harness.newBackend()
         .withSonarCloudUrl(sonarServerMock.baseUrl())
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -504,9 +493,9 @@ class ServerSentEventsMediumTests {
       await().during(Duration.ofMillis(300)).until(() -> requestedPaths().isEmpty());
     }
 
-    @Test
-    void should_close_active_connection_if_sonarqube() {
-      backend = newBackend()
+    @SonarLintTest
+    void should_close_active_connection_if_sonarqube(SonarLintTestHarness harness) {
+      var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -524,9 +513,9 @@ class ServerSentEventsMediumTests {
   @Nested
   class WhenConnectionUpdated {
 
-    @Test
-    void should_resubscribe_if_sonarqube_connection_active() {
-      backend = newBackend()
+    @SonarLintTest
+    void should_resubscribe_if_sonarqube_connection_active(SonarLintTestHarness harness) {
+      var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -544,9 +533,9 @@ class ServerSentEventsMediumTests {
           "/api/push/sonarlint_events?projectKeys=projectKey&languages=java,js"));
     }
 
-    @Test
-    void should_not_resubscribe_if_sonarcloud() {
-      backend = newBackend()
+    @SonarLintTest
+    void should_not_resubscribe_if_sonarcloud(SonarLintTestHarness harness) {
+      var backend = harness.newBackend()
         .withSonarCloudUrl(sonarServerMock.baseUrl())
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -575,14 +564,14 @@ class ServerSentEventsMediumTests {
       sseServer.stop();
     }
 
-    @Test
-    void should_forward_taint_events_to_client() {
-      var fakeClient = newFakeClient().build();
+    @SonarLintTest
+    void should_forward_taint_events_to_client(SonarLintTestHarness harness) {
+      var fakeClient = harness.newFakeClient().build();
       var branchName = "branchName";
       when(fakeClient.matchSonarProjectBranch(eq("configScope"), eq("main"), eq(Set.of("main", branchName)), any())).thenReturn(branchName);
       var projectKey = "projectKey";
       var introductionDate = Instant.now().truncatedTo(ChronoUnit.SECONDS);
-      serverWithTaintIssues = newSonarQubeServer("10.0")
+      serverWithTaintIssues = harness.newFakeSonarQubeServer("10.0")
         .withProject(projectKey,
           project -> project.withBranch(branchName,
             branch -> branch.withTaintIssue("key1", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", introductionDate, new TextRange(1, 0, 3, 4), RuleType.VULNERABILITY)
@@ -601,7 +590,7 @@ class ServerSentEventsMediumTests {
           "}\n\n"
       );
 
-      backend = newBackend()
+      harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()

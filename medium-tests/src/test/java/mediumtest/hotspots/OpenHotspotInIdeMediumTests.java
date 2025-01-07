@@ -27,14 +27,7 @@ import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
@@ -49,10 +42,12 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingR
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.HotspotDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
+import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
 
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
@@ -70,78 +65,56 @@ class OpenHotspotInIdeMediumTests {
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
   public static final String CONNECTION_ID = "connectionId";
   public static final String SCOPE_ID = "scopeId";
-
-  private SonarLintTestRpcServer backend;
   public static final String PROJECT_KEY = "projectKey";
   public static final String SONAR_PROJECT_NAME = "Project Name";
-  static ServerFixture.Server serverWithHotspot = newSonarQubeServer("1.2.3")
-    .withProject(PROJECT_KEY,
-      project -> project.withProjectName(SONAR_PROJECT_NAME).withDefaultBranch(branch -> branch.withHotspot("key",
-          hotspot -> hotspot.withRuleKey("ruleKey")
-            .withMessage("msg")
-            .withAuthor("author")
-            .withFilePath("file/path")
-            .withStatus(HotspotReviewStatus.SAFE)
-            .withTextRange(new TextRange(1, 0, 3, 4)))
-        .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))))
-    .start();
-  static ServerFixture.Server serverWithoutHotspot = newSonarQubeServer("1.2.3")
-    .start();
 
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
-  }
-
-  @AfterAll
-  static void stopServer() {
-    serverWithHotspot.shutdown();
-    serverWithoutHotspot.shutdown();
-  }
-
-  @Test
-  void it_should_fail_request_when_server_parameter_missing() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_fail_request_when_server_parameter_missing(SonarLintTestHarness harness) {
+    var serverWithoutHotspot = harness.newFakeSonarQubeServer("1.2.3").start();
+    var backend = harness.newBackend()
       .withEmbeddedServer()
       .build();
 
-    var statusCode = requestGetOpenHotspotWithParams("project=projectKey&hotspot=key");
+    var statusCode = requestGetOpenHotspotWithParams(backend, serverWithoutHotspot, "project=projectKey&hotspot=key");
 
     assertThat(statusCode).isEqualTo(400);
   }
 
-  @Test
-  void it_should_fail_request_when_project_parameter_missing() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_fail_request_when_project_parameter_missing(SonarLintTestHarness harness) {
+    var serverWithoutHotspot = harness.newFakeSonarQubeServer("1.2.3").start();
+    var backend = harness.newBackend()
       .withEmbeddedServer()
       .build();
 
-    var statusCode = requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&hotspot=key");
+    var statusCode = requestGetOpenHotspotWithParams(backend, serverWithoutHotspot, "server=URL&hotspot=key");
 
     assertThat(statusCode).isEqualTo(400);
   }
 
-  @Test
-  void it_should_fail_request_when_hotspot_parameter_missing() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_fail_request_when_hotspot_parameter_missing(SonarLintTestHarness harness) {
+    var serverWithoutHotspot = harness.newFakeSonarQubeServer("1.2.3").start();
+    var backend = harness.newBackend()
       .withEmbeddedServer()
       .build();
 
-    var statusCode = requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey");
+    var statusCode = requestGetOpenHotspotWithParams(backend, serverWithoutHotspot, "server=URL&project=projectKey");
 
     assertThat(statusCode).isEqualTo(400);
   }
 
-  @Test
-  void it_should_open_hotspot_in_ide_when_project_bound() {
-    var fakeClient = newFakeClient().build();
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_open_hotspot_in_ide_when_project_bound(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient().build();
+    var serverWithHotspot = buildServerWithHotspot(harness).start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, serverWithHotspot)
       .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withEmbeddedServer()
       .build(fakeClient);
 
-    var statusCode = requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
+    var statusCode = requestGetOpenHotspotWithParams(backend, serverWithHotspot, "server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
     assertThat(statusCode).isEqualTo(200);
 
     ArgumentCaptor<HotspotDetailsDto> captor = ArgumentCaptor.captor();
@@ -154,16 +127,17 @@ class OpenHotspotInIdeMediumTests {
       .containsExactly(tuple("key", "msg", "author", Path.of("file/path"), "REVIEWED", "SAFE", "source\ncode\nfile"));
   }
 
-  @Test
-  void it_should_update_telemetry_data_when_opening_hotspot_in_ide() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_update_telemetry_data_when_opening_hotspot_in_ide(SonarLintTestHarness harness) {
+    var serverWithHotspot = buildServerWithHotspot(harness).start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, serverWithHotspot)
       .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withEmbeddedServer()
       .withTelemetryEnabled()
       .build();
 
-    requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
+    requestGetOpenHotspotWithParams(backend, serverWithHotspot, "server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
 
     await().atMost(2, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(backend.telemetryFilePath())
@@ -171,18 +145,19 @@ class OpenHotspotInIdeMediumTests {
         .contains("\"showHotspotRequestsCount\":1"));
   }
 
-  @Test
-  void it_should_assist_creating_the_connection_when_server_url_unknown() {
-    var fakeClient = newFakeClient().build();
-    mockAssistCreatingConnection(fakeClient, CONNECTION_ID);
-    mockAssistBinding(fakeClient, SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
+  @SonarLintTest
+  void it_should_assist_creating_the_connection_when_server_url_unknown(SonarLintTestHarness harness) {
+    var serverWithHotspot = buildServerWithHotspot(harness).start();
+    var fakeClient = harness.newFakeClient().build();
 
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withUnboundConfigScope(SCOPE_ID, SONAR_PROJECT_NAME)
       .withEmbeddedServer()
       .build(fakeClient);
+    mockAssistCreatingConnection(backend, fakeClient, serverWithHotspot, CONNECTION_ID);
+    mockAssistBinding(backend, fakeClient, SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
-    var statusCode = requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
+    var statusCode = requestGetOpenHotspotWithParams(backend, serverWithHotspot, "server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
     assertThat(statusCode).isEqualTo(200);
 
     ArgumentCaptor<HotspotDetailsDto> captor = ArgumentCaptor.captor();
@@ -194,19 +169,20 @@ class OpenHotspotInIdeMediumTests {
       .containsExactly("msg");
   }
 
-  @Test
-  void it_should_assist_creating_the_binding_if_scope_not_bound() {
-    var fakeClient = newFakeClient().build();
-    mockAssistCreatingConnection(fakeClient, CONNECTION_ID);
-    mockAssistBinding(fakeClient, SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
+  @SonarLintTest
+  void it_should_assist_creating_the_binding_if_scope_not_bound(SonarLintTestHarness harness) {
+    var serverWithHotspot = buildServerWithHotspot(harness).start();
+    var fakeClient = harness.newFakeClient().build();
 
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, serverWithHotspot)
       .withUnboundConfigScope(SCOPE_ID, SONAR_PROJECT_NAME)
       .withEmbeddedServer()
       .build(fakeClient);
+    mockAssistCreatingConnection(backend, fakeClient, serverWithHotspot, CONNECTION_ID);
+    mockAssistBinding(backend, fakeClient, SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
-    var statusCode = requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
+    var statusCode = requestGetOpenHotspotWithParams(backend, serverWithHotspot, "server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
     assertThat(statusCode).isEqualTo(200);
 
     ArgumentCaptor<HotspotDetailsDto> captor = ArgumentCaptor.captor();
@@ -218,16 +194,17 @@ class OpenHotspotInIdeMediumTests {
       .containsExactly("msg");
   }
 
-  @Test
-  void it_should_display_a_message_when_failing_to_fetch_the_hotspot() {
-    var fakeClient = newFakeClient().build();
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_display_a_message_when_failing_to_fetch_the_hotspot(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient().build();
+    var serverWithoutHotspot = harness.newFakeSonarQubeServer("1.2.3").start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, serverWithoutHotspot)
       .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withEmbeddedServer()
       .build(fakeClient);
 
-    var statusCode = requestGetOpenHotspotWithParams("server=" + urlEncode(serverWithoutHotspot.baseUrl()) + "&project=projectKey&hotspot=key",
+    var statusCode = requestGetOpenHotspotWithParams(backend, "server=" + urlEncode(serverWithoutHotspot.baseUrl()) + "&project=projectKey&hotspot=key",
       serverWithoutHotspot.baseUrl());
     assertThat(statusCode).isEqualTo(200);
 
@@ -235,33 +212,33 @@ class OpenHotspotInIdeMediumTests {
     verify(fakeClient, never()).showHotspot(anyString(), any());
   }
 
-  @Test
-  void it_should_not_accept_post_method() {
-    var fakeClient = newFakeClient().build();
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_not_accept_post_method(SonarLintTestHarness harness) {
+    var serverWithoutHotspot = harness.newFakeSonarQubeServer("1.2.3").start();
+    var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, serverWithoutHotspot)
       .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withEmbeddedServer()
-      .build(fakeClient);
+      .build();
 
-    var statusCode = requestPostOpenHotspotWithParams("server=" + urlEncode(serverWithoutHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
+    var statusCode = requestPostOpenHotspotWithParams(backend, serverWithoutHotspot, "server=" + urlEncode(serverWithoutHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
 
     assertThat(statusCode).isEqualTo(400);
   }
 
-  private int requestGetOpenHotspotWithParams(String query, String baseUrl) {
-    return requestOpenHotspotWithParams(query, "GET", baseUrl, HttpRequest.BodyPublishers.noBody());
+  private int requestGetOpenHotspotWithParams(SonarLintTestRpcServer backend, String query, String baseUrl) {
+    return requestOpenHotspotWithParams(backend, query, "GET", baseUrl, HttpRequest.BodyPublishers.noBody());
   }
 
-  private int requestGetOpenHotspotWithParams(String query) {
-    return requestOpenHotspotWithParams(query, "GET", serverWithHotspot.baseUrl(), HttpRequest.BodyPublishers.noBody());
+  private int requestGetOpenHotspotWithParams(SonarLintTestRpcServer backend, ServerFixture.Server server, String query) {
+    return requestOpenHotspotWithParams(backend, query, "GET", server.baseUrl(), HttpRequest.BodyPublishers.noBody());
   }
 
-  private int requestPostOpenHotspotWithParams(String query) {
-    return requestOpenHotspotWithParams(query, "POST", serverWithHotspot.baseUrl(), HttpRequest.BodyPublishers.ofString(""));
+  private int requestPostOpenHotspotWithParams(SonarLintTestRpcServer backend, ServerFixture.Server server, String query) {
+    return requestOpenHotspotWithParams(backend, query, "POST", server.baseUrl(), HttpRequest.BodyPublishers.ofString(""));
   }
 
-  private int requestOpenHotspotWithParams(String query, String method, String baseUrl, HttpRequest.BodyPublisher bodyPublisher) {
+  private int requestOpenHotspotWithParams(SonarLintTestRpcServer backend, String query, String method, String baseUrl, HttpRequest.BodyPublisher bodyPublisher) {
     var request = HttpRequest.newBuilder()
       .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/hotspots/show?" + query))
       .header("Origin", baseUrl)
@@ -276,19 +253,34 @@ class OpenHotspotInIdeMediumTests {
     return response.statusCode();
   }
 
-  private void mockAssistBinding(SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient, String configScopeId, String connectionId, String sonarProjectKey) {
+  private void mockAssistBinding(SonarLintTestRpcServer backend, SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient, String configScopeId, String connectionId,
+    String sonarProjectKey) {
     doAnswer((Answer<AssistBindingResponse>) invocation -> {
       backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(configScopeId, new BindingConfigurationDto(connectionId, sonarProjectKey, false)));
       return new AssistBindingResponse(configScopeId);
     }).when(fakeClient).assistBinding(any(), any());
   }
 
-  private void mockAssistCreatingConnection(SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient, String connectionId) {
+  private void mockAssistCreatingConnection(SonarLintTestRpcServer backend, SonarLintBackendFixture.FakeSonarLintRpcClient fakeClient, ServerFixture.Server serverWithHotspot,
+    String connectionId) {
     doAnswer((Answer<AssistCreatingConnectionResponse>) invocation -> {
       backend.getConnectionService().didUpdateConnections(
         new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto(connectionId, serverWithHotspot.baseUrl(), true)), Collections.emptyList()));
       return new AssistCreatingConnectionResponse(connectionId);
     }).when(fakeClient).assistCreatingConnection(any(), any());
+  }
+
+  private static ServerFixture.ServerBuilder buildServerWithHotspot(SonarLintTestHarness harness) {
+    return harness.newFakeSonarQubeServer("1.2.3")
+      .withProject(PROJECT_KEY,
+        project -> project.withProjectName(SONAR_PROJECT_NAME).withDefaultBranch(branch -> branch.withHotspot("key",
+          hotspot -> hotspot.withRuleKey("ruleKey")
+            .withMessage("msg")
+            .withAuthor("author")
+            .withFilePath("file/path")
+            .withStatus(HotspotReviewStatus.SAFE)
+            .withTextRange(new TextRange(1, 0, 3, 4)))
+          .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))));
   }
 
 }

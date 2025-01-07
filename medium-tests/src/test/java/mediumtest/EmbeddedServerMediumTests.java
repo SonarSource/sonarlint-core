@@ -24,30 +24,19 @@ import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.eclipse.jetty.http.HttpStatus;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 class EmbeddedServerMediumTests {
 
-  private SonarLintTestRpcServer backend;
-
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
-  }
-
-  @Test
-  void it_should_return_the_ide_name_and_empty_description_if_the_origin_is_not_trusted() throws IOException, InterruptedException {
-    var fakeClient = newFakeClient().build();
-    backend = newBackend().withEmbeddedServer().withClientName("ClientName").build(fakeClient);
+  @SonarLintTest
+  void it_should_return_the_ide_name_and_empty_description_if_the_origin_is_not_trusted(SonarLintTestHarness harness) throws IOException, InterruptedException {
+    var fakeClient = harness.newFakeClient().build();
+    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").build(fakeClient);
 
     var embeddedServerPort = backend.getEmbeddedServerPort();
     var request = HttpRequest.newBuilder()
@@ -61,12 +50,12 @@ class EmbeddedServerMediumTests {
     assertCspResponseHeader(response, embeddedServerPort);
   }
 
-  @Test
-  void it_should_not_trust_origin_having_known_connection_prefix() throws IOException, InterruptedException {
-    var fakeClient = newFakeClient().build();
+  @SonarLintTest
+  void it_should_not_trust_origin_having_known_connection_prefix(SonarLintTestHarness harness) throws IOException, InterruptedException {
+    var fakeClient = harness.newFakeClient().build();
     when(fakeClient.getClientLiveDescription()).thenReturn("WorkspaceTitle");
 
-    backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").build(fakeClient);
+    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").build(fakeClient);
 
     var embeddedServerPort = backend.getEmbeddedServerPort();
     var request = HttpRequest.newBuilder()
@@ -81,12 +70,12 @@ class EmbeddedServerMediumTests {
     assertCspResponseHeader(response, embeddedServerPort);
   }
 
-  @Test
-  void it_should_return_the_ide_name_and_full_description_if_the_origin_is_trusted() throws IOException, InterruptedException {
-    var fakeClient = newFakeClient().build();
+  @SonarLintTest
+  void it_should_return_the_ide_name_and_full_description_if_the_origin_is_trusted(SonarLintTestHarness harness) throws IOException, InterruptedException {
+    var fakeClient = harness.newFakeClient().build();
     when(fakeClient.getClientLiveDescription()).thenReturn("WorkspaceTitle");
 
-    backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").build(fakeClient);
+    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").build(fakeClient);
 
     var embeddedServerPort = backend.getEmbeddedServerPort();
     var request = HttpRequest.newBuilder()
@@ -107,12 +96,12 @@ class EmbeddedServerMediumTests {
       .contains("connect-src 'self' http://localhost:" + embeddedServerPort + ";");
   }
 
-  @Test
-  void it_should_set_preflight_response_accordingly_when_receiving_preflight_request() throws IOException, InterruptedException {
-    var fakeClient = newFakeClient().build();
+  @SonarLintTest
+  void it_should_set_preflight_response_accordingly_when_receiving_preflight_request(SonarLintTestHarness harness) throws IOException, InterruptedException {
+    var fakeClient = harness.newFakeClient().build();
     when(fakeClient.getClientLiveDescription()).thenReturn("WorkspaceTitle");
 
-    backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "http://sonar.my").build(fakeClient);
+    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "http://sonar.my").build(fakeClient);
 
     var request = HttpRequest.newBuilder()
       .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
@@ -128,12 +117,12 @@ class EmbeddedServerMediumTests {
     assertThat(response.headers().map()).doesNotContainKey("Content-Security-Policy-Report-Only");
   }
 
-  @Test
-  void it_should_receive_bad_request_response_if_not_right_method() throws IOException, InterruptedException {
-    var fakeClient = newFakeClient().build();
+  @SonarLintTest
+  void it_should_receive_bad_request_response_if_not_right_method(SonarLintTestHarness harness) throws IOException, InterruptedException {
+    var fakeClient = harness.newFakeClient().build();
     when(fakeClient.getClientLiveDescription()).thenReturn("WorkspaceTitle");
 
-    backend = newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").build(fakeClient);
+    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").build(fakeClient);
 
     var embeddedServerPort = backend.getEmbeddedServerPort();
     var requestToken = HttpRequest.newBuilder()

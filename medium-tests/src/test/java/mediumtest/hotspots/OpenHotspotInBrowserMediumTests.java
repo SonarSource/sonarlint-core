@@ -21,14 +21,10 @@ package mediumtest.hotspots;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.concurrent.ExecutionException;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.OpenHotspotInBrowserParams;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
@@ -38,37 +34,30 @@ import static org.mockito.Mockito.verify;
 
 class OpenHotspotInBrowserMediumTests {
 
-  private SonarLintTestRpcServer backend;
-
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
-  }
-
-  @Test
-  void it_should_open_hotspot_in_sonarqube() throws MalformedURLException {
-    var fakeClient = newFakeClient().build();
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_open_hotspot_in_sonarqube(SonarLintTestHarness harness) throws MalformedURLException {
+    var fakeClient = harness.newFakeClient().build();
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", "http://localhost:12345", storage -> storage.withProject("projectKey", project -> project.withMainBranch("master")))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withTelemetryEnabled()
       .build(fakeClient);
 
-    this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "ab12ef45"));
+    backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "ab12ef45"));
 
     verify(fakeClient, timeout(5000)).openUrlInBrowser(new URL("http://localhost:12345/security_hotspots?id=projectKey&branch=master&hotspots=ab12ef45"));
 
     await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"openHotspotInBrowserCount\":1"));
   }
 
-  @Test
-  void it_should_not_open_hotspot_if_unbound() throws InterruptedException {
-    var fakeClient = newFakeClient().build();
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_not_open_hotspot_if_unbound(SonarLintTestHarness harness) throws InterruptedException {
+    var fakeClient = harness.newFakeClient().build();
+    var backend = harness.newBackend()
       .withUnboundConfigScope("scopeId")
       .build(fakeClient);
 
-    this.backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "ab12ef45"));
+    backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "ab12ef45"));
 
     Thread.sleep(100);
 

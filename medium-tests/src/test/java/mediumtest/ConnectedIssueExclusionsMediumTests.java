@@ -23,9 +23,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,11 +35,11 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
 
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
@@ -53,6 +50,8 @@ import static utils.AnalysisUtils.createFile;
 class ConnectedIssueExclusionsMediumTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
+  @RegisterExtension
+  private static final SonarLintTestHarness harness = new SonarLintTestHarness();
 
   private static final String FILE1_PATH = "Foo.java";
   private static final String FILE2_PATH = "Foo2.java";
@@ -68,14 +67,14 @@ class ConnectedIssueExclusionsMediumTests {
     inputFile1 = prepareJavaInputFile1(baseDir, FILE1_PATH);
     inputFile2 = prepareJavaInputFile2(baseDir, FILE2_PATH);
 
-    client = newFakeClient()
+    client = harness.newFakeClient()
       .withInitialFs(JAVA_MODULE_KEY, List.of(
         new ClientFileDto(inputFile1.toUri(), baseDir.relativize(inputFile1), JAVA_MODULE_KEY, false, null, inputFile1, null, null, true),
         new ClientFileDto(inputFile2.toUri(), baseDir.relativize(inputFile2), JAVA_MODULE_KEY, false, null, inputFile2, null, null, true)
       ))
       .build();
-    var server = newSonarQubeServer().start();
-    backend = newBackend()
+    var server = harness.newFakeSonarQubeServer().start();
+    backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage
         .withPlugin(TestPlugin.JAVA)
         .withProject("test-project")
@@ -87,14 +86,6 @@ class ConnectedIssueExclusionsMediumTests {
       .withBoundConfigScope(JAVA_MODULE_KEY, CONNECTION_ID, JAVA_MODULE_KEY)
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .build(client);
-  }
-
-  @AfterAll
-  static void stop() {
-    if (backend != null) {
-      backend.shutdown().join();
-      backend = null;
-    }
   }
 
   @BeforeEach

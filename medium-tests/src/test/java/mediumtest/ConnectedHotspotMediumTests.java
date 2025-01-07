@@ -23,53 +23,38 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
 
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static utils.AnalysisUtils.createFile;
 
 class ConnectedHotspotMediumTests {
-  private SonarLintTestRpcServer backend;
-  private static SonarLintBackendFixture.FakeSonarLintRpcClient client;
 
-  @AfterEach
-  void stopBackend() throws ExecutionException, InterruptedException {
-    if (backend != null) {
-      backend.shutdown().get();
-    }
-  }
-
-  @Test
-  void should_locally_detect_hotspots_when_connected_to_sonarqube(@TempDir Path baseDir) {
+  @SonarLintTest
+  void should_locally_detect_hotspots_when_connected_to_sonarqube(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var inputFile = createFile(baseDir, "Foo.java", "public class Foo {\n" +
       "\n" +
       "  void foo() {\n" +
       "    String password = \"blue\";\n" +
       "  }\n" +
       "}\n");
-    client = newFakeClient()
+    var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, List.of(
         new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)))
       .build();
     var projectKey = "projectKey";
     var branchName = "main";
-    var server = newSonarQubeServer("9.9")
+    var server = harness.newFakeSonarQubeServer("9.9")
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile
         .withLanguage("java").withActiveRule("java:S2068", activeRule -> activeRule
           .withSeverity(org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.BLOCKER)))
@@ -79,7 +64,7 @@ class ConnectedHotspotMediumTests {
           .withBranch(branchName))
       .withPlugin(TestPlugin.JAVA)
       .start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withFullSynchronization()
       .withSecurityHotspotsEnabled()
       .withSonarQubeConnection(CONNECTION_ID, server)

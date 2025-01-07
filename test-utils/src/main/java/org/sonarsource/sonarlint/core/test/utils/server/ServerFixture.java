@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -80,19 +81,35 @@ import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBo
 
 public class ServerFixture {
   public static ServerBuilder newSonarQubeServer() {
-    return newSonarQubeServer("99.9");
+    return newSonarQubeServer((Consumer<Server>) null);
+  }
+
+  public static ServerBuilder newSonarQubeServer(Consumer<Server> onStart) {
+    return newSonarQubeServer(onStart, "99.9");
   }
 
   public static ServerBuilder newSonarQubeServer(String version) {
-    return new ServerBuilder(ServerKind.SONARQUBE, null, version);
+    return newSonarQubeServer(null, version);
+  }
+
+  public static ServerBuilder newSonarQubeServer(Consumer<Server> onStart, String version) {
+    return new ServerBuilder(onStart, ServerKind.SONARQUBE, null, version);
   }
 
   public static ServerBuilder newSonarCloudServer() {
-    return newSonarCloudServer("myOrganization");
+    return newSonarCloudServer((Consumer<Server>) null);
+  }
+
+  public static ServerBuilder newSonarCloudServer(Consumer<Server> onStart) {
+    return newSonarCloudServer(onStart, "myOrganization");
   }
 
   public static ServerBuilder newSonarCloudServer(String organization) {
-    return new ServerBuilder(ServerKind.SONARCLOUD, organization, null);
+    return newSonarCloudServer(null, organization);
+  }
+
+  public static ServerBuilder newSonarCloudServer(Consumer<Server> onStart, String organization) {
+    return new ServerBuilder(onStart, ServerKind.SONARCLOUD, organization, null);
   }
 
   private enum ServerKind {
@@ -104,6 +121,7 @@ public class ServerFixture {
   }
 
   public static class ServerBuilder {
+    private final Consumer<Server> onStart;
     private final ServerKind serverKind;
     @Nullable
     private final String organizationKey;
@@ -115,7 +133,8 @@ public class ServerFixture {
     private boolean smartNotificationsSupported;
     private final List<String> tokensRegistered = new ArrayList<>();
 
-    public ServerBuilder(ServerKind serverKind, @Nullable String organizationKey, @Nullable String version) {
+    public ServerBuilder(Consumer<Server> onStart, ServerKind serverKind, @Nullable String organizationKey, @Nullable String version) {
+      this.onStart = onStart;
       this.serverKind = serverKind;
       this.organizationKey = organizationKey;
       this.version = version;
@@ -168,8 +187,12 @@ public class ServerFixture {
     }
 
     public Server start() {
-      var server = new Server(serverKind, serverStatus, organizationKey, version, projectByProjectKey, smartNotificationsSupported, pluginsByKey, qualityProfilesByKey, tokensRegistered);
+      var server = new Server(serverKind, serverStatus, organizationKey, version, projectByProjectKey, smartNotificationsSupported, pluginsByKey, qualityProfilesByKey,
+        tokensRegistered);
       server.start();
+      if (onStart != null) {
+        onStart.accept(server);
+      }
       return server;
     }
 
@@ -202,7 +225,6 @@ public class ServerFixture {
       private final List<String> relativeFilePaths = new ArrayList<>();
       private String name = "MyProject";
       private String projectName;
-
 
       private ServerProjectBuilder() {
         branchesByName.put(mainBranchName, new ServerProjectBranchBuilder());
@@ -582,13 +604,13 @@ public class ServerFixture {
       mockServer.stubFor(get("/api/plugins/installed")
         .willReturn(aResponse().withStatus(200).withBody("{\"plugins\": [" +
           pluginsByKey.entrySet().stream().map(
-              entry -> {
-                var pluginKey = entry.getKey();
-                return "{\"key\": \"" + pluginKey + "\", " +
-                  "\"hash\": \"" + entry.getValue().hash + "\", " +
-                  "\"filename\": \"" + entry.getValue().jarPath.getFileName() + "\", " +
-                  "\"sonarLintSupported\": " + entry.getValue().sonarLintSupported + "}";
-              })
+            entry -> {
+              var pluginKey = entry.getKey();
+              return "{\"key\": \"" + pluginKey + "\", " +
+                "\"hash\": \"" + entry.getValue().hash + "\", " +
+                "\"filename\": \"" + entry.getValue().jarPath.getFileName() + "\", " +
+                "\"sonarLintSupported\": " + entry.getValue().sonarLintSupported + "}";
+            })
             .collect(Collectors.joining(", "))
           + "]}")));
     }
@@ -742,11 +764,11 @@ public class ServerFixture {
         var branchParameter = branchName == null ? "" : "&branch=" + urlEncode(branchName);
         messagesPerFilePath.forEach((filePath,
           messages) -> mockServer.stubFor(get("/api/hotspots/search.protobuf?projectKey=" + projectKey + "&files=" + urlEncode(filePath) + branchParameter + "&ps=500&p=1")
-          .willReturn(aResponse().withResponseBody(protobufBody(Hotspots.SearchWsResponse.newBuilder()
-            .addComponents(Hotspots.Component.newBuilder().setPath(filePath).setKey(projectKey + ":" + filePath).build())
-            .addAllHotspots(messages)
-            .setPaging(Common.Paging.newBuilder().setTotal(messages.size()).build())
-            .build())))));
+            .willReturn(aResponse().withResponseBody(protobufBody(Hotspots.SearchWsResponse.newBuilder()
+              .addComponents(Hotspots.Component.newBuilder().setPath(filePath).setKey(projectKey + ":" + filePath).build())
+              .addAllHotspots(messages)
+              .setPaging(Common.Paging.newBuilder().setTotal(messages.size()).build())
+              .build())))));
         var allMessages = messagesPerFilePath.values().stream().flatMap(Collection::stream).collect(toList());
         mockServer.stubFor(get("/api/hotspots/search.protobuf?projectKey=" + projectKey + branchParameter + "&ps=500&p=1")
           .willReturn(aResponse().withResponseBody(protobufBody(Hotspots.SearchWsResponse.newBuilder()
@@ -778,7 +800,8 @@ public class ServerFixture {
                     .addAllImpacts(issue.getImpactsList().stream().map(i -> Common.Impact.newBuilder()
                       .setSoftwareQuality(i.getSoftwareQuality())
                       .setSeverity(i.getSeverity())
-                      .build()).collect(toList())).build())
+                      .build()).collect(toList()))
+                    .build())
                 .addAllComponents(
                   issuesPerFilePath.keySet().stream().map(issues -> Issues.Component.newBuilder().setPath(issues).setKey(projectKey + ":" + issues).build()).collect(toList()))
                 .setRules(Issues.SearchWsResponse.newBuilder().getRulesBuilder().addRules(Common.Rule.newBuilder().setKey(issue.getRule()).build()))
@@ -974,25 +997,24 @@ public class ServerFixture {
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
         var branchParameter = branchName == null ? "" : "&branchName=" + branchName;
         var timestamp = Issues.IssuesPullQueryTimestamp.newBuilder().setQueryTimestamp(123L).build();
-        var issuesArray = branch.issues.stream().map(issue ->
-          Issues.IssueLite.newBuilder()
-            .setKey(issue.issueKey)
-            .setRuleKey(issue.ruleKey)
-            .setType(Common.RuleType.BUG)
-            .setUserSeverity(Common.Severity.MAJOR)
-            .setMainLocation(Issues.Location.newBuilder().setFilePath(issue.filePath).setMessage(issue.message)
-              .setTextRange(Issues.TextRange.newBuilder()
-                .setStartLine(issue.textRange.getStartLine())
-                .setStartLineOffset(issue.textRange.getStartLineOffset())
-                .setEndLine(issue.textRange.getEndLine())
-                .setEndLineOffset(issue.textRange.getEndLineOffset())
-                .setHash("hash")))
-            .setCreationDate(123456789L)
-            .addAllImpacts(issue.impacts.entrySet().stream().map(i -> Common.Impact.newBuilder()
-              .setSoftwareQuality(Common.SoftwareQuality.valueOf(i.getKey().name()))
-              .setSeverity(Common.ImpactSeverity.valueOf(i.getValue().name()))
-              .build()).collect(toList()))
-            .build()).toArray(Issues.IssueLite[]::new);
+        var issuesArray = branch.issues.stream().map(issue -> Issues.IssueLite.newBuilder()
+          .setKey(issue.issueKey)
+          .setRuleKey(issue.ruleKey)
+          .setType(Common.RuleType.BUG)
+          .setUserSeverity(Common.Severity.MAJOR)
+          .setMainLocation(Issues.Location.newBuilder().setFilePath(issue.filePath).setMessage(issue.message)
+            .setTextRange(Issues.TextRange.newBuilder()
+              .setStartLine(issue.textRange.getStartLine())
+              .setStartLineOffset(issue.textRange.getStartLineOffset())
+              .setEndLine(issue.textRange.getEndLine())
+              .setEndLineOffset(issue.textRange.getEndLineOffset())
+              .setHash("hash")))
+          .setCreationDate(123456789L)
+          .addAllImpacts(issue.impacts.entrySet().stream().map(i -> Common.Impact.newBuilder()
+            .setSoftwareQuality(Common.SoftwareQuality.valueOf(i.getKey().name()))
+            .setSeverity(Common.ImpactSeverity.valueOf(i.getValue().name()))
+            .build()).collect(toList()))
+          .build()).toArray(Issues.IssueLite[]::new);
         var messages = new Message[issuesArray.length + 1];
         messages[0] = timestamp;
         System.arraycopy(issuesArray, 0, messages, 1, issuesArray.length);
@@ -1101,7 +1123,8 @@ public class ServerFixture {
     private void registerComponentsShowApiResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> {
         var url = "/api/components/show.protobuf?component=" + projectKey;
-        var projectComponent = projectsByProjectKey.entrySet().stream().filter(e -> e.getKey().equals(projectKey)).map(entry -> Components.Component.newBuilder().setKey(entry.getKey()).setName(entry.getValue().name).build()).findFirst().get();
+        var projectComponent = projectsByProjectKey.entrySet().stream().filter(e -> e.getKey().equals(projectKey))
+          .map(entry -> Components.Component.newBuilder().setKey(entry.getKey()).setName(entry.getValue().name).build()).findFirst().get();
         mockServer.stubFor(get(url)
           .willReturn(aResponse().withResponseBody(protobufBody(Components.ShowWsResponse.newBuilder()
             .setComponent(projectComponent)
@@ -1143,7 +1166,8 @@ public class ServerFixture {
     }
 
     private void registerTokenApiResponse() {
-      tokensRegistered.forEach(tokenName -> mockServer.stubFor(post("/api/user_tokens/revoke").withRequestBody(WireMock.containing("name=" + tokenName)).willReturn(aResponse().withStatus(200))));
+      tokensRegistered.forEach(
+        tokenName -> mockServer.stubFor(post("/api/user_tokens/revoke").withRequestBody(WireMock.containing("name=" + tokenName)).willReturn(aResponse().withStatus(200))));
     }
 
     public void shutdown() {

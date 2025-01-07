@@ -23,33 +23,24 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class InitializationMediumTests {
 
-  private SonarLintRpcServer backend;
-
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
-  }
-
-  @Test
-  void it_should_fail_to_initialize_the_backend_twice() {
-    backend = newBackend()
+  @SonarLintTest
+  void it_should_fail_to_initialize_the_backend_twice(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .build();
     var telemetryInitDto = new TelemetryClientConstantAttributesDto("mediumTests", "mediumTests", "1.2.3", "4.5.6", emptyMap());
     var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false, false, false, false, false, false);

@@ -20,50 +20,35 @@
 package mediumtest.connection;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBody;
 
 class ConnectionValidatorMediumTests {
-  private static SonarLintRpcServer backend;
 
   @RegisterExtension
   static WireMockExtension serverMock = WireMockExtension.newInstance()
     .options(wireMockConfig().dynamicPort())
     .build();
 
-  @BeforeAll
-  static void createBackend() {
-    backend = newBackend()
+  @SonarLintTest
+  void testConnection_ok(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
       .withSonarCloudUrl(serverMock.baseUrl())
       .build();
-  }
-
-  @AfterAll
-  static void tearDown() {
-    if (backend != null) {
-      backend.shutdown().join();
-    }
-  }
-
-  @Test
-  void testConnection_ok() {
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}")));
     serverMock.stubFor(get("/api/authentication/validate?format=json")
@@ -74,8 +59,11 @@ class ConnectionValidatorMediumTests {
     assertThat(response.isSuccess()).isTrue();
   }
 
-  @Test
-  void testConnectionOrganizationNotFound() {
+  @SonarLintTest
+  void testConnectionOrganizationNotFound(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
+      .withSonarCloudUrl(serverMock.baseUrl())
+      .build();
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}")));
     serverMock.stubFor(get("/api/authentication/validate?format=json")
@@ -89,8 +77,11 @@ class ConnectionValidatorMediumTests {
     assertThat(response.getMessage()).isEqualTo("No organizations found for key: myOrg");
   }
 
-  @Test
-  void testConnection_ok_with_org() {
+  @SonarLintTest
+  void testConnection_ok_with_org(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
+      .withSonarCloudUrl(serverMock.baseUrl())
+      .build();
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}")));
     serverMock.stubFor(get("/api/authentication/validate?format=json")
@@ -110,8 +101,11 @@ class ConnectionValidatorMediumTests {
     assertThat(response.isSuccess()).isTrue();
   }
 
-  @Test
-  void testConnection_ok_without_org() {
+  @SonarLintTest
+  void testConnection_ok_without_org(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
+      .withSonarCloudUrl(serverMock.baseUrl())
+      .build();
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}")));
     serverMock.stubFor(get("/api/authentication/validate?format=json")
@@ -121,8 +115,11 @@ class ConnectionValidatorMediumTests {
     assertThat(response.isSuccess()).isTrue();
   }
 
-  @Test
-  void testUnsupportedServer() {
+  @SonarLintTest
+  void testUnsupportedServer(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
+      .withSonarCloudUrl(serverMock.baseUrl())
+      .build();
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}")));
 
@@ -132,8 +129,11 @@ class ConnectionValidatorMediumTests {
     assertThat(response.getMessage()).isEqualTo("Your SonarQube Server instance has version 6.7. Version should be greater or equal to 9.9");
   }
 
-  @Test
-  void testClientError() {
+  @SonarLintTest
+  void testClientError(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
+      .withSonarCloudUrl(serverMock.baseUrl())
+      .build();
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withStatus(400)));
 
@@ -144,8 +144,11 @@ class ConnectionValidatorMediumTests {
     assertThat(response.getMessage()).isEqualTo("Error 400 on " + serverMock.baseUrl() + "/api/system/status");
   }
 
-  @Test
-  void testResponseError() {
+  @SonarLintTest
+  void testResponseError(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
+      .withSonarCloudUrl(serverMock.baseUrl())
+      .build();
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withBody("{\"id\": }")));
 

@@ -22,14 +22,7 @@ package mediumtest.synchronization;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.FakeSonarLintRpcClient.ProgressReport;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.FakeSonarLintRpcClient.ProgressStep;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.assertj.core.api.Condition;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.GetMatchedSonarProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
@@ -37,12 +30,13 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.Configur
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.GetNewCodeDefinitionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.FakeSonarLintRpcClient.ProgressReport;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.FakeSonarLintRpcClient.ProgressStep;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.waitAtMost;
@@ -54,20 +48,18 @@ import static org.mockito.Mockito.verify;
 
 class BranchSpecificSynchronizationMediumTests {
 
-  private ServerFixture.Server server;
-
-  @Test
-  void it_should_automatically_synchronize_bound_projects_that_have_an_active_branch() {
-    server = newSonarQubeServer("9.9")
+  @SonarLintTest
+  void it_should_automatically_synchronize_bound_projects_that_have_an_active_branch(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer("9.9")
       .withProject("projectKey",
         project -> project.withBranch("main",
           branch -> branch.withIssue("key", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", Instant.now(), new TextRange(1, 0, 3, 4))
             .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))))
       .start();
 
-    var client = newFakeClient().withMatchedBranch("configScopeId", "branchName").build();
+    var client = harness.newFakeClient().withMatchedBranch("configScopeId", "branchName").build();
 
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
@@ -79,9 +71,9 @@ class BranchSpecificSynchronizationMediumTests {
     });
   }
 
-  @Test
-  void it_should_honor_binding_inheritance() {
-    server = newSonarQubeServer("9.9")
+  @SonarLintTest
+  void it_should_honor_binding_inheritance(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarQubeServer("9.9")
       .withProject("projectKey",
         project -> project
           .withBranch("branchNameParent",
@@ -92,12 +84,12 @@ class BranchSpecificSynchronizationMediumTests {
               .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))))
       .start();
 
-    var client = newFakeClient()
+    var client = harness.newFakeClient()
       .withMatchedBranch("parentScope", "branchNameParent")
       .withMatchedBranch("childScope", "branchNameChild")
       .build();
 
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withFullSynchronization()
       .build(client);
@@ -125,15 +117,15 @@ class BranchSpecificSynchronizationMediumTests {
       .matches(response -> "branchNameChild".equals(response.getMatchedSonarProjectBranch()));
   }
 
-  @Test
-  void it_should_report_progress_to_the_client_when_synchronizing() {
-    var fakeClient = newFakeClient()
+  @SonarLintTest
+  void it_should_report_progress_to_the_client_when_synchronizing(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient()
       .build();
-    server = newSonarQubeServer("9.9")
+    var server = harness.newFakeSonarQubeServer("9.9")
       .withProject("projectKey")
       .withProject("projectKey2")
       .start();
-    backend = newBackend()
+    harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withBoundConfigScope("configScopeId2", "connectionId", "projectKey2")
@@ -152,19 +144,19 @@ class BranchSpecificSynchronizationMediumTests {
         true)));
   }
 
-  @Test
-  void it_should_not_report_progress_to_the_client_when_synchronizing_if_client_rejects_progress() {
-    var fakeClient = newFakeClient()
+  @SonarLintTest
+  void it_should_not_report_progress_to_the_client_when_synchronizing_if_client_rejects_progress(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient()
       .build();
     doThrow(new UnsupportedOperationException("Failed to start progress"))
       .when(fakeClient)
       .startProgress(any());
 
-    server = newSonarQubeServer("9.9")
+    var server = harness.newFakeSonarQubeServer("9.9")
       .withProject("projectKey")
       .withProject("projectKey2")
       .start();
-    backend = newBackend()
+    harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withBoundConfigScope("configScopeId2", "connectionId", "projectKey2")
@@ -178,15 +170,15 @@ class BranchSpecificSynchronizationMediumTests {
     });
   }
 
-  @Test
-  void it_should_skip_second_consecutive_synchronization_for_the_same_server_project() {
-    var fakeClient = newFakeClient()
+  @SonarLintTest
+  void it_should_skip_second_consecutive_synchronization_for_the_same_server_project(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient()
       .build();
-    server = newSonarQubeServer("9.9")
+    var server = harness.newFakeSonarQubeServer("9.9")
       .withProject("projectKey")
       .withProject("projectKey2")
       .start();
-    backend = newBackend()
+    var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
@@ -213,14 +205,4 @@ class BranchSpecificSynchronizationMediumTests {
       }
     };
   }
-
-  @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
-    if (server != null) {
-      server.shutdown();
-    }
-  }
-
-  private SonarLintTestRpcServer backend;
 }

@@ -28,12 +28,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
-import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -46,15 +42,15 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
+import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
+import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
 import org.sonarsource.sonarlint.core.test.utils.server.sse.SSEServer;
 import utils.TestPlugin;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
-import static org.sonarsource.sonarlint.core.test.utils.storage.ServerSecurityHotspotFixture.aServerHotspot;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
@@ -62,6 +58,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
+import static org.sonarsource.sonarlint.core.test.utils.storage.ServerSecurityHotspotFixture.aServerHotspot;
 import static utils.AnalysisUtils.analyzeFileAndGetHotspots;
 
 @ExtendWith(LogTestStartAndEnd.class)
@@ -71,23 +68,17 @@ class HotspotEventsMediumTests {
   static SonarLintLogTester logTester = new SonarLintLogTester();
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
   private static final SSEServer sseServer = new SSEServer();
-  private SonarLintTestRpcServer backend;
-  private ServerFixture.Server serverWithHotspots;
 
   @AfterEach
-  void tearDown() throws ExecutionException, InterruptedException {
-    backend.shutdown().get();
-    if (serverWithHotspots != null) {
-      serverWithHotspots.shutdown();
-    }
+  void tearDown() {
     sseServer.stop();
   }
 
   @Nested
   class WhenReceivingSecurityHotspotRaisedEvent {
-    @Test
-    void it_should_add_hotspot_in_storage() {
-      var server = newSonarQubeServer("10.0")
+    @SonarLintTest
+    void it_should_add_hotspot_in_storage(SonarLintTestHarness harness) {
+      var server = harness.newFakeSonarQubeServer("10.0")
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
         .start();
@@ -112,7 +103,7 @@ class HotspotEventsMediumTests {
         "  \"projectKey\": \"projectKey\"," +
         "  \"branch\": \"branchName\"" +
         "}\n\n");
-      backend = newBackend()
+      var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", server,
@@ -121,7 +112,7 @@ class HotspotEventsMediumTests {
         .build();
       sseServer.shouldSendServerEventOnce();
 
-      await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> assertThat(readHotspots("connectionId", "projectKey", "branchName", "file/path"))
+      await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> assertThat(readHotspots(backend, "connectionId", "projectKey", "branchName", "file/path"))
         .extracting(ServerHotspot::getKey)
         .containsOnly("AYhSN6mVrRF_krvNbHl1"));
     }
@@ -129,9 +120,9 @@ class HotspotEventsMediumTests {
 
   @Nested
   class WhenReceivingSecurityHotspotClosedEvent {
-    @Test
-    void it_should_remove_hotspot_from_storage() {
-      var server = newSonarQubeServer("10.0")
+    @SonarLintTest
+    void it_should_remove_hotspot_from_storage(SonarLintTestHarness harness) {
+      var server = harness.newFakeSonarQubeServer("10.0")
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
         .start();
@@ -141,7 +132,7 @@ class HotspotEventsMediumTests {
         "    \"projectKey\": \"projectKey\"," +
         "    \"filePath\": \"file/path\"" +
         "}\n\n");
-      backend = newBackend()
+      var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", server,
@@ -150,12 +141,12 @@ class HotspotEventsMediumTests {
         .build();
       sseServer.shouldSendServerEventOnce();
 
-      await().atMost(Duration.ofSeconds(4)).untilAsserted(() -> assertThat(readHotspots("connectionId", "projectKey", "branchName", "file/path"))
+      await().atMost(Duration.ofSeconds(4)).untilAsserted(() -> assertThat(readHotspots(backend, "connectionId", "projectKey", "branchName", "file/path"))
         .isEmpty());
     }
 
-    @Test
-    void should_republish_hotspots_without_closed_one(@TempDir Path baseDir) {
+    @SonarLintTest
+    void should_republish_hotspots_without_closed_one(SonarLintTestHarness harness, @TempDir Path baseDir) {
       var filePath = createFile(baseDir, "Foo.java",
         "public class Foo {\n" +
           "\n" +
@@ -170,13 +161,13 @@ class HotspotEventsMediumTests {
       var projectKey = "projectKey";
       var serverHotspotKey1 = "myHotspotKey1";
       var serverHotspotKey2 = "myHotspotKey2";
-      var client = newFakeClient()
+      var client = harness.newFakeClient()
         .withToken(connectionId, "token")
         .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
         .build();
       when(client.matchSonarProjectBranch(eq(CONFIG_SCOPE_ID), eq("main"), eq(Set.of("main", branchName)), any())).thenReturn(branchName);
       var introductionDate = Instant.now().truncatedTo(ChronoUnit.SECONDS);
-      serverWithHotspots = newSonarQubeServer("10.4")
+      var serverWithHotspots = harness.newFakeSonarQubeServer("10.4")
         .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java").withActiveRule("java:S2068", activeRule -> activeRule
           .withSeverity(IssueSeverity.MAJOR)
         ))
@@ -216,7 +207,7 @@ class HotspotEventsMediumTests {
           "    \"filePath\": \"Foo.java\"" +
           "}\n\n"
       );
-      backend = newBackend()
+      var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withSecurityHotspotsEnabled()
         .withServerSentEventsEnabled()
@@ -244,9 +235,9 @@ class HotspotEventsMediumTests {
   @Nested
   class WhenReceivingSecurityHotspotChangedEvent {
 
-    @Test
-    void it_should_update_hotspot_in_storage_when_changing_status() {
-      var server = newSonarQubeServer("10.0")
+    @SonarLintTest
+    void it_should_update_hotspot_in_storage_when_changing_status(SonarLintTestHarness harness) {
+      var server = harness.newFakeSonarQubeServer("10.0")
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
         .start();
@@ -260,7 +251,7 @@ class HotspotEventsMediumTests {
         "  \"resolution\": \"SAFE\"," +
         "  \"filePath\": \"file/path\"" +
         "}\n\n");
-      backend = newBackend()
+      var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", server,
@@ -270,14 +261,14 @@ class HotspotEventsMediumTests {
         .build();
       sseServer.shouldSendServerEventOnce();
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readHotspots("connectionId", "projectKey", "branchName", "file/path"))
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readHotspots(backend, "connectionId", "projectKey", "branchName", "file/path"))
         .extracting(ServerHotspot::getKey, ServerHotspot::getStatus)
         .containsOnly(tuple("AYhSN6mVrRF_krvNbHl1", HotspotReviewStatus.SAFE)));
     }
 
-    @Test
-    void it_should_update_hotspot_in_storage_when_changing_assignee() {
-      var server = newSonarQubeServer("10.0")
+    @SonarLintTest
+    void it_should_update_hotspot_in_storage_when_changing_assignee(SonarLintTestHarness harness) {
+      var server = harness.newFakeSonarQubeServer("10.0")
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
         .start();
@@ -291,7 +282,7 @@ class HotspotEventsMediumTests {
         "  \"resolution\": \"SAFE\"," +
         "  \"filePath\": \"file/path\"" +
         "}\n\n");
-      backend = newBackend()
+      var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", server,
@@ -301,13 +292,13 @@ class HotspotEventsMediumTests {
         .build();
       sseServer.shouldSendServerEventOnce();
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readHotspots("connectionId", "projectKey", "branchName", "file/path"))
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readHotspots(backend, "connectionId", "projectKey", "branchName", "file/path"))
         .extracting(ServerHotspot::getKey, ServerHotspot::getAssignee)
         .containsOnly(tuple("AYhSN6mVrRF_krvNbHl1", "assigneeEmail")));
     }
 
-    @Test
-    void should_raise_hotspot_with_changed_data(@TempDir Path baseDir) {
+    @SonarLintTest
+    void should_raise_hotspot_with_changed_data(SonarLintTestHarness harness, @TempDir Path baseDir) {
       var filePath = createFile(baseDir, "Foo.java",
         "public class Foo {\n" +
           "\n" +
@@ -320,13 +311,13 @@ class HotspotEventsMediumTests {
       var branchName = "branchName";
       var projectKey = "projectKey";
       var serverHotspotKey = "myHotspotKey";
-      var client = newFakeClient()
+      var client = harness.newFakeClient()
         .withToken(connectionId, "token")
         .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
         .build();
       when(client.matchSonarProjectBranch(eq(CONFIG_SCOPE_ID), eq("main"), eq(Set.of("main", branchName)), any())).thenReturn(branchName);
       var introductionDate = Instant.now().truncatedTo(ChronoUnit.SECONDS);
-      serverWithHotspots = newSonarQubeServer("10.4")
+      var serverWithHotspots = harness.newFakeSonarQubeServer("10.4")
         .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java").withActiveRule("java:S2068", activeRule -> activeRule
           .withSeverity(IssueSeverity.MAJOR)
         ))
@@ -360,7 +351,7 @@ class HotspotEventsMediumTests {
           "  \"filePath\": \"" + baseDir.relativize(filePath) + "\"" +
           "}\n\n"
       );
-      backend = newBackend()
+      var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withSecurityHotspotsEnabled()
         .withServerSentEventsEnabled()
@@ -394,7 +385,7 @@ class HotspotEventsMediumTests {
     return filePath;
   }
 
-  private Collection<ServerHotspot> readHotspots(String connectionId, String projectKey, String branchName, String filePath) {
+  private Collection<ServerHotspot> readHotspots(SonarLintTestRpcServer backend, String connectionId, String projectKey, String branchName, String filePath) {
     return backend.getIssueStorageService().connection(connectionId).project(projectKey).findings().loadHotspots(branchName, Path.of(filePath));
   }
 
