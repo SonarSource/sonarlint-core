@@ -438,10 +438,43 @@ class StandaloneIssueMediumTests {
     assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, StandaloneIssueMediumTests::extractMqrDetails)
       .usingRecursiveFieldByFieldElementComparator()
       .containsOnly(
-        tuple("java:S1220", null, tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
-        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
-        tuple("java:S106", new TextRangeDto(4, 4, 4, 14), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM)))),
-        tuple("java:S1135", new TextRangeDto(5, 0, 5, 27), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
+        tuple("java:S1220", null, tuple(CleanCodeAttribute.MODULAR, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
+        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), tuple(CleanCodeAttribute.CLEAR, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
+        tuple("java:S106", new TextRangeDto(4, 4, 4, 14), tuple(CleanCodeAttribute.MODULAR, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM)))),
+        tuple("java:S1135", new TextRangeDto(5, 0, 5, 27), tuple(CleanCodeAttribute.COMPLETE, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
+  }
+
+  @SonarLintTest
+  void simpleJavaSymbolicEngine(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    assumeTrue(COMMERCIAL_ENABLED);
+    var inputFile = createFile(baseDir, A_JAVA_FILE_PATH,
+      """
+        public class Foo {
+          public void foo() {
+            boolean a = true;
+            if (a) {
+               System.out.println( "Hello World!" );
+            }
+          }
+        }""");
+
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)
+      ))
+      .build();
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .withStandaloneEmbeddedPlugin(TestPlugin.JAVA_SE)
+      .start(client);
+
+    var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
+
+    assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange)
+      .usingRecursiveFieldByFieldElementComparator()
+      .contains(
+        tuple("java:S2589", new TextRangeDto(4, 8, 4, 9)));
   }
 
   @SonarLintTest
@@ -467,7 +500,7 @@ class StandaloneIssueMediumTests {
     assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, StandaloneIssueMediumTests::extractMqrDetails)
       .usingRecursiveFieldByFieldElementComparator()
       .contains(
-        tuple("java:S1186", new TextRangeDto(2, 14, 2, 17), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.HIGH)))));
+        tuple("java:S1186", new TextRangeDto(2, 14, 2, 17), tuple(CleanCodeAttribute.COMPLETE, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.HIGH)))));
 
     assertThat(issues)
       .flatExtracting(RaisedIssueDto::getQuickFixes)
@@ -518,8 +551,8 @@ class StandaloneIssueMediumTests {
     assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, StandaloneIssueMediumTests::extractMqrDetails)
       .usingRecursiveFieldByFieldElementComparator()
       .containsOnly(
-        tuple("java:S1220", null, tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
-        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
+        tuple("java:S1220", null, tuple(CleanCodeAttribute.MODULAR, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
+        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), tuple(CleanCodeAttribute.CLEAR, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
   }
 
   @SonarLintTest
@@ -693,8 +726,8 @@ class StandaloneIssueMediumTests {
     assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, StandaloneIssueMediumTests::extractMqrDetails)
       .usingRecursiveFieldByFieldElementComparator()
       .containsOnly(
-        tuple("java:S1220", null, tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
-        tuple("java:S1481", new TextRangeDto(4, 8, 4, 9), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
+        tuple("java:S1220", null, tuple(CleanCodeAttribute.MODULAR, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
+        tuple("java:S1481", new TextRangeDto(4, 8, 4, 9), tuple(CleanCodeAttribute.CLEAR, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
   }
 
   @SonarLintTest
@@ -757,8 +790,8 @@ class StandaloneIssueMediumTests {
     assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, StandaloneIssueMediumTests::extractMqrDetails)
       .usingRecursiveFieldByFieldElementComparator()
       .containsOnly(
-        tuple("java:S1220", null, tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
-        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
+        tuple("java:S1220", null, tuple(CleanCodeAttribute.MODULAR, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
+        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), tuple(CleanCodeAttribute.CLEAR, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
   }
 
   @SonarLintTest
@@ -788,8 +821,8 @@ class StandaloneIssueMediumTests {
     assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, StandaloneIssueMediumTests::extractMqrDetails)
       .usingRecursiveFieldByFieldElementComparator()
       .containsOnly(
-        tuple("java:S1220", null, tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
-        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
+        tuple("java:S1220", null, tuple(CleanCodeAttribute.MODULAR, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
+        tuple("java:S1481", new TextRangeDto(3, 8, 3, 9), tuple(CleanCodeAttribute.CLEAR, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
 
     assertThat(client.getLogMessages()).contains("Rule 'java:S106' was excluded using its deprecated key 'squid:S106'. Please fix your configuration.");
   }
@@ -821,10 +854,10 @@ class StandaloneIssueMediumTests {
     assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, StandaloneIssueMediumTests::extractMqrDetails)
       .usingRecursiveFieldByFieldElementComparator()
       .containsOnly(
-        tuple("java:S3553", new TextRangeDto(3, 18, 3, 34), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM)))),
-        tuple("java:S106", new TextRangeDto(5, 4, 5, 14), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM)))),
-        tuple("java:S1220", null, tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
-        tuple("java:S1481", new TextRangeDto(4, 8, 4, 9), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
+        tuple("java:S3553", new TextRangeDto(3, 18, 3, 34), tuple(CleanCodeAttribute.CLEAR, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM)))),
+        tuple("java:S106", new TextRangeDto(5, 4, 5, 14), tuple(CleanCodeAttribute.MODULAR, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM)))),
+        tuple("java:S1220", null, tuple(CleanCodeAttribute.MODULAR, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
+        tuple("java:S1481", new TextRangeDto(4, 8, 4, 9), tuple(CleanCodeAttribute.CLEAR, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
   }
 
   @SonarLintTest
@@ -854,10 +887,10 @@ class StandaloneIssueMediumTests {
     assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, StandaloneIssueMediumTests::extractMqrDetails)
       .usingRecursiveFieldByFieldElementComparator()
       .containsOnly(
-        tuple("java:S3553", new TextRangeDto(3, 18, 3, 34), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM)))),
-        tuple("java:S106", new TextRangeDto(5, 4, 5, 14), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM)))),
-        tuple("java:S1220", null, tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
-        tuple("java:S1481", new TextRangeDto(4, 8, 4, 9), tuple(CleanCodeAttribute.CONVENTIONAL, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
+        tuple("java:S3553", new TextRangeDto(3, 18, 3, 34), tuple(CleanCodeAttribute.CLEAR, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM)))),
+        tuple("java:S106", new TextRangeDto(5, 4, 5, 14), tuple(CleanCodeAttribute.MODULAR, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM)))),
+        tuple("java:S1220", null, tuple(CleanCodeAttribute.MODULAR, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))),
+        tuple("java:S1481", new TextRangeDto(4, 8, 4, 9), tuple(CleanCodeAttribute.CLEAR, List.of(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW)))));
 
     assertThat(client.getLogMessages()).contains("Rule 'java:S3553' was included using its deprecated key 'squid:S3553'. Please fix your configuration.");
   }
@@ -976,6 +1009,8 @@ class StandaloneIssueMediumTests {
       .containsOnly(
         tuple("java:S106", new TextRangeDto(4, 4, 4, 14)),
         tuple("java:S1220", null),
+        tuple("java:S1220", null),
+        tuple("java:S1186", new TextRangeDto(2, 14, 2, 21)),
         tuple("java:S1481", new TextRangeDto(3, 8, 3, 9)),
         tuple("java:S2187", new TextRangeDto(1, 13, 1, 20)));
   }

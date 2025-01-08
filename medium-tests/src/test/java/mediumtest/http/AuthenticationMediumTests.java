@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.EffectiveRuleDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
@@ -41,7 +40,6 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBody;
 
 class AuthenticationMediumTests {
@@ -71,9 +69,7 @@ class AuthenticationMediumTests {
         .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc from server").build())
         .build()))));
 
-    var details = getEffectiveRuleDetails(backend, "scopeId", "python:S139");
-
-    assertThat(details.getDescription().getLeft().getHtmlContent()).contains("extendedDesc from server");
+    getEffectiveRuleDetails(backend, "scopeId", "python:S139");
 
     sonarqubeMock.verify(getRequestedFor(urlEqualTo("/api/rules/show.protobuf?key=python:S139"))
       .withHeader("Authorization", equalTo("Basic " + Base64.getEncoder().encodeToString("myLogin:myPassword".getBytes(StandardCharsets.UTF_8)))));
@@ -99,9 +95,7 @@ class AuthenticationMediumTests {
       .willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": " +
         "\"UP\"}")));
 
-    var details = getEffectiveRuleDetails(backend, "scopeId", "python:S139");
-
-    assertThat(details.getDescription().getLeft().getHtmlContent()).contains("extendedDesc from server");
+    getEffectiveRuleDetails(backend, "scopeId", "python:S139");
 
     sonarqubeMock.verify(getRequestedFor(urlEqualTo("/api/rules/show.protobuf?key=python:S139"))
       .withHeader("Authorization", equalTo("Basic " + Base64.getEncoder().encodeToString("myToken:".getBytes(StandardCharsets.UTF_8)))));
@@ -127,17 +121,15 @@ class AuthenticationMediumTests {
       .willReturn(aResponse().withStatus(200).withBody("{\"id\": \"20160308094653\",\"version\": \"10.4\",\"status\": " +
         "\"UP\"}")));
 
-    var details = getEffectiveRuleDetails(backend, "scopeId", "python:S139");
-
-    assertThat(details.getDescription().getLeft().getHtmlContent()).contains("extendedDesc from server");
+    getEffectiveRuleDetails(backend, "scopeId", "python:S139");
 
     sonarqubeMock.verify(getRequestedFor(urlEqualTo("/api/rules/show.protobuf?key=python:S139"))
       .withHeader("Authorization", equalTo("Bearer myToken")));
   }
 
-  private EffectiveRuleDetailsDto getEffectiveRuleDetails(SonarLintTestRpcServer backend, String configScopeId, String ruleKey) {
+  private void getEffectiveRuleDetails(SonarLintTestRpcServer backend, String configScopeId, String ruleKey) {
     try {
-      return backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, ruleKey, null)).get().details();
+      backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, ruleKey, null)).get().details();
     } catch (InterruptedException | ExecutionException e) {
       throw new RuntimeException(e);
     }

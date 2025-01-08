@@ -27,6 +27,11 @@ import org.sonarsource.sonarlint.core.test.utils.plugins.Plugin;
 
 public class TestPlugin {
   public static final Plugin JAVA = new Plugin(Language.JAVA, PluginLocator.getJavaPluginPath(), PluginLocator.SONAR_JAVA_PLUGIN_VERSION, PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH);
+  public static final Plugin JAVA_SE = new Plugin("javasymbolicexecution", Language.JAVA, PluginLocator.getJavaSePluginPath(), PluginLocator.SONAR_JAVA_SE_PLUGIN_VERSION, PluginLocator.SONAR_JAVA_SE_PLUGIN_JAR_HASH);
+
+  public static final Plugin DBD = new Plugin("dbd", Language.JAVA, PluginLocator.getDbdPluginPath(), PluginLocator.SONAR_DBD_PLUGIN_VERSION, PluginLocator.SONAR_DBD_PLUGIN_JAR_HASH);
+  public static final Plugin DBD_JAVA = new Plugin("dbdjavafrontend", Language.JAVA, PluginLocator.getDbdJavaPluginPath(), PluginLocator.SONAR_DBD_JAVA_PLUGIN_VERSION, PluginLocator.SONAR_DBD_JAVA_PLUGIN_JAR_HASH);
+
   public static final Plugin PHP = new Plugin(Language.PHP, PluginLocator.getPhpPluginPath(), PluginLocator.SONAR_PHP_PLUGIN_VERSION, PluginLocator.SONAR_PHP_PLUGIN_JAR_HASH);
   public static final Plugin PYTHON = new Plugin(Language.PYTHON, PluginLocator.getPythonPluginPath(), PluginLocator.SONAR_PYTHON_PLUGIN_VERSION,
     PluginLocator.SONAR_PYTHON_PLUGIN_JAR_HASH);

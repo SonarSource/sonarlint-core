@@ -351,7 +351,7 @@ class IssueEventsMediumTests {
       var raisedIssueDto = raisedIssues.get(0);
       assertThat(raisedIssueDto.getServerKey()).isEqualTo(serverIssueKey);
       assertThat(raisedIssueDto.getSeverityMode().isRight()).isTrue();
-      assertThat(raisedIssueDto.getSeverityMode().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.CONVENTIONAL);
+      assertThat(raisedIssueDto.getSeverityMode().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.CLEAR);
       assertThat(raisedIssueDto.getSeverityMode().getRight().getImpacts())
         .extracting(ImpactDto::getSoftwareQuality, ImpactDto::getImpactSeverity)
         .containsExactly(
@@ -544,7 +544,7 @@ class IssueEventsMediumTests {
       var raisedIssueDto = raisedIssues.get(0);
       assertThat(raisedIssueDto.getServerKey()).isEqualTo(serverIssueKey);
       assertThat(raisedIssueDto.getSeverityMode().isRight()).isTrue();
-      assertThat(raisedIssueDto.getSeverityMode().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.CONVENTIONAL);
+      assertThat(raisedIssueDto.getSeverityMode().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.CLEAR);
       assertThat(raisedIssueDto.getSeverityMode().getRight().getImpacts())
         .extracting(ImpactDto::getSoftwareQuality, ImpactDto::getImpactSeverity)
         .containsExactly(

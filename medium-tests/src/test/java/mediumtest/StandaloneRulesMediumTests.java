@@ -83,14 +83,14 @@ class StandaloneRulesMediumTests {
 
     var ruleDetails = backend.getRulesService().getStandaloneRuleDetails(new GetStandaloneRuleDescriptionParams("java:S1176")).get();
 
-    assertThat(ruleDetails.getRuleDefinition().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.CONVENTIONAL);
+    assertThat(ruleDetails.getRuleDefinition().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.CLEAR);
     assertThat(ruleDetails.getRuleDefinition().getSoftwareImpacts())
       .extracting(ImpactDto::getSoftwareQuality, ImpactDto::getImpactSeverity)
       .containsExactly(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM));
     assertThat(ruleDetails.getRuleDefinition().getName()).isEqualTo("Public types, methods and fields (API) should be documented with Javadoc");
-    assertThat(ruleDetails.getDescription().isLeft()).isTrue();
-    assertThat(ruleDetails.getDescription().getLeft().getHtmlContent())
-      .startsWith("<p>Try to imagine using the standard Java API (Collections, JDBC, IO, …\u200B) without Javadoc.");
+    assertThat(ruleDetails.getDescription().isRight()).isTrue();
+    assertThat(ruleDetails.getDescription().getRight().getIntroductionHtmlContent())
+      .startsWith("<p>A good API documentation is a key factor in the usability and success of a software API");
   }
 
   @SonarLintTest

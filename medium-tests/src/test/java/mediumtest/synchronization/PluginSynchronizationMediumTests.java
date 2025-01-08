@@ -64,12 +64,12 @@ class PluginSynchronizationMediumTests {
       .start();
 
     waitAtMost(20, SECONDS).untilAsserted(() -> {
-      assertThat(getPluginsStorageFolder(backend)).isDirectoryContaining(path -> path.getFileName().toString().equals("sonar-java-plugin-7.16.0.30901.jar"));
+      assertThat(getPluginsStorageFolder(backend)).isDirectoryContaining(path -> path.getFileName().toString().equals("sonar-java-plugin-" + TestPlugin.JAVA.getVersion() + ".jar"));
       assertThat(getPluginReferencesFilePath(backend))
         .exists()
         .extracting(this::readPluginReferences, as(MAP))
         .containsOnly(
-          entry("java", PluginReference.newBuilder().setFilename("sonar-java-plugin-7.16.0.30901.jar").setKey("java").setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH).build()));
+          entry("java", PluginReference.newBuilder().setFilename("sonar-java-plugin-" + TestPlugin.JAVA.getVersion() + ".jar").setKey("java").setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH).build()));
     });
   }
 
@@ -109,12 +109,12 @@ class PluginSynchronizationMediumTests {
       .start(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
-      assertThat(getPluginsStorageFolder(backend)).isDirectoryContaining(path -> path.getFileName().toString().equals("sonar-java-plugin-7.16.0.30901.jar"));
+      assertThat(getPluginsStorageFolder(backend)).isDirectoryContaining(path -> path.getFileName().toString().equals("sonar-java-plugin-" + TestPlugin.JAVA.getVersion() + ".jar"));
       assertThat(getPluginReferencesFilePath(backend))
         .exists()
         .extracting(this::readPluginReferences, as(MAP))
         .containsOnly(
-          entry("java", PluginReference.newBuilder().setFilename("sonar-java-plugin-7.16.0.30901.jar").setKey("java").setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH).build()));
+          entry("java", PluginReference.newBuilder().setFilename("sonar-java-plugin-" + TestPlugin.JAVA.getVersion() + ".jar").setKey("java").setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH).build()));
       assertThat(client.getLogMessages()).contains("[SYNC] Code analyzer 'java' is up-to-date. Skip downloading it.");
     });
   }
@@ -137,7 +137,7 @@ class PluginSynchronizationMediumTests {
       .exists()
       .extracting(this::readPluginReferences, as(MAP))
       .containsOnly(
-        entry("java", PluginReference.newBuilder().setFilename("sonar-java-plugin-7.16.0.30901.jar").setKey("java").setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH).build())));
+        entry("java", PluginReference.newBuilder().setFilename("sonar-java-plugin-" + TestPlugin.JAVA.getVersion() + ".jar").setKey("java").setHash(PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH).build())));
   }
 
   @SonarLintTest
