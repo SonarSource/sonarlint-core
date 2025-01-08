@@ -47,6 +47,8 @@ import static org.apache.commons.lang3.StringUtils.abbreviate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute.CONVENTIONAL;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute.FORMATTED;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute.MODULAR;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity.LOW;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity.MEDIUM;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity.BLOCKER;
@@ -72,15 +74,15 @@ class EffectiveRulesMediumTests {
 
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getCleanCodeAttribute, EffectiveRuleDetailsDto::getLanguage,
-        r -> r.getDefaultImpacts().get(0).getImpactSeverity(), r -> r.getDescription().getLeft().getHtmlContent())
-      .containsExactly("python:S139", "Comments should not be located at the end of lines of code", CONVENTIONAL, PYTHON, LOW,
+        r -> r.getDefaultImpacts().get(0).getImpactSeverity(), r -> r.getDescription().getRight().getTabs().get(0).getContent().getLeft().getHtmlContent())
+      .containsExactly("python:S139", "Comments should not be located at the end of lines of code", FORMATTED, PYTHON, LOW,
         PYTHON_S139_DESCRIPTION);
     assertThat(details.getParams())
       .extracting(EffectiveRuleParamDto::getName, EffectiveRuleParamDto::getDescription, EffectiveRuleParamDto::getValue, EffectiveRuleParamDto::getDefaultValue)
       .containsExactly(tuple("legalTrailingCommentPattern",
         "Pattern for text of trailing comments that are allowed. By default, Mypy and Black pragma comments as well as comments containing only one word.",
-        "^#\\s*+([^\\s]++|fmt.*|type.*)$",
-        "^#\\s*+([^\\s]++|fmt.*|type.*)$"));
+        "^#\\s*+([^\\s]++|fmt.*|type.*|noqa.*)$",
+        "^#\\s*+([^\\s]++|fmt.*|type.*|noqa.*)$"));
   }
 
   @SonarLintTest
@@ -98,7 +100,7 @@ class EffectiveRulesMediumTests {
       .containsExactly(tuple("legalTrailingCommentPattern",
         "Pattern for text of trailing comments that are allowed. By default, Mypy and Black pragma comments as well as comments containing only one word.",
         "initialValue",
-        "^#\\s*+([^\\s]++|fmt.*|type.*)$"));
+        "^#\\s*+([^\\s]++|fmt.*|type.*|noqa.*)$"));
 
     backend.getRulesService().updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("python:S139",
       new StandaloneRuleConfigDto(true, Map.of("legalTrailingCommentPattern", "updatedValue")))));
@@ -110,7 +112,7 @@ class EffectiveRulesMediumTests {
       .containsExactly(tuple("legalTrailingCommentPattern",
         "Pattern for text of trailing comments that are allowed. By default, Mypy and Black pragma comments as well as comments containing only one word.",
         "updatedValue",
-        "^#\\s*+([^\\s]++|fmt.*|type.*)$"));
+        "^#\\s*+([^\\s]++|fmt.*|type.*|noqa.*)$"));
   }
 
   @SonarLintTest
@@ -140,8 +142,8 @@ class EffectiveRulesMediumTests {
 
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getCleanCodeAttribute, EffectiveRuleDetailsDto::getLanguage,
-        r -> r.getDefaultImpacts().get(0).getImpactSeverity(), r -> r.getDescription().getLeft().getHtmlContent())
-      .containsExactly("java:S106", "Standard outputs should not be used directly to log anything", CONVENTIONAL, JAVA, MEDIUM,
+        r -> r.getDefaultImpacts().get(0).getImpactSeverity(), r -> r.getDescription().getRight().getTabs().get(0).getContent().getLeft().getHtmlContent())
+      .containsExactly("java:S106", "Standard outputs should not be used directly to log anything", MODULAR, JAVA, MEDIUM,
         JAVA_S106_DESCRIPTION);
     assertThat(details.getParams()).isEmpty();
   }
@@ -156,16 +158,16 @@ class EffectiveRulesMediumTests {
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .start();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
-      .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc").build())
+      .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").build())
       .build());
 
     var details = getEffectiveRuleDetails(backend, "scopeId", "python:S139");
 
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getCleanCodeAttribute, EffectiveRuleDetailsDto::getLanguage,
-        r -> r.getDefaultImpacts().get(0).getImpactSeverity(), r -> r.getDescription().getLeft().getHtmlContent())
-      .containsExactly("python:S139", "Comments should not be located at the end of lines of code", CONVENTIONAL, PYTHON, LOW,
-        PYTHON_S139_DESCRIPTION + "extendedDesc");
+        r -> r.getDefaultImpacts().get(0).getImpactSeverity(), r -> r.getDescription().getRight().getTabs().get(0).getContent().getLeft().getHtmlContent())
+      .containsExactly("python:S139", "Comments should not be located at the end of lines of code", FORMATTED, PYTHON, LOW,
+        PYTHON_S139_DESCRIPTION);
     assertThat(details.getParams()).isEmpty();
   }
 
@@ -180,16 +182,16 @@ class EffectiveRulesMediumTests {
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .start();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
-      .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc").build())
+      .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").build())
       .build());
 
     var details = getEffectiveRuleDetails(backend, "childScopeId", "python:S139");
 
     assertThat(details)
       .extracting(EffectiveRuleDetailsDto::getKey, EffectiveRuleDetailsDto::getName, EffectiveRuleDetailsDto::getCleanCodeAttribute, EffectiveRuleDetailsDto::getLanguage,
-        r -> r.getDefaultImpacts().get(0).getImpactSeverity(), r -> r.getDescription().getLeft().getHtmlContent())
-      .containsExactly("python:S139", "Comments should not be located at the end of lines of code", CONVENTIONAL, PYTHON, LOW,
-        PYTHON_S139_DESCRIPTION + "extendedDesc");
+        r -> r.getDefaultImpacts().get(0).getImpactSeverity(), r -> r.getDescription().getRight().getTabs().get(0).getContent().getLeft().getHtmlContent())
+      .containsExactly("python:S139", "Comments should not be located at the end of lines of code", FORMATTED, PYTHON, LOW,
+        PYTHON_S139_DESCRIPTION);
     assertThat(details.getParams()).isEmpty();
   }
 
@@ -446,7 +448,7 @@ class EffectiveRulesMediumTests {
             The application must determine where the third-party data comes from and treat that data
             source as an attack vector. Two rules apply:
         </p>
-        
+
         <p>
             First, before using it in the application&apos;s business logic, the application must
             validate the attacker-controlled data against predefined formats, such as:
@@ -457,7 +459,7 @@ class EffectiveRulesMediumTests {
             <li>Types</li>
             <li>Or any strict schema</li>
         </ul>
-        
+
         <p>
             Second, the application must sanitize string data before inserting it into interpreted
             contexts (client-side code, file paths, SQL queries). Unsanitized code can corrupt the
@@ -541,39 +543,48 @@ class EffectiveRulesMediumTests {
     really readable, trailing comments would have to be properly written and formatted (correct alignment, no interference with the visual structure of
     the code, not too long to be visible) but most often, automatic code formatters would not handle this correctly: the code would end up less readable.
     Comments are far better placed on the previous empty line of code, where they will always be visible and properly formatted.</p>
-    <h2>Noncompliant Code Example</h2>
+    <h3>Noncompliant code example</h3>
     <pre>
     a = b + c   # This is a trailing comment that can be very very long
     </pre>
-    <h2>Compliant Solution</h2>
+    <h3>Compliant solution</h3>
     <pre>
     # This very long comment is better placed before the line of code
     a = b + c
     </pre>""";
   private static final String JAVA_S106_DESCRIPTION = """
-    <p>When logging a message there are several important requirements which must be fulfilled:</p>
+    <p>In software development, logs serve as a record of events within an application, providing crucial insights for debugging. When logging, it is
+    essential to ensure that the logs are:</p>
     <ul>
-      <li> The user must be able to easily retrieve the logs </li>
-      <li> The format of all logged message must be uniform to allow the user to easily read the log </li>
-      <li> Logged data must actually be recorded </li>
-      <li> Sensitive data must only be logged securely </li>
+      <li> easily accessible </li>
+      <li> uniformly formatted for readability </li>
+      <li> properly recorded </li>
+      <li> securely logged when dealing with sensitive data </li>
     </ul>
-    <p>If a program directly writes to the standard outputs, there is absolutely no way to comply with those requirements. That’s why defining and using a
-    dedicated logger is highly recommended.</p>
-    <h2>Noncompliant Code Example</h2>
-    <pre>
-    System.out.println("My Message");  // Noncompliant
+    <p>Those requirements are not met if a program directly writes to the standard outputs (e.g., System.out, System.err). That is why defining and using
+    a dedicated logger is highly recommended.</p>
+    
+    <p>The following noncompliant code:</p>
+    <pre data-diff-id="1" data-diff-type="noncompliant">
+    class MyClass {
+      public void doSomething() {
+        System.out.println("My Message");  // Noncompliant, output directly to System.out without a logger
+      }
+    }
     </pre>
-    <h2>Compliant Solution</h2>
-    <pre>
-    logger.log("My Message");
-    </pre>
-    <h2>See</h2>
-    <ul>
-      <li> <a href="https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/">OWASP Top 10 2021 Category A9</a> - Security Logging and
-      Monitoring Failures </li>
-      <li> <a href="https://www.owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure">OWASP Top 10 2017 Category A3</a> - Sensitive Data
-      Exposure </li>
-      <li> <a href="https://wiki.sei.cmu.edu/confluence/x/nzdGBQ">CERT, ERR02-J.</a> - Prevent exceptions while logging data </li>
-    </ul>""";
+    <p>Could be replaced by:</p>
+    <pre data-diff-id="1" data-diff-type="compliant">
+    import java.util.logging.Logger;
+    
+    class MyClass {
+    
+      Logger logger = Logger.getLogger(getClass().getName());
+    
+      public void doSomething() {
+        // ...
+        logger.info("My Message");  // Compliant, output via logger
+        // ...
+      }
+    }
+    </pre>""";
 }

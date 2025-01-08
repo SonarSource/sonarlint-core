@@ -62,7 +62,7 @@ public class AnalysisUtils {
         new AnalyzeFilesAndTrackParams(scopeId, analysisId, List.of(fileUri), Map.of(), true, System.currentTimeMillis()))
       .join();
     assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
-    await().atMost(40, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(scopeId)).isNotEmpty());
+    await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(scopeId)).isNotEmpty());
     return client.getRaisedIssuesForScopeId(scopeId).get(fileUri);
   }
 

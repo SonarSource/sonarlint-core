@@ -24,16 +24,27 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class PluginLocator {
-  public static final String SONAR_JAVA_PLUGIN_VERSION = "7.16.0.30901";
+  public static final String SONAR_JAVA_PLUGIN_VERSION = "8.8.0.37665";
   public static final String SONAR_JAVA_PLUGIN_JAR = "sonar-java-plugin-" + SONAR_JAVA_PLUGIN_VERSION + ".jar";
   public static final String SONAR_JAVA_PLUGIN_JAR_HASH = "fa425ffda3272aef1abc137941a64772";
+  public static final String SONAR_JAVA_SE_PLUGIN_VERSION = SONAR_JAVA_PLUGIN_VERSION;
+  public static final String SONAR_JAVA_SE_PLUGIN_JAR = "sonar-java-symbolic-execution-plugin-" + SONAR_JAVA_SE_PLUGIN_VERSION + ".jar";
+  public static final String SONAR_JAVA_SE_PLUGIN_JAR_HASH = "unused";
+
+  public static final String SONAR_DBD_PLUGIN_VERSION = "1.36.1.13250";
+  public static final String SONAR_DBD_PLUGIN_JAR = "sonar-dbd-plugin-" + SONAR_DBD_PLUGIN_VERSION + ".jar";
+  public static final String SONAR_DBD_PLUGIN_JAR_HASH = "unused";
+  public static final String SONAR_DBD_JAVA_PLUGIN_VERSION = SONAR_DBD_PLUGIN_VERSION;
+  public static final String SONAR_DBD_JAVA_PLUGIN_JAR = "sonar-dbd-java-frontend-plugin-" + SONAR_DBD_JAVA_PLUGIN_VERSION + ".jar";
+  public static final String SONAR_DBD_JAVA_PLUGIN_JAR_HASH = "unused";
+
   public static final String SONAR_JAVASCRIPT_PLUGIN_VERSION = "9.13.0.20537";
   public static final String SONAR_JAVASCRIPT_PLUGIN_JAR = "sonar-javascript-plugin-" + SONAR_JAVASCRIPT_PLUGIN_VERSION + ".jar";
   public static final String SONAR_JAVASCRIPT_PLUGIN_JAR_HASH = "2fab92be44e07f1d367f891a55258736";
   public static final String SONAR_PHP_PLUGIN_VERSION = "3.27.1.9352";
   public static final String SONAR_PHP_PLUGIN_JAR = "sonar-php-plugin-" + SONAR_PHP_PLUGIN_VERSION + ".jar";
   public static final String SONAR_PHP_PLUGIN_JAR_HASH = "88ddaa391f3176891a62375e98b76ae9";
-  public static final String SONAR_PYTHON_PLUGIN_VERSION = "4.1.0.11333";
+  public static final String SONAR_PYTHON_PLUGIN_VERSION = "4.26.0.19456";
   public static final String SONAR_PYTHON_PLUGIN_JAR = "sonar-python-plugin-" + SONAR_PYTHON_PLUGIN_VERSION + ".jar";
   public static final String SONAR_PYTHON_PLUGIN_JAR_HASH = "e1cff9e38811ab71e6efbff087743367";
   public static final String SONAR_KOTLIN_PLUGIN_VERSION = "2.20.0.4382";
@@ -51,6 +62,18 @@ public class PluginLocator {
 
   public static Path getJavaPluginPath() {
     return getValidPluginPath(SONAR_JAVA_PLUGIN_JAR);
+  }
+
+  public static Path getJavaSePluginPath() {
+    return getPluginPath(SONAR_JAVA_SE_PLUGIN_JAR);
+  }
+
+  public static Path getDbdPluginPath() {
+    return getPluginPath(SONAR_DBD_PLUGIN_JAR);
+  }
+
+  public static Path getDbdJavaPluginPath() {
+    return getPluginPath(SONAR_DBD_JAVA_PLUGIN_JAR);
   }
 
   public static Path getJavaScriptPluginPath() {

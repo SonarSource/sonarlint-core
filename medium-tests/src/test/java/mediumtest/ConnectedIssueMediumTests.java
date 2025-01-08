@@ -32,9 +32,12 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.GetEffectiveIssueDetailsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
@@ -42,7 +45,9 @@ import utils.TestPlugin;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
+import static utils.AnalysisUtils.analyzeFileAndGetIssues;
 import static utils.AnalysisUtils.createFile;
 
 class ConnectedIssueMediumTests {
@@ -50,6 +55,9 @@ class ConnectedIssueMediumTests {
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
   private static final String CONFIG_SCOPE_ID = "configScopeId";
   private static final String CONNECTION_ID = "connectionId";
+  // commercial plugins might not be available
+  // (if you pass -Dcommercial to maven, a profile will be activated that downloads the commercial plugins)
+  private static final boolean COMMERCIAL_ENABLED = System.getProperty("commercial") != null;
 
   @SonarLintTest
   void simpleJavaBound(SonarLintTestHarness harness, @TempDir Path baseDir) {
@@ -102,9 +110,95 @@ class ConnectedIssueMediumTests {
     assertThat(issues).extracting("ruleKey", "severityMode.right.cleanCodeAttribute")
       .usingRecursiveFieldByFieldElementComparator()
       .containsOnly(
-        tuple("java:S106", CleanCodeAttribute.CONVENTIONAL),
-        tuple("java:S1220", CleanCodeAttribute.CONVENTIONAL),
-        tuple("java:S1481", CleanCodeAttribute.CONVENTIONAL));
+        tuple("java:S106", CleanCodeAttribute.MODULAR),
+        tuple("java:S1220", CleanCodeAttribute.MODULAR),
+        tuple("java:S1481", CleanCodeAttribute.CLEAR));
+  }
+
+  @SonarLintTest
+  void simpleJavaSymbolicEngineBound(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    assumeTrue(COMMERCIAL_ENABLED);
+    var inputFile = createFile(baseDir, "Foo.java",
+      """
+        public class Foo {
+          public void foo() {
+            boolean a = true;
+            if (a) {
+              System.out.println( "Hello World!" );
+            }
+          }
+        }""");
+
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, List.of(
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)))
+      .build();
+    var server = harness.newFakeSonarQubeServer()
+      .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java"))
+      .withProject("projectKey")
+      .start();
+    var backend = harness.newBackend()
+      .withSonarQubeConnection("connectionId", server, storage -> storage
+        .withPlugins(TestPlugin.JAVA, TestPlugin.JAVA_SE)
+        .withProject("projectKey", project -> project.withRuleSet("java", ruleSet -> ruleSet
+          .withActiveRule("java:S2589", "BLOCKER")
+          .withActiveRule("java:S106", "BLOCKER"))
+          .withMainBranch("main")))
+      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, "projectKey")
+      .withEnabledLanguageInStandaloneMode(Language.JAVA)
+      .start(client);
+
+    var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIG_SCOPE_ID);
+
+    assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange)
+      .usingRecursiveFieldByFieldElementComparator()
+      .contains(
+        tuple("java:S2589", new TextRangeDto(4, 8, 4, 9)),
+        tuple("java:S106", new TextRangeDto(5, 6, 5, 16)));
+  }
+
+  @SonarLintTest
+  void simpleJavaSymbolicEngineBoundWithDbd(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    assumeTrue(COMMERCIAL_ENABLED);
+    var inputFile = createFile(baseDir, "Foo.java",
+      """
+        public class Foo {
+          public void foo() {
+            boolean a = true;
+            if (a) {
+              System.out.println( "Hello World!" );
+            }
+          }
+        }""");
+
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, List.of(
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)))
+      .build();
+    var server = harness.newFakeSonarQubeServer()
+      .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java"))
+      .withProject("projectKey")
+      .start();
+    var backend = harness.newBackend()
+      .withDataflowBugDetectionEnabled()
+      .withSonarQubeConnection("connectionId", server, storage -> storage
+        .withPlugins(TestPlugin.PYTHON, TestPlugin.JAVA, TestPlugin.JAVA_SE, TestPlugin.DBD, TestPlugin.DBD_JAVA)
+        .withProject("projectKey", project -> project.withRuleSet("java", ruleSet -> ruleSet
+          .withActiveRule("java:S2589", "BLOCKER")
+          .withActiveRule("java:S106", "BLOCKER"))
+          .withMainBranch("main")))
+      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, "projectKey")
+      .withEnabledLanguageInStandaloneMode(Language.JAVA)
+      .withEnabledLanguageInStandaloneMode(Language.PYTHON)
+      .start(client);
+
+    var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIG_SCOPE_ID);
+
+    assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange)
+      .usingRecursiveFieldByFieldElementComparator()
+      .contains(
+        tuple("java:S2589", new TextRangeDto(4, 8, 4, 9)),
+        tuple("java:S106", new TextRangeDto(5, 6, 5, 16)));
   }
 
   @SonarLintTest
