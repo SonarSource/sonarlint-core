@@ -495,7 +495,7 @@ class AnalysisMediumTests {
     assertThat(rawIssue.getRuleKey()).isEqualTo("python:S930");
   }
 
-  @Disabled
+  @Disabled("SLCORE-1113")
   @SonarLintTest
   void it_should_update_module_file_system_on_file_events_deleting_file(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var fileIssue = createFile(baseDir, "fileIssue.py",
@@ -539,7 +539,7 @@ class AnalysisMediumTests {
     verify(client, times(0)).didRaiseIssue(eq(CONFIG_SCOPE_ID), eq(analysisId), rawIssueCaptor.capture());
   }
 
-  @Disabled
+  @Disabled("SLCORE-1113")
   @SonarLintTest
   void it_should_update_module_file_system_on_file_events_editing_file(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var fileIssue = createFile(baseDir, "fileIssue.py",
