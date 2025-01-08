@@ -440,6 +440,38 @@ class StandaloneIssueMediumTests {
   }
 
   @SonarLintTest
+  void simpleJavaSymbolicEngine(SonarLintTestHarness harness, @TempDir Path baseDir) {
+//    assumeTrue(COMMERCIAL_ENABLED);
+    var inputFile = createFile(baseDir, A_JAVA_FILE_PATH,
+      "public class Foo {\n"
+        + "  public void foo() {\n"
+        + "    boolean a = true;\n"
+        + "    if (a) {\n"
+        + "       System.out.println( \"Hello World!\" );\n"
+        + "    }\n"
+        + "  }\n"
+        + "}");
+
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
+        new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)
+      ))
+      .build();
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .withStandaloneEmbeddedPlugin(TestPlugin.JAVA_SE)
+      .build(client);
+
+    var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
+
+    assertThat(issues).extracting(RaisedIssueDto::getRuleKey, RaisedIssueDto::getTextRange, RaisedIssueDto::getSeverity)
+      .usingRecursiveFieldByFieldElementComparator()
+      .contains(
+        tuple("java:S2589", new TextRangeDto(4, 8, 4, 9), IssueSeverity.MAJOR));
+  }
+
+  @SonarLintTest
   void simpleJavaWithQuickFix(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var inputFile = createFile(baseDir, A_JAVA_FILE_PATH,
       "public class Foo {\n"

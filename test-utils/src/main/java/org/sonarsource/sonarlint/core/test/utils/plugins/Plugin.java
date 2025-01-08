@@ -25,16 +25,30 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 
 public class Plugin {
+  private final String key;
   private final Set<Language> languages;
   private final Path path;
   private final String version;
   private final String hash;
 
+  private static String getPluginKeyFromLanguage(Language language) {
+    return SonarLanguage.valueOf(language.name()).getPluginKey();
+  }
+
   public Plugin(Language language, Path path, String version, String hash) {
     this(Set.of(language), path, version, hash);
   }
 
+  public Plugin(String key, Language language, Path path, String version, String hash) {
+    this(key, Set.of(language), path, version, hash);
+  }
+
   public Plugin(Set<Language> languages, Path path, String version, String hash) {
+    this(getPluginKeyFromLanguage(languages.iterator().next()), languages, path, version, hash);
+  }
+
+  public Plugin(String key, Set<Language> languages, Path path, String version, String hash) {
+    this.key = key;
     this.languages = languages;
     this.path = path;
     this.version = version;
@@ -46,7 +60,7 @@ public class Plugin {
   }
 
   public String getPluginKey() {
-    return SonarLanguage.valueOf(languages.iterator().next().name()).getPluginKey();
+    return key;
   }
 
   public Path getPath() {
