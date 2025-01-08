@@ -25,7 +25,6 @@ import com.sonar.orchestrator.container.Edition;
 import com.sonar.orchestrator.junit5.OnlyOnSonarQube;
 import com.sonar.orchestrator.junit5.OrchestratorExtension;
 import com.sonar.orchestrator.locator.FileLocation;
-import com.sonar.orchestrator.locator.MavenLocation;
 import its.utils.OrchestratorUtils;
 import its.utils.PluginLocator;
 import java.io.File;
@@ -119,7 +118,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
-import static its.utils.ItUtils.SONAR_VERSION;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
@@ -160,7 +158,6 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
   static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
     .setEdition(Edition.DEVELOPER)
     .activateLicense()
-    .addPlugin(MavenLocation.of("org.sonarsource.sonarqube", "sonar-xoo-plugin", SONAR_VERSION))
     .addPlugin(FileLocation.of("../plugins/global-extension-plugin/target/global-extension-plugin.jar"))
     .addPlugin(FileLocation.of("../plugins/custom-sensor-plugin/target/custom-sensor-plugin.jar"))
     .addPlugin(FileLocation.of("../plugins/java-custom-rules/target/java-custom-rules-plugin.jar"))
@@ -710,18 +707,18 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       var configScopeId = "should_sync_branches_from_server";
       var short_branch = "feature/short_living";
       var long_branch = "branch-1.x";
-      var projectKey = "sample-xoo";
-      provisionProject(ORCHESTRATOR, projectKey, "Sample Xoo");
-      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/xoo-sonarlint.xml"));
-      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "xoo", "SonarLint IT Xoo");
+      var projectKey = "sample-branch";
+      provisionProject(ORCHESTRATOR, projectKey, "Sample Branch");
+      ORCHESTRATOR.getServer().restoreProfile(FileLocation.ofClasspath("/xml-sonarlint.xml"));
+      ORCHESTRATOR.getServer().associateProjectToQualityProfile(projectKey, "xml", "SonarLint IT XML");
       // Use the pattern of long living branches in SQ 9.9, else we only have issues on changed files
 
       // main branch
-      analyzeProject("sample-xoo-v1", projectKey);
+      analyzeProject("sample-xml", projectKey);
       // short living branch
-      analyzeProject("sample-xoo-v1", projectKey, "sonar.branch.name", short_branch);
+      analyzeProject("sample-xml", projectKey, "sonar.branch.name", short_branch);
       // long living branch
-      analyzeProject("sample-xoo-v1", projectKey, "sonar.branch.name", long_branch);
+      analyzeProject("sample-xml", projectKey, "sonar.branch.name", long_branch);
 
       openBoundConfigurationScope(configScopeId, projectKey, true);
       waitForSync(configScopeId);

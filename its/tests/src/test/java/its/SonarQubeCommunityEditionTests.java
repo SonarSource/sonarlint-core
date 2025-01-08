@@ -21,7 +21,6 @@ package its;
 
 import com.sonar.orchestrator.junit5.OrchestratorExtension;
 import com.sonar.orchestrator.locator.FileLocation;
-import com.sonar.orchestrator.locator.MavenLocation;
 import its.utils.OrchestratorUtils;
 import java.io.IOException;
 import java.io.PipedInputStream;
@@ -42,8 +41,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarqube.ws.client.WsClient;
@@ -70,7 +67,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
-import static its.utils.ItUtils.SONAR_VERSION;
 import static java.util.Collections.emptySet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -83,7 +79,6 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
   @RegisterExtension
   static OrchestratorExtension ORCHESTRATOR = OrchestratorUtils.defaultEnvBuilder()
-    .addPlugin(MavenLocation.of("org.sonarsource.sonarqube", "sonar-xoo-plugin", SONAR_VERSION))
     .addPlugin(FileLocation.of("../plugins/java-custom-rules/target/java-custom-rules-plugin.jar"))
     .setServerProperty("sonar.projectCreation.mainBranchName", MAIN_BRANCH_NAME)
     .build();
@@ -158,20 +153,6 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
 
     var searchResult = adminWsClient.userTokens().search(new org.sonarqube.ws.client.usertokens.SearchRequest().setLogin(testToken.getLogin()));
     assertThat(searchResult.getUserTokensCount()).isZero();
-  }
-
-  @Nested
-  // TODO Can be removed when switching to Java 16+ and changing prepare() to static
-  @TestInstance(Lifecycle.PER_CLASS)
-  class PathPrefix {
-
-    private static final String MULTI_MODULE_PROJECT_KEY = "com.sonarsource.it.samples:multi-modules-sample";
-
-    @BeforeAll
-    void analyzeMultiModuleProject() {
-      // Project has 5 modules: B, B/B1, B/B2, A, A/A1 and A/A2
-      analyzeMavenProject(ORCHESTRATOR, "multi-modules-sample");
-    }
   }
 
   @Nested
