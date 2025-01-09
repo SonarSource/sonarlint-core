@@ -28,10 +28,9 @@ import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
@@ -51,7 +50,7 @@ import org.springframework.context.event.EventListener;
 @Named
 @Singleton
 public class SonarProjectBranchTrackingService {
-  private static final Logger LOG = LoggerFactory.getLogger(SonarProjectBranchTrackingService.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final SonarLintRpcClient client;
   private final StorageService storageService;
   private final ConfigurationRepository configurationRepository;

@@ -27,17 +27,16 @@ import java.util.List;
 import java.util.regex.Pattern;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.command.Command;
 import org.sonar.api.utils.command.CommandException;
 import org.sonar.api.utils.command.CommandExecutor;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class NodeJsHelper {
 
-  private static final Logger LOG = LoggerFactory.getLogger(NodeJsHelper.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private static final Pattern NODEJS_VERSION_PATTERN = Pattern.compile("v?(\\d+\\.\\d+\\.\\d+(-.*)?)");
   private final System2 system2;
