@@ -208,6 +208,7 @@ class OpenFixSuggestionInIdeMediumTests {
     var inputFile = createFile(baseDir, "Main.java", "");
     var fakeClient = harness.newFakeClient()
       .withInitialFs("configScopeParent", List.of(new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), "configScopeParent", false, null, inputFile, null, null, true)))
+      .withInitialFs("configScopeChild", List.of())
       .build();
     var scServer = buildSonarCloudServer(harness).start();
     var backend = harness.newBackend()
