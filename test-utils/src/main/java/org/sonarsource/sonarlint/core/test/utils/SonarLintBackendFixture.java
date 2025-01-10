@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -45,9 +46,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
-import org.sonarsource.sonarlint.core.test.utils.storage.ConfigurationScopeStorageFixture;
-import org.sonarsource.sonarlint.core.test.utils.storage.StorageFixture;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
@@ -102,25 +100,32 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.test.utils.plugins.Plugin;
+import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
+import org.sonarsource.sonarlint.core.test.utils.storage.ConfigurationScopeStorageFixture;
+import org.sonarsource.sonarlint.core.test.utils.storage.StorageFixture;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
-import static org.sonarsource.sonarlint.core.test.utils.storage.StorageFixture.newStorage;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.telemetry.TelemetrySpringConfig.PROPERTY_TELEMETRY_ENDPOINT;
+import static org.sonarsource.sonarlint.core.test.utils.storage.StorageFixture.newStorage;
 
 public class SonarLintBackendFixture {
 
   public static final String USER_AGENT_FOR_TESTS = "SonarLintBackendFixture";
 
+  private SonarLintBackendFixture() {
+    // utility class
+  }
+
   public static SonarLintBackendBuilder newBackend() {
     return newBackend(null);
   }
 
-  public static SonarLintBackendBuilder newBackend(Consumer<SonarLintTestRpcServer> onBuild) {
+  public static SonarLintBackendBuilder newBackend(@Nullable Consumer<SonarLintTestRpcServer> onBuild) {
     return new SonarLintBackendBuilder(onBuild);
   }
 
@@ -136,8 +141,8 @@ public class SonarLintBackendFixture {
     private final List<ConfigurationScopeStorageFixture.ConfigurationScopeStorageBuilder> configurationScopeStorages = new ArrayList<>();
     private final Set<Path> embeddedPluginPaths = new HashSet<>();
     private final Map<String, Path> connectedModeEmbeddedPluginPathsByKey = new HashMap<>();
-    private final Set<Language> enabledLanguages = new HashSet<>();
-    private final Set<Language> extraEnabledLanguagesInConnectedMode = new HashSet<>();
+    private final Set<Language> enabledLanguages = EnumSet.noneOf(Language.class);
+    private final Set<Language> extraEnabledLanguagesInConnectedMode = EnumSet.noneOf(Language.class);
     private final Set<String> disabledPluginKeysForAnalysis = new HashSet<>();
     private boolean startEmbeddedServer;
     private boolean manageSmartNotifications;
@@ -157,8 +162,6 @@ public class SonarLintBackendFixture {
     private boolean isFocusOnNewCode;
     private boolean enableDataflowBugDetection;
 
-    private Path clientNodeJsPath;
-    private Path eslintBridgeServerBundlePath;
     private String sonarCloudUrl;
     private String sonarCloudWebSocketsUrl;
     private Duration responseTimeout;
@@ -169,7 +172,7 @@ public class SonarLintBackendFixture {
     private TelemetryMigrationDto telemetryMigration;
     private LanguageSpecificRequirements languageSpecificRequirements;
 
-    public SonarLintBackendBuilder(Consumer<SonarLintTestRpcServer> onBuild) {
+    public SonarLintBackendBuilder(@Nullable Consumer<SonarLintTestRpcServer> onBuild) {
       this.onBuild = onBuild;
     }
 
@@ -214,7 +217,7 @@ public class SonarLintBackendFixture {
     }
 
     private SonarLintBackendBuilder withSonarQubeConnection(String connectionId, String serverUrl, boolean disableNotifications,
-      Consumer<StorageFixture.StorageBuilder> storageBuilder) {
+      @Nullable Consumer<StorageFixture.StorageBuilder> storageBuilder) {
       if (storageBuilder != null) {
         var storage = newStorage(connectionId);
         storageBuilder.accept(storage);
@@ -243,7 +246,7 @@ public class SonarLintBackendFixture {
     }
 
     public SonarLintBackendBuilder withSonarCloudConnection(String connectionId, String organizationKey, boolean disableNotifications,
-      Consumer<StorageFixture.StorageBuilder> storageBuilder) {
+      @Nullable Consumer<StorageFixture.StorageBuilder> storageBuilder) {
       if (storageBuilder != null) {
         var storage = newStorage(connectionId);
         storageBuilder.accept(storage);
@@ -273,7 +276,7 @@ public class SonarLintBackendFixture {
       return withUnboundConfigScope(configurationScopeId, name, null);
     }
 
-    public SonarLintBackendBuilder withUnboundConfigScope(String configurationScopeId, String name, String parentId) {
+    public SonarLintBackendBuilder withUnboundConfigScope(String configurationScopeId, String name, @Nullable String parentId) {
       return withConfigScope(configurationScopeId, name, parentId, new BindingConfigurationDto(null, null, false));
     }
 
@@ -286,15 +289,15 @@ public class SonarLintBackendFixture {
       return withConfigScope(configurationScopeId, configurationScopeId, null, new BindingConfigurationDto(connectionId, projectKey, false), storageBuilder);
     }
 
-    public SonarLintBackendBuilder withChildConfigScope(String configurationScopeId, String parentScopeId) {
+    public SonarLintBackendBuilder withChildConfigScope(String configurationScopeId, @Nullable String parentScopeId) {
       return withConfigScope(configurationScopeId, configurationScopeId, parentScopeId, new BindingConfigurationDto(null, null, false));
     }
 
-    public SonarLintBackendBuilder withConfigScope(String configurationScopeId, String name, String parentScopeId, BindingConfigurationDto bindingConfiguration) {
+    public SonarLintBackendBuilder withConfigScope(String configurationScopeId, String name, @Nullable String parentScopeId, BindingConfigurationDto bindingConfiguration) {
       return withConfigScope(configurationScopeId, name, parentScopeId, bindingConfiguration, null);
     }
 
-    public SonarLintBackendBuilder withConfigScope(String configurationScopeId, String name, String parentScopeId, BindingConfigurationDto bindingConfiguration,
+    public SonarLintBackendBuilder withConfigScope(String configurationScopeId, String name, @Nullable String parentScopeId, BindingConfigurationDto bindingConfiguration,
       @Nullable Consumer<ConfigurationScopeStorageFixture.ConfigurationScopeStorageBuilder> storageBuilder) {
       if (storageBuilder != null) {
         var builder = ConfigurationScopeStorageFixture.newBuilder(configurationScopeId);
@@ -410,14 +413,12 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintBackendBuilder withClientNodeJsPath(Path path) {
-      clientNodeJsPath = path;
+    public SonarLintBackendBuilder withClientNodeJsPath(Path clientNodeJsPath) {
       languageSpecificRequirements = new LanguageSpecificRequirements(new JsTsRequirementsDto(clientNodeJsPath, null), null);
       return this;
     }
 
-    public SonarLintBackendBuilder withEslintBridgeServerBundlePath(Path path) {
-      eslintBridgeServerBundlePath = path;
+    public SonarLintBackendBuilder withEslintBridgeServerBundlePath(Path eslintBridgeServerBundlePath) {
       languageSpecificRequirements = new LanguageSpecificRequirements(new JsTsRequirementsDto(null, eslintBridgeServerBundlePath), null);
       return this;
     }
@@ -598,7 +599,8 @@ public class SonarLintBackendFixture {
     }
 
     public FakeSonarLintRpcClient build() {
-      return spy(new FakeSonarLintRpcClient(credentialsByConnectionId, printLogsToStdOut, matchedBranchPerScopeId, baseDirsByConfigScope, initialFilesByConfigScope, fileExclusionsByConfigScope));
+      return spy(new FakeSonarLintRpcClient(credentialsByConnectionId, printLogsToStdOut, matchedBranchPerScopeId, baseDirsByConfigScope, initialFilesByConfigScope,
+        fileExclusionsByConfigScope));
     }
 
     public SonarLintClientBuilder printLogsToStdOut() {
@@ -643,7 +645,8 @@ public class SonarLintBackendFixture {
     Map<String, Boolean> analysisReadinessPerScopeId = new HashMap<>();
 
     public FakeSonarLintRpcClient(Map<String, Either<TokenDto, UsernamePasswordDto>> credentialsByConnectionId, boolean printLogsToStdOut,
-      Map<String, String> matchedBranchPerScopeId, Map<String, Path> baseDirsByConfigScope, Map<String, List<ClientFileDto>> initialFilesByConfigScope, Map<String, Set<String>> fileExclusionsByConfigScope) {
+      Map<String, String> matchedBranchPerScopeId, Map<String, Path> baseDirsByConfigScope, Map<String, List<ClientFileDto>> initialFilesByConfigScope,
+      Map<String, Set<String>> fileExclusionsByConfigScope) {
       this.credentialsByConnectionId = credentialsByConnectionId;
       this.printLogsToStdOut = printLogsToStdOut;
       this.matchedBranchPerScopeId = matchedBranchPerScopeId;
@@ -669,14 +672,17 @@ public class SonarLintBackendFixture {
 
     @Override
     public void showHotspot(String configurationScopeId, HotspotDetailsDto hotspotDetails) {
+      // no-op
     }
 
     @Override
     public void showIssue(String configurationScopeId, IssueDetailsDto issueDetails) {
+      // no-op
     }
 
     @Override
     public void showFixSuggestion(String configurationScopeId, String issueKey, FixSuggestionDto fixSuggestion) {
+      // no-op
     }
 
     @Override
@@ -752,6 +758,7 @@ public class SonarLintBackendFixture {
 
     @Override
     public void didReceiveServerHotspotEvent(DidReceiveServerHotspotEvent params) {
+      // no-op
     }
 
     @Override
@@ -769,11 +776,13 @@ public class SonarLintBackendFixture {
 
     @Override
     public void didChangeMatchedSonarProjectBranch(String configScopeId, String newMatchedBranchName) {
+      // no-op
 
     }
 
     @Override
     public void suggestBinding(Map<String, List<BindingSuggestionDto>> suggestionsByConfigScope) {
+      // no-op
 
     }
 
@@ -784,11 +793,13 @@ public class SonarLintBackendFixture {
 
     @Override
     public void openUrlInBrowser(URL url) {
+      // no-op
 
     }
 
     @Override
     public void showMessage(MessageType type, String text) {
+      // no-op
 
     }
 
@@ -843,7 +854,8 @@ public class SonarLintBackendFixture {
     }
 
     @Override
-    public void raiseHotspots(String configurationScopeId, Map<URI, List<RaisedHotspotDto>> hotspotsByFileUri, boolean isIntermediatePublication, @org.jetbrains.annotations.Nullable UUID analysisId) {
+    public void raiseHotspots(String configurationScopeId, Map<URI, List<RaisedHotspotDto>> hotspotsByFileUri, boolean isIntermediatePublication,
+      @org.jetbrains.annotations.Nullable UUID analysisId) {
       raisedHotspotsByScopeId.put(configurationScopeId, hotspotsByFileUri);
     }
 
