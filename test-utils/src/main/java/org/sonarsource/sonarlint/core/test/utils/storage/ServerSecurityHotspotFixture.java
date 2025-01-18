@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.test.utils.storage;
 
 import java.nio.file.Path;
 import java.time.Instant;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
@@ -92,7 +93,7 @@ public class ServerSecurityHotspotFixture {
     public final VulnerabilityProbability vulnerabilityProbability;
     public final String assignee;
 
-    public ServerHotspot(String key, String ruleKey, String message, String filePath, Instant introductionDate, IssueSeverity userSeverity,
+    public ServerHotspot(String key, String ruleKey, String message, String filePath, Instant introductionDate, @Nullable IssueSeverity userSeverity,
       TextRangeWithHash textRangeWithHash, HotspotReviewStatus status, VulnerabilityProbability vulnerabilityProbability, String assignee) {
       this.key = key;
       this.ruleKey = ruleKey;
