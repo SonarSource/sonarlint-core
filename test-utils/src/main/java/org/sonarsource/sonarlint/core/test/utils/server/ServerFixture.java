@@ -84,7 +84,7 @@ public class ServerFixture {
     return newSonarQubeServer((Consumer<Server>) null);
   }
 
-  public static ServerBuilder newSonarQubeServer(Consumer<Server> onStart) {
+  public static ServerBuilder newSonarQubeServer(@Nullable Consumer<Server> onStart) {
     return newSonarQubeServer(onStart, "99.9");
   }
 
@@ -92,7 +92,7 @@ public class ServerFixture {
     return newSonarQubeServer(null, version);
   }
 
-  public static ServerBuilder newSonarQubeServer(Consumer<Server> onStart, String version) {
+  public static ServerBuilder newSonarQubeServer(@Nullable Consumer<Server> onStart, String version) {
     return new ServerBuilder(onStart, ServerKind.SONARQUBE, null, version);
   }
 
@@ -100,7 +100,7 @@ public class ServerFixture {
     return newSonarCloudServer((Consumer<Server>) null);
   }
 
-  public static ServerBuilder newSonarCloudServer(Consumer<Server> onStart) {
+  public static ServerBuilder newSonarCloudServer(@Nullable Consumer<Server> onStart) {
     return newSonarCloudServer(onStart, "myOrganization");
   }
 
@@ -108,7 +108,7 @@ public class ServerFixture {
     return newSonarCloudServer(null, organization);
   }
 
-  public static ServerBuilder newSonarCloudServer(Consumer<Server> onStart, String organization) {
+  public static ServerBuilder newSonarCloudServer(@Nullable Consumer<Server> onStart, String organization) {
     return new ServerBuilder(onStart, ServerKind.SONARCLOUD, organization, null);
   }
 
@@ -133,7 +133,7 @@ public class ServerFixture {
     private boolean smartNotificationsSupported;
     private final List<String> tokensRegistered = new ArrayList<>();
 
-    public ServerBuilder(Consumer<Server> onStart, ServerKind serverKind, @Nullable String organizationKey, @Nullable String version) {
+    public ServerBuilder(@Nullable Consumer<Server> onStart, ServerKind serverKind, @Nullable String organizationKey, @Nullable String version) {
       this.onStart = onStart;
       this.serverKind = serverKind;
       this.organizationKey = organizationKey;
@@ -250,7 +250,7 @@ public class ServerFixture {
         return this;
       }
 
-      public ServerProjectBuilder withBranch(String branchName, UnaryOperator<ServerProjectBranchBuilder> branchBuilder) {
+      public ServerProjectBuilder withBranch(@Nullable String branchName, UnaryOperator<ServerProjectBranchBuilder> branchBuilder) {
         var builder = new ServerProjectBranchBuilder();
         this.branchesByName.put(branchName, branchBuilder.apply(builder));
         return this;
@@ -304,7 +304,7 @@ public class ServerFixture {
         }
 
         public ServerProjectBranchBuilder withIssue(String issueKey, String ruleKey, String message, String author, String filePath,
-          String status, String resolution, Instant creationDate, TextRange textRange) {
+          String status, @Nullable String resolution, Instant creationDate, TextRange textRange) {
           this.issues.add(new ServerIssue(issueKey, ruleKey, message, author, filePath, status, resolution, creationDate, textRange, RuleType.BUG));
           return this;
         }
@@ -389,7 +389,7 @@ public class ServerFixture {
           }
 
           private ServerIssue(String issueKey, String ruleKey, String message, String author, String filePath, String status,
-            String resolution, Instant introductionDate, TextRange textRange, RuleType ruleType, String hash, Constants.Severity severity) {
+            @Nullable String resolution, Instant introductionDate, TextRange textRange, RuleType ruleType, String hash, Constants.Severity severity) {
             this(issueKey, ruleKey, message, author, filePath, status, resolution, introductionDate, textRange, ruleType);
             this.hash = hash;
             this.severity = severity;
@@ -397,7 +397,7 @@ public class ServerFixture {
           }
 
           private ServerIssue(String issueKey, String ruleKey, String message, String author, String filePath, String status,
-            String resolution, Instant introductionDate, TextRange textRange, RuleType ruleType) {
+            @Nullable String resolution, Instant introductionDate, TextRange textRange, RuleType ruleType) {
             this.issueKey = issueKey;
             this.ruleKey = ruleKey;
             this.message = message;
