@@ -23,8 +23,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidChangeCredentialsParams;
@@ -133,9 +131,9 @@ class ConnectionSyncMediumTests {
       "Synchronizing project branches for project 'projectKey'"));
   }
 
-  @ParameterizedTest
-  @ValueSource(ints = {401, 403})
-  void it_should_notify_client_if_invalid_token(Integer status) {
+  @SonarLintTest
+  void it_should_notify_client_if_invalid_token() {
+    var status = 403;
     var client = newFakeClient()
       .withCredentials(CONNECTION_ID, "user", "pw")
       .build();

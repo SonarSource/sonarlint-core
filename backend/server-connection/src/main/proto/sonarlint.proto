@@ -100,10 +100,6 @@ message LastEventPolling {
   int64 last_event_polling = 1;
 }
 
-message LastWebApiErrorNotification {
-  int64 last_wrong_token_notification = 1;
-}
-
 enum NewCodeDefinitionMode {
   UNKNOWN = 0;
   NUMBER_OF_DAYS = 1;
