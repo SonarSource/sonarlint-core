@@ -23,9 +23,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import mediumtest.fixtures.TestPlugin;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -45,6 +42,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
+import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
 
 class ConnectionSyncMediumTests {
   public static final String CONNECTION_ID = "connectionId";
@@ -146,7 +146,7 @@ class ConnectionSyncMediumTests {
       .withResponseCode(status)
       .start();
 
-    backend = newBackend()
+    var backend = newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage.withPlugin(TestPlugin.JAVA).withProject("projectKey"))
       .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, "projectKey")
       .withEnabledLanguageInStandaloneMode(JAVA)

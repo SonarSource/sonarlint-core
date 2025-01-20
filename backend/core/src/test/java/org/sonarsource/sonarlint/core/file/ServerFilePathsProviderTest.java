@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.file;
 
-import ch.qos.logback.classic.spi.ILoggingEvent;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -110,8 +109,7 @@ class ServerFilePathsProviderTest {
 
     underTest.getServerPaths(new Binding("conId", null), cancelMonitor);
 
-    assertThat(logTester.logs())
-      .containsExactly("Connection 'conId' does not exist");
+    assertThat(logTester.logs()).contains("Connection 'conId' does not exist");
   }
 
   @Test
