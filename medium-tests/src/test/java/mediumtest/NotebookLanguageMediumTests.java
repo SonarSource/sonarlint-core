@@ -19,12 +19,10 @@
  */
 package mediumtest;
 
-import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidChangeCredentialsParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
@@ -41,22 +39,17 @@ class NotebookLanguageMediumTests {
 
   @SonarLintTest
   void should_not_enable_sync_for_notebook_python_language(SonarLintTestHarness harness) {
-    client = harness.newFakeClient()
+    var fakeClient = harness.newFakeClient()
       .build();
     var backend = harness.newBackend()
       .withStorage(CONNECTION_ID, s -> s.withPlugins(TestPlugin.JAVASCRIPT, TestPlugin.JAVA)
         .withProject("test-project")
         .withProject(JAVA_MODULE_KEY))
-      .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, JAVA_MODULE_KEY)
-      .withEnabledLanguageInStandaloneMode(Language.JAVA)
-      .withEnabledLanguageInStandaloneMode(Language.JS)
-      .withEnabledLanguageInStandaloneMode(Language.IPYTHON)
-      .withFullSynchronization()
-      .build(client);
+      .build(fakeClient);
 
     backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams(CONNECTION_ID));
 
-    await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("[SYNC] Languages enabled for synchronization: [java, js]"));
+    await().untilAsserted(() -> assertThat(fakeClient.getLogMessages()).contains("[SYNC] Languages enabled for synchronization: [java, js]"));
   }
 
 }
