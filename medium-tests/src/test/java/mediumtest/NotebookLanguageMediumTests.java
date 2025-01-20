@@ -20,31 +20,40 @@
 package mediumtest;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidChangeCredentialsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
 
 class NotebookLanguageMediumTests {
-  @RegisterExtension
-  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   private static final String CONNECTION_ID = StringUtils.repeat("very-long-id", 30);
   private static final String JAVA_MODULE_KEY = "test-project-2";
+  public static final String SCOPE_ID = "scopeId";
 
   @SonarLintTest
   void should_not_enable_sync_for_notebook_python_language(SonarLintTestHarness harness) {
     var fakeClient = harness.newFakeClient()
       .build();
+    var server = newSonarQubeServer()
+      .withProject(JAVA_MODULE_KEY, project -> project.withBranch("main"))
+      .start();
     var backend = harness.newBackend()
-      .withStorage(CONNECTION_ID, s -> s.withPlugins(TestPlugin.JAVASCRIPT, TestPlugin.JAVA)
-        .withProject("test-project")
+      .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage
+        .withPlugin(TestPlugin.JAVA)
+        .withPlugin(TestPlugin.JAVASCRIPT)
+        .withPlugin(TestPlugin.PYTHON)
         .withProject(JAVA_MODULE_KEY))
+      .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, JAVA_MODULE_KEY)
+      .withEnabledLanguageInStandaloneMode(Language.JAVA)
+      .withEnabledLanguageInStandaloneMode(Language.JS)
+      .withEnabledLanguageInStandaloneMode(Language.IPYTHON)
+      .withFullSynchronization()
       .build(fakeClient);
 
     backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams(CONNECTION_ID));
