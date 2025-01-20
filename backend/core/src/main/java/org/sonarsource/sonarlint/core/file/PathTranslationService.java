@@ -27,11 +27,10 @@ import javax.annotation.CheckForNull;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sonarsource.sonarlint.core.SonarLintMDC;
 import org.sonarsource.sonarlint.core.branch.MatchedSonarProjectBranchChangedEvent;
 import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
@@ -51,7 +50,7 @@ import static java.util.stream.Collectors.toList;
 @Named
 @Singleton
 public class PathTranslationService {
-  private static final Logger LOG = LoggerFactory.getLogger(PathTranslationService.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final ClientFileSystemService clientFs;
   private final ConfigurationRepository configurationRepository;
   private final ServerFilePathsProvider serverFilePathsProvider;

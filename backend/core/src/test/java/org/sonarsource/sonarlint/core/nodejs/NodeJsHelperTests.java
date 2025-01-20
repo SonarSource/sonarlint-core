@@ -88,7 +88,7 @@ class NodeJsHelperTests {
     var underTest = new NodeJsHelper(system2, DUMMY_FILE_HELPER_LOCATION, commandExecutor);
     var result = underTest.detect(FAKE_NODE_PATH);
 
-    assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).containsExactly(
+    assertThat(logTester.logs()).containsExactly(
       "Node.js path provided by configuration: " + FAKE_NODE_PATH,
       "Checking node version...",
       "Execute command '" + FAKE_NODE_PATH + " -v'...",
@@ -107,7 +107,7 @@ class NodeJsHelperTests {
     var underTest = new NodeJsHelper(system2, DUMMY_FILE_HELPER_LOCATION, commandExecutor);
     var result = underTest.detect(FAKE_NODE_PATH);
 
-    assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).containsExactly(
+    assertThat(logTester.logs()).containsExactly(
       "Node.js path provided by configuration: " + FAKE_NODE_PATH,
       "Checking node version...",
       "Execute command '" + FAKE_NODE_PATH + " -v'...",
@@ -128,7 +128,7 @@ class NodeJsHelperTests {
     var underTest = new NodeJsHelper(system2, DUMMY_FILE_HELPER_LOCATION, commandExecutor);
     var result = underTest.detect(FAKE_NODE_PATH);
 
-    assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).containsExactly(
+    assertThat(logTester.logs()).containsExactly(
       "Node.js path provided by configuration: " + FAKE_NODE_PATH,
       "Checking node version...",
       "Execute command '" + FAKE_NODE_PATH + " -v'...",
@@ -144,7 +144,7 @@ class NodeJsHelperTests {
     var underTest = new NodeJsHelper(system2, DUMMY_FILE_HELPER_LOCATION, commandExecutor);
     var result = underTest.detect(FAKE_NODE_PATH);
 
-    assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).containsExactly(
+    assertThat(logTester.logs()).containsExactly(
       "Node.js path provided by configuration: " + FAKE_NODE_PATH,
       "Checking node version...",
       "Execute command '" + FAKE_NODE_PATH + " -v'...",
@@ -162,7 +162,7 @@ class NodeJsHelperTests {
     var underTest = new NodeJsHelper(system2, DUMMY_FILE_HELPER_LOCATION, commandExecutor);
     var result = underTest.detect(null);
 
-    assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).containsExactly(
+    assertThat(logTester.logs()).containsExactly(
       "Looking for node in the PATH",
       "Execute command '/usr/bin/which node'...",
       "Command '/usr/bin/which node' exited with 0\nstdout: " + FAKE_NODE_PATH,
@@ -186,7 +186,7 @@ class NodeJsHelperTests {
     var underTest = new NodeJsHelper(system2, DUMMY_FILE_HELPER_LOCATION, commandExecutor);
     var result = underTest.detect(null);
 
-    assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).containsExactly(
+    assertThat(logTester.logs()).containsExactly(
       "Looking for node in the PATH",
       "Execute command '/usr/bin/which node'...",
       "Command '/usr/bin/which node' exited with -1\nstderr: error",
@@ -203,7 +203,7 @@ class NodeJsHelperTests {
     var underTest = new NodeJsHelper(system2, DUMMY_FILE_HELPER_LOCATION, commandExecutor);
     var result = underTest.detect(null);
 
-    assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).containsExactly(
+    assertThat(logTester.logs()).containsExactly(
       "Looking for node in the PATH",
       "Execute command 'C:\\Windows\\System32\\where.exe $PATH:node.exe'...",
       "Command 'C:\\Windows\\System32\\where.exe $PATH:node.exe' exited with 0",
@@ -221,7 +221,7 @@ class NodeJsHelperTests {
     var underTest = new NodeJsHelper(system2, DUMMY_FILE_HELPER_LOCATION, commandExecutor);
     var result = underTest.detect(null);
 
-    assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).containsExactly(
+    assertThat(logTester.logs()).containsExactly(
       "Looking for node in the PATH",
       "Execute command 'C:\\Windows\\System32\\where.exe $PATH:node.exe'...",
       "Command 'C:\\Windows\\System32\\where.exe $PATH:node.exe' exited with 0\nstdout: " + FAKE_NODE_PATH,
@@ -248,7 +248,7 @@ class NodeJsHelperTests {
     var underTest = new NodeJsHelper(system2, DUMMY_FILE_HELPER_LOCATION, commandExecutor);
     var result = underTest.detect(null);
 
-    assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).containsExactly(
+    assertThat(logTester.logs()).containsExactly(
       "Looking for node in the PATH",
       "Execute command 'C:\\Windows\\System32\\where.exe $PATH:node.exe'...",
       "Command 'C:\\Windows\\System32\\where.exe $PATH:node.exe' exited with 0\nstdout: "
@@ -277,7 +277,7 @@ class NodeJsHelperTests {
     var underTest = new NodeJsHelper(system2, fakePathHelper, commandExecutor);
     var result = underTest.detect(null);
 
-    assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).containsExactly(
+    assertThat(logTester.logs()).containsExactly(
       "Looking for node in the PATH",
       "Execute command '" + fakePathHelper + " -s'...",
       "Command '" + fakePathHelper + " -s' exited with 0\nstdout: PATH=\"/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin/node\"; export PATH;",
@@ -306,7 +306,7 @@ class NodeJsHelperTests {
     var underTest = new NodeJsHelper(system2, fakePathHelper, commandExecutor);
     var result = underTest.detect(null);
 
-    assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).containsExactly(
+    assertThat(logTester.logs()).containsExactly(
       "Looking for node in the PATH",
       "Execute command '" + fakePathHelper + " -s'...",
       "Command '" + fakePathHelper + " -s' exited with 0\nstdout: wrong \n output",
@@ -333,7 +333,7 @@ class NodeJsHelperTests {
     var underTest = new NodeJsHelper(system2, Paths.get("not_exists"), commandExecutor);
     var result = underTest.detect(null);
 
-    assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).containsExactly(
+    assertThat(logTester.logs()).containsExactly(
       "Looking for node in the PATH",
       "Execute command '/usr/bin/which node'...",
       "Command '/usr/bin/which node' exited with 0\nstdout: " + FAKE_NODE_PATH,
@@ -352,7 +352,7 @@ class NodeJsHelperTests {
     var underTest = new NodeJsHelper();
     var result = underTest.detect(Paths.get("not_node"));
 
-    assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage).anyMatch(s -> s.startsWith("Unable to execute the command"));
+    assertThat(logTester.logs()).anyMatch(s -> s.startsWith("Unable to execute the command"));
     assertThat(result).isNull();
   }
 

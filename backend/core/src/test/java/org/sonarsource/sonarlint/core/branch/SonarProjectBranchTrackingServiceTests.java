@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.branch;
 
-import ch.qos.logback.classic.spi.ILoggingEvent;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -123,7 +122,7 @@ class SonarProjectBranchTrackingServiceTests {
 
     assertThat(underTest.awaitEffectiveSonarProjectBranch(CONFIG_SCOPE_ID)).contains("main");
 
-    await().untilAsserted(() -> assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage)
+    await().untilAsserted(() -> assertThat(logTester.logs())
       .contains("Matched Sonar project branch for configuration scope 'configScopeId' changed from 'null' to 'main'"));
   }
 

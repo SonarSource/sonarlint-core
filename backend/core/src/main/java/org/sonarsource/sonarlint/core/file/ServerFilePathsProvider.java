@@ -42,10 +42,9 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.commons.Binding;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 
@@ -54,7 +53,7 @@ import static java.util.stream.Collectors.toList;
 @Named
 @Singleton
 public class ServerFilePathsProvider {
-  private static final Logger LOG = LoggerFactory.getLogger(ServerFilePathsProvider.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final ServerApiProvider serverApiProvider;
   private final Map<Binding, Path> cachedResponseFilePathByBinding = new HashMap<>();

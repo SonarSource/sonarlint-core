@@ -104,7 +104,7 @@ class ServerFilePathsProviderTest {
 
     underTest.getServerPaths(new Binding("conId", null), cancelMonitor);
 
-    assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage)
+    assertThat(logTester.logs())
       .containsExactly("Connection 'conId' does not exist");
   }
 
@@ -168,7 +168,7 @@ class ServerFilePathsProviderTest {
 
     underTest.getServerPaths(new Binding(CONNECTION_A, PROJECT_KEY), cancelMonitor);
 
-    assertThat(logTester.getSlf4jLogs()).extracting(ILoggingEvent::getFormattedMessage)
+    assertThat(logTester.logs())
       .contains("Error while getting server file paths for project 'projectKey'");
   }
 

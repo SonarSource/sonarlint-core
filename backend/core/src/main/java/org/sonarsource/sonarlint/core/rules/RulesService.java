@@ -36,13 +36,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.sonarsource.sonarlint.core.ServerApiProvider;
 import org.sonarsource.sonarlint.core.analysis.RuleDetailsForAnalysis;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.mode.SeverityModeService;
@@ -83,7 +82,7 @@ import static org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter.toDto;
 @Singleton
 public class RulesService {
 
-  private static final Logger LOG = LoggerFactory.getLogger(RulesService.class);
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   public static final String IN_EMBEDDED_RULES = "' in embedded rules";
   private final ServerApiProvider serverApiProvider;
   private final ConfigurationRepository configurationRepository;
