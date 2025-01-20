@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.sync;
 import java.util.Optional;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -42,17 +42,17 @@ import static java.util.stream.Collectors.toSet;
 public class SonarProjectBranchesSynchronizationService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final StorageService storageService;
-  private final ServerApiProvider serverApiProvider;
+  private final ConnectionManager connectionManager;
   private final ApplicationEventPublisher eventPublisher;
 
-  public SonarProjectBranchesSynchronizationService(StorageService storageService, ServerApiProvider serverApiProvider, ApplicationEventPublisher eventPublisher) {
+  public SonarProjectBranchesSynchronizationService(StorageService storageService, ConnectionManager connectionManager, ApplicationEventPublisher eventPublisher) {
     this.storageService = storageService;
-    this.serverApiProvider = serverApiProvider;
+    this.connectionManager = connectionManager;
     this.eventPublisher = eventPublisher;
   }
 
   public void sync(String connectionId, String sonarProjectKey, SonarLintCancelMonitor cancelMonitor) {
-    serverApiProvider.getServerApi(connectionId).ifPresent(serverApi -> {
+    connectionManager.withValidConnection(connectionId, serverApi -> {
       var branchesStorage = storageService.getStorageFacade().connection(connectionId).project(sonarProjectKey).branches();
       Optional<ProjectBranches> oldBranches = Optional.empty();
       if (branchesStorage.exists()) {
@@ -81,9 +81,9 @@ public class SonarProjectBranchesSynchronizationService {
       var storedBranches = branchesStorage.read();
       return storedBranches.getMainBranchName();
     } else {
-      var serverApi = serverApiProvider.getServerApiOrThrow(connectionId);
-      var branches = getProjectBranches(serverApi, projectKey, cancelMonitor);
-      return branches.getMainBranchName();
+      return connectionManager.withValidConnectionAndReturn(connectionId,
+          serverApi -> getProjectBranches(serverApi, projectKey, cancelMonitor))
+        .map(ProjectBranches::getMainBranchName).orElseThrow();
     }
   }
 

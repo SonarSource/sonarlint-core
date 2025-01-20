@@ -24,7 +24,7 @@ import java.util.LinkedHashSet;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
@@ -45,12 +45,12 @@ public class HotspotSynchronizationService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final StorageService storageService;
   private final LanguageSupportRepository languageSupportRepository;
-  private final ServerApiProvider serverApiProvider;
+  private final ConnectionManager connectionManager;
 
-  public HotspotSynchronizationService(StorageService storageService, LanguageSupportRepository languageSupportRepository, ServerApiProvider serverApiProvider) {
+  public HotspotSynchronizationService(StorageService storageService, LanguageSupportRepository languageSupportRepository, ConnectionManager connectionManager) {
     this.storageService = storageService;
     this.languageSupportRepository = languageSupportRepository;
-    this.serverApiProvider = serverApiProvider;
+    this.connectionManager = connectionManager;
   }
 
   public void syncServerHotspotsForProject(ServerApi serverApi, String connectionId, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
@@ -73,8 +73,8 @@ public class HotspotSynchronizationService {
   }
 
   public void fetchProjectHotspots(Binding binding, String activeBranch, SonarLintCancelMonitor cancelMonitor) {
-    serverApiProvider.getServerApi(binding.getConnectionId())
-      .ifPresent(serverApi -> downloadAllServerHotspots(binding.getConnectionId(), serverApi, binding.getSonarProjectKey(), activeBranch, cancelMonitor));
+    connectionManager.withValidConnection(binding.getConnectionId(), serverApi ->
+      downloadAllServerHotspots(binding.getConnectionId(), serverApi, binding.getSonarProjectKey(), activeBranch, cancelMonitor));
   }
 
   private void downloadAllServerHotspots(String connectionId, ServerApi serverApi, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
@@ -87,8 +87,8 @@ public class HotspotSynchronizationService {
   }
 
   public void fetchFileHotspots(Binding binding, String activeBranch, Path serverFilePath, SonarLintCancelMonitor cancelMonitor) {
-    serverApiProvider.getServerApi(binding.getConnectionId())
-      .ifPresent(serverApi -> downloadAllServerHotspotsForFile(binding.getConnectionId(), serverApi, binding.getSonarProjectKey(), serverFilePath, activeBranch, cancelMonitor));
+    connectionManager.withValidConnection(binding.getConnectionId(), serverApi ->
+      downloadAllServerHotspotsForFile(binding.getConnectionId(), serverApi, binding.getSonarProjectKey(), serverFilePath, activeBranch, cancelMonitor));
   }
 
   private void downloadAllServerHotspotsForFile(String connectionId, ServerApi serverApi, String projectKey, Path serverRelativeFilePath, String branchName,

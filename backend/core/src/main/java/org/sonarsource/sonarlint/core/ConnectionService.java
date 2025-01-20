@@ -63,23 +63,23 @@ public class ConnectionService {
   private final ApplicationEventPublisher applicationEventPublisher;
   private final ConnectionConfigurationRepository repository;
   private final URI sonarCloudUri;
-  private final ServerApiProvider serverApiProvider;
+  private final ConnectionManager connectionManager;
   private final TokenGeneratorHelper tokenGeneratorHelper;
 
   @Inject
   public ConnectionService(ApplicationEventPublisher applicationEventPublisher, ConnectionConfigurationRepository repository, InitializeParams params,
-    SonarCloudActiveEnvironment sonarCloudActiveEnvironment, TokenGeneratorHelper tokenGeneratorHelper, ServerApiProvider serverApiProvider) {
-    this(applicationEventPublisher, repository, params.getSonarQubeConnections(), params.getSonarCloudConnections(), sonarCloudActiveEnvironment, serverApiProvider,
+    SonarCloudActiveEnvironment sonarCloudActiveEnvironment, TokenGeneratorHelper tokenGeneratorHelper, ConnectionManager connectionManager) {
+    this(applicationEventPublisher, repository, params.getSonarQubeConnections(), params.getSonarCloudConnections(), sonarCloudActiveEnvironment, connectionManager,
       tokenGeneratorHelper);
   }
 
   ConnectionService(ApplicationEventPublisher applicationEventPublisher, ConnectionConfigurationRepository repository,
     @Nullable List<SonarQubeConnectionConfigurationDto> initSonarQubeConnections, @Nullable List<SonarCloudConnectionConfigurationDto> initSonarCloudConnections,
-    SonarCloudActiveEnvironment sonarCloudActiveEnvironment, ServerApiProvider serverApiProvider, TokenGeneratorHelper tokenGeneratorHelper) {
+    SonarCloudActiveEnvironment sonarCloudActiveEnvironment, ConnectionManager connectionManager, TokenGeneratorHelper tokenGeneratorHelper) {
     this.applicationEventPublisher = applicationEventPublisher;
     this.repository = repository;
     this.sonarCloudUri = sonarCloudActiveEnvironment.getUri();
-    this.serverApiProvider = serverApiProvider;
+    this.connectionManager = connectionManager;
     this.tokenGeneratorHelper = tokenGeneratorHelper;
     if (initSonarQubeConnections != null) {
       initSonarQubeConnections.forEach(c -> repository.addOrReplace(adapt(c)));
@@ -157,7 +157,7 @@ public class ConnectionService {
 
   public ValidateConnectionResponse validateConnection(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection,
     SonarLintCancelMonitor cancelMonitor) {
-    var serverApi = serverApiProvider.getForTransientConnection(transientConnection);
+    var serverApi = connectionManager.getForTransientConnection(transientConnection);
     var serverChecker = new ServerVersionAndStatusChecker(serverApi);
     try {
       serverChecker.checkVersionAndStatus(cancelMonitor);
@@ -179,7 +179,7 @@ public class ConnectionService {
 
   public boolean checkSmartNotificationsSupported(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection,
     SonarLintCancelMonitor cancelMonitor) {
-    var serverApi = serverApiProvider.getForTransientConnection(transientConnection);
+    var serverApi = connectionManager.getForTransientConnection(transientConnection);
     var developersApi = serverApi.developers();
     return developersApi.isSupported(cancelMonitor);
   }
@@ -189,7 +189,7 @@ public class ConnectionService {
   }
 
   public List<SonarProjectDto> getAllProjects(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection, SonarLintCancelMonitor cancelMonitor) {
-    var serverApi = serverApiProvider.getForTransientConnection(transientConnection);
+    var serverApi = connectionManager.getForTransientConnection(transientConnection);
     return serverApi.component().getAllProjects(cancelMonitor)
       .stream().map(serverProject -> new SonarProjectDto(serverProject.getKey(), serverProject.getName()))
       .collect(Collectors.toList());
@@ -197,7 +197,7 @@ public class ConnectionService {
 
   public Map<String, String> getProjectNamesByKey(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection,
     List<String> projectKeys, SonarLintCancelMonitor cancelMonitor) {
-    var serverApi = serverApiProvider.getForTransientConnection(transientConnection);
+    var serverApi = connectionManager.getForTransientConnection(transientConnection);
     var projectNamesByKey = new HashMap<String, String>();
     projectKeys.forEach(key -> {
       var projectName = serverApi.component().getProject(key, cancelMonitor).map(ServerProject::getName).orElse(null);

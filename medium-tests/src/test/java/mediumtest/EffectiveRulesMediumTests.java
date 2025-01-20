@@ -237,7 +237,7 @@ class EffectiveRulesMediumTests {
     assertThat(futureResponse).failsWithin(1, TimeUnit.SECONDS)
       .withThrowableOfType(ExecutionException.class)
       .withCauseInstanceOf(ResponseErrorException.class)
-      .withMessageContaining("Connection with ID 'connectionId' does not exist");
+      .withMessageContaining("Connection 'connectionId' is gone");
   }
 
   @SonarLintTest
