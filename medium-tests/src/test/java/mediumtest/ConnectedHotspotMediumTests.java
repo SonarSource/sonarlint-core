@@ -82,7 +82,8 @@ class ConnectedHotspotMediumTests {
 
     var hotspot = client.getRaisedHotspotsForScopeIdAsList(CONFIG_SCOPE_ID).get(0);
     assertThat(hotspot.getRuleKey()).isEqualTo("java:S2068");
-    assertThat(hotspot.getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
+    assertThat(hotspot.getSeverityMode().isLeft()).isTrue();
+    assertThat(hotspot.getSeverityMode().getLeft().getSeverity()).isEqualTo(IssueSeverity.BLOCKER);
   }
 
   private static final String CONNECTION_ID = StringUtils.repeat("very-long-id", 30);

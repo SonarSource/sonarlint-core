@@ -43,14 +43,6 @@ public class AssistCreatingConnectionParams {
     return connectionParams;
   }
 
-  /**
-   * @deprecated Use {@link #getConnectionParams()}.getLeft().getServerUrl() instead.
-   */
-  @Deprecated(since = "10.3", forRemoval = true)
-  public String getServerUrl() {
-    return connectionParams.isLeft() ? connectionParams.getLeft().getServerUrl() : null;
-  }
-
   public String getTokenName() {
     return connectionParams.isLeft() ?
       connectionParams.getLeft().getTokenName()
