@@ -20,7 +20,7 @@
 package testutils;
 
 import java.lang.management.ManagementFactory;
-import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
@@ -57,13 +57,13 @@ public class TestUtils {
     System.out.println(generateThreadDump());
   }
 
-  public static ServerApiProvider mockServerApiProvider() {
+  public static ConnectionManager mockServerApiProvider() {
     var connectionRepository = mock(ConnectionConfigurationRepository.class);
     var awareHttpClientProvider = mock(ConnectionAwareHttpClientProvider.class);
     var httpClientProvider = mock(HttpClientProvider.class);
     var sonarCloudActiveEnvironment = mock(SonarCloudActiveEnvironment.class);
     var client = mock(SonarLintRpcClient.class);
-    var obj = new ServerApiProvider(connectionRepository, awareHttpClientProvider, httpClientProvider,
+    var obj = new ConnectionManager(connectionRepository, awareHttpClientProvider, httpClientProvider,
       sonarCloudActiveEnvironment, client);
     return spy(obj);
   }

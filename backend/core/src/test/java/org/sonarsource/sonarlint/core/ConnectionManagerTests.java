@@ -25,6 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.connection.ServerConnection;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
@@ -32,12 +33,16 @@ import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurat
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
+import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.exception.ForbiddenException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
-class ServerApiProviderTests {
+class ConnectionManagerTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
@@ -45,7 +50,7 @@ class ServerApiProviderTests {
   private final ConnectionAwareHttpClientProvider awareHttpClientProvider = mock(ConnectionAwareHttpClientProvider.class);
   private final HttpClientProvider httpClientProvider = mock(HttpClientProvider.class);
   private final SonarLintRpcClient client = mock(SonarLintRpcClient.class);
-  private final ServerApiProvider underTest = new ServerApiProvider(connectionRepository, awareHttpClientProvider, httpClientProvider,
+  private final ConnectionManager underTest = new ConnectionManager(connectionRepository, awareHttpClientProvider, httpClientProvider,
     SonarCloudActiveEnvironment.prod(), client);
 
   @Test
@@ -135,5 +140,23 @@ class ServerApiProviderTests {
     var serverApi = underTest.getServerApi("sc1");
 
     assertThat(serverApi).isEmpty();
+  }
+
+  @Test
+  void should_log_invalid_connection() {
+    var connectionId = "connectionId";
+    ConnectionManager spy = spy(underTest);
+    var serverApi = mock(ServerApi.class);
+    var serverConnection = new ServerConnection(connectionId, serverApi, client);
+    doReturn(Optional.of(serverConnection)).when(spy).tryGetConnection(connectionId);
+
+    // switch connection to invalid state
+    spy.withValidConnection(connectionId, api -> {
+      throw new ForbiddenException("401");
+    });
+    // attempt to get connection
+    spy.withValidConnection(connectionId, api -> {});
+
+    assertThat(logTester.logs()).contains("Connection 'connectionId' is invalid");
   }
 }

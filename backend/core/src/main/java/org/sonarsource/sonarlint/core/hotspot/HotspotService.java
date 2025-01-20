@@ -25,7 +25,7 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
-import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
@@ -66,20 +66,20 @@ public class HotspotService {
   private final ConfigurationRepository configurationRepository;
   private final ConnectionConfigurationRepository connectionRepository;
 
-  private final ServerApiProvider serverApiProvider;
+  private final ConnectionManager connectionManager;
   private final TelemetryService telemetryService;
   private final SonarProjectBranchTrackingService branchTrackingService;
   private final FindingReportingService findingReportingService;
   private final StorageService storageService;
 
   public HotspotService(SonarLintRpcClient client, StorageService storageService, ConfigurationRepository configurationRepository,
-    ConnectionConfigurationRepository connectionRepository, ServerApiProvider serverApiProvider, TelemetryService telemetryService,
+    ConnectionConfigurationRepository connectionRepository, ConnectionManager connectionManager, TelemetryService telemetryService,
     SonarProjectBranchTrackingService branchTrackingService, FindingReportingService findingReportingService) {
     this.client = client;
     this.storageService = storageService;
     this.configurationRepository = configurationRepository;
     this.connectionRepository = connectionRepository;
-    this.serverApiProvider = serverApiProvider;
+    this.connectionManager = connectionManager;
     this.telemetryService = telemetryService;
     this.branchTrackingService = branchTrackingService;
     this.findingReportingService = findingReportingService;
@@ -128,7 +128,7 @@ public class HotspotService {
   public CheckStatusChangePermittedResponse checkStatusChangePermitted(String connectionId, String hotspotKey, SonarLintCancelMonitor cancelMonitor) {
     // fixme add getConnectionByIdOrThrow
     var connection = connectionRepository.getConnectionById(connectionId);
-    var r = serverApiProvider.getConnectionOrThrow(connectionId)
+    var r = connectionManager.getConnectionOrThrow(connectionId)
       .withClientApiAndReturn(serverApi -> serverApi.hotspot().show(hotspotKey, cancelMonitor));
     var allowedStatuses = HotspotReviewStatus.allowedStatusesOn(connection.getKind());
     // canChangeStatus is false when the 'Administer Hotspots' permission is missing
@@ -151,7 +151,7 @@ public class HotspotService {
       LOG.debug("No binding for config scope {}", configurationScopeId);
       return;
     }
-    serverApiProvider.withValidConnection(effectiveBindingOpt.get().getConnectionId(), serverApi -> {
+    connectionManager.withValidConnection(effectiveBindingOpt.get().getConnectionId(), serverApi -> {
       serverApi.hotspot().changeStatus(hotspotKey, newStatus, cancelMonitor);
       saveStatusInStorage(effectiveBindingOpt.get(), hotspotKey, newStatus);
       telemetryService.hotspotStatusChanged();
