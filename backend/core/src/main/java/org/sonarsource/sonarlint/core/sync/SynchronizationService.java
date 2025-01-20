@@ -39,7 +39,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.branch.MatchedSonarProjectBranchChangedEvent;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.Binding;
@@ -86,7 +86,7 @@ public class SynchronizationService {
   private final SonarLintRpcClient client;
   private final ConfigurationRepository configurationRepository;
   private final LanguageSupportRepository languageSupportRepository;
-  private final ServerApiProvider serverApiProvider;
+  private final ConnectionManager connectionManager;
   private final TaskManager taskManager;
   private final StorageService storageService;
   private final Set<String> connectedModeEmbeddedPluginKeys;
@@ -107,14 +107,14 @@ public class SynchronizationService {
   private final Set<String> ignoreBranchEventForScopes = ConcurrentHashMap.newKeySet();
 
   public SynchronizationService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
-    ServerApiProvider serverApiProvider, StorageService storageService, InitializeParams params, TaintSynchronizationService taintSynchronizationService,
+    ConnectionManager connectionManager, StorageService storageService, InitializeParams params, TaintSynchronizationService taintSynchronizationService,
     IssueSynchronizationService issueSynchronizationService, HotspotSynchronizationService hotspotSynchronizationService,
     SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService, SonarProjectBranchTrackingService sonarProjectBranchTrackingService,
     PluginsRepository pluginsRepository, ApplicationEventPublisher applicationEventPublisher) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
-    this.serverApiProvider = serverApiProvider;
+    this.connectionManager = connectionManager;
     this.taskManager = new TaskManager(client);
     this.storageService = storageService;
     this.connectedModeEmbeddedPluginKeys = params.getConnectedModeEmbeddedPluginPathsByKey().keySet();
@@ -184,7 +184,7 @@ public class SynchronizationService {
     if (boundScopeBySonarProject.isEmpty()) {
       return;
     }
-    serverApiProvider.withValidConnection(connectionId, serverApi -> {
+    connectionManager.withValidConnection(connectionId, serverApi -> {
       var subProgressGap = progressGap / boundScopeBySonarProject.size();
       var subProgress = progress;
       for (var entry : boundScopeBySonarProject.entrySet()) {
@@ -296,7 +296,7 @@ public class SynchronizationService {
   private void synchronizeConnectionAndProjectsIfNeededAsync(String connectionId, Collection<BoundScope> boundScopes) {
     var cancelMonitor = new SonarLintCancelMonitor();
     cancelMonitor.watchForShutdown(scheduledSynchronizer);
-    scheduledSynchronizer.submit(() -> serverApiProvider.withValidConnection(connectionId, serverApi ->
+    scheduledSynchronizer.submit(() -> connectionManager.withValidConnection(connectionId, serverApi ->
       synchronizeConnectionAndProjectsIfNeededSync(connectionId, serverApi, boundScopes, cancelMonitor)));
   }
 

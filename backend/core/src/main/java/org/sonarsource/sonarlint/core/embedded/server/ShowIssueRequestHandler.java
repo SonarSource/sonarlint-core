@@ -41,7 +41,7 @@ import org.apache.hc.core5.http.io.HttpRequestHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.net.URIBuilder;
-import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
@@ -73,18 +73,18 @@ import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 public class ShowIssueRequestHandler implements HttpRequestHandler {
 
   private final SonarLintRpcClient client;
-  private final ServerApiProvider serverApiProvider;
+  private final ConnectionManager connectionManager;
   private final TelemetryService telemetryService;
   private final RequestHandlerBindingAssistant requestHandlerBindingAssistant;
   private final PathTranslationService pathTranslationService;
   private final String sonarCloudUrl;
   private final SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService;
 
-  public ShowIssueRequestHandler(SonarLintRpcClient client, ServerApiProvider serverApiProvider, TelemetryService telemetryService,
+  public ShowIssueRequestHandler(SonarLintRpcClient client, ConnectionManager connectionManager, TelemetryService telemetryService,
     RequestHandlerBindingAssistant requestHandlerBindingAssistant, PathTranslationService pathTranslationService, SonarCloudActiveEnvironment sonarCloudActiveEnvironment,
     SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService) {
     this.client = client;
-    this.serverApiProvider = serverApiProvider;
+    this.connectionManager = connectionManager;
     this.telemetryService = telemetryService;
     this.requestHandlerBindingAssistant = requestHandlerBindingAssistant;
     this.pathTranslationService = pathTranslationService;
@@ -188,13 +188,13 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
 
   private Optional<IssueApi.ServerIssueDetails> tryFetchIssue(String connectionId, String issueKey, String projectKey, String branch, @Nullable String pullRequest,
     SonarLintCancelMonitor cancelMonitor) {
-    return serverApiProvider.withValidConnectionFlatMapOptionalAndReturn(connectionId,
+    return connectionManager.withValidConnectionFlatMapOptionalAndReturn(connectionId,
       serverApi -> serverApi.issue().fetchServerIssue(issueKey, projectKey, branch, pullRequest, cancelMonitor));
   }
 
   private Optional<String> tryFetchCodeSnippet(String connectionId, String fileKey, Common.TextRange textRange, String branch, @Nullable String pullRequest,
     SonarLintCancelMonitor cancelMonitor) {
-    return serverApiProvider.withValidConnectionFlatMapOptionalAndReturn(connectionId,
+    return connectionManager.withValidConnectionFlatMapOptionalAndReturn(connectionId,
       api -> api.issue().getCodeSnippet(fileKey, textRange, branch, pullRequest, cancelMonitor));
   }
 

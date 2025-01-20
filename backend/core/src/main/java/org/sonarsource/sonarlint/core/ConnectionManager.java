@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import com.google.common.annotations.VisibleForTesting;
 import java.net.URI;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -30,7 +29,6 @@ import javax.inject.Singleton;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.connection.ConnectionManager;
 import org.sonarsource.sonarlint.core.connection.ServerConnection;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
@@ -53,7 +51,7 @@ import static org.apache.commons.lang.StringUtils.removeEnd;
 
 @Named
 @Singleton
-public class ServerApiProvider implements ConnectionManager {
+public class ConnectionManager {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final ConnectionConfigurationRepository connectionRepository;
@@ -62,8 +60,8 @@ public class ServerApiProvider implements ConnectionManager {
   private final SonarLintRpcClient client;
   private final URI sonarCloudUri;
 
-  public ServerApiProvider(ConnectionConfigurationRepository connectionRepository, ConnectionAwareHttpClientProvider awareHttpClientProvider, HttpClientProvider httpClientProvider,
-                           SonarCloudActiveEnvironment sonarCloudActiveEnvironment, SonarLintRpcClient client) {
+  public ConnectionManager(ConnectionConfigurationRepository connectionRepository, ConnectionAwareHttpClientProvider awareHttpClientProvider, HttpClientProvider httpClientProvider,
+    SonarCloudActiveEnvironment sonarCloudActiveEnvironment, SonarLintRpcClient client) {
     this.connectionRepository = connectionRepository;
     this.awareHttpClientProvider = awareHttpClientProvider;
     this.httpClientProvider = httpClientProvider;
@@ -145,7 +143,6 @@ public class ServerApiProvider implements ConnectionManager {
       userPass -> httpClientProvider.getHttpClientWithPreemptiveAuth(userPass.getUsername(), userPass.getPassword()));
   }
 
-  @Override
   public ServerConnection getConnectionOrThrow(String connectionId) {
     var serverApi = getServerApiOrThrow(connectionId);
     return new ServerConnection(connectionId, serverApi, client);
@@ -161,28 +158,27 @@ public class ServerApiProvider implements ConnectionManager {
       .map(serverApi -> new ServerConnection(connectionId, serverApi, client));
   }
 
-  @Override
   public ServerApi getTransientConnection(String token,@Nullable String organization,  String baseUrl) {
     return getServerApi(baseUrl, organization, token);
   }
 
-  @Override
   public void withValidConnection(String connectionId, Consumer<ServerApi> serverApiConsumer) {
     getValidConnection(connectionId).ifPresent(connection -> connection.withClientApi(serverApiConsumer));
   }
 
-  @Override
   public <T> Optional<T> withValidConnectionAndReturn(String connectionId, Function<ServerApi, T> serverApiConsumer) {
     return getValidConnection(connectionId).map(connection -> connection.withClientApiAndReturn(serverApiConsumer));
   }
 
-  @Override
   public <T> Optional<T> withValidConnectionFlatMapOptionalAndReturn(String connectionId, Function<ServerApi, Optional<T>> serverApiConsumer) {
     return getValidConnection(connectionId).map(connection -> connection.withClientApiAndReturn(serverApiConsumer)).flatMap(Function.identity());
   }
 
-  @VisibleForTesting
-  public Optional<ServerConnection> getValidConnection(String connectionId) {
-    return tryGetConnection(connectionId).filter(ServerConnection::isValid);
+  private Optional<ServerConnection> getValidConnection(String connectionId) {
+    return tryGetConnection(connectionId).filter(ServerConnection::isValid)
+      .or(() -> {
+        LOG.debug("Connection '{}' is invalid", connectionId);
+        return Optional.empty();
+      });
   }
 }

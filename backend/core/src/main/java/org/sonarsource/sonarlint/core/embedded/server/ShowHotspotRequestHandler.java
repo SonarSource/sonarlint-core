@@ -35,7 +35,7 @@ import org.apache.hc.core5.http.io.HttpRequestHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.net.URIBuilder;
-import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
@@ -57,15 +57,15 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 @Singleton
 public class ShowHotspotRequestHandler implements HttpRequestHandler {
   private final SonarLintRpcClient client;
-  private final ServerApiProvider serverApiProvider;
+  private final ConnectionManager connectionManager;
   private final TelemetryService telemetryService;
   private final RequestHandlerBindingAssistant requestHandlerBindingAssistant;
   private final PathTranslationService pathTranslationService;
 
-  public ShowHotspotRequestHandler(SonarLintRpcClient client, ServerApiProvider serverApiProvider, TelemetryService telemetryService,
+  public ShowHotspotRequestHandler(SonarLintRpcClient client, ConnectionManager connectionManager, TelemetryService telemetryService,
     RequestHandlerBindingAssistant requestHandlerBindingAssistant, PathTranslationService pathTranslationService) {
     this.client = client;
-    this.serverApiProvider = serverApiProvider;
+    this.connectionManager = connectionManager;
     this.telemetryService = telemetryService;
     this.requestHandlerBindingAssistant = requestHandlerBindingAssistant;
     this.pathTranslationService = pathTranslationService;
@@ -105,7 +105,7 @@ public class ShowHotspotRequestHandler implements HttpRequestHandler {
   }
 
   private Optional<ServerHotspotDetails> tryFetchHotspot(String connectionId, String hotspotKey, SonarLintCancelMonitor cancelMonitor) {
-    return serverApiProvider.withValidConnectionFlatMapOptionalAndReturn(connectionId,api -> api.hotspot().fetch(hotspotKey, cancelMonitor));
+    return connectionManager.withValidConnectionFlatMapOptionalAndReturn(connectionId, api -> api.hotspot().fetch(hotspotKey, cancelMonitor));
   }
 
   private static HotspotDetailsDto adapt(String hotspotKey, ServerHotspotDetails hotspot, FilePathTranslation translation) {

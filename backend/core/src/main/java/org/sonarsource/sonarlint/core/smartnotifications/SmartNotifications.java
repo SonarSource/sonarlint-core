@@ -34,7 +34,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Named;
 import javax.inject.Singleton;
-import org.sonarsource.sonarlint.core.ServerApiProvider;
+import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -63,7 +63,7 @@ public class SmartNotifications {
 
   private final ConfigurationRepository configurationRepository;
   private final ConnectionConfigurationRepository connectionRepository;
-  private final ServerApiProvider serverApiProvider;
+  private final ConnectionManager connectionManager;
   private final SonarLintRpcClient client;
   private final TelemetryService telemetryService;
   private final WebSocketService webSocketService;
@@ -72,11 +72,11 @@ public class SmartNotifications {
   private final LastEventPolling lastEventPollingService;
   private ExecutorServiceShutdownWatchable<ScheduledExecutorService> smartNotificationsPolling;
 
-  public SmartNotifications(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository, ServerApiProvider serverApiProvider,
+  public SmartNotifications(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionRepository, ConnectionManager connectionManager,
     SonarLintRpcClient client, StorageService storageService, TelemetryService telemetryService, WebSocketService webSocketService, InitializeParams params) {
     this.configurationRepository = configurationRepository;
     this.connectionRepository = connectionRepository;
-    this.serverApiProvider = serverApiProvider;
+    this.connectionManager = connectionManager;
     this.client = client;
     this.telemetryService = telemetryService;
     this.webSocketService = webSocketService;
@@ -101,7 +101,7 @@ public class SmartNotifications {
     boundScopeByConnectionAndSonarProject.forEach((connectionId, boundScopesByProject) -> {
       var connection = connectionRepository.getConnectionById(connectionId);
       if (connection != null && !connection.isDisableNotifications() && !shouldSkipPolling(connection)) {
-        serverApiProvider.withValidConnection(connectionId,
+        connectionManager.withValidConnection(connectionId,
           serverApi -> manageNotificationsForConnection(serverApi, boundScopesByProject, connection, cancelMonitor));
       }
     });

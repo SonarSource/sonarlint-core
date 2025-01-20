@@ -56,17 +56,17 @@ public class VersionSoonUnsupportedHelper {
   private final SonarLintRpcClient client;
   private final ConfigurationRepository configRepository;
   private final ConnectionConfigurationRepository connectionRepository;
-  private final ServerApiProvider serverApiProvider;
+  private final ConnectionManager connectionManager;
   private final SynchronizationService synchronizationService;
   private final Map<String, Version> cacheConnectionIdPerVersion = new ConcurrentHashMap<>();
   private final ExecutorServiceShutdownWatchable<?> executorService;
 
-  public VersionSoonUnsupportedHelper(SonarLintRpcClient client, ConfigurationRepository configRepository, ServerApiProvider serverApiProvider,
+  public VersionSoonUnsupportedHelper(SonarLintRpcClient client, ConfigurationRepository configRepository, ConnectionManager connectionManager,
     ConnectionConfigurationRepository connectionRepository, SynchronizationService synchronizationService) {
     this.client = client;
     this.configRepository = configRepository;
     this.connectionRepository = connectionRepository;
-    this.serverApiProvider = serverApiProvider;
+    this.connectionManager = connectionManager;
     this.synchronizationService = synchronizationService;
     this.executorService = new ExecutorServiceShutdownWatchable<>(new ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS,
       new LinkedBlockingQueue<>(), r -> new Thread(r, "Version Soon Unsupported Helper")));
@@ -107,7 +107,7 @@ public class VersionSoonUnsupportedHelper {
       try {
         var connection = connectionRepository.getConnectionById(connectionId);
         if (connection != null && connection.getKind() == ConnectionKind.SONARQUBE) {
-          serverApiProvider.tryGetConnectionWithoutCredentials(connectionId)
+          connectionManager.tryGetConnectionWithoutCredentials(connectionId)
             .ifPresent(serverConnection -> serverConnection.withClientApi(serverApi -> {
               var version = synchronizationService.readOrSynchronizeServerVersion(connectionId, serverApi, cancelMonitor);
               var isCached = cacheConnectionIdPerVersion.containsKey(connectionId) && cacheConnectionIdPerVersion.get(connectionId).compareTo(version) == 0;

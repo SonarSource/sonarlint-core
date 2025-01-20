@@ -85,15 +85,15 @@ class SonarProjectsCacheTests {
       return PROJECT_NAME_2;
     }
   };
-  private final ServerApiProvider serverApiProvider = mockServerApiProvider();
+  private final ConnectionManager connectionManager = mockServerApiProvider();
   private final ServerApi serverApi = mock(ServerApi.class, Mockito.RETURNS_DEEP_STUBS);
-  private final SonarProjectsCache underTest = new SonarProjectsCache(serverApiProvider);
+  private final SonarProjectsCache underTest = new SonarProjectsCache(connectionManager);
 
   @BeforeEach
   public void setup() {
-    doReturn(Optional.of(serverApi)).when(serverApiProvider).getServerApi(SQ_1);
+    doReturn(Optional.of(serverApi)).when(connectionManager).getServerApi(SQ_1);
     var serverConnection = new ServerConnection(SQ_1, serverApi, null);
-    doReturn(Optional.of(serverConnection)).when(serverApiProvider).tryGetConnection(SQ_1);
+    doReturn(Optional.of(serverConnection)).when(connectionManager).tryGetConnection(SQ_1);
   }
 
   @Test
