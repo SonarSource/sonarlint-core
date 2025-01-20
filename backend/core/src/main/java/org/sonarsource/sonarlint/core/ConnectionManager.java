@@ -143,16 +143,25 @@ public class ConnectionManager {
       userPass -> httpClientProvider.getHttpClientWithPreemptiveAuth(userPass.getUsername(), userPass.getPassword()));
   }
 
+  /**
+   * Throws ResponseErrorException if connection with provided ID is not found in ConnectionConfigurationRepository
+   */
   public ServerConnection getConnectionOrThrow(String connectionId) {
     var serverApi = getServerApiOrThrow(connectionId);
     return new ServerConnection(connectionId, serverApi, client);
   }
 
+  /**
+   * Returns empty Optional if connection with provided ID is not found in ConnectionConfigurationRepository
+   */
   public Optional<ServerConnection> tryGetConnection(String connectionId) {
     return getServerApi(connectionId)
       .map(serverApi -> new ServerConnection(connectionId, serverApi, client));
   }
 
+  /**
+   * Should be used for WebAPI requests without an authentication
+   */
   public Optional<ServerConnection> tryGetConnectionWithoutCredentials(String connectionId) {
     return getServerApiWithoutCredentials(connectionId)
       .map(serverApi -> new ServerConnection(connectionId, serverApi, client));
