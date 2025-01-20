@@ -134,6 +134,8 @@ public class SloopLauncher {
     if (clientJvmOpts != null) {
       commands.addAll(Arrays.asList(clientJvmOpts.split(" ")));
     }
+    // Avoid displaying the Java icon in the taskbar on Mac
+    commands.add("-Djava.awt.headless=true");
     commands.add("-classpath");
     commands.add(classpath);
     commands.add(SLOOP_CLI_ENTRYPOINT_CLASS);
