@@ -48,7 +48,7 @@ class PathTranslationServiceTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
   private static final String CONFIG_SCOPE = "configScopeA";
-  private final Binding BINDING = new Binding("connectionA", "sonarProjectA");
+  private static final Binding BINDING = new Binding("connectionA", "sonarProjectA");
   private final ClientFileSystemService clientFs = mock(ClientFileSystemService.class);
   private final ConfigurationRepository configurationRepository = mock(ConfigurationRepository.class);
   private final ServerFilePathsProvider serverFilePathsProvider = mock(ServerFilePathsProvider.class);
