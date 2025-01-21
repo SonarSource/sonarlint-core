@@ -2,6 +2,11 @@
 
 ## Breaking changes
 
+* Add new method `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#invalidToken` to notify client that WebAPI calls to SQS/SQC fails due to wrong token
+    * Client can implement this method to offer user to change credentials for the connection to fix the problem
+    * For now notification is being sent only for 403 Forbidden HTTP response code since it's corresponds to malformed/wrong token and ignores 401 Unauthorized response code since it's a user permissions problem that has to be addressed on the server
+    * Also once notification sent, backend doesn't attempt to send any requests to server anymore until credentials changed
+
 * Removed `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#didRaiseIssue` and associated types. See `raiseIssues` and `raiseHotspots` instead.
 * Removed `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer#getIssueTrackingService` and associated types. Tracking is managed by the backend.
 * Removed `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer#getSecurityHotspotMatchingService` and associated types. Tracking is managed by the backend.

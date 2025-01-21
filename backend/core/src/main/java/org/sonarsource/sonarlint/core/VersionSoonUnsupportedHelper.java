@@ -56,17 +56,17 @@ public class VersionSoonUnsupportedHelper {
   private final SonarLintRpcClient client;
   private final ConfigurationRepository configRepository;
   private final ConnectionConfigurationRepository connectionRepository;
-  private final ServerApiProvider serverApiProvider;
+  private final ConnectionManager connectionManager;
   private final SynchronizationService synchronizationService;
   private final Map<String, Version> cacheConnectionIdPerVersion = new ConcurrentHashMap<>();
   private final ExecutorServiceShutdownWatchable<?> executorService;
 
-  public VersionSoonUnsupportedHelper(SonarLintRpcClient client, ConfigurationRepository configRepository, ServerApiProvider serverApiProvider,
+  public VersionSoonUnsupportedHelper(SonarLintRpcClient client, ConfigurationRepository configRepository, ConnectionManager connectionManager,
     ConnectionConfigurationRepository connectionRepository, SynchronizationService synchronizationService) {
     this.client = client;
     this.configRepository = configRepository;
     this.connectionRepository = connectionRepository;
-    this.serverApiProvider = serverApiProvider;
+    this.connectionManager = connectionManager;
     this.synchronizationService = synchronizationService;
     this.executorService = new ExecutorServiceShutdownWatchable<>(new ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS,
       new LinkedBlockingQueue<>(), r -> new Thread(r, "Version Soon Unsupported Helper")));
@@ -107,23 +107,23 @@ public class VersionSoonUnsupportedHelper {
       try {
         var connection = connectionRepository.getConnectionById(connectionId);
         if (connection != null && connection.getKind() == ConnectionKind.SONARQUBE) {
-          var serverApi = serverApiProvider.getServerApiWithoutCredentials(connectionId);
-          if (serverApi.isPresent()) {
-            var version = synchronizationService.getServerConnection(connectionId, serverApi.get()).readOrSynchronizeServerVersion(serverApi.get(), cancelMonitor);
-            var isCached = cacheConnectionIdPerVersion.containsKey(connectionId) && cacheConnectionIdPerVersion.get(connectionId).compareTo(version) == 0;
-            if (!isCached && VersionUtils.isVersionSupportedDuringGracePeriod(version)) {
-              client.showSoonUnsupportedMessage(
-                new ShowSoonUnsupportedMessageParams(
-                  String.format(UNSUPPORTED_NOTIFICATION_ID, connectionId, version.getName()),
-                  configScopeId,
-                  String.format(NOTIFICATION_MESSAGE, version.getName(), connectionId, VersionUtils.getCurrentLts())
-                )
-              );
-              LOG.debug(String.format("Connection '%s' with version '%s' is detected to be soon unsupported",
-                connection.getConnectionId(), version.getName()));
-            }
-            cacheConnectionIdPerVersion.put(connectionId, version);
-          }
+          connectionManager.tryGetConnectionWithoutCredentials(connectionId)
+            .ifPresent(serverConnection -> serverConnection.withClientApi(serverApi -> {
+              var version = synchronizationService.readOrSynchronizeServerVersion(connectionId, serverApi, cancelMonitor);
+              var isCached = cacheConnectionIdPerVersion.containsKey(connectionId) && cacheConnectionIdPerVersion.get(connectionId).compareTo(version) == 0;
+              if (!isCached && VersionUtils.isVersionSupportedDuringGracePeriod(version)) {
+                client.showSoonUnsupportedMessage(
+                  new ShowSoonUnsupportedMessageParams(
+                    String.format(UNSUPPORTED_NOTIFICATION_ID, connectionId, version.getName()),
+                    configScopeId,
+                    String.format(NOTIFICATION_MESSAGE, version.getName(), connectionId, VersionUtils.getCurrentLts())
+                  )
+                );
+                LOG.debug(String.format("Connection '%s' with version '%s' is detected to be soon unsupported",
+                  connection.getConnectionId(), version.getName()));
+              }
+              cacheConnectionIdPerVersion.put(connectionId, version);
+            }));
         }
       } catch (Exception e) {
         LOG.error("Error while checking if soon unsupported", e);

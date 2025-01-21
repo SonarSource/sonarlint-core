@@ -40,6 +40,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
+import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
 
 class ConnectionSyncMediumTests {
   public static final String CONNECTION_ID = "connectionId";
@@ -108,7 +111,7 @@ class ConnectionSyncMediumTests {
             RuleType.VULNERABILITY)))
       .start();
 
-    server.getMockServer().stubFor(get("/api/system/status").willReturn(aResponse().withStatus(401)));
+    server.getMockServer().stubFor(get("/api/system/status").willReturn(aResponse().withStatus(404)));
 
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage.withPlugin(TestPlugin.JAVA))
@@ -126,6 +129,33 @@ class ConnectionSyncMediumTests {
     await().untilAsserted(() -> assertThat(client.getLogMessages()).contains(
       "Synchronizing connection 'connectionId' after credentials changed",
       "Synchronizing project branches for project 'projectKey'"));
+  }
+
+  @SonarLintTest
+  void it_should_notify_client_if_invalid_token() {
+    var status = 403;
+    var client = newFakeClient()
+      .withCredentials(CONNECTION_ID, "user", "pw")
+      .build();
+    when(client.getClientLiveDescription()).thenReturn(this.getClass().getName());
+
+    var server = newSonarQubeServer()
+      .withProject("projectKey", project -> project.withBranch("main"))
+      .withResponseCode(status)
+      .start();
+
+    var backend = newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage.withPlugin(TestPlugin.JAVA).withProject("projectKey"))
+      .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, "projectKey")
+      .withEnabledLanguageInStandaloneMode(JAVA)
+      .withProjectSynchronization()
+      .withFullSynchronization()
+      .build(client);
+    await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Error during synchronization"));
+
+    backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams(CONNECTION_ID));
+
+    await().untilAsserted(() -> assertThat(client.getConnectionIdsWithInvalidToken()).containsExactly(CONNECTION_ID));
   }
 
   private EffectiveRuleDetailsDto getEffectiveRuleDetails(SonarLintTestRpcServer backend, String configScopeId, String ruleKey) {

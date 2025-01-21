@@ -47,14 +47,14 @@ import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singleP
 public class OrganizationsCache {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private final ServerApiProvider serverApiProvider;
+  private final ConnectionManager connectionManager;
 
   private final Cache<Either<TokenDto, UsernamePasswordDto>, TextSearchIndex<OrganizationDto>> textSearchIndexCacheByCredentials = CacheBuilder.newBuilder()
     .expireAfterWrite(5, TimeUnit.MINUTES)
     .build();
 
-  public OrganizationsCache(ServerApiProvider serverApiProvider) {
-    this.serverApiProvider = serverApiProvider;
+  public OrganizationsCache(ConnectionManager connectionManager) {
+    this.connectionManager = connectionManager;
   }
 
   public List<OrganizationDto> fuzzySearchOrganizations(Either<TokenDto, UsernamePasswordDto> credentials, String searchText, SonarLintCancelMonitor cancelMonitor) {
@@ -74,7 +74,7 @@ public class OrganizationsCache {
         LOG.debug("Load user organizations...");
         List<OrganizationDto> orgs;
         try {
-          var serverApi = serverApiProvider.getForSonarCloudNoOrg(credentials);
+          var serverApi = connectionManager.getForSonarCloudNoOrg(credentials);
           var serverOrganizations = serverApi.organization().listUserOrganizations(cancelMonitor);
           orgs = serverOrganizations.stream().map(o -> new OrganizationDto(o.getKey(), o.getName(), o.getDescription())).collect(Collectors.toList());
         } catch (Exception e) {
@@ -103,7 +103,7 @@ public class OrganizationsCache {
 
   @CheckForNull
   public OrganizationDto getOrganization(Either<TokenDto, UsernamePasswordDto> credentials, String organizationKey, SonarLintCancelMonitor cancelMonitor) {
-    var helper = serverApiProvider.getForSonarCloudNoOrg(credentials);
+    var helper = connectionManager.getForSonarCloudNoOrg(credentials);
     var serverOrganization = helper.organization().getOrganization(organizationKey, cancelMonitor);
     return serverOrganization.map(o -> new OrganizationDto(o.getKey(), o.getName(), o.getDescription())).orElse(null);
   }
