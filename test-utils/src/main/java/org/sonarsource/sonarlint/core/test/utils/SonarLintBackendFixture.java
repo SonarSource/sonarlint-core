@@ -496,8 +496,8 @@ public class SonarLintBackendFixture {
         SonarCloudAlternativeEnvironmentDto sonarCloudAlternativeEnvironment = null;
         if (sonarCloudUrl != null || sonarCloudWebSocketsUrl != null) {
           sonarCloudAlternativeEnvironment = new SonarCloudAlternativeEnvironmentDto(
-            sonarCloudUrl == null ? SonarCloudActiveEnvironment.PRODUCTION_URI : URI.create(sonarCloudUrl),
-            sonarCloudWebSocketsUrl == null ? SonarCloudActiveEnvironment.prod().getWebSocketsEndpointUri() : URI.create(sonarCloudWebSocketsUrl));
+            sonarCloudUrl == null ? SonarCloudActiveEnvironment.PRODUCTION_EU_URI : URI.create(sonarCloudUrl),
+            sonarCloudWebSocketsUrl == null ? SonarCloudActiveEnvironment.prodEu().getWebSocketsEndpointUri() : URI.create(sonarCloudWebSocketsUrl));
         }
 
         var sslConfiguration = new SslConfigurationDto(null, null, null, keyStorePath, keyStorePassword, keyStoreType);

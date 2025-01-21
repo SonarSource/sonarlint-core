@@ -51,7 +51,7 @@ class ConnectionManagerTests {
   private final HttpClientProvider httpClientProvider = mock(HttpClientProvider.class);
   private final SonarLintRpcClient client = mock(SonarLintRpcClient.class);
   private final ConnectionManager underTest = new ConnectionManager(connectionRepository, awareHttpClientProvider, httpClientProvider,
-    SonarCloudActiveEnvironment.prod(), client);
+    SonarCloudActiveEnvironment.prodEu(), client);
 
   @Test
   void getServerApi_for_sonarqube() {

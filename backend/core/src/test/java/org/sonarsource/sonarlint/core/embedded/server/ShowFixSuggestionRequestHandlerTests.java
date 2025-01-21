@@ -70,7 +70,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment.PRODUCTION_URI;
+import static org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment.PRODUCTION_EU_URI;
 
 class ShowFixSuggestionRequestHandlerTests {
   @RegisterExtension
@@ -100,7 +100,7 @@ class ShowFixSuggestionRequestHandlerTests {
     when(featureFlagsDto.canOpenFixSuggestion()).thenReturn(true);
     initializeParams = mock(InitializeParams.class);
     when(initializeParams.getFeatureFlags()).thenReturn(featureFlagsDto);
-    var sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
+    var sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prodEu();
     telemetryService = mock(TelemetryService.class);
     var sonarProjectBranchesSynchronizationService = mock(SonarProjectBranchesSynchronizationService.class);
     when(sonarProjectBranchesSynchronizationService.getProjectBranches(any(), any(), any())).thenReturn(new ProjectBranches(Set.of(), "main"));
@@ -108,7 +108,7 @@ class ShowFixSuggestionRequestHandlerTests {
     var clientFs = mock(ClientFileSystemService.class);
     when(clientFs.getFiles(any())).thenReturn(List.of(clientFile));
     var connectionConfiguration = mock(ConnectionConfigurationRepository.class);
-    when(connectionConfiguration.hasConnectionWithOrigin(PRODUCTION_URI.toString())).thenReturn(true);
+    when(connectionConfiguration.hasConnectionWithOrigin(PRODUCTION_EU_URI.toString())).thenReturn(true);
 
     showFixSuggestionRequestHandler = new ShowFixSuggestionRequestHandler(sonarLintRpcClient, telemetryService, initializeParams,
       new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintRpcClient, connectionConfigurationRepository,
@@ -124,7 +124,7 @@ class ShowFixSuggestionRequestHandlerTests {
       "&issue=AX2VL6pgAvx3iwyNtLyr&branch=branch" +
       "&organizationKey=sample-organization"));
     when(request.getMethod()).thenReturn(Method.POST.name());
-    when(request.getHeader("Origin")).thenReturn(new BasicHeader("Origin", PRODUCTION_URI));
+    when(request.getHeader("Origin")).thenReturn(new BasicHeader("Origin", PRODUCTION_EU_URI));
     when(request.getEntity()).thenReturn(new StringEntity("""
       {
         "fileEdit": {
@@ -159,7 +159,7 @@ class ShowFixSuggestionRequestHandlerTests {
       "?project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
       "&issue=AX2VL6pgAvx3iwyNtLyr&branch=branch" +
       "&organizationKey=sample-organization");
-    request.addHeader("Origin", PRODUCTION_URI);
+    request.addHeader("Origin", PRODUCTION_EU_URI);
     request.setEntity(new StringEntity("""
       {
         "fileEdit": {
@@ -203,7 +203,7 @@ class ShowFixSuggestionRequestHandlerTests {
       "&issue=AX2VL6pgAvx3iwyNtLyr&tokenName=abc" +
       "&organizationKey=sample-organization" +
       "&tokenValue=123");
-    request.addHeader("Origin", PRODUCTION_URI);
+    request.addHeader("Origin", PRODUCTION_EU_URI);
     request.setEntity(new StringEntity("""
       {
         "fileEdit": {
@@ -251,7 +251,7 @@ class ShowFixSuggestionRequestHandlerTests {
       "?project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
       "&issue=AX2VL6pgAvx3iwyNtLyr&branch=branch" +
       "&organizationKey=sample-organization");
-    request.addHeader("Origin", PRODUCTION_URI);
+    request.addHeader("Origin", PRODUCTION_EU_URI);
     request.setEntity(new StringEntity("""
       {
         "fileEdit": {
@@ -273,7 +273,7 @@ class ShowFixSuggestionRequestHandlerTests {
     var context = mock(HttpContext.class);
 
     when(connectionConfigurationRepository.findByOrganization(any())).thenReturn(List.of(
-      new SonarCloudConnectionConfiguration(PRODUCTION_URI, "name", "organizationKey", false)));
+      new SonarCloudConnectionConfiguration(PRODUCTION_EU_URI, "name", "organizationKey", false)));
     when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope", "connectionId", "projectKey")));
     when(sonarLintRpcClient.matchProjectBranch(any())).thenReturn(CompletableFuture.completedFuture(new MatchProjectBranchResponse(false)));
 
@@ -294,7 +294,7 @@ class ShowFixSuggestionRequestHandlerTests {
       "?project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
       "&issue=AX2VL6pgAvx3iwyNtLyr" +
       "&organizationKey=sample-organization");
-    request.addHeader("Origin", PRODUCTION_URI);
+    request.addHeader("Origin", PRODUCTION_EU_URI);
     request.setEntity(new StringEntity("""
       {
         "fileEdit": {
@@ -318,7 +318,7 @@ class ShowFixSuggestionRequestHandlerTests {
     when(clientFile.getUri()).thenReturn(URI.create("file:///src/main/java/Main.java"));
     when(filePathTranslation.serverToIdePath(any())).thenReturn(Path.of("src/main/java/Main.java"));
     when(connectionConfigurationRepository.findByOrganization(any())).thenReturn(List.of(
-      new SonarCloudConnectionConfiguration(PRODUCTION_URI, "name", "organizationKey", false)));
+      new SonarCloudConnectionConfiguration(PRODUCTION_EU_URI, "name", "organizationKey", false)));
     when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope", "connectionId", "projectKey")));
     when(sonarLintRpcClient.matchProjectBranch(any())).thenReturn(CompletableFuture.completedFuture(new MatchProjectBranchResponse(true)));
 

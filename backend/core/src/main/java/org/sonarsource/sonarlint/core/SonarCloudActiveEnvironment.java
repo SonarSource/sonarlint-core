@@ -23,17 +23,26 @@ import java.net.URI;
 
 public class SonarCloudActiveEnvironment {
 
-  public static final URI PRODUCTION_URI = URI.create("https://sonarcloud.io");
+  public static final URI PRODUCTION_EU_URI = URI.create("https://sonarcloud.io");
+  public static final URI PRODUCTION_US_URI = URI.create("https://us.sonarcloud.io");
+  public static final URI WS_EU_ENDPOINT_URI = URI.create("wss://events-api.sonarcloud.io/");
+  public static final URI WS_US_ENDPOINT_URI = URI.create("wss://events-api.sonarcloud.io/");
 
-  public static SonarCloudActiveEnvironment prod() {
-    return new SonarCloudActiveEnvironment(PRODUCTION_URI, URI.create("wss://events-api.sonarcloud.io/"));
+  public static SonarCloudActiveEnvironment prodEu() {
+    return new SonarCloudActiveEnvironment(PRODUCTION_EU_URI, WS_EU_ENDPOINT_URI, SonarCloudRegion.EU);
   }
 
+  public static SonarCloudActiveEnvironment prodUs() {
+    return new SonarCloudActiveEnvironment(PRODUCTION_US_URI, WS_US_ENDPOINT_URI, SonarCloudRegion.US);
+  }
+
+  private final SonarCloudRegion region;
   private final URI uri;
   private final URI webSocketsEndpointUri;
 
-  public SonarCloudActiveEnvironment(URI uri, URI webSocketsEndpointUri) {
+  public SonarCloudActiveEnvironment(URI uri, URI webSocketsEndpointUri, SonarCloudRegion region) {
     this.uri = uri;
+    this.region = region;
     this.webSocketsEndpointUri = webSocketsEndpointUri;
   }
 
@@ -43,5 +52,9 @@ public class SonarCloudActiveEnvironment {
 
   public URI getWebSocketsEndpointUri() {
     return webSocketsEndpointUri;
+  }
+
+  public SonarCloudRegion getRegion() {
+    return region;
   }
 }

@@ -68,14 +68,14 @@ class ConnectionServiceTests {
 
   @Test
   void initialize_provide_connections() {
-    underTest = new ConnectionService(eventPublisher, repository, List.of(SQ_DTO_1, SQ_DTO_2), List.of(SC_DTO_1, SC_DTO_2), SonarCloudActiveEnvironment.prod(), null, null);
+    underTest = new ConnectionService(eventPublisher, repository, List.of(SQ_DTO_1, SQ_DTO_2), List.of(SC_DTO_1, SC_DTO_2), SonarCloudActiveEnvironment.prodEu(), null, null);
 
     assertThat(repository.getConnectionsById()).containsOnlyKeys("sq1", "sq2", "sc1", "sc2");
   }
 
   @Test
   void add_new_connection_and_post_event() {
-    underTest = new ConnectionService(eventPublisher, repository, List.of(), List.of(), SonarCloudActiveEnvironment.prod(), null, null);
+    underTest = new ConnectionService(eventPublisher, repository, List.of(), List.of(), SonarCloudActiveEnvironment.prodEu(), null, null);
 
     underTest.didUpdateConnections(List.of(SQ_DTO_1), List.of());
     assertThat(repository.getConnectionsById()).containsOnlyKeys("sq1");
@@ -105,7 +105,7 @@ class ConnectionServiceTests {
 
   @Test
   void multiple_connections_with_same_id_should_log_and_ignore() {
-    underTest = new ConnectionService(eventPublisher, repository, List.of(), List.of(), SonarCloudActiveEnvironment.prod(), null, null);
+    underTest = new ConnectionService(eventPublisher, repository, List.of(), List.of(), SonarCloudActiveEnvironment.prodEu(), null, null);
     underTest.didUpdateConnections(List.of(SQ_DTO_1), List.of());
 
     underTest.didUpdateConnections(List.of(SQ_DTO_1, SQ_DTO_1_DUP), List.of());
@@ -121,7 +121,7 @@ class ConnectionServiceTests {
 
   @Test
   void remove_connection() {
-    underTest = new ConnectionService(eventPublisher, repository, List.of(SQ_DTO_1), List.of(SC_DTO_1), SonarCloudActiveEnvironment.prod(), null, null);
+    underTest = new ConnectionService(eventPublisher, repository, List.of(SQ_DTO_1), List.of(SC_DTO_1), SonarCloudActiveEnvironment.prodEu(), null, null);
     assertThat(repository.getConnectionsById()).containsKeys("sq1", "sc1");
 
     underTest.didUpdateConnections(List.of(SQ_DTO_1), List.of());
@@ -140,7 +140,7 @@ class ConnectionServiceTests {
   @Test
   void remove_connection_should_log_if_unknown_connection_and_ignore() {
     var mockedRepo = mock(ConnectionConfigurationRepository.class);
-    underTest = new ConnectionService(eventPublisher, mockedRepo, List.of(), List.of(), SonarCloudActiveEnvironment.prod(), null, null);
+    underTest = new ConnectionService(eventPublisher, mockedRepo, List.of(), List.of(), SonarCloudActiveEnvironment.prodEu(), null, null);
 
     // Emulate a race condition on the repository: the connection is gone between get and remove
     when(mockedRepo.getConnectionsById()).thenReturn(Map.of("id", new SonarQubeConnectionConfiguration("id", "http://foo", true)));
@@ -153,7 +153,7 @@ class ConnectionServiceTests {
 
   @Test
   void update_connection() {
-    underTest = new ConnectionService(eventPublisher, repository, List.of(SQ_DTO_1), List.of(), SonarCloudActiveEnvironment.prod(), null, null);
+    underTest = new ConnectionService(eventPublisher, repository, List.of(SQ_DTO_1), List.of(), SonarCloudActiveEnvironment.prodEu(), null, null);
 
     underTest.didUpdateConnections(List.of(SQ_DTO_1_DUP), List.of());
 
@@ -173,7 +173,7 @@ class ConnectionServiceTests {
   @Test
   void update_connection_should_log_if_unknown_connection_and_add() {
     var mockedRepo = mock(ConnectionConfigurationRepository.class);
-    underTest = new ConnectionService(eventPublisher, mockedRepo, List.of(), List.of(), SonarCloudActiveEnvironment.prod(), null, null);
+    underTest = new ConnectionService(eventPublisher, mockedRepo, List.of(), List.of(), SonarCloudActiveEnvironment.prodEu(), null, null);
 
     // Emulate a race condition on the repository: the connection is gone between get and add
     when(mockedRepo.getConnectionsById()).thenReturn(Map.of(SQ_DTO_2.getConnectionId(), new SonarQubeConnectionConfiguration(SQ_DTO_2.getConnectionId(), "http://foo", true)));

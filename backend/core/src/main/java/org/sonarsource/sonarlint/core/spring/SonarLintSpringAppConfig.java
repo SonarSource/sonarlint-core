@@ -37,6 +37,7 @@ import org.sonarsource.sonarlint.core.ConnectionSuggestionProvider;
 import org.sonarsource.sonarlint.core.OrganizationsCache;
 import org.sonarsource.sonarlint.core.SharedConnectedModeSettingsProvider;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
+import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.TokenGeneratorHelper;
 import org.sonarsource.sonarlint.core.VersionSoonUnsupportedHelper;
@@ -206,8 +207,8 @@ public class SonarLintSpringAppConfig {
   @Bean
   SonarCloudActiveEnvironment provideSonarCloudActiveEnvironment(InitializeParams params) {
     var alternativeSonarCloudEnv = params.getAlternativeSonarCloudEnvironment();
-    return alternativeSonarCloudEnv == null ? SonarCloudActiveEnvironment.prod()
-      : new SonarCloudActiveEnvironment(alternativeSonarCloudEnv.getUri(), alternativeSonarCloudEnv.getWebSocketsEndpointUri());
+    return alternativeSonarCloudEnv == null ? SonarCloudActiveEnvironment.prodEu()
+      : new SonarCloudActiveEnvironment(alternativeSonarCloudEnv.getUri(), alternativeSonarCloudEnv.getWebSocketsEndpointUri(), SonarCloudRegion.ALTERNATIVE);
   }
 
   @Bean
