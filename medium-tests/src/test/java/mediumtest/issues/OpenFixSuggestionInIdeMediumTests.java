@@ -424,7 +424,7 @@ class OpenFixSuggestionInIdeMediumTests {
     doAnswer((Answer<AssistCreatingConnectionResponse>) invocation -> {
       backend.getConnectionService().didUpdateConnections(
         new DidUpdateConnectionsParams(Collections.emptyList(),
-          List.of(new SonarCloudConnectionConfigurationDto(connectionId, ORG_KEY, true))));
+          List.of(new SonarCloudConnectionConfigurationDto(connectionId, ORG_KEY, "EU", true))));
       return new AssistCreatingConnectionResponse(connectionId);
     }).when(fakeClient).assistCreatingConnection(any(), any());
   }

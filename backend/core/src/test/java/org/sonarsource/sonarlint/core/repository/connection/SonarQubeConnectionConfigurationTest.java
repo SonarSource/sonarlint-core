@@ -50,7 +50,7 @@ class SonarQubeConnectionConfigurationTest {
       .isEqualTo(new SonarQubeConnectionConfiguration("id1", "http://server1", true))
       .isNotEqualTo(new SonarQubeConnectionConfiguration("id2", "http://server1", true))
       .isNotEqualTo(new SonarQubeConnectionConfiguration("id1", "http://server2", true))
-      .isNotEqualTo(new SonarCloudConnectionConfiguration(URI.create("http://server1"), "id1", "org1", true))
+      .isNotEqualTo(new SonarCloudConnectionConfiguration(URI.create("http://server1"), "id1", "org1", "EU", true))
       .hasSameHashCodeAs(new SonarQubeConnectionConfiguration("id1", "http://server1", true));
   }
 

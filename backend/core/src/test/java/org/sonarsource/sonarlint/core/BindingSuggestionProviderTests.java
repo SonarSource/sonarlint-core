@@ -64,7 +64,7 @@ class BindingSuggestionProviderTests {
   public static final String SC_1_ID = "sc1";
   public static final String SQ_2_ID = "sq2";
   public static final SonarQubeConnectionConfiguration SQ_1 = new SonarQubeConnectionConfiguration(SQ_1_ID, "http://mysonarqube.com", true);
-  public static final SonarCloudConnectionConfiguration SC_1 = new SonarCloudConnectionConfiguration(SonarCloudActiveEnvironment.PRODUCTION_EU_URI, SC_1_ID, "myorg", true);
+  public static final SonarCloudConnectionConfiguration SC_1 = new SonarCloudConnectionConfiguration(SonarCloudActiveEnvironment.PRODUCTION_EU_URI, SC_1_ID, "myorg", "EU", true);
   public static final String CONFIG_SCOPE_ID_1 = "configScope1";
   public static final String PROJECT_KEY_1 = "projectKey1";
   public static final ServerProject SERVER_PROJECT_1 = serverProject(PROJECT_KEY_1, "Project 1");

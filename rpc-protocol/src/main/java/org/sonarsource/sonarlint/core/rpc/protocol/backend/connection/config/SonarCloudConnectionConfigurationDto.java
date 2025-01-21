@@ -26,11 +26,13 @@ public class SonarCloudConnectionConfigurationDto {
    */
   private final String connectionId;
   private final String organization;
+  private final String region;
   private final boolean disableNotifications;
 
-  public SonarCloudConnectionConfigurationDto(String connectionId, String organization, boolean disableNotifications) {
+  public SonarCloudConnectionConfigurationDto(String connectionId, String organization, String region, boolean disableNotifications) {
     this.connectionId = connectionId;
     this.organization = organization;
+    this.region = region;
     this.disableNotifications = disableNotifications;
   }
 
@@ -40,6 +42,10 @@ public class SonarCloudConnectionConfigurationDto {
 
   public String getOrganization() {
     return organization;
+  }
+
+  public String getRegion() {
+    return region;
   }
 
   public boolean isDisableNotifications() {

@@ -451,7 +451,7 @@ class ServerSentEventsMediumTests {
         .start();
 
       backend.getConnectionService()
-        .didUpdateConnections(new DidUpdateConnectionsParams(Collections.emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", true))));
+        .didUpdateConnections(new DidUpdateConnectionsParams(Collections.emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", "EU", true))));
 
       await().during(Duration.ofMillis(300)).until(() -> requestedPaths().isEmpty());
     }
