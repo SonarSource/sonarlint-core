@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.commons;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 
 import static org.sonarsource.sonarlint.core.commons.ConnectionKind.SONARCLOUD;
@@ -70,6 +69,6 @@ public enum HotspotReviewStatus {
 
   public static List<HotspotReviewStatus> allowedStatusesOn(ConnectionKind kind) {
     return Arrays.stream(HotspotReviewStatus.values()).filter(status -> status.isAllowedOn(kind))
-      .collect(Collectors.toList());
+      .toList();
   }
 }

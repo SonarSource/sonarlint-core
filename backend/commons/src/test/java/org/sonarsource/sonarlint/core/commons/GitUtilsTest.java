@@ -213,14 +213,14 @@ class GitUtilsTest {
     var fileCPath = Path.of("fileC");
 
     var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(projectDirPath);
-    assertThat(Stream.of(fileAPath, fileBPath, fileCPath).filter(not(sonarLintGitIgnore::isFileIgnored)).collect(Collectors.toList()))
+    assertThat(Stream.of(fileAPath, fileBPath, fileCPath).filter(not(sonarLintGitIgnore::isFileIgnored)).toList())
       .hasSize(3)
       .containsExactly(fileAPath, fileBPath, fileCPath);
 
     addFileToGitIgnoreAndCommit(git, "fileB");
 
     sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(projectDirPath);
-    assertThat(Stream.of(fileAPath, fileBPath, fileCPath).filter(not(sonarLintGitIgnore::isFileIgnored)).collect(Collectors.toList()))
+    assertThat(Stream.of(fileAPath, fileBPath, fileCPath).filter(not(sonarLintGitIgnore::isFileIgnored)).toList())
       .hasSize(2)
       .containsExactly(fileAPath, fileCPath);
   }
@@ -236,14 +236,14 @@ class GitUtilsTest {
     createFile(projectDirPath, fileC.toString(), "line1", "line2", "line3");
 
     var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(projectDirPath);
-    assertThat(Stream.of(fileA, fileB, fileC).filter(not(sonarLintGitIgnore::isFileIgnored)).collect(Collectors.toList()))
+    assertThat(Stream.of(fileA, fileB, fileC).filter(not(sonarLintGitIgnore::isFileIgnored)).toList())
       .hasSize(3)
       .containsExactly(fileA, fileB, fileC);
 
     addFileToGitIgnoreAndCommit(git, "myDir/");
 
     sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(projectDirPath);
-    assertThat(Stream.of(fileA, fileB, fileC).filter(not(sonarLintGitIgnore::isFileIgnored)).collect(Collectors.toList()))
+    assertThat(Stream.of(fileA, fileB, fileC).filter(not(sonarLintGitIgnore::isFileIgnored)).toList())
       .hasSize(1)
       .containsExactly(fileA);
   }
@@ -266,7 +266,7 @@ class GitUtilsTest {
     assertThat(logTester.logs(LogOutput.Level.INFO))
       .anyMatch(s -> s.contains(".gitignore file was not found for "));
 
-    assertThat(Stream.of(fileAPath, fileBPath, fileCPath).filter(not(sonarLintGitIgnore::isFileIgnored)).collect(Collectors.toList()))
+    assertThat(Stream.of(fileAPath, fileBPath, fileCPath).filter(not(sonarLintGitIgnore::isFileIgnored)).toList())
       .hasSize(3)
       .containsExactly(fileAPath, fileBPath, fileCPath);
   }

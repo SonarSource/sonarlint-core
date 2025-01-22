@@ -293,8 +293,7 @@ public class RulesService {
   public void onServerEventReceived(SonarServerEventReceivedEvent eventReceived) {
     var connectionId = eventReceived.getConnectionId();
     var serverEvent = eventReceived.getEvent();
-    if (serverEvent instanceof RuleSetChangedEvent) {
-      var ruleSetChangedEvent = (RuleSetChangedEvent) serverEvent;
+    if (serverEvent instanceof RuleSetChangedEvent ruleSetChangedEvent) {
       updateStorage(connectionId, ruleSetChangedEvent);
       processEvent(ruleSetChangedEvent, connectionId);
     }

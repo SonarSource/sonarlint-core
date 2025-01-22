@@ -83,11 +83,9 @@ public class ServerFileExclusions {
         return false;
       }
     }
-    if (exclusionPatterns.length > 0) {
-      for (SonarLintPathPattern pattern : exclusionPatterns) {
-        if (pattern.match(relativePath)) {
-          return false;
-        }
+    for (SonarLintPathPattern pattern : exclusionPatterns) {
+      if (pattern.match(relativePath)) {
+        return false;
       }
     }
     return true;

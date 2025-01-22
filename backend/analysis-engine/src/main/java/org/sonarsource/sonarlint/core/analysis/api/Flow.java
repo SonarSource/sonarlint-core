@@ -20,10 +20,9 @@
 package org.sonarsource.sonarlint.core.analysis.api;
 
 import java.util.List;
+import java.util.stream.Collectors;
 import org.sonar.api.batch.sensor.issue.IssueLocation;
 import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.SonarLintInputFile;
-
-import static java.util.stream.Collectors.toList;
 
 public class Flow {
   private final List<org.sonarsource.sonarlint.core.analysis.api.IssueLocation> locations;
@@ -34,7 +33,7 @@ public class Flow {
         i.inputComponent().isFile() ? ((SonarLintInputFile) i.inputComponent()).getClientInputFile() : null,
         i.textRange(),
         i.message()))
-      .collect(toList());
+      .collect(Collectors.toList());
   }
 
   public List<org.sonarsource.sonarlint.core.analysis.api.IssueLocation> locations() {

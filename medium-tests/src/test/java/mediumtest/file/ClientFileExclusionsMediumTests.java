@@ -136,9 +136,10 @@ class ClientFileExclusionsMediumTests {
   void it_should_not_exclude_client_defined_file_exclusion_in_connected_mode(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var ideFilePath = "Foo.java";
     var filePath = AnalysisUtils.createFile(baseDir, ideFilePath,
-      "// FIXME foo bar\n" +
-        "public class Foo {\n" +
-        "}");
+      """
+        // FIXME foo bar
+        public class Foo {
+        }""");
     var projectKey = "projectKey";
     var connectionId = "connectionId";
     var branchName = "main";
@@ -181,9 +182,10 @@ class ClientFileExclusionsMediumTests {
   void it_should_exclude_non_user_defined_files_in_connected_mode(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var ideFilePath = "Foo.java";
     var filePath = AnalysisUtils.createFile(baseDir, ideFilePath,
-      "// FIXME foo bar\n" +
-        "public class Foo {\n" +
-        "}");
+      """
+        // FIXME foo bar
+        public class Foo {
+        }""");
     var projectKey = "projectKey";
     var connectionId = "connectionId";
     var branchName = "main";
@@ -223,12 +225,13 @@ class ClientFileExclusionsMediumTests {
 
   private static Path createXmlFile(Path baseDir) {
     return AnalysisUtils.createFile(baseDir, "pom.xml",
-      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        + "<project>\n"
-        + "  <modelVersion>4.0.0</modelVersion>\n"
-        + "  <groupId>com.foo</groupId>\n"
-        + "  <artifactId>bar</artifactId>\n"
-        + "  <version>${pom.version}</version>\n"
-        + "</project>");
+      """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project>
+          <modelVersion>4.0.0</modelVersion>
+          <groupId>com.foo</groupId>
+          <artifactId>bar</artifactId>
+          <version>${pom.version}</version>
+        </project>""");
   }
 }

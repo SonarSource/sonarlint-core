@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -640,7 +639,7 @@ class ServerSentEventsMediumTests {
       .map(ServeEvent::getRequest)
       .map(LoggedRequest::getUrl)
       .filter(pattern.asPredicate())
-      .collect(Collectors.toList());
+      .toList();
   }
 
 }

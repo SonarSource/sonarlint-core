@@ -166,8 +166,8 @@ public class BindingClueProvider {
   }
 
   private Set<String> matchConnections(BindingClue bindingClue, Set<String> eligibleConnectionIds) {
-    if (bindingClue instanceof SonarQubeBindingClue) {
-      var serverUrl = ((SonarQubeBindingClue) bindingClue).serverUrl;
+    if (bindingClue instanceof SonarQubeBindingClue sonarQubeBindingClue) {
+      var serverUrl = sonarQubeBindingClue.serverUrl;
       return eligibleConnectionIds.stream().map(connectionRepository::getConnectionById)
         .filter(SonarQubeConnectionConfiguration.class::isInstance)
         .map(SonarQubeConnectionConfiguration.class::cast)
@@ -175,8 +175,8 @@ public class BindingClueProvider {
         .map(AbstractConnectionConfiguration::getConnectionId)
         .collect(toSet());
     }
-    if (bindingClue instanceof SonarCloudBindingClue) {
-      var organization = ((SonarCloudBindingClue) bindingClue).organization;
+    if (bindingClue instanceof SonarCloudBindingClue sonarCloudBindingClue) {
+      var organization = sonarCloudBindingClue.organization;
       return eligibleConnectionIds.stream().map(connectionRepository::getConnectionById)
         .filter(SonarCloudConnectionConfiguration.class::isInstance)
         .map(SonarCloudConnectionConfiguration.class::cast)

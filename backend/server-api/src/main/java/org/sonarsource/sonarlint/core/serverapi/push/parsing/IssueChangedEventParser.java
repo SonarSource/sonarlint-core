@@ -54,7 +54,7 @@ public class IssueChangedEventParser implements EventParser<IssueChangedEvent> {
         .map(issueChange ->
           new IssueChangedEvent.Issue(issueChange.issueKey, issueChange.branchName, adapt(issueChange.impacts))
         )
-        .collect(Collectors.toList()),
+        .toList(),
       payload.userSeverity != null ? IssueSeverity.valueOf(payload.userSeverity) : null,
       payload.userType != null ? RuleType.valueOf(payload.userType) : null,
       payload.resolved));

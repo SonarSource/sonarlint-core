@@ -30,7 +30,7 @@ public interface ClientLogOutput {
   void log(String formattedMessage, Level level);
 
   enum Level {
-    ERROR, WARN, INFO, DEBUG, TRACE;
+    ERROR, WARN, INFO, DEBUG, TRACE
   }
 
   static String stackTraceToString(Throwable t) {

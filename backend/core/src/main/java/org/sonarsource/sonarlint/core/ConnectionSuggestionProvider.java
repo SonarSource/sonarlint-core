@@ -147,16 +147,16 @@ public class ConnectionSuggestionProvider {
   }
 
   private Optional<Either<String, String>> handleBindingClue(BindingClueProvider.BindingClue bindingClue) {
-    if (bindingClue instanceof BindingClueProvider.SonarCloudBindingClue) {
+    if (bindingClue instanceof BindingClueProvider.SonarCloudBindingClue sonarCloudBindingClue) {
       LOG.debug("Found a SonarCloud binding clue");
-      var organization = ((BindingClueProvider.SonarCloudBindingClue) bindingClue).getOrganization();
+      var organization = sonarCloudBindingClue.getOrganization();
       var connection = connectionRepository.findByOrganization(organization);
       if (connection.isEmpty()) {
         return Optional.of(Either.forRight(organization));
       }
-    } else if (bindingClue instanceof BindingClueProvider.SonarQubeBindingClue) {
+    } else if (bindingClue instanceof BindingClueProvider.SonarQubeBindingClue sonarQubeBindingClue) {
       LOG.debug("Found a SonarQube binding clue");
-      var serverUrl = ((BindingClueProvider.SonarQubeBindingClue) bindingClue).getServerUrl();
+      var serverUrl = sonarQubeBindingClue.getServerUrl();
       var connection = connectionRepository.findByUrl(serverUrl);
       if (connection.isEmpty()) {
         return Optional.of(Either.forLeft(removeEnd(serverUrl, "/")));

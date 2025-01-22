@@ -23,7 +23,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -307,7 +306,7 @@ public class MapSettings extends Settings {
   public List<String> getKeysStartingWith(String prefix) {
     return getProperties().keySet().stream()
       .filter(key -> StringUtils.startsWith(key, prefix))
-      .collect(Collectors.toList());
+      .toList();
   }
 
   /**

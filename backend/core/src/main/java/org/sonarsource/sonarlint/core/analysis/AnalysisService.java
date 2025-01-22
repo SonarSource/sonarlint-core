@@ -122,7 +122,6 @@ import static java.util.Optional.ofNullable;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.trimToNull;
@@ -231,7 +230,7 @@ public class AnalysisService {
     var pluginPaths = pluginsService.getEmbeddedPluginPaths();
     var activeNodeJs = nodeJsService.getActiveNodeJs();
     var nodeJsDetailsDto = activeNodeJs == null ? null : new NodeJsDetailsDto(activeNodeJs.getPath(), activeNodeJs.getVersion().toString());
-    return new GetGlobalConfigurationResponse(pluginPaths, enabledLanguages.stream().map(AnalysisService::toDto).collect(toList()), nodeJsDetailsDto, false);
+    return new GetGlobalConfigurationResponse(pluginPaths, enabledLanguages.stream().map(AnalysisService::toDto).toList(), nodeJsDetailsDto, false);
   }
 
   public GetGlobalConfigurationResponse getGlobalConnectedConfiguration(String connectionId) {
@@ -239,7 +238,7 @@ public class AnalysisService {
     var pluginPaths = pluginsService.getConnectedPluginPaths(connectionId);
     var activeNodeJs = nodeJsService.getActiveNodeJs();
     var nodeJsDetailsDto = activeNodeJs == null ? null : new NodeJsDetailsDto(activeNodeJs.getPath(), activeNodeJs.getVersion().toString());
-    return new GetGlobalConfigurationResponse(pluginPaths, enabledLanguages.stream().map(AnalysisService::toDto).collect(toList()), nodeJsDetailsDto,
+    return new GetGlobalConfigurationResponse(pluginPaths, enabledLanguages.stream().map(AnalysisService::toDto).toList(), nodeJsDetailsDto,
       isDataflowBugDetectionEnabled);
   }
 
@@ -286,7 +285,7 @@ public class AnalysisService {
         ar.setParams(r.getParams());
         ar.setTemplateRuleKey(r.getTemplateRuleKey());
         return ar;
-      }).collect(toList()))
+      }).toList())
       .setBaseDir(actualBaseDir)
       .build();
   }
@@ -304,7 +303,7 @@ public class AnalysisService {
   }
 
   private static Path findCommonPrefix(List<URI> uris) {
-    var paths = uris.stream().map(Paths::get).collect(toList());
+    var paths = uris.stream().map(Paths::get).toList();
     Path currentPrefixCandidate = paths.get(0).getParent();
     while (currentPrefixCandidate.getNameCount() > 0 && !isPrefixForAll(currentPrefixCandidate, paths)) {
       currentPrefixCandidate = currentPrefixCandidate.getParent();
@@ -353,7 +352,7 @@ public class AnalysisService {
       // Jupyter Notebooks are not yet fully supported in connected mode, use standalone rule configuration in the meantime
       var iPythonRules = buildStandaloneActiveRules()
         .stream().filter(rule -> rule.getLanguageKey().equals(SonarLanguage.IPYTHON.getSonarLanguageKey()))
-        .collect(toList());
+        .toList();
       result.addAll(iPythonRules);
     }
     return result;
@@ -433,16 +432,16 @@ public class AnalysisService {
 
     var allRulesDefinitions = rulesRepository.getEmbeddedRules().stream()
       .filter(rule -> !rule.getType().equals(RuleType.SECURITY_HOTSPOT))
-      .collect(toList());
+      .toList();
 
     filteredActiveRules.addAll(allRulesDefinitions.stream()
       .filter(SonarLintRuleDefinition::isActiveByDefault)
       .filter(isExcludedByConfiguration(excludedRules))
-      .collect(toList()));
+      .toList());
     filteredActiveRules.addAll(allRulesDefinitions.stream()
       .filter(r -> !r.isActiveByDefault())
       .filter(isIncludedByConfiguration(includedRules))
-      .collect(toList()));
+      .toList());
 
     return filteredActiveRules.stream().map(rd -> {
       Map<String, String> effectiveParams = new HashMap<>(rd.getDefaultParams());
@@ -450,7 +449,7 @@ public class AnalysisService {
       // No template rules in standalone mode
       return new ActiveRuleDto(rd.getKey(), rd.getLanguage().getSonarLanguageKey(), effectiveParams, null);
     })
-      .collect(toList());
+      .toList();
   }
 
   private static Predicate<? super SonarLintRuleDefinition> isExcludedByConfiguration(Set<String> excludedRules) {
@@ -669,7 +668,7 @@ public class AnalysisService {
           logSummary(raisedIssues, analysisDuration);
           eventPublisher.publishEvent(new AnalysisFinishedEvent(analysisId, configurationScopeId, analysisDuration,
             languagePerFile, results.failedAnalysisFiles().isEmpty(), raisedIssues, enableTracking, shouldFetchServerIssues));
-          results.setRawIssues(raisedIssues.stream().map(issue -> toDto(issue.getIssue(), issue.getActiveRule())).collect(toList()));
+          results.setRawIssues(raisedIssues.stream().map(issue -> toDto(issue.getIssue(), issue.getActiveRule())).toList());
         } else {
           LOG.error("Error during analysis", error);
         }
@@ -678,7 +677,7 @@ public class AnalysisService {
 
   private static void logSummary(ArrayList<RawIssue> rawIssues, long analysisDuration) {
     // ignore project-level issues for now
-    var fileRawIssues = rawIssues.stream().filter(issue -> issue.getTextRange() != null).collect(toList());
+    var fileRawIssues = rawIssues.stream().filter(issue -> issue.getTextRange() != null).toList();
     var issuesCount = fileRawIssues.stream().filter(not(RawIssue::isSecurityHotspot)).count();
     var hotspotsCount = fileRawIssues.stream().filter(RawIssue::isSecurityHotspot).count();
     LOG.info("Analysis detected {} and {} in {}ms", pluralize(issuesCount, "issue"), pluralize(hotspotsCount, "Security Hotspot"), analysisDuration);
@@ -725,9 +724,9 @@ public class AnalysisService {
         var locationInputFile = location.getInputFile();
         var locationFileUri = locationInputFile == null ? null : locationInputFile.uri();
         return new RawIssueLocationDto(locationTextRangeDto, location.getMessage(), locationFileUri);
-      }).collect(toList());
+      }).toList();
       return new RawIssueFlowDto(locations);
-    }).collect(toList());
+    }).toList();
     return new RawIssueDto(
       RuleDetailsAdapter.adapt(activeRule.getSeverity()),
       RuleDetailsAdapter.adapt(activeRule.getType()),
@@ -741,10 +740,10 @@ public class AnalysisService {
         .map(quickFix -> new QuickFixDto(
           quickFix.inputFileEdits().stream()
             .map(fileEdit -> new FileEditDto(fileEdit.target().uri(),
-              fileEdit.textEdits().stream().map(textEdit -> new TextEditDto(adapt(textEdit.range()), textEdit.newText())).collect(toList())))
-            .collect(toList()),
+              fileEdit.textEdits().stream().map(textEdit -> new TextEditDto(adapt(textEdit.range()), textEdit.newText())).toList()))
+            .toList(),
           quickFix.message()))
-        .collect(toList()),
+        .toList(),
       textRange,
       issue.getRuleDescriptionContextKey().orElse(null),
       RuleDetailsAdapter.adapt(activeRule.getVulnerabilityProbability()));
@@ -821,7 +820,7 @@ public class AnalysisService {
         return inputFile;
       })
       .filter(Objects::nonNull)
-      .collect(toList());
+      .toList();
 
     // Log all the filtered out URIs but not for the filters where there were none
     logFilteredURIs("Filtered out URIs based on the exclusion service", filteredURIsFromExclusionService);
@@ -870,7 +869,7 @@ public class AnalysisService {
 
   public UUID analyzeFullProject(String configScopeId, boolean hotspotsOnly) {
     var files = clientFileSystemService.getFiles(configScopeId);
-    return triggerForcedAnalysis(configScopeId, files.stream().map(ClientFile::getUri).collect(Collectors.toList()), hotspotsOnly);
+    return triggerForcedAnalysis(configScopeId, files.stream().map(ClientFile::getUri).toList(), hotspotsOnly);
   }
 
   public UUID analyzeFileList(String configScopeId, List<URI> filesToAnalyze) {

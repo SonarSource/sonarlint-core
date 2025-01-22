@@ -74,21 +74,23 @@ class OpenFixSuggestionInIdeMediumTests {
   private static final String CONFIG_SCOPE_ID = "configScopeId";
   private static final String BRANCH_NAME = "branchName";
   private static final String ORG_KEY = "orgKey";
-  private static final String FIX_PAYLOAD = "{\n" +
-    "\"fileEdit\": {\n" +
-    "\"path\": \"Main.java\",\n" +
-    "\"changes\": [{\n" +
-    "\"beforeLineRange\": {\n" +
-    "\"startLine\": 0,\n" +
-    "\"endLine\": 1\n" +
-    "},\n" +
-    "\"before\": \"\",\n" +
-    "\"after\": \"var fix = 1;\"\n" +
-    "}]\n" +
-    "},\n" +
-    "\"suggestionId\": \"eb93b2b4-f7b0-4b5c-9460-50893968c264\",\n" +
-    "\"explanation\": \"Modifying the variable name is good\"\n" +
-    "}\n";
+  private static final String FIX_PAYLOAD = """
+    {
+    "fileEdit": {
+    "path": "Main.java",
+    "changes": [{
+    "beforeLineRange": {
+    "startLine": 0,
+    "endLine": 1
+    },
+    "before": "",
+    "after": "var fix = 1;"
+    }]
+    },
+    "suggestionId": "eb93b2b4-f7b0-4b5c-9460-50893968c264",
+    "explanation": "Modifying the variable name is good"
+    }
+    """;
 
   @SonarLintTest
   void it_should_update_the_telemetry_on_show_issue(SonarLintTestHarness harness, @TempDir Path baseDir) throws Exception {

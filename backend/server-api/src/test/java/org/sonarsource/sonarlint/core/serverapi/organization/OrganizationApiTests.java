@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.serverapi.organization;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -80,7 +79,7 @@ class OrganizationApiTests {
   private void mockOrganizationsPage(int page, int total) {
     List<Organization> orgs = IntStream.rangeClosed(1, 500)
       .mapToObj(i -> Organization.newBuilder().setKey("org_page" + page + "number" + i).build())
-      .collect(Collectors.toList());
+      .toList();
 
     var paging = Paging.newBuilder()
       .setPageSize(500)

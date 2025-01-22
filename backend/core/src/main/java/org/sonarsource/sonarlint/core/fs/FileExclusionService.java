@@ -32,7 +32,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.sonar.api.CoreProperties;
 import org.sonar.api.batch.fs.InputFile;
@@ -56,7 +55,6 @@ import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.event.EventListener;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 public class FileExclusionService {
@@ -177,7 +175,7 @@ public class FileExclusionService {
       .map(e -> clientFileSystemService.getClientFiles(e.getKey(), e.getValue()))
       .filter(Objects::nonNull)
       .map(ClientFile::getUri)
-      .collect(Collectors.toList());
+      .toList();
     return existingFileUris.stream()
       .map(k -> Map.entry(k, serverExclusionByUriCache.get(k)))
       .collect(toMap(Map.Entry::getKey, e -> new FileStatusDto(e.getValue())));
@@ -199,7 +197,7 @@ public class FileExclusionService {
 
     return files.stream()
       .filter(fileExclusionFilter)
-      .collect(toList());
+      .toList();
   }
 
   private boolean isConnectedMode(String configurationScopeId) {

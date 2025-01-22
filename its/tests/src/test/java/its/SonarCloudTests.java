@@ -687,7 +687,7 @@ class SonarCloudTests extends AbstractConnectedTests {
 
       @Override
       public void log(LogParams params) {
-        System.out.println(params.toString());
+        System.out.println(params);
         rpcClientLogs.add(params);
       }
     };
@@ -709,7 +709,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     assertThat(analyzeResponse.getFailedAnalysisFiles()).isEmpty();
     var raisedIssues = ((MockSonarLintRpcClientDelegate) client).getRaisedIssues(configScopeId);
     ((MockSonarLintRpcClientDelegate) client).getRaisedIssues().clear();
-    return raisedIssues != null ? raisedIssues.values().stream().flatMap(List::stream).collect(Collectors.toList()) : List.of();
+    return raisedIssues != null ? raisedIssues.values().stream().flatMap(List::stream).toList() : List.of();
   }
 
   private static List<RaisedHotspotDto> analyzeAndGetHotspots(String projectKey, String fileName, String configScopeId, String ... properties) {
@@ -725,7 +725,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     assertThat(analyzeResponse.getFailedAnalysisFiles()).isEmpty();
     var raisedHotspots = ((MockSonarLintRpcClientDelegate) client).getRaisedHotspots(configScopeId);
     ((MockSonarLintRpcClientDelegate) client).getRaisedIssues().clear();
-    return raisedHotspots != null ? raisedHotspots.values().stream().flatMap(List::stream).collect(Collectors.toList()) : List.of();
+    return raisedHotspots != null ? raisedHotspots.values().stream().flatMap(List::stream).toList() : List.of();
   }
 
 }

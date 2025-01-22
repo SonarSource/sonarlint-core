@@ -32,7 +32,6 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 
-import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @Named
@@ -77,7 +76,7 @@ public class BindingCandidatesFinder {
 
     var cluesWithMatchingProjectKey = cluesAndConnections.stream()
       .filter(c -> projectKey.equals(c.getBindingClue().getSonarProjectKey()))
-      .collect(toList());
+      .toList();
 
 
     if (!cluesWithMatchingProjectKey.isEmpty()) {

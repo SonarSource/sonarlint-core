@@ -27,8 +27,6 @@ import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common.BranchType;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.ProjectBranches;
 
-import static java.util.stream.Collectors.toList;
-
 public class ProjectBranchesApi {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
@@ -49,7 +47,7 @@ public class ProjectBranchesApi {
     }
     return response.getBranchesList().stream()
       .filter(b -> b.getType() == BranchType.BRANCH || b.getType() == BranchType.LONG)
-      .map(branchWs -> new ServerBranch(branchWs.getName(), branchWs.getIsMain())).collect(toList());
+      .map(branchWs -> new ServerBranch(branchWs.getName(), branchWs.getIsMain())).toList();
   }
 
 }

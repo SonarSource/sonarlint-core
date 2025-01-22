@@ -33,7 +33,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Disabled;
@@ -85,10 +84,11 @@ class StandaloneIssueMediumTests {
 
   @SonarLintTest
   void simpleJavaScript(SonarLintTestHarness harness, @TempDir Path baseDir) throws Exception {
-    var content = "function foo() {\n"
-      + "  let x;\n"
-      + "  let y; //NOSONAR\n"
-      + "}";
+    var content = """
+      function foo() {
+        let x;
+        let y; //NOSONAR
+      }""";
     var inputFile = createFile(baseDir, "foo.js", content);
 
     var client = harness.newFakeClient()
@@ -120,10 +120,11 @@ class StandaloneIssueMediumTests {
   // to be checked if we need this functionality back, it will require to modify init params
   @SonarLintTest
   void sonarjs_should_honor_global_and_analysis_level_properties(SonarLintTestHarness harness, @TempDir Path baseDir) {
-    var content = "function foo() {\n"
-      + "  console.log(LOCAL1); // Noncompliant\n"
-      + "  console.log(GLOBAL1); // GLOBAL1 defined as global variable in global settings\n"
-      + "}";
+    var content = """
+      function foo() {
+        console.log(LOCAL1); // Noncompliant
+        console.log(GLOBAL1); // GLOBAL1 defined as global variable in global settings
+      }""";
     var inputFile = createFile(baseDir, "foo.js", content);
 
     var client = harness.newFakeClient()
@@ -156,9 +157,10 @@ class StandaloneIssueMediumTests {
     final var tsConfig = new File(baseDir.toFile(), "tsconfig.json");
     FileUtils.write(tsConfig, "{}", StandardCharsets.UTF_8);
     var tsConfigPath = tsConfig.toPath();
-    var content = "function foo() {\n"
-      + "  if(bar() && bar()) { return 42; }\n"
-      + "}";
+    var content = """
+      function foo() {
+        if(bar() && bar()) { return 42; }
+      }""";
     var inputFile = createFile(baseDir, "foo.ts", content);
 
     var client = harness.newFakeClient()
@@ -181,16 +183,17 @@ class StandaloneIssueMediumTests {
   @Disabled("https://sonarsource.atlassian.net/browse/SLCORE-873 - plug test YAML plugin")
   @SonarLintTest
   void simpleJavaScriptInYamlFile(SonarLintTestHarness harness, @TempDir Path baseDir) {
-    String content = "Resources:\n" +
-      "  LambdaFunction:\n" +
-      "    Type: 'AWS::Lambda::Function'\n" +
-      "    Properties:\n" +
-      "      Code:\n" +
-      "        ZipFile: >\n" +
-      "          exports.handler = function(event, context) {\n" +
-      "            let x;\n" +
-      "          };\n" +
-      "      Runtime: nodejs8.10";
+    String content = """
+      Resources:
+        LambdaFunction:
+          Type: 'AWS::Lambda::Function'
+          Properties:
+            Code:
+              ZipFile: >
+                exports.handler = function(event, context) {
+                  let x;
+                };
+            Runtime: nodejs8.10""";
 
     var inputFile = createFile(baseDir, "foo.yaml", content);
 
@@ -212,8 +215,10 @@ class StandaloneIssueMediumTests {
   @SonarLintTest
   void simpleC(SonarLintTestHarness harness, @TempDir Path baseDir) {
     assumeTrue(COMMERCIAL_ENABLED);
-    var inputFile = createFile(baseDir, "foo.c", "#import \"foo.h\"\n"
-      + "#import \"foo2.h\" //NOSONAR\n");
+    var inputFile = createFile(baseDir, "foo.c", """
+      #import "foo.h"
+      #import "foo2.h" //NOSONAR
+      """);
     var buildWrapperContent = "{\"version\":0,\"captures\":[" +
       "{" +
       "\"compiler\": \"clang\"," +
@@ -256,12 +261,14 @@ class StandaloneIssueMediumTests {
 
   @SonarLintTest
   void simplePhp(SonarLintTestHarness harness, @TempDir Path baseDir) {
-    var inputFile = createFile(baseDir, "foo.php", "<?php\n"
-      + "function writeMsg($fname) {\n"
-      + "    $i = 0; // NOSONAR\n"
-      + "    echo \"Hello world!\";\n"
-      + "}\n"
-      + "?>\n");
+    var inputFile = createFile(baseDir, "foo.php", """
+      <?php
+      function writeMsg($fname) {
+          $i = 0; // NOSONAR
+          echo "Hello world!";
+      }
+      ?>
+      """);
 
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
@@ -279,13 +286,15 @@ class StandaloneIssueMediumTests {
   }
 
   @SonarLintTest
-  void fileEncoding(SonarLintTestHarness harness, @TempDir Path baseDir) throws IOException {
-    var content = "<?php\n"
-      + "function writeMsg($fname) {\n"
-      + "    $i = 0; // NOSONAR\n"
-      + "    echo \"Hello world!\";\n"
-      + "}\n"
-      + "?>\n";
+  void fileEncoding(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var content = """
+      <?php
+      function writeMsg($fname) {
+          $i = 0; // NOSONAR
+          echo "Hello world!";
+      }
+      ?>
+      """;
     var inputFile = baseDir.resolve("foo.php");
     try {
       Files.writeString(inputFile, content, StandardCharsets.UTF_16);
@@ -310,11 +319,12 @@ class StandaloneIssueMediumTests {
 
   @SonarLintTest
   void analysisErrors(SonarLintTestHarness harness, @TempDir Path baseDir) {
-    var content = "<?php\n"
-      + "function writeMsg($fname) {\n"
-      + "    echo \"Hello world!;\n"
-      + "}\n"
-      + "?>";
+    var content = """
+      <?php
+      function writeMsg($fname) {
+          echo "Hello world!;
+      }
+      ?>""";
     var inputFile = createFile(baseDir, "foo.php", content);
 
     var client = harness.newFakeClient()
@@ -337,10 +347,12 @@ class StandaloneIssueMediumTests {
 
   @SonarLintTest
   void simplePython(SonarLintTestHarness harness, @TempDir Path baseDir) {
-    var inputFile = createFile(baseDir, "foo.py", "def my_function(name):\n"
-      + "    print \"Hello\"\n"
-      + "    print \"world!\" # NOSONAR\n"
-      + "\n");
+    var inputFile = createFile(baseDir, "foo.py", """
+      def my_function(name):
+          print "Hello"
+          print "world!" # NOSONAR
+      
+      """);
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
         new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
@@ -378,10 +390,12 @@ class StandaloneIssueMediumTests {
   // SLCORE-162
   @SonarLintTest
   void useRelativePathToEvaluatePathPatterns(SonarLintTestHarness harness, @TempDir Path baseDir) {
-    var inputFile = createFile(baseDir, "foo.tmp", "def my_function(name):\n"
-      + "    print \"Hello\"\n"
-      + "    print \"world!\" # NOSONAR\n"
-      + "\n");
+    var inputFile = createFile(baseDir, "foo.tmp", """
+      def my_function(name):
+          print "Hello"
+          print "world!" # NOSONAR
+      
+      """);
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
         new ClientFileDto(inputFile.toUri(), Path.of("foo.py"), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
@@ -401,13 +415,14 @@ class StandaloneIssueMediumTests {
   @SonarLintTest
   void simpleJava(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var inputFile = createFile(baseDir, A_JAVA_FILE_PATH,
-      "public class Foo {\n"
-        + "  public void foo() {\n"
-        + "    int x;\n"
-        + "    System.out.println(\"Foo\");\n"
-        + "    // TODO full line issue\n"
-        + "  }\n"
-        + "}");
+      """
+        public class Foo {
+          public void foo() {
+            int x;
+            System.out.println("Foo");
+            // TODO full line issue
+          }
+        }""");
 
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
@@ -432,11 +447,12 @@ class StandaloneIssueMediumTests {
   @SonarLintTest
   void simpleJavaWithQuickFix(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var inputFile = createFile(baseDir, A_JAVA_FILE_PATH,
-      "public class Foo {\n"
-        + "  public void foo() {\n"
-        + "     \n"
-        + "  }\n"
-        + "}");
+      """
+        public class Foo {
+          public void foo() {
+            \s
+          }
+        }""");
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
         new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
@@ -475,11 +491,12 @@ class StandaloneIssueMediumTests {
   @SonarLintTest
   void simpleJavaWithCommaInClasspath(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var inputFile = createFile(baseDir, A_JAVA_FILE_PATH,
-      "public class Foo {\n"
-        + "  public void foo() {\n"
-        + "    int x;\n"
-        + "  }\n"
-        + "}");
+      """
+        public class Foo {
+          public void foo() {
+            int x;
+          }
+        }""");
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
         new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
@@ -492,7 +509,7 @@ class StandaloneIssueMediumTests {
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
       new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, analysisId, List.of(inputFile.toUri()),
-        Map.of("sonar.java.libraries", "\"" + Paths.get("target/lib/guava,with,comma.jar").toAbsolutePath().toString() + "\""), true, System.currentTimeMillis()))
+        Map.of("sonar.java.libraries", "\"" + Paths.get("target/lib/guava,with,comma.jar").toAbsolutePath() + "\""), true, System.currentTimeMillis()))
       .join();
     assertThat(analysisResult.getFailedAnalysisFiles()).isEmpty();
     await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIGURATION_SCOPE_ID)).isNotEmpty());
@@ -604,10 +621,11 @@ class StandaloneIssueMediumTests {
   void simpleJavaNoHotspots(SonarLintTestHarness harness, @TempDir Path baseDir) throws Exception {
     var fooDir = Files.createDirectory(baseDir.resolve("foo"));
     var inputFile = createFile(fooDir, "Foo.java",
-      "package foo;\n"
-        + "public class Foo {\n"
-        + "  String ip = \"192.168.12.42\"; // Hotspots should not be reported in SonarLint\n"
-        + "}");
+      """
+        package foo;
+        public class Foo {
+          String ip = "192.168.12.42"; // Hotspots should not be reported in SonarLint
+        }""");
 
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
@@ -626,13 +644,14 @@ class StandaloneIssueMediumTests {
   @SonarLintTest
   void simpleJavaPomXml(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var inputFile = createFile(baseDir, "pom.xml",
-      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        + "<project>\n"
-        + "  <modelVersion>4.0.0</modelVersion>\n"
-        + "  <groupId>com.foo</groupId>\n"
-        + "  <artifactId>bar</artifactId>\n"
-        + "  <version>${pom.version}</version>\n"
-        + "</project>");
+      """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project>
+          <modelVersion>4.0.0</modelVersion>
+          <groupId>com.foo</groupId>
+          <artifactId>bar</artifactId>
+          <version>${pom.version}</version>
+        </project>""");
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
         new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
@@ -651,14 +670,15 @@ class StandaloneIssueMediumTests {
   @SonarLintTest
   void supportJavaSuppressWarning(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var inputFile = createFile(baseDir, A_JAVA_FILE_PATH,
-      "public class Foo {\n"
-        + "  @SuppressWarnings(\"java:S106\")\n"
-        + "  public void foo() {\n"
-        + "    int x;\n"
-        + "    System.out.println(\"Foo\");\n"
-        + "    System.out.println(\"Foo\"); //NOSONAR\n"
-        + "  }\n"
-        + "}");
+      """
+        public class Foo {
+          @SuppressWarnings("java:S106")
+          public void foo() {
+            int x;
+            System.out.println("Foo");
+            System.out.println("Foo"); //NOSONAR
+          }
+        }""");
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
         new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
@@ -713,12 +733,13 @@ class StandaloneIssueMediumTests {
   @SonarLintTest
   void simpleJavaWithExcludedRules(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var inputFile = createFile(baseDir, A_JAVA_FILE_PATH,
-      "public class Foo {\n"
-        + "  public void foo() {\n"
-        + "    int x;\n"
-        + "    System.out.println(\"Foo\");\n"
-        + "  }\n"
-        + "}");
+      """
+        public class Foo {
+          public void foo() {
+            int x;
+            System.out.println("Foo");
+          }
+        }""");
 
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
@@ -743,12 +764,13 @@ class StandaloneIssueMediumTests {
   @SonarLintTest
   void simpleJavaWithExcludedRulesUsingDeprecatedKey(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var inputFile = createFile(baseDir, A_JAVA_FILE_PATH,
-      "public class Foo {\n"
-        + "  public void foo() {\n"
-        + "    int x;\n"
-        + "    System.out.println(\"Foo\");\n"
-        + "  }\n"
-        + "}");
+      """
+        public class Foo {
+          public void foo() {
+            int x;
+            System.out.println("Foo");
+          }
+        }""");
 
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
@@ -775,13 +797,14 @@ class StandaloneIssueMediumTests {
   @SonarLintTest
   void simpleJavaWithIncludedRules(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var inputFile = createFile(baseDir, A_JAVA_FILE_PATH,
-      "import java.util.Optional;\n"
-        + "public class Foo {\n"
-        + "  public void foo(Optional<String> name) {  // for squid:3553, not in Sonar Way\n"
-        + "    int x;\n"
-        + "    System.out.println(\"Foo\" + name.isPresent());\n"
-        + "  }\n"
-        + "}");
+      """
+        import java.util.Optional;
+        public class Foo {
+          public void foo(Optional<String> name) {  // for squid:3553, not in Sonar Way
+            int x;
+            System.out.println("Foo" + name.isPresent());
+          }
+        }""");
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
         new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
@@ -807,13 +830,14 @@ class StandaloneIssueMediumTests {
   @SonarLintTest
   void simpleJavaWithIncludedRulesUsingDeprecatedKey(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var inputFile = createFile(baseDir, A_JAVA_FILE_PATH,
-      "import java.util.Optional;\n"
-        + "public class Foo {\n"
-        + "  public void foo(Optional<String> name) {  // for squid:3553, not in Sonar Way\n"
-        + "    int x;\n"
-        + "    System.out.println(\"Foo\" + name.isPresent());\n"
-        + "  }\n"
-        + "}");
+      """
+        import java.util.Optional;
+        public class Foo {
+          public void foo(Optional<String> name) {  // for squid:3553, not in Sonar Way
+            int x;
+            System.out.println("Foo" + name.isPresent());
+          }
+        }""");
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
         new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
@@ -843,9 +867,10 @@ class StandaloneIssueMediumTests {
   void simpleJavaWithIssueOnDir(SonarLintTestHarness harness, @TempDir Path baseDir) throws Exception {
     var fooDir = Files.createDirectory(baseDir.resolve("foo"));
     var inputFile = createFile(fooDir, "Foo.java",
-      "package foo;\n"
-        + "public class Foo {\n"
-        + "}");
+      """
+        package foo;
+        public class Foo {
+        }""");
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
         new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIGURATION_SCOPE_ID, false, null, inputFile, null, null, true)))
@@ -870,14 +895,15 @@ class StandaloneIssueMediumTests {
   @SonarLintTest
   void simpleJavaWithSecondaryLocations(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var inputFile = createFile(baseDir, "Foo.java",
-      "package foo;\n"
-        + "public class Foo {\n"
-        + "  public void method() {\n"
-        + "    String S1 = \"duplicated\";\n"
-        + "    String S2 = \"duplicated\";\n"
-        + "    String S3 = \"duplicated\";\n"
-        + "  }"
-        + "}");
+      """
+        package foo;
+        public class Foo {
+          public void method() {
+            String S1 = "duplicated";
+            String S2 = "duplicated";
+            String S3 = "duplicated";
+          }\
+        }""");
 
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
@@ -903,25 +929,28 @@ class StandaloneIssueMediumTests {
   @SonarLintTest
   void testJavaSurefireDontCrashAnalysis(SonarLintTestHarness harness, @TempDir Path baseDir) throws Exception {
     var surefireReport = new File(baseDir.toFile(), "reports/TEST-FooTest.xml");
-    FileUtils.write(surefireReport, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-      "<testsuite name=\"FooTest\" time=\"0.121\" tests=\"1\" errors=\"0\" skipped=\"0\" failures=\"0\">\n" +
-      "<testcase name=\"errorAnalysis\" classname=\"FooTest\" time=\"0.031\"/>\n" +
-      "</testsuite>", StandardCharsets.UTF_8);
+    FileUtils.write(surefireReport, """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <testsuite name="FooTest" time="0.121" tests="1" errors="0" skipped="0" failures="0">
+      <testcase name="errorAnalysis" classname="FooTest" time="0.031"/>
+      </testsuite>""", StandardCharsets.UTF_8);
 
     var inputFile = createFile(baseDir, A_JAVA_FILE_PATH,
-      "public class Foo {\n"
-        + "  public void foo() {\n"
-        + "    int x;\n"
-        + "    System.out.println(\"Foo\");\n"
-        + "    System.out.println(\"Foo\"); //NOSONAR\n"
-        + "  }\n"
-        + "}");
+      """
+        public class Foo {
+          public void foo() {
+            int x;
+            System.out.println("Foo");
+            System.out.println("Foo"); //NOSONAR
+          }
+        }""");
 
     var inputFileTest = createFile(baseDir, "FooTest.java",
-      "public class FooTest {\n"
-        + "  public void testFoo() {\n"
-        + "  }\n"
-        + "}");
+      """
+        public class FooTest {
+          public void testFoo() {
+          }
+        }""");
 
     var client = harness.newFakeClient()
       .withInitialFs(CONFIGURATION_SCOPE_ID, List.of(
@@ -954,13 +983,14 @@ class StandaloneIssueMediumTests {
   @SonarLintTest
   void lazy_init_file_metadata(SonarLintTestHarness harness, @TempDir Path baseDir) {
     final var inputFile = createFile(baseDir, A_JAVA_FILE_PATH,
-      "public class Foo {\n"
-        + "  public void foo() {\n"
-        + "    int x;\n"
-        + "    System.out.println(\"Foo\");\n"
-        + "    System.out.println(\"Foo\"); //NOSONAR\n"
-        + "  }\n"
-        + "}");
+      """
+        public class Foo {
+          public void foo() {
+            int x;
+            System.out.println("Foo");
+            System.out.println("Foo"); //NOSONAR
+          }
+        }""");
     var unexistingFile = new File(baseDir.toFile(), "missing.bin");
     var unexistingFilePath = unexistingFile.toPath();
     assertThat(unexistingFile).doesNotExist();
@@ -991,6 +1021,6 @@ class StandaloneIssueMediumTests {
     assertThat(raisedIssueDto.getSeverityMode().isRight()).isTrue();
     var mqrModeDetails = raisedIssueDto.getSeverityMode().getRight();
     return tuple(mqrModeDetails.getCleanCodeAttribute(),
-      mqrModeDetails.getImpacts().stream().map(i -> tuple(i.getSoftwareQuality(), i.getImpactSeverity())).collect(Collectors.toList()));
+      mqrModeDetails.getImpacts().stream().map(i -> tuple(i.getSoftwareQuality(), i.getImpactSeverity())).toList());
   }
 }

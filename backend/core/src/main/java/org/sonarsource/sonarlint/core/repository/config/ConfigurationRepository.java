@@ -159,7 +159,7 @@ public class ConfigurationRepository {
           requireNonNull(binding.getSonarProjectKey()))).orElse(null);
       })
       .filter(Objects::nonNull)
-      .collect(Collectors.toList());
+      .toList();
   }
 
   public Collection<ConfigurationScope> getAllBindableUnboundScopes() {
@@ -168,7 +168,7 @@ public class ConfigurationRepository {
       .filter(e -> e.getValue().isBindable())
       .filter(e -> getEffectiveBinding(e.getKey()).isEmpty())
       .map(Map.Entry::getValue)
-      .collect(Collectors.toList());
+      .toList();
   }
 
   @CheckForNull
@@ -183,14 +183,14 @@ public class ConfigurationRepository {
     return getBoundScopesToConnection(connectionId)
       .stream()
       .filter(b -> projectKey.equals(b.getSonarProjectKey()))
-      .collect(Collectors.toList());
+      .toList();
   }
 
   public Collection<BoundScope> getBoundScopesToConnection(String connectionId) {
     return getAllBoundScopes()
       .stream()
       .filter(b -> connectionId.equals(b.getConnectionId()))
-      .collect(Collectors.toList());
+      .toList();
   }
 
   /**

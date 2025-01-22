@@ -30,7 +30,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -177,7 +176,7 @@ class ServerFilePathsProviderTest {
   }
 
   private void mockServerFilePaths(ComponentApi componentApi, String... paths) {
-    doReturn(Arrays.stream(paths).map(path -> PROJECT_KEY + ":" + path).collect(Collectors.toList()))
+    doReturn(Arrays.stream(paths).map(path -> PROJECT_KEY + ":" + path).toList())
       .when(componentApi)
       .getAllFileKeys(PROJECT_KEY, cancelMonitor);
   }

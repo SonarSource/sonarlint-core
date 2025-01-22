@@ -24,7 +24,7 @@ import org.sonar.api.batch.fs.InputFile;
 
 class OptimizedFilePredicateAdapter extends AbstractFilePredicate {
 
-  private FilePredicate unoptimizedPredicate;
+  private final FilePredicate unoptimizedPredicate;
 
   private OptimizedFilePredicateAdapter(FilePredicate unoptimizedPredicate) {
     this.unoptimizedPredicate = unoptimizedPredicate;
@@ -36,8 +36,8 @@ class OptimizedFilePredicateAdapter extends AbstractFilePredicate {
   }
 
   public static OptimizedFilePredicate create(FilePredicate predicate) {
-    if (predicate instanceof OptimizedFilePredicate) {
-      return (OptimizedFilePredicate) predicate;
+    if (predicate instanceof OptimizedFilePredicate optimizedFilePredicate) {
+      return optimizedFilePredicate;
     } else {
       return new OptimizedFilePredicateAdapter(predicate);
     }

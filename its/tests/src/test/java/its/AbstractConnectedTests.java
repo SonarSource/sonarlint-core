@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.assertj.core.internal.Failures;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -140,7 +139,7 @@ public abstract class AbstractConnectedTests {
     var searchReq = new org.sonarqube.ws.client.issues.SearchRequest();
     searchReq.setRules(List.of(ruleKey));
     var response = adminWsClient.issues().search(searchReq);
-    return response.getIssuesList().stream().map(Issues.Issue::getKey).collect(Collectors.toList());
+    return response.getIssuesList().stream().map(Issues.Issue::getKey).toList();
   }
 
   protected static void resolveIssueAsWontFix(WsClient adminWsClient, String issueKey) {

@@ -25,7 +25,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.inject.Named;
@@ -128,7 +127,7 @@ public class PluginsService {
     return result.getPluginCheckResultByKeys().values().stream()
       .filter(PluginRequirementsCheckResult::isSkipped)
       .map(plugin -> new SkippedPlugin(plugin.getPlugin().getKey(), plugin.getSkipReason().get()))
-      .collect(Collectors.toList());
+      .toList();
   }
 
   public LoadedPlugins getPlugins(String connectionId) {

@@ -33,106 +33,111 @@ class SecurityHotspotRaisedEventParserTest {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
   SecurityHotspotRaisedEventParser parser = new SecurityHotspotRaisedEventParser();
-  final String TEST_PAYLOAD_WITHOUT_KEY = "{\n" +
-    "  \"status\": \"TO_REVIEW\",\n" +
-    "  \"vulnerabilityProbability\": \"MEDIUM\",\n" +
-    "  \"creationDate\": 1685006550000,\n" +
-    "  \"mainLocation\": {\n" +
-    "    \"filePath\": \"src/main/java/org/example/Main.java\",\n" +
-    "    \"message\": \"Make sure that using this pseudorandom number generator is safe here.\",\n" +
-    "    \"textRange\": {\n" +
-    "      \"startLine\": 12,\n" +
-    "      \"startLineOffset\": 29,\n" +
-    "      \"endLine\": 12,\n" +
-    "      \"endLineOffset\": 36,\n" +
-    "      \"hash\": \"43b5c9175984c071f30b873fdce0a000\"\n" +
-    "    }\n" +
-    "  },\n" +
-    "  \"ruleKey\": \"java:S2245\",\n" +
-    "  \"projectKey\": \"test\",\n" +
-    "  \"branch\": \"some-branch\"\n" +
-    "}";
+  private static final String TEST_PAYLOAD_WITHOUT_KEY = """
+    {
+      "status": "TO_REVIEW",
+      "vulnerabilityProbability": "MEDIUM",
+      "creationDate": 1685006550000,
+      "mainLocation": {
+        "filePath": "src/main/java/org/example/Main.java",
+        "message": "Make sure that using this pseudorandom number generator is safe here.",
+        "textRange": {
+          "startLine": 12,
+          "startLineOffset": 29,
+          "endLine": 12,
+          "endLineOffset": 36,
+          "hash": "43b5c9175984c071f30b873fdce0a000"
+        }
+      },
+      "ruleKey": "java:S2245",
+      "projectKey": "test",
+      "branch": "some-branch"
+    }""";
 
-  final String TEST_PAYLOAD_WITHOUT_BRANCH = "{\n" +
-    "  \"status\": \"TO_REVIEW\",\n" +
-    "  \"vulnerabilityProbability\": \"MEDIUM\",\n" +
-    "  \"creationDate\": 1685006550000,\n" +
-    "  \"mainLocation\": {\n" +
-    "    \"filePath\": \"src/main/java/org/example/Main.java\",\n" +
-    "    \"message\": \"Make sure that using this pseudorandom number generator is safe here.\",\n" +
-    "    \"textRange\": {\n" +
-    "      \"startLine\": 12,\n" +
-    "      \"startLineOffset\": 29,\n" +
-    "      \"endLine\": 12,\n" +
-    "      \"endLineOffset\": 36,\n" +
-    "      \"hash\": \"43b5c9175984c071f30b873fdce0a000\"\n" +
-    "    }\n" +
-    "  },\n" +
-    "  \"ruleKey\": \"java:S2245\",\n" +
-    "  \"key\": \"AYhSN6mVrRF_krvNbHl1\",\n" +
-    "  \"projectKey\": \"test\"\n" +
-    "}";
+  private static final String TEST_PAYLOAD_WITHOUT_BRANCH = """
+    {
+      "status": "TO_REVIEW",
+      "vulnerabilityProbability": "MEDIUM",
+      "creationDate": 1685006550000,
+      "mainLocation": {
+        "filePath": "src/main/java/org/example/Main.java",
+        "message": "Make sure that using this pseudorandom number generator is safe here.",
+        "textRange": {
+          "startLine": 12,
+          "startLineOffset": 29,
+          "endLine": 12,
+          "endLineOffset": 36,
+          "hash": "43b5c9175984c071f30b873fdce0a000"
+        }
+      },
+      "ruleKey": "java:S2245",
+      "key": "AYhSN6mVrRF_krvNbHl1",
+      "projectKey": "test"
+    }""";
 
-  final String TEST_PAYLOAD_WITHOUT_PROJECT_KEY = "{\n" +
-    "  \"status\": \"TO_REVIEW\",\n" +
-    "  \"vulnerabilityProbability\": \"MEDIUM\",\n" +
-    "  \"creationDate\": 1685006550000,\n" +
-    "  \"mainLocation\": {\n" +
-    "    \"filePath\": \"src/main/java/org/example/Main.java\",\n" +
-    "    \"message\": \"Make sure that using this pseudorandom number generator is safe here.\",\n" +
-    "    \"textRange\": {\n" +
-    "      \"startLine\": 12,\n" +
-    "      \"startLineOffset\": 29,\n" +
-    "      \"endLine\": 12,\n" +
-    "      \"endLineOffset\": 36,\n" +
-    "      \"hash\": \"43b5c9175984c071f30b873fdce0a000\"\n" +
-    "    }\n" +
-    "  },\n" +
-    "  \"ruleKey\": \"java:S2245\",\n" +
-    "  \"key\": \"AYhSN6mVrRF_krvNbHl1\",\n" +
-    "  \"branch\": \"some-branch\"\n" +
-    "}";
+  private static final String TEST_PAYLOAD_WITHOUT_PROJECT_KEY = """
+    {
+      "status": "TO_REVIEW",
+      "vulnerabilityProbability": "MEDIUM",
+      "creationDate": 1685006550000,
+      "mainLocation": {
+        "filePath": "src/main/java/org/example/Main.java",
+        "message": "Make sure that using this pseudorandom number generator is safe here.",
+        "textRange": {
+          "startLine": 12,
+          "startLineOffset": 29,
+          "endLine": 12,
+          "endLineOffset": 36,
+          "hash": "43b5c9175984c071f30b873fdce0a000"
+        }
+      },
+      "ruleKey": "java:S2245",
+      "key": "AYhSN6mVrRF_krvNbHl1",
+      "branch": "some-branch"
+    }""";
 
-  final String TEST_PAYLOAD_WITHOUT_FILE_PATH = "{\n" +
-    "  \"status\": \"TO_REVIEW\",\n" +
-    "  \"vulnerabilityProbability\": \"MEDIUM\",\n" +
-    "  \"creationDate\": 1685006550000,\n" +
-    "  \"mainLocation\": {\n" +
-    "    \"message\": \"Make sure that using this pseudorandom number generator is safe here.\",\n" +
-    "    \"textRange\": {\n" +
-    "      \"startLine\": 12,\n" +
-    "      \"startLineOffset\": 29,\n" +
-    "      \"endLine\": 12,\n" +
-    "      \"endLineOffset\": 36,\n" +
-    "      \"hash\": \"43b5c9175984c071f30b873fdce0a000\"\n" +
-    "    }\n" +
-    "  },\n" +
-    "  \"ruleKey\": \"java:S2245\",\n" +
-    "  \"key\": \"AYhSN6mVrRF_krvNbHl1\",\n" +
-    "  \"projectKey\": \"test\",\n" +
-    "  \"branch\": \"some-branch\"\n" +
-    "}";
+  private static final String TEST_PAYLOAD_WITHOUT_FILE_PATH = """
+    {
+      "status": "TO_REVIEW",
+      "vulnerabilityProbability": "MEDIUM",
+      "creationDate": 1685006550000,
+      "mainLocation": {
+        "message": "Make sure that using this pseudorandom number generator is safe here.",
+        "textRange": {
+          "startLine": 12,
+          "startLineOffset": 29,
+          "endLine": 12,
+          "endLineOffset": 36,
+          "hash": "43b5c9175984c071f30b873fdce0a000"
+        }
+      },
+      "ruleKey": "java:S2245",
+      "key": "AYhSN6mVrRF_krvNbHl1",
+      "projectKey": "test",
+      "branch": "some-branch"
+    }""";
 
-  final String VALID_PAYLOAD = "{\n" +
-    "  \"status\": \"TO_REVIEW\",\n" +
-    "  \"vulnerabilityProbability\": \"MEDIUM\",\n" +
-    "  \"creationDate\": 1685006550000,\n" +
-    "  \"mainLocation\": {\n" +
-    "    \"filePath\": \"src/main/java/org/example/Main.java\",\n" +
-    "    \"message\": \"Make sure that using this pseudorandom number generator is safe here.\",\n" +
-    "    \"textRange\": {\n" +
-    "      \"startLine\": 12,\n" +
-    "      \"startLineOffset\": 29,\n" +
-    "      \"endLine\": 12,\n" +
-    "      \"endLineOffset\": 36,\n" +
-    "      \"hash\": \"43b5c9175984c071f30b873fdce0a000\"\n" +
-    "    }\n" +
-    "  },\n" +
-    "  \"ruleKey\": \"java:S2245\",\n" +
-    "  \"key\": \"AYhSN6mVrRF_krvNbHl1\",\n" +
-    "  \"projectKey\": \"test\",\n" +
-    "  \"branch\": \"some-branch\"\n" +
-    "}";
+  private static final String VALID_PAYLOAD = """
+    {
+      "status": "TO_REVIEW",
+      "vulnerabilityProbability": "MEDIUM",
+      "creationDate": 1685006550000,
+      "mainLocation": {
+        "filePath": "src/main/java/org/example/Main.java",
+        "message": "Make sure that using this pseudorandom number generator is safe here.",
+        "textRange": {
+          "startLine": 12,
+          "startLineOffset": 29,
+          "endLine": 12,
+          "endLineOffset": 36,
+          "hash": "43b5c9175984c071f30b873fdce0a000"
+        }
+      },
+      "ruleKey": "java:S2245",
+      "key": "AYhSN6mVrRF_krvNbHl1",
+      "projectKey": "test",
+      "branch": "some-branch"
+    }""";
 
   @ParameterizedTest
   @ValueSource(strings = {TEST_PAYLOAD_WITHOUT_KEY, TEST_PAYLOAD_WITHOUT_PROJECT_KEY, TEST_PAYLOAD_WITHOUT_FILE_PATH, TEST_PAYLOAD_WITHOUT_BRANCH})

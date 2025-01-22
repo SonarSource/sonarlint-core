@@ -43,7 +43,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
@@ -887,7 +886,7 @@ public class SonarLintBackendFixture {
 
     public List<RaisedIssueDto> getRaisedIssuesForScopeIdAsList(String configurationScopeId) {
       return raisedIssuesByScopeId.getOrDefault(configurationScopeId, Map.of()).values().stream().flatMap(Collection::stream)
-        .collect(Collectors.toList());
+        .toList();
     }
 
     public Map<URI, List<RaisedHotspotDto>> getRaisedHotspotsForScopeId(String configurationScopeId) {
@@ -896,7 +895,7 @@ public class SonarLintBackendFixture {
 
     public List<RaisedHotspotDto> getRaisedHotspotsForScopeIdAsList(String configurationScopeId) {
       return raisedHotspotsByScopeId.getOrDefault(configurationScopeId, Map.of()).values().stream().flatMap(Collection::stream)
-        .collect(Collectors.toList());
+        .toList();
     }
 
     public void cleanRaisedIssues() {
@@ -917,7 +916,7 @@ public class SonarLintBackendFixture {
     }
 
     public List<String> getLogMessages() {
-      return logs.stream().map(LogParams::getMessage).collect(Collectors.toList());
+      return logs.stream().map(LogParams::getMessage).toList();
     }
 
     @Override

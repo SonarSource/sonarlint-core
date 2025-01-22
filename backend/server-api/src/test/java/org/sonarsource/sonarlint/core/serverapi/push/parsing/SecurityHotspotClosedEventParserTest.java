@@ -32,21 +32,24 @@ class SecurityHotspotClosedEventParserTest {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
   SecurityHotspotClosedEventParser parser = new SecurityHotspotClosedEventParser();
-  final String TEST_PAYLOAD_WITHOUT_KEY = "{\n" +
-    "  \"projectKey\": \"test\",\n" +
-    "  \"filePath\": \"/project/path/to/file\"\n" +
-    "}";
+  private static final String TEST_PAYLOAD_WITHOUT_KEY = """
+    {
+      "projectKey": "test",
+      "filePath": "/project/path/to/file"
+    }""";
 
-  final String TEST_PAYLOAD_WITHOUT_PROJECT_KEY = "{\n" +
-    "  \"key\": \"AYhSN6mVrRF_krvNbHl1\",\n" +
-    "  \"filePath\": \"/project/path/to/file\"\n" +
-    "}";
+  private static final String TEST_PAYLOAD_WITHOUT_PROJECT_KEY = """
+    {
+      "key": "AYhSN6mVrRF_krvNbHl1",
+      "filePath": "/project/path/to/file"
+    }""";
 
-  final String VALID_PAYLOAD = "{\n" +
-    "  \"key\": \"AYhSN6mVrRF_krvNbHl1\",\n" +
-    "  \"projectKey\": \"test\",\n" +
-    "  \"filePath\": \"/project/path/to/file\"\n" +
-    "}";
+  private static final String VALID_PAYLOAD = """
+    {
+      "key": "AYhSN6mVrRF_krvNbHl1",
+      "projectKey": "test",
+      "filePath": "/project/path/to/file"
+    }""";
 
   @ParameterizedTest
   @ValueSource(strings = {TEST_PAYLOAD_WITHOUT_KEY, TEST_PAYLOAD_WITHOUT_PROJECT_KEY})

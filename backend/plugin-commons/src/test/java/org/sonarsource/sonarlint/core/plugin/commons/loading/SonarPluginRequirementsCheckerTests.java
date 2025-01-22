@@ -123,7 +123,7 @@ class SonarPluginRequirementsCheckerTests {
     var loadedPlugins = underTest.checkRequirements(jars, Set.of(SonarLanguage.TS), null, null, false);
 
     assertThat(loadedPlugins.values()).extracting(r -> r.getPlugin().getKey(), PluginRequirementsCheckResult::isSkipped, p -> p.getSkipReason().orElse(null))
-      .containsOnly(tuple("php", true, new SkipReason.LanguagesNotEnabled(new HashSet<>(asList(SonarLanguage.PHP)))));
+      .containsOnly(tuple("php", true, new SkipReason.LanguagesNotEnabled(new HashSet<>(List.of(SonarLanguage.PHP)))));
     assertThat(logsWithoutStartStop()).contains("Plugin 'php' is excluded because language 'PHP' is not enabled. Skip loading it.");
   }
 

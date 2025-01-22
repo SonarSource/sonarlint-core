@@ -62,7 +62,6 @@ import org.sonarsource.sonarlint.core.tracking.matching.TrackedIssueFindingMatch
 import org.springframework.context.event.EventListener;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.blameWithFilesGitCommand;
 
@@ -174,14 +173,14 @@ public class TrackingService {
   private static void storeTrackedIssues(XodusKnownFindingsStore knownIssuesStore, String configurationScopeId, Path clientRelativePath, Collection<TrackedIssue> newKnownIssues) {
     knownIssuesStore.storeKnownIssues(configurationScopeId, clientRelativePath,
       newKnownIssues.stream().map(i -> new KnownFinding(i.getId(), i.getServerKey(), i.getTextRangeWithHash(), i.getLineWithHash(), i.getRuleKey(), i.getMessage(),
-        i.getIntroductionDate())).collect(Collectors.toList()));
+        i.getIntroductionDate())).toList());
   }
 
   private static void storeTrackedSecurityHotspots(XodusKnownFindingsStore knownIssuesStore, String configurationScopeId, Path clientRelativePath,
     Collection<TrackedIssue> newKnownSecurityHotspots) {
     knownIssuesStore.storeKnownSecurityHotspots(configurationScopeId, clientRelativePath,
       newKnownSecurityHotspots.stream().map(i -> new KnownFinding(i.getId(), i.getServerKey(), i.getTextRangeWithHash(), i.getLineWithHash(), i.getRuleKey(), i.getMessage(),
-        i.getIntroductionDate())).collect(Collectors.toList()));
+        i.getIntroductionDate())).toList());
   }
 
   private List<TrackedIssue> matchWithServerIssues(Path serverRelativePath, List<ServerIssue<?>> serverIssues,
@@ -201,9 +200,9 @@ public class TrackingService {
         }
         return trackedIssue;
       }
-    }).collect(Collectors.toList());
+    }).toList();
     localOnlyIssueRepository.save(serverRelativePath,
-      matches.stream().filter(issue -> issue.getServerKey() == null).map(issue -> newLocalOnlyIssue(serverRelativePath, issue)).collect(toList()));
+      matches.stream().filter(issue -> issue.getServerKey() == null).map(issue -> newLocalOnlyIssue(serverRelativePath, issue)).toList());
     return matches;
   }
 
@@ -217,7 +216,7 @@ public class TrackingService {
       } else {
         return trackedIssue;
       }
-    }).collect(Collectors.toList());
+    }).toList();
   }
 
   private static LocalOnlyIssue newLocalOnlyIssue(Path serverRelativePath, TrackedIssue issue) {

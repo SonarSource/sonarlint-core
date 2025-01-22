@@ -49,8 +49,8 @@ class NormalizedParameters {
     }
 
     final var lastEntry = argArray[argArray.length - 1];
-    if (lastEntry instanceof Throwable) {
-      return (Throwable) lastEntry;
+    if (lastEntry instanceof Throwable throwable) {
+      return throwable;
     }
 
     return null;

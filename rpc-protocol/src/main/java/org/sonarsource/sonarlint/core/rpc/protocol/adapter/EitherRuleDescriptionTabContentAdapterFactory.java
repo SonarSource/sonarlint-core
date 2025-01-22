@@ -21,9 +21,9 @@ package org.sonarsource.sonarlint.core.rpc.protocol.adapter;
 
 import com.google.gson.reflect.TypeToken;
 import org.eclipse.lsp4j.jsonrpc.json.adapters.EitherTypeAdapter;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleContextualSectionWithDefaultContextKeyDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RuleNonContextualSectionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 
 public class EitherRuleDescriptionTabContentAdapterFactory extends CustomEitherAdapterFactory<RuleNonContextualSectionDto, RuleContextualSectionWithDefaultContextKeyDto> {
 

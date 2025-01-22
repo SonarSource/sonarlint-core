@@ -21,17 +21,16 @@ package org.sonarsource.sonarlint.maven.shade.ext;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import org.apache.maven.plugins.shade.relocation.Relocator;
 import org.apache.maven.plugins.shade.resource.ManifestResourceTransformer;
 import org.apache.maven.plugins.shade.resource.ReproducibleResourceTransformer;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
-import java.util.jar.JarOutputStream;
 
 /**
  *  A custom Resource Transformer for the Maven Shade plug-in used in combination with the Bndtools for building OSGi bundles that are

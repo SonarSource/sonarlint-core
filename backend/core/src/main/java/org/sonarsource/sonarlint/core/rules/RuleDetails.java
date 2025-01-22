@@ -106,7 +106,7 @@ public class RuleDetails {
     return ruleDefinitionParams.values()
       .stream()
       .map(p -> new EffectiveRuleParam(p.name(), p.description(), ruleConfigParams.getOrDefault(p.key(), p.defaultValue()), p.defaultValue()))
-      .collect(Collectors.toList());
+      .toList();
   }
 
   public static RuleDetails merging(ServerActiveRule activeRuleFromStorage, ServerRule serverRule) {

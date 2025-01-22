@@ -52,8 +52,6 @@ import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultSonarLintIssue;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 
-import static java.util.stream.Collectors.toList;
-
 public class SonarLintSensorStorage implements SensorStorage {
 
   private final ActiveRules activeRules;
@@ -75,10 +73,9 @@ public class SonarLintSensorStorage implements SensorStorage {
 
   @Override
   public void store(Issue issue) {
-    if (!(issue instanceof DefaultSonarLintIssue)) {
+    if (!(issue instanceof DefaultSonarLintIssue sonarLintIssue)) {
       throw new IllegalArgumentException("Trying to store a non-SonarLint issue?");
     }
-    var sonarLintIssue = (DefaultSonarLintIssue) issue;
     var inputComponent = sonarLintIssue.primaryLocation().inputComponent();
 
     var activeRule = (ActiveRuleAdapter) activeRules.find(sonarLintIssue.ruleKey());
@@ -100,7 +97,7 @@ public class SonarLintSensorStorage implements SensorStorage {
   }
 
   private static List<org.sonarsource.sonarlint.core.analysis.api.QuickFix> transform(List<QuickFix> quickFixes) {
-    return quickFixes.stream().map(SonarLintSensorStorage::transform).collect(toList());
+    return quickFixes.stream().map(SonarLintSensorStorage::transform).toList();
   }
 
   private static Map<SoftwareQuality, ImpactSeverity> transform(Map<org.sonar.api.issue.impact.SoftwareQuality, Severity> overriddenImpacts) {
@@ -113,7 +110,7 @@ public class SonarLintSensorStorage implements SensorStorage {
     return new org.sonarsource.sonarlint.core.analysis.api.QuickFix(
       qf.inputFileEdits().stream().map(edit -> new ClientInputFileEdit(
         ((SonarLintInputFile) edit.target()).getClientInputFile(),
-        edit.textEdits().stream().map(textEdit -> new TextEdit(TextRangeUtils.convert(textEdit.range()), textEdit.newText())).collect(toList()))).collect(toList()),
+        edit.textEdits().stream().map(textEdit -> new TextEdit(TextRangeUtils.convert(textEdit.range()), textEdit.newText())).toList())).toList(),
       qf.message());
   }
 
@@ -129,7 +126,7 @@ public class SonarLintSensorStorage implements SensorStorage {
     return flows.stream()
       .map(f -> new org.sonarsource.sonarlint.core.analysis.api.Flow(new ArrayList<>(f.locations())))
       .filter(f -> !f.locations().isEmpty())
-      .collect(toList());
+      .toList();
   }
 
   @Override

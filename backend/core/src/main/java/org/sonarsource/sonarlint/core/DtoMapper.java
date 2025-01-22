@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.analysis.RuleDetailsForAnalysis;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsResponse;
@@ -48,7 +47,7 @@ public class DtoMapper {
       RuleDetailsAdapter.adapt(ruleDetails.getType()),
       RuleDetailsAdapter.adapt(ruleDetails.getCleanCodeAttribute()),
       ruleDetails.getImpacts().entrySet().stream().map(entry -> new ImpactDto(RuleDetailsAdapter.adapt(entry.getKey()), RuleDetailsAdapter.adapt(entry.getValue())))
-        .collect(Collectors.toList()), RuleDetailsAdapter.adapt(ruleDetails.getVulnerabilityProbability()));
+        .toList(), RuleDetailsAdapter.adapt(ruleDetails.getVulnerabilityProbability()));
   }
 
   public static RaisedIssueDto toRaisedIssueDto(TrackedIssue issue, NewCodeDefinition newCodeDefinition, boolean isMQRMode) {
@@ -57,8 +56,8 @@ public class DtoMapper {
         : Either.forLeft(new StandardModeDetails(RuleDetailsAdapter.adapt(issue.getSeverity()), RuleDetailsAdapter.adapt(issue.getType()))),
       requireNonNull(issue.getIntroductionDate()), newCodeDefinition.isOnNewCode(issue.getIntroductionDate()), issue.isResolved(),
       toTextRangeDto(issue.getTextRangeWithHash()),
-      issue.getFlows().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()),
-      issue.getQuickFixes().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()),
+      issue.getFlows().stream().map(RuleDetailsAdapter::adapt).toList(),
+      issue.getQuickFixes().stream().map(RuleDetailsAdapter::adapt).toList(),
       issue.getRuleDescriptionContextKey());
   }
 
@@ -71,8 +70,8 @@ public class DtoMapper {
         : Either.forLeft(new StandardModeDetails(RuleDetailsAdapter.adapt(issue.getSeverity()), RuleDetailsAdapter.adapt(issue.getType()))),
       requireNonNull(issue.getIntroductionDate()), newCodeDefinition.isOnNewCode(issue.getIntroductionDate()), issue.isResolved(),
       toTextRangeDto(issue.getTextRangeWithHash()),
-      issue.getFlows().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()),
-      issue.getQuickFixes().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()),
+      issue.getFlows().stream().map(RuleDetailsAdapter::adapt).toList(),
+      issue.getQuickFixes().stream().map(RuleDetailsAdapter::adapt).toList(),
       issue.getRuleDescriptionContextKey(), RuleDetailsAdapter.adapt(issue.getVulnerabilityProbability()), status);
   }
 

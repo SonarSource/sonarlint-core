@@ -21,5 +21,5 @@ package org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry;
 
 public enum AiSuggestionSource {
   SONARQUBE,
-  SONARCLOUD;
+  SONARCLOUD
 }

@@ -86,8 +86,7 @@ public class SpringComponentContainer implements StartableContainer {
   @Override
   public Container add(Object... objects) {
     for (Object o : objects) {
-      if (o instanceof Class) {
-        Class<?> clazz = (Class<?>) o;
+      if (o instanceof Class<?> clazz) {
         context.registerBean(componentKeys.ofClass(clazz), clazz);
         declareProperties(o);
       } else if (o instanceof Iterable) {
@@ -112,8 +111,7 @@ public class SpringComponentContainer implements StartableContainer {
    * For that reason, we need to create the beans ourselves, using ClassDerivedBeanDefinition, which will declare that all constructors can be used for injection.
    */
   private Container addExtension(Object o) {
-    if (o instanceof Class) {
-      Class<?> clazz = (Class<?>) o;
+    if (o instanceof Class<?> clazz) {
       var bd = new ClassDerivedBeanDefinition(clazz);
       context.registerBeanDefinition(componentKeys.ofClass(clazz), bd);
     } else if (o instanceof Iterable) {

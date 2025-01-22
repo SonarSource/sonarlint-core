@@ -46,7 +46,7 @@ public class ApiVersions {
   }
 
   static Version loadVersion(URL versionFileURL, String versionFilePath) {
-    try (var scanner = new Scanner(versionFileURL.openStream(), StandardCharsets.UTF_8.name())) {
+    try (var scanner = new Scanner(versionFileURL.openStream(), StandardCharsets.UTF_8)) {
       var versionInFile = scanner.nextLine();
       return Version.parse(versionInFile);
     } catch (Exception e) {

@@ -177,12 +177,11 @@ public class SonarLintInputFile implements InputFile {
       return true;
     }
 
-    if (!(o instanceof SonarLintInputFile)) {
+    if (!(o instanceof SonarLintInputFile file)) {
       return false;
     }
 
-    var that = (SonarLintInputFile) o;
-    return uri().equals(that.uri());
+    return uri().equals(file.uri());
   }
 
   @Override

@@ -29,8 +29,8 @@ public class StartableBeanPostProcessor implements DestructionAwareBeanPostProce
   @Override
   @Nullable
   public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
-    if (bean instanceof Startable) {
-      ((Startable) bean).start();
+    if (bean instanceof Startable startable) {
+      startable.start();
     }
     return bean;
   }
@@ -44,8 +44,8 @@ public class StartableBeanPostProcessor implements DestructionAwareBeanPostProce
   public void postProcessBeforeDestruction(Object bean, String beanName) throws BeansException {
     try {
       // note: Spring will call close() on AutoCloseable beans.
-      if (bean instanceof Startable) {
-        ((Startable) bean).stop();
+      if (bean instanceof Startable startable) {
+        startable.stop();
       }
     } catch (Exception e) {
       SonarLintLogger.get()

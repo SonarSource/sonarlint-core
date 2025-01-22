@@ -20,19 +20,16 @@
 package org.sonarsource.sonarlint.core.commons.log;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.classic.spi.LoggingEvent;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
-import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.slf4j.LoggerFactory;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput.Level;
@@ -67,7 +64,7 @@ import org.sonarsource.sonarlint.core.commons.log.LogOutput.Level;
  * }
  * </pre>
  */
-public class SonarLintLogTester implements BeforeTestExecutionCallback, AfterTestExecutionCallback, BeforeAllCallback, AfterAllCallback {
+public class SonarLintLogTester implements AfterTestExecutionCallback, BeforeAllCallback, AfterAllCallback {
 
   private final Queue<String> logs = new ConcurrentLinkedQueue<>();
   private final Map<Level, Queue<String>> logsByLevel = new ConcurrentHashMap<>();
@@ -99,10 +96,6 @@ public class SonarLintLogTester implements BeforeTestExecutionCallback, AfterTes
 
   public SonarLintLogTester() {
     this(false);
-  }
-
-  @Override
-  public void beforeTestExecution(ExtensionContext context) throws Exception {
   }
 
   @Override
@@ -152,14 +145,6 @@ public class SonarLintLogTester implements BeforeTestExecutionCallback, AfterTes
 
   private static ch.qos.logback.classic.Logger getRootLogger() {
     return (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
-  }
-
-  /**
-   * Logs with arguments in chronological order (item at index 0 is the oldest one)
-   */
-  public List<ILoggingEvent> getSlf4jLogs() {
-    return listAppender.list.stream().map(e -> (LoggingEvent) e)
-      .collect(Collectors.toList());
   }
 
 }

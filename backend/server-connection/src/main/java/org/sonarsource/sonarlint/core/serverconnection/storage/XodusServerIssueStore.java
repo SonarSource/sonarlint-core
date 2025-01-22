@@ -55,11 +55,11 @@ import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
-import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverapi.util.ProtobufUtil;
@@ -300,7 +300,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     if (blob == null) {
       return List.of();
     }
-    return ProtobufUtil.readMessages(blob, Sonarlint.Flow.parser()).stream().map(XodusServerIssueStore::toJavaFlow).collect(Collectors.toList());
+    return ProtobufUtil.readMessages(blob, Sonarlint.Flow.parser()).stream().map(XodusServerIssueStore::toJavaFlow).toList();
   }
 
   private static Map<SoftwareQuality, ImpactSeverity> readImpacts(@Nullable InputStream blob) {
@@ -330,7 +330,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       .map(fileToLoad -> fileToLoad.getLinks(linkName))
       .map(issueEntities -> StreamSupport.stream(issueEntities.spliterator(), false)
         .map(adapter)
-        .collect(Collectors.toList()))
+        .toList())
       .orElseGet(Collections::emptyList));
   }
 
@@ -339,7 +339,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
     return entityStore.computeInReadonlyTransaction(txn -> findUnique(txn, BRANCH_ENTITY_TYPE, NAME_PROPERTY_NAME, branchName)
       .map(branch -> StreamSupport.stream(branch.getLinks(BRANCH_TO_TAINT_ISSUES_LINK_NAME).spliterator(), false)
         .map(XodusServerIssueStore::adaptTaint)
-        .collect(Collectors.toList()))
+        .toList())
       .orElseGet(Collections::emptyList));
   }
 
@@ -644,12 +644,10 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
       issueEntity.setProperty(USER_SEVERITY_PROPERTY_NAME, userSeverity);
     }
     issueEntity.setProperty(TYPE_PROPERTY_NAME, issue.getType());
-    if (issue instanceof LineLevelServerIssue) {
-      var lineIssue = (LineLevelServerIssue) issue;
+    if (issue instanceof LineLevelServerIssue lineIssue) {
       issueEntity.setBlobString(LINE_HASH_PROPERTY_NAME, lineIssue.getLineHash());
       issueEntity.setProperty(START_LINE_PROPERTY_NAME, lineIssue.getLine());
-    } else if (issue instanceof RangeLevelServerIssue) {
-      var rangeIssue = (RangeLevelServerIssue) issue;
+    } else if (issue instanceof RangeLevelServerIssue rangeIssue) {
       var textRange = rangeIssue.getTextRange();
       issueEntity.setProperty(START_LINE_PROPERTY_NAME, textRange.getStartLine());
       issueEntity.setProperty(START_LINE_OFFSET_PROPERTY_NAME, textRange.getStartLineOffset());
@@ -694,13 +692,13 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
 
   public static InputStream toProtoFlow(List<Flow> flows) {
     var buffer = new ByteArrayOutputStream();
-    ProtobufUtil.writeMessages(buffer, flows.stream().map(XodusServerIssueStore::toProtoFlow).collect(Collectors.toList()));
+    ProtobufUtil.writeMessages(buffer, flows.stream().map(XodusServerIssueStore::toProtoFlow).toList());
     return new ByteArrayInputStream(buffer.toByteArray());
   }
 
   public static InputStream toProtoImpact(Map<SoftwareQuality, ImpactSeverity> impacts) {
     var buffer = new ByteArrayOutputStream();
-    ProtobufUtil.writeMessages(buffer, impacts.entrySet().stream().map(XodusServerIssueStore::toProtoImpact).collect(Collectors.toList()));
+    ProtobufUtil.writeMessages(buffer, impacts.entrySet().stream().map(XodusServerIssueStore::toProtoImpact).toList());
     return new ByteArrayInputStream(buffer.toByteArray());
   }
 
@@ -914,7 +912,7 @@ public class XodusServerIssueStore implements ProjectServerIssueStore {
   }
 
   private static Flow toJavaFlow(Sonarlint.Flow flowProto) {
-    return new Flow(flowProto.getLocationList().stream().map(XodusServerIssueStore::toJavaLocation).collect(Collectors.toList()));
+    return new Flow(flowProto.getLocationList().stream().map(XodusServerIssueStore::toJavaLocation).toList());
   }
 
   private static Map.Entry<SoftwareQuality, ImpactSeverity> toJavaImpact(Sonarlint.Impact impactProto) {

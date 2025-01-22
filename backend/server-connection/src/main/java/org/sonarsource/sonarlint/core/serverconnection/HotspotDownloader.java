@@ -57,7 +57,7 @@ public class HotspotDownloader {
       .stream()
       .filter(not(Hotspots.HotspotLite::getClosed))
       .map(HotspotDownloader::convertLiteHotspot)
-      .collect(Collectors.toList());
+      .toList();
     var closedIssueKeys = apiResult.getHotspots()
       .stream()
       .filter(Hotspots.HotspotLite::getClosed)

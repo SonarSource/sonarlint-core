@@ -33,8 +33,8 @@ import jetbrains.exodus.util.CompressBackupUtil;
 import org.sonarsource.sonarlint.core.commons.IssueStatus;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
 import org.sonarsource.sonarlint.core.local.only.IssueStatusBinding;
-import org.sonarsource.sonarlint.core.serverconnection.storage.UuidBinding;
 import org.sonarsource.sonarlint.core.serverconnection.storage.InstantBinding;
+import org.sonarsource.sonarlint.core.serverconnection.storage.UuidBinding;
 
 import static java.util.Objects.requireNonNull;
 

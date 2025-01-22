@@ -58,7 +58,7 @@ public enum Language {
   TERRAFORM("Terraform"),
   AZURERESOURCEMANAGER("AzureResourceManager"),
   ANSIBLE("Ansible");
-  private String label;
+  private final String label;
 
   Language(String label) {
     this.label = label;

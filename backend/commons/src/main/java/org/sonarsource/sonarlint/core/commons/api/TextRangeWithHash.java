@@ -50,10 +50,9 @@ public class TextRangeWithHash extends TextRange {
     if (!super.equals(obj)) {
       return false;
     }
-    if (!(obj instanceof TextRangeWithHash)) {
+    if (!(obj instanceof TextRangeWithHash other)) {
       return false;
     }
-    TextRangeWithHash other = (TextRangeWithHash) obj;
     return Objects.equals(hash, other.hash);
   }
 

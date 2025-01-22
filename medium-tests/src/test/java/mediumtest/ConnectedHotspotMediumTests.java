@@ -42,12 +42,13 @@ class ConnectedHotspotMediumTests {
 
   @SonarLintTest
   void should_locally_detect_hotspots_when_connected_to_sonarqube(SonarLintTestHarness harness, @TempDir Path baseDir) {
-    var inputFile = createFile(baseDir, "Foo.java", "public class Foo {\n" +
-      "\n" +
-      "  void foo() {\n" +
-      "    String password = \"blue\";\n" +
-      "  }\n" +
-      "}\n");
+    var inputFile = createFile(baseDir, "Foo.java", """
+      public class Foo {
+        void foo() {
+          String password = "blue";
+        }
+      }
+      """);
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, List.of(
         new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)))

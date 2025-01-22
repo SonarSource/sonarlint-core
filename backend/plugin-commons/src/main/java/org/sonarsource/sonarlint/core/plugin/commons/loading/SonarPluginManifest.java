@@ -31,7 +31,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.commons.Version;
 
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toList;
 
 /**
  * This class loads Sonar plugin metadata from JAR manifest.
@@ -119,7 +118,7 @@ public class SonarPluginManifest {
     this.dependencies = List.of(StringUtils.split(StringUtils.defaultString(deps), ' '));
 
     var requires = attributes.getValue(REQUIRE_PLUGINS_ATTRIBUTE);
-    this.requiredPlugins = Stream.of(StringUtils.split(StringUtils.defaultString(requires), ',')).map(RequiredPlugin::parse).collect(toList());
+    this.requiredPlugins = Stream.of(StringUtils.split(StringUtils.defaultString(requires), ',')).map(RequiredPlugin::parse).toList();
     this.jreMinVersion = Optional.ofNullable(attributes.getValue(JRE_MIN_VERSION)).map(Version::create);
     this.nodeJsMinVersion = Optional.ofNullable(attributes.getValue(NODEJS_MIN_VERSION)).map(Version::create);
   }

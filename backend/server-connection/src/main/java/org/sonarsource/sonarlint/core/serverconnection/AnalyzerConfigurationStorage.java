@@ -108,7 +108,7 @@ public class AnalyzerConfigurationStorage {
 
   private static RuleSet adapt(Sonarlint.RuleSet ruleSet) {
     return new RuleSet(
-      ruleSet.getRuleList().stream().map(AnalyzerConfigurationStorage::adapt).collect(Collectors.toList()),
+      ruleSet.getRuleList().stream().map(AnalyzerConfigurationStorage::adapt).toList(),
       ruleSet.getLastModified());
   }
 
@@ -120,13 +120,13 @@ public class AnalyzerConfigurationStorage {
       rule.getTemplateKey(),
       rule.getOverriddenImpactsList().stream()
         .map(impact -> new ImpactPayload(impact.getSoftwareQuality(), impact.getSeverity()))
-        .collect(Collectors.toList()));
+        .toList());
   }
 
   private static Sonarlint.RuleSet adapt(RuleSet ruleSet) {
     return Sonarlint.RuleSet.newBuilder()
       .setLastModified(ruleSet.getLastModified())
-      .addAllRule(ruleSet.getRules().stream().map(AnalyzerConfigurationStorage::adapt).collect(Collectors.toList())).build();
+      .addAllRule(ruleSet.getRules().stream().map(AnalyzerConfigurationStorage::adapt).toList()).build();
   }
 
   private static Sonarlint.RuleSet.ActiveRule adapt(ServerActiveRule rule) {
@@ -140,7 +140,7 @@ public class AnalyzerConfigurationStorage {
           .setSoftwareQuality(impact.getSoftwareQuality())
           .setSeverity(impact.getSeverity())
           .build())
-        .collect(Collectors.toList()))
+        .toList())
       .build();
   }
 }

@@ -53,14 +53,14 @@ class ConnectedIssueMediumTests {
 
   @SonarLintTest
   void simpleJavaBound(SonarLintTestHarness harness, @TempDir Path baseDir) {
-    var inputFile = createFile(baseDir, "Foo.java",
-      "public class Foo {\n"
-        + "  public void foo() {\n"
-        + "    int x;\n"
-        + "    System.out.println(\"Foo\");\n"
-        + "    System.out.println(\"Foo\"); //NOSONAR\n"
-        + "  }\n"
-        + "}");
+    var inputFile = createFile(baseDir, "Foo.java", """
+      public class Foo {
+        public void foo() {
+          int x;
+          System.out.println("Foo");
+          System.out.println("Foo"); //NOSONAR
+        }
+      }""");
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, List.of(
         new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)))
@@ -109,14 +109,14 @@ class ConnectedIssueMediumTests {
 
   @SonarLintTest
   void emptyQPJava(SonarLintTestHarness harness, @TempDir Path baseDir) {
-    var inputFile = createFile(baseDir, "Foo.java",
-      "public class Foo {\n"
-        + "  public void foo() {\n"
-        + "    int x;\n"
-        + "    System.out.println(\"Foo\");\n"
-        + "    System.out.println(\"Foo\"); //NOSONAR\n"
-        + "  }\n"
-        + "}");
+    var inputFile = createFile(baseDir, "Foo.java", """
+      public class Foo {
+        public void foo() {
+          int x;
+          System.out.println("Foo");
+          System.out.println("Foo"); //NOSONAR
+        }
+      }""");
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, List.of(
         new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), CONFIG_SCOPE_ID, false, null, inputFile, null, null, true)))
@@ -150,12 +150,12 @@ class ConnectedIssueMediumTests {
 
   @SonarLintTest
   void it_should_get_hotspot_details(SonarLintTestHarness harness, @TempDir Path baseDir) {
-    var fileFoo = createFile(baseDir, "Foo.java", "public class Foo {\n" +
-      "\n" +
-      "  void foo() {\n" +
-      "    String password = \"blue\";\n" +
-      "  }\n" +
-      "}\n");
+    var fileFoo = createFile(baseDir, "Foo.java", """
+      public class Foo {
+        void foo() {
+          String password = "blue";
+        }
+      }""");
     var fileFooUri = fileFoo.toUri();
 
     var connectionId = "connectionId";

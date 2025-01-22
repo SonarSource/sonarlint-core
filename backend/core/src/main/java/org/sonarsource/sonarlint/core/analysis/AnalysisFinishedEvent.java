@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 
 import static java.util.function.Predicate.not;
-import static java.util.stream.Collectors.toList;
 
 public class AnalysisFinishedEvent {
   private final UUID analysisId;
@@ -86,11 +85,11 @@ public class AnalysisFinishedEvent {
   }
 
   public List<RawIssue> getIssues() {
-    return issues.stream().filter(not(RawIssue::isSecurityHotspot)).collect(toList());
+    return issues.stream().filter(not(RawIssue::isSecurityHotspot)).toList();
   }
 
   public List<RawIssue> getHotspots() {
-    return issues.stream().filter(RawIssue::isSecurityHotspot).collect(toList());
+    return issues.stream().filter(RawIssue::isSecurityHotspot).toList();
   }
 
   public boolean isTrackingEnabled() {

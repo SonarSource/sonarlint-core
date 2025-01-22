@@ -77,7 +77,7 @@ public class FindingsSynchronizationService {
       fetchTasks.addAll(serverFileRelativePaths.stream()
         .map(serverFileRelativePath -> CompletableFuture.runAsync(() -> issueSynchronizationService
           .fetchFileIssues(binding, serverFileRelativePath, activeBranch, cancelMonitor), issueUpdaterExecutorService))
-        .collect(Collectors.toList()));
+        .toList());
     }
     CompletableFuture.allOf(fetchTasks.toArray(new CompletableFuture[0])).join();
   }
@@ -93,7 +93,7 @@ public class FindingsSynchronizationService {
       fetchTasks.addAll(serverFileRelativePaths.stream()
         .map(serverFileRelativePath -> CompletableFuture
           .runAsync(() -> hotspotSynchronizationService.fetchFileHotspots(binding, activeBranch, serverFileRelativePath, cancelMonitor), issueUpdaterExecutorService))
-        .collect(Collectors.toList()));
+        .toList());
     }
     CompletableFuture.allOf(fetchTasks.toArray(new CompletableFuture[0])).join();
   }

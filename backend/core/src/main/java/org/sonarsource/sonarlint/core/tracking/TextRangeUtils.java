@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.tracking;
 
 import java.io.IOException;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -85,7 +84,7 @@ public class TextRangeUtils {
   private static String getLineContent(ClientInputFile file, TextRange textRange) {
     var fileContent = getFileContentOrEmptyString(file);
     if (StringUtils.isEmpty(fileContent)) return "";
-    var lines = fileContent.lines().collect(Collectors.toList());
+    var lines = fileContent.lines().toList();
     if (lines.size() < textRange.getStartLine()) return "";
     var line = lines.get(textRange.getStartLine() - 1);
     return hash(line);
@@ -101,7 +100,7 @@ public class TextRangeUtils {
 
   public static String getTextRangeContent(@Nullable ClientInputFile file, @Nullable TextRange textRange) {
     if (file == null || textRange == null) return "";
-    var contentLines = getFileContentOrEmptyString(file).lines().collect(Collectors.toList());
+    var contentLines = getFileContentOrEmptyString(file).lines().toList();
     var startLine = textRange.getStartLine() - 1;
     var endLine = textRange.getEndLine() - 1;
     if (startLine == endLine) {

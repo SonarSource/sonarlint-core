@@ -81,10 +81,9 @@ public class Version implements Comparable<Version> {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof Version)) {
+    if (!(o instanceof Version other)) {
       return false;
     }
-    var other = (Version) o;
     return getMajor() == other.getMajor()
       && getMinor() == other.getMinor()
       && getPatch() == other.getPatch()

@@ -40,8 +40,6 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverconnection.prefix.FileTreeMatcher;
 import org.springframework.context.event.EventListener;
 
-import static java.util.stream.Collectors.toList;
-
 /**
  * The path translation service is responsible for matching the files on the server with the files on the client.
  * This is only used in connected mode.
@@ -87,7 +85,7 @@ public class PathTranslationService {
       // Maybe a config scope without files, or the filesystem has not been initialized yet
       return new FilePathTranslation(Paths.get(""), Paths.get(""));
     }
-    var match = fileMatcher.match(serverFilePaths, localFilePaths.stream().map(ClientFile::getClientRelativePath).collect(toList()));
+    var match = fileMatcher.match(serverFilePaths, localFilePaths.stream().map(ClientFile::getClientRelativePath).toList());
     LOG.debug("Matched paths for config scope '{}':\n  * idePrefix={}\n  * serverPrefix={}", configScopeId, match.idePrefix(), match.sqPrefix());
     return new FilePathTranslation(match.idePrefix(), match.sqPrefix());
   }

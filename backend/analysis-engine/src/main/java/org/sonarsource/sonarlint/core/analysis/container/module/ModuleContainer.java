@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.analysis.container.module;
 
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
@@ -65,7 +64,7 @@ public class ModuleContainer extends SpringComponentContainer {
     var analysisContainer = new AnalysisContainer(this, progress);
     analysisContainer.add(configuration);
     analysisContainer.add(new IssueListenerHolder(issueListener));
-    analysisContainer.add(new ActiveRulesAdapter(configuration.activeRules().stream().map(ActiveRuleAdapter::new).collect(Collectors.toList())));
+    analysisContainer.add(new ActiveRulesAdapter(configuration.activeRules().stream().map(ActiveRuleAdapter::new).toList()));
     var defaultAnalysisResult = new AnalysisResults();
     analysisContainer.add(defaultAnalysisResult);
     analysisContainer.execute();

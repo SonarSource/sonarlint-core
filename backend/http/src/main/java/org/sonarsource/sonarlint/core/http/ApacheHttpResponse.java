@@ -25,8 +25,8 @@ import org.apache.hc.client5.http.async.methods.SimpleHttpResponse;
 
 class ApacheHttpResponse implements HttpClient.Response {
 
-  private String requestUrl;
-  private SimpleHttpResponse response;
+  private final String requestUrl;
+  private final SimpleHttpResponse response;
 
   public ApacheHttpResponse(String requestUrl, SimpleHttpResponse response) {
     this.requestUrl = requestUrl;

@@ -53,7 +53,6 @@ import org.springframework.context.event.EventListener;
 import static java.lang.String.join;
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
-import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singlePlural;
 
@@ -166,7 +165,7 @@ public class BindingSuggestionProvider {
     var cluesAndConnections = bindingClueProvider.collectBindingCluesWithConnections(checkedConfigScopeId, candidateConnectionIds, cancelMonitor);
 
     List<BindingSuggestionDto> suggestions = new ArrayList<>();
-    var cluesWithProjectKey = cluesAndConnections.stream().filter(c -> c.getBindingClue().getSonarProjectKey() != null).collect(toList());
+    var cluesWithProjectKey = cluesAndConnections.stream().filter(c -> c.getBindingClue().getSonarProjectKey() != null).toList();
     for (var bindingClueWithConnections : cluesWithProjectKey) {
       var sonarProjectKey = requireNonNull(bindingClueWithConnections.getBindingClue().getSonarProjectKey());
       for (var connectionId : bindingClueWithConnections.getConnectionIds()) {
@@ -179,7 +178,7 @@ public class BindingSuggestionProvider {
     if (suggestions.isEmpty()) {
       var configScopeName = Optional.ofNullable(configRepository.getConfigurationScope(checkedConfigScopeId)).map(ConfigurationScope::getName).orElse(null);
       if (isNotBlank(configScopeName)) {
-        var cluesWithoutProjectKey = cluesAndConnections.stream().filter(c -> c.getBindingClue().getSonarProjectKey() == null).collect(toList());
+        var cluesWithoutProjectKey = cluesAndConnections.stream().filter(c -> c.getBindingClue().getSonarProjectKey() == null).toList();
         for (var bindingClueWithConnections : cluesWithoutProjectKey) {
           searchGoodMatchInConnections(suggestions, configScopeName, bindingClueWithConnections.getConnectionIds(), cancelMonitor);
         }

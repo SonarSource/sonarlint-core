@@ -22,8 +22,8 @@ package org.sonarsource.sonarlint.core.serverapi.hotspot;
 import java.nio.file.Path;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
+import org.sonarsource.sonarlint.core.commons.api.TextRange;
 
 public class ServerHotspotDetails {
 

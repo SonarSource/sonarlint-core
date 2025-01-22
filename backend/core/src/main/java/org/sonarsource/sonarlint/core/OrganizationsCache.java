@@ -26,14 +26,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.OrganizationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
@@ -65,7 +64,7 @@ public class OrganizationsCache {
         .thenComparing(e -> e.getKey().getName(), String.CASE_INSENSITIVE_ORDER))
       .limit(10)
       .map(Map.Entry::getKey)
-      .collect(Collectors.toList());
+      .toList();
   }
 
   public TextSearchIndex<OrganizationDto> getTextSearchIndex(Either<TokenDto, UsernamePasswordDto> credentials, SonarLintCancelMonitor cancelMonitor) {
@@ -76,7 +75,7 @@ public class OrganizationsCache {
         try {
           var serverApi = connectionManager.getForSonarCloudNoOrg(credentials);
           var serverOrganizations = serverApi.organization().listUserOrganizations(cancelMonitor);
-          orgs = serverOrganizations.stream().map(o -> new OrganizationDto(o.getKey(), o.getName(), o.getDescription())).collect(Collectors.toList());
+          orgs = serverOrganizations.stream().map(o -> new OrganizationDto(o.getKey(), o.getName(), o.getDescription())).toList();
         } catch (Exception e) {
           LOG.error("Error while querying SonarCloud organizations", e);
           return new TextSearchIndex<>();

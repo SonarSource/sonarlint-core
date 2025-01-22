@@ -28,7 +28,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import jetbrains.exodus.entitystore.Entity;
 import jetbrains.exodus.entitystore.EntityIterable;
@@ -115,7 +114,7 @@ public class XodusKnownFindingsStore {
       .map(fileToLoad -> fileToLoad.getLinks(fileToFindingsLinkName))
       .map(findingEntities -> StreamSupport.stream(findingEntities.spliterator(), false)
         .map(XodusKnownFindingsStore::adapt)
-        .collect(Collectors.toList()))
+        .toList())
       .orElseGet(Collections::emptyList));
   }
 

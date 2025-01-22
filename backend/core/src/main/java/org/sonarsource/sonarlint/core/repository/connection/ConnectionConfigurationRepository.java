@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -87,13 +86,13 @@ public class ConnectionConfigurationRepository {
   public List<AbstractConnectionConfiguration> findByUrl(String serverUrl) {
     return connectionsById.values().stream()
       .filter(connection -> connection.isSameServerUrl(serverUrl))
-      .collect(Collectors.toList());
+      .toList();
   }
 
   public List<AbstractConnectionConfiguration> findByOrganization(String organization) {
     return connectionsById.values().stream()
       .filter(connection -> connection.getKind() == ConnectionKind.SONARCLOUD)
       .filter(scConnection -> ((SonarCloudConnectionConfiguration) scConnection).getOrganization().equals(organization))
-      .collect(Collectors.toList());
+      .toList();
   }
 }

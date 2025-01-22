@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.inject.Singleton;
 
@@ -47,7 +46,7 @@ public class OpenFilesRepository {
 
   public List<URI> getOpenFilesAmong(String configurationScopeId, Set<URI> fileUris) {
     var openFiles = openFilesByConfigScopeId.getOrDefault(configurationScopeId, new ArrayList<>());
-    return openFiles.stream().filter(fileUris::contains).collect(Collectors.toList());
+    return openFiles.stream().filter(fileUris::contains).toList();
   }
 
   public Map<String, List<URI>> getOpenFilesByConfigScopeId() {

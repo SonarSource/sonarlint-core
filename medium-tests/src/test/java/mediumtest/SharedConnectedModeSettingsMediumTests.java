@@ -51,10 +51,11 @@ class SharedConnectedModeSettingsMediumTests {
     var organizationKey = "myOrg";
     var projectKey = "projectKey";
 
-    var expectedFileContent = String.format("{\n" +
-      "    \"sonarCloudOrganization\": \"%s\",\n" +
-      "    \"projectKey\": \"%s\"\n" +
-      "}", organizationKey, projectKey);
+    var expectedFileContent = String.format("""
+      {
+          "sonarCloudOrganization": "%s",
+          "projectKey": "%s"
+      }""", organizationKey, projectKey);
 
     var server = harness.newFakeSonarCloudServer(organizationKey).start();
 
@@ -82,10 +83,11 @@ class SharedConnectedModeSettingsMediumTests {
 
     var server = harness.newFakeSonarQubeServer().start();
 
-    var expectedFileContent = String.format("{\n" +
-      "    \"sonarQubeUri\": \"%s\",\n" +
-      "    \"projectKey\": \"%s\"\n" +
-      "}", removeEnd(server.baseUrl(), "/"), projectKey);
+    var expectedFileContent = String.format("""
+      {
+          "sonarQubeUri": "%s",
+          "projectKey": "%s"
+      }""", removeEnd(server.baseUrl(), "/"), projectKey);
 
     var backend = harness.newBackend()
       .withSonarQubeConnection(connectionId, server)

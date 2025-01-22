@@ -77,12 +77,11 @@ public class SonarLintInputDir implements InputDir {
       return true;
     }
 
-    if (!(o instanceof SonarLintInputDir)) {
+    if (!(o instanceof SonarLintInputDir dir)) {
       return false;
     }
 
-    var that = (SonarLintInputDir) o;
-    return path().equals(that.path());
+    return path().equals(dir.path());
   }
 
   @Override

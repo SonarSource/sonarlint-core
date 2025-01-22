@@ -53,9 +53,9 @@ public class RuleSetChangedEventParser implements EventParser<RuleSetChangedEven
           changedRule.params.stream().filter(p -> p.value != null).collect(Collectors.toMap(p -> p.key, p -> p.value)),
           changedRule.templateKey,
           changedRule.impacts == null ? Collections.emptyList() : changedRule.impacts.stream()
-            .map(impact -> new ImpactPayload(impact.getSoftwareQuality(), impact.getSeverity())).collect(Collectors.toList())
+            .map(impact -> new ImpactPayload(impact.getSoftwareQuality(), impact.getSeverity())).toList()
         ))
-        .collect(Collectors.toList()),
+        .toList(),
       payload.deactivatedRules));
   }
 

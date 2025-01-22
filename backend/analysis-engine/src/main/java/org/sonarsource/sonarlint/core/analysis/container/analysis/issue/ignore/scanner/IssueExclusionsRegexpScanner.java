@@ -39,7 +39,7 @@ public class IssueExclusionsRegexpScanner extends CharHandler {
   private final SonarLintInputFile inputFile;
 
   private int lineIndex = 1;
-  private List<LineExclusion> lineExclusions = new ArrayList<>();
+  private final List<LineExclusion> lineExclusions = new ArrayList<>();
   private LineExclusion currentLineExclusion = null;
   private int fileLength = 0;
   private DoubleRegexpMatcher currentMatcher;
@@ -90,7 +90,7 @@ public class IssueExclusionsRegexpScanner extends CharHandler {
     if (!lineExclusions.isEmpty()) {
       var lineRanges = convertLineExclusionsToLineRanges();
       LOG.debug("  - Line exclusions found: {}", lineRanges.stream().map(LineRange::toString).collect(Collectors.joining(",")));
-      inputFile.addIgnoreIssuesOnLineRanges(lineRanges.stream().map(r -> new int[] {r.from(), r.to()}).collect(Collectors.toList()));
+      inputFile.addIgnoreIssuesOnLineRanges(lineRanges.stream().map(r -> new int[] {r.from(), r.to()}).toList());
     }
   }
 
@@ -150,7 +150,7 @@ public class IssueExclusionsRegexpScanner extends CharHandler {
   }
 
   private static class LineExclusion {
-    private int start;
+    private final int start;
     private int end;
 
     LineExclusion(int start) {

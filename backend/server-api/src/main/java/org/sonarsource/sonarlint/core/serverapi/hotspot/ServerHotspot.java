@@ -23,8 +23,8 @@ import java.nio.file.Path;
 import java.time.Instant;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
-import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
+import org.sonarsource.sonarlint.core.commons.api.TextRange;
 
 public class ServerHotspot {
   private final String key;

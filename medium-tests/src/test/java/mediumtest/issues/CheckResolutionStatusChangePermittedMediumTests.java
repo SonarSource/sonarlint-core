@@ -228,13 +228,14 @@ class CheckResolutionStatusChangePermittedMediumTests {
   @Disabled("SC is difficult to setup for this test")
   @SonarLintTest
   void it_should_not_permit_status_change_on_local_only_issues_for_sonarcloud(SonarLintTestHarness harness, @TempDir Path baseDir) {
-    var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-      + "<project>\n"
-      + "  <modelVersion>4.0.0</modelVersion>\n"
-      + "  <groupId>com.foo</groupId>\n"
-      + "  <artifactId>bar</artifactId>\n"
-      + "  <version>${pom.version}</version>\n"
-      + "</project>");
+    var filePath = createFile(baseDir, "pom.xml", """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <project>
+        <modelVersion>4.0.0</modelVersion>
+        <groupId>com.foo</groupId>
+        <artifactId>bar</artifactId>
+        <version>${pom.version}</version>
+      </project>""");
     var fileUri = filePath.toUri();
     var branchName = "main";
     var projectKey = "projectKey";
@@ -281,13 +282,14 @@ class CheckResolutionStatusChangePermittedMediumTests {
   void it_should_not_permit_status_change_on_local_only_issues_for_sonarqube_prior_to_10_2(SonarLintTestHarness harness, @TempDir Path testDir) throws IOException {
     var baseDir = testDir.resolve("it_should_not_permit_status_change_on_local_only_issues_for_sonarqube_prior_to_10_2");
     Files.createDirectory(baseDir);
-    var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-      + "<project>\n"
-      + "  <modelVersion>4.0.0</modelVersion>\n"
-      + "  <groupId>com.foo</groupId>\n"
-      + "  <artifactId>bar</artifactId>\n"
-      + "  <version>${pom.version}</version>\n"
-      + "</project>");
+    var filePath = createFile(baseDir, "pom.xml", """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <project>
+        <modelVersion>4.0.0</modelVersion>
+        <groupId>com.foo</groupId>
+        <artifactId>bar</artifactId>
+        <version>${pom.version}</version>
+      </project>""");
     var fileUri = filePath.toUri();
     var branchName = "main";
     var projectKey = "projectKey";
@@ -336,13 +338,14 @@ class CheckResolutionStatusChangePermittedMediumTests {
   @Disabled("SLCORE-966")
   @SonarLintTest
   void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_2_plus(SonarLintTestHarness harness, @TempDir Path baseDir) {
-    var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-      + "<project>\n"
-      + "  <modelVersion>4.0.0</modelVersion>\n"
-      + "  <groupId>com.foo</groupId>\n"
-      + "  <artifactId>bar</artifactId>\n"
-      + "  <version>${pom.version}</version>\n"
-      + "</project>");
+    var filePath = createFile(baseDir, "pom.xml", """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <project>
+        <modelVersion>4.0.0</modelVersion>
+        <groupId>com.foo</groupId>
+        <artifactId>bar</artifactId>
+        <version>${pom.version}</version>
+      </project>""");
     var fileUri = filePath.toUri();
     var branchName = "branchName";
     var projectKey = "projectKey";
@@ -397,13 +400,14 @@ class CheckResolutionStatusChangePermittedMediumTests {
   void it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_4_plus(SonarLintTestHarness harness, @TempDir Path testDir) throws IOException {
     var baseDir = testDir.resolve("it_should_permit_status_change_on_local_only_issues_for_sonarqube_10_4_plus");
     Files.createDirectory(baseDir);
-    var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-      + "<project>\n"
-      + "  <modelVersion>4.0.0</modelVersion>\n"
-      + "  <groupId>com.foo</groupId>\n"
-      + "  <artifactId>bar</artifactId>\n"
-      + "  <version>${pom.version}</version>\n"
-      + "</project>");
+    var filePath = createFile(baseDir, "pom.xml", """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <project>
+        <modelVersion>4.0.0</modelVersion>
+        <groupId>com.foo</groupId>
+        <artifactId>bar</artifactId>
+        <version>${pom.version}</version>
+      </project>""");
     var fileUri = filePath.toUri();
     var branchName = "main";
     var projectKey = "projectKey";

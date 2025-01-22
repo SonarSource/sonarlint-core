@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.issue;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
@@ -155,13 +156,13 @@ public class IssueService {
   }
 
   private static List<LocalOnlyIssue> concat(List<LocalOnlyIssue> issues, LocalOnlyIssue issue) {
-    return Stream.concat(issues.stream(), Stream.of(issue)).collect(Collectors.toList());
+    return Stream.concat(issues.stream(), Stream.of(issue)).toList();
   }
 
   private static List<LocalOnlyIssue> subtract(List<LocalOnlyIssue> allIssues, List<LocalOnlyIssue> issueToSubtract) {
     return allIssues.stream()
       .filter(it -> issueToSubtract.stream().noneMatch(issue -> issue.getId().equals(it.getId())))
-      .collect(Collectors.toList());
+      .toList();
   }
 
   public boolean checkAnticipatedStatusChangeSupported(String configScopeId) {
@@ -291,7 +292,7 @@ public class IssueService {
   private void removeIssueOnServer(XodusLocalOnlyIssueStore localOnlyIssueStore,
     String configurationScopeId, UUID issueId, SonarLintCancelMonitor cancelMonitor) {
     var allIssues = localOnlyIssueStore.loadAll(configurationScopeId);
-    var issuesToSync = allIssues.stream().filter(it -> !it.getId().equals(issueId)).collect(Collectors.toList());
+    var issuesToSync = allIssues.stream().filter(it -> !it.getId().equals(issueId)).toList();
     var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
     connectionManager.getConnectionOrThrow(binding.getConnectionId())
         .withClientApi(serverApi -> serverApi.issue().anticipatedTransitions(binding.getSonarProjectKey(), issuesToSync, cancelMonitor));
@@ -396,8 +397,8 @@ public class IssueService {
   public void onServerEventReceived(SonarServerEventReceivedEvent eventReceived) {
     var connectionId = eventReceived.getConnectionId();
     var serverEvent = eventReceived.getEvent();
-    if (serverEvent instanceof IssueChangedEvent) {
-      handleEvent(connectionId, (IssueChangedEvent) serverEvent);
+    if (serverEvent instanceof IssueChangedEvent issueChangedEvent) {
+      handleEvent(connectionId, issueChangedEvent);
     }
   }
 
@@ -447,7 +448,7 @@ public class IssueService {
           .map(impact -> new ImpactDto(
             SoftwareQuality.valueOf(impact.getKey().name()),
             org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity.valueOf(impact.getValue().name())))
-          .collect(Collectors.toList());
+          .toList();
         UnaryOperator<RaisedIssueDto> issueUpdater = it -> it.builder()
           .withMQRModeDetails(mqrModeDetails.getCleanCodeAttribute(), mergeImpacts(it.getSeverityMode().getRight().getImpacts(), impacts)).buildIssue();
         updatedIssue = updateIssue(updatedIssue, impactedIssueKeys, issueUpdater);
@@ -458,12 +459,13 @@ public class IssueService {
   }
 
   private static List<ImpactDto> mergeImpacts(List<ImpactDto> currentImpacts, List<ImpactDto> overriddenImpacts) {
+    var mergedImpacts = new ArrayList<>(currentImpacts);
     for (var impact : overriddenImpacts) {
-      currentImpacts.removeIf(i -> i.getSoftwareQuality().equals(impact.getSoftwareQuality()));
-      currentImpacts.add(new ImpactDto(impact.getSoftwareQuality(), impact.getImpactSeverity()));
+      mergedImpacts.removeIf(i -> i.getSoftwareQuality().equals(impact.getSoftwareQuality()));
+      mergedImpacts.add(new ImpactDto(impact.getSoftwareQuality(), impact.getImpactSeverity()));
     }
 
-    return currentImpacts;
+    return mergedImpacts;
   }
 
   private static RaisedIssueDto updateIssue(RaisedIssueDto issue, Set<String> impactedIssueKeys, UnaryOperator<RaisedIssueDto> issueUpdater) {

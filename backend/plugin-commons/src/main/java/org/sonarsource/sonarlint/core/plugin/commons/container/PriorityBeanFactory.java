@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.springframework.beans.BeanWrapper;
@@ -46,7 +45,7 @@ public class PriorityBeanFactory extends DefaultListableBeanFactory {
     List<Bean> candidateBeans = candidates.entrySet().stream()
       .filter(e -> e.getValue() != null)
       .map(e -> new Bean(e.getKey(), e.getValue()))
-      .collect(Collectors.toList());
+      .toList();
 
     List<Bean> beansAfterPriority = highestPriority(candidateBeans, b -> getPriority(b.getInstance()));
     if (beansAfterPriority.isEmpty()) {

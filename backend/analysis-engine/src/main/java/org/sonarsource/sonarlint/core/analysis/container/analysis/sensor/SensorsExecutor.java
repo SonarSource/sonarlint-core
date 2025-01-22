@@ -130,7 +130,7 @@ public class SensorsExecutor {
 
     return (Collection<T>) sortedList.stream()
       .filter(extensions::contains)
-      .collect(Collectors.toList());
+      .toList();
   }
 
   /**

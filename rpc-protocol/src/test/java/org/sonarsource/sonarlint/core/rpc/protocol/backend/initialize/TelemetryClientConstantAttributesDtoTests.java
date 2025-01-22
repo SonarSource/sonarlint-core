@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class TelemetryClientConstantAttributesDtoTests {
 

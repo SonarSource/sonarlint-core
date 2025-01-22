@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.client.utils;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class IssueResolutionStatusTest {
   @Test

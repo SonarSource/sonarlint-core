@@ -35,42 +35,46 @@ class SecurityHotspotChangedEventParserTest {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
   SecurityHotspotChangedEventParser parser = new SecurityHotspotChangedEventParser();
-  final String TEST_PAYLOAD_WITHOUT_KEY = "{\n" +
-    "  \"projectKey\": \"test\",\n" +
-    "  \"updateDate\": 1685007187000,\n" +
-    "  \"status\": \"REVIEWED\",\n" +
-    "  \"assignee\": \"AYfcq2moStCcBwCPm0uK\",\n" +
-    "  \"resolution\": \"ACKNOWLEDGED\",\n" +
-    "  \"filePath\": \"/project/path/to/file\"\n" +
-    "}";
+  private static final String TEST_PAYLOAD_WITHOUT_KEY = """
+    {
+      "projectKey": "test",
+      "updateDate": 1685007187000,
+      "status": "REVIEWED",
+      "assignee": "AYfcq2moStCcBwCPm0uK",
+      "resolution": "ACKNOWLEDGED",
+      "filePath": "/project/path/to/file"
+    }""";
 
-  final String TEST_PAYLOAD_WITHOUT_PROJECT_KEY = "{\n" +
-    "  \"key\": \"AYhSN6mVrRF_krvNbHl1\",\n" +
-    "  \"updateDate\": 1685007187000,\n" +
-    "  \"status\": \"REVIEWED\",\n" +
-    "  \"assignee\": \"AYfcq2moStCcBwCPm0uK\",\n" +
-    "  \"resolution\": \"ACKNOWLEDGED\",\n" +
-    "  \"filePath\": \"/project/path/to/file\"\n" +
-    "}";
+  private static final String TEST_PAYLOAD_WITHOUT_PROJECT_KEY = """
+    {
+      "key": "AYhSN6mVrRF_krvNbHl1",
+      "updateDate": 1685007187000,
+      "status": "REVIEWED",
+      "assignee": "AYfcq2moStCcBwCPm0uK",
+      "resolution": "ACKNOWLEDGED",
+      "filePath": "/project/path/to/file"
+    }""";
 
-  final String TEST_PAYLOAD_WITHOUT_FILE_PATH = "{\n" +
-    "  \"key\": \"AYhSN6mVrRF_krvNbHl1\",\n" +
-    "  \"projectKey\": \"test\",\n" +
-    "  \"updateDate\": 1685007187000,\n" +
-    "  \"status\": \"REVIEWED\",\n" +
-    "  \"assignee\": \"AYfcq2moStCcBwCPm0uK\",\n" +
-    "  \"resolution\": \"ACKNOWLEDGED\"\n" +
-    "}";
+  private static final String TEST_PAYLOAD_WITHOUT_FILE_PATH = """
+    {
+      "key": "AYhSN6mVrRF_krvNbHl1",
+      "projectKey": "test",
+      "updateDate": 1685007187000,
+      "status": "REVIEWED",
+      "assignee": "AYfcq2moStCcBwCPm0uK",
+      "resolution": "ACKNOWLEDGED"
+    }""";
 
-  final String VALID_PAYLOAD = "{\n" +
-    "  \"key\": \"AYhSN6mVrRF_krvNbHl1\",\n" +
-    "  \"projectKey\": \"test\",\n" +
-    "  \"updateDate\": 1685007187000,\n" +
-    "  \"status\": \"REVIEWED\",\n" +
-    "  \"assignee\": \"assigneeEmail\",\n" +
-    "  \"resolution\": \"ACKNOWLEDGED\",\n" +
-    "  \"filePath\": \"/project/path/to/file\"\n" +
-    "}";
+  private static final String VALID_PAYLOAD = """
+    {
+      "key": "AYhSN6mVrRF_krvNbHl1",
+      "projectKey": "test",
+      "updateDate": 1685007187000,
+      "status": "REVIEWED",
+      "assignee": "assigneeEmail",
+      "resolution": "ACKNOWLEDGED",
+      "filePath": "/project/path/to/file"
+    }""";
 
   @ParameterizedTest
   @ValueSource(strings = {TEST_PAYLOAD_WITHOUT_KEY, TEST_PAYLOAD_WITHOUT_PROJECT_KEY, TEST_PAYLOAD_WITHOUT_FILE_PATH})
@@ -92,30 +96,32 @@ class SecurityHotspotChangedEventParserTest {
 
   @Test
   void shouldCorrectlyMapStatus() {
-    var PAYLOAD_NO_RESOLUTION = "{\n" +
-      "  \"key\": \"AYhSN6mVrRF_krvNbHl1\",\n" +
-      "  \"projectKey\": \"test\",\n" +
-      "  \"updateDate\": 1685007187000,\n" +
-      "  \"status\": \"TO_REVIEW\",\n" +
-      "  \"assignee\": \"assigneeEmail\",\n" +
-      "  \"filePath\": \"/project/path/to/file\"\n" +
-      "}";
+    var payloadNoResolution = """
+      {
+        "key": "AYhSN6mVrRF_krvNbHl1",
+        "projectKey": "test",
+        "updateDate": 1685007187000,
+        "status": "TO_REVIEW",
+        "assignee": "assigneeEmail",
+        "filePath": "/project/path/to/file"
+      }""";
 
-    var parsedResult = parser.parse(PAYLOAD_NO_RESOLUTION);
+    var parsedResult = parser.parse(payloadNoResolution);
     assertThat(parsedResult).isPresent();
     assertThat(parsedResult.get().getStatus()).isEqualTo(TO_REVIEW);
 
-    var PAYLOAD_SAFE = "{\n" +
-      "  \"key\": \"AYhSN6mVrRF_krvNbHl1\",\n" +
-      "  \"projectKey\": \"test\",\n" +
-      "  \"updateDate\": 1685007187000,\n" +
-      "  \"status\": \"REVIEWED\",\n" +
-      "  \"assignee\": \"assigneeEmail\",\n" +
-      "  \"resolution\": \"SAFE\",\n" +
-      "  \"filePath\": \"/project/path/to/file\"\n" +
-      "}";
+    var payloadSafe = """
+      {
+        "key": "AYhSN6mVrRF_krvNbHl1",
+        "projectKey": "test",
+        "updateDate": 1685007187000,
+        "status": "REVIEWED",
+        "assignee": "assigneeEmail",
+        "resolution": "SAFE",
+        "filePath": "/project/path/to/file"
+      }""";
 
-    var parsedResult2 = parser.parse(PAYLOAD_SAFE);
+    var parsedResult2 = parser.parse(payloadSafe);
     assertThat(parsedResult2).isPresent();
     assertThat(parsedResult2.get().getStatus()).isEqualTo(SAFE);
   }

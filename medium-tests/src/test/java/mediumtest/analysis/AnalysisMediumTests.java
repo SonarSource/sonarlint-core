@@ -120,19 +120,21 @@ class AnalysisMediumTests {
   @SonarLintTest
   void should_not_raise_issues_for_previously_analysed_files_if_they_were_not_submitted_for_analysis(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var fileFooPath = createFile(baseDir, "Foo.java",
-      "public class Foo {\n"
-        + "  public void foo() {\n"
-        + "    int x;\n"
-        + "    System.out.println(\"Foo\");\n"
-        + "  }\n"
-        + "}");
+      """
+        public class Foo {
+          public void foo() {
+            int x;
+            System.out.println("Foo");
+          }
+        }""");
     var fileBarPath = createFile(baseDir, "Bar.java",
-      "public class Bar {\n"
-        + "  public void foo() {\n"
-        + "    int x;\n"
-        + "    System.out.println(\"Foo\");\n"
-        + "  }\n"
-        + "}");
+      """
+        public class Bar {
+          public void foo() {
+            int x;
+            System.out.println("Foo");
+          }
+        }""");
     var fileFooUri = fileFooPath.toUri();
     var fileBarUri = fileBarPath.toUri();
     var client = harness.newFakeClient()
@@ -168,13 +170,14 @@ class AnalysisMediumTests {
   @SonarLintTest
   void it_should_analyze_xml_file_in_standalone_mode(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml",
-      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        + "<project>\n"
-        + "  <modelVersion>4.0.0</modelVersion>\n"
-        + "  <groupId>com.foo</groupId>\n"
-        + "  <artifactId>bar</artifactId>\n"
-        + "  <version>${pom.version}</version>\n"
-        + "</project>");
+      """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project>
+          <modelVersion>4.0.0</modelVersion>
+          <groupId>com.foo</groupId>
+          <artifactId>bar</artifactId>
+          <version>${pom.version}</version>
+        </project>""");
     var fileUri = filePath.toUri();
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
@@ -206,13 +209,14 @@ class AnalysisMediumTests {
   @SonarLintTest
   void it_should_analyze_xml_file_in_connected_mode(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml",
-      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        + "<project>\n"
-        + "  <modelVersion>4.0.0</modelVersion>\n"
-        + "  <groupId>com.foo</groupId>\n"
-        + "  <artifactId>bar</artifactId>\n"
-        + "  <version>${pom.version}</version>\n"
-        + "</project>");
+      """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project>
+          <modelVersion>4.0.0</modelVersion>
+          <groupId>com.foo</groupId>
+          <artifactId>bar</artifactId>
+          <version>${pom.version}</version>
+        </project>""");
     var fileUri = filePath.toUri();
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
@@ -332,11 +336,15 @@ class AnalysisMediumTests {
   @SonarLintTest
   void it_should_report_issues_for_multi_file_analysis_taking_data_from_module_filesystem(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var fileIssue = createFile(baseDir, "fileIssue.py",
-      "from fileFuncDef import foo\n" +
-        "foo(1,2,3)\n");
+      """
+        from fileFuncDef import foo
+        foo(1,2,3)
+        """);
     var fileFuncDef = createFile(baseDir, "fileFuncDef.py",
-      "def foo(a):\n" +
-        "    print(a)\n");
+      """
+        def foo(a):
+            print(a)
+        """);
     var fileIssueUri = fileIssue.toUri();
     var fileFuncDefUri = fileFuncDef.toUri();
     var client = harness.newFakeClient()
@@ -362,11 +370,15 @@ class AnalysisMediumTests {
   @SonarLintTest
   void it_should_report_multi_file_issues_for_files_added_after_initialization(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var fileIssue = createFile(baseDir, "fileIssue.py",
-      "from fileFuncDef import foo\n" +
-        "foo(1,2,3)\n");
+      """
+        from fileFuncDef import foo
+        foo(1,2,3)
+        """);
     var fileFuncDef = createFile(baseDir, "fileFuncDef.py",
-      "def foo(a):\n" +
-        "    print(a)\n");
+      """
+        def foo(a):
+            print(a)
+        """);
     var fileIssueUri = fileIssue.toUri();
     var fileFuncDefUri = fileFuncDef.toUri();
     var client = harness.newFakeClient()
@@ -402,17 +414,25 @@ class AnalysisMediumTests {
   @SonarLintTest
   void it_should_report_issues_for_multi_file_analysis_only_for_leaf_config_scopes(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var file1Issue = createFile(baseDir, "file1Issue.py",
-      "from file1FuncDef import foo\n" +
-        "foo(1,2,3)\n");
+      """
+        from file1FuncDef import foo
+        foo(1,2,3)
+        """);
     var file1FuncDef = createFile(baseDir, "file1FuncDef.py",
-      "def foo(a):\n" +
-        "    print(a)\n");
+      """
+        def foo(a):
+            print(a)
+        """);
     var file2Issue = createFile(baseDir, "file2Issue.py",
-      "from file2FuncDef import foo\n" +
-        "foo(1,2,3)\n");
+      """
+        from file2FuncDef import foo
+        foo(1,2,3)
+        """);
     var file2FuncDef = createFile(baseDir, "file2FuncDef.py",
-      "def foo(a):\n" +
-        "    print(a)\n");
+      """
+        def foo(a):
+            print(a)
+        """);
     var file1IssueUri = file1Issue.toUri();
     var file1FuncDefUri = file1FuncDef.toUri();
     var file2IssueUri = file2Issue.toUri();
@@ -451,8 +471,10 @@ class AnalysisMediumTests {
   void it_should_update_module_file_system_on_file_events_creating_file(SonarLintTestHarness harness, @TempDir Path tempDir) throws IOException {
     var baseDir = Files.createDirectory(tempDir.resolve("it_should_update_module_file_system_on_file_events_creating_file"));
     var fileIssue = createFile(baseDir, "fileIssue.py",
-      "from fileFuncDef import foo\n" +
-        "foo(1,2,3)\n");
+      """
+        from fileFuncDef import foo
+        foo(1,2,3)
+        """);
     var fileIssueUri = fileIssue.toUri();
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileIssueUri, baseDir.relativize(fileIssue),
@@ -471,8 +493,10 @@ class AnalysisMediumTests {
     await().during(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty());
 
     var fileFuncDef = createFile(baseDir, "fileFuncDef.py",
-      "def foo(a):\n" +
-        "    print(a)\n");
+      """
+        def foo(a):
+            print(a)
+        """);
     var fileFuncDefUri = fileFuncDef.toUri();
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(
       List.of(new ClientFileDto(fileFuncDefUri, baseDir.relativize(fileFuncDef), CONFIG_SCOPE_ID, false, null, fileFuncDef, null, null,
@@ -492,11 +516,15 @@ class AnalysisMediumTests {
   @SonarLintTest
   void it_should_update_module_file_system_on_file_events_deleting_file(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var fileIssue = createFile(baseDir, "fileIssue.py",
-      "from fileFuncDef import foo\n" +
-        "foo(1,2,3)\n");
+      """
+        from fileFuncDef import foo
+        foo(1,2,3)
+        """);
     var fileFuncDef = createFile(baseDir, "fileFuncDef.py",
-      "def foo(a):\n" +
-        "    print(a)\n");
+      """
+        def foo(a):
+            print(a)
+        """);
     var fileIssueUri = fileIssue.toUri();
     var fileFuncDefUri = fileFuncDef.toUri();
     var client = harness.newFakeClient()
@@ -534,11 +562,15 @@ class AnalysisMediumTests {
   @SonarLintTest
   void it_should_update_module_file_system_on_file_events_editing_file(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var fileIssue = createFile(baseDir, "fileIssue.py",
-      "from fileFuncDef import foo\n" +
-        "foo(1,2,3)\n");
+      """
+        from fileFuncDef import foo
+        foo(1,2,3)
+        """);
     var fileFuncDef = createFile(baseDir, "fileFuncDef.py",
-      "def foo(a):\n" +
-        "    print(a)\n");
+      """
+        def foo(a):
+            print(a)
+        """);
     var fileIssueUri = fileIssue.toUri();
     var fileFuncDefUri = fileFuncDef.toUri();
     var client = harness.newFakeClient()
@@ -621,13 +653,14 @@ class AnalysisMediumTests {
   @SonarLintTest
   void it_should_skip_analysis_and_keep_rules_if_disabled_language_for_analysis(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml",
-      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        + "<project>\n"
-        + "  <modelVersion>4.0.0</modelVersion>\n"
-        + "  <groupId>com.foo</groupId>\n"
-        + "  <artifactId>bar</artifactId>\n"
-        + "  <version>${pom.version}</version>\n"
-        + "</project>");
+      """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project>
+          <modelVersion>4.0.0</modelVersion>
+          <groupId>com.foo</groupId>
+          <artifactId>bar</artifactId>
+          <version>${pom.version}</version>
+        </project>""");
     var fileUri = filePath.toUri();
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
@@ -657,13 +690,14 @@ class AnalysisMediumTests {
   @SonarLintTest
   void it_should_skip_analysis_only_for_disabled_language(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var xmlFilePath = createFile(baseDir, "pom.xml",
-      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        + "<project>\n"
-        + "  <modelVersion>4.0.0</modelVersion>\n"
-        + "  <groupId>com.foo</groupId>\n"
-        + "  <artifactId>bar</artifactId>\n"
-        + "  <version>${pom.version}</version>\n"
-        + "</project>");
+      """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project>
+          <modelVersion>4.0.0</modelVersion>
+          <groupId>com.foo</groupId>
+          <artifactId>bar</artifactId>
+          <version>${pom.version}</version>
+        </project>""");
     var xmlFileUri = xmlFilePath.toUri();
     var javaFilePath = createFile(baseDir, "Main.java",
       "public class Main {}");
@@ -752,21 +786,23 @@ class AnalysisMediumTests {
   @SonarLintTest
   void it_should_unload_rules_cache_on_config_scope_closed(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml",
-      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        + "<project>\n"
-        + "  <modelVersion>4.0.0</modelVersion>\n"
-        + "  <groupId>com.foo</groupId>\n"
-        + "  <artifactId>bar</artifactId>\n"
-        + "  <version>${pom.version}</version>\n"
-        + "</project>");
+      """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project>
+          <modelVersion>4.0.0</modelVersion>
+          <groupId>com.foo</groupId>
+          <artifactId>bar</artifactId>
+          <version>${pom.version}</version>
+        </project>""");
     var filePath2 = createFile(baseDir, "pom.xml",
-      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        + "<project>\n"
-        + "  <modelVersion>4.0.0</modelVersion>\n"
-        + "  <groupId>com.foo</groupId>\n"
-        + "  <artifactId>bar</artifactId>\n"
-        + "  <version>${pom.version}</version>\n"
-        + "</project>");
+      """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project>
+          <modelVersion>4.0.0</modelVersion>
+          <groupId>com.foo</groupId>
+          <artifactId>bar</artifactId>
+          <version>${pom.version}</version>
+        </project>""");
     var fileUri = filePath.toUri();
     var fileUri2 = filePath2.toUri();
     var configScope2 = "configScope2";
@@ -813,29 +849,32 @@ class AnalysisMediumTests {
   @SonarLintTest
   void it_should_not_unload_rules_cache_on_config_scope_closed_if_another_config_scope_still_opened(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml",
-      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        + "<project>\n"
-        + "  <modelVersion>4.0.0</modelVersion>\n"
-        + "  <groupId>com.foo</groupId>\n"
-        + "  <artifactId>bar</artifactId>\n"
-        + "  <version>${pom.version}</version>\n"
-        + "</project>");
+      """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project>
+          <modelVersion>4.0.0</modelVersion>
+          <groupId>com.foo</groupId>
+          <artifactId>bar</artifactId>
+          <version>${pom.version}</version>
+        </project>""");
     var filePath2 = createFile(baseDir, "pom.xml",
-      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        + "<project>\n"
-        + "  <modelVersion>4.0.0</modelVersion>\n"
-        + "  <groupId>com.foo</groupId>\n"
-        + "  <artifactId>bar</artifactId>\n"
-        + "  <version>${pom.version}</version>\n"
-        + "</project>");
+      """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project>
+          <modelVersion>4.0.0</modelVersion>
+          <groupId>com.foo</groupId>
+          <artifactId>bar</artifactId>
+          <version>${pom.version}</version>
+        </project>""");
     var filePath3 = createFile(baseDir, "pom.xml",
-      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        + "<project>\n"
-        + "  <modelVersion>4.0.0</modelVersion>\n"
-        + "  <groupId>com.foo</groupId>\n"
-        + "  <artifactId>bar</artifactId>\n"
-        + "  <version>${pom.version}</version>\n"
-        + "</project>");
+      """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project>
+          <modelVersion>4.0.0</modelVersion>
+          <groupId>com.foo</groupId>
+          <artifactId>bar</artifactId>
+          <version>${pom.version}</version>
+        </project>""");
     var fileUri = filePath.toUri();
     var fileUri2 = filePath2.toUri();
     var fileUri3 = filePath3.toUri();

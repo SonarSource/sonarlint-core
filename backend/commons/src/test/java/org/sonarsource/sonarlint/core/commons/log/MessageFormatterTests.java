@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.commons.log;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * @author Ceki Gulcu
@@ -39,7 +40,7 @@ class MessageFormatterTests {
   @Test
   void testNull() {
     result = MessageFormatter.format(null, i1).getMessage();
-    assertEquals(null, result);
+    assertNull(result);
   }
 
   @Test

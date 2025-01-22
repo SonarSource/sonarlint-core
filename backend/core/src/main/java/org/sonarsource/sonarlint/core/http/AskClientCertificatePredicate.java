@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.http;
 import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import nl.altindag.ssl.model.TrustManagerParameters;
@@ -47,7 +46,7 @@ public class AskClientCertificatePredicate implements Predicate<TrustManagerPara
       return client
         .checkServerTrusted(new CheckServerTrustedParams(
           Arrays.stream(trustManagerParameters.getChain())
-            .map(c -> new X509CertificateDto(CertificateUtils.convertToPem(c))).collect(Collectors.toList()),
+            .map(c -> new X509CertificateDto(CertificateUtils.convertToPem(c))).toList(),
           trustManagerParameters.getAuthType()))
         .get()
         .isTrusted();

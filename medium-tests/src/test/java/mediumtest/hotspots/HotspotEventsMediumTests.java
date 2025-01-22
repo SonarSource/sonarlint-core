@@ -82,27 +82,30 @@ class HotspotEventsMediumTests {
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
         .start();
-      mockEvent(server, "projectKey", "event: SecurityHotspotRaised\n" +
-        "data: {" +
-        "  \"status\": \"TO_REVIEW\"," +
-        "  \"vulnerabilityProbability\": \"MEDIUM\"," +
-        "  \"creationDate\": 1685006550000," +
-        "  \"mainLocation\": {" +
-        "    \"filePath\": \"file/path\"," +
-        "    \"message\": \"Make sure that using this pseudorandom number generator is safe here.\"," +
-        "    \"textRange\": {" +
-        "      \"startLine\": 12," +
-        "      \"startLineOffset\": 29," +
-        "      \"endLine\": 12," +
-        "      \"endLineOffset\": 36," +
-        "      \"hash\": \"43b5c9175984c071f30b873fdce0a000\"" +
-        "    }" +
-        "  }," +
-        "  \"ruleKey\": \"java:S2245\"," +
-        "  \"key\": \"AYhSN6mVrRF_krvNbHl1\"," +
-        "  \"projectKey\": \"projectKey\"," +
-        "  \"branch\": \"branchName\"" +
-        "}\n\n");
+      mockEvent(server, "projectKey", """
+        event: SecurityHotspotRaised
+        data: {\
+          "status": "TO_REVIEW",\
+          "vulnerabilityProbability": "MEDIUM",\
+          "creationDate": 1685006550000,\
+          "mainLocation": {\
+            "filePath": "file/path",\
+            "message": "Make sure that using this pseudorandom number generator is safe here.",\
+            "textRange": {\
+              "startLine": 12,\
+              "startLineOffset": 29,\
+              "endLine": 12,\
+              "endLineOffset": 36,\
+              "hash": "43b5c9175984c071f30b873fdce0a000"\
+            }\
+          },\
+          "ruleKey": "java:S2245",\
+          "key": "AYhSN6mVrRF_krvNbHl1",\
+          "projectKey": "projectKey",\
+          "branch": "branchName"\
+        }
+        
+        """);
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -126,12 +129,15 @@ class HotspotEventsMediumTests {
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
         .start();
-      mockEvent(server, "projectKey", "event: SecurityHotspotClosed\n" +
-        "data: {" +
-        "    \"key\": \"hotspotKey\"," +
-        "    \"projectKey\": \"projectKey\"," +
-        "    \"filePath\": \"file/path\"" +
-        "}\n\n");
+      mockEvent(server, "projectKey", """
+        event: SecurityHotspotClosed
+        data: {\
+            "key": "hotspotKey",\
+            "projectKey": "projectKey",\
+            "filePath": "file/path"\
+        }
+        
+        """);
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -148,13 +154,15 @@ class HotspotEventsMediumTests {
     @SonarLintTest
     void should_republish_hotspots_without_closed_one(SonarLintTestHarness harness, @TempDir Path baseDir) {
       var filePath = createFile(baseDir, "Foo.java",
-        "public class Foo {\n" +
-          "\n" +
-          "  void foo() {\n" +
-          "    String password = \"blue\";\n" +
-          "    String passwordD = \"red\";\n" +
-          "  }\n" +
-          "}\n");
+        """
+          public class Foo {
+          
+            void foo() {
+              String password = "blue";
+              String passwordD = "red";
+            }
+          }
+          """);
       var fileUri = filePath.toUri();
       var connectionId = "connectionId";
       var branchName = "branchName";
@@ -200,12 +208,15 @@ class HotspotEventsMediumTests {
         .start();
 
       mockEvent(serverWithHotspots, projectKey,
-        "event: SecurityHotspotClosed\n" +
-          "data: {" +
-          "    \"key\": \"myHotspotKey1\"," +
-          "    \"projectKey\": \"projectKey\"," +
-          "    \"filePath\": \"Foo.java\"" +
-          "}\n\n"
+        """
+          event: SecurityHotspotClosed
+          data: {\
+              "key": "myHotspotKey1",\
+              "projectKey": "projectKey",\
+              "filePath": "Foo.java"\
+          }
+          
+          """
       );
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -241,16 +252,19 @@ class HotspotEventsMediumTests {
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
         .start();
-      mockEvent(server, "projectKey", "event: SecurityHotspotChanged\n" +
-        "data: {" +
-        "  \"key\": \"AYhSN6mVrRF_krvNbHl1\"," +
-        "  \"projectKey\": \"projectKey\"," +
-        "  \"updateDate\": 1685007187000," +
-        "  \"status\": \"REVIEWED\"," +
-        "  \"assignee\": \"assigneeEmail\"," +
-        "  \"resolution\": \"SAFE\"," +
-        "  \"filePath\": \"file/path\"" +
-        "}\n\n");
+      mockEvent(server, "projectKey", """
+        event: SecurityHotspotChanged
+        data: {\
+          "key": "AYhSN6mVrRF_krvNbHl1",\
+          "projectKey": "projectKey",\
+          "updateDate": 1685007187000,\
+          "status": "REVIEWED",\
+          "assignee": "assigneeEmail",\
+          "resolution": "SAFE",\
+          "filePath": "file/path"\
+        }
+        
+        """);
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -272,16 +286,19 @@ class HotspotEventsMediumTests {
         .withProject("projectKey",
           project -> project.withBranch("branchName"))
         .start();
-      mockEvent(server, "projectKey", "event: SecurityHotspotChanged\n" +
-        "data: {" +
-        "  \"key\": \"AYhSN6mVrRF_krvNbHl1\"," +
-        "  \"projectKey\": \"projectKey\"," +
-        "  \"updateDate\": 1685007187000," +
-        "  \"status\": \"REVIEWED\"," +
-        "  \"assignee\": \"assigneeEmail\"," +
-        "  \"resolution\": \"SAFE\"," +
-        "  \"filePath\": \"file/path\"" +
-        "}\n\n");
+      mockEvent(server, "projectKey", """
+        event: SecurityHotspotChanged
+        data: {\
+          "key": "AYhSN6mVrRF_krvNbHl1",\
+          "projectKey": "projectKey",\
+          "updateDate": 1685007187000,\
+          "status": "REVIEWED",\
+          "assignee": "assigneeEmail",\
+          "resolution": "SAFE",\
+          "filePath": "file/path"\
+        }
+        
+        """);
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -300,12 +317,14 @@ class HotspotEventsMediumTests {
     @SonarLintTest
     void should_raise_hotspot_with_changed_data(SonarLintTestHarness harness, @TempDir Path baseDir) {
       var filePath = createFile(baseDir, "Foo.java",
-        "public class Foo {\n" +
-          "\n" +
-          "  void foo() {\n" +
-          "    String password = \"blue\";\n" +
-          "  }\n" +
-          "}\n");
+        """
+          public class Foo {
+          
+            void foo() {
+              String password = "blue";
+            }
+          }
+          """);
       var fileUri = filePath.toUri();
       var connectionId = "connectionId";
       var branchName = "branchName";

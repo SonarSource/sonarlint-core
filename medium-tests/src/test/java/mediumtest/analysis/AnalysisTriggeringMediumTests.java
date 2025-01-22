@@ -28,7 +28,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeAutomaticAnalysisSettingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidCloseFileParams;
@@ -61,13 +60,14 @@ class AnalysisTriggeringMediumTests {
   @SonarLintTest
   void it_should_analyze_file_on_open(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml",
-      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        + "<project>\n"
-        + "  <modelVersion>4.0.0</modelVersion>\n"
-        + "  <groupId>com.foo</groupId>\n"
-        + "  <artifactId>bar</artifactId>\n"
-        + "  <version>${pom.version}</version>\n"
-        + "</project>");
+      """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project>
+          <modelVersion>4.0.0</modelVersion>
+          <groupId>com.foo</groupId>
+          <artifactId>bar</artifactId>
+          <version>${pom.version}</version>
+        </project>""");
     var fileUri = filePath.toUri();
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
@@ -113,7 +113,7 @@ class AnalysisTriggeringMediumTests {
       assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isEmpty();
       assertThat(client.getLogMessages().stream()
         .filter(message -> message.startsWith("Filtered out URIs that are Windows shortcuts: "))
-        .collect(Collectors.toList())).isNotEmpty();
+        .toList()).isNotEmpty();
     });
 
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fakeWindowsShortcut.toUri()));
@@ -123,13 +123,14 @@ class AnalysisTriggeringMediumTests {
   @SonarLintTest
   void it_should_not_fail_an_analysis_of_symlink_file_and_skip_the_file_analysis(SonarLintTestHarness harness, @TempDir Path baseDir) throws IOException {
     var filePath = createFile(baseDir, "pom.xml",
-      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        + "<project>\n"
-        + "  <modelVersion>4.0.0</modelVersion>\n"
-        + "  <groupId>com.foo</groupId>\n"
-        + "  <artifactId>bar</artifactId>\n"
-        + "  <version>${pom.version}</version>\n"
-        + "</project>");
+      """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project>
+          <modelVersion>4.0.0</modelVersion>
+          <groupId>com.foo</groupId>
+          <artifactId>bar</artifactId>
+          <version>${pom.version}</version>
+        </project>""");
     var link = Paths.get(baseDir.toString(), "pom-link.xml");
     Files.createSymbolicLink(link, filePath);
     var client = harness.newFakeClient()
@@ -146,7 +147,7 @@ class AnalysisTriggeringMediumTests {
       assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isEmpty();
       assertThat(client.getLogMessages().stream()
         .filter(message -> message.startsWith("Filtered out URIs that are symbolic links: "))
-        .collect(Collectors.toList())).isNotEmpty();
+        .toList()).isNotEmpty();
     });
   }
 
@@ -172,14 +173,14 @@ class AnalysisTriggeringMediumTests {
     backend.getFileService()
       .didUpdateFileSystem(new DidUpdateFileSystemParams(
         Collections.emptyList(),
-        List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, "<?xml version=\"1.0\" " +
-          "encoding=\"UTF-8\"?>\n"
-          + "<project>\n"
-          + "  <modelVersion>4.0.0</modelVersion>\n"
-          + "  <groupId>com.foo</groupId>\n"
-          + "  <artifactId>bar</artifactId>\n"
-          + "  <version>${pom.version}</version>\n"
-          + "</project>", null, true)),
+        List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, """
+          <?xml version="1.0" encoding="UTF-8"?>
+          <project>
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>com.foo</groupId>
+            <artifactId>bar</artifactId>
+            <version>${pom.version}</version>
+          </project>""", null, true)),
         Collections.emptyList()));
 
     publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
@@ -212,14 +213,14 @@ class AnalysisTriggeringMediumTests {
 
     backend.getFileService()
       .didUpdateFileSystem(new DidUpdateFileSystemParams(
-        List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, "<?xml version=\"1.0\" " +
-          "encoding=\"UTF-8\"?>\n"
-          + "<project>\n"
-          + "  <modelVersion>4.0.0</modelVersion>\n"
-          + "  <groupId>com.foo</groupId>\n"
-          + "  <artifactId>bar</artifactId>\n"
-          + "  <version>${pom.version}</version>\n"
-          + "</project>", null, true)),
+        List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, """
+          <?xml version="1.0" encoding="UTF-8"?>
+          <project>
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>com.foo</groupId>
+            <artifactId>bar</artifactId>
+            <version>${pom.version}</version>
+          </project>""", null, true)),
         Collections.emptyList(),
         Collections.emptyList()));
 
@@ -228,13 +229,14 @@ class AnalysisTriggeringMediumTests {
 
   @SonarLintTest
   void it_should_analyze_open_files_when_re_enabling_automatic_analysis(SonarLintTestHarness harness, @TempDir Path baseDir) {
-    var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-      + "<project>\n"
-      + "  <modelVersion>4.0.0</modelVersion>\n"
-      + "  <groupId>com.foo</groupId>\n"
-      + "  <artifactId>bar</artifactId>\n"
-      + "  <version>${pom.version}</version>\n"
-      + "</project>");
+    var filePath = createFile(baseDir, "pom.xml", """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <project>
+        <modelVersion>4.0.0</modelVersion>
+        <groupId>com.foo</groupId>
+        <artifactId>bar</artifactId>
+        <version>${pom.version}</version>
+      </project>""");
     var fileUri = filePath.toUri();
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
@@ -259,12 +261,13 @@ class AnalysisTriggeringMediumTests {
 
   @SonarLintTest
   void it_should_analyze_open_files_when_enabling_rule(SonarLintTestHarness harness, @TempDir Path baseDir) {
-    var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-      + "<project>\n"
-      + "  <modelVersion>4.0.0</modelVersion>\n"
-      + "  <groupId>com.foo</groupId>\n"
-      + "  <artifactId>My_Project</artifactId>\n"
-      + "</project>");
+    var filePath = createFile(baseDir, "pom.xml", """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <project>
+        <modelVersion>4.0.0</modelVersion>
+        <groupId>com.foo</groupId>
+        <artifactId>My_Project</artifactId>
+      </project>""");
     var fileUri = filePath.toUri();
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
@@ -294,13 +297,14 @@ class AnalysisTriggeringMediumTests {
 
   @SonarLintTest
   void it_should_not_analyze_open_files_but_should_clear_and_report_issues_when_disabling_rule(SonarLintTestHarness harness, @TempDir Path baseDir) {
-    var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-      + "<project>\n"
-      + "  <modelVersion>4.0.0</modelVersion>\n"
-      + "  <groupId>com.foo</groupId>\n"
-      + "  <artifactId>bar</artifactId>\n"
-      + "  <version>${pom.version}</version>\n"
-      + "</project>");
+    var filePath = createFile(baseDir, "pom.xml", """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <project>
+        <modelVersion>4.0.0</modelVersion>
+        <groupId>com.foo</groupId>
+        <artifactId>bar</artifactId>
+        <version>${pom.version}</version>
+      </project>""");
     var fileUri = filePath.toUri();
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,

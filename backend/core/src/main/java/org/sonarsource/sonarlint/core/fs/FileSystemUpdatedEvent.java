@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.fs;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class FileSystemUpdatedEvent {
@@ -49,7 +48,7 @@ public class FileSystemUpdatedEvent {
 
   public List<ClientFile> getAddedOrUpdated() {
     return Stream.concat(getAdded().stream(), getUpdated().stream())
-      .collect(Collectors.toList());
+      .toList();
   }
 
 }

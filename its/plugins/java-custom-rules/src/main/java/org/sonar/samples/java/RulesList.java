@@ -42,7 +42,7 @@ public final class RulesList {
    * These rules are going to target MAIN code only
    */
   public static List<Class<? extends JavaCheck>> getJavaChecks() {
-    return Collections.unmodifiableList(Arrays.asList(
+    return Collections.unmodifiableList(List.of(
       AvoidAnnotationRule.class));
   }
 
@@ -50,6 +50,6 @@ public final class RulesList {
    * These rules are going to target TEST code only
    */
   public static List<Class<? extends JavaCheck>> getJavaTestChecks() {
-    return Collections.unmodifiableList(Arrays.asList());
+    return Collections.unmodifiableList(List.of());
   }
 }

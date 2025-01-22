@@ -104,7 +104,7 @@ public class TaintIssueDownloader {
       .filter(i -> i.getMainLocation().hasFilePath())
       .filter(not(TaintVulnerabilityLite::getClosed))
       .map(TaintIssueDownloader::convertLiteTaintIssue)
-      .collect(Collectors.toList());
+      .toList();
     var closedIssueKeys = apiResult.getTaintIssues()
       .stream()
       // Ignore project level issues
@@ -181,8 +181,8 @@ public class TaintIssueDownloader {
           return new ServerTaintIssue.ServerIssueLocation(componentPath, convertTextRangeFromWs(locationFromWs.getTextRange(), textRangeHash), locationFromWs.getMsg());
         }
         return new ServerTaintIssue.ServerIssueLocation(componentPath, null, locationFromWs.getMsg());
-      }).collect(Collectors.toList())))
-      .collect(Collectors.toList());
+      }).toList()))
+      .toList();
   }
 
   private static TextRangeWithHash toServerTaintIssueTextRange(Issues.TextRange textRange) {
@@ -214,7 +214,7 @@ public class TaintIssueDownloader {
         mainLocation.getMessage(),
         filePath, creationDate, severity, type, null, ruleDescriptionContextKey, cleanCodeAttribute, impacts);
     }
-    taintIssue.setFlows(liteTaintIssueFromWs.getFlowsList().stream().map(TaintIssueDownloader::convertFlows).collect(Collectors.toList()));
+    taintIssue.setFlows(liteTaintIssueFromWs.getFlowsList().stream().map(TaintIssueDownloader::convertFlows).toList());
     return taintIssue;
   }
 
@@ -226,7 +226,7 @@ public class TaintIssueDownloader {
       } else {
         return new ServerTaintIssue.ServerIssueLocation(filePath, null, locationFromWs.getMessage());
       }
-    }).collect(Collectors.toList()));
+    }).toList());
   }
 
   private static ServerTaintIssue.ServerIssueLocation convertPrimaryLocation(SourceApi sourceApi, Issue issueFromWs, Map<String, Path> componentPathsByKey,

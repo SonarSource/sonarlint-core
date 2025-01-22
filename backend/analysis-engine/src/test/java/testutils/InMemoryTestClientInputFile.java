@@ -32,11 +32,11 @@ import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 
 public class InMemoryTestClientInputFile implements ClientInputFile {
-  private boolean isTest;
-  private SonarLanguage language;
-  private String relativePath;
-  private String contents;
-  private Path path;
+  private final boolean isTest;
+  private final SonarLanguage language;
+  private final String relativePath;
+  private final String contents;
+  private final Path path;
 
   public InMemoryTestClientInputFile(String contents, String relativePath, @Nullable Path path, final boolean isTest, @Nullable SonarLanguage language) {
     this.contents = contents;
