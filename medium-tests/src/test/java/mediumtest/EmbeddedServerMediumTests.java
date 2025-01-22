@@ -36,7 +36,7 @@ class EmbeddedServerMediumTests {
   @SonarLintTest
   void it_should_return_the_ide_name_and_empty_description_if_the_origin_is_not_trusted(SonarLintTestHarness harness) throws IOException, InterruptedException {
     var fakeClient = harness.newFakeClient().build();
-    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").build(fakeClient);
+    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").start(fakeClient);
 
     var embeddedServerPort = backend.getEmbeddedServerPort();
     var request = HttpRequest.newBuilder()
@@ -55,7 +55,7 @@ class EmbeddedServerMediumTests {
     var fakeClient = harness.newFakeClient().build();
     when(fakeClient.getClientLiveDescription()).thenReturn("WorkspaceTitle");
 
-    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").build(fakeClient);
+    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").start(fakeClient);
 
     var embeddedServerPort = backend.getEmbeddedServerPort();
     var request = HttpRequest.newBuilder()
@@ -75,7 +75,7 @@ class EmbeddedServerMediumTests {
     var fakeClient = harness.newFakeClient().build();
     when(fakeClient.getClientLiveDescription()).thenReturn("WorkspaceTitle");
 
-    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").build(fakeClient);
+    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").start(fakeClient);
 
     var embeddedServerPort = backend.getEmbeddedServerPort();
     var request = HttpRequest.newBuilder()
@@ -101,7 +101,7 @@ class EmbeddedServerMediumTests {
     var fakeClient = harness.newFakeClient().build();
     when(fakeClient.getClientLiveDescription()).thenReturn("WorkspaceTitle");
 
-    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "http://sonar.my").build(fakeClient);
+    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "http://sonar.my").start(fakeClient);
 
     var request = HttpRequest.newBuilder()
       .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
@@ -122,7 +122,7 @@ class EmbeddedServerMediumTests {
     var fakeClient = harness.newFakeClient().build();
     when(fakeClient.getClientLiveDescription()).thenReturn("WorkspaceTitle");
 
-    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").build(fakeClient);
+    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").start(fakeClient);
 
     var embeddedServerPort = backend.getEmbeddedServerPort();
     var requestToken = HttpRequest.newBuilder()

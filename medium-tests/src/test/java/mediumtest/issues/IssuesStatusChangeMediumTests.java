@@ -74,7 +74,7 @@ class IssuesStatusChangeMediumTests {
         .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue)))
         .withServerVersion("9.8"))
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
-      .build();
+      .start();
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams(CONFIGURATION_SCOPE_ID, "myIssueKey",
       ResolutionStatus.WONT_FIX, false));
@@ -104,7 +104,7 @@ class IssuesStatusChangeMediumTests {
         .withServerVersion("9.8"))
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
       .withTelemetryEnabled()
-      .build();
+      .start();
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams(CONFIGURATION_SCOPE_ID, "myIssueKey",
       ResolutionStatus.WONT_FIX, false));
@@ -124,7 +124,7 @@ class IssuesStatusChangeMediumTests {
         .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue)))
         .withServerVersion("9.8"))
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
-      .build();
+      .start();
 
     var response = backend.getIssueService().changeStatus(new ChangeIssueStatusParams(CONFIGURATION_SCOPE_ID, "myIssueKey",
       ResolutionStatus.WONT_FIX, false));
@@ -163,7 +163,7 @@ class IssuesStatusChangeMediumTests {
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .withFullSynchronization()
-      .build(client);
+      .start(client);
     client.waitForSynchronization();
 
     backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, UUID.randomUUID(),
@@ -207,7 +207,7 @@ class IssuesStatusChangeMediumTests {
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .withFullSynchronization()
-      .build(client);
+      .start(client);
     client.waitForSynchronization();
 
     backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, UUID.randomUUID(),
@@ -256,7 +256,7 @@ class IssuesStatusChangeMediumTests {
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .withFullSynchronization()
       .withTelemetryEnabled()
-      .build(client);
+      .start(client);
     client.waitForSynchronization();
 
     backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, UUID.randomUUID(),
@@ -280,7 +280,7 @@ class IssuesStatusChangeMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
-      .build();
+      .start();
 
     var params = new ChangeIssueStatusParams(CONFIGURATION_SCOPE_ID, "myIssueKey", ResolutionStatus.WONT_FIX, false);
     var issueService = backend.getIssueService();
@@ -299,7 +299,7 @@ class IssuesStatusChangeMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, server,
         storage -> storage.withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(aServerIssue("myIssueKey")))))
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
-      .build();
+      .start();
 
     var response = backend.getIssueService().addComment(new AddIssueCommentParams(CONFIGURATION_SCOPE_ID, "myIssueKey", "That's " +
       "serious issue"));
@@ -321,7 +321,7 @@ class IssuesStatusChangeMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, server,
         storage -> storage.withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(aServerIssue(issueKey)))))
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
-      .build();
+      .start();
 
     var response = backend.getIssueService().addComment(new AddIssueCommentParams(CONFIGURATION_SCOPE_ID, issueKey, "That's " +
       "serious issue"));
@@ -342,7 +342,7 @@ class IssuesStatusChangeMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey", storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId)))
-      .build();
+      .start();
 
     var response = backend.getIssueService().addComment(new AddIssueCommentParams(CONFIGURATION_SCOPE_ID, issueId.toString(), "That's " +
       "serious issue"));
@@ -362,7 +362,7 @@ class IssuesStatusChangeMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, server,
         storage -> storage.withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(aServerIssue("myIssueKey")))))
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
-      .build();
+      .start();
 
     var response = backend.getIssueService().addComment(new AddIssueCommentParams(CONFIGURATION_SCOPE_ID, "myIssueKey", "That's " +
       "serious issue"));
@@ -382,7 +382,7 @@ class IssuesStatusChangeMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
-      .build();
+      .start();
 
     var response = backend.getIssueService().addComment(new AddIssueCommentParams(CONFIGURATION_SCOPE_ID, "myIssueKey", "That's " +
       "serious issue"));
@@ -402,7 +402,7 @@ class IssuesStatusChangeMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
-      .build();
+      .start();
     var issueKey = UUID.randomUUID().toString();
 
     var response = backend.getIssueService().addComment(new AddIssueCommentParams(CONFIGURATION_SCOPE_ID, issueKey, "That's " +
@@ -424,7 +424,7 @@ class IssuesStatusChangeMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey", storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId)))
-      .build();
+      .start();
     var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadAll(CONFIGURATION_SCOPE_ID);
     assertThat(storedIssues).extracting(LocalOnlyIssue::getId).containsOnly(issueId);
 
@@ -456,7 +456,7 @@ class IssuesStatusChangeMediumTests {
             new LocalOnlyIssueResolution(org.sonarsource.sonarlint.core.commons.IssueStatus.WONT_FIX, Instant.now().truncatedTo(ChronoUnit.MILLIS), "comment")))
           .withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId1))
           .withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId2)))
-      .build();
+      .start();
 
     var issuesForFile = backend.getLocalOnlyIssueStorageService().get().loadForFile(CONFIGURATION_SCOPE_ID, Path.of("file/path"));
     var issuesForOtherFile = backend.getLocalOnlyIssueStorageService().get().loadForFile(CONFIGURATION_SCOPE_ID, Path.of("file/path1"));
@@ -486,7 +486,7 @@ class IssuesStatusChangeMediumTests {
             "ruleKey",
             "message",
             new LocalOnlyIssueResolution(org.sonarsource.sonarlint.core.commons.IssueStatus.WONT_FIX, Instant.now().truncatedTo(ChronoUnit.MILLIS), "comment"))))
-      .build();
+      .start();
     var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadAll(CONFIGURATION_SCOPE_ID);
     assertThat(storedIssues).extracting(LocalOnlyIssue::getId).containsOnly(issueId1, issueId2, otherFileIssueId);
 
@@ -507,7 +507,7 @@ class IssuesStatusChangeMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey", storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId)))
-      .build();
+      .start();
 
     var response = backend.getIssueService().reopenIssue(new ReopenIssueParams(CONFIGURATION_SCOPE_ID, invalidIssueId, false));
 
@@ -525,7 +525,7 @@ class IssuesStatusChangeMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey", storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(issueId)))
-      .build();
+      .start();
 
     var response = backend.getIssueService().reopenIssue(new ReopenIssueParams(CONFIGURATION_SCOPE_ID, nonExistingIssueId.toString(), false));
 
@@ -547,7 +547,7 @@ class IssuesStatusChangeMediumTests {
         .withProject("projectKey", project -> project.withMainBranch("main", branch -> branch.withIssue(serverIssue)))
         .withServerVersion("9.8"))
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
-      .build();
+      .start();
 
     var reopenResponse = backend.getIssueService().reopenIssue(new ReopenIssueParams(CONFIGURATION_SCOPE_ID, "myIssueKey", false));
 

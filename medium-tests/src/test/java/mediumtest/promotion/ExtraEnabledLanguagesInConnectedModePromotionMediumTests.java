@@ -59,7 +59,7 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
       .withUnboundConfigScope("configScopeId")
       .withEmbeddedServer()
       .withTelemetryEnabled()
-      .build(fakeClient);
+      .start(fakeClient);
 
     backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams("configScopeId", UUID.randomUUID(),
@@ -82,7 +82,7 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withEmbeddedServer()
       .withTelemetryEnabled()
-      .build(fakeClient);
+      .start(fakeClient);
 
     backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams("configScopeId", UUID.randomUUID(),
@@ -103,7 +103,7 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
       .withUnboundConfigScope("configScopeId")
       .withEmbeddedServer()
       .withTelemetryEnabled()
-      .build(fakeClient);
+      .start(fakeClient);
 
     backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams("configScopeId", UUID.randomUUID(),
@@ -124,7 +124,7 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
       .withUnboundConfigScope("configScopeId")
       .withEmbeddedServer()
       .withTelemetryEnabled()
-      .build(fakeClient);
+      .start(fakeClient);
 
     backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams("configScopeId", UUID.randomUUID(),

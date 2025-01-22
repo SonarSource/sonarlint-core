@@ -46,7 +46,7 @@ class CheckAnticipatedStatusChangeSupportedMediumTests {
 
   @SonarLintTest
   void it_should_fail_when_the_connection_is_unknown(SonarLintTestHarness harness) {
-    var backend = harness.newBackend().build();
+    var backend = harness.newBackend().start();
 
     assertThat(checkAnticipatedStatusChangeSupported(backend, "configScopeId"))
       .failsWithin(Duration.ofSeconds(2))
@@ -62,7 +62,7 @@ class CheckAnticipatedStatusChangeSupportedMediumTests {
       .withSonarCloudUrl(mockWebServerExtension.endpointParams().getBaseUrl())
       .withSonarCloudConnection("connectionId", "orgKey")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .build();
+      .start();
 
     assertThat(checkAnticipatedStatusChangeSupported(backend, "configScopeId"))
       .succeedsWithin(Duration.ofSeconds(2))
@@ -75,7 +75,7 @@ class CheckAnticipatedStatusChangeSupportedMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.1"))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .build();
+      .start();
 
     assertThat(checkAnticipatedStatusChangeSupported(backend, "configScopeId"))
       .succeedsWithin(Duration.ofSeconds(2))
@@ -88,7 +88,7 @@ class CheckAnticipatedStatusChangeSupportedMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(),  storage -> storage.withServerVersion("10.2"))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .build();
+      .start();
 
     assertThat(checkAnticipatedStatusChangeSupported(backend, "configScopeId"))
       .succeedsWithin(Duration.ofSeconds(2))

@@ -41,7 +41,7 @@ class NodeJsMediumTests {
     var backend = harness.newBackend()
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVASCRIPT)
       .withClientNodeJsPath(Paths.get("wrong"))
-      .build(client);
+      .start(client);
 
     var globalConfig = backend.getAnalysisService().getGlobalStandaloneConfiguration().join();
 
@@ -62,7 +62,7 @@ class NodeJsMediumTests {
     var client = harness.newFakeClient().build();
     var backend = harness.newBackend()
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVASCRIPT)
-      .build(client);
+      .start(client);
 
     var nodeJsDetails = backend.getAnalysisService().getAutoDetectedNodeJs().join().getDetails();
 
@@ -76,7 +76,7 @@ class NodeJsMediumTests {
     var client = harness.newFakeClient().build();
     var backend = harness.newBackend()
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVASCRIPT)
-      .build(client);
+      .start(client);
 
     var nodeJsDetails = backend.getAnalysisService().didChangeClientNodeJsPath(new DidChangeClientNodeJsPathParams(null)).join().getDetails();
 

@@ -109,7 +109,7 @@ class HotspotEventsMediumTests {
         .withSonarQubeConnection("connectionId", server,
           storage -> storage.withProject("projectKey", project -> project.withMainBranch("branchName")))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
+        .start();
       sseServer.shouldSendServerEventOnce();
 
       await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> assertThat(readHotspots(backend, "connectionId", "projectKey", "branchName", "file/path"))
@@ -138,7 +138,7 @@ class HotspotEventsMediumTests {
         .withSonarQubeConnection("connectionId", server,
           storage -> storage.withProject("projectKey", project -> project.withMainBranch("branchName", branch -> branch.withHotspot(aServerHotspot("hotspotKey")))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
+        .start();
       sseServer.shouldSendServerEventOnce();
 
       await().atMost(Duration.ofSeconds(4)).untilAsserted(() -> assertThat(readHotspots(backend, "connectionId", "projectKey", "branchName", "file/path"))
@@ -214,7 +214,7 @@ class HotspotEventsMediumTests {
         .withFullSynchronization()
         .withSonarQubeConnection(connectionId, serverWithHotspots)
         .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
-        .build(client);
+        .start(client);
 
       await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
       analyzeFileAndGetHotspots(fileUri, client, backend, CONFIG_SCOPE_ID);
@@ -258,7 +258,7 @@ class HotspotEventsMediumTests {
           storage -> storage.withProject("projectKey",
             project -> project.withMainBranch("branchName", branch -> branch.withHotspot(aServerHotspot("AYhSN6mVrRF_krvNbHl1").withStatus(HotspotReviewStatus.TO_REVIEW)))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
+        .start();
       sseServer.shouldSendServerEventOnce();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readHotspots(backend, "connectionId", "projectKey", "branchName", "file/path"))
@@ -289,7 +289,7 @@ class HotspotEventsMediumTests {
           storage -> storage.withProject("projectKey",
             project -> project.withMainBranch("branchName", branch -> branch.withHotspot(aServerHotspot("AYhSN6mVrRF_krvNbHl1").withAssignee("previousAssignee")))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
+        .start();
       sseServer.shouldSendServerEventOnce();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readHotspots(backend, "connectionId", "projectKey", "branchName", "file/path"))
@@ -358,7 +358,7 @@ class HotspotEventsMediumTests {
         .withFullSynchronization()
         .withSonarQubeConnection(connectionId, serverWithHotspots)
         .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
-        .build(client);
+        .start(client);
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
       analyzeFileAndGetHotspots(fileUri, client, backend, CONFIG_SCOPE_ID);

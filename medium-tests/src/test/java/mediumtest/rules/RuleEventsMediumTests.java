@@ -97,7 +97,7 @@ class RuleEventsMediumTests {
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", server)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
+        .start();
       sseServer.shouldSendServerEventOnce();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets(backend, "connectionId", "projectKey"))
@@ -137,7 +137,7 @@ class RuleEventsMediumTests {
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", server)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
+        .start();
       sseServer.shouldSendServerEventOnce();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets(backend, "connectionId", "projectKey"))
@@ -184,7 +184,7 @@ class RuleEventsMediumTests {
           project -> project.withRuleSet("java",
             ruleSet -> ruleSet.withActiveRule("java:S0000", "INFO"))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
+        .start();
       sseServer.shouldSendServerEventOnce();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets(backend, "connectionId", "projectKey"))
@@ -222,7 +222,7 @@ class RuleEventsMediumTests {
           project -> project.withRuleSet("java",
             ruleSet -> ruleSet.withActiveRule("java:S0000", "INFO"))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
+        .start();
       sseServer.shouldSendServerEventOnce();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets(backend, "connectionId", "projectKey"))
@@ -276,7 +276,7 @@ class RuleEventsMediumTests {
         .withFullSynchronization()
         .withSonarQubeConnection(connectionId, server)
         .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
-        .build(client);
+        .start(client);
 
       backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
@@ -322,7 +322,7 @@ class RuleEventsMediumTests {
           project -> project.withRuleSet("java",
             ruleSet -> ruleSet.withActiveRule("java:S0000", "INFO"))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
+        .start();
       sseServer.shouldSendServerEventOnce();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets(backend, "connectionId", "projectKey"))
@@ -352,7 +352,7 @@ class RuleEventsMediumTests {
           project -> project.withRuleSet("java",
             ruleSet -> ruleSet.withActiveRule("java:S0000", "INFO").withActiveRule("java:S0001", "INFO"))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
+        .start();
       sseServer.shouldSendServerEventOnce();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets(backend, "connectionId", "projectKey"))
@@ -381,7 +381,7 @@ class RuleEventsMediumTests {
           project -> project.withRuleSet("java",
             ruleSet -> ruleSet.withActiveRule("java:S0000", "INFO"))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
+        .start();
       sseServer.shouldSendServerEventOnce();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readRuleSets(backend, "connectionId", "projectKey"))
@@ -434,7 +434,7 @@ class RuleEventsMediumTests {
         .withFullSynchronization()
         .withSonarQubeConnection(connectionId, server)
         .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
-        .build(client);
+        .start(client);
 
       await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
       var raisedIssues = analyzeFileAndGetIssues(fileUri, client, backend, CONFIG_SCOPE_ID);

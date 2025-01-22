@@ -48,7 +48,7 @@ class DogfoodingRpcServiceMediumTests {
   @SonarLintTest
   void should_return_true_when_env_variable_is_set(SonarLintTestHarness harness) {
     environmentVariables.set(SONARSOURCE_DOGFOODING_ENV_VAR_KEY, "1");
-    var backend = harness.newBackend().build();
+    var backend = harness.newBackend().start();
 
     var result = backend.getDogfoodingService().isDogfoodingEnvironment().join();
 
@@ -57,7 +57,7 @@ class DogfoodingRpcServiceMediumTests {
 
   @SonarLintTest
   void should_return_false_when_env_var_is_absent(SonarLintTestHarness harness) {
-    var backend = harness.newBackend().build();
+    var backend = harness.newBackend().start();
 
     var result = backend.getDogfoodingService().isDogfoodingEnvironment().join();
 
@@ -66,7 +66,7 @@ class DogfoodingRpcServiceMediumTests {
 
   @SonarLintTest
   void should_return_false_when_env_var_is_false(SonarLintTestHarness harness) {
-    var backend = harness.newBackend().build();
+    var backend = harness.newBackend().start();
     environmentVariables.set(SONARSOURCE_DOGFOODING_ENV_VAR_KEY, "0");
 
     var result = backend.getDogfoodingService().isDogfoodingEnvironment().join();

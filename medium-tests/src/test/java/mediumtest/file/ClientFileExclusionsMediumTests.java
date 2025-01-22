@@ -61,7 +61,7 @@ class ClientFileExclusionsMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .build(client);
+      .start(client);
 
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
 
@@ -80,7 +80,7 @@ class ClientFileExclusionsMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .build(client);
+      .start(client);
 
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
 
@@ -102,7 +102,7 @@ class ClientFileExclusionsMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .build(client);
+      .start(client);
 
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
 
@@ -120,7 +120,7 @@ class ClientFileExclusionsMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .build(client);
+      .start(client);
 
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
 
@@ -164,7 +164,7 @@ class ClientFileExclusionsMediumTests {
           project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
             .withMainBranch(branchName)))
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
 
     backend.getConfigurationService()
       .didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
@@ -208,7 +208,7 @@ class ClientFileExclusionsMediumTests {
           project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
             .withMainBranch(branchName)))
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
 
     backend.getConfigurationService()
       .didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(

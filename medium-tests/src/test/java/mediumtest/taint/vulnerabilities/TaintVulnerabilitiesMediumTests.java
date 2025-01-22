@@ -47,7 +47,7 @@ class TaintVulnerabilitiesMediumTests {
   @SonarLintTest
   void it_should_return_no_taint_vulnerabilities_if_the_scope_is_not_bound(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
-      .build();
+      .start();
 
     var taintVulnerabilities = listAllTaintVulnerabilities(backend, "configScopeId");
 
@@ -59,7 +59,7 @@ class TaintVulnerabilitiesMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .build();
+      .start();
 
     var taintVulnerabilities = listAllTaintVulnerabilities(backend, "configScopeId");
 
@@ -82,7 +82,7 @@ class TaintVulnerabilitiesMediumTests {
               .withIntroductionDate(introductionDate)))))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
-      .build();
+      .start();
 
     await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(listAllTaintVulnerabilities(backend, "configScopeId"))
       .extracting(TaintVulnerabilityDto::getIntroductionDate)
@@ -114,7 +114,7 @@ class TaintVulnerabilitiesMediumTests {
             branch -> branch.withTaintIssue(fakeTaintBuilder))))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
-      .build(client);
+      .start(client);
 
     client.waitForSynchronization();
 
@@ -147,7 +147,7 @@ class TaintVulnerabilitiesMediumTests {
           project -> project.withMainBranch("main")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
-      .build();
+      .start();
     await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(listAllTaintVulnerabilities(backend, "configScopeId")).isNotEmpty());
     // switch server to simulate a new dataset. Not ideal, should be handled differently
     backend.getConnectionService()

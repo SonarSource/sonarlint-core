@@ -122,7 +122,7 @@ class SmartNotificationsMediumTests {
       .withBoundConfigScope("scopeId", CONNECTION_ID, PROJECT_KEY)
       .withBoundConfigScope("scopeId2", CONNECTION_ID, PROJECT_KEY)
       .withSmartNotifications()
-      .build(fakeClient);
+      .start(fakeClient);
 
     await().atMost(3, SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
 
@@ -145,7 +145,7 @@ class SmartNotificationsMediumTests {
       .withBoundConfigScope("parentScopeId", CONNECTION_ID, PROJECT_KEY)
       .withChildConfigScope("childScopeId", "parentScopeId")
       .withSmartNotifications()
-      .build(fakeClient);
+      .start(fakeClient);
 
     await().atMost(3, SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
 
@@ -183,7 +183,7 @@ class SmartNotificationsMediumTests {
       .withBoundConfigScope("scopeId5", CONNECTION_ID, PROJECT_KEY_4)
       .withBoundConfigScope("scopeId6", CONNECTION_ID_2, PROJECT_KEY_4)
       .withSmartNotifications()
-      .build(fakeClient);
+      .start(fakeClient);
 
     await().atMost(3, SECONDS).untilAsserted(() -> assertThat(fakeClient.getSmartNotificationsToShow()).hasSize(4));
 
@@ -211,7 +211,7 @@ class SmartNotificationsMediumTests {
       .withUnboundConfigScope("scopeId")
       .withBoundConfigScope("scopeId2", CONNECTION_ID, PROJECT_KEY)
       .withSmartNotifications()
-      .build(fakeClient);
+      .start(fakeClient);
 
     await().atMost(3, SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
 
@@ -232,7 +232,7 @@ class SmartNotificationsMediumTests {
         storage -> storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
       .withBoundConfigScope("scopeId", CONNECTION_ID, PROJECT_KEY)
       .withSmartNotifications()
-      .build(fakeClient);
+      .start(fakeClient);
 
     backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams("scopeId"));
 
@@ -261,7 +261,7 @@ class SmartNotificationsMediumTests {
       .withSonarCloudConnectionAndNotifications(CONNECTION_ID, "myOrg", storage -> storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
       .withBoundConfigScope("scopeId", CONNECTION_ID, PROJECT_KEY)
       .withSmartNotifications()
-      .build(fakeClient);
+      .start(fakeClient);
 
     await().atMost(3, SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
 
@@ -287,7 +287,7 @@ class SmartNotificationsMediumTests {
       .withBoundConfigScope("scopeId", CONNECTION_ID, PROJECT_KEY)
       .withSmartNotifications()
       .withServerSentEventsEnabled()
-      .build(fakeClient);
+      .start(fakeClient);
 
     await().atMost(2, SECONDS).until(() -> webSocketServer.getConnections().size() == 1);
 
@@ -315,7 +315,7 @@ class SmartNotificationsMediumTests {
         storage -> storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
       .withBoundConfigScope("scopeId", CONNECTION_ID, PROJECT_KEY)
       .withSmartNotifications()
-      .build(fakeClient);
+      .start(fakeClient);
 
     await().atMost(3, SECONDS).until(() -> !fakeClient.getSmartNotificationsToShow().isEmpty());
 

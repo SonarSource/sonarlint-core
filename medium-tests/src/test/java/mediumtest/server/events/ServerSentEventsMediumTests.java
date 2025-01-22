@@ -107,7 +107,7 @@ class ServerSentEventsMediumTests {
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withUnboundConfigScope("configScope")
-        .build();
+        .start();
 
       bind(backend, "configScope", "connectionId", "projectKey");
 
@@ -124,7 +124,7 @@ class ServerSentEventsMediumTests {
         .withServerSentEventsEnabled()
         .withSonarCloudConnection("connectionId")
         .withUnboundConfigScope("configScope")
-        .build();
+        .start();
 
       bind(backend, "configScope", "connectionId", "projectKey");
 
@@ -139,7 +139,7 @@ class ServerSentEventsMediumTests {
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
+        .start();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(requestedPaths()).hasSize(1));
 
       bind(backend, "configScope", "connectionId", "projectKey");
@@ -162,7 +162,7 @@ class ServerSentEventsMediumTests {
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
+        .start();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(requestedPaths()).hasSize(1));
 
       unbind(backend, "configScope");
@@ -179,7 +179,7 @@ class ServerSentEventsMediumTests {
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope1", "connectionId", "projectKey1")
         .withBoundConfigScope("configScope2", "connectionId", "projectKey2")
-        .build();
+        .start();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(requestedPaths()).hasSize(1));
 
       unbind(backend, "configScope1");
@@ -204,7 +204,7 @@ class ServerSentEventsMediumTests {
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
-        .build();
+        .start();
 
       addConfigurationScope(backend, "configScope", "connectionId", "projectKey");
 
@@ -220,7 +220,7 @@ class ServerSentEventsMediumTests {
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
-        .build(client);
+        .start(client);
       var projectKey = "projectKey";
 
       sonarServerMock.stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java,js")
@@ -245,7 +245,7 @@ class ServerSentEventsMediumTests {
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
-        .build();
+        .start();
 
       addConfigurationScope(backend, "configScope", null, null);
 
@@ -260,7 +260,7 @@ class ServerSentEventsMediumTests {
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarCloudConnection("connectionId")
-        .build();
+        .start();
 
       addConfigurationScope(backend, "configScope", "connectionId", "projectKey");
 
@@ -284,7 +284,7 @@ class ServerSentEventsMediumTests {
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withUnboundConfigScope("configScope")
-        .build();
+        .start();
 
       removeScope(backend, "configScope");
 
@@ -300,7 +300,7 @@ class ServerSentEventsMediumTests {
         .withServerSentEventsEnabled()
         .withSonarCloudConnection("connectionId")
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
+        .start();
 
       removeScope(backend, "configScope");
 
@@ -315,7 +315,7 @@ class ServerSentEventsMediumTests {
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
+        .start();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(requestedPaths()).hasSize(1));
 
       removeScope(backend, "configScope");
@@ -332,7 +332,7 @@ class ServerSentEventsMediumTests {
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope1", "connectionId", "projectKey")
         .withBoundConfigScope("configScope2", "connectionId", "projectKey")
-        .build();
+        .start();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(requestedPaths()).hasSize(1));
 
       removeScope(backend, "configScope1");
@@ -351,7 +351,7 @@ class ServerSentEventsMediumTests {
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope1", "connectionId", "projectKey1")
         .withBoundConfigScope("configScope2", "connectionId", "projectKey2")
-        .build();
+        .start();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(requestedPaths()).hasSize(1));
 
       removeScope(backend, "configScope1");
@@ -378,7 +378,7 @@ class ServerSentEventsMediumTests {
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
+        .start();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(requestedPaths()).hasSize(1));
 
       notifyCredentialsChanged(backend, "connectionId");
@@ -398,7 +398,7 @@ class ServerSentEventsMediumTests {
         .withServerSentEventsEnabled()
         .withSonarCloudConnection("connectionId")
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
+        .start();
 
       notifyCredentialsChanged(backend, "connectionId");
 
@@ -412,7 +412,7 @@ class ServerSentEventsMediumTests {
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
-        .build();
+        .start();
 
       notifyCredentialsChanged(backend, "connectionId");
 
@@ -434,7 +434,7 @@ class ServerSentEventsMediumTests {
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withUnboundConfigScope("configScope")
-        .build();
+        .start();
 
       backend.getConnectionService()
         .didUpdateConnections(new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto("connectionId", "url", true)), Collections.emptyList()));
@@ -449,7 +449,7 @@ class ServerSentEventsMediumTests {
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
+        .start();
 
       backend.getConnectionService()
         .didUpdateConnections(new DidUpdateConnectionsParams(Collections.emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", true))));
@@ -464,7 +464,7 @@ class ServerSentEventsMediumTests {
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
+        .start();
 
       backend.getConnectionService().didUpdateConnections(
         new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto("connectionId", sonarServerMock.baseUrl(), true)), Collections.emptyList()));
@@ -486,7 +486,7 @@ class ServerSentEventsMediumTests {
         .withServerSentEventsEnabled()
         .withSonarCloudConnection("connectionId")
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
+        .start();
 
       backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(Collections.emptyList(), Collections.emptyList()));
 
@@ -501,7 +501,7 @@ class ServerSentEventsMediumTests {
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
+        .start();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(requestedPaths()).hasSize(1));
 
       backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(Collections.emptyList(), Collections.emptyList()));
@@ -521,7 +521,7 @@ class ServerSentEventsMediumTests {
         .withServerSentEventsEnabled()
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
+        .start();
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(requestedPaths()).hasSize(1));
 
       backend.getConnectionService().didUpdateConnections(
@@ -542,7 +542,7 @@ class ServerSentEventsMediumTests {
         .withServerSentEventsEnabled()
         .withSonarCloudConnection("connectionId")
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
+        .start();
 
       backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(), Collections.emptyList()));
 
@@ -597,7 +597,7 @@ class ServerSentEventsMediumTests {
         .withFullSynchronization()
         .withSonarQubeConnection("connectionId", serverWithTaintIssues)
         .withBoundConfigScope("configScope", "connectionId", projectKey)
-        .build(fakeClient);
+        .start(fakeClient);
       fakeClient.waitForSynchronization();
 
       ArgumentCaptor<List<TaintVulnerabilityDto>> captor = ArgumentCaptor.forClass(List.class);

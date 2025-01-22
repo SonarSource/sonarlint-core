@@ -54,7 +54,7 @@ class StandaloneNoPluginMediumTests {
     var backend = harness.newBackend()
       .withSecurityHotspotsEnabled()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
-      .build(client);
+      .start(client);
 
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(

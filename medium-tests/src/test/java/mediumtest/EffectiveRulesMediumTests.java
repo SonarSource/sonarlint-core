@@ -66,7 +66,7 @@ class EffectiveRulesMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope("scopeId")
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
-      .build();
+      .start();
 
     var details = getEffectiveRuleDetails(backend, "scopeId", "python:S139");
 
@@ -89,7 +89,7 @@ class EffectiveRulesMediumTests {
       .withUnboundConfigScope("scopeId")
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .withStandaloneRuleConfig("python:S139", true, Map.of("legalTrailingCommentPattern", "initialValue"))
-      .build();
+      .start();
 
     var detailsAfterInit = getEffectiveRuleDetails(backend, "scopeId", "python:S139");
 
@@ -118,7 +118,7 @@ class EffectiveRulesMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope("scopeId")
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
-      .build();
+      .start();
 
     var futureResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:SXXXX"));
 
@@ -134,7 +134,7 @@ class EffectiveRulesMediumTests {
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withPlugin(TestPlugin.JAVA))
       .withEnabledLanguageInStandaloneMode(JAVA)
-      .build();
+      .start();
 
     var details = getEffectiveRuleDetails(backend, "scopeId", "java:S106");
 
@@ -154,7 +154,7 @@ class EffectiveRulesMediumTests {
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
-      .build();
+      .start();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc").build())
       .build());
@@ -178,7 +178,7 @@ class EffectiveRulesMediumTests {
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withChildConfigScope("childScopeId", "scopeId")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
-      .build();
+      .start();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc").build())
       .build());
@@ -202,7 +202,7 @@ class EffectiveRulesMediumTests {
         projectStorage -> projectStorage.withRuleSet("js",
           ruleSet -> ruleSet.withActiveRule("jssecurity:S5696", "BLOCKER"))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .build();
+      .start();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=jssecurity:S5696", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName(name).setSeverity("BLOCKER").setType(Common.RuleType.VULNERABILITY).setLang("js")
         .setDescriptionSections(Rules.Rule.DescriptionSections.newBuilder()
@@ -230,7 +230,7 @@ class EffectiveRulesMediumTests {
         projectStorage -> projectStorage.withRuleSet("python",
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .build();
+      .start();
 
     var futureResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:S139"));
 
@@ -247,7 +247,7 @@ class EffectiveRulesMediumTests {
         projectStorage -> projectStorage.withRuleSet("python",
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .build();
+      .start();
 
     var futureResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:S139"));
 
@@ -267,7 +267,7 @@ class EffectiveRulesMediumTests {
           ruleSet -> ruleSet.withCustomActiveRule("python:custom", "python:CommentRegularExpression", "INFO", Map.of("message", "msg", "regularExpression", "regExp")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
-      .build();
+      .start();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:custom", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc")
         .setDescriptionSections(Rules.Rule.DescriptionSections.newBuilder()
@@ -296,7 +296,7 @@ class EffectiveRulesMediumTests {
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withEnabledLanguageInStandaloneMode(PYTHON)
-      .build();
+      .start();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc")
         .setDescriptionSections(Rules.Rule.DescriptionSections.newBuilder()
@@ -413,7 +413,7 @@ class EffectiveRulesMediumTests {
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withEnabledLanguageInStandaloneMode(PYTHON)
-      .build();
+      .start();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc")
         .setEducationPrinciples(Rules.Rule.EducationPrinciples.newBuilder().addEducationPrinciples("never_trust_user_input").build())
@@ -471,7 +471,7 @@ class EffectiveRulesMediumTests {
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .withSecurityHotspotsEnabled()
-      .build();
+      .start();
 
     var details = getEffectiveRuleDetails(backend, "scopeId", "python:S4784");
 
@@ -489,7 +489,7 @@ class EffectiveRulesMediumTests {
           ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withEnabledLanguageInStandaloneMode(PYTHON)
-      .build();
+      .start();
     mockWebServerExtension.addProtobufResponse("/api/rules/show.protobuf?key=python:S139", Rules.ShowResponse.newBuilder()
       .setRule(Rules.Rule.newBuilder().setName("newName").setSeverity("INFO").setType(Common.RuleType.BUG).setLang("py").setHtmlNote("extendedDesc")
         .setEducationPrinciples(Rules.Rule.EducationPrinciples.newBuilder().addEducationPrinciples("never_trust_user_input").build())

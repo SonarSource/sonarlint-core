@@ -99,7 +99,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVASCRIPT)
-      .build(client);
+      .start(client);
 
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
@@ -134,7 +134,7 @@ class StandaloneIssueMediumTests {
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVASCRIPT)
 
-      .build(client);
+      .start(client);
     backend.getRulesService()
       .updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("javascript:S3827", new StandaloneRuleConfigDto(true, emptyMap()))));
 
@@ -170,7 +170,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVASCRIPT)
-      .build(client);
+      .start(client);
 
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
@@ -202,7 +202,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVASCRIPT)
-      .build(client);
+      .start(client);
 
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
     assertThat(issues).extracting(RaisedIssueDto::getRuleKey, i -> i.getTextRange().getStartLine()).containsOnly(
@@ -237,7 +237,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.CFAMILY)
-      .build(client);
+      .start(client);
 
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
@@ -271,7 +271,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PHP)
-      .build(client);
+      .start(client);
 
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
@@ -301,7 +301,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PHP)
-      .build(client);
+      .start(client);
 
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
@@ -325,7 +325,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PHP)
-      .build(client);
+      .start(client);
 
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
@@ -348,7 +348,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
-      .build(client);
+      .start(client);
 
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
@@ -367,7 +367,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.KOTLIN)
-      .build(client);
+      .start(client);
 
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
@@ -389,7 +389,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
-      .build(client);
+      .start(client);
 
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
@@ -416,7 +416,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
 
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
@@ -444,7 +444,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
 
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
@@ -487,7 +487,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
 
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
@@ -517,7 +517,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.TEXT)
-      .build(client);
+      .start(client);
     var analysisId = UUID.randomUUID();
 
     backend.getAnalysisService()
@@ -551,7 +551,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.TEXT)
-      .build(client);
+      .start(client);
 
     var issueId = UUID.randomUUID();
     var params = new GetEffectiveIssueDetailsParams(CONFIGURATION_SCOPE_ID, issueId);
@@ -567,7 +567,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
-      .build(client);
+      .start(client);
 
     var response = backend.getRulesService().listAllStandaloneRulesDefinitions().get();
     assertThat(response.getRulesByKey()).doesNotContainKey("python:XPath");
@@ -587,7 +587,7 @@ class StandaloneIssueMediumTests {
     if (COMMERCIAL_ENABLED) {
       backendBuilder = backendBuilder.withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.CFAMILY);
     }
-    var backend = backendBuilder.build(client);
+    var backend = backendBuilder.start(client);
 
     var enabledLanguages = EnumSet.of(JAVA, JS, PHP, PYTHON, TS, XML, KOTLIN);
 
@@ -616,7 +616,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
     backend.getRulesService()
       .updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("java:S1313", new StandaloneRuleConfigDto(true, emptyMap()))));
 
@@ -640,7 +640,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .build(client);
+      .start(client);
 
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
@@ -666,7 +666,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
 
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
@@ -691,7 +691,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
       new AnalyzeFilesAndTrackParams(CONFIGURATION_SCOPE_ID, analysisId, List.of(inputFile.toUri()), Map.of("sonar.java.binaries", projectWithByteCode.resolve("bin").toString()),
@@ -727,7 +727,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
     backend.getRulesService()
       .updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("java:S106", new StandaloneRuleConfigDto(false, emptyMap()))));
 
@@ -757,7 +757,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
     backend.getRulesService()
       .updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("squid:S106", new StandaloneRuleConfigDto(false, emptyMap()))));
 
@@ -789,7 +789,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
     backend.getRulesService()
       .updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("java:S3553", new StandaloneRuleConfigDto(true, emptyMap()))));
 
@@ -821,7 +821,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
     backend.getRulesService()
       .updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("squid:S3553", new StandaloneRuleConfigDto(true, emptyMap()))));
 
@@ -853,7 +853,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
     backend.getRulesService()
       .updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("java:S1228", new StandaloneRuleConfigDto(true, emptyMap()))));
 
@@ -886,7 +886,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
 
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
@@ -931,7 +931,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
 
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(
@@ -973,7 +973,7 @@ class StandaloneIssueMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
 
     var analysisId = UUID.randomUUID();
     var analysisResult = backend.getAnalysisService().analyzeFilesAndTrack(

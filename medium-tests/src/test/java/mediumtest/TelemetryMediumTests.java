@@ -101,7 +101,7 @@ class TelemetryMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", "http://localhost:12345", storage -> storage.withProject("projectKey", project -> project.withMainBranch("master")))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .build();
+      .start();
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isFalse();
 
@@ -119,7 +119,7 @@ class TelemetryMediumTests {
       .withSonarQubeConnection("connectionId", "http://localhost:12345", storage -> storage.withProject("projectKey",
         project -> project.withMainBranch("master")))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .build(fakeClient);
+      .start(fakeClient);
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isFalse();
     backend.getTelemetryService().enableTelemetry();
@@ -140,7 +140,7 @@ class TelemetryMediumTests {
       .withSonarQubeConnection("connectionId", "http://localhost:12345", storage -> storage.withProject("projectKey", project -> project.withMainBranch("master")))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withTelemetryEnabled(telemetryEndpointMock.baseUrl() + "/sonarlint-telemetry")
-      .build(fakeClient);
+      .start(fakeClient);
 
     backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "ab12ef45"));
     await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).isNotEmptyFile());
@@ -166,7 +166,7 @@ class TelemetryMediumTests {
       .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withTelemetryEnabled()
-      .build();
+      .start();
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isTrue();
     assertThat(backend.telemetryFilePath()).isNotEmptyFile();
@@ -186,7 +186,7 @@ class TelemetryMediumTests {
 
     var backend = harness.newBackend()
       .withTelemetryEnabled(telemetryEndpointMock.baseUrl() + "/sonarlint-telemetry")
-      .build(fakeClient);
+      .start(fakeClient);
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isTrue();
 
@@ -213,7 +213,7 @@ class TelemetryMediumTests {
 
     var backend = harness.newBackend()
       .withTelemetryEnabled(telemetryEndpointMock.baseUrl() + "/sonarlint-telemetry")
-      .build(fakeClient);
+      .start(fakeClient);
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isTrue();
 
@@ -246,7 +246,7 @@ class TelemetryMediumTests {
       .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withTelemetryEnabled()
-      .build(fakeClient);
+      .start(fakeClient);
 
     backend.getTelemetryService().disableTelemetry();
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isFalse();
@@ -263,7 +263,7 @@ class TelemetryMediumTests {
     harness.newBackend()
       .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
-      .build(fakeClient);
+      .start(fakeClient);
     assertThat(telemetryEndpointMock.getAllServeEvents()).isEmpty();
   }
 
@@ -279,7 +279,7 @@ class TelemetryMediumTests {
       .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withTelemetryEnabled()
-      .build(fakeClient);
+      .start(fakeClient);
 
     assertThat(telemetryEndpointMock.getAllServeEvents()).isEmpty();
     await().untilAsserted(() -> assertThat(fakeClient.getLogs()).extracting(LogParams::getMessage).contains(("Failed to fetch telemetry payload")));
@@ -425,7 +425,7 @@ class TelemetryMediumTests {
     var backend = harness.newBackend()
       .withTelemetryMigration(new TelemetryMigrationDto(OffsetDateTime.now(), 42, false))
       .withTelemetryEnabled()
-      .build();
+      .start();
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isFalse();
   }
@@ -435,7 +435,7 @@ class TelemetryMediumTests {
       .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withTelemetryEnabled()
-      .build();
+      .start();
   }
 
 }

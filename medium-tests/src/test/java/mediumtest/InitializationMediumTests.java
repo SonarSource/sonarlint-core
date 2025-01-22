@@ -41,7 +41,7 @@ class InitializationMediumTests {
   @SonarLintTest
   void it_should_fail_to_initialize_the_backend_twice(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
-      .build();
+      .start();
     var telemetryInitDto = new TelemetryClientConstantAttributesDto("mediumTests", "mediumTests", "1.2.3", "4.5.6", emptyMap());
     var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false, false, false, false, false, false);
     var future = backend

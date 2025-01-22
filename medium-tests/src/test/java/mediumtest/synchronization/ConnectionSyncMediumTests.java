@@ -60,7 +60,7 @@ class ConnectionSyncMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage.withPlugin(TestPlugin.JAVA))
       .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, "projectKey")
       .withEnabledLanguageInStandaloneMode(JAVA)
-      .build(client);
+      .start(client);
     await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Binding suggestion computation queued for config scopes 'scopeId'..."));
 
     assertThat(client.getLogMessages()).doesNotContain("Extracting rules metadata for connection 'connectionId'");
@@ -87,7 +87,7 @@ class ConnectionSyncMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage.withPlugin(TestPlugin.JAVA))
       .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, "projectKey")
       .withEnabledLanguageInStandaloneMode(JAVA)
-      .build(client);
+      .start(client);
     await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Binding suggestion computation queued for config scopes 'scopeId'..."));
     getEffectiveRuleDetails(backend, SCOPE_ID, "java:S106");
 
@@ -119,7 +119,7 @@ class ConnectionSyncMediumTests {
       .withEnabledLanguageInStandaloneMode(JAVA)
       .withProjectSynchronization()
       .withFullSynchronization()
-      .build(client);
+      .start(client);
     await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Error while checking if soon unsupported"));
 
     server.registerSystemApiResponses();
@@ -150,7 +150,7 @@ class ConnectionSyncMediumTests {
       .withEnabledLanguageInStandaloneMode(JAVA)
       .withProjectSynchronization()
       .withFullSynchronization()
-      .build(client);
+      .start(client);
     await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Error during synchronization"));
 
     backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams(CONNECTION_ID));

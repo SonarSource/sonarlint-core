@@ -73,7 +73,7 @@ class OpenHotspotInIdeMediumTests {
     var serverWithoutHotspot = harness.newFakeSonarQubeServer("1.2.3").start();
     var backend = harness.newBackend()
       .withEmbeddedServer()
-      .build();
+      .start();
 
     var statusCode = requestGetOpenHotspotWithParams(backend, serverWithoutHotspot, "project=projectKey&hotspot=key");
 
@@ -85,7 +85,7 @@ class OpenHotspotInIdeMediumTests {
     var serverWithoutHotspot = harness.newFakeSonarQubeServer("1.2.3").start();
     var backend = harness.newBackend()
       .withEmbeddedServer()
-      .build();
+      .start();
 
     var statusCode = requestGetOpenHotspotWithParams(backend, serverWithoutHotspot, "server=URL&hotspot=key");
 
@@ -97,7 +97,7 @@ class OpenHotspotInIdeMediumTests {
     var serverWithoutHotspot = harness.newFakeSonarQubeServer("1.2.3").start();
     var backend = harness.newBackend()
       .withEmbeddedServer()
-      .build();
+      .start();
 
     var statusCode = requestGetOpenHotspotWithParams(backend, serverWithoutHotspot, "server=URL&project=projectKey");
 
@@ -112,7 +112,7 @@ class OpenHotspotInIdeMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, serverWithHotspot)
       .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withEmbeddedServer()
-      .build(fakeClient);
+      .start(fakeClient);
 
     var statusCode = requestGetOpenHotspotWithParams(backend, serverWithHotspot, "server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
     assertThat(statusCode).isEqualTo(200);
@@ -135,7 +135,7 @@ class OpenHotspotInIdeMediumTests {
       .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withEmbeddedServer()
       .withTelemetryEnabled()
-      .build();
+      .start();
 
     requestGetOpenHotspotWithParams(backend, serverWithHotspot, "server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
 
@@ -153,7 +153,7 @@ class OpenHotspotInIdeMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(SCOPE_ID, SONAR_PROJECT_NAME)
       .withEmbeddedServer()
-      .build(fakeClient);
+      .start(fakeClient);
     mockAssistCreatingConnection(backend, fakeClient, serverWithHotspot, CONNECTION_ID);
     mockAssistBinding(backend, fakeClient, SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
@@ -178,7 +178,7 @@ class OpenHotspotInIdeMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, serverWithHotspot)
       .withUnboundConfigScope(SCOPE_ID, SONAR_PROJECT_NAME)
       .withEmbeddedServer()
-      .build(fakeClient);
+      .start(fakeClient);
     mockAssistCreatingConnection(backend, fakeClient, serverWithHotspot, CONNECTION_ID);
     mockAssistBinding(backend, fakeClient, SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
@@ -202,7 +202,7 @@ class OpenHotspotInIdeMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, serverWithoutHotspot)
       .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withEmbeddedServer()
-      .build(fakeClient);
+      .start(fakeClient);
 
     var statusCode = requestGetOpenHotspotWithParams(backend, "server=" + urlEncode(serverWithoutHotspot.baseUrl()) + "&project=projectKey&hotspot=key",
       serverWithoutHotspot.baseUrl());
@@ -219,7 +219,7 @@ class OpenHotspotInIdeMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, serverWithoutHotspot)
       .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withEmbeddedServer()
-      .build();
+      .start();
 
     var statusCode = requestPostOpenHotspotWithParams(backend, serverWithoutHotspot, "server=" + urlEncode(serverWithoutHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
 

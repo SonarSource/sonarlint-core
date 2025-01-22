@@ -37,7 +37,7 @@ class HotspotLocalDetectionSupportMediumTests {
 
   @SonarLintTest
   void it_should_fail_when_the_configuration_scope_id_is_unknown(SonarLintTestHarness harness) {
-    var backend = harness.newBackend().build();
+    var backend = harness.newBackend().start();
 
     var future = backend.getHotspotService().checkLocalDetectionSupported(new CheckLocalDetectionSupportedParams("configScopeId"));
 
@@ -53,7 +53,7 @@ class HotspotLocalDetectionSupportMediumTests {
   void it_should_fail_when_the_configuration_scope_is_bound_to_an_unknown_connection(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .build();
+      .start();
 
     var future = backend.getHotspotService().checkLocalDetectionSupported(new CheckLocalDetectionSupportedParams("configScopeId"));
 
@@ -69,7 +69,7 @@ class HotspotLocalDetectionSupportMediumTests {
   void it_should_not_support_local_detection_in_standalone_mode(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .withUnboundConfigScope("configScopeId")
-      .build();
+      .start();
 
     var checkResponse = checkLocalDetectionSupported(backend, "configScopeId");
 
@@ -83,7 +83,7 @@ class HotspotLocalDetectionSupportMediumTests {
     var backend = harness.newBackend()
       .withSonarCloudConnection("connectionId", "orgKey")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .build();
+      .start();
 
     var checkResponse = checkLocalDetectionSupported(backend, "configScopeId");
 
@@ -99,7 +99,7 @@ class HotspotLocalDetectionSupportMediumTests {
       .withSonarQubeConnection("connectionId", storage -> storage.withServerVersion("9.9")
         .withProject("projectKey"))
       .withBoundConfigScope(configScopeId, "connectionId", "projectKey")
-      .build();
+      .start();
 
     var checkResponse = checkLocalDetectionSupported(backend, configScopeId);
 

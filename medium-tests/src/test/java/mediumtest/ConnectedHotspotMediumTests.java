@@ -70,7 +70,7 @@ class ConnectedHotspotMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
-      .build(client);
+      .start(client);
     client.waitForSynchronization();
 
     var analysisId = UUID.randomUUID();

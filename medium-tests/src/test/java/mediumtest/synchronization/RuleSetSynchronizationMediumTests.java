@@ -54,7 +54,7 @@ class RuleSetSynchronizationMediumTests {
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
       .withFullSynchronization()
-      .build();
+      .start();
 
     addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");
 
@@ -79,7 +79,7 @@ class RuleSetSynchronizationMediumTests {
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
       .withFullSynchronization()
-      .build(client);
+      .start(client);
 
     addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");
 

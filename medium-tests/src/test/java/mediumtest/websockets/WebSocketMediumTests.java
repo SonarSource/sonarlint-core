@@ -86,7 +86,7 @@ class WebSocketMediumTests {
       var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withUnboundConfigScope("configScope")
-        .build(client);
+        .start(client);
 
       bind(backend, "configScope", "connectionId", "projectKey");
 
@@ -101,7 +101,7 @@ class WebSocketMediumTests {
       var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withUnboundConfigScope("configScope")
-        .build(client);
+        .start(client);
 
       bind(backend, "configScope", "connectionId", "projectKey");
 
@@ -118,7 +118,7 @@ class WebSocketMediumTests {
       var backend = newBackendWithWebSockets(harness)
         .withSonarQubeConnection("connectionId")
         .withUnboundConfigScope("configScope")
-        .build(client);
+        .start(client);
 
       bind(backend, "configScope", "connectionId", "projectKey");
 
@@ -133,7 +133,7 @@ class WebSocketMediumTests {
       var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       bind(backend, "configScope", "connectionId", "newProjectKey");
@@ -153,7 +153,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope1", "connectionId", "projectKey1")
         .withBoundConfigScope("configScope2", "connectionId", "projectKey2")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey2", "projectKey1");
 
       bind(backend, "configScope1", "connectionId", "projectKey2");
@@ -172,7 +172,7 @@ class WebSocketMediumTests {
       var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnection("connectionId", "orgKey", true, null)
         .withUnboundConfigScope("configScope")
-        .build(client);
+        .start(client);
 
       bind(backend, "configScope", "connectionId", "newProjectKey");
 
@@ -187,7 +187,7 @@ class WebSocketMediumTests {
       var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnection("connectionId", "orgKey", true, null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
 
       bind(backend, "configScope", "connectionId", "newProjectKey");
 
@@ -210,7 +210,7 @@ class WebSocketMediumTests {
       var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       unbind(backend, "configScope");
@@ -232,7 +232,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope1", "connectionId", "projectKey")
         .withBoundConfigScope("configScope2", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
 
       unbind(backend, "configScope1");
 
@@ -249,7 +249,7 @@ class WebSocketMediumTests {
       var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnection("connectionId", "orgKey", true, null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
 
       unbind(backend, "configScope");
 
@@ -272,7 +272,7 @@ class WebSocketMediumTests {
       newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
         assertThat(webSocketServer.getConnections())
@@ -289,7 +289,7 @@ class WebSocketMediumTests {
       newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withUnboundConfigScope("configScope")
-        .build(client);
+        .start(client);
 
       await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
     }
@@ -302,7 +302,7 @@ class WebSocketMediumTests {
       newBackendWithWebSockets(harness)
         .withSonarQubeConnection("connectionId")
         .withUnboundConfigScope("configScope")
-        .build(client);
+        .start(client);
 
       await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
     }
@@ -315,7 +315,7 @@ class WebSocketMediumTests {
       newBackendWithWebSockets(harness)
         .withSonarCloudConnection("connectionId", "orgKey", true, null)
         .withUnboundConfigScope("configScope")
-        .build(client);
+        .start(client);
 
       await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
     }
@@ -331,7 +331,7 @@ class WebSocketMediumTests {
       var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams("configScope"));
@@ -355,7 +355,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId2", "orgKey2", null)
         .withBoundConfigScope("configScope1", "connectionId1", "projectKey")
         .withBoundConfigScope("configScope2", "connectionId2", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams("configScope1"));
@@ -373,7 +373,7 @@ class WebSocketMediumTests {
       var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
       backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(emptyList(),
         List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", true))));
@@ -395,7 +395,7 @@ class WebSocketMediumTests {
       var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
       client.setToken("connectionId", "secondToken");
 
@@ -414,7 +414,7 @@ class WebSocketMediumTests {
         .build();
       var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
-        .build(client);
+        .start(client);
 
       backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams("connectionId"));
 
@@ -429,7 +429,7 @@ class WebSocketMediumTests {
       var backend = newBackendWithWebSockets(harness)
         .withSonarQubeConnection("connectionId")
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
 
       backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams("connectionId"));
 
@@ -447,7 +447,7 @@ class WebSocketMediumTests {
         .build();
       var backend = newBackendWithWebSockets(harness)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
 
       backend.getConnectionService()
         .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", false))));
@@ -465,7 +465,7 @@ class WebSocketMediumTests {
       webSocketServer.stop();
       var backend = newBackendWithWebSockets(harness)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
 
       backend.getConnectionService()
         .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", false))));
@@ -492,7 +492,7 @@ class WebSocketMediumTests {
       var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), emptyList()));
@@ -513,7 +513,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId2", "orgKey2", null)
         .withBoundConfigScope("configScope1", "connectionId1", "projectKey1")
         .withBoundConfigScope("configScope2", "connectionId2", "projectKey2")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey2", "projectKey1");
 
       backend.getConnectionService()
@@ -536,7 +536,7 @@ class WebSocketMediumTests {
       var backend = newBackendWithWebSockets(harness)
         .withSonarQubeConnection("connectionId")
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
 
       backend.getConnectionService()
         .didUpdateConnections(new DidUpdateConnectionsParams(List.of(new SonarQubeConnectionConfigurationDto("connectionid", "url",
@@ -552,7 +552,7 @@ class WebSocketMediumTests {
         .build();
       var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
-        .build(client);
+        .start(client);
 
       backend.getConnectionService()
         .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey2", false))));
@@ -568,7 +568,7 @@ class WebSocketMediumTests {
       var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       backend.getConnectionService()
@@ -590,7 +590,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId2", "orgKey2", null)
         .withBoundConfigScope("configScope1", "connectionId1", "projectKey1")
         .withBoundConfigScope("configScope2", "connectionId2", "projectKey2")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey2", "projectKey1");
 
       backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(emptyList(),
@@ -611,7 +611,7 @@ class WebSocketMediumTests {
       var backend = newBackendWithWebSockets(harness)
         .withSonarCloudConnection("connectionId", "orgKey", true, null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
 
       backend.getConnectionService()
         .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", false))));
@@ -633,7 +633,7 @@ class WebSocketMediumTests {
         .withSmartNotifications()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       webSocketServer.getConnections().get(0).sendMessage(
@@ -656,7 +656,7 @@ class WebSocketMediumTests {
         .withSmartNotifications()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       webSocketServer.getConnections().get(0).sendMessage(
@@ -679,7 +679,7 @@ class WebSocketMediumTests {
         .withSmartNotifications()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       webSocketServer.getConnections().get(0).sendMessage("{\"event\": [\"QualityGateChanged\"], \"data\": {\"message\": 0}}");
@@ -719,7 +719,7 @@ class WebSocketMediumTests {
         .withSmartNotifications()
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       webSocketServer.getConnections().get(0).sendMessage(payload);
@@ -741,7 +741,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch("master", branch -> branch.withIssue(serverIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
@@ -776,7 +776,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch("master", branch -> branch.withIssue(serverIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
@@ -811,7 +811,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch("master", branch -> branch.withIssue(serverIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
@@ -845,7 +845,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch("master", branch -> branch.withIssue(serverIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
@@ -879,7 +879,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch("master", branch -> branch.withIssue(serverIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
@@ -914,7 +914,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey"))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
@@ -984,7 +984,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey"))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
@@ -1059,7 +1059,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withTaintIssue(serverTaintIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
@@ -1088,7 +1088,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withTaintIssue(serverTaintIssue))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
@@ -1120,7 +1120,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withHotspot(serverHotspot))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
@@ -1154,7 +1154,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withHotspot(serverHotspot))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
@@ -1189,7 +1189,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey"))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
@@ -1231,7 +1231,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey"))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
@@ -1278,7 +1278,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withHotspot(serverHotspot))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
@@ -1308,7 +1308,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", storage -> storage
           .withProject("projectKey", project -> project.withMainBranch(branch -> branch.withHotspot(serverHotspot))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
@@ -1338,7 +1338,7 @@ class WebSocketMediumTests {
       newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       webSocketServer.getConnections().get(0).sendMessage("{\"event\": \"UnknownEvent\", \"data\": {\"message\": \"msg\"}}");
@@ -1354,7 +1354,7 @@ class WebSocketMediumTests {
       newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       await().atMost(Duration.ofSeconds(2)).until(() -> !webSocketServer.getConnections().isEmpty());
 
       webSocketServer.getConnections().get(0).sendMessage("{\"event\": \"Malformed");
@@ -1370,7 +1370,7 @@ class WebSocketMediumTests {
       newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       webSocketServer.getConnections().get(0).sendMessage(
@@ -1398,7 +1398,7 @@ class WebSocketMediumTests {
       newBackendWithWebSockets(harness)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       webSocketServer.getConnections().get(0).close();
@@ -1417,7 +1417,7 @@ class WebSocketMediumTests {
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .withBoundConfigScope("configScope2", "connectionId", "projectKey")
-        .build(client);
+        .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       webSocketServer.getConnections().get(0).close();

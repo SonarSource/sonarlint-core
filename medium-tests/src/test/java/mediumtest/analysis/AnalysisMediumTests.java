@@ -106,7 +106,7 @@ class AnalysisMediumTests {
     var client = harness.newFakeClient().build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
-      .build(client);
+      .start(client);
     var analysisId = UUID.randomUUID();
 
     var result = backend.getAnalysisService()
@@ -144,7 +144,7 @@ class AnalysisMediumTests {
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .withDisabledPluginsForAnalysis(SonarLanguage.JAVA.getPluginKey())
-      .build(client);
+      .start(client);
     var analysisId = UUID.randomUUID();
 
     var result = backend.getAnalysisService()
@@ -182,7 +182,7 @@ class AnalysisMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .build(client);
+      .start(client);
     var analysisId = UUID.randomUUID();
 
     var result = backend.getAnalysisService()
@@ -223,7 +223,7 @@ class AnalysisMediumTests {
         storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "BLOCKER"))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
-      .build(client);
+      .start(client);
     var analysisId = UUID.randomUUID();
 
     var result = backend.getAnalysisService()
@@ -251,7 +251,7 @@ class AnalysisMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
     var analysisId = UUID.randomUUID();
 
     var result = backend.getAnalysisService()
@@ -272,7 +272,7 @@ class AnalysisMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.TEXT)
-      .build(client);
+      .start(client);
     var analysisId = UUID.randomUUID();
 
     var result = backend.getAnalysisService()
@@ -293,7 +293,7 @@ class AnalysisMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.TEXT)
-      .build(client);
+      .start(client);
     var analysisId = UUID.randomUUID();
 
     backend.getAnalysisService()
@@ -318,7 +318,7 @@ class AnalysisMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.TEXT)
-      .build(client);
+      .start(client);
     var analysisId = UUID.randomUUID();
 
     var result = backend.getAnalysisService()
@@ -346,7 +346,7 @@ class AnalysisMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
-      .build(client);
+      .start(client);
     var analysisId = UUID.randomUUID();
 
     var result = backend.getAnalysisService()
@@ -373,7 +373,7 @@ class AnalysisMediumTests {
       .build();
     var backend = harness.newBackend()
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
-      .build(client);
+      .start(client);
     var analysisId = UUID.randomUUID();
 
     var result = backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId,
@@ -430,7 +430,7 @@ class AnalysisMediumTests {
       .withUnboundConfigScope(parentConfigScope)
       .withUnboundConfigScope(leafConfigScope, leafConfigScope, parentConfigScope)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
-      .build(client);
+      .start(client);
     var analysisId = UUID.randomUUID();
 
     var leafConfigScopeResult = backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(leafConfigScope, analysisId,
@@ -461,7 +461,7 @@ class AnalysisMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
-      .build(client);
+      .start(client);
     var analysisId = UUID.randomUUID();
 
     var parentConfigScopeResult = backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId,
@@ -508,7 +508,7 @@ class AnalysisMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
-      .build(client);
+      .start(client);
     var analysisId = UUID.randomUUID();
 
     var result = backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId,
@@ -550,7 +550,7 @@ class AnalysisMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
-      .build(client);
+      .start(client);
     var analysisId = UUID.randomUUID();
 
     var result = backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId,
@@ -578,7 +578,7 @@ class AnalysisMediumTests {
 
   @SonarLintTest
   void should_save_and_return_client_analysis_settings(SonarLintTestHarness harness) {
-    var backend = harness.newBackend().build();
+    var backend = harness.newBackend().start();
     backend.getAnalysisService().didSetUserAnalysisProperties(
       new DidChangeAnalysisPropertiesParams(CONFIG_SCOPE_ID, Map.of("key1", "user-value1", "key2", "user-value2")));
 
@@ -591,7 +591,7 @@ class AnalysisMediumTests {
   void should_set_js_internal_bundlePath_if_provided(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var backend = harness.newBackend()
       .withEslintBridgeServerBundlePath(baseDir.resolve("eslint-bridge"))
-      .build();
+      .start();
 
     var analysisProperties = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).join().getAnalysisProperties();
 
@@ -600,7 +600,7 @@ class AnalysisMediumTests {
 
   @SonarLintTest
   void should_not_set_js_internal_bundlePath_when_not_provided(SonarLintTestHarness harness) {
-    var backend = harness.newBackend().build();
+    var backend = harness.newBackend().start();
 
     var analysisProperties = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).join().getAnalysisProperties();
 
@@ -611,7 +611,7 @@ class AnalysisMediumTests {
   void should_not_set_js_internal_bundlePath_when_no_language_specific_requirements(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .withNoLanguageSpecificRequirements()
-      .build();
+      .start();
 
     var analysisProperties = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).join().getAnalysisProperties();
 
@@ -636,7 +636,7 @@ class AnalysisMediumTests {
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .withDisabledPluginsForAnalysis(SonarLanguage.XML.getPluginKey())
-      .build(client);
+      .start(client);
     var analysisId = UUID.randomUUID();
 
     var result = backend.getAnalysisService()
@@ -679,7 +679,7 @@ class AnalysisMediumTests {
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .withDisabledPluginsForAnalysis(SonarLanguage.XML.getPluginKey())
-      .build(client);
+      .start(client);
     var analysisId = UUID.randomUUID();
 
     var result = backend.getAnalysisService()
@@ -719,7 +719,7 @@ class AnalysisMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.CFAMILY)
-      .build(client);
+      .start(client);
     backend.getAnalysisService()
       .didSetUserAnalysisProperties(new DidChangeAnalysisPropertiesParams(CONFIG_SCOPE_ID, Map.of("sonar.cfamily.build-wrapper-content", buildWrapperContent)));
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, cFileUri));
@@ -741,7 +741,7 @@ class AnalysisMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.CFAMILY)
-      .build();
+      .start();
 
     backend.getAnalysisService().didChangePathToCompileCommands(new DidChangePathToCompileCommandsParams(CONFIG_SCOPE_ID, null));
 
@@ -790,7 +790,7 @@ class AnalysisMediumTests {
       .withBoundConfigScope(configScope2, connectionId2, projectKey2)
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
       .withFullSynchronization()
-      .build(client);
+      .start(client);
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
       new ConfigurationScopeDto(configScope2, null, true, configScope2,
         new BindingConfigurationDto(connectionId2, projectKey2, true)))));
@@ -862,7 +862,7 @@ class AnalysisMediumTests {
       .withBoundConfigScope(configScope2, connectionId2, projectKey2)
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
       .withFullSynchronization()
-      .build(client);
+      .start(client);
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
       new ConfigurationScopeDto(configScope2, null, true, configScope2,
         new BindingConfigurationDto(connectionId2, projectKey2, true)))));
@@ -900,7 +900,7 @@ class AnalysisMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
 
     backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri1), Map.of(), false, System.currentTimeMillis())).join();
@@ -932,7 +932,7 @@ class AnalysisMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
 
     backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), false, System.currentTimeMillis())).join();
@@ -943,7 +943,7 @@ class AnalysisMediumTests {
   void it_should_not_use_enterprise_csharp_analyzer_in_standalone(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
-      .build();
+      .start();
 
     var response = backend.getAnalysisService().shouldUseEnterpriseCSharpAnalyzer(new ShouldUseEnterpriseCSharpAnalyzerParams(CONFIG_SCOPE_ID)).join();
 
@@ -960,7 +960,7 @@ class AnalysisMediumTests {
       .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
       .withFullSynchronization()
-      .build();
+      .start();
 
     var result = backend.getAnalysisService().shouldUseEnterpriseCSharpAnalyzer(new ShouldUseEnterpriseCSharpAnalyzerParams(CONFIG_SCOPE_ID)).join();
 
@@ -980,7 +980,7 @@ class AnalysisMediumTests {
       .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
       .withFullSynchronization()
-      .build();
+      .start();
 
     var result = backend.getAnalysisService().shouldUseEnterpriseCSharpAnalyzer(new ShouldUseEnterpriseCSharpAnalyzerParams(CONFIG_SCOPE_ID)).join();
 

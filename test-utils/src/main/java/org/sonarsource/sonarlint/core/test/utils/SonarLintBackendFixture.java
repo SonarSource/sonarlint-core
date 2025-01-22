@@ -125,8 +125,8 @@ public class SonarLintBackendFixture {
     return newBackend(null);
   }
 
-  public static SonarLintBackendBuilder newBackend(@Nullable Consumer<SonarLintTestRpcServer> onBuild) {
-    return new SonarLintBackendBuilder(onBuild);
+  public static SonarLintBackendBuilder newBackend(@Nullable Consumer<SonarLintTestRpcServer> afterStartCallback) {
+    return new SonarLintBackendBuilder(afterStartCallback);
   }
 
   public static SonarLintClientBuilder newFakeClient() {
@@ -134,7 +134,7 @@ public class SonarLintBackendFixture {
   }
 
   public static class SonarLintBackendBuilder {
-    private final Consumer<SonarLintTestRpcServer> onBuild;
+    private final Consumer<SonarLintTestRpcServer> afterStartCallback;
     private final List<SonarQubeConnectionConfigurationDto> sonarQubeConnections = new ArrayList<>();
     private final List<SonarCloudConnectionConfigurationDto> sonarCloudConnections = new ArrayList<>();
     private final List<ConfigurationScopeDto> configurationScopes = new ArrayList<>();
@@ -172,8 +172,8 @@ public class SonarLintBackendFixture {
     private TelemetryMigrationDto telemetryMigration;
     private LanguageSpecificRequirements languageSpecificRequirements;
 
-    public SonarLintBackendBuilder(@Nullable Consumer<SonarLintTestRpcServer> onBuild) {
-      this.onBuild = onBuild;
+    public SonarLintBackendBuilder(@Nullable Consumer<SonarLintTestRpcServer> afterStartCallback) {
+      this.afterStartCallback = afterStartCallback;
     }
 
     public SonarLintBackendBuilder withSonarQubeConnection() {
@@ -470,7 +470,7 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintTestRpcServer build(SonarLintRpcClientDelegate client) {
+    public SonarLintTestRpcServer start(SonarLintRpcClientDelegate client) {
       var sonarlintUserHome = tempDirectory("slUserHome");
       var workDir = tempDirectory("work");
       var storageParentPath = tempDirectory("storage");
@@ -505,8 +505,8 @@ public class SonarLintBackendFixture {
             standaloneConfigByKey, isFocusOnNewCode, languageSpecificRequirements, automaticAnalysisEnabled, telemetryMigration))
           .get();
         sonarLintBackend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(configurationScopes));
-        if (onBuild != null) {
-          onBuild.accept(sonarLintBackend);
+        if (afterStartCallback != null) {
+          afterStartCallback.accept(sonarLintBackend);
         }
         return sonarLintBackend;
       } catch (Exception e) {
@@ -570,8 +570,8 @@ public class SonarLintBackendFixture {
       }
     }
 
-    public SonarLintTestRpcServer build() {
-      return build(newFakeClient().build());
+    public SonarLintTestRpcServer start() {
+      return start(newFakeClient().build());
     }
   }
 

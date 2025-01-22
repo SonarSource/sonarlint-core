@@ -54,7 +54,7 @@ class RulesInConnectedModeMediumTests {
             .withActiveRule("java:S3776", "BLOCKER", Map.of("blah", "blah"))
             // Emulate server returning a deprecated template key
             .withCustomActiveRule("squid:myCustomRule", "squid:S124", "MAJOR", Map.of("message", "Needs to be reviewed", "regularExpression", ".*REVIEW.*")))))
-      .build();
+      .start();
 
     backend.getConfigurationService().didAddConfigurationScopes(
       new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "My project",
@@ -79,7 +79,7 @@ class RulesInConnectedModeMediumTests {
       .withSonarQubeConnection(CONNECTION_ID,
         storage -> storage.withServerVersion("9.7").withProject(JAVA_MODULE_KEY, project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S4792", "INFO"))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, JAVA_MODULE_KEY)
-      .build();
+      .start();
 
     var activeRules = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).get().getActiveRules();
 
@@ -95,7 +95,7 @@ class RulesInConnectedModeMediumTests {
       .withSonarQubeConnection(CONNECTION_ID,
         storage -> storage.withServerVersion("9.7").withProject(JAVA_MODULE_KEY, project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S4792", "INFO"))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, JAVA_MODULE_KEY)
-      .build();
+      .start();
 
     var activeRules = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).get().getActiveRules();
 
@@ -110,7 +110,7 @@ class RulesInConnectedModeMediumTests {
       .withSonarQubeConnection(CONNECTION_ID,
         storage -> storage.withServerVersion("9.9").withProject(JAVA_MODULE_KEY, project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S4792", "INFO"))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, JAVA_MODULE_KEY)
-      .build();
+      .start();
 
     var activeRules = backend.getAnalysisService().getAnalysisConfig(new GetAnalysisConfigParams(CONFIG_SCOPE_ID)).get().getActiveRules();
 

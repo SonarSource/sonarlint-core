@@ -103,7 +103,7 @@ class IssueEventsMediumTests {
         .withSonarQubeConnection("connectionId", server,
           storage -> storage.withProject(projectKey, project -> project.withMainBranch("branchName", branch -> branch.withIssue(aServerIssue("key1").open()))))
         .withBoundConfigScope("configScope", "connectionId", projectKey)
-        .build();
+        .start();
       sseServer.shouldSendServerEventOnce();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readIssues(backend, "connectionId", projectKey, "branchName", "file/path"))
@@ -137,7 +137,7 @@ class IssueEventsMediumTests {
             project -> project.withMainBranch("branchName",
               branch -> branch.withIssue(aServerIssue("key1").withImpacts(Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.HIGH))))))
         .withBoundConfigScope("configScope", "connectionId", projectKey)
-        .build();
+        .start();
       sseServer.shouldSendServerEventOnce();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readIssues(backend, "connectionId", projectKey, "branchName", "file/path"))
@@ -169,7 +169,7 @@ class IssueEventsMediumTests {
         .withSonarQubeConnection("connectionId", server,
           storage -> storage.withProject(projectKey, project -> project.withMainBranch("branchName", branch -> branch.withIssue(aServerIssue("key1")))))
         .withBoundConfigScope("configScope", "connectionId", projectKey)
-        .build();
+        .start();
       sseServer.shouldSendServerEventOnce();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readIssues(backend, "connectionId", projectKey, "branchName", "file/path"))
@@ -203,7 +203,7 @@ class IssueEventsMediumTests {
             project -> project.withMainBranch("branchName",
               branch -> branch.withIssue(aServerIssue("key1").withImpacts(Map.of(SoftwareQuality.SECURITY, ImpactSeverity.BLOCKER))))))
         .withBoundConfigScope("configScope", "connectionId", projectKey)
-        .build();
+        .start();
       sseServer.shouldSendServerEventOnce();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readIssues(backend, "connectionId", projectKey, "branchName", "file/path"))
@@ -234,7 +234,7 @@ class IssueEventsMediumTests {
           storage -> storage.withProject("projectKey",
             project -> project.withMainBranch("branchName", branch -> branch.withIssue(aServerIssue("key1").withSeverity(IssueSeverity.INFO)))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
+        .start();
       sseServer.shouldSendServerEventOnce();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readIssues(backend, "connectionId", "projectKey", "branchName", "file/path"))
@@ -265,7 +265,7 @@ class IssueEventsMediumTests {
           storage -> storage.withProject("projectKey",
             project -> project.withMainBranch("branchName", branch -> branch.withIssue(aServerIssue("key1").withType(RuleType.VULNERABILITY)))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
-        .build();
+        .start();
       sseServer.shouldSendServerEventOnce();
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readIssues(backend, "connectionId", "projectKey", "branchName", "file/path"))
@@ -319,7 +319,7 @@ class IssueEventsMediumTests {
         .withFullSynchronization()
         .withSonarQubeConnection(connectionId, serverWithIssues)
         .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
-        .build(client);
+        .start(client);
 
       await().atMost(Duration.ofMinutes(2)).untilAsserted(() -> assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
       analyzeFileAndGetIssue(fileUri, client, backend, CONFIG_SCOPE_ID);
@@ -384,7 +384,7 @@ class IssueEventsMediumTests {
         .withFullSynchronization()
         .withSonarQubeConnection(connectionId, serverWithIssues)
         .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
-        .build(client);
+        .start(client);
 
       await().atMost(Duration.ofMinutes(2)).untilAsserted(() -> assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
       analyzeFileAndGetIssue(fileUri, client, backend, CONFIG_SCOPE_ID);
@@ -446,7 +446,7 @@ class IssueEventsMediumTests {
         .withFullSynchronization()
         .withSonarQubeConnection(connectionId, serverWithIssues)
         .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
-        .build(client);
+        .start(client);
 
       await().atMost(Duration.ofMinutes(2)).untilAsserted(() -> assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
       analyzeFileAndGetIssue(fileUri, client, backend, CONFIG_SCOPE_ID);
@@ -512,7 +512,7 @@ class IssueEventsMediumTests {
         .withFullSynchronization()
         .withSonarQubeConnection(connectionId, serverWithIssues)
         .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
-        .build(client);
+        .start(client);
 
       await().atMost(Duration.ofMinutes(2)).untilAsserted(() -> assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
       analyzeFileAndGetIssue(fileUri, client, backend, CONFIG_SCOPE_ID);

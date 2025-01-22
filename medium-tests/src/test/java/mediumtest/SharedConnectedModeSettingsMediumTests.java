@@ -37,7 +37,7 @@ class SharedConnectedModeSettingsMediumTests {
   void should_throw_when_not_bound(SonarLintTestHarness harness) {
     var configScopeId = "file:///my/folder";
     var backend = harness.newBackend()
-      .build();
+      .start();
 
     var fileContents = getFileContents(backend, configScopeId);
 
@@ -63,7 +63,7 @@ class SharedConnectedModeSettingsMediumTests {
       .withSonarCloudConnection(connectionId, organizationKey)
       .withBoundConfigScope(configScopeId, connectionId, projectKey)
       .withTelemetryEnabled()
-      .build();
+      .start();
 
     var result = getFileContents(backend, configScopeId);
 
@@ -91,7 +91,7 @@ class SharedConnectedModeSettingsMediumTests {
       .withSonarQubeConnection(connectionId, server)
       .withBoundConfigScope(configScopeId, connectionId, projectKey)
       .withTelemetryEnabled()
-      .build();
+      .start();
 
     var result = getFileContents(backend, configScopeId);
 

@@ -54,7 +54,7 @@ class NotebookLanguageMediumTests {
       .withEnabledLanguageInStandaloneMode(Language.JS)
       .withEnabledLanguageInStandaloneMode(Language.IPYTHON)
       .withFullSynchronization()
-      .build(fakeClient);
+      .start(fakeClient);
 
     backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams(CONNECTION_ID));
 

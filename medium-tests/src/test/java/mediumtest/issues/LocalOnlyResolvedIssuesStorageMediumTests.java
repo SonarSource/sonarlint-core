@@ -42,7 +42,7 @@ class LocalOnlyResolvedIssuesStorageMediumTests {
         .withServerVersion("9.8"))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey",
         storage -> storage.withLocalOnlyIssue(aLocalOnlyIssueResolved(Instant.now().minus(1, ChronoUnit.MINUTES).minus(7, ChronoUnit.DAYS))))
-      .build();
+      .start();
 
     var storedIssues = backend.getLocalOnlyIssueStorageService().get().loadAll("configScopeId");
 

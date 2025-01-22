@@ -85,7 +85,7 @@ class ConnectedIssueExclusionsMediumTests {
             .withActiveRule("java:S1481", "BLOCKER"))))
       .withBoundConfigScope(JAVA_MODULE_KEY, CONNECTION_ID, JAVA_MODULE_KEY)
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
-      .build(client);
+      .start(client);
   }
 
   @BeforeEach
