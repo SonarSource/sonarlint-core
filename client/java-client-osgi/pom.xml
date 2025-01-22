@@ -10,6 +10,14 @@
   <artifactId>sonarlint-java-client-osgi</artifactId>
   <name>SonarLint Core - Java Client OSGi</name>
   <description>Common SonarLint features bundled for OSGi</description>
+  
+  <properties>
+    <!--
+      As this creates the OSGi bundle that is used on SonarQube for Eclipse, we
+      have to stick to Java 11 for the compiler!
+    -->
+    <maven.compiler.release>11</maven.compiler.release>
+  </properties>
 
   <dependencies>
     <dependency>
