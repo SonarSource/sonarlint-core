@@ -38,7 +38,6 @@ import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.after;
@@ -63,7 +62,7 @@ class BranchSpecificSynchronizationMediumTests {
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
-      .build(client);
+      .start(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
       assertThat(backend.getWorkDir()).isDirectoryContaining(path -> path.getFileName().toString().contains("xodus-issue-store"));
@@ -92,7 +91,7 @@ class BranchSpecificSynchronizationMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withFullSynchronization()
-      .build(client);
+      .start(client);
 
     backend.getConfigurationService().didAddConfigurationScopes(
       new DidAddConfigurationScopesParams(List.of(
@@ -130,7 +129,7 @@ class BranchSpecificSynchronizationMediumTests {
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withBoundConfigScope("configScopeId2", "connectionId", "projectKey2")
       .withFullSynchronization()
-      .build(fakeClient);
+      .start(fakeClient);
 
     fakeClient.waitForSynchronization();
 
@@ -161,7 +160,7 @@ class BranchSpecificSynchronizationMediumTests {
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withBoundConfigScope("configScopeId2", "connectionId", "projectKey2")
       .withFullSynchronization()
-      .build(fakeClient);
+      .start(fakeClient);
     fakeClient.waitForSynchronization();
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
@@ -182,7 +181,7 @@ class BranchSpecificSynchronizationMediumTests {
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
-      .build(fakeClient);
+      .start(fakeClient);
     fakeClient.waitForSynchronization();
     reset(fakeClient);
 

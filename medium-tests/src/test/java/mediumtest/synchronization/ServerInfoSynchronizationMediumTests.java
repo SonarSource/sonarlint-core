@@ -49,7 +49,7 @@ class ServerInfoSynchronizationMediumTests {
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
       .withFullSynchronization()
-      .build();
+      .start();
 
     addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");
 
@@ -68,7 +68,7 @@ class ServerInfoSynchronizationMediumTests {
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
       .withFullSynchronization()
-      .build();
+      .start();
 
     addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");
 
@@ -84,7 +84,7 @@ class ServerInfoSynchronizationMediumTests {
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarCloudConnection("connectionId", "test")
       .withFullSynchronization()
-      .build();
+      .start();
 
     addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");
 
@@ -103,7 +103,7 @@ class ServerInfoSynchronizationMediumTests {
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
       .withFullSynchronization()
-      .build();
+      .start();
 
     addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");
 
@@ -124,7 +124,7 @@ class ServerInfoSynchronizationMediumTests {
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
       .withFullSynchronization()
-      .build(client);
+      .start(client);
 
     addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");
 
@@ -144,7 +144,7 @@ class ServerInfoSynchronizationMediumTests {
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
       .withFullSynchronization()
-      .build(client);
+      .start(client);
 
     addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");
 

@@ -37,7 +37,7 @@ class HotspotCheckStatusChangePermittedMediumTests {
 
   @SonarLintTest
   void it_should_fail_when_the_connection_is_unknown(SonarLintTestHarness harness) {
-    var backend = harness.newBackend().build();
+    var backend = harness.newBackend().start();
 
     var response = checkStatusChangePermitted(backend, "connectionId");
 
@@ -55,7 +55,7 @@ class HotspotCheckStatusChangePermittedMediumTests {
     var backend = harness.newBackend()
       .withSonarCloudUrl(server.baseUrl())
       .withSonarCloudConnection("connectionId", "orgKey")
-      .build();
+      .start();
 
     var response = checkStatusChangePermitted(backend, "connectionId");
 
@@ -71,7 +71,7 @@ class HotspotCheckStatusChangePermittedMediumTests {
     var server = harness.newFakeSonarQubeServer().withProject("projectKey", project -> project.withDefaultBranch(branch -> branch.withHotspot("hotspotKey"))).start();
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
-      .build();
+      .start();
 
     var response = checkStatusChangePermitted(backend, "connectionId");
 
@@ -91,7 +91,7 @@ class HotspotCheckStatusChangePermittedMediumTests {
       .start();
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
-      .build();
+      .start();
 
     var response = checkStatusChangePermitted(backend, "connectionId");
 

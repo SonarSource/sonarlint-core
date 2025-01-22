@@ -109,7 +109,7 @@ class IssueTrackingMediumTests {
           .withMainBranch(branchName)))
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
-      .build(client);
+      .start(client);
 
     var firstAnalysisPublishedIssues = analyzeFileAndGetAllIssuesOfRule(backend, fileUri, client, ruleKey);
 
@@ -158,7 +158,7 @@ class IssueTrackingMediumTests {
           project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
             .withMainBranch(branchName)))
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
 
     backend.getConfigurationService()
       .didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
@@ -218,7 +218,7 @@ class IssueTrackingMediumTests {
             .withMainBranch(branchName)))
       .withFullSynchronization()
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
 
     backend.getConfigurationService()
       .didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
@@ -258,7 +258,7 @@ class IssueTrackingMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
 
     var issue = analyzeFileAndGetIssue(backend, client, fileUri);
 
@@ -285,7 +285,7 @@ class IssueTrackingMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
 
     Instant analysisTime = Instant.now();
     var issues = analyzeFileAndGetAllIssues(backend, fileUri, client);
@@ -333,7 +333,7 @@ class IssueTrackingMediumTests {
           project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
             .withMainBranch(branchName)))
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
 
     backend.getConfigurationService()
       .didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
@@ -406,7 +406,7 @@ class IssueTrackingMediumTests {
           project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
             .withMainBranch(branchName)))
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
 
     backend.getConfigurationService()
       .didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
@@ -453,7 +453,7 @@ class IssueTrackingMediumTests {
           project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
             .withMainBranch(branchName)))
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
 
     backend.getConfigurationService()
       .didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
@@ -479,7 +479,7 @@ class IssueTrackingMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
 
     var firstPublishedIssue = analyzeFileAndGetIssue(backend, client, fileUri);
 
@@ -511,7 +511,7 @@ class IssueTrackingMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
 
     var issues = analyzeFileAndGetAllIssues(backend, fileUri, client);
 
@@ -545,7 +545,7 @@ class IssueTrackingMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .build(client);
+      .start(client);
     var startTime = System.currentTimeMillis();
 
     var publishedIssue = analyzeFileAndGetIssue(backend, client, fileUri);
@@ -565,7 +565,7 @@ class IssueTrackingMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .build(client);
+      .start(client);
 
     var firstPublishedIssue = analyzeFileAndGetIssue(backend, client, fileUri);
 
@@ -589,7 +589,7 @@ class IssueTrackingMediumTests {
         storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MINOR"))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
-      .build(client);
+      .start(client);
     var startTime = System.currentTimeMillis();
 
     var publishedIssue = analyzeFileAndGetIssue(backend, client, fileUri);
@@ -612,7 +612,7 @@ class IssueTrackingMediumTests {
         storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MINOR"))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
-      .build(client);
+      .start(client);
 
     var firstPublishedIssue = analyzeFileAndGetIssue(backend, client, fileUri);
 
@@ -646,7 +646,7 @@ class IssueTrackingMediumTests {
                 .withIntroductionDate(serverIssueIntroductionDate)))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
-      .build(client);
+      .start(client);
 
     var publishedIssue = analyzeFileAndGetIssue(backend, client, fileUri);
 
@@ -681,7 +681,7 @@ class IssueTrackingMediumTests {
                 .withIntroductionDate(serverIssueIntroductionDate)))))
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .build(client);
+      .start(client);
 
     var firstPublishedIssue = analyzeFileAndGetIssue(backend, client, fileUri);
 
@@ -741,7 +741,7 @@ class IssueTrackingMediumTests {
       .withSonarCloudUrl(server.baseUrl())
       .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .build(client);
+      .start(client);
 
     backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID,
       new BindingConfigurationDto(connectionId, projectKey, true)));
@@ -774,7 +774,7 @@ class IssueTrackingMediumTests {
       .withStandaloneEmbeddedPlugin(pluginPath)
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
-      .build(client);
+      .start(client);
 
     analyzeFileAndGetAllIssues(backend, fileUri, client);
 
@@ -816,7 +816,7 @@ class IssueTrackingMediumTests {
       .withStandaloneEmbeddedPlugin(pluginPath)
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
-      .build(client);
+      .start(client);
     analyzeFileAndGetAllIssues(backend, fileUri, client);
     reset(client);
 
@@ -855,7 +855,7 @@ class IssueTrackingMediumTests {
       .withStandaloneEmbeddedPlugin(pluginPath)
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
-      .build(client);
+      .start(client);
     backend.getAnalysisService().analyzeFilesAndTrack(
       new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), true, System.currentTimeMillis()))
       .join();

@@ -82,7 +82,7 @@ class BindingSuggestionsMediumTests {
     var fakeClient = harness.newFakeClient().build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID, "My Project 1")
-      .build(fakeClient);
+      .start(fakeClient);
     await().untilAsserted(() -> assertThat(fakeClient.getLogMessages()).contains("No connections configured, skipping binding suggestions."));
 
     backend.getConnectionService()
@@ -101,7 +101,7 @@ class BindingSuggestionsMediumTests {
     var fakeClient = harness.newFakeClient().build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID, "sonarlint-core")
-      .build(fakeClient);
+      .start(fakeClient);
     await().untilAsserted(() -> assertThat(fakeClient.getLogMessages()).contains("No connections configured, skipping binding suggestions."));
 
     sonarqubeMock.stubFor(get("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1")
@@ -131,7 +131,7 @@ class BindingSuggestionsMediumTests {
     var fakeClient = harness.newFakeClient().build();
     var backend = harness.newBackend()
       .withSonarQubeConnection(MYSONAR, sonarqubeMock.baseUrl())
-      .build(fakeClient);
+      .start(fakeClient);
 
     sonarqubeMock.stubFor(get("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1")
       .willReturn(aResponse().withResponseBody(protobufBody(Components.SearchWsResponse.newBuilder()
@@ -170,7 +170,7 @@ class BindingSuggestionsMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(MYSONAR, sonarqubeMock.baseUrl())
       .withSonarQubeConnection("another")
-      .build(fakeClient);
+      .start(fakeClient);
 
     sonarqubeMock.stubFor(get("/api/components/show.protobuf?component=org.sonarsource.sonarlint%3Asonarlint-core-parent")
       .willReturn(aResponse().withResponseBody(protobufBody(Components.ShowWsResponse.newBuilder()
@@ -204,7 +204,7 @@ class BindingSuggestionsMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(MYSONAR, sonarqubeMock.baseUrl())
       .withSonarQubeConnection("another")
-      .build(fakeClient);
+      .start(fakeClient);
 
     sonarqubeMock.stubFor(get("/api/components/show.protobuf?component=org.sonarsource.sonarlint%3Asonarlint-core-parent")
       .willReturn(aResponse().withResponseBody(protobufBody(Components.ShowWsResponse.newBuilder()
@@ -249,7 +249,7 @@ class BindingSuggestionsMediumTests {
     var fakeClient = harness.newFakeClient().build();
     var backend = harness.newBackend()
       .withSonarQubeConnection(MYSONAR, sonarqubeMock.baseUrl())
-      .build(fakeClient);
+      .start(fakeClient);
 
     sonarqubeMock.stubFor(get("/api/components/search.protobuf?qualifiers=TRK&ps=500&p=1")
       .willReturn(aResponse().withResponseBody(protobufBody(Components.SearchWsResponse.newBuilder()
@@ -285,7 +285,7 @@ class BindingSuggestionsMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(MYSONAR, sonarqubeMock.baseUrl())
       .withSonarQubeConnection("another")
-      .build(fakeClient);
+      .start(fakeClient);
 
     sonarqubeMock.stubFor(get("/api/components/show.protobuf?component=org.sonarsource.sonarlint%3Asonarlint-core-parent")
       .willReturn(aResponse().withResponseBody(protobufBody(Components.ShowWsResponse.newBuilder()

@@ -101,7 +101,7 @@ class SecurityHotspotTrackingMediumTests {
             .withMainBranch(branchName)))
       .withSecurityHotspotsEnabled()
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
     backend.getConfigurationService()
       .didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
         new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, CONFIG_SCOPE_ID,
@@ -159,7 +159,7 @@ class SecurityHotspotTrackingMediumTests {
             .withMainBranch(branchName)))
       .withSecurityHotspotsEnabled()
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
     backend.getConfigurationService()
       .didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
         new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, CONFIG_SCOPE_ID,
@@ -205,7 +205,7 @@ class SecurityHotspotTrackingMediumTests {
       .withSecurityHotspotsEnabled()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
 
     analyzeFileAndAssertNoHotspotsRaised(backend, fileUri, client);
   }

@@ -41,7 +41,7 @@ class OpenHotspotInBrowserMediumTests {
       .withSonarQubeConnection("connectionId", "http://localhost:12345", storage -> storage.withProject("projectKey", project -> project.withMainBranch("master")))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withTelemetryEnabled()
-      .build(fakeClient);
+      .start(fakeClient);
 
     backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "ab12ef45"));
 
@@ -55,7 +55,7 @@ class OpenHotspotInBrowserMediumTests {
     var fakeClient = harness.newFakeClient().build();
     var backend = harness.newBackend()
       .withUnboundConfigScope("scopeId")
-      .build(fakeClient);
+      .start(fakeClient);
 
     backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "ab12ef45"));
 

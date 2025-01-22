@@ -50,7 +50,7 @@ class SonarProjectBranchMediumTests {
 
     var backend = harness.newBackend()
       .withUnboundConfigScope("configScopeId")
-      .build(client);
+      .start(client);
 
     notifyVcsRepositoryChanged(backend, "configScopeId");
 
@@ -69,7 +69,7 @@ class SonarProjectBranchMediumTests {
         storage -> storage.withProject("projectKey",
           project -> project.withMainBranch("main").withNonMainBranch("myBranch")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .build(client);
+      .start(client);
 
     notifyVcsRepositoryChanged(backend, "configScopeId");
 
@@ -87,7 +87,7 @@ class SonarProjectBranchMediumTests {
         storage -> storage.withProject("projectKey",
           project -> project.withMainBranch("main").withNonMainBranch("myBranch")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .build(client);
+      .start(client);
 
     // Wait for the first branch matching
     verify(client, timeout(5000)).didChangeMatchedSonarProjectBranch(eq("configScopeId"), any());
@@ -110,7 +110,7 @@ class SonarProjectBranchMediumTests {
         storage -> storage.withProject("projectKey",
           project -> project.withMainBranch("main").withNonMainBranch("myBranch")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .build(client);
+      .start(client);
 
     notifyVcsRepositoryChanged(backend, "configScopeId");
 
@@ -123,7 +123,7 @@ class SonarProjectBranchMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .build(client);
+      .start(client);
 
     notifyVcsRepositoryChanged(backend, "configScopeId");
 
@@ -141,7 +141,7 @@ class SonarProjectBranchMediumTests {
         storage -> storage.withProject("projectKey",
           project -> project.withMainBranch("main").withNonMainBranch("myBranch")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .build(client);
+      .start(client);
 
     verify(client, timeout(1000)).didChangeMatchedSonarProjectBranch("configScopeId", "main");
   }
@@ -157,7 +157,7 @@ class SonarProjectBranchMediumTests {
         storage -> storage.withProject("projectKey",
           project -> project.withMainBranch("main").withNonMainBranch("myBranch")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .build(client);
+      .start(client);
 
     // Wait for initial branch matching
     verify(client, timeout(5000)).didChangeMatchedSonarProjectBranch("configScopeId", "branchA");
@@ -181,7 +181,7 @@ class SonarProjectBranchMediumTests {
         storage -> storage.withProject("projectKey",
           project -> project.withMainBranch("main").withNonMainBranch("myBranch")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .build(client);
+      .start(client);
 
     // Initial matching
     verify(client, timeout(1000)).didChangeMatchedSonarProjectBranch("configScopeId", "main");
@@ -213,7 +213,7 @@ class SonarProjectBranchMediumTests {
           project -> project.withMainBranch("main").withNonMainBranch("myBranch")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withProjectSynchronization()
-      .build(client);
+      .start(client);
 
     // Wait for first sync
     verify(client, timeout(5000)).didChangeMatchedSonarProjectBranch(eq("configScopeId"), eq("main"));
@@ -241,7 +241,7 @@ class SonarProjectBranchMediumTests {
         storage -> storage.withProject("projectKey",
           project -> project.withMainBranch("main").withNonMainBranch("myBranch")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .build(client);
+      .start(client);
 
     verify(client, timeout(5000)).didChangeMatchedSonarProjectBranch(eq("configScopeId"), eq("myBranch"));
 

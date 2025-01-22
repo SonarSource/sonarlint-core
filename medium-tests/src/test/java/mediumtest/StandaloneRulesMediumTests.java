@@ -47,7 +47,7 @@ class StandaloneRulesMediumTests {
     var backend = harness.newBackend()
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .withStandaloneEmbeddedPlugin(TestPlugin.PHP)
-      .build();
+      .start();
 
     var allRules = listAllStandaloneRulesDefinitions(backend).getRulesByKey().values();
 
@@ -58,7 +58,7 @@ class StandaloneRulesMediumTests {
   void it_should_return_param_definition(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build();
+      .start();
 
     var javaS1176 = listAllStandaloneRulesDefinitions(backend).getRulesByKey().get("java:S1176");
 
@@ -79,7 +79,7 @@ class StandaloneRulesMediumTests {
   void it_should_return_rule_details_with_definition_and_description(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
     var backend = harness.newBackend()
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build();
+      .start();
 
     var ruleDetails = backend.getRulesService().getStandaloneRuleDetails(new GetStandaloneRuleDescriptionParams("java:S1176")).get();
 
@@ -97,7 +97,7 @@ class StandaloneRulesMediumTests {
   void it_should_not_contain_rule_templates(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
-      .build();
+      .start();
 
     var allRules = listAllStandaloneRulesDefinitions(backend).getRulesByKey().values();
 
@@ -109,7 +109,7 @@ class StandaloneRulesMediumTests {
   void it_should_not_contain_hotspots_by_default(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build();
+      .start();
 
     var allRules = listAllStandaloneRulesDefinitions(backend).getRulesByKey().values();
 

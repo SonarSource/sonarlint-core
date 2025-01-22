@@ -29,21 +29,21 @@ class NewCodeTelemetryMediumTests {
 
   @SonarLintTest
   void it_should_save_initial_value_when_focus_on_overall_code(SonarLintTestHarness harness) {
-    var backend = harness.newBackend().withTelemetryEnabled().build();
+    var backend = harness.newBackend().withTelemetryEnabled().start();
 
     assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"isFocusOnNewCode\":false,\"codeFocusChangedCount\":0");
   }
 
   @SonarLintTest
   void it_should_save_initial_value_when_focus_on_new_code(SonarLintTestHarness harness) {
-    var backend = harness.newBackend().withTelemetryEnabled().withFocusOnNewCode().build();
+    var backend = harness.newBackend().withTelemetryEnabled().withFocusOnNewCode().start();
 
     assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"isFocusOnNewCode\":true,\"codeFocusChangedCount\":0");
   }
 
   @SonarLintTest
   void it_should_save_new_focus_and_increment_count_when_focusing_on_new_code(SonarLintTestHarness harness) {
-    var backend = harness.newBackend().withTelemetryEnabled().build();
+    var backend = harness.newBackend().withTelemetryEnabled().start();
 
     backend.getNewCodeService().didToggleFocus();
 
@@ -52,7 +52,7 @@ class NewCodeTelemetryMediumTests {
 
   @SonarLintTest
   void it_should_save_new_focus_and_increment_count_when_focusing_on_overall_code(SonarLintTestHarness harness) {
-    var backend = harness.newBackend().withTelemetryEnabled().withFocusOnNewCode().build();
+    var backend = harness.newBackend().withTelemetryEnabled().withFocusOnNewCode().start();
 
     backend.getNewCodeService().didToggleFocus();
 

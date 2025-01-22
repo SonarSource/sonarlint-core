@@ -99,7 +99,7 @@ class ConnectedFileExclusionsMediumTests {
       .withBoundConfigScope(CONFIG_SCOPE_ID, MYSONAR, PROJECT_KEY)
       .withFullSynchronization()
       .withProjectSynchronization()
-      .build(fakeClient);
+      .start(fakeClient);
 
     verify(fakeClient, timeout(5000).times(1)).didSynchronizeConfigurationScopes(Set.of(CONFIG_SCOPE_ID));
 
@@ -213,7 +213,7 @@ class ConnectedFileExclusionsMediumTests {
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withFullSynchronization()
       .withProjectSynchronization()
-      .build(fakeClient);
+      .start(fakeClient);
     backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID, new BindingConfigurationDto(MYSONAR, PROJECT_KEY, true)));
 
     // get statuses while synchronization happens in background
@@ -244,7 +244,7 @@ class ConnectedFileExclusionsMediumTests {
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withFullSynchronization()
       .withProjectSynchronization()
-      .build(fakeClient);
+      .start(fakeClient);
     mockSonarProjectSettings(server, Map.of("sonar.exclusions", "src/**"));
     forceSyncOfConfigScope(backend, fakeClient);
 

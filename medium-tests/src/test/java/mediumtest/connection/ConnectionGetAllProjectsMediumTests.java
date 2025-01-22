@@ -44,7 +44,7 @@ class ConnectionGetAllProjectsMediumTests {
   @SonarLintTest
   void it_should_return_an_empty_response_if_no_projects_in_sonarqube(SonarLintTestHarness harness) {
     var server = harness.newFakeSonarQubeServer().start();
-    var backend = harness.newBackend().build();
+    var backend = harness.newBackend().start();
 
     var response = getAllProjects(backend, new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto(null))));
 
@@ -56,7 +56,7 @@ class ConnectionGetAllProjectsMediumTests {
     var server = harness.newFakeSonarCloudServer("myOrg").start();
     var backend = harness.newBackend()
       .withSonarCloudUrl(server.baseUrl())
-      .build();
+      .start();
 
     var response = getAllProjects(backend, new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto("token"))));
 
@@ -69,7 +69,7 @@ class ConnectionGetAllProjectsMediumTests {
       .withProject("projectKey1", project -> project.withName("MyProject1"))
       .withProject("projectKey2", project -> project.withName("MyProject2"))
       .start();
-    var backend = harness.newBackend().build();
+    var backend = harness.newBackend().start();
 
     var response = getAllProjects(backend, new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto("token"))));
 
@@ -87,7 +87,7 @@ class ConnectionGetAllProjectsMediumTests {
       .start();
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl())
-      .build();
+      .start();
 
     var emptySearch = backend.getConnectionService().fuzzySearchProjects(new FuzzySearchProjectsParams("connectionId", "")).join();
     assertThat(emptySearch.getTopResults())
@@ -123,7 +123,7 @@ class ConnectionGetAllProjectsMediumTests {
       .start();
     var backend = harness.newBackend()
       .withSonarCloudUrl(server.baseUrl())
-      .build();
+      .start();
 
     var response = getAllProjects(backend, new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto("token"))));
 
@@ -139,7 +139,7 @@ class ConnectionGetAllProjectsMediumTests {
       .withStatus(200)
       .withFixedDelay(2000)));
     var client = harness.newFakeClient().build();
-    var backend = harness.newBackend().build(client);
+    var backend = harness.newBackend().start(client);
 
     var connectionDto = new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto(null)));
 

@@ -73,7 +73,7 @@ class AnalysisForcedByClientMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
 
     backend.getAnalysisService().analyzeFileList(
       new AnalyzeFileListParams(CONFIG_SCOPE_ID, List.of(fileUri1, fileUri2)));
@@ -100,7 +100,7 @@ class AnalysisForcedByClientMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri1));
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri2));
 
@@ -139,7 +139,7 @@ class AnalysisForcedByClientMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
 
     backend.getAnalysisService().analyzeVCSChangedFiles(new AnalyzeVCSChangedFilesParams(CONFIG_SCOPE_ID));
     await().during(500, TimeUnit.MILLISECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).hasSize(3));
@@ -184,7 +184,7 @@ class AnalysisForcedByClientMediumTests {
       .withSonarQubeConnection(connectionId, serverWithHotspots)
       .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
-      .build(client);
+      .start(client);
     await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
 
     backend.getAnalysisService().analyzeFullProject(new AnalyzeFullProjectParams(CONFIG_SCOPE_ID, true));
@@ -240,7 +240,7 @@ class AnalysisForcedByClientMediumTests {
       .withSonarQubeConnection(connectionId, serverWithHotspots)
       .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
-      .build(client);
+      .start(client);
     await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
 
     backend.getAnalysisService().analyzeFullProject(new AnalyzeFullProjectParams(CONFIG_SCOPE_ID, false));
@@ -275,7 +275,7 @@ class AnalysisForcedByClientMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .build(client);
+      .start(client);
 
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
 

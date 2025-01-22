@@ -76,7 +76,7 @@ class ConnectionSuggestionMediumTests {
       .build();
 
     var backend = harness.newBackend()
-      .build(fakeClient);
+      .start(fakeClient);
 
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(fileDto), Collections.emptyList(), Collections.emptyList()));
 
@@ -109,7 +109,7 @@ class ConnectionSuggestionMediumTests {
       .withInitialFs(CONFIG_SCOPE_ID, List.of(fileDto))
       .build();
 
-    var backend = harness.newBackend().build(fakeClient);
+    var backend = harness.newBackend().start(fakeClient);
 
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(fileDto), Collections.emptyList(), Collections.emptyList()));
 
@@ -134,7 +134,7 @@ class ConnectionSuggestionMediumTests {
         List.of(fileDto))
       .build();
 
-    var backend = harness.newBackend().build(fakeClient);
+    var backend = harness.newBackend().start(fakeClient);
 
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(fileDto), Collections.emptyList(), Collections.emptyList()));
 
@@ -154,7 +154,7 @@ class ConnectionSuggestionMediumTests {
       .build();
 
     var backend = harness.newBackend()
-      .build(fakeClient);
+      .start(fakeClient);
 
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(fileDto), Collections.emptyList(), Collections.emptyList()));
 
@@ -187,7 +187,7 @@ class ConnectionSuggestionMediumTests {
       .build();
 
     var backend = harness.newBackend()
-      .build(fakeClient);
+      .start(fakeClient);
 
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(fileDto), Collections.emptyList(), Collections.emptyList()));
 
@@ -214,7 +214,7 @@ class ConnectionSuggestionMediumTests {
       .build();
 
     var backend = harness.newBackend()
-      .build(fakeClient);
+      .start(fakeClient);
 
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(fileDto), Collections.emptyList(), Collections.emptyList()));
 
@@ -241,7 +241,7 @@ class ConnectionSuggestionMediumTests {
       .build();
 
     var backend = harness.newBackend()
-      .build(fakeClient);
+      .start(fakeClient);
 
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(fileDto), Collections.emptyList(), Collections.emptyList()));
 
@@ -270,7 +270,7 @@ class ConnectionSuggestionMediumTests {
       .build();
 
     var backend = harness.newBackend()
-      .build(fakeClient);
+      .start(fakeClient);
 
     backend.getConfigurationService()
       .didAddConfigurationScopes(
@@ -306,7 +306,7 @@ class ConnectionSuggestionMediumTests {
       .build();
 
     var backend = harness.newBackend()
-      .build(fakeClient);
+      .start(fakeClient);
 
     backend.getConfigurationService()
       .didAddConfigurationScopes(
@@ -348,7 +348,7 @@ class ConnectionSuggestionMediumTests {
       .build();
 
     var backend = harness.newBackend()
-      .build(fakeClient);
+      .start(fakeClient);
 
     backend.getConfigurationService()
       .didAddConfigurationScopes(
@@ -381,7 +381,7 @@ class ConnectionSuggestionMediumTests {
       .build();
 
     var backend = harness.newBackend()
-      .build(fakeClient);
+      .start(fakeClient);
 
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(fileDto), Collections.emptyList(), Collections.emptyList()));
 
@@ -410,7 +410,7 @@ class ConnectionSuggestionMediumTests {
       .build();
 
     var backend = harness.newBackend()
-      .build(fakeClient);
+      .start(fakeClient);
 
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(fileDto), Collections.emptyList(), Collections.emptyList()));
 

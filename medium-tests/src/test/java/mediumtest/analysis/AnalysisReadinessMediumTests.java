@@ -52,7 +52,7 @@ class AnalysisReadinessMediumTests {
   void it_should_be_immediately_consider_analysis_to_be_ready_when_adding_a_non_bound_configuration_scope(SonarLintTestHarness harness) {
     var client = harness.newFakeClient().build();
     var backend = harness.newBackend()
-      .build(client);
+      .start(client);
 
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, true, "name", null))));
 
@@ -82,7 +82,7 @@ class AnalysisReadinessMediumTests {
       .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
       .withFullSynchronization()
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
-      .build(client);
+      .start(client);
 
     verify(client, never()).didChangeAnalysisReadiness(Set.of(CONFIG_SCOPE_ID), true);
 

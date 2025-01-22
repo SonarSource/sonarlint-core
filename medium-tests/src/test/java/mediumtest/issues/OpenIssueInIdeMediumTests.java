@@ -87,7 +87,7 @@ class OpenIssueInIdeMediumTests {
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withEmbeddedServer()
       .withTelemetryEnabled()
-      .build(fakeClient);
+      .start(fakeClient);
 
     assertThat(backend.telemetryFilePath())
       .content().asBase64Decoded().asString()
@@ -115,7 +115,7 @@ class OpenIssueInIdeMediumTests {
       .withSonarQubeConnection(connectionId, fakeServerWithIssue)
       .withBoundConfigScope(configScopeId, connectionId, projectKey)
       .withEmbeddedServer()
-      .build(fakeClient);
+      .start(fakeClient);
 
     var statusCode = executeOpenIssueRequest(backend, fakeServerWithIssue, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
     assertThat(statusCode).isEqualTo(200);
@@ -149,7 +149,7 @@ class OpenIssueInIdeMediumTests {
       .withSonarQubeConnection(connectionId, fakeServerWithIssue)
       .withBoundConfigScope(configScopeId, connectionId, projectKey)
       .withEmbeddedServer()
-      .build(fakeClient);
+      .start(fakeClient);
 
     var statusCode = executeOpenIssueRequest(backend, fakeServerWithIssue, PR_ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, "1234");
     assertThat(statusCode).isEqualTo(200);
@@ -184,7 +184,7 @@ class OpenIssueInIdeMediumTests {
       .withSonarQubeConnection(connectionId, fakeServerWithIssue)
       .withBoundConfigScope(configScopeId, connectionId, projectKey)
       .withEmbeddedServer()
-      .build(fakeClient);
+      .start(fakeClient);
 
     var statusCode = executeOpenIssueRequest(backend, fakeServerWithIssue, FILE_LEVEL_ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
     assertThat(statusCode).isEqualTo(200);
@@ -215,7 +215,7 @@ class OpenIssueInIdeMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, fakeServerWithIssue)
       .withUnboundConfigScope(CONFIG_SCOPE_ID, SONAR_PROJECT_NAME)
       .withEmbeddedServer()
-      .build(fakeClient);
+      .start(fakeClient);
     mockAssistCreatingConnection(backend, fakeClient, fakeServerWithIssue, CONNECTION_ID);
     mockAssistBinding(backend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
@@ -236,7 +236,7 @@ class OpenIssueInIdeMediumTests {
       .withUnboundConfigScope("configScopeA", SONAR_PROJECT_NAME + " 1")
       .withUnboundConfigScope("configScopeB", SONAR_PROJECT_NAME + " 2")
       .withEmbeddedServer()
-      .build(fakeClient);
+      .start(fakeClient);
     mockAssistCreatingConnection(backend, fakeClient, fakeServerWithIssue, CONNECTION_ID);
     mockAssistBinding(backend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
@@ -258,7 +258,7 @@ class OpenIssueInIdeMediumTests {
       .withUnboundConfigScope("configScopeParent", SONAR_PROJECT_NAME)
       .withUnboundConfigScope("configScopeChild", SONAR_PROJECT_NAME, "configScopeParent")
       .withEmbeddedServer()
-      .build(fakeClient);
+      .start(fakeClient);
     mockAssistCreatingConnection(backend, fakeClient, fakeServerWithIssue, CONNECTION_ID);
     mockAssistBinding(backend, fakeClient, "configScopeParent", CONNECTION_ID, PROJECT_KEY);
 
@@ -276,7 +276,7 @@ class OpenIssueInIdeMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID, SONAR_PROJECT_NAME)
       .withEmbeddedServer()
-      .build(fakeClient);
+      .start(fakeClient);
     mockAssistCreatingConnection(backend, fakeClient, fakeServerWithIssue, CONNECTION_ID);
     mockAssistBinding(backend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
@@ -304,7 +304,7 @@ class OpenIssueInIdeMediumTests {
       .withSonarCloudUrl("https://sonar.my")
       .withUnboundConfigScope(CONFIG_SCOPE_ID, SONAR_PROJECT_NAME)
       .withEmbeddedServer()
-      .build(fakeClient);
+      .start(fakeClient);
     mockAssistCreatingConnection(backend, fakeClient, fakeServerWithIssue, CONNECTION_ID);
     mockAssistBinding(backend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
@@ -332,7 +332,7 @@ class OpenIssueInIdeMediumTests {
       .withSonarCloudUrl("https://sonar.my")
       .withUnboundConfigScope(CONFIG_SCOPE_ID, SONAR_PROJECT_NAME)
       .withEmbeddedServer()
-      .build(fakeClient);
+      .start(fakeClient);
 
     var statusCode = executeOpenSCIssueRequest(backend, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, "orgKey", "token-name", "token-value");
     assertThat(statusCode).isEqualTo(200);
@@ -348,7 +348,7 @@ class OpenIssueInIdeMediumTests {
   void it_should_fail_request_when_issue_parameter_missing(SonarLintTestHarness harness) throws Exception {
     var backend = harness.newBackend()
       .withEmbeddedServer()
-      .build();
+      .start();
     var fakeServerWithIssue = fakeServerWithIssue(harness).start();
 
     var statusCode = executeOpenIssueRequest(backend, fakeServerWithIssue, "", PROJECT_KEY, BRANCH_NAME);
@@ -360,7 +360,7 @@ class OpenIssueInIdeMediumTests {
   void it_should_fail_request_when_project_parameter_missing(SonarLintTestHarness harness) throws Exception {
     var backend = harness.newBackend()
       .withEmbeddedServer()
-      .build();
+      .start();
     var fakeServerWithIssue = fakeServerWithIssue(harness).start();
 
     var statusCode = executeOpenIssueRequest(backend, fakeServerWithIssue, ISSUE_KEY, "", "", "");

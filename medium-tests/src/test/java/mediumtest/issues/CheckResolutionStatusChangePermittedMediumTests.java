@@ -80,7 +80,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
 
   @SonarLintTest
   void it_should_fail_when_the_connection_is_unknown(SonarLintTestHarness harness) {
-    var backend = harness.newBackend().build();
+    var backend = harness.newBackend().start();
 
     var response = checkStatusChangePermitted(backend, CONNECTION_ID, "issueKey");
 
@@ -97,7 +97,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
     fakeServerWithIssue("issueKey", List.of("wontfix", "falsepositive"));
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
-      .build();
+      .start();
 
     var response = checkStatusChangePermitted(backend, CONNECTION_ID, "issueKey");
 
@@ -113,7 +113,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
     fakeServerWithIssue("issueKey", List.of("accept", "falsepositive"));
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.4"))
-      .build();
+      .start();
 
     var response = checkStatusChangePermitted(backend, CONNECTION_ID, "issueKey");
 
@@ -130,7 +130,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
     var backend = harness.newBackend()
       .withSonarCloudUrl(mockWebServerExtension.endpointParams().getBaseUrl())
       .withSonarCloudConnection(CONNECTION_ID, "orgKey")
-      .build();
+      .start();
 
     var response = checkStatusChangePermitted(backend, CONNECTION_ID, "issueKey");
 
@@ -147,7 +147,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
     fakeServerWithIssue(issueKey, List.of("accept", "falsepositive"));
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.4"))
-      .build();
+      .start();
 
     var response = checkStatusChangePermitted(backend, CONNECTION_ID, issueKey);
 
@@ -163,7 +163,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
     fakeServerWithIssue("issueKey", List.of("confirm"));
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
-      .build();
+      .start();
 
     var response = checkStatusChangePermitted(backend, CONNECTION_ID, "issueKey");
 
@@ -179,7 +179,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
     fakeServerWithResponse("issueKey", null, Issues.SearchWsResponse.newBuilder().build());
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
-      .build();
+      .start();
 
     var response = checkStatusChangePermitted(backend, CONNECTION_ID, "issueKey");
 
@@ -196,7 +196,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
   void it_should_fail_if_web_api_returns_an_error(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
-      .build();
+      .start();
 
     var response = checkStatusChangePermitted(backend, CONNECTION_ID, "issueKey");
 
@@ -212,7 +212,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
     fakeServerWithWrongBody("issueKey");
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, mockWebServerExtension.endpointParams().getBaseUrl(), storage -> storage.withServerVersion("10.3"))
-      .build();
+      .start();
 
     var response = checkStatusChangePermitted(backend, CONNECTION_ID, "issueKey");
 
@@ -258,7 +258,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
       .withFullSynchronization()
-      .build(client);
+      .start(client);
     client.waitForSynchronization();
     waitForAnalysisReady(client, CONFIG_SCOPE_ID);
 
@@ -311,7 +311,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
       .withFullSynchronization()
-      .build(client);
+      .start(client);
     client.waitForSynchronization();
     waitForAnalysisReady(client, CONFIG_SCOPE_ID);
 
@@ -374,7 +374,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
       .withFullSynchronization()
-      .build(client);
+      .start(client);
     client.waitForSynchronization();
 
     backend.getAnalysisService().analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(),
@@ -427,7 +427,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
       .withFullSynchronization()
-      .build(client);
+      .start(client);
     client.waitForSynchronization();
     waitForAnalysisReady(client, CONFIG_SCOPE_ID);
 

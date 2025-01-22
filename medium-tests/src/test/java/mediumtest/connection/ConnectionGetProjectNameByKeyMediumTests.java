@@ -44,7 +44,7 @@ class ConnectionGetProjectNameByKeyMediumTests {
   @SonarLintTest
   void it_should_return_null_if_no_projects_in_sonarqube(SonarLintTestHarness harness) {
     var server = harness.newFakeSonarQubeServer().start();
-    var backend = harness.newBackend().build();
+    var backend = harness.newBackend().start();
 
     var response = getProjectNamesByKey(backend, new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto("token"))),
       List.of("myProject"));
@@ -58,7 +58,7 @@ class ConnectionGetProjectNameByKeyMediumTests {
     var server = harness.newFakeSonarCloudServer("myOrg").start();
     var backend = harness.newBackend()
       .withSonarCloudUrl(server.baseUrl())
-      .build();
+      .start();
 
     var response = getProjectNamesByKey(backend, new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto("token"))), List.of(
       "myProject"));
@@ -76,7 +76,7 @@ class ConnectionGetProjectNameByKeyMediumTests {
       .start();
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl())
-      .build();
+      .start();
 
     var response = getProjectNamesByKey(backend, new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto("token"))),
       List.of("project-foo2", "project-foo3", "project-foo4"));
@@ -95,7 +95,7 @@ class ConnectionGetProjectNameByKeyMediumTests {
       .start();
     var backend = harness.newBackend()
       .withSonarCloudUrl(server.baseUrl())
-      .build();
+      .start();
 
     var response = getProjectNamesByKey(backend, new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto("token"))),
       List.of("projectKey2", "projectKey3", "projectKey4"));
@@ -112,7 +112,7 @@ class ConnectionGetProjectNameByKeyMediumTests {
       .withStatus(200)
       .withFixedDelay(2000)));
     var client = harness.newFakeClient().build();
-    var backend = harness.newBackend().build(client);
+    var backend = harness.newBackend().start(client);
 
     var connectionDto = new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto(null)));
 

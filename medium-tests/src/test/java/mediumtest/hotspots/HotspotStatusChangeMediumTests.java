@@ -46,7 +46,7 @@ class HotspotStatusChangeMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .build();
+      .start();
 
     var response = setStatusToSafe(backend, "configScopeId", "hotspotKey");
 
@@ -59,7 +59,7 @@ class HotspotStatusChangeMediumTests {
 
   @SonarLintTest
   void it_should_do_nothing_when_the_configuration_scope_is_unknown(SonarLintTestHarness harness) {
-    var backend = harness.newBackend().build();
+    var backend = harness.newBackend().start();
 
     var response = setStatusToSafe(backend, "configScopeId", "hotspotKey");
 
@@ -70,7 +70,7 @@ class HotspotStatusChangeMediumTests {
   void it_should_do_nothing_when_the_configuration_scope_bound_connection_is_unknown(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .build();
+      .start();
 
     var response = setStatusToSafe(backend, "configScopeId", "hotspotKey");
 
@@ -85,7 +85,7 @@ class HotspotStatusChangeMediumTests {
       .withSonarCloudUrl(server.baseUrl())
       .withSonarCloudConnection("connectionId", "orgKey")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .build();
+      .start();
 
     var response = setStatusToSafe(backend, "configScopeId", "hotspotKey");
 
@@ -102,7 +102,7 @@ class HotspotStatusChangeMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .build();
+      .start();
 
     var response = setStatusToSafe(backend, "configScopeId", "hotspotKey");
 
@@ -120,7 +120,7 @@ class HotspotStatusChangeMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .build();
+      .start();
 
     var response = setStatusToSafe(backend, "configScopeId", "hotspotKey");
 
@@ -138,7 +138,7 @@ class HotspotStatusChangeMediumTests {
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withTelemetryEnabled()
-      .build();
+      .start();
 
     var response = setStatusToSafe(backend, "configScopeId", "hotspotKey");
 

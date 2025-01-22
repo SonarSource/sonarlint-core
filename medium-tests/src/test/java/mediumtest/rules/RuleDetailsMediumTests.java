@@ -44,7 +44,7 @@ class RuleDetailsMediumTests {
         storage -> storage.withServerVersion("9.9").withProject("projectKey",
           project -> project.withRuleSet("secrets", ruleSet -> ruleSet.withActiveRule("secrets:S6290", "MAJOR"))))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
-      .build();
+      .start();
 
     var ruleDetails = backend.getAnalysisService().getRuleDetails(new GetRuleDetailsParams("configScope", "secrets:S6290")).join();
 
@@ -66,7 +66,7 @@ class RuleDetailsMediumTests {
         storage -> storage.withPlugin(TestPlugin.TEXT).withProject("projectKey",
           project -> project.withRuleSet("secrets", ruleSet -> ruleSet.withActiveRule("secrets:S6290", "MAJOR"))))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
-      .build();
+      .start();
 
     var ruleDetails = backend.getAnalysisService().getRuleDetails(new GetRuleDetailsParams("configScope", "secrets:S6290")).join();
 
@@ -87,7 +87,7 @@ class RuleDetailsMediumTests {
         storage -> storage.withPlugin(TestPlugin.TEXT).withProject("projectKey",
           project -> project.withRuleSet("secrets", ruleSet -> ruleSet.withActiveRule("secrets:S6290", "MAJOR"))))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
-      .build();
+      .start();
 
     var ruleDetails = backend.getAnalysisService().getRuleDetails(new GetRuleDetailsParams("configScope", "ipython:PrintStatementUsage")).join();
 

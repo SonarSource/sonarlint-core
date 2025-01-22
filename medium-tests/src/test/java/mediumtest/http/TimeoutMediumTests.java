@@ -58,7 +58,7 @@ class TimeoutMediumTests {
     var backend = harness.newBackend()
       .withHttpResponseTimeout(Duration.ofSeconds(1))
       .withSonarCloudUrl(sonarcloudMock.baseUrl())
-      .build(fakeClient);
+      .start(fakeClient);
     sonarcloudMock.stubFor(get("/api/organizations/search.protobuf?organizations=myOrg&ps=500&p=1")
       .willReturn(aResponse().withStatus(200)
         .withFixedDelay(2000)

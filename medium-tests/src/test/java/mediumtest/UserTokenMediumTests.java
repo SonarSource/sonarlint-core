@@ -30,7 +30,7 @@ class UserTokenMediumTests {
 
   @SonarLintTest
   void test_revoke_user_token(SonarLintTestHarness harness) {
-    var backend = harness.newBackend().build();
+    var backend = harness.newBackend().start();
     var tokenName = "tokenNameTest";
     var server = harness.newFakeSonarQubeServer().withToken(tokenName).start();
 
@@ -42,7 +42,7 @@ class UserTokenMediumTests {
 
   @SonarLintTest
   void test_revoke_unknown_user_token(SonarLintTestHarness harness) {
-    var backend = harness.newBackend().build();
+    var backend = harness.newBackend().start();
     var tokenName = "tokenNameTest";
     var server = harness.newFakeSonarQubeServer().start();
 

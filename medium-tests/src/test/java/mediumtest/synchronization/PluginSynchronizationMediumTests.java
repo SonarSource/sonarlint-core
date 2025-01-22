@@ -61,7 +61,7 @@ class PluginSynchronizationMediumTests {
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
-      .build();
+      .start();
 
     waitAtMost(20, SECONDS).untilAsserted(() -> {
       assertThat(getPluginsStorageFolder(backend)).isDirectoryContaining(path -> path.getFileName().toString().equals("sonar-java-plugin-7.16.0.30901.jar"));
@@ -86,7 +86,7 @@ class PluginSynchronizationMediumTests {
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
-      .build(client);
+      .start(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
       assertThat(getPluginsStorageFolder(backend)).doesNotExist();
@@ -106,7 +106,7 @@ class PluginSynchronizationMediumTests {
       .withSonarQubeConnection("connectionId", server, storage -> storage.withPlugin(TestPlugin.JAVA))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
-      .build(client);
+      .start(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
       assertThat(getPluginsStorageFolder(backend)).isDirectoryContaining(path -> path.getFileName().toString().equals("sonar-java-plugin-7.16.0.30901.jar"));
@@ -131,7 +131,7 @@ class PluginSynchronizationMediumTests {
       .withSonarQubeConnection("connectionId", server, storage -> storage.withPlugin(TestPlugin.JAVA.getPluginKey(), TestPlugin.JAVA.getPath(), "differentHash"))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
-      .build(client);
+      .start(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> assertThat(getPluginReferencesFilePath(backend))
       .exists()
@@ -152,7 +152,7 @@ class PluginSynchronizationMediumTests {
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
-      .build(client);
+      .start(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
       File[] files = getPluginsStorageFolder(backend).toFile().listFiles();
@@ -174,7 +174,7 @@ class PluginSynchronizationMediumTests {
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
-      .build(client);
+      .start(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
       File[] files = getPluginsStorageFolder(backend).toFile().listFiles();
@@ -195,7 +195,7 @@ class PluginSynchronizationMediumTests {
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
-      .build(client);
+      .start(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
       File[] files = getPluginsStorageFolder(backend).toFile().listFiles();
@@ -216,7 +216,7 @@ class PluginSynchronizationMediumTests {
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
-      .build(client);
+      .start(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
       assertThat(getPluginsStorageFolder(backend)).isDirectoryContaining(path -> path.getFileName().toString().equals("java-custom-plugin-4.3.0.1456.jar"));
@@ -241,7 +241,7 @@ class PluginSynchronizationMediumTests {
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
-      .build(client);
+      .start(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
       assertThat(getPluginsStorageFolder(backend)).isDirectoryContaining(path -> path.getFileName().toString().equals("sonar-typescript-plugin-1.9.0.3766.jar"));
@@ -265,7 +265,7 @@ class PluginSynchronizationMediumTests {
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withFullSynchronization()
-      .build(client);
+      .start(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
       File[] files = getPluginsStorageFolder(backend).toFile().listFiles();
@@ -287,7 +287,7 @@ class PluginSynchronizationMediumTests {
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withEnabledLanguageInStandaloneMode(Language.PHP)
       .withFullSynchronization()
-      .build(client);
+      .start(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
       assertThat(getPluginsStorageFolder(backend).toFile().listFiles())

@@ -88,7 +88,7 @@ class ConnectedIssueMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
-      .build(client);
+      .start(client);
     client.waitForSynchronization();
 
     var analysisId = UUID.randomUUID();
@@ -137,7 +137,7 @@ class ConnectedIssueMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
-      .build(client);
+      .start(client);
     client.waitForSynchronization();
 
     var analysisId = UUID.randomUUID();
@@ -181,7 +181,7 @@ class ConnectedIssueMediumTests {
           project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S2068", "BLOCKER"))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .build(client);
+      .start(client);
     await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> Assertions.assertThat(client.getSynchronizedConfigScopeIds()).contains(CONFIG_SCOPE_ID));
 
     var analysisId = UUID.randomUUID();

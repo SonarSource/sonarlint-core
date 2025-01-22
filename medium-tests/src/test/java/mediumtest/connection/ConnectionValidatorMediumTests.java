@@ -48,7 +48,7 @@ class ConnectionValidatorMediumTests {
   void testConnection_ok(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .withSonarCloudUrl(serverMock.baseUrl())
-      .build();
+      .start();
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}")));
     serverMock.stubFor(get("/api/authentication/validate?format=json")
@@ -63,7 +63,7 @@ class ConnectionValidatorMediumTests {
   void testConnectionOrganizationNotFound(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .withSonarCloudUrl(serverMock.baseUrl())
-      .build();
+      .start();
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}")));
     serverMock.stubFor(get("/api/authentication/validate?format=json")
@@ -81,7 +81,7 @@ class ConnectionValidatorMediumTests {
   void testConnection_ok_with_org(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .withSonarCloudUrl(serverMock.baseUrl())
-      .build();
+      .start();
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}")));
     serverMock.stubFor(get("/api/authentication/validate?format=json")
@@ -105,7 +105,7 @@ class ConnectionValidatorMediumTests {
   void testConnection_ok_without_org(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .withSonarCloudUrl(serverMock.baseUrl())
-      .build();
+      .start();
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}")));
     serverMock.stubFor(get("/api/authentication/validate?format=json")
@@ -119,7 +119,7 @@ class ConnectionValidatorMediumTests {
   void testUnsupportedServer(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .withSonarCloudUrl(serverMock.baseUrl())
-      .build();
+      .start();
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}")));
 
@@ -133,7 +133,7 @@ class ConnectionValidatorMediumTests {
   void testClientError(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .withSonarCloudUrl(serverMock.baseUrl())
-      .build();
+      .start();
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withStatus(400)));
 
@@ -148,7 +148,7 @@ class ConnectionValidatorMediumTests {
   void testResponseError(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
       .withSonarCloudUrl(serverMock.baseUrl())
-      .build();
+      .start();
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withBody("{\"id\": }")));
 

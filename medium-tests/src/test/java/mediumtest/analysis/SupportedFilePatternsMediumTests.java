@@ -34,7 +34,7 @@ class SupportedFilePatternsMediumTests {
   void it_should_return_default_supported_file_patterns_in_standalone_mode(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
     var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(JAVA)
-      .build();
+      .start();
 
     var patterns = backend.getAnalysisService().getSupportedFilePatterns(new GetSupportedFilePatternsParams("configScopeId")).get().getPatterns();
     assertThat(patterns).containsOnly("**/*.java", "**/*.jav");
@@ -48,7 +48,7 @@ class SupportedFilePatternsMediumTests {
         .withProject("projectKey"))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
-      .build(client);
+      .start(client);
 
     var patterns = backend.getAnalysisService().getSupportedFilePatterns(new GetSupportedFilePatternsParams("configScopeId")).get().getPatterns();
     assertThat(patterns).containsOnly("**/*.java", "**/*.jav");
@@ -62,7 +62,7 @@ class SupportedFilePatternsMediumTests {
         .withProject("projectKey", project -> project.withSetting("sonar.java.file.suffixes", ".foo, .bar")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withEnabledLanguageInStandaloneMode(JAVA)
-      .build(client);
+      .start(client);
 
     var patterns = backend.getAnalysisService().getSupportedFilePatterns(new GetSupportedFilePatternsParams("configScopeId")).get().getPatterns();
     assertThat(patterns).containsOnly("**/*.foo", "**/*.bar");
