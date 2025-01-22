@@ -215,9 +215,12 @@ class OpenIssueInIdeMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, fakeServerWithIssue)
       .withUnboundConfigScope(CONFIG_SCOPE_ID, SONAR_PROJECT_NAME)
       .withEmbeddedServer()
+      .beforeInitialize(createdBackend -> {
+        mockAssistCreatingConnection(createdBackend, fakeClient, fakeServerWithIssue, CONNECTION_ID);
+        mockAssistBinding(createdBackend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
+      })
       .start(fakeClient);
-    mockAssistCreatingConnection(backend, fakeClient, fakeServerWithIssue, CONNECTION_ID);
-    mockAssistBinding(backend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
+
 
     var statusCode = executeOpenIssueRequest(backend, fakeServerWithIssue, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
     assertThat(statusCode).isEqualTo(200);
@@ -236,9 +239,11 @@ class OpenIssueInIdeMediumTests {
       .withUnboundConfigScope("configScopeA", SONAR_PROJECT_NAME + " 1")
       .withUnboundConfigScope("configScopeB", SONAR_PROJECT_NAME + " 2")
       .withEmbeddedServer()
+      .beforeInitialize(createdBackend -> {
+        mockAssistCreatingConnection(createdBackend, fakeClient, fakeServerWithIssue, CONNECTION_ID);
+        mockAssistBinding(createdBackend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
+      })
       .start(fakeClient);
-    mockAssistCreatingConnection(backend, fakeClient, fakeServerWithIssue, CONNECTION_ID);
-    mockAssistBinding(backend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
     var statusCode = executeOpenIssueRequest(backend, fakeServerWithIssue, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
 
@@ -258,9 +263,11 @@ class OpenIssueInIdeMediumTests {
       .withUnboundConfigScope("configScopeParent", SONAR_PROJECT_NAME)
       .withUnboundConfigScope("configScopeChild", SONAR_PROJECT_NAME, "configScopeParent")
       .withEmbeddedServer()
+      .beforeInitialize(createdBackend -> {
+        mockAssistCreatingConnection(createdBackend, fakeClient, fakeServerWithIssue, CONNECTION_ID);
+        mockAssistBinding(createdBackend, fakeClient, "configScopeParent", CONNECTION_ID, PROJECT_KEY);
+      })
       .start(fakeClient);
-    mockAssistCreatingConnection(backend, fakeClient, fakeServerWithIssue, CONNECTION_ID);
-    mockAssistBinding(backend, fakeClient, "configScopeParent", CONNECTION_ID, PROJECT_KEY);
 
     var statusCode = executeOpenIssueRequest(backend, fakeServerWithIssue, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
 
@@ -276,9 +283,11 @@ class OpenIssueInIdeMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID, SONAR_PROJECT_NAME)
       .withEmbeddedServer()
+      .beforeInitialize(createdBackend -> {
+        mockAssistCreatingConnection(createdBackend, fakeClient, fakeServerWithIssue, CONNECTION_ID);
+        mockAssistBinding(createdBackend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
+      })
       .start(fakeClient);
-    mockAssistCreatingConnection(backend, fakeClient, fakeServerWithIssue, CONNECTION_ID);
-    mockAssistBinding(backend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
     var statusCode = executeOpenIssueRequest(backend, fakeServerWithIssue, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
     assertThat(statusCode).isEqualTo(200);
@@ -304,9 +313,11 @@ class OpenIssueInIdeMediumTests {
       .withSonarCloudUrl("https://sonar.my")
       .withUnboundConfigScope(CONFIG_SCOPE_ID, SONAR_PROJECT_NAME)
       .withEmbeddedServer()
+      .beforeInitialize(createdBackend -> {
+        mockAssistCreatingConnection(createdBackend, fakeClient, fakeServerWithIssue, CONNECTION_ID);
+        mockAssistBinding(createdBackend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
+      })
       .start(fakeClient);
-    mockAssistCreatingConnection(backend, fakeClient, fakeServerWithIssue, CONNECTION_ID);
-    mockAssistBinding(backend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
     var statusCode = executeOpenSCIssueRequest(backend, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, "orgKey");
     assertThat(statusCode).isEqualTo(200);

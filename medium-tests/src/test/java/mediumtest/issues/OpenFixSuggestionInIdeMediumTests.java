@@ -167,9 +167,11 @@ class OpenFixSuggestionInIdeMediumTests {
       .withUnboundConfigScope(CONFIG_SCOPE_ID, PROJECT_KEY)
       .withEmbeddedServer()
       .withOpenFixSuggestion()
+      .beforeInitialize(createdBackend -> {
+        mockAssistCreatingConnection(createdBackend, fakeClient, CONNECTION_ID);
+        mockAssistBinding(createdBackend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
+      })
       .start(fakeClient);
-    mockAssistCreatingConnection(backend, fakeClient, CONNECTION_ID);
-    mockAssistBinding(backend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
     var statusCode = executeOpenFixSuggestionRequestWithoutToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
     assertThat(statusCode).isEqualTo(200);
@@ -191,9 +193,11 @@ class OpenFixSuggestionInIdeMediumTests {
       .withUnboundConfigScope("configScopeB", PROJECT_KEY + " 2")
       .withEmbeddedServer()
       .withOpenFixSuggestion()
+      .beforeInitialize(createdBackend -> {
+        mockAssistCreatingConnection(createdBackend, fakeClient, CONNECTION_ID);
+        mockAssistBinding(createdBackend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
+      })
       .start(fakeClient);
-    mockAssistCreatingConnection(backend, fakeClient, CONNECTION_ID);
-    mockAssistBinding(backend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
     var statusCode = executeOpenFixSuggestionRequestWithoutToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
 
@@ -217,9 +221,11 @@ class OpenFixSuggestionInIdeMediumTests {
       .withUnboundConfigScope("configScopeChild", PROJECT_KEY, "configScopeParent")
       .withEmbeddedServer()
       .withOpenFixSuggestion()
+      .beforeInitialize(createdBackend -> {
+        mockAssistCreatingConnection(createdBackend, fakeClient, CONNECTION_ID);
+        mockAssistBinding(createdBackend, fakeClient, "configScopeParent", CONNECTION_ID, PROJECT_KEY);
+      })
       .start(fakeClient);
-    mockAssistCreatingConnection(backend, fakeClient, CONNECTION_ID);
-    mockAssistBinding(backend, fakeClient, "configScopeParent", CONNECTION_ID, PROJECT_KEY);
 
     var statusCode = executeOpenFixSuggestionRequestWithoutToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
 
@@ -241,9 +247,11 @@ class OpenFixSuggestionInIdeMediumTests {
       .withUnboundConfigScope(CONFIG_SCOPE_ID, PROJECT_KEY)
       .withEmbeddedServer()
       .withOpenFixSuggestion()
+      .beforeInitialize(createdBackend -> {
+        mockAssistCreatingConnection(createdBackend, fakeClient, CONNECTION_ID);
+        mockAssistBinding(createdBackend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
+      })
       .start(fakeClient);
-    mockAssistCreatingConnection(backend, fakeClient, CONNECTION_ID);
-    mockAssistBinding(backend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
     var statusCode = executeOpenFixSuggestionRequestWithToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY, "token-name", "token-value");
     assertThat(statusCode).isEqualTo(200);

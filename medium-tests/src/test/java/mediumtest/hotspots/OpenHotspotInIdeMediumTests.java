@@ -153,9 +153,11 @@ class OpenHotspotInIdeMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(SCOPE_ID, SONAR_PROJECT_NAME)
       .withEmbeddedServer()
+      .beforeInitialize(createdBackend -> {
+        mockAssistCreatingConnection(createdBackend, fakeClient, serverWithHotspot, CONNECTION_ID);
+        mockAssistBinding(createdBackend, fakeClient, SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
+      })
       .start(fakeClient);
-    mockAssistCreatingConnection(backend, fakeClient, serverWithHotspot, CONNECTION_ID);
-    mockAssistBinding(backend, fakeClient, SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
     var statusCode = requestGetOpenHotspotWithParams(backend, serverWithHotspot, "server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
     assertThat(statusCode).isEqualTo(200);
@@ -178,9 +180,11 @@ class OpenHotspotInIdeMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, serverWithHotspot)
       .withUnboundConfigScope(SCOPE_ID, SONAR_PROJECT_NAME)
       .withEmbeddedServer()
+      .beforeInitialize(createdBackend -> {
+        mockAssistCreatingConnection(createdBackend, fakeClient, serverWithHotspot, CONNECTION_ID);
+        mockAssistBinding(createdBackend, fakeClient, SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
+      })
       .start(fakeClient);
-    mockAssistCreatingConnection(backend, fakeClient, serverWithHotspot, CONNECTION_ID);
-    mockAssistBinding(backend, fakeClient, SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
 
     var statusCode = requestGetOpenHotspotWithParams(backend, serverWithHotspot, "server=" + urlEncode(serverWithHotspot.baseUrl()) + "&project=projectKey&hotspot=key");
     assertThat(statusCode).isEqualTo(200);

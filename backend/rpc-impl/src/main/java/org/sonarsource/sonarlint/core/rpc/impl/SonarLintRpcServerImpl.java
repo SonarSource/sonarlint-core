@@ -121,8 +121,6 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     rootLogger.addAppender(rpcAppender);
 
     this.clientListener = launcher.startListening();
-
-    LOG.info("SonarLint backend started, instance={}", this);
   }
 
   private static PrintWriter getMessageTracer() {
