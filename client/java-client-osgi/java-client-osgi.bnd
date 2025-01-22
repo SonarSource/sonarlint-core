@@ -3,8 +3,7 @@
 
 # Manifest entries to configure the OSGi attributes for the normal JAR archive
 Bundle-SymbolicName: ${project.groupId}.${project.artifactId}
-Export-Package: org.sonarsource.sonarlint.core.commons.api.*;version="${project.version}",\
-  org.sonarsource.sonarlint.core.client.utils.*;version="${project.version}",\
+Export-Package: org.sonarsource.sonarlint.core.client.utils.*;version="${project.version}",\
   org.sonarsource.sonarlint.core.rpc.client.*;version="${project.version}",\
   org.sonarsource.sonarlint.core.rpc.protocol.*;version="${project.version}",\
   org.sonarsource.sonarlint.shaded.com.google.gson.*;version="${gson.version}",\
