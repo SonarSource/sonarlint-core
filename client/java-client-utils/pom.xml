@@ -10,6 +10,14 @@
   <artifactId>sonarlint-java-client-utils</artifactId>
   <name>SonarLint Core - Java Client Utils</name>
   <description>Utility classes for Java clients</description>
+  
+  <properties>
+    <!--
+      As this is a dependency of the SonarLint Core OSGi bundle that is used on
+      SonarQube for Eclipse, we have to stick to Java 11 for the compiler!
+    -->
+    <maven.compiler.release>11</maven.compiler.release>
+  </properties>
 
   <dependencies>
     <dependency>

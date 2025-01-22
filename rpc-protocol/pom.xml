@@ -12,6 +12,14 @@
   <artifactId>sonarlint-rpc-protocol</artifactId>
   <name>SonarLint Core - RPC Protocol</name>
   <description>Protocol used to communicate with clients (IDEs) through RPC</description>
+  
+  <properties>
+    <!--
+      As this is a dependency of the SonarLint Core OSGi bundle that is used on
+      SonarQube for Eclipse, we have to stick to Java 11 for the compiler!
+    -->
+    <maven.compiler.release>11</maven.compiler.release>
+  </properties>
 
   <dependencies>
     <dependency>
