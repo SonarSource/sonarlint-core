@@ -14,11 +14,6 @@
   <dependencies>
     <dependency>
       <groupId>${project.groupId}</groupId>
-      <artifactId>sonarlint-commons</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
       <artifactId>sonarlint-java-client-dependencies</artifactId>
       <version>${project.version}</version>
     </dependency>
