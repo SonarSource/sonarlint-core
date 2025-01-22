@@ -171,6 +171,7 @@ public class SonarLintBackendFixture {
     private boolean automaticAnalysisEnabled = true;
     private TelemetryMigrationDto telemetryMigration;
     private LanguageSpecificRequirements languageSpecificRequirements;
+    private final List<Consumer<SonarLintTestRpcServer>> beforeInitializeCallbacks = new ArrayList<>();
 
     public SonarLintBackendBuilder(@Nullable Consumer<SonarLintTestRpcServer> afterStartCallback) {
       this.afterStartCallback = afterStartCallback;
@@ -470,6 +471,11 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintBackendBuilder beforeInitialize(Consumer<SonarLintTestRpcServer> backendConsumer) {
+      this.beforeInitializeCallbacks.add(backendConsumer);
+      return this;
+    }
+
     public SonarLintTestRpcServer start(SonarLintRpcClientDelegate client) {
       var sonarlintUserHome = tempDirectory("slUserHome");
       var workDir = tempDirectory("work");
@@ -481,6 +487,7 @@ public class SonarLintBackendFixture {
       }
       try {
         var sonarLintBackend = createTestBackend(client);
+        beforeInitializeCallbacks.forEach(callback -> callback.accept(sonarLintBackend));
         var telemetryInitDto = new TelemetryClientConstantAttributesDto("mediumTests", "mediumTests",
           "1.2.3", "4.5.6", emptyMap());
         var clientInfo = new ClientConstantInfoDto(clientName, userAgent, 0);
