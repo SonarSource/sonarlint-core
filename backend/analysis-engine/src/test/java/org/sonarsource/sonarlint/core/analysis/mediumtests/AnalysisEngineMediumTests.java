@@ -90,8 +90,10 @@ class AnalysisEngineMediumTests {
 
   @Test
   void should_analyze_a_single_file_outside_of_any_module(@TempDir Path baseDir) throws Exception {
-    var content = "def foo():\n"
-      + "  x = 9; # trailing comment\n";
+    var content = """
+      def foo():
+        x = 9; # trailing comment
+      """;
     var inputFile = preparePythonInputFile(baseDir, content);
 
     var analysisConfig = AnalysisConfiguration.builder()
@@ -110,8 +112,10 @@ class AnalysisEngineMediumTests {
 
   @Test
   void should_analyze_a_file_inside_a_module(@TempDir Path baseDir) throws Exception {
-    var content = "def foo():\n"
-      + "  x = 9; # trailing comment\n";
+    var content = """
+      def foo():
+        x = 9; # trailing comment
+      """;
     ClientInputFile inputFile = preparePythonInputFile(baseDir, content);
 
     AnalysisConfiguration analysisConfig = AnalysisConfiguration.builder()
@@ -176,7 +180,6 @@ class AnalysisEngineMediumTests {
   void should_cancel_pending_commands_when_stopping() {
     var futureLongCommand = analysisEngine.post((moduleRegistry, progressMonitor) -> {
       while (!engineStopped) {
-        ;
       }
       return null;
     }, progressMonitor);

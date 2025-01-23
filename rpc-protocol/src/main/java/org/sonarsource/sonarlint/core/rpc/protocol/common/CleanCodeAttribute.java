@@ -37,6 +37,6 @@ public enum CleanCodeAttribute {
 
   LAWFUL,
   RESPECTFUL,
-  TRUSTWORTHY;
+  TRUSTWORTHY
 
 }

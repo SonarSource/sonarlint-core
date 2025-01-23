@@ -29,7 +29,6 @@ import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.sonarsource.sonarlint.core.commons.VulnerabilityProbability.HIGH;
 import static org.sonarsource.sonarlint.core.commons.VulnerabilityProbability.LOW;
@@ -165,7 +164,7 @@ public final class SecurityStandards {
       .keySet()
       .stream()
       .filter(k -> cwe.stream().anyMatch(CWES_BY_SL_CATEGORY.get(k)::contains))
-      .collect(toList());
+      .toList();
     return result.isEmpty() ? singletonList(SLCategory.OTHERS) : result;
   }
 

@@ -52,7 +52,6 @@ import org.sonarsource.sonarlint.core.tracking.TrackedIssue;
 import org.sonarsource.sonarlint.core.tracking.streaming.Alarm;
 
 import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.sonarsource.sonarlint.core.DtoMapper.toRaisedHotspotDto;
 import static org.sonarsource.sonarlint.core.DtoMapper.toRaisedIssueDto;
@@ -118,11 +117,11 @@ public class FindingReportingService {
     var isMQRMode = severityModeService.isMQRModeForConnection(connectionId);
     var issuesToRaise = issuesPerFileUri.entrySet().stream()
       .filter(e -> filesPerAnalysis.get(analysisId).contains(e.getKey()))
-      .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedIssueDto(issue, newCodeDefinition, isMQRMode)).collect(toList())))
+      .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedIssueDto(issue, newCodeDefinition, isMQRMode)).toList()))
       .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
     var hotspotsToRaise = securityHotspotsPerFileUri.entrySet().stream()
       .filter(e -> filesPerAnalysis.get(analysisId).contains(e.getKey()))
-      .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedHotspotDto(issue, newCodeDefinition, isMQRMode)).collect(toList())))
+      .map(e -> Map.entry(e.getKey(), e.getValue().stream().map(issue -> toRaisedHotspotDto(issue, newCodeDefinition, isMQRMode)).toList()))
       .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
     updateRaisedFindingsCacheAndNotifyClient(configurationScopeId, analysisId, issuesToRaise, hotspotsToRaise, true);
   }
@@ -197,7 +196,7 @@ public class FindingReportingService {
       var updatedFindingsForFile = finding.stream()
         .map(findingUpdater)
         .filter(Objects::nonNull)
-        .collect(Collectors.toList());
+        .toList();
       updatedFindings.put(uri, updatedFindingsForFile);
     });
     return updatedFindings;

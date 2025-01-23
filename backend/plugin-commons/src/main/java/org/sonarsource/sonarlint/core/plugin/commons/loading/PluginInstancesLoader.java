@@ -201,8 +201,8 @@ public class PluginInstancesLoader implements Closeable {
     Queue<IOException> exceptions = new LinkedList<>();
     synchronized (classloadersToClose) {
       for (var classLoader : classloadersToClose) {
-        if (classLoader instanceof Closeable) {
-          tryAndCollectIOException(((Closeable) classLoader)::close, exceptions);
+        if (classLoader instanceof Closeable closeableClassloader) {
+          tryAndCollectIOException(closeableClassloader::close, exceptions);
         }
       }
       classloadersToClose.clear();

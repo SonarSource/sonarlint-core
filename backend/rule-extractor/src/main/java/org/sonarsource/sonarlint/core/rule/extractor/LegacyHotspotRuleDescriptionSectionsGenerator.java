@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.rule.extractor;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDescriptionSection.Context;
@@ -84,7 +83,7 @@ public class LegacyHotspotRuleDescriptionSectionsGenerator {
     return Stream.of(rootSection, assessSection, fixSection)
       .filter(Predicate.not(Optional::isEmpty))
       .flatMap(Optional::stream)
-      .collect(Collectors.toList());
+      .toList();
   }
 
   private static String[] extractSection(String beginning, String description) {

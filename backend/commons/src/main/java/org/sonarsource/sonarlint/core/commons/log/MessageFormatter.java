@@ -240,22 +240,22 @@ final class MessageFormatter {
     } else {
       // check for primitive array types because they
       // unfortunately cannot be cast to Object[]
-      if (o instanceof boolean[]) {
-        booleanArrayAppend(sbuf, (boolean[]) o);
-      } else if (o instanceof byte[]) {
-        byteArrayAppend(sbuf, (byte[]) o);
-      } else if (o instanceof char[]) {
-        charArrayAppend(sbuf, (char[]) o);
-      } else if (o instanceof short[]) {
-        shortArrayAppend(sbuf, (short[]) o);
-      } else if (o instanceof int[]) {
-        intArrayAppend(sbuf, (int[]) o);
-      } else if (o instanceof long[]) {
-        longArrayAppend(sbuf, (long[]) o);
-      } else if (o instanceof float[]) {
-        floatArrayAppend(sbuf, (float[]) o);
-      } else if (o instanceof double[]) {
-        doubleArrayAppend(sbuf, (double[]) o);
+      if (o instanceof boolean[] booleans) {
+        booleanArrayAppend(sbuf, booleans);
+      } else if (o instanceof byte[] bytes) {
+        byteArrayAppend(sbuf, bytes);
+      } else if (o instanceof char[] chars) {
+        charArrayAppend(sbuf, chars);
+      } else if (o instanceof short[] shorts) {
+        shortArrayAppend(sbuf, shorts);
+      } else if (o instanceof int[] ints) {
+        intArrayAppend(sbuf, ints);
+      } else if (o instanceof long[] longs) {
+        longArrayAppend(sbuf, longs);
+      } else if (o instanceof float[] floats) {
+        floatArrayAppend(sbuf, floats);
+      } else if (o instanceof double[] doubles) {
+        doubleArrayAppend(sbuf, doubles);
       } else {
         objectArrayAppend(sbuf, (Object[]) o, seenMap);
       }

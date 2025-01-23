@@ -20,8 +20,8 @@
 package org.sonarsource.sonarlint.core.analysis.container.analysis.issue.ignore.pattern;
 
 public class BlockIssuePattern {
-  private String beginBlockRegexp;
-  private String endBlockRegexp;
+  private final String beginBlockRegexp;
+  private final String endBlockRegexp;
 
   public BlockIssuePattern(String beginBlockRegexp, String endBlockRegexp) {
     this.beginBlockRegexp = beginBlockRegexp;

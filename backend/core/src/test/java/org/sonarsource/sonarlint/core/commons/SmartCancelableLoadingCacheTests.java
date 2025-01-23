@@ -53,7 +53,7 @@ class SmartCancelableLoadingCacheTests {
 
   public static final String ANOTHER_VALUE = "anotherValue";
   @RegisterExtension
-  private static SonarLintLogTester logTester = new SonarLintLogTester(true);
+  private static final SonarLintLogTester logTester = new SonarLintLogTester(true);
 
   public static final String A_VALUE = "aValue";
   public static final String A_KEY = "aKey";

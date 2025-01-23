@@ -37,7 +37,7 @@ public class TelemetryAnalyzerPerformance {
     INTERVALS.put(Integer.MAX_VALUE, "4000+");
   }
 
-  private Map<String, Integer> frequencies;
+  private final Map<String, Integer> frequencies;
 
   public TelemetryAnalyzerPerformance() {
     frequencies = new LinkedHashMap<>();

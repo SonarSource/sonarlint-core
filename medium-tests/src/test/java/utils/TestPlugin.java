@@ -21,9 +21,9 @@ package utils;
 
 import java.nio.file.Path;
 import java.util.Set;
-import org.sonarsource.sonarlint.core.test.utils.plugins.Plugin;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
+import org.sonarsource.sonarlint.core.test.utils.plugins.Plugin;
 
 public class TestPlugin {
   public static final Plugin JAVA = new Plugin(Language.JAVA, PluginLocator.getJavaPluginPath(), PluginLocator.SONAR_JAVA_PLUGIN_VERSION, PluginLocator.SONAR_JAVA_PLUGIN_JAR_HASH);

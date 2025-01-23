@@ -28,8 +28,8 @@ public final class FooLintRulesDefinition implements RulesDefinition {
 
   private static final String PATH_TO_RULES_XML = "/example/foolint-rules.xml";
 
-  protected static final String KEY = "foolint";
-  protected static final String NAME = "FooLint";
+  static final String KEY = "foolint";
+  private static final String NAME = "FooLint";
 
   private final RulesDefinitionXmlLoader xmlLoader;
 
@@ -37,7 +37,7 @@ public final class FooLintRulesDefinition implements RulesDefinition {
     this.xmlLoader = xmlLoader;
   }
 
-  protected String rulesDefinitionFilePath() {
+  private String rulesDefinitionFilePath() {
     return PATH_TO_RULES_XML;
   }
 

@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem;
 
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.sonar.api.batch.fs.FilePredicate;
 import org.sonar.api.batch.fs.FileSystem.Index;
@@ -35,7 +34,7 @@ public abstract class AbstractFilePredicate implements OptimizedFilePredicate {
 
   @Override
   public Iterable<InputFile> filter(Iterable<InputFile> target) {
-    return StreamSupport.stream(target.spliterator(), false).filter(AbstractFilePredicate.this::apply).collect(Collectors.toList());
+    return StreamSupport.stream(target.spliterator(), false).filter(AbstractFilePredicate.this::apply).toList();
   }
 
   @Override

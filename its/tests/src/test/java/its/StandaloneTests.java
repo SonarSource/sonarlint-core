@@ -37,7 +37,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -174,7 +173,7 @@ class StandaloneTests {
     return new MockSonarLintRpcClientDelegate() {
       @Override
       public void log(LogParams params) {
-        System.out.println(params.toString());
+        System.out.println(params);
       }
     };
   }
@@ -197,6 +196,6 @@ class StandaloneTests {
     await().atMost(Duration.ofMillis(200)).untilAsserted(() -> assertThat(((MockSonarLintRpcClientDelegate) client).getRaisedIssues(configScopeId)).isNotEmpty());
     var raisedIssues = ((MockSonarLintRpcClientDelegate) client).getRaisedIssues(configScopeId);
     ((MockSonarLintRpcClientDelegate) client).getRaisedIssues().clear();
-    return raisedIssues != null ? raisedIssues.values().stream().flatMap(List::stream).collect(Collectors.toList()) : List.of();
+    return raisedIssues != null ? raisedIssues.values().stream().flatMap(List::stream).toList() : List.of();
   }
 }

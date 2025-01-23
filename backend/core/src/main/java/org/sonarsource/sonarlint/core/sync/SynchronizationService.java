@@ -75,7 +75,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toCollection;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 @Named
@@ -301,7 +300,7 @@ public class SynchronizationService {
   }
 
   private void synchronizeConnectionAndProjectsIfNeededSync(String connectionId, ServerApi serverApi, Collection<BoundScope> boundScopes, SonarLintCancelMonitor cancelMonitor) {
-    var scopesToSync = boundScopes.stream().filter(this::shouldSynchronizeScope).collect(toList());
+    var scopesToSync = boundScopes.stream().filter(this::shouldSynchronizeScope).toList();
     if (scopesToSync.isEmpty()) {
       return;
     }
@@ -322,7 +321,7 @@ public class SynchronizationService {
         applicationEventPublisher.publishEvent(new PluginsSynchronizedEvent(connectionId));
       }
       scopesToSync = scopesToSync.stream()
-        .filter(boundScope -> shouldSynchronizeBinding(new Binding(connectionId, boundScope.getSonarProjectKey()))).collect(toList());
+        .filter(boundScope -> shouldSynchronizeBinding(new Binding(connectionId, boundScope.getSonarProjectKey()))).toList();
       var scopesPerProjectKey = scopesToSync.stream()
         .collect(groupingBy(BoundScope::getSonarProjectKey, mapping(BoundScope::getConfigScopeId, toSet())));
       scopesPerProjectKey.forEach((projectKey, configScopeIds) -> {

@@ -168,8 +168,7 @@ public class DefaultSonarLintIssue extends DefaultStorable implements Issue, New
     var component = location.inputComponent();
     Optional<Path> dirOrModulePath = Optional.empty();
 
-    if (component instanceof InputDir) {
-      var dirComponent = (InputDir) component;
+    if (component instanceof InputDir dirComponent) {
       dirOrModulePath = Optional.of(baseDir.relativize(dirComponent.path()));
     }
 

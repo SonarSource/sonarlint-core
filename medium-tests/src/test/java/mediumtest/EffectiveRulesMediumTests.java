@@ -435,33 +435,34 @@ class EffectiveRulesMediumTests {
       .extracting(RuleDescriptionTabDto::getContent)
       .extracting(Either::getLeft)
       .extracting(RuleNonContextualSectionDto::getHtmlContent)
-      .containsExactly("extendedDesc<h3>Clean Code Principles</h3>\n" +
-        "<h4>Never Trust User Input</h4>\n" +
-        "<p>\n" +
-        "    Applications must treat all user input and, more generally, all third-party data as\n" +
-        "    attacker-controlled data.\n" +
-        "</p>\n" +
-        "<p>\n" +
-        "    The application must determine where the third-party data comes from and treat that data\n" +
-        "    source as an attack vector. Two rules apply:\n" +
-        "</p>\n" +
-        "\n" +
-        "<p>\n" +
-        "    First, before using it in the application&apos;s business logic, the application must\n" +
-        "    validate the attacker-controlled data against predefined formats, such as:\n" +
-        "</p>\n" +
-        "<ul>\n" +
-        "    <li>Character sets</li>\n" +
-        "    <li>Sizes</li>\n" +
-        "    <li>Types</li>\n" +
-        "    <li>Or any strict schema</li>\n" +
-        "</ul>\n" +
-        "\n" +
-        "<p>\n" +
-        "    Second, the application must sanitize string data before inserting it into interpreted\n" +
-        "    contexts (client-side code, file paths, SQL queries). Unsanitized code can corrupt the\n" +
-        "    application&apos;s logic.\n" +
-        "</p>");
+      .containsExactly("""
+        extendedDesc<h3>Clean Code Principles</h3>
+        <h4>Never Trust User Input</h4>
+        <p>
+            Applications must treat all user input and, more generally, all third-party data as
+            attacker-controlled data.
+        </p>
+        <p>
+            The application must determine where the third-party data comes from and treat that data
+            source as an attack vector. Two rules apply:
+        </p>
+        
+        <p>
+            First, before using it in the application&apos;s business logic, the application must
+            validate the attacker-controlled data against predefined formats, such as:
+        </p>
+        <ul>
+            <li>Character sets</li>
+            <li>Sizes</li>
+            <li>Types</li>
+            <li>Or any strict schema</li>
+        </ul>
+        
+        <p>
+            Second, the application must sanitize string data before inserting it into interpreted
+            contexts (client-side code, file paths, SQL queries). Unsanitized code can corrupt the
+            application&apos;s logic.
+        </p>""");
   }
 
   @SonarLintTest
@@ -535,43 +536,44 @@ class EffectiveRulesMediumTests {
     }
   }
 
-  private static final String PYTHON_S139_DESCRIPTION = "<p>This rule verifies that single-line comments are not located at the ends of lines of code. The main idea behind this rule is that in order to be\n"
-    +
-    "really readable, trailing comments would have to be properly written and formatted (correct alignment, no interference with the visual structure of\n" +
-    "the code, not too long to be visible) but most often, automatic code formatters would not handle this correctly: the code would end up less readable.\n" +
-    "Comments are far better placed on the previous empty line of code, where they will always be visible and properly formatted.</p>\n" +
-    "<h2>Noncompliant Code Example</h2>\n" +
-    "<pre>\n" +
-    "a = b + c   # This is a trailing comment that can be very very long\n" +
-    "</pre>\n" +
-    "<h2>Compliant Solution</h2>\n" +
-    "<pre>\n" +
-    "# This very long comment is better placed before the line of code\n" +
-    "a = b + c\n" +
-    "</pre>";
-  private static final String JAVA_S106_DESCRIPTION = "<p>When logging a message there are several important requirements which must be fulfilled:</p>\n" +
-    "<ul>\n" +
-    "  <li> The user must be able to easily retrieve the logs </li>\n" +
-    "  <li> The format of all logged message must be uniform to allow the user to easily read the log </li>\n" +
-    "  <li> Logged data must actually be recorded </li>\n" +
-    "  <li> Sensitive data must only be logged securely </li>\n" +
-    "</ul>\n" +
-    "<p>If a program directly writes to the standard outputs, there is absolutely no way to comply with those requirements. That’s why defining and using a\n" +
-    "dedicated logger is highly recommended.</p>\n" +
-    "<h2>Noncompliant Code Example</h2>\n" +
-    "<pre>\n" +
-    "System.out.println(\"My Message\");  // Noncompliant\n" +
-    "</pre>\n" +
-    "<h2>Compliant Solution</h2>\n" +
-    "<pre>\n" +
-    "logger.log(\"My Message\");\n" +
-    "</pre>\n" +
-    "<h2>See</h2>\n" +
-    "<ul>\n" +
-    "  <li> <a href=\"https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/\">OWASP Top 10 2021 Category A9</a> - Security Logging and\n" +
-    "  Monitoring Failures </li>\n" +
-    "  <li> <a href=\"https://www.owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure\">OWASP Top 10 2017 Category A3</a> - Sensitive Data\n" +
-    "  Exposure </li>\n" +
-    "  <li> <a href=\"https://wiki.sei.cmu.edu/confluence/x/nzdGBQ\">CERT, ERR02-J.</a> - Prevent exceptions while logging data </li>\n" +
-    "</ul>";
+  private static final String PYTHON_S139_DESCRIPTION = """
+    <p>This rule verifies that single-line comments are not located at the ends of lines of code. The main idea behind this rule is that in order to be
+    really readable, trailing comments would have to be properly written and formatted (correct alignment, no interference with the visual structure of
+    the code, not too long to be visible) but most often, automatic code formatters would not handle this correctly: the code would end up less readable.
+    Comments are far better placed on the previous empty line of code, where they will always be visible and properly formatted.</p>
+    <h2>Noncompliant Code Example</h2>
+    <pre>
+    a = b + c   # This is a trailing comment that can be very very long
+    </pre>
+    <h2>Compliant Solution</h2>
+    <pre>
+    # This very long comment is better placed before the line of code
+    a = b + c
+    </pre>""";
+  private static final String JAVA_S106_DESCRIPTION = """
+    <p>When logging a message there are several important requirements which must be fulfilled:</p>
+    <ul>
+      <li> The user must be able to easily retrieve the logs </li>
+      <li> The format of all logged message must be uniform to allow the user to easily read the log </li>
+      <li> Logged data must actually be recorded </li>
+      <li> Sensitive data must only be logged securely </li>
+    </ul>
+    <p>If a program directly writes to the standard outputs, there is absolutely no way to comply with those requirements. That’s why defining and using a
+    dedicated logger is highly recommended.</p>
+    <h2>Noncompliant Code Example</h2>
+    <pre>
+    System.out.println("My Message");  // Noncompliant
+    </pre>
+    <h2>Compliant Solution</h2>
+    <pre>
+    logger.log("My Message");
+    </pre>
+    <h2>See</h2>
+    <ul>
+      <li> <a href="https://owasp.org/Top10/A09_2021-Security_Logging_and_Monitoring_Failures/">OWASP Top 10 2021 Category A9</a> - Security Logging and
+      Monitoring Failures </li>
+      <li> <a href="https://www.owasp.org/www-project-top-ten/2017/A3_2017-Sensitive_Data_Exposure">OWASP Top 10 2017 Category A3</a> - Sensitive Data
+      Exposure </li>
+      <li> <a href="https://wiki.sei.cmu.edu/confluence/x/nzdGBQ">CERT, ERR02-J.</a> - Prevent exceptions while logging data </li>
+    </ul>""";
 }

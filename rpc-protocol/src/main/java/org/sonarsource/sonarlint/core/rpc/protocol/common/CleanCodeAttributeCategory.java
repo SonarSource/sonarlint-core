@@ -23,6 +23,6 @@ public enum CleanCodeAttributeCategory {
   ADAPTABLE,
   CONSISTENT,
   INTENTIONAL,
-  RESPONSIBLE;
+  RESPONSIBLE
 
 }

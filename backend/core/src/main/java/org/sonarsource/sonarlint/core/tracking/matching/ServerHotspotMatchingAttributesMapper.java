@@ -38,8 +38,8 @@ public class ServerHotspotMatchingAttributesMapper implements MatchingAttributes
   @Override
   public Optional<String> getTextRangeHash(ServerHotspot issue) {
     var textRange = issue.getTextRange();
-    if (textRange instanceof TextRangeWithHash) {
-      return Optional.of(((TextRangeWithHash) textRange).getHash());
+    if (textRange instanceof TextRangeWithHash textRangeWithHash) {
+      return Optional.of(textRangeWithHash.getHash());
     }
     return Optional.empty();
   }

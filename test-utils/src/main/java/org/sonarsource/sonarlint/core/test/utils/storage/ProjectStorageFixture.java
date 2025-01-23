@@ -190,7 +190,7 @@ public class ProjectStorageFixture {
       var projectBranches = Sonarlint.ProjectBranches.newBuilder()
         .setMainBranchName(
           branches.stream().filter(branch -> branch.isMain).map(branch -> branch.name).findFirst().orElseThrow(() -> new IllegalArgumentException("No main branch defined")))
-        .addAllBranchName(branches.stream().map(branch -> branch.name).collect(Collectors.toList()))
+        .addAllBranchName(branches.stream().map(branch -> branch.name).toList())
         .build();
       ProtobufFileUtil.writeToFile(projectBranches, projectFolder.resolve("project_branches.pb"));
     }
@@ -228,7 +228,7 @@ public class ProjectStorageFixture {
             .collect(Collectors.groupingBy(ServerSecurityHotspotFixture.ServerHotspot::getFilePath));
           Stream.of(issuesByFilePath, taintIssuesByFilePath, hotspotsByFilePath)
             .flatMap(map -> map.keySet().stream())
-            .collect(Collectors.toList())
+            .toList()
             .forEach(filePath -> {
               var fileEntity = txn.newEntity("File");
               fileEntity.setProperty("path", filePath);

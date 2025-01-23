@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 
@@ -41,7 +40,7 @@ public class AnalysisStartedEvent {
   public AnalysisStartedEvent(String configurationScopeId, UUID analysisId, Iterable<ClientInputFile> files, boolean enableTracking) {
     this.configurationScopeId = configurationScopeId;
     this.analysisId = analysisId;
-    this.files = StreamSupport.stream(files.spliterator(), false).collect(Collectors.toList());
+    this.files = StreamSupport.stream(files.spliterator(), false).toList();
     this.enableTracking = enableTracking;
   }
 

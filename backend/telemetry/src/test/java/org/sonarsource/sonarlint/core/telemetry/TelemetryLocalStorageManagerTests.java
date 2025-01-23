@@ -36,7 +36,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
@@ -170,7 +169,7 @@ class TelemetryLocalStorageManagerTests {
     var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
     // Put some data to avoid migration
     storage.tryUpdateAtomically(data -> {
-      data.setInstallTime(OffsetDateTime.now().minus(50, ChronoUnit.DAYS));
+      data.setInstallTime(OffsetDateTime.now().minusDays(50));
       data.setLastUseDate(today);
       data.setNumUseDays(0);
     });
@@ -252,7 +251,7 @@ class TelemetryLocalStorageManagerTests {
         IntStream.range(0, 100).mapToObj(value -> CompletableFuture.runAsync(read))
       ).flatMap(Function.identity())
       .map(CompletableFuture::join)
-      .collect(Collectors.toList());
+      .toList();
 
     assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isEqualTo(200);
   }

@@ -88,15 +88,18 @@ class IssueEventsMediumTests {
           project -> project.withBranch("branchName"))
         .start();
       mockEvent(server, projectKey, "java",
-        "event: IssueChanged\n" +
-          "data: {" +
-          "\"projectKey\": \"projectKey\"," +
-          "\"issues\": [{" +
-          "  \"issueKey\": \"key1\"," +
-          "  \"branchName\": \"branchName\"" +
-          "}]," +
-          "\"resolved\": true" +
-          "}\n\n");
+        """
+          event: IssueChanged
+          data: {\
+          "projectKey": "projectKey",\
+          "issues": [{\
+            "issueKey": "key1",\
+            "branchName": "branchName"\
+          }],\
+          "resolved": true\
+          }
+          
+          """);
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -119,16 +122,19 @@ class IssueEventsMediumTests {
           project -> project.withBranch("branchName"))
         .start();
       mockEvent(server, projectKey, "java",
-        "event: IssueChanged\n" +
-          "data: {" +
-          "\"projectKey\": \"projectKey\"," +
-          "\"issues\": [{" +
-          "  \"issueKey\": \"key1\"," +
-          "  \"branchName\": \"branchName\"," +
-          "  \"impacts\": [ { \"softwareQuality\": \"MAINTAINABILITY\", \"severity\": \"BLOCKER\" } ]" +
-          "}]," +
-          "\"resolved\": true" +
-          "}\n\n");
+        """
+          event: IssueChanged
+          data: {\
+          "projectKey": "projectKey",\
+          "issues": [{\
+            "issueKey": "key1",\
+            "branchName": "branchName",\
+            "impacts": [ { "softwareQuality": "MAINTAINABILITY", "severity": "BLOCKER" } ]\
+          }],\
+          "resolved": true\
+          }
+          
+          """);
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -153,16 +159,19 @@ class IssueEventsMediumTests {
           project -> project.withBranch("branchName"))
         .start();
       mockEvent(server, projectKey, "java",
-        "event: IssueChanged\n" +
-          "data: {" +
-          "\"projectKey\": \"projectKey\"," +
-          "\"issues\": [{" +
-          "  \"issueKey\": \"key1\"," +
-          "  \"branchName\": \"branchName\"," +
-          "  \"impacts\": [ { \"softwareQuality\": \"SECURITY\", \"severity\": \"BLOCKER\" } ]" +
-          "}]," +
-          "\"resolved\": true" +
-          "}\n\n");
+        """
+          event: IssueChanged
+          data: {\
+          "projectKey": "projectKey",\
+          "issues": [{\
+            "issueKey": "key1",\
+            "branchName": "branchName",\
+            "impacts": [ { "softwareQuality": "SECURITY", "severity": "BLOCKER" } ]\
+          }],\
+          "resolved": true\
+          }
+          
+          """);
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -185,16 +194,19 @@ class IssueEventsMediumTests {
           project -> project.withBranch("branchName"))
         .start();
       mockEvent(server, projectKey, "java",
-        "event: IssueChanged\n" +
-          "data: {" +
-          "\"projectKey\": \"projectKey\"," +
-          "\"issues\": [{" +
-          "  \"issueKey\": \"key1\"," +
-          "  \"branchName\": \"branchName\"," +
-          "  \"impacts\": [ { \"softwareQuality\": \"MAINTAINABILITY\", \"severity\": \"HIGH\" } ]" +
-          "}]," +
-          "\"resolved\": true" +
-          "}\n\n");
+        """
+          event: IssueChanged
+          data: {\
+          "projectKey": "projectKey",\
+          "issues": [{\
+            "issueKey": "key1",\
+            "branchName": "branchName",\
+            "impacts": [ { "softwareQuality": "MAINTAINABILITY", "severity": "HIGH" } ]\
+          }],\
+          "resolved": true\
+          }
+          
+          """);
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -218,15 +230,18 @@ class IssueEventsMediumTests {
           project -> project.withBranch("branchName"))
         .start();
       mockEvent(server, "projectKey", "java",
-        "event: IssueChanged\n" +
-          "data: {" +
-          "\"projectKey\": \"projectKey\"," +
-          "\"issues\": [{" +
-          "  \"issueKey\": \"key1\"," +
-          "  \"branchName\": \"branchName\"" +
-          "}]," +
-          "\"userSeverity\": \"CRITICAL\"" +
-          "}\n\n");
+        """
+          event: IssueChanged
+          data: {\
+          "projectKey": "projectKey",\
+          "issues": [{\
+            "issueKey": "key1",\
+            "branchName": "branchName"\
+          }],\
+          "userSeverity": "CRITICAL"\
+          }
+          
+          """);
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -249,15 +264,18 @@ class IssueEventsMediumTests {
           project -> project.withBranch("branchName"))
         .start();
       mockEvent(server, "projectKey", "java",
-        "event: IssueChanged\n" +
-          "data: {" +
-          "\"projectKey\": \"projectKey\"," +
-          "\"issues\": [{" +
-          "  \"issueKey\": \"key1\"," +
-          "  \"branchName\": \"branchName\"" +
-          "}]," +
-          "\"userType\": \"BUG\"" +
-          "}\n\n");
+        """
+          event: IssueChanged
+          data: {\
+          "projectKey": "projectKey",\
+          "issues": [{\
+            "issueKey": "key1",\
+            "branchName": "branchName"\
+          }],\
+          "userType": "BUG"\
+          }
+          
+          """);
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()

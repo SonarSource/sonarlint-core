@@ -192,11 +192,10 @@ public class ServerApiHelper {
     var loaded = new AtomicInteger(0);
     do {
       page.incrementAndGet();
-      var fullUrl = new StringBuilder(relativeUrlWithoutPaginationParams);
-      fullUrl.append(relativeUrlWithoutPaginationParams.contains("?") ? "&" : "?");
-      fullUrl.append("ps=" + PAGE_SIZE + "&p=").append(page);
+      String fullUrl = relativeUrlWithoutPaginationParams + (relativeUrlWithoutPaginationParams.contains("?") ? "&" : "?") +
+        "ps=" + PAGE_SIZE + "&p=" + page;
       ServerApiHelper.consumeTimed(
-        () -> rawGet(fullUrl.toString(), cancelChecker),
+        () -> rawGet(fullUrl, cancelChecker),
         response -> processPage(relativeUrlWithoutPaginationParams, responseParser, getPagingTotal, itemExtractor, itemConsumer, limitToTwentyPages, page, stop, loaded,
           response),
         duration -> LOG.debug("Page downloaded in {}ms", duration));
@@ -223,7 +222,7 @@ public class ServerApiHelper {
     var isEmpty = items.isEmpty();
     var pagingTotal = getPagingTotal.apply(protoBufResponse).longValue();
     // SONAR-9150 Some WS used to miss the paging information, so iterate until response is empty
-    stop.set(isEmpty || (pagingTotal > 0 && page.get() * PAGE_SIZE >= pagingTotal));
+    stop.set(isEmpty || (pagingTotal > 0 && (long) page.get() * PAGE_SIZE >= pagingTotal));
     if (!stop.get() && limitToTwentyPages && page.get() >= MAX_PAGES) {
       stop.set(true);
       LOG.debug("Limiting number of requested pages from '{}' to {}. Some of the data won't be fetched", baseUrl, MAX_PAGES);

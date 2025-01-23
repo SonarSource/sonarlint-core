@@ -31,7 +31,7 @@ import static org.mockito.Mockito.when;
 class ServerIssueMatchingAttributesMapperTests {
 
   private final LineLevelServerIssue serverIssue = mock(LineLevelServerIssue.class);
-  private ServerIssueMatchingAttributesMapper underTest = new ServerIssueMatchingAttributesMapper();
+  private final ServerIssueMatchingAttributesMapper underTest = new ServerIssueMatchingAttributesMapper();
 
   @BeforeEach
   void prepare() {

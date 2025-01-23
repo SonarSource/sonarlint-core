@@ -30,7 +30,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -189,7 +188,7 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
               new LineRangeDto(c.beforeLineRange.startLine, c.beforeLineRange.endLine),
               c.before,
               c.after)
-          ).collect(Collectors.toList())
+          ).toList()
         )
       );
       client.showFixSuggestion(new ShowFixSuggestionParams(configScopeId, issueKey, fixSuggestionDto));

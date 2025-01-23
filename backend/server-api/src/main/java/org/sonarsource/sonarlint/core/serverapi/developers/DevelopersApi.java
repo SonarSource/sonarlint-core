@@ -103,7 +103,7 @@ public class DevelopersApi {
 
   private static String getWsPath(Map<String, ZonedDateTime> projectTimestamps) {
     // Sort project keys to simplify testing
-    var sortedProjectKeys = projectTimestamps.keySet().stream().sorted().collect(Collectors.toList());
+    var sortedProjectKeys = projectTimestamps.keySet().stream().sorted().toList();
     var builder = new StringBuilder();
     builder.append(API_PATH);
     builder.append("?projects=");

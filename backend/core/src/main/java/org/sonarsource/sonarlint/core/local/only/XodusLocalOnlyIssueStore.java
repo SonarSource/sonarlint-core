@@ -29,7 +29,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import jetbrains.exodus.entitystore.Entity;
 import jetbrains.exodus.entitystore.EntityIterable;
@@ -111,7 +110,7 @@ public class XodusLocalOnlyIssueStore {
       .map(fileToLoad -> fileToLoad.getLinks(XodusLocalOnlyIssueStore.FILE_TO_ISSUES_LINK_NAME))
       .map(issueEntities -> StreamSupport.stream(issueEntities.spliterator(), false)
         .map(XodusLocalOnlyIssueStore::adapt)
-        .collect(Collectors.toList()))
+        .toList())
       .orElseGet(Collections::emptyList));
   }
 
@@ -121,12 +120,12 @@ public class XodusLocalOnlyIssueStore {
       .flatMap(filesIterable -> {
         List<LocalOnlyIssue> allIssues = new ArrayList<>();
         var files = StreamSupport.stream(filesIterable.spliterator(), false)
-          .collect(Collectors.toList());
+          .toList();
         files.forEach(file -> {
           EntityIterable issueEntitiesForFile = file.getLinks(XodusLocalOnlyIssueStore.FILE_TO_ISSUES_LINK_NAME);
           List<LocalOnlyIssue> localIssuesForFile = StreamSupport.stream(issueEntitiesForFile.spliterator(), false)
             .map(XodusLocalOnlyIssueStore::adapt)
-            .collect(Collectors.toList());
+            .toList();
           allIssues.addAll(localIssuesForFile);
         });
         return Optional.of(allIssues);

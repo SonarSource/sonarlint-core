@@ -748,19 +748,20 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
 
       webSocketServer.getConnections().get(0).sendMessage(
-        "{\n" +
-          "  \"event\": \"IssueChanged\",\n" +
-          "  \"data\": {\n" +
-          "    \"projectKey\": \"projectKey\",\n" +
-          "    \"issues\": [\n" +
-          "      {\n" +
-          "        \"issueKey\": \"myIssueKey\",\n" +
-          "        \"branchName\": \"master\"\n" +
-          "      }\n" +
-          "    ],\n" +
-          "    \"resolved\": true\n" +
-          "  }\n" +
-          "}");
+        """
+          {
+            "event": "IssueChanged",
+            "data": {
+              "projectKey": "projectKey",
+              "issues": [
+                {
+                  "issueKey": "myIssueKey",
+                  "branchName": "master"
+                }
+              ],
+              "resolved": true
+            }
+          }""");
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isTrue());
     }
@@ -783,19 +784,20 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
 
       webSocketServer.getConnections().get(0).sendMessage(
-        "{\n" +
-          "  \"event\": \"IssueChanged\",\n" +
-          "  \"data\": {\n" +
-          "    \"projectKey\": \"projectKey\",\n" +
-          "    \"invalid\": [\n" +
-          "      {\n" +
-          "        \"issueKey\": myIssueKey,\n" +
-          "        \"branchName\": \"master\"\n" +
-          "      }\n" +
-          "    ],\n" +
-          "    \"resolved\": true\n" +
-          "  }\n" +
-          "}");
+        """
+          {
+            "event": "IssueChanged",
+            "data": {
+              "projectKey": "projectKey",
+              "invalid": [
+                {
+                  "issueKey": myIssueKey,
+                  "branchName": "master"
+                }
+              ],
+              "resolved": true
+            }
+          }""");
 
       await().atMost(Duration.ofSeconds(1)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
     }
@@ -818,18 +820,19 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
 
       webSocketServer.getConnections().get(0).sendMessage(
-        "{\n" +
-          "  \"event\": \"IssueChanged\",\n" +
-          "  \"data\": {\n" +
-          "    \"projectKey\": \"projectKey\",\n" +
-          "    \"invalid\": [\n" +
-          "      {\n" +
-          "        \"branchName\": \"master\"\n" +
-          "      }\n" +
-          "    ],\n" +
-          "    \"resolved\": true\n" +
-          "  }\n" +
-          "}");
+        """
+          {
+            "event": "IssueChanged",
+            "data": {
+              "projectKey": "projectKey",
+              "invalid": [
+                {
+                  "branchName": "master"
+                }
+              ],
+              "resolved": true
+            }
+          }""");
 
       await().atMost(Duration.ofSeconds(1)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
     }
@@ -852,18 +855,19 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
 
       webSocketServer.getConnections().get(0).sendMessage(
-        "{\n" +
-          "  \"event\": \"IssueChanged\",\n" +
-          "  \"data\": {\n" +
-          "    \"projectKey\": \"projectKey\",\n" +
-          "    \"invalid\": [\n" +
-          "      {\n" +
-          "        \"issueKey\": myIssueKey,\n" +
-          "        \"branchName\": \"master\"\n" +
-          "      }\n" +
-          "    ]\n" +
-          "  }\n" +
-          "}");
+        """
+          {
+            "event": "IssueChanged",
+            "data": {
+              "projectKey": "projectKey",
+              "invalid": [
+                {
+                  "issueKey": myIssueKey,
+                  "branchName": "master"
+                }
+              ]
+            }
+          }""");
 
       await().atMost(Duration.ofSeconds(1)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
     }
@@ -886,18 +890,19 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
 
       webSocketServer.getConnections().get(0).sendMessage(
-        "{\n" +
-          "  \"event\": \"IssueChanged\",\n" +
-          "  \"data\": {\n" +
-          "    \"invalid\": [\n" +
-          "      {\n" +
-          "        \"issueKey\": myIssueKey,\n" +
-          "        \"branchName\": \"master\"\n" +
-          "      }\n" +
-          "    ],\n" +
-          "    \"resolved\": true\n" +
-          "  }\n" +
-          "}");
+        """
+          {
+            "event": "IssueChanged",
+            "data": {
+              "invalid": [
+                {
+                  "issueKey": myIssueKey,
+                  "branchName": "master"
+                }
+              ],
+              "resolved": true
+            }
+          }""");
 
       await().atMost(Duration.ofSeconds(1)).untilAsserted(() -> assertThat(issueStorage.getIssue("myIssueKey").isResolved()).isFalse());
     }
@@ -920,57 +925,58 @@ class WebSocketMediumTests {
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
 
       webSocketServer.getConnections().get(0).sendMessage(
-        "{\n" +
-          "  \"event\": \"TaintVulnerabilityRaised\",\n" +
-          "  \"data\": {\n" +
-          "    \"key\": \"taintKey\",\n" +
-          "    \"projectKey\": \"projectKey\",\n" +
-          "    \"branch\": \"branch\",\n" +
-          "    \"creationDate\": 123456789,\n" +
-          "    \"ruleKey\": \"javasecurity:S123\",\n" +
-          "    \"severity\": \"MAJOR\",\n" +
-          "    \"type\": \"VULNERABILITY\",\n" +
-          "    \"mainLocation\": {\n" +
-          "      \"filePath\": \"functions/taint.js\",\n" +
-          "      \"message\": \"blah blah\",\n" +
-          "      \"textRange\": {\n" +
-          "        \"startLine\": 17,\n" +
-          "        \"startLineOffset\": 10,\n" +
-          "        \"endLine\": 3,\n" +
-          "        \"endLineOffset\": 2,\n" +
-          "        \"hash\": \"hash\"\n" +
-          "      }\n" +
-          "    },\n" +
-          "    \"flows\": [\n" +
-          "      {\n" +
-          "        \"locations\": [\n" +
-          "          {\n" +
-          "            \"filePath\": \"functions/taint.js\",\n" +
-          "            \"message\": \"sink: tainted value is used to perform a security-sensitive operation\",\n" +
-          "            \"textRange\": {\n" +
-          "              \"startLine\": 17,\n" +
-          "              \"startLineOffset\": 10,\n" +
-          "              \"endLine\": 3,\n" +
-          "              \"endLineOffset\": 2,\n" +
-          "              \"hash\": \"hash1\"\n" +
-          "            }\n" +
-          "          },\n" +
-          "          {\n" +
-          "            \"filePath\": \"functions/taint2.js\",\n" +
-          "            \"message\": \"sink: tainted value is used to perform a security-sensitive operation\",\n" +
-          "            \"textRange\": {\n" +
-          "              \"startLine\": 18,\n" +
-          "              \"startLineOffset\": 11,\n" +
-          "              \"endLine\": 4,\n" +
-          "              \"endLineOffset\": 3,\n" +
-          "              \"hash\": \"hash2\"\n" +
-          "            }\n" +
-          "          }\n" +
-          "        ]\n" +
-          "      }\n" +
-          "    ]\n" +
-          "  }\n" +
-          "}");
+        """
+          {
+            "event": "TaintVulnerabilityRaised",
+            "data": {
+              "key": "taintKey",
+              "projectKey": "projectKey",
+              "branch": "branch",
+              "creationDate": 123456789,
+              "ruleKey": "javasecurity:S123",
+              "severity": "MAJOR",
+              "type": "VULNERABILITY",
+              "mainLocation": {
+                "filePath": "functions/taint.js",
+                "message": "blah blah",
+                "textRange": {
+                  "startLine": 17,
+                  "startLineOffset": 10,
+                  "endLine": 3,
+                  "endLineOffset": 2,
+                  "hash": "hash"
+                }
+              },
+              "flows": [
+                {
+                  "locations": [
+                    {
+                      "filePath": "functions/taint.js",
+                      "message": "sink: tainted value is used to perform a security-sensitive operation",
+                      "textRange": {
+                        "startLine": 17,
+                        "startLineOffset": 10,
+                        "endLine": 3,
+                        "endLineOffset": 2,
+                        "hash": "hash1"
+                      }
+                    },
+                    {
+                      "filePath": "functions/taint2.js",
+                      "message": "sink: tainted value is used to perform a security-sensitive operation",
+                      "textRange": {
+                        "startLine": 18,
+                        "startLineOffset": 11,
+                        "endLine": 4,
+                        "endLineOffset": 3,
+                        "hash": "hash2"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }""");
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey")).isTrue());
     }
@@ -990,57 +996,58 @@ class WebSocketMediumTests {
       var issueStorage = backend.getIssueStorageService().connection("connectionId").project("projectKey").findings();
 
       webSocketServer.getConnections().get(0).sendMessage(
-        "{\n" +
-          "  \"event\": \"TaintVulnerabilityRaised\",\n" +
-          "  \"data\": {\n" +
-          "    \"invalidKey\": \"taintKey\",\n" +
-          "    \"projectKey\": \"projectKey\",\n" +
-          "    \"branch\": \"branch\",\n" +
-          "    \"creationDate\": 123456789,\n" +
-          "    \"ruleKey\": \"javasecurity:S123\",\n" +
-          "    \"severity\": \"MAJOR\",\n" +
-          "    \"type\": \"VULNERABILITY\",\n" +
-          "    \"mainLocation\": {\n" +
-          "      \"filePath\": \"functions/taint.js\",\n" +
-          "      \"message\": \"blah blah\",\n" +
-          "      \"textRange\": {\n" +
-          "        \"startLine\": 17,\n" +
-          "        \"startLineOffset\": 10,\n" +
-          "        \"endLine\": 3,\n" +
-          "        \"endLineOffset\": 2,\n" +
-          "        \"hash\": \"hash\"\n" +
-          "      }\n" +
-          "    },\n" +
-          "    \"flows\": [\n" +
-          "      {\n" +
-          "        \"locations\": [\n" +
-          "          {\n" +
-          "            \"filePath\": \"functions/taint.js\",\n" +
-          "            \"message\": \"sink: tainted value is used to perform a security-sensitive operation\",\n" +
-          "            \"textRange\": {\n" +
-          "              \"startLine\": 17,\n" +
-          "              \"startLineOffset\": 10,\n" +
-          "              \"endLine\": 3,\n" +
-          "              \"endLineOffset\": 2,\n" +
-          "              \"hash\": \"hash1\"\n" +
-          "            }\n" +
-          "          },\n" +
-          "          {\n" +
-          "            \"filePath\": \"functions/taint2.js\",\n" +
-          "            \"message\": \"sink: tainted value is used to perform a security-sensitive operation\",\n" +
-          "            \"textRange\": {\n" +
-          "              \"startLine\": 18,\n" +
-          "              \"startLineOffset\": 11,\n" +
-          "              \"endLine\": 4,\n" +
-          "              \"endLineOffset\": 3,\n" +
-          "              \"hash\": \"hash2\"\n" +
-          "            }\n" +
-          "          }\n" +
-          "        ]\n" +
-          "      }\n" +
-          "    ]\n" +
-          "  }\n" +
-          "}");
+        """
+          {
+            "event": "TaintVulnerabilityRaised",
+            "data": {
+              "invalidKey": "taintKey",
+              "projectKey": "projectKey",
+              "branch": "branch",
+              "creationDate": 123456789,
+              "ruleKey": "javasecurity:S123",
+              "severity": "MAJOR",
+              "type": "VULNERABILITY",
+              "mainLocation": {
+                "filePath": "functions/taint.js",
+                "message": "blah blah",
+                "textRange": {
+                  "startLine": 17,
+                  "startLineOffset": 10,
+                  "endLine": 3,
+                  "endLineOffset": 2,
+                  "hash": "hash"
+                }
+              },
+              "flows": [
+                {
+                  "locations": [
+                    {
+                      "filePath": "functions/taint.js",
+                      "message": "sink: tainted value is used to perform a security-sensitive operation",
+                      "textRange": {
+                        "startLine": 17,
+                        "startLineOffset": 10,
+                        "endLine": 3,
+                        "endLineOffset": 2,
+                        "hash": "hash1"
+                      }
+                    },
+                    {
+                      "filePath": "functions/taint2.js",
+                      "message": "sink: tainted value is used to perform a security-sensitive operation",
+                      "textRange": {
+                        "startLine": 18,
+                        "startLineOffset": 11,
+                        "endLine": 4,
+                        "endLineOffset": 3,
+                        "hash": "hash2"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }""");
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey")).isFalse());
     }
@@ -1066,13 +1073,14 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey")).isTrue());
 
       webSocketServer.getConnections().get(0).sendMessage(
-        "{\n" +
-          "  \"event\": \"TaintVulnerabilityClosed\",\n" +
-          "  \"data\": {\n" +
-          "    \"projectKey\": \"projectKey\",\n" +
-          "    \"key\": \"taintKey\"\n" +
-          "  }\n" +
-          "}");
+        """
+          {
+            "event": "TaintVulnerabilityClosed",
+            "data": {
+              "projectKey": "projectKey",
+              "key": "taintKey"
+            }
+          }""");
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey")).isFalse());
     }
@@ -1095,13 +1103,14 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey")).isTrue());
 
       webSocketServer.getConnections().get(0).sendMessage(
-        "{\n" +
-          "  \"event\": \"TaintVulnerabilityClosed\",\n" +
-          "  \"data\": {\n" +
-          "    \"projectKey\": \"projectKey\",\n" +
-          "    \"taintKey\": \"taintKey\"\n" +
-          "  }\n" +
-          "}");
+        """
+          {
+            "event": "TaintVulnerabilityClosed",
+            "data": {
+              "projectKey": "projectKey",
+              "taintKey": "taintKey"
+            }
+          }""");
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.containsIssue("taintKey")).isTrue());
     }
@@ -1127,18 +1136,19 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey").getStatus().isResolved()).isFalse());
 
       webSocketServer.getConnections().get(0).sendMessage(
-        "{\n" +
-          "  \"event\": \"SecurityHotspotChanged\",\n" +
-          "  \"data\": {\n" +
-          "    \"key\": \"hotspotKey\",\n" +
-          "    \"projectKey\": \"projectKey\",\n" +
-          "    \"updateDate\": 1685007187000,\n" +
-          "    \"status\": \"REVIEWED\",\n" +
-          "    \"assignee\": \"assigneeEmail\",\n" +
-          "    \"invalidKey\": \"SAFE\",\n" +
-          "    \"filePath\": \"/project/path/to/file\"\n" +
-          "  }\n" +
-          "}");
+        """
+          {
+            "event": "SecurityHotspotChanged",
+            "data": {
+              "key": "hotspotKey",
+              "projectKey": "projectKey",
+              "updateDate": 1685007187000,
+              "status": "REVIEWED",
+              "assignee": "assigneeEmail",
+              "invalidKey": "SAFE",
+              "filePath": "/project/path/to/file"
+            }
+          }""");
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey").getStatus().isResolved()).isFalse());
     }
@@ -1161,18 +1171,19 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey").getStatus().isResolved()).isFalse());
 
       webSocketServer.getConnections().get(0).sendMessage(
-        "{\n" +
-          "  \"event\": \"SecurityHotspotChanged\",\n" +
-          "  \"data\": {\n" +
-          "    \"key\": \"hotspotKey\",\n" +
-          "    \"projectKey\": \"projectKey\",\n" +
-          "    \"updateDate\": 1685007187000,\n" +
-          "    \"status\": \"REVIEWED\",\n" +
-          "    \"assignee\": \"assigneeEmail\",\n" +
-          "    \"wrongKey\": \"SAFE\",\n" +
-          "    \"filePath\": \"/project/path/to/file\"\n" +
-          "  }\n" +
-          "}");
+        """
+          {
+            "event": "SecurityHotspotChanged",
+            "data": {
+              "key": "hotspotKey",
+              "projectKey": "projectKey",
+              "updateDate": 1685007187000,
+              "status": "REVIEWED",
+              "assignee": "assigneeEmail",
+              "wrongKey": "SAFE",
+              "filePath": "/project/path/to/file"
+            }
+          }""");
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey").getStatus().isResolved()).isFalse());
     }
@@ -1196,28 +1207,29 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey")).isNull());
 
       webSocketServer.getConnections().get(0).sendMessage(
-        "{\n" +
-          "  \"event\": \"SecurityHotspotRaised\",\n" +
-          "  \"data\": {\n" +
-          "    \"status\": \"TO_REVIEW\",\n" +
-          "    \"vulnerabilityProbability\": \"MEDIUM\",\n" +
-          "    \"creationDate\": 1685006550000,\n" +
-          "    \"mainLocation\": {\n" +
-          "      \"filePath\": \"src/main/java/org/example/Main.java\",\n" +
-          "      \"message\": \"Make sure that using this pseudorandom number generator is safe here.\",\n" +
-          "      \"textRange\": {\n" +
-          "        \"startLine\": 12,\n" +
-          "        \"startLineOffset\": 29,\n" +
-          "        \"endLine\": 12,\n" +
-          "        \"endLineOffset\": 36,\n" +
-          "        \"hash\": \"43b5c9175984c071f30b873fdce0a000\"\n" +
-          "      }\n" +
-          "    },\n" +
-          "    \"ruleKey\": \"java:S2245\",\n" +
-          "    \"key\": \"hotspotKey\",\n" +
-          "    \"projectKey\": \"projectKey\",\n" +
-          "    \"branch\": \"some-branch\"\n" +
-          "}}");
+        """
+          {
+            "event": "SecurityHotspotRaised",
+            "data": {
+              "status": "TO_REVIEW",
+              "vulnerabilityProbability": "MEDIUM",
+              "creationDate": 1685006550000,
+              "mainLocation": {
+                "filePath": "src/main/java/org/example/Main.java",
+                "message": "Make sure that using this pseudorandom number generator is safe here.",
+                "textRange": {
+                  "startLine": 12,
+                  "startLineOffset": 29,
+                  "endLine": 12,
+                  "endLineOffset": 36,
+                  "hash": "43b5c9175984c071f30b873fdce0a000"
+                }
+              },
+              "ruleKey": "java:S2245",
+              "key": "hotspotKey",
+              "projectKey": "projectKey",
+              "branch": "some-branch"
+          }}""");
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey")).isNotNull());
     }
@@ -1238,28 +1250,29 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey")).isNull());
 
       webSocketServer.getConnections().get(0).sendMessage(
-        "{\n" +
-          "  \"event\": \"SecurityHotspotRaised\",\n" +
-          "  \"data\": {\n" +
-          "    \"wrongKey\": \"TO_REVIEW\",\n" +
-          "    \"vulnerabilityProbability\": \"MEDIUM\",\n" +
-          "    \"creationDate\": 1685006550000,\n" +
-          "    \"mainLocation\": {\n" +
-          "      \"filePath\": \"src/main/java/org/example/Main.java\",\n" +
-          "      \"message\": \"Make sure that using this pseudorandom number generator is safe here.\",\n" +
-          "      \"textRange\": {\n" +
-          "        \"startLine\": 12,\n" +
-          "        \"startLineOffset\": 29,\n" +
-          "        \"endLine\": 12,\n" +
-          "        \"endLineOffset\": 36,\n" +
-          "        \"hash\": \"43b5c9175984c071f30b873fdce0a000\"\n" +
-          "      }\n" +
-          "    },\n" +
-          "    \"ruleKey\": \"java:S2245\",\n" +
-          "    \"key\": \"hotspotKey\",\n" +
-          "    \"projectKey\": \"projectKey\",\n" +
-          "    \"branch\": \"some-branch\"\n" +
-          "}}");
+        """
+          {
+            "event": "SecurityHotspotRaised",
+            "data": {
+              "wrongKey": "TO_REVIEW",
+              "vulnerabilityProbability": "MEDIUM",
+              "creationDate": 1685006550000,
+              "mainLocation": {
+                "filePath": "src/main/java/org/example/Main.java",
+                "message": "Make sure that using this pseudorandom number generator is safe here.",
+                "textRange": {
+                  "startLine": 12,
+                  "startLineOffset": 29,
+                  "endLine": 12,
+                  "endLineOffset": 36,
+                  "hash": "43b5c9175984c071f30b873fdce0a000"
+                }
+              },
+              "ruleKey": "java:S2245",
+              "key": "hotspotKey",
+              "projectKey": "projectKey",
+              "branch": "some-branch"
+          }}""");
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey")).isNull());
     }
@@ -1285,14 +1298,15 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey")).isNotNull());
 
       webSocketServer.getConnections().get(0).sendMessage(
-        "{\n" +
-          "  \"event\": \"SecurityHotspotClosed\",\n" +
-          "  \"data\": {\n" +
-          "    \"key\": \"hotspotKey\",\n" +
-          "    \"projectKey\": \"projectKey\",\n" +
-          "    \"filePath\": \"/project/path/to/file\"\n" +
-          "  }\n" +
-          "}");
+        """
+          {
+            "event": "SecurityHotspotClosed",
+            "data": {
+              "key": "hotspotKey",
+              "projectKey": "projectKey",
+              "filePath": "/project/path/to/file"
+            }
+          }""");
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey")).isNull());
     }
@@ -1315,14 +1329,15 @@ class WebSocketMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey")).isNotNull());
 
       webSocketServer.getConnections().get(0).sendMessage(
-        "{\n" +
-          "  \"event\": \"SecurityHotspotClosed\",\n" +
-          "  \"data\": {\n" +
-          "    \"wrongKey\": \"hotspotKey\",\n" +
-          "    \"projectKey\": \"projectKey\",\n" +
-          "    \"filePath\": \"/project/path/to/file\"\n" +
-          "  }\n" +
-          "}");
+        """
+          {
+            "event": "SecurityHotspotClosed",
+            "data": {
+              "wrongKey": "hotspotKey",
+              "projectKey": "projectKey",
+              "filePath": "/project/path/to/file"
+            }
+          }""");
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey")).isNotNull());
     }

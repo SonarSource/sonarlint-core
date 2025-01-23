@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
-import java.util.stream.Collectors;
 import org.jetbrains.annotations.Nullable;
 import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
@@ -82,11 +81,11 @@ public class MockSonarLintRpcClientDelegate implements SonarLintRpcClientDelegat
   }
 
   public List<RaisedIssueDto> getRaisedIssuesAsList(String configurationScopeId) {
-    return raisedIssues.getOrDefault(configurationScopeId, new HashMap<>()).values().stream().flatMap(List::stream).collect(Collectors.toList());
+    return raisedIssues.getOrDefault(configurationScopeId, new HashMap<>()).values().stream().flatMap(List::stream).toList();
   }
 
   public List<RaisedHotspotDto> getRaisedHotspotsAsList(String configurationScopeId) {
-    return raisedHotspots.getOrDefault(configurationScopeId, new HashMap<>()).values().stream().flatMap(List::stream).collect(Collectors.toList());
+    return raisedHotspots.getOrDefault(configurationScopeId, new HashMap<>()).values().stream().flatMap(List::stream).toList();
   }
 
   @Override

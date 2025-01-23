@@ -99,7 +99,7 @@ class TelemetryUtils {
       var resolvedSnippetStatues = fixSuggestionResolved.getOrDefault(suggestionId, List.of(new TelemetryFixSuggestionResolvedStatus(null, null)));
       var resolvedSnippetPayload = resolvedSnippetStatues.stream()
         .map(s -> new TelemetryFixSuggestionResolvedPayload(s.getFixSuggestionResolvedStatus(),
-        s.getFixSuggestionResolvedSnippetIndex())).collect(Collectors.toList());
+        s.getFixSuggestionResolvedSnippetIndex())).toList();
 
       return new TelemetryFixSuggestionPayload(suggestionId, snippetsCount, source, resolvedSnippetPayload);
     }).toArray(TelemetryFixSuggestionPayload[]::new);

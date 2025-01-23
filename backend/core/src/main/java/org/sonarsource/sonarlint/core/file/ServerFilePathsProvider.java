@@ -48,8 +48,6 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 
-import static java.util.stream.Collectors.toList;
-
 @Named
 @Singleton
 public class ServerFilePathsProvider {
@@ -124,7 +122,7 @@ public class ServerFilePathsProvider {
 
   private static List<Path> readServerPathsFromFile(Path responsePath) {
     try {
-      return Files.readAllLines(responsePath).stream().map(Paths::get).collect(toList());
+      return Files.readAllLines(responsePath).stream().map(Paths::get).toList();
     } catch (IOException e) {
       LOG.debug("Error occurred while reading the file server path response file cache {}", responsePath);
       return Collections.emptyList();
@@ -139,7 +137,7 @@ public class ServerFilePathsProvider {
     return serverApi.component().getAllFileKeys(projectKey, cancelMonitor).stream()
       .map(fileKey -> StringUtils.substringAfterLast(fileKey, ":"))
       .map(Paths::get)
-      .collect(toList());
+      .toList();
   }
 
   private void cacheServerPaths(Binding binding, List<Path> paths) {

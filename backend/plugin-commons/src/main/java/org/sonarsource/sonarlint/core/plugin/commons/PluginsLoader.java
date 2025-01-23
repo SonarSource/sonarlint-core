@@ -37,7 +37,6 @@ import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginRequirementsC
 import org.sonarsource.sonarlint.core.plugin.commons.loading.SonarPluginRequirementsChecker;
 
 import static java.util.function.Predicate.not;
-import static java.util.stream.Collectors.toList;
 
 /**
  * Orchestrates the loading and instantiation of plugins
@@ -100,6 +99,6 @@ public class PluginsLoader {
     return pluginCheckResultByKeys.values().stream()
       .filter(not(PluginRequirementsCheckResult::isSkipped))
       .map(PluginRequirementsCheckResult::getPlugin)
-      .collect(toList());
+      .toList();
   }
 }

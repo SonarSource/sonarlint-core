@@ -21,10 +21,10 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects;
 
 import com.google.gson.annotations.JsonAdapter;
 import java.util.List;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherTransientConnectionAdapterFactory;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 
 public class GetProjectNamesByKeyParams {
   @JsonAdapter(EitherTransientConnectionAdapterFactory.class)

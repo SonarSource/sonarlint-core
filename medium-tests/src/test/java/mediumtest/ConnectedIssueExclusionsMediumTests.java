@@ -136,7 +136,7 @@ class ConnectedIssueExclusionsMediumTests {
     client.cleanRaisedIssues();
 
     updateIssueExclusionsSettings(Map.of("sonar.issue.ignore.multicriteria", "1",
-      "sonar.issue.ignore.multicriteria.1.resourceKey", FILE2_PATH.toString(),
+      "sonar.issue.ignore.multicriteria.1.resourceKey", FILE2_PATH,
       "sonar.issue.ignore.multicriteria.1.ruleKey", "*"));
     issues = analyzeFilesAndGetIssuesAsMap(List.of(inputFile1.toUri(), inputFile2.toUri()), client, backend, JAVA_MODULE_KEY);
     issuesFile1 = issues.get(inputFile1.toUri());
@@ -151,9 +151,9 @@ class ConnectedIssueExclusionsMediumTests {
     client.cleanRaisedIssues();
 
     updateIssueExclusionsSettings(Map.of("sonar.issue.ignore.multicriteria", "1,2",
-      "sonar.issue.ignore.multicriteria.1.resourceKey", FILE2_PATH.toString(),
+      "sonar.issue.ignore.multicriteria.1.resourceKey", FILE2_PATH,
       "sonar.issue.ignore.multicriteria.1.ruleKey", "java:S1481",
-      "sonar.issue.ignore.multicriteria.2.resourceKey", FILE1_PATH.toString(),
+      "sonar.issue.ignore.multicriteria.2.resourceKey", FILE1_PATH,
       "sonar.issue.ignore.multicriteria.2.ruleKey", "java:S106"));
     issues = analyzeFilesAndGetIssuesAsMap(List.of(inputFile1.toUri(), inputFile2.toUri()), client, backend, JAVA_MODULE_KEY);
     issuesFile1 = issues.get(inputFile1.toUri());
@@ -267,7 +267,7 @@ class ConnectedIssueExclusionsMediumTests {
         tuple("java:S1481", new TextRangeDto(3, 8, 3, 9)));
 
     updateIssueExclusionsSettings(Map.of("sonar.issue.enforce.multicriteria", "1",
-      "sonar.issue.enforce.multicriteria.1.resourceKey", FILE2_PATH.toString(),
+      "sonar.issue.enforce.multicriteria.1.resourceKey", FILE2_PATH,
       "sonar.issue.enforce.multicriteria.1.ruleKey", "*S1481"));
     issues = analyzeFilesAndGetIssuesAsMap(List.of(inputFile1.toUri(), inputFile2.toUri()), client, backend, JAVA_MODULE_KEY);
     issuesFile1 = issues.get(inputFile1.toUri());
@@ -285,7 +285,7 @@ class ConnectedIssueExclusionsMediumTests {
         tuple("java:S1481", new TextRangeDto(3, 8, 3, 9)));
 
     updateIssueExclusionsSettings(Map.of("sonar.issue.enforce.multicriteria", "1",
-      "sonar.issue.enforce.multicriteria.1.resourceKey", FILE2_PATH.toString(),
+      "sonar.issue.enforce.multicriteria.1.resourceKey", FILE2_PATH,
       "sonar.issue.enforce.multicriteria.1.ruleKey", "*"));
     issues = analyzeFilesAndGetIssuesAsMap(List.of(inputFile1.toUri(), inputFile2.toUri()), client, backend, JAVA_MODULE_KEY);
     issuesFile1 = issues.get(inputFile1.toUri());
@@ -299,9 +299,9 @@ class ConnectedIssueExclusionsMediumTests {
         tuple("java:S1481", new TextRangeDto(3, 8, 3, 9)));
 
     updateIssueExclusionsSettings(Map.of("sonar.issue.enforce.multicriteria", "1,2",
-      "sonar.issue.enforce.multicriteria.1.resourceKey", FILE2_PATH.toString(),
+      "sonar.issue.enforce.multicriteria.1.resourceKey", FILE2_PATH,
       "sonar.issue.enforce.multicriteria.1.ruleKey", "java:S1481",
-      "sonar.issue.enforce.multicriteria.2.resourceKey", FILE1_PATH.toString(),
+      "sonar.issue.enforce.multicriteria.2.resourceKey", FILE1_PATH,
       "sonar.issue.enforce.multicriteria.2.ruleKey", "java:S106"));
     issues = analyzeFilesAndGetIssuesAsMap(List.of(inputFile1.toUri(), inputFile2.toUri()), client, backend, JAVA_MODULE_KEY);
     issuesFile1 = issues.get(inputFile1.toUri());
@@ -332,25 +332,25 @@ class ConnectedIssueExclusionsMediumTests {
   }
 
   private static Path prepareJavaInputFile1(Path baseDir, String filePath) {
-    return createFile(baseDir, filePath,
-      "/*NOSL1*/ public class Foo {\n"
-        + "  public void foo() {\n"
-        + "    int x;\n"
-        + "    // SONAR-OFF\n"
-        + "    System.out.println(\"Foo\");\n"
-        + "    // SONAR-ON\n"
-        + "  }\n"
-        + "}");
+    return createFile(baseDir, filePath, """
+      /*NOSL1*/ public class Foo {
+        public void foo() {
+          int x;
+          // SONAR-OFF
+          System.out.println("Foo");
+          // SONAR-ON
+        }
+      }""");
   }
 
   private static Path prepareJavaInputFile2(Path baseDir, String filePath) {
-    return createFile(baseDir, filePath,
-      "/*NOSL2*/ public class Foo2 {\n"
-        + "  public void foo() {\n"
-        + "    int x;\n"
-        + "    System.out.println(\"Foo\");\n"
-        + "  }\n"
-        + "}");
+    return createFile(baseDir, filePath, """
+      /*NOSL2*/ public class Foo2 {
+        public void foo() {
+          int x;
+          System.out.println("Foo");
+        }
+      }""");
   }
 
 }

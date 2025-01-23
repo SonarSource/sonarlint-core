@@ -78,11 +78,12 @@ class ProjectBranchesApiTests {
   @Test
   void shouldReturnEmptyListOnMalformedResponse() {
     mockServer.addStringResponse("/api/project_branches/list.protobuf?project=project1",
-      "{\n" +
-        "  \"branches\": [\n" +
-        "    { }" +
-        "  ]\n" +
-        "}");
+      """
+        {
+          "branches": [
+            { }\
+          ]
+        }""");
 
     var branches = underTest.getAllBranches(PROJECT_KEY, new SonarLintCancelMonitor());
 

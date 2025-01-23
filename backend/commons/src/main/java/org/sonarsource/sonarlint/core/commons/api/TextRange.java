@@ -61,10 +61,9 @@ public class TextRange {
     if (this == obj) {
       return true;
     }
-    if (!(obj instanceof TextRange)) {
+    if (!(obj instanceof TextRange other)) {
       return false;
     }
-    TextRange other = (TextRange) obj;
     return endLine == other.endLine && endLineOffset == other.endLineOffset && startLine == other.startLine && startLineOffset == other.startLineOffset;
   }
 }

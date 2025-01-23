@@ -22,8 +22,8 @@ package org.sonarsource.sonarlint.core.serverconnection.storage;
 import java.nio.file.Path;
 import java.time.Instant;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
-import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
+import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 
 public class ServerHotspotFixtures {

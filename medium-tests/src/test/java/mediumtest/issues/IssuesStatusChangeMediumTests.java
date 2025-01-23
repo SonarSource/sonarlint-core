@@ -140,13 +140,14 @@ class IssuesStatusChangeMediumTests {
 
   @SonarLintTest
   void it_should_update_local_only_storage_when_the_issue_exists_locally(SonarLintTestHarness harness, @TempDir Path baseDir) {
-    var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-      + "<project>\n"
-      + "  <modelVersion>4.0.0</modelVersion>\n"
-      + "  <groupId>com.foo</groupId>\n"
-      + "  <artifactId>bar</artifactId>\n"
-      + "  <version>${pom.version}</version>\n"
-      + "</project>");
+    var filePath = createFile(baseDir, "pom.xml", """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <project>
+        <modelVersion>4.0.0</modelVersion>
+        <groupId>com.foo</groupId>
+        <artifactId>bar</artifactId>
+        <version>${pom.version}</version>
+      </project>""");
     var fileUri = filePath.toUri();
     var server = harness.newFakeSonarQubeServer()
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile
@@ -184,13 +185,14 @@ class IssuesStatusChangeMediumTests {
 
   @SonarLintTest
   void it_should_sync_anticipated_transitions_with_sonarqube_when_the_issue_exists_locally(SonarLintTestHarness harness, @TempDir Path baseDir) {
-    var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-      + "<project>\n"
-      + "  <modelVersion>4.0.0</modelVersion>\n"
-      + "  <groupId>com.foo</groupId>\n"
-      + "  <artifactId>bar</artifactId>\n"
-      + "  <version>${pom.version}</version>\n"
-      + "</project>");
+    var filePath = createFile(baseDir, "pom.xml", """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <project>
+        <modelVersion>4.0.0</modelVersion>
+        <groupId>com.foo</groupId>
+        <artifactId>bar</artifactId>
+        <version>${pom.version}</version>
+      </project>""");
     var fileUri = filePath.toUri();
     var server = harness.newFakeSonarQubeServer()
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile
@@ -232,13 +234,14 @@ class IssuesStatusChangeMediumTests {
 
   @SonarLintTest
   void it_should_update_telemetry_when_changing_status_of_a_local_only_issue(SonarLintTestHarness harness, @TempDir Path baseDir) {
-    var filePath = createFile(baseDir, "pom.xml", "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-      + "<project>\n"
-      + "  <modelVersion>4.0.0</modelVersion>\n"
-      + "  <groupId>com.foo</groupId>\n"
-      + "  <artifactId>bar</artifactId>\n"
-      + "  <version>${pom.version}</version>\n"
-      + "</project>");
+    var filePath = createFile(baseDir, "pom.xml", """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <project>
+        <modelVersion>4.0.0</modelVersion>
+        <groupId>com.foo</groupId>
+        <artifactId>bar</artifactId>
+        <version>${pom.version}</version>
+      </project>""");
     var fileUri = filePath.toUri();
     var server = harness.newFakeSonarQubeServer()
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile

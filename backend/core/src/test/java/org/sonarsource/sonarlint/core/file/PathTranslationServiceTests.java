@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.file;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -74,7 +73,7 @@ class PathTranslationServiceTests {
 
   private void mockServerFilePaths(Binding binding, String... paths) {
     when(serverFilePathsProvider.getServerPaths(eq(binding), any(SonarLintCancelMonitor.class)))
-      .thenReturn(Optional.of(Arrays.stream(paths).map(Paths::get).collect(Collectors.toList())));
+      .thenReturn(Optional.of(Arrays.stream(paths).map(Paths::get).toList()));
   }
 
   @Test
@@ -128,7 +127,7 @@ class PathTranslationServiceTests {
   private void mockClientFilePaths(String... paths) {
     doReturn(Arrays.stream(paths)
       .map(path -> new ClientFile(null, null, Paths.get(path), null, null, null, null, true))
-      .collect(Collectors.toList()))
+      .toList())
       .when(clientFs)
       .getFiles(CONFIG_SCOPE);
   }

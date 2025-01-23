@@ -33,10 +33,10 @@ import org.sonar.markdown.Markdown;
 import org.sonarsource.sonarlint.core.commons.CleanCodeAttribute;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
-import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 
 import static java.util.stream.Collectors.toSet;
 import static org.sonarsource.sonarlint.core.rule.extractor.SecurityStandards.fromSecurityStandards;
@@ -80,7 +80,7 @@ public class SonarLintRuleDefinition {
     } else {
       this.description = htmlDescription;
       this.descriptionSections = rule.ruleDescriptionSections().stream().map(s -> new SonarLintRuleDescriptionSection(s.getKey(), s.getHtmlContent(),
-        s.getContext().map(c -> new SonarLintRuleDescriptionSection.Context(c.getKey(), c.getDisplayName())))).collect(Collectors.toList());
+        s.getContext().map(c -> new SonarLintRuleDescriptionSection.Context(c.getKey(), c.getDisplayName())))).toList();
     }
 
     this.isActiveByDefault = rule.activatedByDefault();

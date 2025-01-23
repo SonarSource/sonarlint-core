@@ -24,5 +24,5 @@ public enum RuleType {
   CODE_SMELL,
   BUG,
   VULNERABILITY,
-  SECURITY_HOTSPOT;
+  SECURITY_HOTSPOT
 }

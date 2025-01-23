@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -67,8 +66,7 @@ public class SkippedPluginsNotifierService {
         .findFirst()
         .ifPresent(skippedPlugin -> {
           var skipReason = skippedPlugin.getReason();
-          if (skipReason instanceof SkipReason.UnsatisfiedRuntimeRequirement) {
-            var runtimeRequirement = (SkipReason.UnsatisfiedRuntimeRequirement) skipReason;
+          if (skipReason instanceof SkipReason.UnsatisfiedRuntimeRequirement runtimeRequirement) {
             var rpcLanguage = Language.valueOf(sonarLanguage.name());
             var rpcSkipReason = runtimeRequirement.getRuntime() == SkipReason.UnsatisfiedRuntimeRequirement.RuntimeRequirement.JRE
               ? DidSkipLoadingPluginParams.SkipReason.UNSATISFIED_JRE
@@ -83,7 +81,7 @@ public class SkippedPluginsNotifierService {
   private List<SkippedPlugin> getSkippedPluginsToNotify(String configurationScopeId) {
     var skippedPlugins = getSkippedPlugins(configurationScopeId);
     if (skippedPlugins != null) {
-      return skippedPlugins.stream().filter(skippedPlugin -> !alreadyNotifiedPluginKeys.contains(skippedPlugin.getKey())).collect(Collectors.toList());
+      return skippedPlugins.stream().filter(skippedPlugin -> !alreadyNotifiedPluginKeys.contains(skippedPlugin.getKey())).toList();
     }
     return List.of();
   }

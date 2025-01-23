@@ -28,7 +28,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -64,7 +63,7 @@ public class SonarProjectsCache {
         .thenComparing(Comparator.comparing(e -> e.getKey().getName(), String.CASE_INSENSITIVE_ORDER)))
       .limit(10)
       .map(e -> new SonarProjectDto(e.getKey().getKey(), e.getKey().getName()))
-      .collect(Collectors.toList());
+      .toList();
   }
 
   private static class SonarProjectKey {

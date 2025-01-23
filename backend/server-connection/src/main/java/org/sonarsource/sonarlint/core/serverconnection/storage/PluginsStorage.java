@@ -86,7 +86,7 @@ public class PluginsStorage {
 
   public List<StoredPlugin> getStoredPlugins() {
     return rwLock.read(() -> Files.exists(pluginReferencesFilePath) ? ProtobufFileUtil.readFile(pluginReferencesFilePath, Sonarlint.PluginReferences.parser())
-      : Sonarlint.PluginReferences.newBuilder().build()).getPluginsByKeyMap().values().stream().map(this::adapt).collect(Collectors.toList());
+      : Sonarlint.PluginReferences.newBuilder().build()).getPluginsByKeyMap().values().stream().map(this::adapt).toList();
   }
 
   public Map<String, StoredPlugin> getStoredPluginsByKey() {
@@ -135,13 +135,13 @@ public class PluginsStorage {
     }
     LOG.debug("Known plugin paths: {}", knownPluginsPaths);
     try (Stream<Path> pathsInDir = Files.list(rootPath)) {
-      var paths = pathsInDir.collect(Collectors.toList());
+      var paths = pathsInDir.toList();
       LOG.debug("Paths in dir: {}", paths);
       var unknownFiles = paths.stream()
         .filter(p -> !p.equals(pluginReferencesFilePath))
         .filter(p -> !knownPluginsPaths.contains(p))
         .map(Path::toFile)
-        .collect(Collectors.toList());
+        .toList();
       LOG.debug("Unknown files: {}", unknownFiles);
       return unknownFiles;
     } catch (Exception e) {

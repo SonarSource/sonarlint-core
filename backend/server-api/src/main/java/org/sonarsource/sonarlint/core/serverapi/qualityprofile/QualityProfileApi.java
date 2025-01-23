@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.serverapi.qualityprofile;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -51,7 +50,7 @@ public class QualityProfileApi {
         () -> helper.get(url.toString(), cancelMonitor),
         response -> Qualityprofiles.SearchWsResponse.parseFrom(response.bodyAsStream()),
         duration -> LOG.debug("Downloaded project quality profiles in {}ms", duration));
-      return qpResponse.getProfilesList().stream().map(QualityProfileApi::adapt).collect(Collectors.toList());
+      return qpResponse.getProfilesList().stream().map(QualityProfileApi::adapt).toList();
     } catch (NotFoundException e) {
       throw new ProjectNotFoundException(projectKey, helper.getOrganizationKey().orElse(null));
     }

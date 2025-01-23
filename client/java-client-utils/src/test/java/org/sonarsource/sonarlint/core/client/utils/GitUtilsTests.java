@@ -41,7 +41,7 @@ import static org.mockito.Mockito.when;
 
 class GitUtilsTests {
 
-  private ClientLogOutput fakeClientLogger = (m, l) -> {
+  private final ClientLogOutput fakeClientLogger = (m, l) -> {
   };
 
   @Test

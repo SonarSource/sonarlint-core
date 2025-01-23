@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -123,9 +122,9 @@ class SonarLintBlameResultTest {
     var results = blameWithFilesGitCommand(projectDir, Set.of(Path.of("fileA"), Path.of("fileB")));
 
     assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"),
-      IntStream.rangeClosed(1, 100).boxed().collect(Collectors.toList()))).isPresent().contains(c1);
+      IntStream.rangeClosed(1, 100).boxed().toList())).isPresent().contains(c1);
     assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"),
-      IntStream.rangeClosed(100, 1000).boxed().collect(Collectors.toList()))).isEmpty();
+      IntStream.rangeClosed(100, 1000).boxed().toList())).isEmpty();
   }
 
   @Test
@@ -148,7 +147,7 @@ class SonarLintBlameResultTest {
     var results = blameWithFilesGitCommand(projectDir, Set.of(Path.of(deepFilePath)));
     assertThat(results.getLatestChangeDateForLinesInFile(
       Path.of(deepFilePath),
-      IntStream.rangeClosed(1, 100).boxed().collect(Collectors.toList())))
+      IntStream.rangeClosed(1, 100).boxed().toList()))
       .isPresent().contains(c1);
   }
 }

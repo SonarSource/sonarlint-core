@@ -69,11 +69,11 @@ public class PluginsSynchronizer {
     var pluginsToDownload = downloadSkipReasonByServerPlugin.entrySet().stream()
       .filter(entry -> entry.getValue().isEmpty())
       .map(Map.Entry::getKey)
-      .collect(Collectors.toList());
+      .toList();
     var serverPluginsExpectedInStorage = downloadSkipReasonByServerPlugin.entrySet().stream()
       .filter(entry -> entry.getValue().isEmpty() || entry.getValue().get().equals(DownloadSkipReason.UP_TO_DATE))
       .map(Map.Entry::getKey)
-      .collect(Collectors.toList());
+      .toList();
 
     if (pluginsToDownload.isEmpty()) {
       storage.plugins().storeNoPlugins();

@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.hotspot;
 
 import java.util.List;
-import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
@@ -142,7 +141,7 @@ public class HotspotService {
       coreStatuses.stream().map(s -> HotspotStatus.valueOf(s.name()))
         // respect ordering of the client-api enum for the UI
         .sorted()
-        .collect(Collectors.toList()));
+        .toList());
   }
 
   public void changeStatus(String configurationScopeId, String hotspotKey, HotspotReviewStatus newStatus, SonarLintCancelMonitor cancelMonitor) {
@@ -179,16 +178,13 @@ public class HotspotService {
   public void onServerEventReceived(SonarServerEventReceivedEvent event) {
     var connectionId = event.getConnectionId();
     var serverEvent = event.getEvent();
-    if (serverEvent instanceof SecurityHotspotChangedEvent) {
-      var hotspotChangedEvent = (SecurityHotspotChangedEvent) serverEvent;
+    if (serverEvent instanceof SecurityHotspotChangedEvent hotspotChangedEvent) {
       updateStorage(connectionId, hotspotChangedEvent);
       republishPreviouslyRaisedHotspots(connectionId, hotspotChangedEvent);
-    } else if (serverEvent instanceof SecurityHotspotClosedEvent) {
-      var hotspotClosedEvent = (SecurityHotspotClosedEvent) serverEvent;
+    } else if (serverEvent instanceof SecurityHotspotClosedEvent hotspotClosedEvent) {
       updateStorage(connectionId, hotspotClosedEvent);
       republishPreviouslyRaisedHotspots(connectionId, hotspotClosedEvent);
-    } else if (serverEvent instanceof SecurityHotspotRaisedEvent) {
-      var hotspotRaisedEvent = (SecurityHotspotRaisedEvent) serverEvent;
+    } else if (serverEvent instanceof SecurityHotspotRaisedEvent hotspotRaisedEvent) {
       // We could try to match with an existing hotspot. But we don't do it because we don't invest in hotspots right now.
       updateStorage(connectionId, hotspotRaisedEvent);
     }

@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.rules;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
 
 public class StandaloneRulesConfigurationChanged {
@@ -40,6 +39,6 @@ public class StandaloneRulesConfigurationChanged {
     return standaloneRuleConfig.entrySet().stream()
       .filter(entry -> !entry.getValue().isActive())
       .map(Map.Entry::getKey)
-      .collect(Collectors.toList());
+      .toList();
   }
 }

@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.plugin.commons;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason.IncompatiblePluginApi;
@@ -34,7 +35,7 @@ class SkipReasonTests {
 
   @Test
   void testLanguageNotEnabled_getters_equals_hashcode_tostring() {
-    var underTest = new LanguagesNotEnabled(asList(SonarLanguage.JAVA));
+    var underTest = new LanguagesNotEnabled(List.of(SonarLanguage.JAVA));
     // Getters
     assertThat(underTest.getNotEnabledLanguages())
       .containsExactly(SonarLanguage.JAVA);
@@ -42,11 +43,11 @@ class SkipReasonTests {
       // Equals
       .isEqualTo(underTest)
       .isNotEqualTo(IncompatiblePluginApi.INSTANCE)
-      .isNotEqualTo(new LanguagesNotEnabled(asList(SonarLanguage.JS)))
-      .isEqualTo(new LanguagesNotEnabled(asList(SonarLanguage.JAVA)))
+      .isNotEqualTo(new LanguagesNotEnabled(List.of(SonarLanguage.JS)))
+      .isEqualTo(new LanguagesNotEnabled(List.of(SonarLanguage.JAVA)))
       // HashCode
       .hasSameHashCodeAs(underTest)
-      .hasSameHashCodeAs(new LanguagesNotEnabled(asList(SonarLanguage.JAVA)))
+      .hasSameHashCodeAs(new LanguagesNotEnabled(List.of(SonarLanguage.JAVA)))
       // To String
       .hasToString("LanguagesNotEnabled [languages=[JAVA]]");
   }

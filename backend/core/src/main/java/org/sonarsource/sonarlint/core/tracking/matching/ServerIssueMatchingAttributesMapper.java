@@ -33,27 +33,27 @@ public class ServerIssueMatchingAttributesMapper implements MatchingAttributesMa
 
   @Override
   public Optional<Integer> getLine(ServerIssue<?> issue) {
-    if (issue instanceof LineLevelServerIssue) {
-      return Optional.of(((LineLevelServerIssue) issue).getLine());
+    if (issue instanceof LineLevelServerIssue lineLevelServerIssue) {
+      return Optional.of(lineLevelServerIssue.getLine());
     }
-    if (issue instanceof RangeLevelServerIssue) {
-      return Optional.of(((RangeLevelServerIssue) issue).getTextRange().getStartLine());
+    if (issue instanceof RangeLevelServerIssue rangeLevelServerIssue) {
+      return Optional.of(rangeLevelServerIssue.getTextRange().getStartLine());
     }
     return Optional.empty();
   }
 
   @Override
   public Optional<String> getTextRangeHash(ServerIssue<?> issue) {
-    if (issue instanceof RangeLevelServerIssue) {
-      return Optional.of(((RangeLevelServerIssue) issue).getTextRange().getHash());
+    if (issue instanceof RangeLevelServerIssue rangeLevelServerIssue) {
+      return Optional.of(rangeLevelServerIssue.getTextRange().getHash());
     }
     return Optional.empty();
   }
 
   @Override
   public Optional<String> getLineHash(ServerIssue<?> issue) {
-    if (issue instanceof LineLevelServerIssue) {
-      return Optional.of(((LineLevelServerIssue) issue).getLineHash());
+    if (issue instanceof LineLevelServerIssue lineLevelServerIssue) {
+      return Optional.of(lineLevelServerIssue.getLineHash());
     }
     return Optional.empty();
   }

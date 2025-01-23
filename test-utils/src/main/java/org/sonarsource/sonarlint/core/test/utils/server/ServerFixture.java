@@ -36,8 +36,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Consumer;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -660,7 +660,7 @@ public class ServerFixture {
                 .setIsDefault(true)
                 .setActiveRuleCount(qualityProfile.activeRulesByKey.size())
                 .build();
-            }).collect(toList())).build()))));
+            }).toList()).build()))));
       });
     }
 
@@ -676,7 +676,7 @@ public class ServerFixture {
             .addAllRules(qualityProfile.activeRulesByKey.entrySet().stream().map(entry -> Rules.Rule.newBuilder()
               .setKey(entry.getKey())
               .setSeverity(entry.getValue().issueSeverity.name())
-              .build()).collect(toList()))
+              .build()).toList())
             .setActives(Rules.Actives.newBuilder()
               .putAllActives(qualityProfile.activeRulesByKey.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> Rules.ActiveList.newBuilder()
                 .addActiveList(Rules.Active.newBuilder().setSeverity(entry.getValue().issueSeverity.name()).build()).build())))
@@ -696,7 +696,7 @@ public class ServerFixture {
           .addAllRules(taintActiveRulesByKey.entrySet().stream().map(entry -> Rules.Rule.newBuilder()
             .setKey(entry.getKey())
             .setSeverity(entry.getValue().issueSeverity.name())
-            .build()).collect(toList()))
+            .build()).toList())
           .setActives(Rules.Actives.newBuilder()
             .putAllActives(taintActiveRulesByKey.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> Rules.ActiveList.newBuilder()
               .addActiveList(Rules.Active.newBuilder().setSeverity(entry.getValue().issueSeverity.name()).build()).build())))
@@ -704,7 +704,7 @@ public class ServerFixture {
           .setPaging(Common.Paging.newBuilder().setTotal(taintActiveRulesByKey.size()).build())
           .build()))));
 
-      var activeRules = qualityProfilesByKey.values().stream().flatMap(qp -> qp.activeRulesByKey.entrySet().stream()).collect(toList());
+      var activeRules = qualityProfilesByKey.values().stream().flatMap(qp -> qp.activeRulesByKey.entrySet().stream()).toList();
       activeRules.forEach(entry -> {
         var ruleKey = entry.getKey();
         var rule = entry.getValue();
@@ -734,7 +734,7 @@ public class ServerFixture {
           .addAllBranches(project.branchesByName.keySet().stream()
             .filter(Objects::nonNull)
             .map(branchName -> ProjectBranches.Branch.newBuilder().setName(branchName).setIsMain(project.mainBranchName.equals(branchName)).setType(Common.BranchType.LONG).build())
-            .collect(Collectors.toList()))
+            .toList())
           .build())))));
     }
 
@@ -782,11 +782,11 @@ public class ServerFixture {
               .addAllHotspots(messages)
               .setPaging(Common.Paging.newBuilder().setTotal(messages.size()).build())
               .build())))));
-        var allMessages = messagesPerFilePath.values().stream().flatMap(Collection::stream).collect(toList());
+        var allMessages = messagesPerFilePath.values().stream().flatMap(Collection::stream).toList();
         mockServer.stubFor(get("/api/hotspots/search.protobuf?projectKey=" + projectKey + branchParameter + "&ps=500&p=1")
           .willReturn(aResponse().withResponseBody(protobufBody(Hotspots.SearchWsResponse.newBuilder()
             .addAllComponents(messagesPerFilePath.keySet().stream().map(filePath -> Hotspots.Component.newBuilder().setPath(filePath).setKey(projectKey + ":" + filePath).build())
-              .collect(toList()))
+              .toList())
             .setPaging(Common.Paging.newBuilder().setTotal(allMessages.size()).build())
             .addAllHotspots(allMessages).build()))));
       }));
@@ -797,7 +797,7 @@ public class ServerFixture {
         project.pullRequestsByName.forEach((pullRequestName, pullRequest) -> {
           var issuesPerFilePath = getIssuesPerFilePath(projectKey, pullRequest);
 
-          var allIssues = issuesPerFilePath.values().stream().flatMap(Collection::stream).collect(toList());
+          var allIssues = issuesPerFilePath.values().stream().flatMap(Collection::stream).toList();
 
           allIssues.forEach(issue -> {
             var searchUrl = "/api/issues/search.protobuf?issues=".concat(urlEncode(issue.getKey()))
@@ -813,10 +813,10 @@ public class ServerFixture {
                     .addAllImpacts(issue.getImpactsList().stream().map(i -> Common.Impact.newBuilder()
                       .setSoftwareQuality(i.getSoftwareQuality())
                       .setSeverity(i.getSeverity())
-                      .build()).collect(toList()))
+                      .build()).toList())
                     .build())
                 .addAllComponents(
-                  issuesPerFilePath.keySet().stream().map(issues -> Issues.Component.newBuilder().setPath(issues).setKey(projectKey + ":" + issues).build()).collect(toList()))
+                  issuesPerFilePath.keySet().stream().map(issues -> Issues.Component.newBuilder().setPath(issues).setKey(projectKey + ":" + issues).build()).toList())
                 .setRules(Issues.SearchWsResponse.newBuilder().getRulesBuilder().addRules(Common.Rule.newBuilder().setKey(issue.getRule()).build()))
                 .setPaging(Common.Paging.newBuilder().setTotal(1).build())
                 .build()))));
@@ -825,7 +825,7 @@ public class ServerFixture {
         project.branchesByName.forEach((branchName, branch) -> {
           var issuesPerFilePath = getIssuesPerFilePath(projectKey, branch);
 
-          var allIssues = issuesPerFilePath.values().stream().flatMap(Collection::stream).collect(toList());
+          var allIssues = issuesPerFilePath.values().stream().flatMap(Collection::stream).toList();
 
           allIssues.forEach(issue -> {
             var searchUrl = "/api/issues/search.protobuf?issues=".concat(urlEncode(issue.getKey()))
@@ -839,13 +839,13 @@ public class ServerFixture {
                     .setKey(issue.getKey()).setRule(issue.getRule()).setCreationDate(issue.getCreationDate()).setMessage(issue.getMessage())
                     .setTextRange(issue.getTextRange()).setComponent(issue.getComponent()).setType(issue.getType()).build())
                 .addAllComponents(
-                  issuesPerFilePath.keySet().stream().map(issues -> Issues.Component.newBuilder().setPath(issues).setKey(projectKey + ":" + issues).build()).collect(toList()))
+                  issuesPerFilePath.keySet().stream().map(issues -> Issues.Component.newBuilder().setPath(issues).setKey(projectKey + ":" + issues).build()).toList())
                 .setRules(Issues.SearchWsResponse.newBuilder().getRulesBuilder().addRules(Common.Rule.newBuilder().setKey(issue.getRule()).build()))
                 .setPaging(Common.Paging.newBuilder().setTotal(1).build())
                 .build()))));
           });
 
-          var vulnerabilities = allIssues.stream().filter(issue -> issue.getType() == Common.RuleType.VULNERABILITY).collect(toList());
+          var vulnerabilities = allIssues.stream().filter(issue -> issue.getType() == Common.RuleType.VULNERABILITY).toList();
           var searchUrl = "/api/issues/search.protobuf?statuses=OPEN,CONFIRMED,REOPENED,RESOLVED&types=VULNERABILITY&componentKeys=" + projectKey + "&rules=&branch=" + branchName
             + "&ps=500&p=1";
           mockServer.stubFor(get(searchUrl)
@@ -853,9 +853,9 @@ public class ServerFixture {
               .addAllIssues(
                 vulnerabilities.stream().map(vulnerability -> Issues.Issue.newBuilder()
                   .setKey(vulnerability.getKey()).setRule(vulnerability.getRule()).setCreationDate(vulnerability.getCreationDate()).setMessage(vulnerability.getMessage())
-                  .setTextRange(vulnerability.getTextRange()).setComponent(vulnerability.getComponent()).setType(vulnerability.getType()).build()).collect(toList()))
+                  .setTextRange(vulnerability.getTextRange()).setComponent(vulnerability.getComponent()).setType(vulnerability.getType()).build()).toList())
               .addAllComponents(
-                issuesPerFilePath.keySet().stream().map(issues -> Issues.Component.newBuilder().setPath(issues).setKey(projectKey + ":" + issues).build()).collect(toList()))
+                issuesPerFilePath.keySet().stream().map(issues -> Issues.Component.newBuilder().setPath(issues).setKey(projectKey + ":" + issues).build()).toList())
               .setPaging(Common.Paging.newBuilder().setTotal(vulnerabilities.size()).build())
               .build()))));
         });
@@ -884,7 +884,7 @@ public class ServerFixture {
             .addAllImpacts(issue.impacts.entrySet().stream().map(i -> Common.Impact.newBuilder()
               .setSoftwareQuality(Common.SoftwareQuality.valueOf(i.getKey().name()))
               .setSeverity(Common.ImpactSeverity.valueOf(i.getValue().name()))
-              .build()).collect(toList()))
+              .build()).toList())
             .build(), toList())));
     }
 
@@ -1026,7 +1026,7 @@ public class ServerFixture {
           .addAllImpacts(issue.impacts.entrySet().stream().map(i -> Common.Impact.newBuilder()
             .setSoftwareQuality(Common.SoftwareQuality.valueOf(i.getKey().name()))
             .setSeverity(Common.ImpactSeverity.valueOf(i.getValue().name()))
-            .build()).collect(toList()))
+            .build()).toList())
           .build()).toArray(Issues.IssueLite[]::new);
         var messages = new Message[issuesArray.length + 1];
         messages[0] = timestamp;
@@ -1128,7 +1128,7 @@ public class ServerFixture {
       mockServer.stubFor(get(url)
         .willReturn(aResponse().withResponseBody(protobufBody(Components.SearchWsResponse.newBuilder()
           .addAllComponents(projectsByProjectKey.entrySet().stream().map(entry -> Components.Component.newBuilder().setKey(entry.getKey()).setName(entry.getValue().name).build())
-            .collect(toList()))
+            .toList())
           .setPaging(Common.Paging.newBuilder().setTotal(projectsByProjectKey.size()).build())
           .build()))));
     }
@@ -1155,7 +1155,7 @@ public class ServerFixture {
         mockServer.stubFor(get(url)
           .willReturn(aResponse().withResponseBody(protobufBody(Components.TreeWsResponse.newBuilder()
             .addAllComponents(
-              project.relativeFilePaths.stream().map(relativePath -> Components.Component.newBuilder().setKey(projectKey + ":" + relativePath).build()).collect(toList()))
+              project.relativeFilePaths.stream().map(relativePath -> Components.Component.newBuilder().setKey(projectKey + ":" + relativePath).build()).toList())
             .setPaging(Common.Paging.newBuilder().setTotal(project.relativeFilePaths.size()).build())
             .build()))));
       });

@@ -77,7 +77,7 @@ public class GitUtils {
       var untracked = status.getUntracked().stream().filter(f -> !f.equals(GITIGNORE_FILENAME));
       return Stream.concat(uncommitted, untracked)
         .map(file -> baseDir.resolve(file).toUri())
-        .collect(Collectors.toList());
+        .toList();
     } catch (GitAPIException | IllegalStateException e) {
       LOG.debug("Git repository access error: ", e);
       return List.of();

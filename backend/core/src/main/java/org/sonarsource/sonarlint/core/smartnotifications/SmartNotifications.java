@@ -157,14 +157,14 @@ public class SmartNotifications {
         e.getLink(),
         e.getProjectKey(),
         e.getTime()))
-      .collect(Collectors.toList());
+      .toList();
   }
 
   @EventListener
   public void onServerEventReceived(SonarServerEventReceivedEvent eventReceived) {
     var serverEvent = eventReceived.getEvent();
-    if (serverEvent instanceof SmartNotificationEvent) {
-      notifyClient(eventReceived.getConnectionId(), (SmartNotificationEvent) serverEvent);
+    if (serverEvent instanceof SmartNotificationEvent smartNotificationEvent) {
+      notifyClient(eventReceived.getConnectionId(), smartNotificationEvent);
     }
   }
 

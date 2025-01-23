@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.jetbrains.annotations.NotNull;
@@ -48,7 +47,7 @@ public class LanguageSupportRepository {
 
   @NotNull
   private static List<SonarLanguage> adaptLanguage(Set<Language> languagesDto) {
-    return languagesDto.stream().map(e -> SonarLanguage.valueOf(e.name())).collect(Collectors.toList());
+    return languagesDto.stream().map(e -> SonarLanguage.valueOf(e.name())).toList();
   }
 
   private static <T extends Enum<T>> EnumSet<T> toEnumSet(Collection<T> collection, Class<T> clazz) {

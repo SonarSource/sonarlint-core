@@ -106,7 +106,7 @@ public class RuleDetailsAdapter {
     var htmlSnippets = new ArrayList<String>();
     if (!ruleDetails.getDescriptionSectionsByKey().isEmpty()) {
       // The rule has only `default` section
-      htmlSnippets.addAll(ruleDetails.getDescriptionSectionsByKey().get("default").stream().map(RuleDetails.DescriptionSection::getHtmlContent).collect(Collectors.toList()));
+      htmlSnippets.addAll(ruleDetails.getDescriptionSectionsByKey().get("default").stream().map(RuleDetails.DescriptionSection::getHtmlContent).toList());
     } else {
       htmlSnippets.add(ruleDetails.getHtmlDescription());
     }
@@ -116,7 +116,7 @@ public class RuleDetailsAdapter {
   }
 
   private static String getCleanCodePrinciplesContent(Set<String> cleanCodePrincipleKeys) {
-    var principles = cleanCodePrincipleKeys.stream().sorted(Comparator.naturalOrder()).map(CleanCodePrinciples::getContent).collect(Collectors.toList());
+    var principles = cleanCodePrincipleKeys.stream().sorted(Comparator.naturalOrder()).map(CleanCodePrinciples::getContent).toList();
     return (principles.stream().anyMatch(StringUtils::isNotBlank) ? "<h3>Clean Code Principles</h3>\n" : "") + concat(principles);
   }
 
@@ -170,7 +170,7 @@ public class RuleDetailsAdapter {
               context.getDisplayName());
           })
             .sorted(Comparator.comparing(RuleContextualSectionDto::getDisplayName))
-            .collect(Collectors.toList());
+            .collect(Collectors.toCollection(ArrayList::new));
           contextualSectionContents.add(
             new RuleContextualSectionDto(OthersSectionHtmlContent.getHtmlContent(),
               DEFAULT_CONTEXT_KEY, DEFAULT_CONTEXT_DISPLAY_NAME));
@@ -232,7 +232,7 @@ public class RuleDetailsAdapter {
   public static List<ImpactDto> toDto(Map<org.sonarsource.sonarlint.core.commons.SoftwareQuality, org.sonarsource.sonarlint.core.commons.ImpactSeverity> defaultImpacts) {
     return defaultImpacts.entrySet().stream()
       .map(e -> new ImpactDto(adapt(e.getKey()), adapt(e.getValue())))
-      .collect(Collectors.toList());
+      .toList();
   }
 
   public static CleanCodeAttribute adapt(org.sonarsource.sonarlint.core.commons.CleanCodeAttribute cca) {
@@ -269,7 +269,7 @@ public class RuleDetailsAdapter {
   }
 
   public static IssueFlowDto adapt(Flow f) {
-    return new IssueFlowDto(f.locations().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()));
+    return new IssueFlowDto(f.locations().stream().map(RuleDetailsAdapter::adapt).toList());
   }
 
   public static IssueLocationDto adapt(org.sonarsource.sonarlint.core.analysis.api.IssueLocation l) {
@@ -279,12 +279,12 @@ public class RuleDetailsAdapter {
   }
 
   public static QuickFixDto adapt(QuickFix qf) {
-    List<FileEditDto> fileEditDto = qf.inputFileEdits().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList());
+    List<FileEditDto> fileEditDto = qf.inputFileEdits().stream().map(RuleDetailsAdapter::adapt).toList();
     return new QuickFixDto(fileEditDto, qf.message());
   }
 
   private static FileEditDto adapt(ClientInputFileEdit edit) {
-    return new FileEditDto(edit.target().uri(), edit.textEdits().stream().map(RuleDetailsAdapter::adapt).collect(Collectors.toList()));
+    return new FileEditDto(edit.target().uri(), edit.textEdits().stream().map(RuleDetailsAdapter::adapt).toList());
   }
 
   private static TextEditDto adapt(TextEdit textEdit) {

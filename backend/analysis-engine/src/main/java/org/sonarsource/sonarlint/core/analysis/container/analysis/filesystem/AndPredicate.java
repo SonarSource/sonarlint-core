@@ -47,8 +47,8 @@ class AndPredicate extends AbstractFilePredicate {
         continue;
       } else if (filePredicate == FalsePredicate.FALSE) {
         return FalsePredicate.FALSE;
-      } else if (filePredicate instanceof AndPredicate) {
-        result.predicates.addAll(((AndPredicate) filePredicate).predicates);
+      } else if (filePredicate instanceof AndPredicate andPredicate) {
+        result.predicates.addAll(andPredicate.predicates);
       } else {
         result.predicates.add(OptimizedFilePredicateAdapter.create(filePredicate));
       }

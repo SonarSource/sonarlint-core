@@ -70,18 +70,15 @@ public interface SkipReason {
       if (this == obj) {
         return true;
       }
-      if (!(obj instanceof LanguagesNotEnabled)) {
+      if (!(obj instanceof LanguagesNotEnabled other)) {
         return false;
       }
-      var other = (LanguagesNotEnabled) obj;
       return Objects.equals(languages, other.languages);
     }
 
     @Override
     public String toString() {
-      var builder = new StringBuilder();
-      builder.append("LanguagesNotEnabled [languages=").append(languages).append("]");
-      return builder.toString();
+      return "LanguagesNotEnabled [languages=" + languages + "]";
     }
 
   }
@@ -107,18 +104,15 @@ public interface SkipReason {
       if (this == obj) {
         return true;
       }
-      if (!(obj instanceof UnsatisfiedDependency)) {
+      if (!(obj instanceof UnsatisfiedDependency other)) {
         return false;
       }
-      var other = (UnsatisfiedDependency) obj;
       return Objects.equals(dependencyKey, other.dependencyKey);
     }
 
     @Override
     public String toString() {
-      var builder = new StringBuilder();
-      builder.append("UnsatisfiedDependency [dependencyKey=").append(dependencyKey).append("]");
-      return builder.toString();
+      return "UnsatisfiedDependency [dependencyKey=" + dependencyKey + "]";
     }
 
   }
@@ -162,19 +156,15 @@ public interface SkipReason {
       if (this == obj) {
         return true;
       }
-      if (!(obj instanceof UnsatisfiedRuntimeRequirement)) {
+      if (!(obj instanceof UnsatisfiedRuntimeRequirement other)) {
         return false;
       }
-      var other = (UnsatisfiedRuntimeRequirement) obj;
       return runtime == other.runtime && Objects.equals(currentVersion, other.currentVersion) && Objects.equals(minVersion, other.minVersion);
     }
 
     @Override
     public String toString() {
-      var builder = new StringBuilder();
-      builder.append("UnsatisfiedRuntimeRequirement [runtime=").append(runtime).append(", currentVersion=").append(currentVersion).append(", minVersion=").append(minVersion)
-        .append("]");
-      return builder.toString();
+      return "UnsatisfiedRuntimeRequirement [runtime=" + runtime + ", currentVersion=" + currentVersion + ", minVersion=" + minVersion + "]";
     }
 
   }

@@ -85,13 +85,15 @@ class AnalysisConfigurationTests {
   @Test
   void testToString_and_getters_when_empty() {
     var config = AnalysisConfiguration.builder().build();
-    assertThat(config).hasToString("[\n" +
-      "  baseDir: null\n" +
-      "  extraProperties: {}\n" +
-      "  activeRules: []\n" +
-      "  inputFiles: [\n" +
-      "  ]\n" +
-      "]\n");
+    assertThat(config).hasToString("""
+      [
+        baseDir: null
+        extraProperties: {}
+        activeRules: []
+        inputFiles: [
+        ]
+      ]
+      """);
     assertThat(config.baseDir()).isNull();
     assertThat(config.inputFiles()).isEmpty();
     assertThat(config.activeRules()).isEmpty();
@@ -108,13 +110,15 @@ class AnalysisConfigurationTests {
       .addActiveRules(activeRuleWithParams)
       .addActiveRules(new ActiveRule("python:S123", null), new ActiveRule("python:S456", null))
       .build();
-    assertThat(config).hasToString("[\n" +
-      "  baseDir: null\n" +
-      "  extraProperties: {}\n" +
-      "  activeRules: [java:S123, java:S456, php:S123{param1=value1}, python:S123, python:S456]\n" +
-      "  inputFiles: [\n" +
-      "  ]\n" +
-      "]\n");
+    assertThat(config).hasToString("""
+      [
+        baseDir: null
+        extraProperties: {}
+        activeRules: [java:S123, java:S456, php:S123{param1=value1}, python:S123, python:S456]
+        inputFiles: [
+        ]
+      ]
+      """);
     assertThat(config.baseDir()).isNull();
     assertThat(config.inputFiles()).isEmpty();
     assertThat(config.activeRules()).extracting(ActiveRule::getRuleKey).containsExactly("java:S123", "java:S456", "php:S123", "python:S123", "python:S456");
@@ -129,13 +133,15 @@ class AnalysisConfigurationTests {
       .addActiveRules(activeRuleWithParams)
       .addActiveRules(new ActiveRule("python:S123", null), new ActiveRule("python:S456", null))
       .build();
-    assertThat(config).hasToString("[\n" +
-      "  baseDir: null\n" +
-      "  extraProperties: {}\n" +
-      "  activeRules: [2 python, 2 java, 1 php]\n" +
-      "  inputFiles: [\n" +
-      "  ]\n" +
-      "]\n");
+    assertThat(config).hasToString("""
+      [
+        baseDir: null
+        extraProperties: {}
+        activeRules: [2 python, 2 java, 1 php]
+        inputFiles: [
+        ]
+      ]
+      """);
     assertThat(config.baseDir()).isNull();
     assertThat(config.inputFiles()).isEmpty();
     assertThat(config.activeRules()).extracting(ActiveRule::getRuleKey).containsExactly("java:S123", "java:S456", "php:S123", "python:S123", "python:S456");

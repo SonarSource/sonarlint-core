@@ -237,7 +237,7 @@ class FileExclusionTests extends AbstractConnectedTests {
 
       @Override
       public void log(LogParams params) {
-        System.out.println(params.toString());
+        System.out.println(params);
         rpcClientLogs.add(params);
       }
     };

@@ -61,16 +61,17 @@ class SecurityHotspotTrackingMediumTests {
   void it_should_track_server_hotspot(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var ideFilePath = "Foo.java";
     var filePath = createFile(baseDir, ideFilePath,
-      "package sonar;\n" +
-        "\n" +
-        "public class Foo {\n" +
-        "  public void run() {\n" +
-        "    String username = \"steve\";\n" +
-        "    String password = \"blue\";\n" +
-        "    Connection conn = DriverManager.getConnection(\"jdbc:mysql://localhost/test?\" +\n" +
-        "      \"user=\" + username + \"&password=\" + password); // Sensitive\n" +
-        "  }\n" +
-        "}");
+      """
+        package sonar;
+        
+        public class Foo {
+          public void run() {
+            String username = "steve";
+            String password = "blue";
+            Connection conn = DriverManager.getConnection("jdbc:mysql://localhost/test?" +
+              "user=" + username + "&password=" + password); // Sensitive
+          }
+        }""");
     var projectKey = "projectKey";
     var connectionId = "connectionId";
     var branchName = "main";
@@ -119,16 +120,17 @@ class SecurityHotspotTrackingMediumTests {
   void it_should_track_known_server_hotspots(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var ideFilePath = "Foo.java";
     var filePath = createFile(baseDir, ideFilePath,
-      "package sonar;\n" +
-        "\n" +
-        "public class Foo {\n" +
-        "  public void run() {\n" +
-        "    String username = \"steve\";\n" +
-        "    String password = \"blue\";\n" +
-        "    Connection conn = DriverManager.getConnection(\"jdbc:mysql://localhost/test?\" +\n" +
-        "      \"user=\" + username + \"&password=\" + password); // Sensitive\n" +
-        "  }\n" +
-        "}");
+      """
+        package sonar;
+        
+        public class Foo {
+          public void run() {
+            String username = "steve";
+            String password = "blue";
+            Connection conn = DriverManager.getConnection("jdbc:mysql://localhost/test?" +
+              "user=" + username + "&password=" + password); // Sensitive
+          }
+        }""");
     var projectKey = "projectKey";
     var connectionId = "connectionId";
     var branchName = "main";
@@ -178,16 +180,17 @@ class SecurityHotspotTrackingMediumTests {
   void it_should_not_track_server_hotspots_in_standalone_mode(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var ideFilePath = "Foo.java";
     var filePath = createFile(baseDir, ideFilePath,
-      "package sonar;\n" +
-        "\n" +
-        "public class Foo {\n" +
-        "  public void run() {\n" +
-        "    String username = \"steve\";\n" +
-        "    String password = \"blue\";\n" +
-        "    Connection conn = DriverManager.getConnection(\"jdbc:mysql://localhost/test?\" +\n" +
-        "      \"user=\" + username + \"&password=\" + password); // Sensitive\n" +
-        "  }\n" +
-        "}");
+      """
+        package sonar;
+        
+        public class Foo {
+          public void run() {
+            String username = "steve";
+            String password = "blue";
+            Connection conn = DriverManager.getConnection("jdbc:mysql://localhost/test?" +
+              "user=" + username + "&password=" + password); // Sensitive
+          }
+        }""");
     var projectKey = "projectKey";
     var connectionId = "connectionId";
     var branchName = "main";

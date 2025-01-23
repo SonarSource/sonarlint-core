@@ -72,7 +72,7 @@ class FileTreeMatcherTests {
 
   @Test
   void should_return_shortest_sq_prefix_if_there_are_ties() {
-    List<Path> idePaths = Arrays.asList(
+    List<Path> idePaths = List.of(
       Paths.get("pom.xml"));
 
     List<Path> sqPaths = Arrays.asList(

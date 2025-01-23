@@ -305,7 +305,7 @@ public class IssueApi {
   }
 
   private static List<IssueAnticipatedTransition> adapt(List<LocalOnlyIssue> resolvedLocalOnlyIssues) {
-    return resolvedLocalOnlyIssues.stream().map(IssueApi::adapt).collect(Collectors.toList());
+    return resolvedLocalOnlyIssues.stream().map(IssueApi::adapt).toList();
   }
 
   private static IssueAnticipatedTransition adapt(LocalOnlyIssue issue) {

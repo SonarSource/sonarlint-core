@@ -1380,7 +1380,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(((MockSonarLintRpcClientDelegate) client).getRaisedIssuesAsList(configScopeId)).isNotEmpty());
     var raisedIssues = ((MockSonarLintRpcClientDelegate) client).getRaisedIssues(configScopeId);
     ((MockSonarLintRpcClientDelegate) client).getRaisedIssues().clear();
-    return raisedIssues != null ? raisedIssues.values().stream().flatMap(List::stream).collect(Collectors.toList()) : List.of();
+    return raisedIssues != null ? raisedIssues.values().stream().flatMap(List::stream).toList() : List.of();
   }
 
   private void analyzeFileAndVerifyNoIssues(String configScopeId, String baseDir, String filePathStr, String... properties) {
@@ -1409,7 +1409,7 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
     await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(((MockSonarLintRpcClientDelegate) client).getRaisedHotspotsAsList(configScopeId)).isNotEmpty());
     var raisedHotspots = ((MockSonarLintRpcClientDelegate) client).getRaisedHotspots(configScopeId);
     ((MockSonarLintRpcClientDelegate) client).clear();
-    return raisedHotspots != null ? raisedHotspots.values().stream().flatMap(List::stream).collect(Collectors.toList()) : List.of();
+    return raisedHotspots != null ? raisedHotspots.values().stream().flatMap(List::stream).toList() : List.of();
   }
 
   private static SonarLintRpcClientDelegate newDummySonarLintClient() {

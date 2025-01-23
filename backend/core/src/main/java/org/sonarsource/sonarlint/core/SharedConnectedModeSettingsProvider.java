@@ -36,14 +36,16 @@ import static java.lang.String.format;
 @Singleton
 public class SharedConnectedModeSettingsProvider {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final String SONARCLOUD_CONNECTED_MODE_CONFIG = "{\n" +
-    "    \"sonarCloudOrganization\": \"%s\",\n" +
-    "    \"projectKey\": \"%s\"\n" +
-    "}";
-  private static final String SONARQUBE_CONNECTED_MODE_CONFIG = "{\n" +
-    "    \"sonarQubeUri\": \"%s\",\n" +
-    "    \"projectKey\": \"%s\"\n" +
-    "}";
+  private static final String SONARCLOUD_CONNECTED_MODE_CONFIG = """
+    {
+        "sonarCloudOrganization": "%s",
+        "projectKey": "%s"
+    }""";
+  private static final String SONARQUBE_CONNECTED_MODE_CONFIG = """
+    {
+        "sonarQubeUri": "%s",
+        "projectKey": "%s"
+    }""";
 
   private final ConfigurationRepository configurationRepository;
   private final ConnectionConfigurationRepository connectionRepository;

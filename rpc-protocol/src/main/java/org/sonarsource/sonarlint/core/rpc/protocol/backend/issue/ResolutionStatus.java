@@ -22,5 +22,5 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.issue;
 public enum ResolutionStatus {
   ACCEPT,
   WONT_FIX,
-  FALSE_POSITIVE;
+  FALSE_POSITIVE
 }

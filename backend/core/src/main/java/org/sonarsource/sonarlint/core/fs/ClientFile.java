@@ -43,23 +43,23 @@ public class ClientFile {
    * Relative path for this file on the client side. We use the {@link Path} class for convenience for filename separators,
    * but it is not necessary to have a file on the filesystem.
    */
-  private Path relativePath;
+  private final Path relativePath;
 
   /**
    * For some clients, deciding if a file is a test is costly, and will be computed only when a file is opened in an editor.
    * null means unknown
    */
   @Nullable
-  private Boolean isTest;
+  private final Boolean isTest;
 
   @Nullable
-  private Charset charset;
+  private final Charset charset;
 
   /**
    * The absolute path on the local filesystem, if available.
    */
   @Nullable
-  private Path fsPath;
+  private final Path fsPath;
   @Nullable
   private final SonarLanguage detectedLanguage;
 
@@ -75,7 +75,7 @@ public class ClientFile {
   @Nullable
   private String clientProvidedContent;
 
-  private boolean isUserDefined;
+  private final boolean isUserDefined;
 
   public ClientFile(URI uri, String configScopeId, Path relativePath, @Nullable Boolean isTest, @Nullable Charset charset, @Nullable Path fsPath,
     @Nullable SonarLanguage detectedLanguage, boolean isUserDefined) {

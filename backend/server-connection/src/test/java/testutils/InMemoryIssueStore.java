@@ -232,7 +232,7 @@ public class InMemoryIssueStore implements ProjectServerIssueStore {
       .values()
       .stream()
       .flatMap(Collection::stream)
-      .collect(Collectors.toList());
+      .toList();
   }
 
   @Override

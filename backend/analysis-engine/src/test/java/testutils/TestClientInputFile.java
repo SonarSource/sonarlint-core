@@ -30,11 +30,11 @@ import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 
 public class TestClientInputFile implements ClientInputFile {
-  private Path path;
-  private boolean isTest;
-  private Charset encoding;
-  private SonarLanguage language;
-  private Path baseDir;
+  private final Path path;
+  private final boolean isTest;
+  private final Charset encoding;
+  private final SonarLanguage language;
+  private final Path baseDir;
 
   public TestClientInputFile(final Path baseDir, final Path path, final boolean isTest, final Charset encoding, @Nullable SonarLanguage language) {
     this.baseDir = baseDir;

@@ -151,12 +151,14 @@ class AnalysisForcedByClientMediumTests {
   @SonarLintTest
   @Disabled("Flaky tests")
   void should_run_forced_full_project_analysis_only_for_hotspots(SonarLintTestHarness harness, @TempDir Path baseDir) {
-    var fileFoo = createFile(baseDir, "Foo.java", "public class Foo {\n" +
-      "\n" +
-      "  void foo() {\n" +
-      "    String password = \"blue\";\n" +
-      "  }\n" +
-      "}\n");
+    var fileFoo = createFile(baseDir, "Foo.java", """
+      public class Foo {
+      
+        void foo() {
+          String password = "blue";
+        }
+      }
+      """);
     var fileBar = createFile(baseDir, "Bar.java", "");
     var fileFooUri = fileFoo.toUri();
     var fileBarUri = fileBar.toUri();
@@ -206,12 +208,14 @@ class AnalysisForcedByClientMediumTests {
   @SonarLintTest
   @Disabled("Flaky test")
   void should_run_forced_full_project_analysis_for_all_findings(SonarLintTestHarness harness, @TempDir Path baseDir) {
-    var fileFoo = createFile(baseDir, "Foo.java", "public class Foo {\n" +
-      "\n" +
-      "  void foo() {\n" +
-      "    String password = \"blue\";\n" +
-      "  }\n" +
-      "}\n");
+    var fileFoo = createFile(baseDir, "Foo.java", """
+      public class Foo {
+      
+        void foo() {
+          String password = "blue";
+        }
+      }
+      """);
     var fileBar = createFile(baseDir, "Bar.java", "");
     var fileFooUri = fileFoo.toUri();
     var fileBarUri = fileBar.toUri();
@@ -260,13 +264,14 @@ class AnalysisForcedByClientMediumTests {
   @SonarLintTest
   void should_not_check_file_exclusions_for_forced_analysis(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml",
-      "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        + "<project>\n"
-        + "  <modelVersion>4.0.0</modelVersion>\n"
-        + "  <groupId>com.foo</groupId>\n"
-        + "  <artifactId>bar</artifactId>\n"
-        + "  <version>${pom.version}</version>\n"
-        + "</project>");
+      """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project>
+          <modelVersion>4.0.0</modelVersion>
+          <groupId>com.foo</groupId>
+          <artifactId>bar</artifactId>
+          <version>${pom.version}</version>
+        </project>""");
     var fileUri = filePath.toUri();
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
