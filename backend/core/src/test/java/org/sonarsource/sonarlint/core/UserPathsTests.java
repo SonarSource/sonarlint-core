@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Commons
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,28 +17,22 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons;
+package org.sonarsource.sonarlint.core;
 
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import javax.annotation.Nullable;
+import org.junit.jupiter.api.Test;
 
-public class SonarLintUserHome {
+import static org.assertj.core.api.Assertions.assertThat;
 
-  public static final String SONARLINT_USER_HOME_ENV = "SONARLINT_USER_HOME";
+class UserPathsTests {
 
-  private SonarLintUserHome() {
-    // utility class, forbidden constructor
+  @Test
+  void default_home_should_be_in_user_home() {
+    assertThat(UserPaths.computeUserHome(null)).isEqualTo(Paths.get(System.getProperty("user.home")).resolve(".sonarlint"));
   }
 
-  public static Path get() {
-    return home(System.getenv(SONARLINT_USER_HOME_ENV));
-  }
-
-  static Path home(@Nullable String slHome) {
-    if (slHome != null) {
-      return Paths.get(slHome);
-    }
-    return Paths.get(System.getProperty("user.home")).resolve(".sonarlint");
+  @Test
+  void env_setting_should_override_default_home() {
+    assertThat(UserPaths.computeUserHome("clientPath")).isEqualTo(Paths.get("clientPath"));
   }
 }

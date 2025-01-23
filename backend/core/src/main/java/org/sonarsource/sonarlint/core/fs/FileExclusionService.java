@@ -101,7 +101,7 @@ public class FileExclusionService {
     if (effectiveBindingOpt.isEmpty()) {
       return false;
     }
-    var storage = storageService.getStorageFacade().connection(effectiveBindingOpt.get().getConnectionId());
+    var storage = storageService.connection(effectiveBindingOpt.get().getConnectionId());
     AnalyzerConfiguration analyzerConfig;
     try {
       analyzerConfig = storage.project(effectiveBindingOpt.get().getSonarProjectKey()).analyzerConfiguration().read();
@@ -136,7 +136,7 @@ public class FileExclusionService {
       var connectionId = requireNonNull(event.getNewConfig().getConnectionId());
       var projectKey = requireNonNull(event.getNewConfig().getSonarProjectKey());
       // do not recompute exclusions if storage does not yet contain settings (will be done by onFileExclusionSettingsChanged later)
-      if (storageService.getStorageFacade().connection(connectionId).project(projectKey).analyzerConfiguration().isValid()) {
+      if (storageService.connection(connectionId).project(projectKey).analyzerConfiguration().isValid()) {
         LOG.debug("Binding changed for config scope '{}', recompute file exclusions...", event.getConfigScopeId());
         clientFileSystemService.getFiles(event.getConfigScopeId()).forEach(f -> serverExclusionByUriCache.refreshAsync(f.getUri()));
       }

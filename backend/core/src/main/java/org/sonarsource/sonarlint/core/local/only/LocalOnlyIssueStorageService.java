@@ -19,13 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.local.only;
 
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
-import jakarta.inject.Named;
+import org.sonarsource.sonarlint.core.UserPaths;
 
 public class LocalOnlyIssueStorageService {
 
@@ -33,9 +33,9 @@ public class LocalOnlyIssueStorageService {
   private final Path workDir;
   private XodusLocalOnlyIssueStore localOnlyIssueStore;
 
-  public LocalOnlyIssueStorageService(@Named("storageRoot") Path storageRoot, @Named("userHome") Path workDir) {
-    projectsStorageBaseDir = storageRoot;
-    this.workDir = workDir;
+  public LocalOnlyIssueStorageService(UserPaths userPaths) {
+    this.projectsStorageBaseDir = userPaths.getStorageRoot();
+    this.workDir = userPaths.getWorkDir();
   }
 
   @PostConstruct

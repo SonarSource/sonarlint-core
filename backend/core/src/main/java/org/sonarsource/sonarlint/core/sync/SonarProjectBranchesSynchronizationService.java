@@ -53,7 +53,7 @@ public class SonarProjectBranchesSynchronizationService {
 
   public void sync(String connectionId, String sonarProjectKey, SonarLintCancelMonitor cancelMonitor) {
     connectionManager.withValidConnection(connectionId, serverApi -> {
-      var branchesStorage = storageService.getStorageFacade().connection(connectionId).project(sonarProjectKey).branches();
+      var branchesStorage = storageService.connection(connectionId).project(sonarProjectKey).branches();
       Optional<ProjectBranches> oldBranches = Optional.empty();
       if (branchesStorage.exists()) {
         oldBranches = Optional.of(branchesStorage.read());

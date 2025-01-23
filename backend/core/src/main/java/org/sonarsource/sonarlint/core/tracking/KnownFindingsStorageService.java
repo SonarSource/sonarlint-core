@@ -19,10 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.tracking;
 
-import jakarta.inject.Named;
 import java.io.IOException;
 import java.nio.file.Path;
 import javax.annotation.PreDestroy;
+import org.sonarsource.sonarlint.core.UserPaths;
 
 public class KnownFindingsStorageService {
 
@@ -30,9 +30,9 @@ public class KnownFindingsStorageService {
   private final Path workDir;
   private XodusKnownFindingsStore trackedIssuesStore;
 
-  public KnownFindingsStorageService(@Named("storageRoot") Path storageRoot, @Named("userHome") Path workDir) {
-    projectsStorageBaseDir = storageRoot;
-    this.workDir = workDir;
+  public KnownFindingsStorageService(UserPaths userPaths) {
+    this.projectsStorageBaseDir = userPaths.getStorageRoot();
+    this.workDir = userPaths.getWorkDir();
   }
 
   public XodusKnownFindingsStore get() {

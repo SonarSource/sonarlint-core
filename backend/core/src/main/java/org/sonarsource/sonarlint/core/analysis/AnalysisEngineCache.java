@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.analysis;
 
+import jakarta.inject.Named;
+import jakarta.inject.Singleton;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
+import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
@@ -43,6 +46,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.sync.PluginsSynchronizedEvent;
 import org.springframework.context.event.EventListener;
 
+@Named
+@Singleton
 public class AnalysisEngineCache {
   private final Path workDir;
   private final ClientFileSystemService clientFileSystemService;
@@ -54,12 +59,12 @@ public class AnalysisEngineCache {
   private AnalysisEngine standaloneEngine;
   private final Map<String, AnalysisEngine> connectedEnginesByConnectionId = new ConcurrentHashMap<>();
 
-  public AnalysisEngineCache(ConfigurationRepository configurationRepository, NodeJsService nodeJsService, InitializeParams initializeParams,
+  public AnalysisEngineCache(ConfigurationRepository configurationRepository, NodeJsService nodeJsService, InitializeParams initializeParams, UserPaths userPaths,
     PluginsService pluginsService, ClientFileSystemService clientFileSystemService) {
     this.configurationRepository = configurationRepository;
     this.pluginsService = pluginsService;
     this.nodeJsService = nodeJsService;
-    this.workDir = initializeParams.getWorkDir();
+    this.workDir = userPaths.getWorkDir();
     this.clientFileSystemService = clientFileSystemService;
     var shouldSupportCsharp = initializeParams.getEnabledLanguagesInStandaloneMode().contains(Language.CS);
     var languageSpecificRequirements = initializeParams.getLanguageSpecificRequirements();
