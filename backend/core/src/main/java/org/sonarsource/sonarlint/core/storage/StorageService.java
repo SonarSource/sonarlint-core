@@ -19,41 +19,33 @@
  */
 package org.sonarsource.sonarlint.core.storage;
 
-import java.nio.file.Path;
 import jakarta.annotation.PreDestroy;
-import jakarta.inject.Named;
+import java.nio.file.Path;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.ConnectionStorage;
 import org.sonarsource.sonarlint.core.serverconnection.SonarProjectStorage;
-import org.sonarsource.sonarlint.core.serverconnection.StorageFacade;
-import org.sonarsource.sonarlint.core.serverconnection.StorageFacadeCache;
 import org.springframework.context.event.EventListener;
 
 public class StorageService {
   private final Path globalStorageRoot;
   private final Path workDir;
+  private final Map<String, ConnectionStorage> connectionStorageById = new ConcurrentHashMap<>();
 
-  public StorageService(@Named("storageRoot") Path globalStorageRoot, @Named("workDir") Path workDir) {
-    this.globalStorageRoot = globalStorageRoot;
-    this.workDir = workDir;
-  }
-
-  public StorageFacade getStorageFacade() {
-    return StorageFacadeCache.get().getOrCreate(globalStorageRoot, workDir);
+  public StorageService(UserPaths userPaths) {
+    this.globalStorageRoot = userPaths.getStorageRoot();
+    this.workDir = userPaths.getWorkDir();
   }
 
   public ConnectionStorage connection(String connectionId) {
-    return getStorageFacade().connection(connectionId);
+    return connectionStorageById.computeIfAbsent(connectionId, k -> new ConnectionStorage(globalStorageRoot, workDir, connectionId));
   }
 
   public SonarProjectStorage binding(Binding binding) {
-    return getStorageFacade().connection(binding.getConnectionId()).project(binding.getSonarProjectKey());
-  }
-
-  @PreDestroy
-  public void close() {
-    StorageFacadeCache.get().close(globalStorageRoot);
+    return connection(binding.getConnectionId()).project(binding.getSonarProjectKey());
   }
 
   @EventListener
@@ -62,6 +54,11 @@ public class StorageService {
     var connectionStorage = connection(removedConnectionId);
     connectionStorage.close();
     connectionStorage.delete();
+  }
+
+  @PreDestroy
+  public void close() {
+    connectionStorageById.values().forEach(ConnectionStorage::close);
   }
 
 }

@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import java.nio.file.Path;
+import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,9 +40,9 @@ public class TelemetrySpringConfig {
   private static final String TELEMETRY_ENDPOINT = "https://telemetry.sonarsource.com/sonarlint";
 
   @Bean(name = "telemetryPath")
-  Path provideTelemetryPath(InitializeParams params, Path userHome) {
+  Path provideTelemetryPath(InitializeParams params, UserPaths userPaths) {
     String productKey = params.getTelemetryConstantAttributes().getProductKey();
-    return userHome.resolve("telemetry").resolve(productKey).resolve("usage");
+    return userPaths.getUserHome().resolve("telemetry").resolve(productKey).resolve("usage");
   }
 
   @Bean(name = "telemetryEndpoint")

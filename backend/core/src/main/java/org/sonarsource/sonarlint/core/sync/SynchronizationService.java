@@ -213,7 +213,7 @@ public class SynchronizationService {
   }
 
   public Version readOrSynchronizeServerVersion(String connectionId, ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
-    var serverInfoSynchronizer = new ServerInfoSynchronizer(storageService.getStorageFacade().connection(connectionId));
+    var serverInfoSynchronizer = new ServerInfoSynchronizer(storageService.connection(connectionId));
     return serverInfoSynchronizer.readOrSynchronizeServerInfo(serverApi, cancelMonitor).getVersion();
   }
 
@@ -309,7 +309,7 @@ public class SynchronizationService {
     ignoreBranchEventForScopes.addAll(scopesToSync.stream().map(BoundScope::getConfigScopeId).collect(toSet()));
     var enabledLanguagesToSync = languageSupportRepository.getEnabledLanguagesInConnectedMode().stream()
       .filter(SonarLanguage::shouldSyncInConnectedMode).collect(Collectors.toCollection(LinkedHashSet::new));
-    var storage = storageService.getStorageFacade().connection(connectionId);
+    var storage = storageService.connection(connectionId);
     var serverInfoSynchronizer = new ServerInfoSynchronizer(storage);
     var storageSynchronizer = new LocalStorageSynchronizer(enabledLanguagesToSync, connectedModeEmbeddedPluginKeys, serverInfoSynchronizer, storage);
     try {
