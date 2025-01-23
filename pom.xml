@@ -120,28 +120,28 @@
       <dependency>
         <groupId>org.awaitility</groupId>
         <artifactId>awaitility</artifactId>
-        <version>4.2.0</version>
+        <version>4.2.2</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
-        <version>3.12.0</version>
+        <version>3.17.0</version>
       </dependency>
       <!-- This dependency is imported by the SLLS, ping them when it is modified -->
       <dependency>
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
-        <version>2.16.1</version>
+        <version>2.18.0</version>
       </dependency>
       <dependency>
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
-        <version>1.15</version>
+        <version>1.17.2</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
-        <version>1.26.1</version>
+        <version>1.27.1</version>
       </dependency>
       <dependency>
         <groupId>com.google.code.gson</groupId>
@@ -151,18 +151,18 @@
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
-        <version>32.1.1-jre</version>
+        <version>33.4.0-jre</version>
       </dependency>
       <dependency>
         <groupId>org.assertj</groupId>
         <artifactId>assertj-core</artifactId>
-        <version>3.24.2</version>
+        <version>3.27.3</version>
       </dependency>
       <!-- Resolve dependency conflict between assertj and mockito -->
       <dependency>
         <groupId>net.bytebuddy</groupId>
         <artifactId>byte-buddy</artifactId>
-        <version>1.14.10</version>
+        <version>1.16.1</version>
       </dependency>
       <dependency>
         <groupId>org.mockito</groupId>
@@ -213,17 +213,18 @@
       <dependency>
         <groupId>org.apache.httpcomponents.client5</groupId>
         <artifactId>httpclient5</artifactId>
-        <version>5.2.1</version>
+        <version>5.4.1</version>
       </dependency>
       <dependency>
         <groupId>io.github.hakky54</groupId>
         <artifactId>sslcontext-kickstart</artifactId>
-        <version>8.3.4</version>
+        <version>9.0.0</version>
       </dependency>
+      <!-- Use the Jetty 12 variant that supports Servlet 6, to not conflict with Tomcat -->
       <dependency>
-        <groupId>com.github.tomakehurst</groupId>
-        <artifactId>wiremock-jre8</artifactId>
-        <version>2.35.2</version>
+        <groupId>org.wiremock</groupId>
+        <artifactId>wiremock-jetty12</artifactId>
+        <version>3.10.0</version>
       </dependency>
       <dependency>
         <groupId>org.slf4j</groupId>
@@ -259,12 +260,12 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>build-helper-maven-plugin</artifactId>
-          <version>3.3.0</version>
+          <version>3.6.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.8.0</version>
+          <version>3.11.2</version>
           <configuration>
             <source>11</source>
           </configuration>
@@ -294,17 +295,17 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.3.0</version>
+          <version>3.8.1</version>
         </plugin>
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.9</version>
+          <version>0.8.12</version>
         </plugin>
         <plugin>
           <groupId>com.googlecode.maven-download-plugin</groupId>
           <artifactId>download-maven-plugin</artifactId>
-          <version>1.6.8</version> <!--Issue in 1.7.1 https://github.com/maven-download-plugin/maven-download-plugin/issues/260 -->
+          <version>1.13.0</version>
         </plugin>
       </plugins>
     </pluginManagement>
