@@ -75,10 +75,12 @@ public class EmbeddedServer {
     port = INVALID_PORT;
     var triedPort = STARTING_PORT;
     HttpServer startedServer = null;
+    var loopbackAddress = InetAddress.getLoopbackAddress();
     while (port < 0 && triedPort <= ENDING_PORT) {
       try {
         startedServer = ServerBootstrap.bootstrap()
-          .setLocalAddress(InetAddress.getLoopbackAddress())
+          .setLocalAddress(loopbackAddress)
+          .setCanonicalHostName(loopbackAddress.getHostName())
           // we will never have long connections
           .setConnectionReuseStrategy(new DontKeepAliveReuseStrategy())
           .setListenerPort(triedPort)

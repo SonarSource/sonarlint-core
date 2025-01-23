@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.http;
 
 import org.apache.hc.core5.http.EntityDetails;
-import org.apache.hc.core5.http.HttpRequest;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.HttpResponseInterceptor;
 import org.apache.hc.core5.http.HttpStatus;
@@ -49,7 +48,8 @@ class RedirectInterceptor implements HttpResponseInterceptor {
   }
 
   private static boolean isPost(HttpContext context) {
-    var request = (HttpRequest) context.getAttribute(HttpCoreContext.HTTP_REQUEST);
+    var httpCoreContext = HttpCoreContext.cast(context);
+    var request = httpCoreContext.getRequest();
     return request != null && Method.POST.isSame(request.getMethod());
   }
 }
