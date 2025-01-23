@@ -28,7 +28,6 @@ import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason.UnsatisfiedD
 import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason.UnsatisfiedRuntimeRequirement;
 import org.sonarsource.sonarlint.core.plugin.commons.api.SkipReason.UnsatisfiedRuntimeRequirement.RuntimeRequirement;
 
-import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class SkipReasonTests {

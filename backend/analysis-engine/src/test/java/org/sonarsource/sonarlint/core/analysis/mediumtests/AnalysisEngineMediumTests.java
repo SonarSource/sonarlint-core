@@ -180,6 +180,7 @@ class AnalysisEngineMediumTests {
   void should_cancel_pending_commands_when_stopping() {
     var futureLongCommand = analysisEngine.post((moduleRegistry, progressMonitor) -> {
       while (!engineStopped) {
+        // make the command block until canceled
       }
       return null;
     }, progressMonitor);
