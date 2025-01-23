@@ -155,7 +155,7 @@ mend_scan_task:
     <<: *CONTAINER_DEFINITION
   env:
     WS_APIKEY: VAULT[development/kv/data/mend data.apikey]
-    JDK_VERSION: "11"
+    JDK_VERSION: "17"
   <<: *MAVEN_CACHE_DEFINITION
   whitesource_script:
     - source cirrus-env QA
@@ -163,7 +163,6 @@ mend_scan_task:
     - mvn clean install -DskipTests
     - source ws_scan.sh
   cleanup_before_cache_script: cleanup_maven_repository
-  allow_failures: "true"
   always:
     ws_artifacts:
       path: "whitesource/**/*"
@@ -237,7 +236,7 @@ promote_task:
     cpu: 2
     memory: 4G
   env:
-      JDK_VERSION: "11"
+      JDK_VERSION: "17"
       ARTIFACTORY_PROMOTE_ACCESS_TOKEN: VAULT[development/artifactory/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-promoter access_token]
       GITHUB_TOKEN: VAULT[development/github/token/${CIRRUS_REPO_OWNER}-${CIRRUS_REPO_NAME}-promotion token]
   <<: *MAVEN_CACHE_DEFINITION
