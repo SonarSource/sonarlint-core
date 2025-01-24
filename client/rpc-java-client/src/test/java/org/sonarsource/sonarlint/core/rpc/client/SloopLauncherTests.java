@@ -91,7 +91,7 @@ class SloopLauncherTests {
 
     sloop = underTest.start(distPath);
 
-    verify(mockPbFactory).apply(List.of(bundledJrejavaPath.toString(), "-Djava.awt.headless=true",
+    verify(mockPbFactory).apply(List.of(bundledJrejavaPath.toString(), "-Djava.awt.headless=true", "-Dapple.awt.headless=true",
       "-classpath", distPath.resolve("lib") + File.separator + '*', "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli"));
     assertThat(sloop.getRpcServer()).isNotNull();
   }
@@ -101,7 +101,7 @@ class SloopLauncherTests {
     sloop = underTest.start(distPath, fakeJreHomePath);
 
     verify(mockPbFactory)
-      .apply(List.of(fakeJreJavaLinuxPath.toString(), "-Djava.awt.headless=true",
+      .apply(List.of(fakeJreJavaLinuxPath.toString(), "-Djava.awt.headless=true", "-Dapple.awt.headless=true",
         "-classpath", distPath.resolve("lib") + File.separator + '*', "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli"));
     assertThat(sloop.getRpcServer()).isNotNull();
   }
@@ -112,7 +112,7 @@ class SloopLauncherTests {
     sloop = underTest.start(distPath, fakeJreHomePath);
 
     verify(mockPbFactory)
-      .apply(List.of(fakeJreJavaWindowsPath.toString(), "-Djava.awt.headless=true",
+      .apply(List.of(fakeJreJavaWindowsPath.toString(), "-Djava.awt.headless=true", "-Dapple.awt.headless=true",
         "-classpath", distPath.resolve("lib") + File.separator + '*', "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli"));
     assertThat(sloop.getRpcServer()).isNotNull();
   }
@@ -158,7 +158,7 @@ class SloopLauncherTests {
     sloop = underTest.start(distPath, fakeJreHomePath, "-XX:+UseG1GC -XX:MaxHeapFreeRatio=50");
 
     verify(mockPbFactory)
-      .apply(List.of(fakeJreJavaLinuxPath.toString(), "-XX:+UseG1GC", "-XX:MaxHeapFreeRatio=50", "-Djava.awt.headless=true",
+      .apply(List.of(fakeJreJavaLinuxPath.toString(), "-XX:+UseG1GC", "-XX:MaxHeapFreeRatio=50", "-Djava.awt.headless=true", "-Dapple.awt.headless=true",
         "-classpath", distPath.resolve("lib") + File.separator + '*', "org.sonarsource.sonarlint.core.backend.cli.SonarLintServerCli"));
     assertThat(sloop.getRpcServer()).isNotNull();
   }
