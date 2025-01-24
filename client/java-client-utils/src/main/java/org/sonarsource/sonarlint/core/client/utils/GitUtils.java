@@ -50,7 +50,7 @@ public class GitUtils {
         .findGitDir(projectDir.toFile())
         .setMustExist(true);
       if (builder.getGitDir() == null) {
-        clientLogOutput.log("Not inside a Git work tree: " + projectDir, ClientLogOutput.Level.ERROR);
+        clientLogOutput.log("Not inside a Git work tree: " + projectDir, ClientLogOutput.Level.DEBUG);
         return null;
       }
       return builder.build();
