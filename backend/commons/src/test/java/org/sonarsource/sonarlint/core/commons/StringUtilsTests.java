@@ -17,16 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons.util;
+package org.sonarsource.sonarlint.core.commons;
 
-public class StringUtils {
+import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.commons.util.StringUtils;
 
-  public static String pluralize(long count, String word) {
-    var pluralizedWord = count == 1 || count == 0 ? word : (word + 's');
-    return count + " " + pluralizedWord;
+import static org.assertj.core.api.Assertions.assertThat;
+
+class StringUtilsTests {
+
+  @Test
+  void should_pluralize_words() {
+    assertThat(StringUtils.pluralize(0, "word")).isEqualTo("0 word");
+    assertThat(StringUtils.pluralize(1, "word")).isEqualTo("1 word");
+    assertThat(StringUtils.pluralize(2, "word")).isEqualTo("2 words");
   }
 
-  private StringUtils() {
-    // utility class
-  }
 }
