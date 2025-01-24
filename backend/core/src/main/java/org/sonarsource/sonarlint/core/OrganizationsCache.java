@@ -21,8 +21,6 @@ package org.sonarsource.sonarlint.core;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -41,8 +39,6 @@ import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singleP
 /**
  * Cache user organizations index for a certain amount of time.
  */
-@Named
-@Singleton
 public class OrganizationsCache {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();

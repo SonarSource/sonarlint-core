@@ -19,15 +19,13 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import jakarta.inject.Inject;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
-import jakarta.inject.Inject;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
@@ -53,8 +51,6 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import static java.util.stream.Collectors.toMap;
 
-@Named
-@Singleton
 public class ConnectionService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();

@@ -32,8 +32,6 @@ import java.util.UUID;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.ConnectionManager;
@@ -80,8 +78,6 @@ import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
-@Named
-@Singleton
 public class IssueService {
 
   private static final String STATUS_CHANGE_PERMISSION_MISSING_REASON = "Marking an issue as resolved requires the 'Administer Issues' permission";

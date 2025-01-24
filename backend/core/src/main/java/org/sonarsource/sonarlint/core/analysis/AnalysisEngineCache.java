@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.analysis;
 
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -46,8 +44,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.sync.PluginsSynchronizedEvent;
 import org.springframework.context.event.EventListener;
 
-@Named
-@Singleton
 public class AnalysisEngineCache {
   private final Path workDir;
   private final ClientFileSystemService clientFileSystemService;

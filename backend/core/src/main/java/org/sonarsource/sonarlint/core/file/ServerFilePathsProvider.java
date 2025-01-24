@@ -22,8 +22,6 @@ package org.sonarsource.sonarlint.core.file;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -48,8 +46,6 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 
-@Named
-@Singleton
 public class ServerFilePathsProvider {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 

@@ -23,8 +23,6 @@ import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
 import java.io.IOException;
 import java.util.Optional;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.ContentType;
@@ -40,8 +38,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 
-@Named
-@Singleton
 public class StatusRequestHandler implements HttpRequestHandler {
 
   private final SonarLintRpcClient client;

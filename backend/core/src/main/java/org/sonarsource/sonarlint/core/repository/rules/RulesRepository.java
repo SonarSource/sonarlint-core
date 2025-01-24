@@ -24,8 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
@@ -34,8 +32,6 @@ import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
 import org.springframework.context.event.EventListener;
 
-@Named
-@Singleton
 public class RulesRepository {
 
   private final SonarLintLogger logger = SonarLintLogger.get();

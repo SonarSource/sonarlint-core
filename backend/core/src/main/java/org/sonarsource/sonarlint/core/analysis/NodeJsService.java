@@ -23,8 +23,6 @@ import java.nio.file.Path;
 import java.util.Optional;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.apache.commons.lang3.SystemUtils;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -36,8 +34,6 @@ import org.springframework.context.ApplicationEventPublisher;
 /**
  * Keep track of the Node.js executable to be used by analysis
  */
-@Singleton
-@Named
 public class NodeJsService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();

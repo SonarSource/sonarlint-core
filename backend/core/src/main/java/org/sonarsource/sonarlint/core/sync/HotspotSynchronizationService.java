@@ -22,8 +22,6 @@ package org.sonarsource.sonarlint.core.sync;
 import java.nio.file.Path;
 import java.util.LinkedHashSet;
 import java.util.stream.Collectors;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.Version;
@@ -39,8 +37,6 @@ import org.sonarsource.sonarlint.core.serverconnection.ServerHotspotUpdater;
 import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 
-@Named
-@Singleton
 public class HotspotSynchronizationService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final StorageService storageService;

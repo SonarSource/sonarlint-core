@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import com.google.common.util.concurrent.MoreExecutors;
+import jakarta.annotation.PreDestroy;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -27,9 +28,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
-import jakarta.annotation.PreDestroy;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.sonarsource.sonarlint.core.analysis.AnalysisFinishedEvent;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -47,8 +45,6 @@ import org.springframework.context.event.EventListener;
 import static java.util.Optional.ofNullable;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-@Named
-@Singleton
 public class TelemetryService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();

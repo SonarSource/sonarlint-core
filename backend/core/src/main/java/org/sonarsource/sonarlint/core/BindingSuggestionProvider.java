@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core;
 
 import com.google.common.util.concurrent.MoreExecutors;
+import jakarta.annotation.PreDestroy;
+import jakarta.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,10 +34,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import jakarta.annotation.PreDestroy;
-import jakarta.inject.Inject;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -56,8 +54,6 @@ import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singlePlural;
 
-@Named
-@Singleton
 public class BindingSuggestionProvider {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();

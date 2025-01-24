@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import java.net.URI;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -49,8 +47,6 @@ import org.sonarsource.sonarlint.core.serverconnection.ServerVersionAndStatusChe
 
 import static org.apache.commons.lang.StringUtils.removeEnd;
 
-@Named
-@Singleton
 public class ConnectionManager {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();

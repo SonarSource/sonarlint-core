@@ -28,8 +28,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
@@ -40,8 +38,6 @@ import org.springframework.context.event.EventListener;
 
 import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singlePlural;
 
-@Named
-@Singleton
 public class SonarProjectsCache {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();

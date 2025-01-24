@@ -20,16 +20,12 @@
 package org.sonarsource.sonarlint.core.newcode;
 
 import java.util.Optional;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.GetNewCodeDefinitionResponse;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
-@Named
-@Singleton
 public class NewCodeService {
   private static final NewCodeDefinition STANDALONE_NEW_CODE_DEFINITION = NewCodeDefinition.withExactNumberOfDays(30);
   private final ConfigurationRepository configurationRepository;

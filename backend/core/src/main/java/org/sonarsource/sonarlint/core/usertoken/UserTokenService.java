@@ -19,15 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.usertoken;
 
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.RevokeTokenParams;
 
-@Named
-@Singleton
 public class UserTokenService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();

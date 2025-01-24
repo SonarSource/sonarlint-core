@@ -19,14 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.file;
 
+import jakarta.annotation.PreDestroy;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.CheckForNull;
-import jakarta.annotation.PreDestroy;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.sonarsource.sonarlint.core.SonarLintMDC;
 import org.sonarsource.sonarlint.core.branch.MatchedSonarProjectBranchChangedEvent;
 import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
@@ -45,8 +43,6 @@ import org.springframework.context.event.EventListener;
  * This is only used in connected mode.
  * A debounce mechanism is used to avoid too many requests to the server.
  */
-@Named
-@Singleton
 public class PathTranslationService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final ClientFileSystemService clientFs;

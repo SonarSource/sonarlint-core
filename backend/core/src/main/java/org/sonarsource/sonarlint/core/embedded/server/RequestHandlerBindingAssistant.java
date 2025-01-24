@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.embedded.server;
 
 import com.google.common.util.concurrent.MoreExecutors;
+import jakarta.annotation.PreDestroy;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
@@ -30,9 +31,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import jakarta.annotation.PreDestroy;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
@@ -52,8 +50,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.usertoken.UserTokenService;
 
-@Named
-@Singleton
 public class RequestHandlerBindingAssistant {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();

@@ -19,12 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.commons.monitoring;
 
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.apache.commons.lang3.SystemUtils;
 
-@Named
-@Singleton
 public class DogfoodEnvironmentDetectionService {
   public static final String SONARSOURCE_DOGFOODING_ENV_VAR_KEY = "SONARSOURCE_DOGFOODING";
 

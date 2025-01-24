@@ -22,8 +22,6 @@ package org.sonarsource.sonarlint.core.sync;
 import com.google.common.util.concurrent.MoreExecutors;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -77,8 +75,6 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toCollection;
 import static java.util.stream.Collectors.toSet;
 
-@Named
-@Singleton
 public class SynchronizationService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 

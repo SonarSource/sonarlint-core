@@ -19,15 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.plugin.skipped;
 
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.CheckForNull;
 
-@Named
-@Singleton
 public class SkippedPluginsRepository {
   private List<SkippedPlugin> skippedEmbeddedPlugins;
   private final Map<String, List<SkippedPlugin>> skippedPluginsByConnectionId = new HashMap<>();

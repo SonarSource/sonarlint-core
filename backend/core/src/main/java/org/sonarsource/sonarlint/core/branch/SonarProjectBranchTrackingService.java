@@ -19,15 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.branch;
 
+import jakarta.annotation.PreDestroy;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import jakarta.annotation.PreDestroy;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.slf4j.MDC;
 import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -47,8 +45,6 @@ import org.springframework.context.event.EventListener;
 /**
  * This service keep track of the currently matched Sonar project branch for each configuration scope.
  */
-@Named
-@Singleton
 public class SonarProjectBranchTrackingService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final SonarLintRpcClient client;

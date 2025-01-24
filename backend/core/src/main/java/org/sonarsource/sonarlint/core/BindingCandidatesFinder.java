@@ -20,8 +20,6 @@
 package org.sonarsource.sonarlint.core;
 
 import jakarta.inject.Inject;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -34,8 +32,6 @@ import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
-@Named
-@Singleton
 public class BindingCandidatesFinder {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();

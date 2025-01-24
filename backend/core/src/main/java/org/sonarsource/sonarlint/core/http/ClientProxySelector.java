@@ -27,14 +27,10 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.SelectProxiesParams;
 
-@Named
-@Singleton
 public class ClientProxySelector extends ProxySelector {
 
   private final SonarLintLogger logger = SonarLintLogger.get();

@@ -22,14 +22,10 @@ package org.sonarsource.sonarlint.core.commons.monitoring;
 import io.sentry.Sentry;
 import io.sentry.SentryOptions;
 import jakarta.inject.Inject;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.apache.commons.lang3.SystemUtils;
 import org.sonarsource.sonarlint.core.commons.SonarLintCoreVersion;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
-@Named
-@Singleton
 public class MonitoringService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 

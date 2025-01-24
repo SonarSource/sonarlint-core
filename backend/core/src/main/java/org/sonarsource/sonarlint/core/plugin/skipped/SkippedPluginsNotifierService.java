@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.plugin.skipped;
 
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -35,8 +33,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingP
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.springframework.context.event.EventListener;
 
-@Named
-@Singleton
 public class SkippedPluginsNotifierService {
   private final SkippedPluginsRepository skippedPluginsRepository;
   private final ConfigurationRepository configurationRepository;

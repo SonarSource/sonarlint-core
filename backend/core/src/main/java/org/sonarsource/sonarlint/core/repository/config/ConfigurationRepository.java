@@ -30,8 +30,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.commons.Binding;
@@ -42,8 +40,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toSet;
 
-@Named
-@Singleton
 public class ConfigurationRepository {
 
   private final Map<String, ConfigurationScope> configScopePerId = new ConcurrentHashMap<>();

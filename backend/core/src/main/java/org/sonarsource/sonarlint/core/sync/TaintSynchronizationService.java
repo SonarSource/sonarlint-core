@@ -21,8 +21,6 @@ package org.sonarsource.sonarlint.core.sync;
 
 import java.util.LinkedHashSet;
 import java.util.stream.Collectors;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
@@ -42,8 +40,6 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import static java.util.stream.Collectors.groupingBy;
 
-@Named
-@Singleton
 public class TaintSynchronizationService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 

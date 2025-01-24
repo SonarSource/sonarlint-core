@@ -29,8 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -44,8 +42,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
-@Named
-@Singleton
 public class ClientFileSystemService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();

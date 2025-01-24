@@ -32,8 +32,6 @@ import java.util.Properties;
 import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
@@ -49,8 +47,6 @@ import static org.apache.commons.lang.StringUtils.removeEnd;
 import static org.apache.commons.lang.StringUtils.trimToNull;
 import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singlePlural;
 
-@Named
-@Singleton
 public class BindingClueProvider {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();

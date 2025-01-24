@@ -23,8 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
@@ -34,8 +32,6 @@ import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnection
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rules.RulesService;
 
-@Named
-@Singleton
 public class TelemetryServerAttributesProvider {
 
   private final ConfigurationRepository configurationRepository;

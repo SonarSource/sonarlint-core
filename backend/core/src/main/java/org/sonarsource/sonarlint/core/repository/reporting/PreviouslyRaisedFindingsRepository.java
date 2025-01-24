@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.repository.reporting;
 
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,8 +33,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotD
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 
-@Named
-@Singleton
 public class PreviouslyRaisedFindingsRepository {
   private final Map<String, Map<URI, List<RaisedIssueDto>>> previouslyRaisedIssuesByScopeId = new ConcurrentHashMap<>();
   private final Map<String, Map<URI, List<RaisedHotspotDto>>> previouslyRaisedHotspotsByScopeId = new ConcurrentHashMap<>();
