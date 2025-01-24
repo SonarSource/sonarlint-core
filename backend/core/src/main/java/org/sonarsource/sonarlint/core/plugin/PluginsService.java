@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -53,8 +51,6 @@ import org.springframework.context.event.EventListener;
 import static org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer.CUSTOM_SECRETS_MIN_SQ_VERSION;
 import static org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer.ENTERPRISE_IAC_MIN_SQ_VERSION;
 
-@Named
-@Singleton
 public class PluginsService {
   private static final Version REPACKAGED_DOTNET_ANALYZER_MIN_SQ_VERSION = Version.create("10.8");
 

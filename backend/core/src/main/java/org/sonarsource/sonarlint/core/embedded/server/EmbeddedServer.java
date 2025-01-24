@@ -19,12 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.embedded.server;
 
-import java.net.InetAddress;
-import java.util.concurrent.TimeUnit;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
+import java.net.InetAddress;
+import java.util.concurrent.TimeUnit;
 import org.apache.hc.core5.http.ConnectionReuseStrategy;
 import org.apache.hc.core5.http.HttpRequest;
 import org.apache.hc.core5.http.HttpResponse;
@@ -36,8 +34,6 @@ import org.apache.hc.core5.io.CloseMode;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 
-@Named
-@Singleton
 public class EmbeddedServer {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 

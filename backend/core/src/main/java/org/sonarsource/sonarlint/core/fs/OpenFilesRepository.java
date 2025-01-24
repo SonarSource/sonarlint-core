@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.fs;
 
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,8 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Named
-@Singleton
 public class OpenFilesRepository {
   private final Map<String, List<URI>> openFilesByConfigScopeId = new ConcurrentHashMap<>();
 

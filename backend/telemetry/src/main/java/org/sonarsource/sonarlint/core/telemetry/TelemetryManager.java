@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.telemetry;
 
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import java.time.LocalDateTime;
 import java.util.function.Consumer;
 
@@ -28,8 +26,6 @@ import java.util.function.Consumer;
  * Manage telemetry data and persistent storage, and stateful telemetry actions.
  * The single central point for clients to manage telemetry.
  */
-@Named
-@Singleton
 public class TelemetryManager {
 
   static final int MIN_HOURS_BETWEEN_UPLOAD = 5;

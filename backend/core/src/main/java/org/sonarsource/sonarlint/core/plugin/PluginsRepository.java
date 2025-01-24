@@ -19,22 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
+import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 import javax.annotation.CheckForNull;
-import jakarta.annotation.PreDestroy;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 
 import static org.sonarsource.sonarlint.core.commons.IOExceptionUtils.throwFirstWithOtherSuppressed;
 import static org.sonarsource.sonarlint.core.commons.IOExceptionUtils.tryAndCollectIOException;
 
-@Named
-@Singleton
 public class PluginsRepository {
   private LoadedPlugins loadedEmbeddedPlugins;
   private final Map<String, LoadedPlugins> loadedPluginsByConnectionId = new HashMap<>();

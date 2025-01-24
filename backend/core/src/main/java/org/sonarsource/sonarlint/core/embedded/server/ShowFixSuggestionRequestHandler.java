@@ -21,8 +21,6 @@ package org.sonarsource.sonarlint.core.embedded.server;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.Gson;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -69,8 +67,6 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
-@Named
-@Singleton
 public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();

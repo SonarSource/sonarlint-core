@@ -23,8 +23,6 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.Credentials;
 import org.apache.hc.client5.http.auth.CredentialsProvider;
@@ -40,8 +38,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.http.GetProxyPasswordA
  * Inspired by {@link org.apache.hc.client5.http.impl.auth.SystemDefaultCredentialsProvider} but asking client instead of
  * asking JDK
  */
-@Named
-@Singleton
 public class ClientProxyCredentialsProvider implements CredentialsProvider {
 
   private final SonarLintLogger logger = SonarLintLogger.get();

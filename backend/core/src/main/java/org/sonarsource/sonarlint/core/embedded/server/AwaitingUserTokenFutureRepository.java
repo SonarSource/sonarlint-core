@@ -22,14 +22,10 @@ package org.sonarsource.sonarlint.core.embedded.server;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenResponse;
 
 import static org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository.haveSameOrigin;
 
-@Named
-@Singleton
 public class AwaitingUserTokenFutureRepository {
   private final ConcurrentHashMap<String, CompletableFuture<HelpGenerateUserTokenResponse>> awaitingFuturesByServerUrl = new ConcurrentHashMap<>();
 

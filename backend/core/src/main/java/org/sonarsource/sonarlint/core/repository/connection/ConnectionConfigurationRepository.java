@@ -25,12 +25,8 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
-@Named
-@Singleton
 public class ConnectionConfigurationRepository {
 
   private final Map<String, AbstractConnectionConfiguration> connectionsById = new ConcurrentHashMap<>();

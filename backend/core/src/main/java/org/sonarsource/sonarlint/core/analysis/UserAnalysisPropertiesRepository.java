@@ -19,15 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.analysis;
 
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 
-@Named
-@Singleton
 public class UserAnalysisPropertiesRepository {
 
   private static final String PATH_TO_COMPILE_COMMANDS_ANALYZER_PROPERTY = "sonar.cfamily.compile-commands";

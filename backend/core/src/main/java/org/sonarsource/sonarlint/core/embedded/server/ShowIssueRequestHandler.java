@@ -27,8 +27,6 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Optional;
 import javax.annotation.Nullable;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpException;
@@ -67,8 +65,6 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
-@Named
-@Singleton
 public class ShowIssueRequestHandler implements HttpRequestHandler {
 
   private final SonarLintRpcClient client;

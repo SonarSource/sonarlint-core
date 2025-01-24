@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.smartnotifications;
 
 import com.google.common.util.concurrent.MoreExecutors;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.HashMap;
@@ -30,10 +32,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
@@ -55,8 +53,6 @@ import org.sonarsource.sonarlint.core.websocket.WebSocketService;
 import org.sonarsource.sonarlint.core.websocket.events.SmartNotificationEvent;
 import org.springframework.context.event.EventListener;
 
-@Named
-@Singleton
 public class SmartNotifications {
 
   private final SonarLintLogger logger = SonarLintLogger.get();

@@ -21,8 +21,6 @@ package org.sonarsource.sonarlint.core;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import jakarta.annotation.PreDestroy;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -45,8 +43,6 @@ import org.sonarsource.sonarlint.core.serverconnection.VersionUtils;
 import org.sonarsource.sonarlint.core.sync.SynchronizationService;
 import org.springframework.context.event.EventListener;
 
-@Named
-@Singleton
 public class VersionSoonUnsupportedHelper {
 
   private static final String UNSUPPORTED_NOTIFICATION_ID = "sonarlint.unsupported.%s.%s.id";

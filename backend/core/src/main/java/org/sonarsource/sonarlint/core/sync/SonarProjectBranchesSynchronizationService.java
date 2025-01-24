@@ -20,8 +20,6 @@
 package org.sonarsource.sonarlint.core.sync;
 
 import java.util.Optional;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -37,8 +35,6 @@ import static java.util.stream.Collectors.toSet;
 /**
  * This service manages the synchronization of the SonarProject branches from the Sonar server in the local storage.
  */
-@Named
-@Singleton
 public class SonarProjectBranchesSynchronizationService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final StorageService storageService;

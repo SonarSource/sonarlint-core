@@ -22,8 +22,6 @@ package org.sonarsource.sonarlint.core.telemetry;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -45,8 +43,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryM
 /**
  * Serialize and deserialize telemetry data to persistent storage.
  */
-@Named
-@Singleton
 public class TelemetryLocalStorageManager {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final Path path;

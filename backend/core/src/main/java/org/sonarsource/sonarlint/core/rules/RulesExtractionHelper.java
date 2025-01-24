@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.rules;
 
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import java.util.List;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
@@ -29,8 +27,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 
-@Named
-@Singleton
 public class RulesExtractionHelper {
 
   private final SonarLintLogger logger = SonarLintLogger.get();

@@ -20,8 +20,6 @@
 package org.sonarsource.sonarlint.core.hotspot;
 
 import java.util.List;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.ConnectionManager;
@@ -53,8 +51,6 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
 import org.springframework.context.event.EventListener;
 
-@Named
-@Singleton
 public class HotspotService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();

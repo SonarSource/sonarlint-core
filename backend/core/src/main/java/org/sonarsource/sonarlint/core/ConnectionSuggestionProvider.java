@@ -20,8 +20,6 @@
 package org.sonarsource.sonarlint.core;
 
 import jakarta.inject.Inject;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -53,8 +51,6 @@ import org.springframework.context.event.EventListener;
 import static org.apache.commons.lang.StringUtils.removeEnd;
 import static org.sonarsource.sonarlint.core.BindingClueProvider.ALL_BINDING_CLUE_FILENAMES;
 
-@Named
-@Singleton
 public class ConnectionSuggestionProvider {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();

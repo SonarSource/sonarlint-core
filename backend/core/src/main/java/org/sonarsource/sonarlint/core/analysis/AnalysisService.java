@@ -20,8 +20,6 @@
 package org.sonarsource.sonarlint.core.analysis;
 
 import com.google.common.util.concurrent.MoreExecutors;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import java.net.URI;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.Files;
@@ -130,8 +128,6 @@ import static org.sonarsource.sonarlint.core.commons.util.StringUtils.pluralize;
 import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.createSonarLintGitIgnore;
 import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.getVSCChangedFiles;
 
-@Named
-@Singleton
 public class AnalysisService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();

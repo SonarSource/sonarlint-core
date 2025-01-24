@@ -20,8 +20,6 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import com.google.common.annotations.VisibleForTesting;
-import jakarta.inject.Named;
-import jakarta.inject.Singleton;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -54,8 +52,6 @@ import org.sonarsource.sonarlint.core.telemetry.payload.cayc.NewCodeFocusPayload
 import static org.sonarsource.sonarlint.core.telemetry.metricspayload.TelemetryMetricsValueGranularity.DAILY;
 import static org.sonarsource.sonarlint.core.telemetry.metricspayload.TelemetryMetricsValueType.INTEGER;
 
-@Named
-@Singleton
 public class TelemetryHttpClient {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
