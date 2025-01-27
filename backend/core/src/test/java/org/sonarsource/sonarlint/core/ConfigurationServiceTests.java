@@ -135,7 +135,8 @@ class ConfigurationServiceTests {
     underTest.didRemoveConfigurationScope("id2");
 
     assertThat(repository.getConfigScopeIds()).containsOnly("id1");
-    assertThat(logTester.logs(LogOutput.Level.ERROR)).containsExactly("Attempt to remove configuration scope 'id2' that was not registered");
+    assertThat(logTester.logs(LogOutput.Level.DEBUG)).contains("Attempt to remove configuration scope 'id2' that was not registered");
+    assertThat(logTester.logs(LogOutput.Level.ERROR)).isEmpty();
   }
 
   @Test
