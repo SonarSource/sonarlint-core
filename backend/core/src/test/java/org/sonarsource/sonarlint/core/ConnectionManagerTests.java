@@ -34,7 +34,7 @@ import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnection
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverapi.exception.ForbiddenException;
+import org.sonarsource.sonarlint.core.serverapi.exception.UnauthorizedException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
@@ -152,7 +152,7 @@ class ConnectionManagerTests {
 
     // switch connection to invalid state
     spy.withValidConnection(connectionId, api -> {
-      throw new ForbiddenException("401");
+      throw new UnauthorizedException("401");
     });
     // attempt to get connection
     spy.withValidConnection(connectionId, api -> {});

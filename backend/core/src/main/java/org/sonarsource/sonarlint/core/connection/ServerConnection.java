@@ -27,7 +27,7 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.InvalidTokenParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
-import org.sonarsource.sonarlint.core.serverapi.exception.ForbiddenException;
+import org.sonarsource.sonarlint.core.serverapi.exception.UnauthorizedException;
 
 public class ServerConnection {
 
@@ -59,7 +59,7 @@ public class ServerConnection {
       state = ConnectionState.ACTIVE;
       lastNotificationTime = null;
       return result;
-    } catch (ForbiddenException e) {
+    } catch (UnauthorizedException e) {
       state = ConnectionState.INVALID_CREDENTIALS;
       notifyClientAboutWrongTokenIfNeeded();
     }
@@ -71,7 +71,7 @@ public class ServerConnection {
       serverApiConsumer.accept(serverApi);
       state = ConnectionState.ACTIVE;
       lastNotificationTime = null;
-    } catch (ForbiddenException e) {
+    } catch (UnauthorizedException e) {
       state = ConnectionState.INVALID_CREDENTIALS;
       notifyClientAboutWrongTokenIfNeeded();
     }

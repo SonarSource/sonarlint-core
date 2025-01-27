@@ -133,7 +133,7 @@ class ConnectionSyncMediumTests {
 
   @SonarLintTest
   void it_should_notify_client_if_invalid_token() {
-    var status = 403;
+    var status = 401;
     var client = newFakeClient()
       .withCredentials(CONNECTION_ID, "user", "pw")
       .build();
