@@ -23,12 +23,14 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.List;
 import org.eclipse.jetty.http.HttpStatus;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.when;
 
 class EmbeddedServerMediumTests {
@@ -177,6 +179,25 @@ class EmbeddedServerMediumTests {
     assertThat(response)
       .extracting(HttpResponse::statusCode, HttpResponse::body)
       .containsExactly(HttpStatus.BAD_REQUEST_400, "");
+  }
+
+  @SonarLintTest
+  void it_should_not_rate_limit_over_time(SonarLintTestHarness harness) throws IOException, InterruptedException {
+    var fakeClient = harness.newFakeClient().build();
+    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").start(fakeClient);
+
+    var embeddedServerPort = backend.getEmbeddedServerPort();
+    var request = HttpRequest.newBuilder()
+      .uri(URI.create("http://localhost:" + embeddedServerPort + "/sonarlint/api/status"))
+      .header("Origin", "https://sonar")
+      .GET().build();
+    for (int i = 0; i < 10; i++) {
+      java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    }
+    await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+      var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+      assertThat(response.statusCode()).isEqualTo(HttpStatus.OK_200);
+    });
   }
 
 }
