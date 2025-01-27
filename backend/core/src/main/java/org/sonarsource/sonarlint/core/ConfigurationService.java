@@ -85,7 +85,7 @@ public class ConfigurationService {
   public void didRemoveConfigurationScope(String removedId) {
     var removed = repository.remove(removedId);
     if (removed == null) {
-      LOG.error("Attempt to remove configuration scope '{}' that was not registered", removedId);
+      LOG.debug("Attempt to remove configuration scope '{}' that was not registered", removedId);
     } else {
       applicationEventPublisher.publishEvent(new ConfigurationScopeRemovedEvent(removed.getScope(), removed.getBindingConfiguration()));
     }
