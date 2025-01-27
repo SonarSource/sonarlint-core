@@ -185,13 +185,13 @@ class ShowFixSuggestionRequestHandlerTests {
     assertThat(showFixSuggestionQuery.getBranch()).isEqualTo("branch");
     assertThat(showFixSuggestionQuery.getTokenName()).isNull();
     assertThat(showFixSuggestionQuery.getTokenValue()).isNull();
-    assertThat(showFixSuggestionQuery.getFixSuggestion().getSuggestionId()).isEqualTo("eb93b2b4-f7b0-4b5c-9460-50893968c264");
-    assertThat(showFixSuggestionQuery.getFixSuggestion().getExplanation()).isEqualTo("Modifying the variable name is good");
-    assertThat(showFixSuggestionQuery.getFixSuggestion().getFileEdit().getPath()).isEqualTo("src/main/java/Main.java");
-    assertThat(showFixSuggestionQuery.getFixSuggestion().getFileEdit().getChanges().get(0).getBefore()).isEmpty();
-    assertThat(showFixSuggestionQuery.getFixSuggestion().getFileEdit().getChanges().get(0).getAfter()).isEqualTo("var fix = 1;");
-    assertThat(showFixSuggestionQuery.getFixSuggestion().getFileEdit().getChanges().get(0).getBeforeLineRange().getStartLine()).isZero();
-    assertThat(showFixSuggestionQuery.getFixSuggestion().getFileEdit().getChanges().get(0).getBeforeLineRange().getEndLine()).isEqualTo(1);
+    assertThat(showFixSuggestionQuery.getFixSuggestion().suggestionId()).isEqualTo("eb93b2b4-f7b0-4b5c-9460-50893968c264");
+    assertThat(showFixSuggestionQuery.getFixSuggestion().explanation()).isEqualTo("Modifying the variable name is good");
+    assertThat(showFixSuggestionQuery.getFixSuggestion().fileEdit().path()).isEqualTo("src/main/java/Main.java");
+    assertThat(showFixSuggestionQuery.getFixSuggestion().fileEdit().changes().get(0).before()).isEmpty();
+    assertThat(showFixSuggestionQuery.getFixSuggestion().fileEdit().changes().get(0).after()).isEqualTo("var fix = 1;");
+    assertThat(showFixSuggestionQuery.getFixSuggestion().fileEdit().changes().get(0).beforeLineRange().startLine()).isZero();
+    assertThat(showFixSuggestionQuery.getFixSuggestion().fileEdit().changes().get(0).beforeLineRange().endLine()).isEqualTo(1);
   }
 
   @Test
@@ -228,13 +228,13 @@ class ShowFixSuggestionRequestHandlerTests {
     assertThat(showFixSuggestionQuery.getTokenName()).isEqualTo("abc");
     assertThat(showFixSuggestionQuery.getOrganizationKey()).isEqualTo("sample-organization");
     assertThat(showFixSuggestionQuery.getTokenValue()).isEqualTo("123");
-    assertThat(showFixSuggestionQuery.getFixSuggestion().getSuggestionId()).isEqualTo("eb93b2b4-f7b0-4b5c-9460-50893968c264");
-    assertThat(showFixSuggestionQuery.getFixSuggestion().getExplanation()).isEqualTo("Modifying the variable name is good");
-    assertThat(showFixSuggestionQuery.getFixSuggestion().getFileEdit().getPath()).isEqualTo("src/main/java/Main.java");
-    assertThat(showFixSuggestionQuery.getFixSuggestion().getFileEdit().getChanges().get(0).getBefore()).isEmpty();
-    assertThat(showFixSuggestionQuery.getFixSuggestion().getFileEdit().getChanges().get(0).getAfter()).isEqualTo("var fix = 1;");
-    assertThat(showFixSuggestionQuery.getFixSuggestion().getFileEdit().getChanges().get(0).getBeforeLineRange().getStartLine()).isZero();
-    assertThat(showFixSuggestionQuery.getFixSuggestion().getFileEdit().getChanges().get(0).getBeforeLineRange().getEndLine()).isEqualTo(1);
+    assertThat(showFixSuggestionQuery.getFixSuggestion().suggestionId()).isEqualTo("eb93b2b4-f7b0-4b5c-9460-50893968c264");
+    assertThat(showFixSuggestionQuery.getFixSuggestion().explanation()).isEqualTo("Modifying the variable name is good");
+    assertThat(showFixSuggestionQuery.getFixSuggestion().fileEdit().path()).isEqualTo("src/main/java/Main.java");
+    assertThat(showFixSuggestionQuery.getFixSuggestion().fileEdit().changes().get(0).before()).isEmpty();
+    assertThat(showFixSuggestionQuery.getFixSuggestion().fileEdit().changes().get(0).after()).isEqualTo("var fix = 1;");
+    assertThat(showFixSuggestionQuery.getFixSuggestion().fileEdit().changes().get(0).beforeLineRange().startLine()).isZero();
+    assertThat(showFixSuggestionQuery.getFixSuggestion().fileEdit().changes().get(0).beforeLineRange().endLine()).isEqualTo(1);
   }
 
   @Test

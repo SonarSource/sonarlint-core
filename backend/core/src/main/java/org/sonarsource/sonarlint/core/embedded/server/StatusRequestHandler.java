@@ -83,30 +83,9 @@ public class StatusRequestHandler implements HttpRequestHandler {
     return repository.hasConnectionWithOrigin(serverOrigin);
   }
 
-  private static class StatusResponse {
-    @Expose
-    private final String ideName;
-    @Expose
-    private final String description;
-    @Expose
-    private final boolean needsToken;
-    @Expose
-    private final CapabilitiesResponse capabilities;
+  private record StatusResponse(@Expose String ideName, @Expose String description, @Expose boolean needsToken,
+                                @Expose CapabilitiesResponse capabilities) { }
 
-    public StatusResponse(String ideName, String description, boolean needsToken, CapabilitiesResponse capabilities) {
-      this.ideName = ideName;
-      this.description = description;
-      this.needsToken = needsToken;
-      this.capabilities = capabilities;
-    }
-  }
+  private record CapabilitiesResponse(@Expose boolean canOpenFixSuggestion) { }
 
-  private static class CapabilitiesResponse {
-    @Expose
-    private final boolean canOpenFixSuggestion;
-
-    public CapabilitiesResponse(boolean canOpenFixSuggestion) {
-      this.canOpenFixSuggestion = canOpenFixSuggestion;
-    }
-  }
 }

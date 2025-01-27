@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nullable;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpException;
@@ -124,8 +125,8 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
             client.matchProjectBranch(new MatchProjectBranchParams(configScopeId, branchToMatch)).join().isBranchMatched();
           if (!localBranchMatchesRequesting) {
             client.showMessage(new ShowMessageParams(MessageType.ERROR,
-              "Attempted to show a fix suggestion from branch '" + branchToMatch + "', which is different from the currently " +
-                "checked-out branch.\nPlease switch to the correct branch and try again."));
+              "Attempted to show a fix suggestion from branch '" + StringEscapeUtils.escapeHtml(branchToMatch) + "', " +
+                "which is different from the currently checked-out branch.\nPlease switch to the correct branch and try again."));
             return;
           }
 
@@ -147,8 +148,8 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
     if (optTranslation.isPresent()) {
       var translation = optTranslation.get();
       var idePath = translation.serverToIdePath(Paths.get(filePath));
-      for (var scope: boundScopes) {
-        for (var file: clientFs.getFiles(scope)) {
+      for (var scope : boundScopes) {
+        for (var file : clientFs.getFiles(scope)) {
           if (Path.of(file.getUri()).endsWith(idePath)) {
             return true;
           }
@@ -176,7 +177,7 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
     pathTranslationService.getOrComputePathTranslation(configScopeId).ifPresent(translation -> {
       var fixSuggestionDto = new FixSuggestionDto(
         fixSuggestion.suggestionId,
-        fixSuggestion.getExplanation(),
+        fixSuggestion.explanation(),
         new FileEditDto(
           translation.serverToIdePath(Paths.get(fixSuggestion.fileEdit.path)),
           fixSuggestion.fileEdit.changes.stream().map(c ->
@@ -306,107 +307,45 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
   }
 
   @VisibleForTesting
-  public static class FixSuggestionPayload {
-    private final FileEditPayload fileEdit;
-    private final String suggestionId;
-    private final String explanation;
+  public record FixSuggestionPayload(FileEditPayload fileEdit, String suggestionId, String explanation) {
 
     public FixSuggestionPayload(FileEditPayload fileEdit, String suggestionId, String explanation) {
       this.fileEdit = fileEdit;
       this.suggestionId = suggestionId;
-      this.explanation = explanation;
+      this.explanation = StringEscapeUtils.escapeHtml(explanation);
     }
 
     public boolean isValid() {
       return fileEdit.isValid() && !suggestionId.isBlank();
     }
 
-    public FileEditPayload getFileEdit() {
-      return fileEdit;
-    }
-
-    public String getSuggestionId() {
-      return suggestionId;
-    }
-
-    public String getExplanation() {
-      return explanation;
-    }
   }
 
   @VisibleForTesting
-  public static class FileEditPayload {
-    private final List<ChangesPayload> changes;
-    private final String path;
-
-    public FileEditPayload(List<ChangesPayload> changes, String path) {
-      this.changes = changes;
-      this.path = path;
-    }
+  public record FileEditPayload(List<ChangesPayload> changes, String path) {
 
     public boolean isValid() {
       return !path.isBlank() && changes.stream().allMatch(ChangesPayload::isValid);
     }
 
-    public List<ChangesPayload> getChanges() {
-      return changes;
-    }
-
-    public String getPath() {
-      return path;
-    }
   }
 
   @VisibleForTesting
-  public static class ChangesPayload {
-    private final TextRangePayload beforeLineRange;
-    private final String before;
-    private final String after;
-
-    public ChangesPayload(TextRangePayload beforeLineRange, String before, String after) {
-      this.beforeLineRange = beforeLineRange;
-      this.before = before;
-      this.after = after;
-    }
+  public record ChangesPayload(TextRangePayload beforeLineRange, String before, String after) {
 
     public boolean isValid() {
       return beforeLineRange.isValid();
     }
 
-    public TextRangePayload getBeforeLineRange() {
-      return beforeLineRange;
-    }
-
-    public String getBefore() {
-      return before;
-    }
-
-    public String getAfter() {
-      return after;
-    }
   }
 
   @VisibleForTesting
-  public static class TextRangePayload {
-    private final int startLine;
-    private final int endLine;
-
-    public TextRangePayload(int startLine, int endLine) {
-      this.startLine = startLine;
-      this.endLine = endLine;
-    }
+  public record TextRangePayload(int startLine, int endLine) {
 
     public boolean isValid() {
       return startLine >= 0 && endLine >= 0 && startLine <= endLine;
     }
 
-    public int getStartLine() {
-      return startLine;
-    }
-
-    public int getEndLine() {
-      return endLine;
-    }
   }
 
 }

@@ -41,11 +41,11 @@ class SmartNotificationEventParserTests {
 
     assertThat(optionalEvent).isPresent();
     var event = optionalEvent.get();
-    assertThat(event.getCategory()).isEqualTo("QA");
-    assertThat(event.getDate()).isEqualTo("2023-07-19T15:08:01+0000");
-    assertThat(event.getMessage()).isEqualTo("msg");
-    assertThat(event.getProject()).isEqualTo("projectKey");
-    assertThat(event.getLink()).isEqualTo("lnk");
+    assertThat(event.category()).isEqualTo("QA");
+    assertThat(event.date()).isEqualTo("2023-07-19T15:08:01+0000");
+    assertThat(event.message()).isEqualTo("msg");
+    assertThat(event.project()).isEqualTo("projectKey");
+    assertThat(event.link()).isEqualTo("lnk");
   }
 
   @Test

@@ -19,42 +19,18 @@
  */
 package org.sonarsource.sonarlint.core.websocket.events;
 
+import org.apache.commons.lang.StringEscapeUtils;
 import org.sonarsource.sonarlint.core.serverapi.push.SonarServerEvent;
 
-public class SmartNotificationEvent implements SonarServerEvent {
-
-  private final String message;
-  private final String link;
-  private final String project;
-  private final String date;
-  private final String category;
+public record SmartNotificationEvent(String message, String link, String project, String date,
+                                     String category) implements SonarServerEvent {
 
   public SmartNotificationEvent(String message, String link, String project, String date, String category) {
-    this.message = message;
+    this.message = StringEscapeUtils.escapeHtml(message);
     this.link = link;
     this.project = project;
     this.date = date;
     this.category = category;
-  }
-
-  public String getMessage() {
-    return message;
-  }
-
-  public String getLink() {
-    return link;
-  }
-
-  public String getProject() {
-    return project;
-  }
-
-  public String getDate() {
-    return date;
-  }
-
-  public String getCategory() {
-    return category;
   }
 
 }

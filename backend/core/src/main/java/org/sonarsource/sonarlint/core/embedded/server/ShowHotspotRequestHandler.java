@@ -90,18 +90,21 @@ public class ShowHotspotRequestHandler implements HttpRequestHandler {
     response.setEntity(new StringEntity("OK"));
   }
 
-  private void showHotspotForScope(String connectionId, String configurationScopeId, String hotspotKey, SonarLintCancelMonitor cancelMonitor) {
+  private void showHotspotForScope(String connectionId, String configurationScopeId, String hotspotKey,
+    SonarLintCancelMonitor cancelMonitor) {
     var hotspotOpt = tryFetchHotspot(connectionId, hotspotKey, cancelMonitor);
     if (hotspotOpt.isPresent()) {
       pathTranslationService.getOrComputePathTranslation(configurationScopeId)
-        .ifPresent(translation -> client.showHotspot(new ShowHotspotParams(configurationScopeId, adapt(hotspotKey, hotspotOpt.get(), translation))));
+        .ifPresent(translation -> client.showHotspot(new ShowHotspotParams(configurationScopeId, adapt(hotspotKey, hotspotOpt.get(),
+          translation))));
     } else {
       client.showMessage(new ShowMessageParams(MessageType.ERROR, "Could not show the hotspot. See logs for more details"));
     }
   }
 
   private Optional<ServerHotspotDetails> tryFetchHotspot(String connectionId, String hotspotKey, SonarLintCancelMonitor cancelMonitor) {
-    return connectionManager.withValidConnectionFlatMapOptionalAndReturn(connectionId, api -> api.hotspot().fetch(hotspotKey, cancelMonitor));
+    return connectionManager.withValidConnectionFlatMapOptionalAndReturn(connectionId, api -> api.hotspot().fetch(hotspotKey,
+      cancelMonitor));
   }
 
   private static HotspotDetailsDto adapt(String hotspotKey, ServerHotspotDetails hotspot, FilePathTranslation translation) {
@@ -144,20 +147,12 @@ public class ShowHotspotRequestHandler implements HttpRequestHandler {
     return new ShowHotspotQuery(params.get("server"), params.get("project"), params.get("hotspot"));
   }
 
-  private static class ShowHotspotQuery {
-    private final String serverUrl;
-    private final String projectKey;
-    private final String hotspotKey;
-
-    private ShowHotspotQuery(String serverUrl, String projectKey, String hotspotKey) {
-      this.serverUrl = serverUrl;
-      this.projectKey = projectKey;
-      this.hotspotKey = hotspotKey;
-    }
+  private record ShowHotspotQuery(String serverUrl, String projectKey, String hotspotKey) {
 
     public boolean isValid() {
       return isNotBlank(serverUrl) && isNotBlank(projectKey) && isNotBlank(hotspotKey);
     }
+
   }
 
 }

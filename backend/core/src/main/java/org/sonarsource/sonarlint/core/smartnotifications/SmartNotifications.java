@@ -165,11 +165,11 @@ public class SmartNotifications {
   }
 
   private void notifyClient(String connectionId, SmartNotificationEvent event) {
-    var projectKey = event.getProject();
+    var projectKey = event.project();
     var boundScopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, projectKey);
-    client.showSmartNotification(new ShowSmartNotificationParams(event.getMessage(), event.getLink(),
-      boundScopes.stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet()), event.getCategory(), connectionId));
-    telemetryService.smartNotificationsReceived(event.getCategory());
+    client.showSmartNotification(new ShowSmartNotificationParams(event.message(), event.link(),
+      boundScopes.stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet()), event.category(), connectionId));
+    telemetryService.smartNotificationsReceived(event.category());
   }
 
 }
