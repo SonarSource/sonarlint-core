@@ -41,6 +41,7 @@ class EmbeddedServerMediumTests {
     var embeddedServerPort = backend.getEmbeddedServerPort();
     var request = HttpRequest.newBuilder()
       .uri(URI.create("http://localhost:" + embeddedServerPort + "/sonarlint/api/status"))
+      .header("Origin", "https://untrusted")
       .GET().build();
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -141,4 +142,41 @@ class EmbeddedServerMediumTests {
     assertThat(responseToken.headers().map()).doesNotContainKey("Content-Security-Policy-Report-Only");
     assertThat(responseStatus.headers().map()).doesNotContainKey("Content-Security-Policy-Report-Only");
   }
+
+  @SonarLintTest
+  void it_should_rate_limit_origin_if_too_many_requests(SonarLintTestHarness harness) throws IOException, InterruptedException {
+    var fakeClient = harness.newFakeClient().build();
+    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").start(fakeClient);
+
+    var embeddedServerPort = backend.getEmbeddedServerPort();
+    var request = HttpRequest.newBuilder()
+      .uri(URI.create("http://localhost:" + embeddedServerPort + "/sonarlint/api/status"))
+      .header("Origin", "https://sonar")
+      .GET().build();
+    for (int i = 0; i < 10; i++) {
+      java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+    }
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+    assertThat(response)
+      .extracting(HttpResponse::statusCode, HttpResponse::body)
+      .containsExactly(HttpStatus.TOO_MANY_REQUESTS_429, "");
+  }
+
+  @SonarLintTest
+  void it_should_not_allow_request_if_origin_is_missing(SonarLintTestHarness harness) throws IOException, InterruptedException {
+    var fakeClient = harness.newFakeClient().build();
+    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").start(fakeClient);
+
+    var embeddedServerPort = backend.getEmbeddedServerPort();
+    var request = HttpRequest.newBuilder()
+      .uri(URI.create("http://localhost:" + embeddedServerPort + "/sonarlint/api/status"))
+      .GET().build();
+    var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+
+    assertThat(response)
+      .extracting(HttpResponse::statusCode, HttpResponse::body)
+      .containsExactly(HttpStatus.BAD_REQUEST_400, "");
+  }
+
 }
