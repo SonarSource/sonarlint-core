@@ -158,7 +158,9 @@ public interface SonarLintRpcClientDelegate {
    */
   boolean checkServerTrusted(List<X509CertificateDto> chain, String authType);
 
-  void didReceiveServerHotspotEvent(DidReceiveServerHotspotEvent params);
+  default void didReceiveServerHotspotEvent(DidReceiveServerHotspotEvent params) {
+    // no-op
+  }
 
   /**
    * @return null if the client is unable to match the branch
