@@ -27,6 +27,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Optional;
 import javax.annotation.Nullable;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpException;
