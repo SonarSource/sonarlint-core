@@ -64,6 +64,8 @@ import org.springframework.context.event.EventListener;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
+import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.blameFile;
+import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.blameFromNativeCommand;
 import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.blameWithFilesGitCommand;
 
 public class TrackingService {
@@ -271,7 +273,9 @@ public class TrackingService {
     var baseDir = getBaseDir(configurationScopeId);
     if (baseDir != null) {
       try {
-        var sonarLintBlameResult = blameWithFilesGitCommand(baseDir, fileRelativePaths, fileContentProvider);
+        var sonarLintBlameResult2 = blameWithFilesGitCommand(baseDir, fileRelativePaths, fileContentProvider);
+        var sonarLintBlameResult = blameFromNativeCommand(baseDir, fileRelativePaths);
+        //blameFile(baseDir, fileRelativePaths);
         return (filePath, lineNumbers) -> determineIntroductionDate(filePath, lineNumbers, sonarLintBlameResult);
       } catch (GitRepoNotFoundException e) {
         LOG.info("Git Repository not found for {}. The path {} is not in a Git repository", configurationScopeId, e.getPath());
