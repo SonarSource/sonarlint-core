@@ -25,11 +25,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.SonarLintUserHome;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 
 public class UserPaths {
-
-  private static final String SONARLINT_USER_HOME_ENV = "SONARLINT_USER_HOME";
 
   public static UserPaths from(InitializeParams initializeParams) {
     var userHome = computeUserHome(initializeParams.getSonarlintUserHome());
@@ -45,11 +44,7 @@ public class UserPaths {
     if (clientUserHome != null) {
       return Paths.get(clientUserHome);
     }
-    String slHome = System.getenv(SONARLINT_USER_HOME_ENV);
-    if (slHome != null) {
-      return Paths.get(slHome);
-    }
-    return Paths.get(System.getProperty("user.home")).resolve(".sonarlint");
+    return SonarLintUserHome.get();
   }
 
   private static void createFolderIfNeeded(Path path) {
