@@ -60,7 +60,7 @@ public class AnalyzerConfigurationStorage {
     try {
       return Optional.of(read());
     } catch (Exception e) {
-      LOG.error("Could not load analyzer configuration storage", e);
+      LOG.debug("Could not load analyzer configuration storage", e);
       return Optional.empty();
     }
   }
