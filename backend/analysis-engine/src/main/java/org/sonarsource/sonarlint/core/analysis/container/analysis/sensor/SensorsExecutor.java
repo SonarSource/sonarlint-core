@@ -19,6 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.analysis.sensor;
 
+import io.sentry.ISpan;
+import io.sentry.ITransaction;
+import io.sentry.SpanStatus;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -50,12 +53,15 @@ public class SensorsExecutor {
   private final ProgressMonitor progress;
   private final List<ProjectSensor> sensors;
   private final DefaultSensorContext context;
+  private final Optional<ITransaction> analysisTransaction;
 
-  public SensorsExecutor(DefaultSensorContext context, SensorOptimizer sensorOptimizer, ProgressMonitor progress, Optional<List<ProjectSensor>> sensors) {
+  public SensorsExecutor(DefaultSensorContext context, SensorOptimizer sensorOptimizer, ProgressMonitor progress, Optional<ITransaction> analysisTransaction,
+    Optional<List<ProjectSensor>> sensors) {
     this.context = context;
     this.sensors = sensors.orElse(List.of());
     this.sensorOptimizer = sensorOptimizer;
     this.progress = progress;
+    this.analysisTransaction = analysisTransaction;
   }
 
   public void execute() {
@@ -83,18 +89,25 @@ public class SensorsExecutor {
       var descriptor = new DefaultSensorDescriptor();
       sensor.describe(descriptor);
       if (sensorOptimizer.shouldExecute(descriptor)) {
-        executeSensor(context, sensor, descriptor);
+        executeSensor(context, sensor, descriptor, analysisTransaction);
       }
     }
   }
 
-  private static void executeSensor(SensorContext context, ProjectSensor sensor, DefaultSensorDescriptor descriptor) {
+  private static void executeSensor(SensorContext context, ProjectSensor sensor, DefaultSensorDescriptor descriptor, Optional<ITransaction> analysisTransaction) {
     var sensorName = descriptor.name() != null ? descriptor.name() : describe(sensor);
+    Optional<ISpan> sensorSpan = analysisTransaction.map(t -> t.startChild("executeSensor", sensorName));
     LOG.debug("Execute Sensor: {}", sensorName);
     try {
       sensor.execute(context);
     } catch (Throwable t) {
+      sensorSpan.ifPresent(s -> {
+        s.setStatus(SpanStatus.INTERNAL_ERROR);
+        s.setThrowable(t);
+      });
       LOG.error("Error executing sensor: '{}'", sensorName, t);
+    } finally {
+      sensorSpan.ifPresent(ISpan::finish);
     }
   }
 

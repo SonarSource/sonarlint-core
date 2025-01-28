@@ -19,12 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.analysis.command;
 
+import io.sentry.Sentry;
+import io.sentry.SpanStatus;
+import java.util.Objects;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
@@ -61,12 +66,25 @@ public class AnalyzeCommand implements Command<AnalysisResults> {
       moduleContainer = moduleRegistry.createTransientContainer(configuration.inputFiles());
     }
     Throwable originalException = null;
+    AnalysisResults result = null;
+    var analysisTransaction = Sentry.startTransaction("AnalyzeCommand", "doRunAnalysis");
+    analysisTransaction.setData("filesCount", configuration.inputFiles().size());
+    analysisTransaction.setData("languages", configuration.inputFiles().stream()
+      .map(ClientInputFile::language)
+      .filter(Objects::nonNull)
+      .map(SonarLanguage::getSonarLanguageKey)
+      .toList());
     try {
-      return moduleContainer.analyze(configuration, issueListener, progressMonitor);
+      result = moduleContainer.analyze(configuration, issueListener, progressMonitor, analysisTransaction);
+      analysisTransaction.setData("failedFilesCount", result.failedAnalysisFiles().size());
+      return result;
     } catch (Throwable e) {
       originalException = e;
+      analysisTransaction.setThrowable(e);
+      analysisTransaction.setStatus(SpanStatus.INTERNAL_ERROR);
       throw e;
     } finally {
+      analysisTransaction.finish();
       try {
         if (moduleContainer.isTransient()) {
           moduleContainer.stopComponents();

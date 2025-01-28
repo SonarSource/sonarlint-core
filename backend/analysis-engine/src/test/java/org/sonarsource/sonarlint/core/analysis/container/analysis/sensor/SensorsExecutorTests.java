@@ -68,7 +68,7 @@ class SensorsExecutorTests {
   void testThrowingSensorShouldBeLogged() {
     var sensorOptimizer = mock(SensorOptimizer.class);
     when(sensorOptimizer.shouldExecute(any())).thenReturn(true);
-    var executor = new SensorsExecutor(null, sensorOptimizer, new ProgressMonitor(null), Optional.of(List.of(new ThrowingSensor())));
+    var executor = new SensorsExecutor(null, sensorOptimizer, new ProgressMonitor(null), Optional.empty(), Optional.of(List.of(new ThrowingSensor())));
 
     executor.execute();
 
@@ -84,7 +84,7 @@ class SensorsExecutorTests {
     var globalSensor = new GlobalSensor();
     var oldGlobalSensor = new OldGlobalSensor();
 
-    var executor = new SensorsExecutor(null, sensorOptimizer, new ProgressMonitor(null), Optional.of(List.of(globalSensor, regularSensor, oldGlobalSensor)));
+    var executor = new SensorsExecutor(null, sensorOptimizer, new ProgressMonitor(null), Optional.empty(), Optional.of(List.of(globalSensor, regularSensor, oldGlobalSensor)));
 
     executor.execute();
 
