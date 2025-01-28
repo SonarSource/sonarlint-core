@@ -19,7 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.module;
 
+import io.sentry.ITransaction;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
@@ -60,13 +62,14 @@ public class ModuleContainer extends SpringComponentContainer {
     return isTransient;
   }
 
-  public AnalysisResults analyze(AnalysisConfiguration configuration, Consumer<Issue> issueListener, ProgressMonitor progress) {
+  public AnalysisResults analyze(AnalysisConfiguration configuration, Consumer<Issue> issueListener, ProgressMonitor progress, @Nullable ITransaction analysisTransaction) {
     var analysisContainer = new AnalysisContainer(this, progress);
     analysisContainer.add(configuration);
     analysisContainer.add(new IssueListenerHolder(issueListener));
     analysisContainer.add(new ActiveRulesAdapter(configuration.activeRules().stream().map(ActiveRuleAdapter::new).toList()));
     var defaultAnalysisResult = new AnalysisResults();
     analysisContainer.add(defaultAnalysisResult);
+    analysisContainer.add(analysisTransaction);
     analysisContainer.execute();
     return defaultAnalysisResult;
   }

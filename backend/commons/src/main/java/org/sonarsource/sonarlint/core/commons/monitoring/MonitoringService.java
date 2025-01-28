@@ -27,6 +27,10 @@ import org.sonarsource.sonarlint.core.commons.SonarLintCoreVersion;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class MonitoringService {
+
+  private static final String TRACES_SAMPLE_RATE_PROPERTY = "sonarlint.internal.monitoring.tracesSampleRate";
+  private static final double TRACES_SAMPLE_RATE_DEFAULT = 0.01D;
+
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final MonitoringInitializationParams initializeParams;
@@ -72,6 +76,16 @@ public class MonitoringService {
     sentryOptions.setTag("platform", platform);
     sentryOptions.setTag("architecture", architecture);
     sentryOptions.addInAppInclude("org.sonarsource.sonarlint");
+    sentryOptions.setTracesSampleRate(getTracesSampleRate());
     return sentryOptions;
+  }
+
+  static double getTracesSampleRate() {
+    try {
+      var sampleRateFromSystemProperty = System.getProperty(TRACES_SAMPLE_RATE_PROPERTY);
+      return Double.parseDouble(sampleRateFromSystemProperty);
+    } catch (RuntimeException e) {
+      return TRACES_SAMPLE_RATE_DEFAULT;
+    }
   }
 }
