@@ -172,7 +172,8 @@ class ConfigurationServiceTests {
 
     underTest.didUpdateBinding("id2", BINDING_DTO_2);
 
-    assertThat(logTester.logs(LogOutput.Level.ERROR)).containsExactly("Attempt to update binding in configuration scope 'id2' that was not registered");
+    assertThat(logTester.logs(LogOutput.Level.DEBUG)).contains("Attempt to update binding in configuration scope 'id2' that was not registered");
+    assertThat(logTester.logs(LogOutput.Level.ERROR)).isEmpty();
   }
 
   @Test

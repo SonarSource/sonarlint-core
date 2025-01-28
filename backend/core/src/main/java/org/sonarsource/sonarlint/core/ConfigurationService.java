@@ -110,7 +110,7 @@ public class ConfigurationService {
   private BindingConfigChangedEvent bind(String configurationScopeId, BindingConfigurationDto bindingConfiguration) {
     var previousBindingConfig = repository.getBindingConfiguration(configurationScopeId);
     if (previousBindingConfig == null) {
-      LOG.error("Attempt to update binding in configuration scope '{}' that was not registered", configurationScopeId);
+      LOG.debug("Attempt to update binding in configuration scope '{}' that was not registered", configurationScopeId);
       return null;
     }
     var newBindingConfig = adapt(bindingConfiguration);
