@@ -54,7 +54,8 @@ class SharedConnectedModeSettingsMediumTests {
     var expectedFileContent = String.format("""
       {
           "sonarCloudOrganization": "%s",
-          "projectKey": "%s"
+          "projectKey": "%s",
+          "region": "EU"
       }""", organizationKey, projectKey);
 
     var server = harness.newFakeSonarCloudServer(organizationKey).start();
