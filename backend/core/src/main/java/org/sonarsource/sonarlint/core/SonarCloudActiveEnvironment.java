@@ -30,8 +30,7 @@ public class SonarCloudActiveEnvironment {
   public static final URI PRODUCTION_EU_URI = URI.create("https://sonarcloud.io");
   public static final URI PRODUCTION_US_URI = URI.create("https://us.sonarcloud.io");
   public static final URI WS_EU_ENDPOINT_URI = URI.create("wss://events-api.sonarcloud.io/");
-  // TODO provide the correct URL
-  public static final URI WS_US_ENDPOINT_URI = URI.create("wss://events-api.sonarcloud.io/");
+  public static final URI WS_US_ENDPOINT_URI = URI.create("wss://events-api.us.sonarcloud.io/");
 
   public static SonarCloudActiveEnvironment prod() {
     return new SonarCloudActiveEnvironment();

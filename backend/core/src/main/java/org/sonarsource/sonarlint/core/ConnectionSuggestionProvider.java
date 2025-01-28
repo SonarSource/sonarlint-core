@@ -131,7 +131,8 @@ public class ConnectionSuggestionProvider {
               .add(new ConnectionSuggestionDto(new SonarQubeConnectionSuggestionDto(serverUrl, projectKey),
                 bindingClue.isFromSharedConfiguration())),
             organization -> connectionSuggestionsByConfigScopeIds.computeIfAbsent(configScopeId, s -> new ArrayList<>())
-              .add(new ConnectionSuggestionDto(new SonarCloudConnectionSuggestionDto(organization, projectKey),
+              .add(new ConnectionSuggestionDto(new SonarCloudConnectionSuggestionDto(organization, projectKey,
+                ((BindingClueProvider.SonarCloudBindingClue) bindingClue).getRegion()),
                 bindingClue.isFromSharedConfiguration()))
           ), () -> bindingSuggestionsForConfigScopeIds.add(configScopeId));
         }
