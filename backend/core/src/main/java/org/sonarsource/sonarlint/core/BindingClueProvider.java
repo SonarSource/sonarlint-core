@@ -188,7 +188,6 @@ public class BindingClueProvider {
       var projectKey = configuration.get("projectKey");
       var organization = configuration.get("sonarCloudOrganization");
       var serverUrl = configuration.get("sonarQubeUri");
-      // TODO make sure the field name is final
       var region = configuration.get("region");
       // Checking for PascalCase due to VS backward compatibility
       if (projectKey == null || ((organization == null) == (serverUrl == null))) {

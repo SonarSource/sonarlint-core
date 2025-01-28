@@ -35,7 +35,8 @@ public class SharedConnectedModeSettingsProvider {
   private static final String SONARCLOUD_CONNECTED_MODE_CONFIG = """
     {
         "sonarCloudOrganization": "%s",
-        "projectKey": "%s"
+        "projectKey": "%s",
+        "region": "%s"
     }""";
   private static final String SONARQUBE_CONNECTED_MODE_CONFIG = """
     {
@@ -64,8 +65,9 @@ public class SharedConnectedModeSettingsProvider {
       telemetryService.exportedConnectedMode();
       if (connection.getKind() == ConnectionKind.SONARCLOUD) {
         var organization = ((SonarCloudConnectionConfiguration) connection).getOrganization();
+        var region = ((SonarCloudConnectionConfiguration) connection).getRegion();
 
-        return format(SONARCLOUD_CONNECTED_MODE_CONFIG, organization, projectKey);
+        return format(SONARCLOUD_CONNECTED_MODE_CONFIG, organization, projectKey, region);
       } else {
         return format(SONARQUBE_CONNECTED_MODE_CONFIG, connection.getEndpointParams().getBaseUrl(), projectKey);
       }

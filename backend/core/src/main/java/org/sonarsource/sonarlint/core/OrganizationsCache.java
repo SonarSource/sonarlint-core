@@ -52,7 +52,8 @@ public class OrganizationsCache {
     this.connectionManager = connectionManager;
   }
 
-  public List<OrganizationDto> fuzzySearchOrganizations(Either<TokenDto, UsernamePasswordDto> credentials, String searchText, SonarCloudRegion region, SonarLintCancelMonitor cancelMonitor) {
+  public List<OrganizationDto> fuzzySearchOrganizations(Either<TokenDto, UsernamePasswordDto> credentials, String searchText,
+    SonarCloudRegion region, SonarLintCancelMonitor cancelMonitor) {
     return getTextSearchIndex(credentials, region, cancelMonitor).search(searchText)
       .entrySet()
       .stream()
