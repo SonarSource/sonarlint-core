@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.repository.connection;
 
 import java.net.URI;
 import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.SonarCloudRegion;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -50,7 +51,7 @@ class SonarQubeConnectionConfigurationTest {
       .isEqualTo(new SonarQubeConnectionConfiguration("id1", "http://server1", true))
       .isNotEqualTo(new SonarQubeConnectionConfiguration("id2", "http://server1", true))
       .isNotEqualTo(new SonarQubeConnectionConfiguration("id1", "http://server2", true))
-      .isNotEqualTo(new SonarCloudConnectionConfiguration(URI.create("http://server1"), "id1", "org1", "EU", true))
+      .isNotEqualTo(new SonarCloudConnectionConfiguration(URI.create("http://server1"), "id1", "org1", SonarCloudRegion.EU, true))
       .hasSameHashCodeAs(new SonarQubeConnectionConfiguration("id1", "http://server1", true));
   }
 

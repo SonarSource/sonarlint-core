@@ -62,6 +62,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionReceivedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
@@ -78,7 +79,7 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
   private final boolean canOpenFixSuggestion;
   private final RequestHandlerBindingAssistant requestHandlerBindingAssistant;
   private final PathTranslationService pathTranslationService;
-  private final String sonarCloudUrl;
+  private final SonarCloudActiveEnvironment sonarCloudActiveEnvironment;
   private final SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService;
   private final ClientFileSystemService clientFs;
 
@@ -91,7 +92,7 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
     this.canOpenFixSuggestion = params.getFeatureFlags().canOpenFixSuggestion();
     this.requestHandlerBindingAssistant = requestHandlerBindingAssistant;
     this.pathTranslationService = pathTranslationService;
-    this.sonarCloudUrl = sonarCloudActiveEnvironment.getUri().toString();
+    this.sonarCloudActiveEnvironment = sonarCloudActiveEnvironment;
     this.sonarProjectBranchesSynchronizationService = sonarProjectBranchesSynchronizationService;
     this.clientFs = clientFs;
   }
@@ -110,7 +111,7 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
       showFixSuggestionQuery.isSonarCloud ? AiSuggestionSource.SONARCLOUD : AiSuggestionSource.SONARQUBE,
       showFixSuggestionQuery.fixSuggestion.fileEdit.changes.size()));
 
-    AssistCreatingConnectionParams serverConnectionParams = createAssistServerConnectionParams(showFixSuggestionQuery);
+    AssistCreatingConnectionParams serverConnectionParams = createAssistServerConnectionParams(showFixSuggestionQuery, sonarCloudActiveEnvironment);
 
     requestHandlerBindingAssistant.assistConnectionAndBindingIfNeededAsync(
       serverConnectionParams,
@@ -160,17 +161,21 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
     return false;
   }
 
-  private static AssistCreatingConnectionParams createAssistServerConnectionParams(ShowFixSuggestionQuery query) {
+  private static AssistCreatingConnectionParams createAssistServerConnectionParams(ShowFixSuggestionQuery query, SonarCloudActiveEnvironment sonarCloudActiveEnvironment) {
     String tokenName = query.getTokenName();
     String tokenValue = query.getTokenValue();
-    return query.isSonarCloud ?
-      new AssistCreatingConnectionParams(new SonarCloudConnectionParams(query.getOrganizationKey(), tokenName, tokenValue))
-      : new AssistCreatingConnectionParams(new SonarQubeConnectionParams(query.getServerUrl(), tokenName, tokenValue));
+    if (query.isSonarCloud) {
+      // It 'isSonarCloud' check passed, we are sure we will have a region
+      var region = sonarCloudActiveEnvironment.getRegion(query.getServerUrl()).get();
+      return new AssistCreatingConnectionParams(new SonarCloudConnectionParams(query.getOrganizationKey(), tokenName, tokenValue, SonarCloudRegion.valueOf(region.name())));
+    } else {
+      return new AssistCreatingConnectionParams(new SonarQubeConnectionParams(query.getServerUrl(), tokenName, tokenValue));
+    }
   }
 
   private boolean isSonarCloud(@Nullable String origin) {
     return Optional.ofNullable(origin)
-      .map(sonarCloudUrl::equals)
+      .map(sonarCloudActiveEnvironment::isSonarQubeCloud)
       .orElse(false);
   }
 
@@ -205,7 +210,17 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
     }
     var payload = extractAndValidatePayload(request);
     boolean isSonarCloud = isSonarCloud(origin);
-    var serverUrl = isSonarCloud ? sonarCloudUrl : params.get("server");
+    String serverUrl;
+
+    // TODO remove duplication
+    if (isSonarCloud) {
+      var originUrl = request.getHeader("Origin").getValue();
+      var region = sonarCloudActiveEnvironment.getRegion(originUrl);
+      // Since the 'isSonarCloud' check passed, we are sure that the region will be there
+      serverUrl = sonarCloudActiveEnvironment.getUri(region.get()).toString();
+    } else {
+      serverUrl = params.get("server");
+    }
     return new ShowFixSuggestionQuery(serverUrl, params.get("project"), params.get("issue"), params.get("branch"),
       params.get("tokenName"), params.get("tokenValue"), params.get("organizationKey"), isSonarCloud, payload);
   }

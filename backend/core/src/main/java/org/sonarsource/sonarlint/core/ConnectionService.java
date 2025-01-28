@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core;
 
 import jakarta.inject.Inject;
-import java.net.URI;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -57,7 +56,7 @@ public class ConnectionService {
 
   private final ApplicationEventPublisher applicationEventPublisher;
   private final ConnectionConfigurationRepository repository;
-  private final URI sonarCloudUri;
+  private final SonarCloudActiveEnvironment sonarCloudActiveEnvironment;
   private final ConnectionManager connectionManager;
   private final TokenGeneratorHelper tokenGeneratorHelper;
 
@@ -73,7 +72,7 @@ public class ConnectionService {
     SonarCloudActiveEnvironment sonarCloudActiveEnvironment, ConnectionManager connectionManager, TokenGeneratorHelper tokenGeneratorHelper) {
     this.applicationEventPublisher = applicationEventPublisher;
     this.repository = repository;
-    this.sonarCloudUri = sonarCloudActiveEnvironment.getUri();
+    this.sonarCloudActiveEnvironment = sonarCloudActiveEnvironment;
     this.connectionManager = connectionManager;
     this.tokenGeneratorHelper = tokenGeneratorHelper;
     if (initSonarQubeConnections != null) {
@@ -89,7 +88,8 @@ public class ConnectionService {
   }
 
   private SonarCloudConnectionConfiguration adapt(SonarCloudConnectionConfigurationDto scDto) {
-    return new SonarCloudConnectionConfiguration(sonarCloudUri, scDto.getConnectionId(), scDto.getOrganization(), scDto.getRegion(), scDto.isDisableNotifications());
+    return new SonarCloudConnectionConfiguration(sonarCloudActiveEnvironment.getUri(SonarCloudRegion.valueOf(scDto.getRegion().toString())), scDto.getConnectionId(),
+      scDto.getOrganization(), SonarCloudRegion.valueOf(scDto.getRegion().toString()), scDto.isDisableNotifications());
   }
 
   private static void putAndLogIfDuplicateId(Map<String, AbstractConnectionConfiguration> map, AbstractConnectionConfiguration config) {

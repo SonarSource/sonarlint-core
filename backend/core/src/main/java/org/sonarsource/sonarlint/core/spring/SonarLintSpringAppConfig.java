@@ -29,7 +29,6 @@ import org.apache.hc.core5.util.Timeout;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingClueProvider;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
-import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.ConfigurationService;
 import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.ConnectionService;
@@ -37,9 +36,9 @@ import org.sonarsource.sonarlint.core.ConnectionSuggestionProvider;
 import org.sonarsource.sonarlint.core.OrganizationsCache;
 import org.sonarsource.sonarlint.core.SharedConnectedModeSettingsProvider;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
-import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.TokenGeneratorHelper;
+import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.VersionSoonUnsupportedHelper;
 import org.sonarsource.sonarlint.core.analysis.AnalysisEngineCache;
 import org.sonarsource.sonarlint.core.analysis.AnalysisService;
@@ -207,8 +206,9 @@ public class SonarLintSpringAppConfig {
   @Bean
   SonarCloudActiveEnvironment provideSonarCloudActiveEnvironment(InitializeParams params) {
     var alternativeSonarCloudEnv = params.getAlternativeSonarCloudEnvironment();
-    return alternativeSonarCloudEnv == null ? SonarCloudActiveEnvironment.prodEu()
-      : new SonarCloudActiveEnvironment(alternativeSonarCloudEnv.getUri(), alternativeSonarCloudEnv.getWebSocketsEndpointUri(), SonarCloudRegion.ALTERNATIVE);
+    // TODO consider giving possibility to provide custom urls for both regions
+    return alternativeSonarCloudEnv == null ? SonarCloudActiveEnvironment.prod()
+      : new SonarCloudActiveEnvironment(alternativeSonarCloudEnv.getUri(), alternativeSonarCloudEnv.getWebSocketsEndpointUri());
   }
 
   @Bean

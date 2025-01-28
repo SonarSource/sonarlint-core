@@ -43,6 +43,7 @@ import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
+import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
@@ -100,7 +101,7 @@ class ShowFixSuggestionRequestHandlerTests {
     when(featureFlagsDto.canOpenFixSuggestion()).thenReturn(true);
     initializeParams = mock(InitializeParams.class);
     when(initializeParams.getFeatureFlags()).thenReturn(featureFlagsDto);
-    var sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prodEu();
+    var sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
     telemetryService = mock(TelemetryService.class);
     var sonarProjectBranchesSynchronizationService = mock(SonarProjectBranchesSynchronizationService.class);
     when(sonarProjectBranchesSynchronizationService.getProjectBranches(any(), any(), any())).thenReturn(new ProjectBranches(Set.of(), "main"));
@@ -273,7 +274,7 @@ class ShowFixSuggestionRequestHandlerTests {
     var context = mock(HttpContext.class);
 
     when(connectionConfigurationRepository.findByOrganization(any())).thenReturn(List.of(
-      new SonarCloudConnectionConfiguration(PRODUCTION_EU_URI, "name", "organizationKey", "EU", false)));
+      new SonarCloudConnectionConfiguration(PRODUCTION_EU_URI, "name", "organizationKey", SonarCloudRegion.EU, false)));
     when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope", "connectionId", "projectKey")));
     when(sonarLintRpcClient.matchProjectBranch(any())).thenReturn(CompletableFuture.completedFuture(new MatchProjectBranchResponse(false)));
 
@@ -318,7 +319,7 @@ class ShowFixSuggestionRequestHandlerTests {
     when(clientFile.getUri()).thenReturn(URI.create("file:///src/main/java/Main.java"));
     when(filePathTranslation.serverToIdePath(any())).thenReturn(Path.of("src/main/java/Main.java"));
     when(connectionConfigurationRepository.findByOrganization(any())).thenReturn(List.of(
-      new SonarCloudConnectionConfiguration(PRODUCTION_EU_URI, "name", "organizationKey", "EU", false)));
+      new SonarCloudConnectionConfiguration(PRODUCTION_EU_URI, "name", "organizationKey", SonarCloudRegion.EU, false)));
     when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope", "connectionId", "projectKey")));
     when(sonarLintRpcClient.matchProjectBranch(any())).thenReturn(CompletableFuture.completedFuture(new MatchProjectBranchResponse(true)));
 

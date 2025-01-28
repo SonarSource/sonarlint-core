@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.repository.connection;
 
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
+import org.sonarsource.sonarlint.core.SonarCloudRegion;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -28,13 +29,13 @@ class SonarCloudConnectionConfigurationTest {
 
   @Test
   void testEqualsAndHashCode() {
-    var underTest = new SonarCloudConnectionConfiguration(SonarCloudActiveEnvironment.PRODUCTION_EU_URI, "id1", "org1", "EU", true);
+    var underTest = new SonarCloudConnectionConfiguration(SonarCloudActiveEnvironment.PRODUCTION_EU_URI, "id1", "org1", SonarCloudRegion.EU, true);
     assertThat(underTest)
-      .isEqualTo(new SonarCloudConnectionConfiguration(SonarCloudActiveEnvironment.PRODUCTION_EU_URI, "id1", "org1", "EU", true))
-      .isNotEqualTo(new SonarCloudConnectionConfiguration(SonarCloudActiveEnvironment.PRODUCTION_EU_URI, "id2", "org1", "EU", true))
-      .isNotEqualTo(new SonarCloudConnectionConfiguration(SonarCloudActiveEnvironment.PRODUCTION_EU_URI, "id1", "org2", "EU", true))
+      .isEqualTo(new SonarCloudConnectionConfiguration(SonarCloudActiveEnvironment.PRODUCTION_EU_URI, "id1", "org1", SonarCloudRegion.EU, true))
+      .isNotEqualTo(new SonarCloudConnectionConfiguration(SonarCloudActiveEnvironment.PRODUCTION_EU_URI, "id2", "org1", SonarCloudRegion.EU, true))
+      .isNotEqualTo(new SonarCloudConnectionConfiguration(SonarCloudActiveEnvironment.PRODUCTION_EU_URI, "id1", "org2", SonarCloudRegion.EU, true))
       .isNotEqualTo(new SonarQubeConnectionConfiguration("id1", "http://server1", true))
-      .hasSameHashCodeAs(new SonarCloudConnectionConfiguration(SonarCloudActiveEnvironment.PRODUCTION_EU_URI, "id1", "org1", "EU", true));
+      .hasSameHashCodeAs(new SonarCloudConnectionConfiguration(SonarCloudActiveEnvironment.PRODUCTION_EU_URI, "id1", "org1", SonarCloudRegion.EU, true));
   }
 
 }

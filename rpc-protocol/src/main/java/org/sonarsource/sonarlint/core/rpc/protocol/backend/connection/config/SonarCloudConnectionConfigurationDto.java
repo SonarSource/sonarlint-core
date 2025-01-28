@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config;
 
+import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
+
 public class SonarCloudConnectionConfigurationDto {
 
   /**
@@ -26,10 +28,15 @@ public class SonarCloudConnectionConfigurationDto {
    */
   private final String connectionId;
   private final String organization;
-  private final String region;
+  private final SonarCloudRegion region;
   private final boolean disableNotifications;
 
-  public SonarCloudConnectionConfigurationDto(String connectionId, String organization, String region, boolean disableNotifications) {
+  @Deprecated(since = "10.14")
+  public SonarCloudConnectionConfigurationDto(String connectionId, String organization, boolean disableNotifications) {
+    this(connectionId, organization, SonarCloudRegion.EU, disableNotifications);
+  }
+
+  public SonarCloudConnectionConfigurationDto(String connectionId, String organization, SonarCloudRegion region, boolean disableNotifications) {
     this.connectionId = connectionId;
     this.organization = organization;
     this.region = region;
@@ -44,7 +51,7 @@ public class SonarCloudConnectionConfigurationDto {
     return organization;
   }
 
-  public String getRegion() {
+  public SonarCloudRegion getRegion() {
     return region;
   }
 

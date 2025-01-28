@@ -40,6 +40,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.Did
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
@@ -376,7 +377,7 @@ class WebSocketMediumTests {
         .start(client);
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
       backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(emptyList(),
-        List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", "EU", true))));
+        List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", SonarCloudRegion.EU, true))));
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).extracting(WebSocketConnection::isOpened).containsExactly(false));
 
       backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams("configScope"));
@@ -450,7 +451,7 @@ class WebSocketMediumTests {
         .start(client);
 
       backend.getConnectionService()
-        .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", "EU", false))));
+        .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", SonarCloudRegion.EU, false))));
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
@@ -468,7 +469,7 @@ class WebSocketMediumTests {
         .start(client);
 
       backend.getConnectionService()
-        .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", "EU", false))));
+        .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", SonarCloudRegion.EU, false))));
 
       await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Error while trying to create websocket connection for ws://localhost:54321/endpoint"));
 
@@ -517,7 +518,7 @@ class WebSocketMediumTests {
       awaitUntilFirstWebSocketSubscribedTo("projectKey2", "projectKey1");
 
       backend.getConnectionService()
-        .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId2", "orgKey2", "EU", false))));
+        .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId2", "orgKey2", SonarCloudRegion.EU, false))));
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
@@ -555,7 +556,7 @@ class WebSocketMediumTests {
         .start(client);
 
       backend.getConnectionService()
-        .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey2", "EU", false))));
+        .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey2", SonarCloudRegion.EU, false))));
 
       await().pollDelay(Duration.ofMillis(200)).atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections()).isEmpty());
     }
@@ -572,7 +573,7 @@ class WebSocketMediumTests {
       awaitUntilFirstWebSocketSubscribedTo("projectKey");
 
       backend.getConnectionService()
-        .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", "EU", true))));
+        .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", SonarCloudRegion.EU, true))));
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
@@ -594,8 +595,8 @@ class WebSocketMediumTests {
       awaitUntilFirstWebSocketSubscribedTo("projectKey2", "projectKey1");
 
       backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(emptyList(),
-        List.of(new SonarCloudConnectionConfigurationDto("connectionId1", "orgKey1", "EU", false), new SonarCloudConnectionConfigurationDto(
-          "connectionId2", "orgKey2", "EU", true))));
+        List.of(new SonarCloudConnectionConfigurationDto("connectionId1", "orgKey1", SonarCloudRegion.EU, false), new SonarCloudConnectionConfigurationDto(
+          "connectionId2", "orgKey2", SonarCloudRegion.EU, true))));
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
@@ -614,7 +615,7 @@ class WebSocketMediumTests {
         .start(client);
 
       backend.getConnectionService()
-        .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", "EU", false))));
+        .didUpdateConnections(new DidUpdateConnectionsParams(emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", SonarCloudRegion.EU, false))));
 
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(webSocketServer.getConnections())
         .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)

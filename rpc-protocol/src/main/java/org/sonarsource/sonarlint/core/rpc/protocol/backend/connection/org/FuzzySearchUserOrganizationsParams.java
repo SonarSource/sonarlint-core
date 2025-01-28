@@ -30,10 +30,12 @@ public class FuzzySearchUserOrganizationsParams {
   @JsonAdapter(EitherCredentialsAdapterFactory.class)
   private final Either<TokenDto, UsernamePasswordDto> credentials;
   private final String searchText;
+  private final String region;
 
-  public FuzzySearchUserOrganizationsParams(Either<TokenDto, UsernamePasswordDto> credentials, String searchText) {
+  public FuzzySearchUserOrganizationsParams(Either<TokenDto, UsernamePasswordDto> credentials, String searchText, String region) {
     this.credentials = credentials;
     this.searchText = searchText;
+    this.region = region;
   }
 
   public Either<TokenDto, UsernamePasswordDto> getCredentials() {
@@ -42,5 +44,9 @@ public class FuzzySearchUserOrganizationsParams {
 
   public String getSearchText() {
     return searchText;
+  }
+
+  public String getRegion() {
+    return region;
   }
 }

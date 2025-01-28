@@ -104,6 +104,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
@@ -165,7 +166,7 @@ class SonarCloudTests extends AbstractConnectedTests {
     backend.initialize(
       new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(), new SonarCloudAlternativeEnvironmentDto(SONARCLOUD_STAGING_URL, SONARCLOUD_WEBSOCKETS_STAGING_URL), featureFlags, sonarUserHome.resolve("storage"),
         sonarUserHome.resolve("work"), emptySet(), PluginLocator.getEmbeddedPluginsByKeyForTests(), languages, emptySet(), emptySet(), emptyList(),
-        List.of(new SonarCloudConnectionConfigurationDto(CONNECTION_ID, SONARCLOUD_ORGANIZATION, "EU", true)), sonarUserHome.toString(),
+        List.of(new SonarCloudConnectionConfigurationDto(CONNECTION_ID, SONARCLOUD_ORGANIZATION, SonarCloudRegion.EU, true)), sonarUserHome.toString(),
         emptyMap(), false, null, false, null));
     randomPositiveInt = new Random().nextInt() & Integer.MAX_VALUE;
 

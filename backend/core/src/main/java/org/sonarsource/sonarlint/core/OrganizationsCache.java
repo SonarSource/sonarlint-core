@@ -52,8 +52,8 @@ public class OrganizationsCache {
     this.connectionManager = connectionManager;
   }
 
-  public List<OrganizationDto> fuzzySearchOrganizations(Either<TokenDto, UsernamePasswordDto> credentials, String searchText, SonarLintCancelMonitor cancelMonitor) {
-    return getTextSearchIndex(credentials, cancelMonitor).search(searchText)
+  public List<OrganizationDto> fuzzySearchOrganizations(Either<TokenDto, UsernamePasswordDto> credentials, String searchText, SonarCloudRegion region, SonarLintCancelMonitor cancelMonitor) {
+    return getTextSearchIndex(credentials, region, cancelMonitor).search(searchText)
       .entrySet()
       .stream()
       .sorted(Comparator.comparing(Map.Entry<OrganizationDto, Double>::getValue).reversed()
@@ -63,13 +63,13 @@ public class OrganizationsCache {
       .toList();
   }
 
-  public TextSearchIndex<OrganizationDto> getTextSearchIndex(Either<TokenDto, UsernamePasswordDto> credentials, SonarLintCancelMonitor cancelMonitor) {
+  public TextSearchIndex<OrganizationDto> getTextSearchIndex(Either<TokenDto, UsernamePasswordDto> credentials, SonarCloudRegion region, SonarLintCancelMonitor cancelMonitor) {
     try {
       return textSearchIndexCacheByCredentials.get(credentials, () -> {
         LOG.debug("Load user organizations...");
         List<OrganizationDto> orgs;
         try {
-          var serverApi = connectionManager.getForSonarCloudNoOrg(credentials);
+          var serverApi = connectionManager.getForSonarCloudNoOrg(credentials, region);
           var serverOrganizations = serverApi.organization().listUserOrganizations(cancelMonitor);
           orgs = serverOrganizations.stream().map(o -> new OrganizationDto(o.getKey(), o.getName(), o.getDescription())).toList();
         } catch (Exception e) {
@@ -91,14 +91,14 @@ public class OrganizationsCache {
     }
   }
 
-  public List<OrganizationDto> listUserOrganizations(Either<TokenDto, UsernamePasswordDto> credentials, SonarLintCancelMonitor cancelMonitor) {
+  public List<OrganizationDto> listUserOrganizations(Either<TokenDto, UsernamePasswordDto> credentials, SonarCloudRegion region, SonarLintCancelMonitor cancelMonitor) {
     textSearchIndexCacheByCredentials.invalidate(credentials);
-    return getTextSearchIndex(credentials, cancelMonitor).getAll();
+    return getTextSearchIndex(credentials, region, cancelMonitor).getAll();
   }
 
   @CheckForNull
-  public OrganizationDto getOrganization(Either<TokenDto, UsernamePasswordDto> credentials, String organizationKey, SonarLintCancelMonitor cancelMonitor) {
-    var helper = connectionManager.getForSonarCloudNoOrg(credentials);
+  public OrganizationDto getOrganization(Either<TokenDto, UsernamePasswordDto> credentials, String organizationKey, SonarCloudRegion region, SonarLintCancelMonitor cancelMonitor) {
+    var helper = connectionManager.getForSonarCloudNoOrg(credentials, region);
     var serverOrganization = helper.organization().getOrganization(organizationKey, cancelMonitor);
     return serverOrganization.map(o -> new OrganizationDto(o.getKey(), o.getName(), o.getDescription())).orElse(null);
   }

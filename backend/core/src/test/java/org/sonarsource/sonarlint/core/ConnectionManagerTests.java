@@ -51,7 +51,7 @@ class ConnectionManagerTests {
   private final HttpClientProvider httpClientProvider = mock(HttpClientProvider.class);
   private final SonarLintRpcClient client = mock(SonarLintRpcClient.class);
   private final ConnectionManager underTest = new ConnectionManager(connectionRepository, awareHttpClientProvider, httpClientProvider,
-    SonarCloudActiveEnvironment.prodEu(), client);
+    SonarCloudActiveEnvironment.prod(), client);
 
   @Test
   void getServerApi_for_sonarqube() {
@@ -134,7 +134,7 @@ class ConnectionManagerTests {
 
   @Test
   void getServerApi_returns_empty_if_client_cant_provide_httpclient() {
-    when(connectionRepository.getConnectionById("sc1")).thenReturn(new SonarCloudConnectionConfiguration(URI.create("http://server1"), "sc1", "myorg", "EU", true));
+    when(connectionRepository.getConnectionById("sc1")).thenReturn(new SonarCloudConnectionConfiguration(URI.create("http://server1"), "sc1", "myorg", SonarCloudRegion.EU, true));
     when(awareHttpClientProvider.getHttpClient("sc1", true)).thenReturn(null);
 
     var serverApi = underTest.getServerApi("sc1");

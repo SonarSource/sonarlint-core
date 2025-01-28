@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreat
 import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.FixSuggestionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
@@ -424,7 +425,7 @@ class OpenFixSuggestionInIdeMediumTests {
     doAnswer((Answer<AssistCreatingConnectionResponse>) invocation -> {
       backend.getConnectionService().didUpdateConnections(
         new DidUpdateConnectionsParams(Collections.emptyList(),
-          List.of(new SonarCloudConnectionConfigurationDto(connectionId, ORG_KEY, "EU", true))));
+          List.of(new SonarCloudConnectionConfigurationDto(connectionId, ORG_KEY, SonarCloudRegion.EU, true))));
       return new AssistCreatingConnectionResponse(connectionId);
     }).when(fakeClient).assistCreatingConnection(any(), any());
   }

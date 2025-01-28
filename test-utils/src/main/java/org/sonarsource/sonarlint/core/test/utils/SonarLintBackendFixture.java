@@ -47,6 +47,7 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
+import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintCancelChecker;
@@ -252,7 +253,7 @@ public class SonarLintBackendFixture {
         storageBuilder.accept(storage);
         storages.add(storage);
       }
-      sonarCloudConnections.add(new SonarCloudConnectionConfigurationDto(connectionId, organizationKey, "EU", disableNotifications));
+      sonarCloudConnections.add(new SonarCloudConnectionConfigurationDto(connectionId, organizationKey, org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion.EU, disableNotifications));
       return this;
     }
 
@@ -497,7 +498,7 @@ public class SonarLintBackendFixture {
         if (sonarCloudUrl != null || sonarCloudWebSocketsUrl != null) {
           sonarCloudAlternativeEnvironment = new SonarCloudAlternativeEnvironmentDto(
             sonarCloudUrl == null ? SonarCloudActiveEnvironment.PRODUCTION_EU_URI : URI.create(sonarCloudUrl),
-            sonarCloudWebSocketsUrl == null ? SonarCloudActiveEnvironment.prodEu().getWebSocketsEndpointUri() : URI.create(sonarCloudWebSocketsUrl));
+            sonarCloudWebSocketsUrl == null ? SonarCloudActiveEnvironment.prod().getWebSocketsEndpointUri(SonarCloudRegion.EU) : URI.create(sonarCloudWebSocketsUrl));
         }
 
         var sslConfiguration = new SslConfigurationDto(null, null, null, keyStorePath, keyStorePassword, keyStoreType);

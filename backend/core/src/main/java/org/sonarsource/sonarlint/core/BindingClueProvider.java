@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import java.io.StringReader;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -42,7 +41,6 @@ import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionC
 
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang.StringUtils.isBlank;
-import static org.apache.commons.lang.StringUtils.removeEnd;
 import static org.apache.commons.lang.StringUtils.trimToNull;
 import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singlePlural;
 
@@ -56,12 +54,12 @@ public class BindingClueProvider {
 
   private final ConnectionConfigurationRepository connectionRepository;
   private final ClientFileSystemService clientFs;
-  private final URI sonarCloudUri;
+  private final SonarCloudActiveEnvironment sonarCloudActiveEnvironment;
 
   public BindingClueProvider(ConnectionConfigurationRepository connectionRepository, ClientFileSystemService clientFs, SonarCloudActiveEnvironment sonarCloudActiveEnvironment) {
     this.connectionRepository = connectionRepository;
     this.clientFs = clientFs;
-    this.sonarCloudUri = sonarCloudActiveEnvironment.getUri();
+    this.sonarCloudActiveEnvironment = sonarCloudActiveEnvironment;
   }
 
   public List<BindingClueWithConnections> collectBindingCluesWithConnections(String configScopeId, Set<String> connectionIds, SonarLintCancelMonitor cancelMonitor) {
@@ -251,7 +249,7 @@ public class BindingClueProvider {
       return new SonarCloudBindingClue(scannerProps.projectKey, scannerProps.organization, scannerProps.isFromSharedConfiguration);
     }
     if (scannerProps.serverUrl != null) {
-      if (removeEnd(scannerProps.serverUrl, "/").equals(removeEnd(sonarCloudUri.toString(), "/"))) {
+      if (sonarCloudActiveEnvironment.isSonarQubeCloud(scannerProps.serverUrl)) {
         return new SonarCloudBindingClue(scannerProps.projectKey, null, scannerProps.isFromSharedConfiguration);
       } else {
         return new SonarQubeBindingClue(scannerProps.projectKey, scannerProps.serverUrl, scannerProps.isFromSharedConfiguration);

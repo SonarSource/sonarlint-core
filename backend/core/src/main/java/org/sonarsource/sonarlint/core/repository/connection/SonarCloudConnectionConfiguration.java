@@ -31,10 +31,10 @@ public class SonarCloudConnectionConfiguration extends AbstractConnectionConfigu
   private final String organization;
   private final SonarCloudRegion region;
 
-  public SonarCloudConnectionConfiguration(URI uri, String connectionId, String organization, String region, boolean disableNotifications) {
+  public SonarCloudConnectionConfiguration(URI uri, String connectionId, String organization, SonarCloudRegion region, boolean disableNotifications) {
     super(connectionId, ConnectionKind.SONARCLOUD, disableNotifications, uri.toString());
     this.organization = organization;
-    this.region = SonarCloudRegion.valueOf(region);
+    this.region = region;
   }
 
   public String getOrganization() {

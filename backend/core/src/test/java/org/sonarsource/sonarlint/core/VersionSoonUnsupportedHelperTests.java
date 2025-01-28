@@ -63,7 +63,7 @@ class VersionSoonUnsupportedHelperTests {
   private static final String SC_CONNECTION_ID = "scConnectionId";
   private static final SonarQubeConnectionConfiguration SQ_CONNECTION = new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID, "https://mysonarqube.com", true);
   private static final SonarQubeConnectionConfiguration SQ_CONNECTION_2 = new SonarQubeConnectionConfiguration(SQ_CONNECTION_ID_2, "https://mysonarqube2.com", true);
-  private static final SonarCloudConnectionConfiguration SC_CONNECTION = new SonarCloudConnectionConfiguration(SonarCloudActiveEnvironment.PRODUCTION_EU_URI, SC_CONNECTION_ID, "https://sonarcloud.com", "EU", true);
+  private static final SonarCloudConnectionConfiguration SC_CONNECTION = new SonarCloudConnectionConfiguration(SonarCloudActiveEnvironment.PRODUCTION_EU_URI, SC_CONNECTION_ID, "https://sonarcloud.com", SonarCloudRegion.EU, true);
 
   private final SonarLintRpcClient client = mock(SonarLintRpcClient.class);
   private final ConnectionManager connectionManager = mock(ConnectionManager.class);

@@ -73,7 +73,7 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
   private final TelemetryService telemetryService;
   private final RequestHandlerBindingAssistant requestHandlerBindingAssistant;
   private final PathTranslationService pathTranslationService;
-  private final String sonarCloudUrl;
+  private final SonarCloudActiveEnvironment sonarCloudActiveEnvironment;
   private final SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService;
 
   public ShowIssueRequestHandler(SonarLintRpcClient client, ConnectionManager connectionManager, TelemetryService telemetryService,
@@ -84,7 +84,7 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
     this.telemetryService = telemetryService;
     this.requestHandlerBindingAssistant = requestHandlerBindingAssistant;
     this.pathTranslationService = pathTranslationService;
-    this.sonarCloudUrl = sonarCloudActiveEnvironment.getUri().toString();
+    this.sonarCloudActiveEnvironment = sonarCloudActiveEnvironment;
     this.sonarProjectBranchesSynchronizationService = sonarProjectBranchesSynchronizationService;
   }
 
@@ -138,7 +138,7 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
   private boolean isSonarCloud(ClassicHttpRequest request) throws ProtocolException {
     return Optional.ofNullable(request.getHeader("Origin"))
       .map(NameValuePair::getValue)
-      .map(sonarCloudUrl::equals)
+      .map(sonarCloudActiveEnvironment::isSonarQubeCloud)
       .orElse(false);
   }
 
@@ -206,7 +206,16 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
       // Ignored
     }
     boolean isSonarCloud = isSonarCloud(request);
-    String serverUrl = isSonarCloud ? sonarCloudUrl : params.get("server");
+    String serverUrl;
+
+    if (isSonarCloud) {
+      var originUrl = request.getHeader("Origin").getValue();
+      var region = sonarCloudActiveEnvironment.getRegion(originUrl);
+      // Since the 'isSonarCloud' check passed, we are sure that the region will be there
+      serverUrl = sonarCloudActiveEnvironment.getUri(region.get()).toString();
+    } else {
+      serverUrl = params.get("server");
+    }
     return new ShowIssueQuery(serverUrl, params.get("project"), params.get("issue"), params.get("branch"),
       params.get("pullRequest"), params.get("tokenName"), params.get("tokenValue"), params.get("organizationKey"), isSonarCloud);
   }

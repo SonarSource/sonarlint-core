@@ -34,6 +34,7 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
+import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
@@ -60,7 +61,7 @@ public class RequestHandlerBindingAssistant {
   private final ConfigurationRepository configurationRepository;
   private final UserTokenService userTokenService;
   private final ExecutorServiceShutdownWatchable<?> executorService;
-  private final String sonarCloudUrl;
+  private final SonarCloudActiveEnvironment sonarCloudActiveEnvironment;
   private final ConnectionConfigurationRepository repository;
 
   public RequestHandlerBindingAssistant(BindingSuggestionProvider bindingSuggestionProvider, BindingCandidatesFinder bindingCandidatesFinder,
@@ -74,7 +75,7 @@ public class RequestHandlerBindingAssistant {
     this.userTokenService = userTokenService;
     this.executorService = new ExecutorServiceShutdownWatchable<>(new ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS,
       new LinkedBlockingQueue<>(), r -> new Thread(r, "Show Issue or Hotspot Request Handler")));
-    this.sonarCloudUrl = sonarCloudActiveEnvironment.getUri().toString();
+    this.sonarCloudActiveEnvironment = sonarCloudActiveEnvironment;
     this.repository = repository;
   }
 
@@ -129,7 +130,8 @@ public class RequestHandlerBindingAssistant {
   }
 
   private String getServerUrl(AssistCreatingConnectionParams connectionParams) {
-    return connectionParams.getConnectionParams().isLeft() ? connectionParams.getConnectionParams().getLeft().getServerUrl() : sonarCloudUrl;
+    return connectionParams.getConnectionParams().isLeft() ? connectionParams.getConnectionParams().getLeft().getServerUrl() :
+      sonarCloudActiveEnvironment.getUri(SonarCloudRegion.valueOf(connectionParams.getConnectionParams().getRight().getRegion().name())).toString();
   }
 
   private AssistCreatingConnectionResponse assistCreatingConnectionAndWaitForRepositoryUpdate(

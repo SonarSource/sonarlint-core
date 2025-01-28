@@ -20,41 +20,73 @@
 package org.sonarsource.sonarlint.core;
 
 import java.net.URI;
+import java.util.Map;
+import java.util.Optional;
+
+import static org.apache.commons.lang.StringUtils.removeEnd;
 
 public class SonarCloudActiveEnvironment {
 
   public static final URI PRODUCTION_EU_URI = URI.create("https://sonarcloud.io");
   public static final URI PRODUCTION_US_URI = URI.create("https://us.sonarcloud.io");
   public static final URI WS_EU_ENDPOINT_URI = URI.create("wss://events-api.sonarcloud.io/");
+  // TODO provide the correct URL
   public static final URI WS_US_ENDPOINT_URI = URI.create("wss://events-api.sonarcloud.io/");
 
-  public static SonarCloudActiveEnvironment prodEu() {
-    return new SonarCloudActiveEnvironment(PRODUCTION_EU_URI, WS_EU_ENDPOINT_URI, SonarCloudRegion.EU);
+  public static SonarCloudActiveEnvironment prod() {
+    return new SonarCloudActiveEnvironment();
   }
 
-  public static SonarCloudActiveEnvironment prodUs() {
-    return new SonarCloudActiveEnvironment(PRODUCTION_US_URI, WS_US_ENDPOINT_URI, SonarCloudRegion.US);
+  private final Map<SonarCloudRegion, SonarQubeCloudUris> uris;
+
+  public SonarCloudActiveEnvironment() {
+    var euUris = new SonarQubeCloudUris(PRODUCTION_EU_URI, WS_EU_ENDPOINT_URI);
+    var usUris = new SonarQubeCloudUris(PRODUCTION_US_URI, WS_US_ENDPOINT_URI);
+    this.uris = Map.of(SonarCloudRegion.EU, euUris, SonarCloudRegion.US, usUris);
   }
 
-  private final SonarCloudRegion region;
-  private final URI uri;
-  private final URI webSocketsEndpointUri;
-
-  public SonarCloudActiveEnvironment(URI uri, URI webSocketsEndpointUri, SonarCloudRegion region) {
-    this.uri = uri;
-    this.region = region;
-    this.webSocketsEndpointUri = webSocketsEndpointUri;
+  public SonarCloudActiveEnvironment(URI uri, URI webSocketsEndpointUri) {
+    this.uris = Map.of(SonarCloudRegion.EU, new SonarQubeCloudUris(uri, webSocketsEndpointUri));
   }
 
-  public URI getUri() {
-    return uri;
+  public URI getUri(SonarCloudRegion region) {
+    return uris.get(region).getProductionUri();
   }
 
-  public URI getWebSocketsEndpointUri() {
-    return webSocketsEndpointUri;
+  public URI getWebSocketsEndpointUri(SonarCloudRegion region) {
+    return uris.get(region).getWsUri();
   }
 
-  public SonarCloudRegion getRegion() {
-    return region;
+  public boolean isSonarQubeCloud(String uri) {
+    return uris.values()
+      .stream()
+      .map(u -> removeEnd(u.getProductionUri().toString(), "/"))
+      .anyMatch(u -> u.equals(removeEnd(uri, "/")));
+  }
+
+  public Optional<SonarCloudRegion> getRegion(String uri) {
+    return uris.entrySet()
+      .stream()
+      .filter(e -> removeEnd(e.getValue().getProductionUri().toString(), "/").equals(removeEnd(uri, "/")))
+      .findFirst()
+      .map(Map.Entry::getKey);
+  }
+
+  private static class SonarQubeCloudUris {
+    private final URI productionUri;
+    private final URI wsUri;
+
+    public SonarQubeCloudUris(URI productionUri, URI wsUri) {
+      this.productionUri = productionUri;
+      this.wsUri = wsUri;
+    }
+
+    public URI getProductionUri() {
+      return productionUri;
+    }
+
+    public URI getWsUri() {
+      return wsUri;
+    }
   }
 }

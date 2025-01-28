@@ -21,16 +21,24 @@ package org.sonarsource.sonarlint.core.rpc.protocol.client.connection;
 
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 
 public class SonarCloudConnectionParams {
   private final String organizationKey;
   private final String tokenName;
   private final String tokenValue;
+  private final SonarCloudRegion region;
 
+  @Deprecated(since = "10.14")
   public SonarCloudConnectionParams(String organizationKey, @Nullable String tokenName, @Nullable String tokenValue) {
+    this(organizationKey, tokenName, tokenValue, SonarCloudRegion.EU);
+  }
+
+  public SonarCloudConnectionParams(String organizationKey, @Nullable String tokenName, @Nullable String tokenValue, SonarCloudRegion region) {
     this.organizationKey = organizationKey;
     this.tokenName = tokenName;
     this.tokenValue = tokenValue;
+    this.region = region;
   }
 
   public String getOrganizationKey() {
@@ -45,5 +53,9 @@ public class SonarCloudConnectionParams {
   @CheckForNull
   public String getTokenValue() {
     return tokenValue;
+  }
+
+  public SonarCloudRegion getRegion() {
+    return region;
   }
 }

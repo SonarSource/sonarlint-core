@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.websocket;
 
 import com.google.common.util.concurrent.MoreExecutors;
-import java.net.URI;
+import jakarta.annotation.PreDestroy;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -30,7 +30,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
-import jakarta.annotation.PreDestroy;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
@@ -47,6 +46,7 @@ import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.serverapi.push.SonarServerEvent;
 import org.springframework.context.ApplicationEventPublisher;
@@ -63,8 +63,8 @@ public class WebSocketService {
   private final ConfigurationRepository configurationRepository;
   private final ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider;
   private final ApplicationEventPublisher eventPublisher;
-  private final URI webSocketsEndpointUri;
   protected SonarCloudWebSocket sonarCloudWebSocket;
+  private SonarCloudActiveEnvironment sonarCloudActiveEnvironment;
   private String connectionIdUsedToCreateConnection;
   private final ExecutorService executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-websocket-subscriber"));
 
@@ -75,7 +75,7 @@ public class WebSocketService {
     this.configurationRepository = configurationRepository;
     this.connectionAwareHttpClientProvider = connectionAwareHttpClientProvider;
     this.shouldEnableWebSockets = params.getFeatureFlags().shouldManageServerSentEvents();
-    this.webSocketsEndpointUri = sonarCloudActiveEnvironment.getWebSocketsEndpointUri();
+    this.sonarCloudActiveEnvironment = sonarCloudActiveEnvironment;
     this.eventPublisher = eventPublisher;
   }
 
@@ -289,8 +289,11 @@ public class WebSocketService {
 
   private void createConnectionIfNeeded(String connectionId) {
     connectionIdsInterestedInNotifications.add(connectionId);
-    if (this.sonarCloudWebSocket == null) {
-      this.sonarCloudWebSocket = SonarCloudWebSocket.create(webSocketsEndpointUri, connectionAwareHttpClientProvider.getWebSocketClient(connectionId),
+    var connection = connectionConfigurationRepository.getConnectionById(connectionId);
+    var region = connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD) ? ((SonarCloudConnectionConfiguration) connection).getRegion() : null;
+    if (this.sonarCloudWebSocket == null && region != null) {
+      this.sonarCloudWebSocket = SonarCloudWebSocket.create(sonarCloudActiveEnvironment.getWebSocketsEndpointUri(region),
+        connectionAwareHttpClientProvider.getWebSocketClient(connectionId),
         this::handleSonarServerEvent, this::reopenConnectionOnClose);
       this.connectionIdUsedToCreateConnection = connectionId;
     }
