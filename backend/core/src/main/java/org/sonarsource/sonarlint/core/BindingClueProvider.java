@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonSyntaxException;
 import java.io.StringReader;
 import java.net.URI;
 import java.util.ArrayList;
@@ -200,7 +199,7 @@ public class BindingClueProvider {
         organization != null ? organization.getAsString() : null,
         serverUrl != null ? serverUrl.getAsString() : null,
         true);
-    } catch (JsonSyntaxException e) {
+    } catch (Exception e) {
       LOG.warn("Unable to parse candidate connected mode configuration file", e);
       return null;
     }
