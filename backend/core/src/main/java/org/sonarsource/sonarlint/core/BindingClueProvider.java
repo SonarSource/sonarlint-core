@@ -199,7 +199,8 @@ public class BindingClueProvider {
       return new BindingProperties(projectKey != null ? projectKey.getAsString() : null,
         organization != null ? organization.getAsString() : null,
         serverUrl != null ? serverUrl.getAsString() : null,
-        region.getAsString(), true);
+        region != null ? region.getAsString() : null,
+        true);
     } catch (Exception e) {
       LOG.warn("Unable to parse candidate connected mode configuration file", e);
       return null;
