@@ -27,9 +27,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.text.ParseException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -38,10 +37,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
-import org.eclipse.jgit.api.BlameCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.blame.BlameResult;
 import org.eclipse.jgit.diff.RawTextComparator;
 import org.eclipse.jgit.ignore.IgnoreNode;
 import org.eclipse.jgit.lib.Constants;
@@ -49,7 +46,6 @@ import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
-import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
 import org.sonar.scm.git.blame.RepositoryBlameCommand;
@@ -62,8 +58,11 @@ import static org.eclipse.jgit.lib.Constants.GITIGNORE_FILENAME;
 import static org.sonarsource.sonarlint.core.commons.util.git.BlameParser.parseBlameOutput;
 
 public class GitUtils {
-
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  
+  // So we only have to make the expensive call once (or at most twice) to get the native Git executable!
+  private static boolean checkedForNativeGitExecutable = false;
+  private static String nativeGitExecutable = null;
 
   private GitUtils() {
     // Utility class
@@ -91,9 +90,16 @@ public class GitUtils {
       return List.of();
     }
   }
+  
+  public static SonarLintBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, @Nullable UnaryOperator<String> fileContentProvider) {
+    try {
+      return blameFromNativeCommand(projectBaseDir, projectBaseRelativeFilePaths);
+    } catch (IllegalStateException ignored) {
+      return blameWithFilesGitCommand(projectBaseDir, projectBaseRelativeFilePaths, fileContentProvider);
+    }
+  }
 
   public static SonarLintBlameResult blameWithFilesGitCommand(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, @Nullable UnaryOperator<String> fileContentProvider) {
-    long startTime = System.currentTimeMillis();
     var gitRepo = buildGitRepository(projectBaseDir);
 
     var gitRepoRelativeProjectBaseDir = getRelativePath(gitRepo, projectBaseDir);
@@ -113,31 +119,44 @@ public class GitUtils {
 
     try {
       var blameResult = blameCommand.call();
-      long endTime = System.currentTimeMillis();
-      LOG.info("blameWithFilesGitCommand took " + (endTime - startTime) + " ms");
       return new SonarLintBlameResult(blameResult, gitRepoRelativeProjectBaseDir);
     } catch (GitAPIException e) {
       throw new IllegalStateException("Failed to blame repository files", e);
     }
   }
 
-  private static boolean isGitAvailable() {
-    try {
-      Process process = new ProcessBuilder("git", "--version").start();
-      int exitCode = process.waitFor();
-      return exitCode == 0;
-    } catch (IOException | InterruptedException e) {
-      return false;
+  /**
+   *  Get the native Git executable by checking for the version of both `git` and `git.exe`. We cache this information
+   *  to run these expensive processes more than once (or twice in case of Windows).
+   */
+  private static String getNativeGitExecutable() {
+    if (!checkedForNativeGitExecutable) {
+      for (var executable : List.of("git", "git.exe")) {
+        try {
+          var process = new ProcessBuilder(executable, "--version").start();
+          var exitCode = process.waitFor();
+          if (exitCode == 0) {
+            nativeGitExecutable = executable;
+            break;
+          }
+        } catch (IOException | InterruptedException e) {
+          // Do log the exception stacktrace here as it might not be due to the command not being found but rather something like the
+          // Windows Execution Policy preventing it or something else. In this case this is extremely useful for debugging!
+          LOG.debug("Checking for native Git executable '" + executable+ "' failed with an exception", e);
+        }
+      }
+      checkedForNativeGitExecutable = true;
     }
+    return nativeGitExecutable;
   }
 
   private static String executeGitCommand(Path workingDir, String... command) throws IOException, InterruptedException {
-    var processBuilder = new ProcessBuilder(command);
-    processBuilder.directory(workingDir.toFile());
-    processBuilder.redirectErrorStream(true);
+    var processBuilder = new ProcessBuilder(command)
+      .directory(workingDir.toFile())
+      .redirectErrorStream(true);
     var process = processBuilder.start();
-    StringBuilder output = new StringBuilder();
-    try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+    var output = new StringBuilder();
+    try (var reader = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
       String line;
       while ((line = reader.readLine()) != null) {
         output.append(line).append(System.lineSeparator());
@@ -151,45 +170,19 @@ public class GitUtils {
   }
 
   public static SonarLintBlameResult blameFromNativeCommand(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths) {
-    if (isGitAvailable()) {
-      long startTime = System.currentTimeMillis();
+    var nativeExecutable = getNativeGitExecutable();
+    if (nativeExecutable != null) {
       for (var relativeFilePath : projectBaseRelativeFilePaths) {
         try {
-          var result = parseBlameOutput(executeGitCommand(projectBaseDir, "git", "blame", projectBaseDir.resolve(relativeFilePath).toString(), "--line-porcelain", "--encoding=UTF-8"), projectBaseDir.resolve(relativeFilePath).toString(), projectBaseDir);
-          long endTime = System.currentTimeMillis();
-          LOG.info("blameFromNativeCommand took " + (endTime - startTime) + " ms");
-          return result;
+          return parseBlameOutput(executeGitCommand(projectBaseDir,
+              nativeExecutable, "blame", projectBaseDir.resolve(relativeFilePath).toString(), "--line-porcelain", "--encoding=UTF-8"),
+            projectBaseDir.resolve(relativeFilePath).toString(), projectBaseDir);
         } catch (IOException | InterruptedException e) {
-          LOG.debug("Native git command error: ", e);
-        } catch (ParseException e) {
           throw new IllegalStateException("Failed to blame repository files", e);
         }
       }
     }
-    throw new IllegalStateException("Failed to blame repository files");
-  }
-
-  public static void blameFile(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths) {
-    long startTime = System.currentTimeMillis();
-    try {
-      var repository = buildGitRepository(projectBaseDir);
-      for (var relativeFilePath : projectBaseRelativeFilePaths) {
-        var blameCommand = new BlameCommand(repository);
-        blameCommand.setFilePath(relativeFilePath.toString());
-        var blameResult = blameCommand.call();
-
-        if (blameResult != null) {
-          for (int i = 0; i < blameResult.getResultContents().size(); i++) {
-            var commit = blameResult.getSourceCommit(i);
-            LOG.info("Line " + (i + 1) + " of file " + relativeFilePath + " was last modified by " + commit.getAuthorIdent().getName() + " on " + commit.getAuthorIdent().getWhen());
-          }
-        }
-      }
-      long endTime = System.currentTimeMillis();
-      LOG.info("blameFile took " + (endTime - startTime) + " ms");
-    } catch (GitAPIException e) {
-      e.printStackTrace();
-    }
+    throw new IllegalStateException("There is no native Git available");
   }
 
   private static Path getRelativePath(Repository gitRepo, Path projectBaseDir) {
