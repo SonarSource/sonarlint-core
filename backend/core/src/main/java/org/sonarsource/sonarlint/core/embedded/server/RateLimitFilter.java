@@ -58,18 +58,16 @@ public class RateLimitFilter implements HttpFilterHandler {
   private boolean isRequestAllowed(String origin) {
     long currentTime = System.currentTimeMillis();
     var counter = requestCounters.computeIfAbsent(origin, k -> new RequestCounter(currentTime));
-    synchronized (counter) {
+    requestCounters.compute(origin, (k, v) -> {
       if (currentTime - counter.timestamp > TIME_FRAME_MS) {
         counter.timestamp = currentTime;
         counter.count = 1;
-        return true;
-      } else if (counter.count < MAX_REQUESTS_PER_ORIGIN) {
-        counter.count++;
-        return true;
       } else {
-        return false;
+        counter.count++;
       }
-    }
+      return counter;
+    });
+    return counter.count <= MAX_REQUESTS_PER_ORIGIN;
   }
 
   private static class RequestCounter {
@@ -78,7 +76,7 @@ public class RateLimitFilter implements HttpFilterHandler {
 
     RequestCounter(long timestamp) {
       this.timestamp = timestamp;
-      this.count = 1;
+      this.count = 0;
     }
   }
 

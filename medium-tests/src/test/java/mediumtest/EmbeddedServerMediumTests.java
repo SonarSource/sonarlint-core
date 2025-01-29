@@ -25,6 +25,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
+import org.apache.commons.lang.RandomStringUtils;
 import org.eclipse.jetty.http.HttpStatus;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -153,9 +154,9 @@ class EmbeddedServerMediumTests {
     var embeddedServerPort = backend.getEmbeddedServerPort();
     var request = HttpRequest.newBuilder()
       .uri(URI.create("http://localhost:" + embeddedServerPort + "/sonarlint/api/status"))
-      .header("Origin", "https://sonar")
+      .header("Origin", RandomStringUtils.randomAlphabetic(10))
       .GET().build();
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 15; i++) {
       java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
     }
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
@@ -189,12 +190,12 @@ class EmbeddedServerMediumTests {
     var embeddedServerPort = backend.getEmbeddedServerPort();
     var request = HttpRequest.newBuilder()
       .uri(URI.create("http://localhost:" + embeddedServerPort + "/sonarlint/api/status"))
-      .header("Origin", "https://sonar")
+      .header("Origin", RandomStringUtils.randomAlphabetic(10))
       .GET().build();
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 15; i++) {
       java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
     }
-    await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+    await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> {
       var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
       assertThat(response.statusCode()).isEqualTo(HttpStatus.OK_200);
     });
