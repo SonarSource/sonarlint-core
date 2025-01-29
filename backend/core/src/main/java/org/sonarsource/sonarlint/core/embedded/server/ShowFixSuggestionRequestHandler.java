@@ -69,6 +69,7 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.sonarsource.sonarlint.core.commons.util.StringUtils.sanitizeAgainstRTLO;
+import static org.sonarsource.sonarlint.core.embedded.server.RequestHandlerUtils.getServerUrlForSonarCloud;
 
 public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
 
@@ -166,7 +167,7 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
     String tokenValue = query.getTokenValue();
     if (query.isSonarCloud) {
       // It 'isSonarCloud' check passed, we are sure we will have a region
-      var region = sonarCloudActiveEnvironment.getRegion(query.getServerUrl()).get();
+      var region = sonarCloudActiveEnvironment.getRegionOrThrow(query.getServerUrl());
       return new AssistCreatingConnectionParams(new SonarCloudConnectionParams(query.getOrganizationKey(), tokenName, tokenValue, SonarCloudRegion.valueOf(region.name())));
     } else {
       return new AssistCreatingConnectionParams(new SonarQubeConnectionParams(query.getServerUrl(), tokenName, tokenValue));
@@ -211,13 +212,8 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
     var payload = extractAndValidatePayload(request);
     boolean isSonarCloud = isSonarCloud(origin);
     String serverUrl;
-
-    // TODO remove duplication
     if (isSonarCloud) {
-      var originUrl = request.getHeader("Origin").getValue();
-      var region = sonarCloudActiveEnvironment.getRegion(originUrl);
-      // Since the 'isSonarCloud' check passed, we are sure that the region will be there
-      serverUrl = sonarCloudActiveEnvironment.getUri(region.get()).toString();
+      serverUrl = getServerUrlForSonarCloud(request, sonarCloudActiveEnvironment);
     } else {
       serverUrl = params.get("server");
     }

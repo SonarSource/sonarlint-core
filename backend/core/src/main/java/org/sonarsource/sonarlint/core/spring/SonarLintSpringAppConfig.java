@@ -206,7 +206,6 @@ public class SonarLintSpringAppConfig {
   @Bean
   SonarCloudActiveEnvironment provideSonarCloudActiveEnvironment(InitializeParams params) {
     var alternativeSonarCloudEnv = params.getAlternativeSonarCloudEnvironment();
-    // TODO consider giving possibility to provide custom urls for both regions
     return alternativeSonarCloudEnv == null ? SonarCloudActiveEnvironment.prod()
       : new SonarCloudActiveEnvironment(alternativeSonarCloudEnv.getUri(), alternativeSonarCloudEnv.getWebSocketsEndpointUri());
   }

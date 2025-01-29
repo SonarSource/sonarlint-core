@@ -253,7 +253,8 @@ public class SonarLintBackendFixture {
         storageBuilder.accept(storage);
         storages.add(storage);
       }
-      sonarCloudConnections.add(new SonarCloudConnectionConfigurationDto(connectionId, organizationKey, org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion.EU, disableNotifications));
+      sonarCloudConnections.add(new SonarCloudConnectionConfigurationDto(connectionId, organizationKey,
+        org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion.EU, disableNotifications));
       return this;
     }
 

@@ -65,6 +65,7 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+import static org.sonarsource.sonarlint.core.embedded.server.RequestHandlerUtils.getServerUrlForSonarCloud;
 
 public class ShowIssueRequestHandler implements HttpRequestHandler {
 
@@ -207,12 +208,8 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
     }
     boolean isSonarCloud = isSonarCloud(request);
     String serverUrl;
-
     if (isSonarCloud) {
-      var originUrl = request.getHeader("Origin").getValue();
-      var region = sonarCloudActiveEnvironment.getRegion(originUrl);
-      // Since the 'isSonarCloud' check passed, we are sure that the region will be there
-      serverUrl = sonarCloudActiveEnvironment.getUri(region.get()).toString();
+      serverUrl = getServerUrlForSonarCloud(request, sonarCloudActiveEnvironment);
     } else {
       serverUrl = params.get("server");
     }

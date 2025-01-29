@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core;
 
 import java.net.URI;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.apache.commons.lang.StringUtils.removeEnd;
 
@@ -63,12 +62,16 @@ public class SonarCloudActiveEnvironment {
       .anyMatch(u -> u.equals(removeEnd(uri, "/")));
   }
 
-  public Optional<SonarCloudRegion> getRegion(String uri) {
+  /**
+   *  Before calling this method, caller should make sure URI is SonarCloud
+   */
+  public SonarCloudRegion getRegionOrThrow(String uri) {
     return uris.entrySet()
       .stream()
       .filter(e -> removeEnd(e.getValue().getProductionUri().toString(), "/").equals(removeEnd(uri, "/")))
       .findFirst()
-      .map(Map.Entry::getKey);
+      .map(Map.Entry::getKey)
+      .orElseThrow(() -> new IllegalArgumentException("URI should be a known SonarCloud URI"));
   }
 
   private static class SonarQubeCloudUris {

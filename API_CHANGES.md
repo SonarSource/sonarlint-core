@@ -24,6 +24,7 @@
   * `getCleanCodeAttribute`
   * `getImpacts`
   * Use `getSeverityMode` instead.
+* Add SonarCloud region parameter to `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarCloudConnectionParams` to support multi-region SQC connection configuration
 
 # 10.13
 
