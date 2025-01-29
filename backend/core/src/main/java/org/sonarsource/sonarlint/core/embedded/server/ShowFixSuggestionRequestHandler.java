@@ -67,6 +67,7 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+import static org.sonarsource.sonarlint.core.commons.util.StringUtils.sanitizeAgainstRTLO;
 
 public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
 
@@ -332,6 +333,12 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
 
   @VisibleForTesting
   public record ChangesPayload(TextRangePayload beforeLineRange, String before, String after) {
+
+    public ChangesPayload(TextRangePayload beforeLineRange, String before, String after) {
+      this.beforeLineRange = beforeLineRange;
+      this.before = sanitizeAgainstRTLO(before);
+      this.after = sanitizeAgainstRTLO(after);
+    }
 
     public boolean isValid() {
       return beforeLineRange.isValid();

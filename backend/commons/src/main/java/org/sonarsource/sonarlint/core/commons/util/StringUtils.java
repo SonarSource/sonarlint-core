@@ -19,11 +19,22 @@
  */
 package org.sonarsource.sonarlint.core.commons.util;
 
+import javax.annotation.Nullable;
+
 public class StringUtils {
 
+  private static final char RTLO = '\u202E';
+
   public static String pluralize(long count, String word) {
-    var pluralizedWord = count == 1 || count == 0 ? word : (word + 's');
+    var pluralizedWord = count == 1 ? word : (word + 's');
     return count + " " + pluralizedWord;
+  }
+
+  public static String sanitizeAgainstRTLO(@Nullable String input) {
+    if (input == null) {
+      return null;
+    }
+    return input.replaceAll(String.valueOf(RTLO), "");
   }
 
   private StringUtils() {
