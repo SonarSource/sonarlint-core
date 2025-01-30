@@ -9,7 +9,7 @@
 
 1. Make sure your Developer Box is properly setup (see xtranet)
 2. Configure Orchestrator settings as described [here](https://github.com/SonarSource/orchestrator#configuration). The Artifactory API key and GitHub token are the only mandatory options. The GH token is a Personal Access Token (classic) with the `repo` scope permission, and SSO properly configured
-3. For SonarCloud ITs, make sure the `SONARCLOUD_IT_PASSWORD` env var is defined (you can find the value in our password management tool)
+3. For SonarCloud ITs, make sure the `SONARCLOUD_IT_TOKEN` env var is defined (you can find the value in our password management tool)
 4. Run `mvn clean install` a first time from this `its` folder so that test resources are built (like custom plugins)
 
 # Running ITs from IntelliJ

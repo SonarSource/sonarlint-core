@@ -130,14 +130,12 @@ class SonarCloudTests extends AbstractConnectedTests {
   private static final URI SONARCLOUD_STAGING_URL = URI.create("https://sc-staging.io");
   private static final URI SONARCLOUD_WEBSOCKETS_STAGING_URL = URI.create("wss://events-api.sc-staging.io/");
   private static final String SONARCLOUD_ORGANIZATION = "sonarlint-it";
-  private static final String SONARCLOUD_USER = "sonarlint-it";
-  private static final String SONARCLOUD_PASSWORD = System.getenv("SONARCLOUD_IT_PASSWORD");
+  private static final String SONARCLOUD_TOKEN = System.getenv("SONARCLOUD_IT_TOKEN");
 
   private static final String TIMESTAMP = Long.toString(Instant.now().toEpochMilli());
   private static final String TOKEN_NAME = "SLCORE-IT-" + TIMESTAMP;
   private static final String PROJECT_KEY_JAVA = "sample-java";
-
-
+  
   public static final String CONNECTION_ID = "sonarcloud";
 
   private static WsClient adminWsClient;
@@ -195,7 +193,7 @@ class SonarCloudTests extends AbstractConnectedTests {
   static void cleanup() throws Exception {
     adminWsClient.userTokens()
       .revoke(new RevokeRequest().setName(TOKEN_NAME));
-
+    
     var request = new PostRequest("api/projects/bulk_delete");
     request.setParam("q", "-" + randomPositiveInt);
     request.setParam("organization", SONARCLOUD_ORGANIZATION);
@@ -277,7 +275,7 @@ class SonarCloudTests extends AbstractConnectedTests {
   void getAllProjects() {
     provisionProject("foo-bar", "Foo");
     var getAllProjectsParams = new GetAllProjectsParams(new TransientSonarCloudConnectionDto(SONARCLOUD_ORGANIZATION,
-      Either.forRight(new UsernamePasswordDto(SONARCLOUD_USER, SONARCLOUD_PASSWORD))));
+      Either.forLeft(new TokenDto(SONARCLOUD_TOKEN))));
 
     waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> assertThat(backend.getConnectionService().getAllProjects(getAllProjectsParams).get().getSonarProjects())
       .extracting(SonarProjectDto::getKey)
@@ -406,14 +404,14 @@ class SonarCloudTests extends AbstractConnectedTests {
   @Test
   void downloadUserOrganizations() throws ExecutionException, InterruptedException {
     var response = backend.getConnectionService()
-      .listUserOrganizations(new ListUserOrganizationsParams(Either.forRight(new UsernamePasswordDto(SONARCLOUD_USER, SONARCLOUD_PASSWORD)))).get();
+      .listUserOrganizations(new ListUserOrganizationsParams(Either.forLeft(new TokenDto(SONARCLOUD_TOKEN)))).get();
     assertThat(response.getUserOrganizations()).hasSize(1);
   }
 
   @Test
   void getOrganization() throws ExecutionException, InterruptedException {
     var response = backend.getConnectionService()
-      .getOrganization(new GetOrganizationParams(Either.forRight(new UsernamePasswordDto(SONARCLOUD_USER, SONARCLOUD_PASSWORD)), SONARCLOUD_ORGANIZATION)).get();
+      .getOrganization(new GetOrganizationParams(Either.forLeft(new TokenDto(SONARCLOUD_TOKEN)), SONARCLOUD_ORGANIZATION)).get();
     var org = response.getOrganization();
     assertThat(org).isNotNull();
     assertThat(org.getKey()).isEqualTo(SONARCLOUD_ORGANIZATION);
@@ -484,13 +482,13 @@ class SonarCloudTests extends AbstractConnectedTests {
   void testConnection() throws ExecutionException, InterruptedException {
     var successResponse = backend.getConnectionService()
       .validateConnection(
-        new ValidateConnectionParams(new TransientSonarCloudConnectionDto(SONARCLOUD_ORGANIZATION, Either.forRight(new UsernamePasswordDto(SONARCLOUD_USER, SONARCLOUD_PASSWORD)))))
+        new ValidateConnectionParams(new TransientSonarCloudConnectionDto(SONARCLOUD_ORGANIZATION, Either.forLeft(new TokenDto(SONARCLOUD_TOKEN)))))
       .get();
     assertThat(successResponse.isSuccess()).isTrue();
     assertThat(successResponse.getMessage()).isEqualTo("Authentication successful");
 
     var failIfWrongOrg = backend.getConnectionService().validateConnection(
-      new ValidateConnectionParams(new TransientSonarCloudConnectionDto("not-exists", Either.forRight(new UsernamePasswordDto(SONARCLOUD_USER, SONARCLOUD_PASSWORD))))).get();
+      new ValidateConnectionParams(new TransientSonarCloudConnectionDto("not-exists", Either.forLeft(new TokenDto(SONARCLOUD_TOKEN))))).get();
     assertThat(failIfWrongOrg.isSuccess()).isFalse();
     assertThat(failIfWrongOrg.getMessage()).isEqualTo("No organizations found for key: not-exists");
 
@@ -621,7 +619,7 @@ class SonarCloudTests extends AbstractConnectedTests {
   public static WsClient newAdminWsClient() {
     return WsClientFactories.getDefault().newClient(HttpConnector.newBuilder()
       .url(SONARCLOUD_STAGING_URL.toString())
-      .credentials(SONARCLOUD_USER, SONARCLOUD_PASSWORD)
+      .token(SONARCLOUD_TOKEN)
       .build());
   }
 
@@ -675,7 +673,7 @@ class SonarCloudTests extends AbstractConnectedTests {
       @Override
       public Either<TokenDto, UsernamePasswordDto> getCredentials(String connectionId) throws ConnectionNotFoundException {
         if (connectionId.equals(CONNECTION_ID)) {
-          return Either.forRight(new UsernamePasswordDto(SONARCLOUD_USER, SONARCLOUD_PASSWORD));
+          return Either.forLeft(new TokenDto(SONARCLOUD_TOKEN));
         }
         return super.getCredentials(connectionId);
       }
