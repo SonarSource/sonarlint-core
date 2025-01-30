@@ -132,8 +132,6 @@ class SonarCloudTests extends AbstractConnectedTests {
   private static final String SONARCLOUD_ORGANIZATION = "sonarlint-it";
   private static final String SONARCLOUD_TOKEN = System.getenv("SONARCLOUD_IT_TOKEN");
 
-  private static final String TIMESTAMP = Long.toString(Instant.now().toEpochMilli());
-  private static final String TOKEN_NAME = "SLCORE-IT-" + TIMESTAMP;
   private static final String PROJECT_KEY_JAVA = "sample-java";
   
   public static final String CONNECTION_ID = "sonarcloud";
@@ -146,7 +144,6 @@ class SonarCloudTests extends AbstractConnectedTests {
 
   private static SonarLintRpcServer backend;
   private static SonarLintRpcClientDelegate client;
-  private static String sonarcloudUserToken;
   private static final Set<String> openedConfigurationScopeIds = new HashSet<>();
   private static final Map<String, Boolean> analysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
 
@@ -173,9 +170,6 @@ class SonarCloudTests extends AbstractConnectedTests {
     randomPositiveInt = new Random().nextInt() & Integer.MAX_VALUE;
 
     adminWsClient = newAdminWsClient();
-    sonarcloudUserToken = adminWsClient.userTokens()
-      .generate(new GenerateRequest().setName(TOKEN_NAME))
-      .getToken();
 
     restoreProfile("java-sonarlint.xml");
     provisionProject(PROJECT_KEY_JAVA, "Sample Java");
@@ -191,9 +185,6 @@ class SonarCloudTests extends AbstractConnectedTests {
 
   @AfterAll
   static void cleanup() throws Exception {
-    adminWsClient.userTokens()
-      .revoke(new RevokeRequest().setName(TOKEN_NAME));
-    
     var request = new PostRequest("api/projects/bulk_delete");
     request.setParam("q", "-" + randomPositiveInt);
     request.setParam("organization", SONARCLOUD_ORGANIZATION);
@@ -629,7 +620,7 @@ class SonarCloudTests extends AbstractConnectedTests {
       "-Dsonar.projectKey=" + projectKey,
       "-Dsonar.host.url=" + SONARCLOUD_STAGING_URL,
       "-Dsonar.organization=" + SONARCLOUD_ORGANIZATION,
-      "-Dsonar.token=" + sonarcloudUserToken,
+      "-Dsonar.token=" + SONARCLOUD_TOKEN,
       "-Dsonar.scm.disabled=true",
       "-Dsonar.branch.autoconfig.disabled=true");
 
