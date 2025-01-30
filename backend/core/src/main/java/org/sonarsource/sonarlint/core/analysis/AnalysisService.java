@@ -64,6 +64,7 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
@@ -152,6 +153,7 @@ public class AnalysisService {
   private final Map<String, Boolean> analysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
   private final OpenFilesRepository openFilesRepository;
   private final ClientFileSystemService clientFileSystemService;
+  private final MonitoringService monitoringService;
   private boolean automaticAnalysisEnabled;
   private final Path esLintBridgeServerPath;
   private final ScheduledExecutorService scheduledAnalysisExecutor = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "SonarLint Analysis Executor"));
@@ -161,7 +163,8 @@ public class AnalysisService {
     ConnectionConfigurationRepository connectionConfigurationRepository, InitializeParams initializeParams, NodeJsService nodeJsService,
     AnalysisEngineCache engineCache, ClientFileSystemService fileSystemService, FileExclusionService fileExclusionService,
     ApplicationEventPublisher eventPublisher,
-    UserAnalysisPropertiesRepository clientAnalysisPropertiesRepository, OpenFilesRepository openFilesRepository, ClientFileSystemService clientFileSystemService) {
+    UserAnalysisPropertiesRepository clientAnalysisPropertiesRepository, OpenFilesRepository openFilesRepository, ClientFileSystemService clientFileSystemService,
+    MonitoringService monitoringService) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
@@ -181,6 +184,7 @@ public class AnalysisService {
     this.openFilesRepository = openFilesRepository;
     this.automaticAnalysisEnabled = initializeParams.isAutomaticAnalysisEnabled();
     this.clientFileSystemService = clientFileSystemService;
+    this.monitoringService = monitoringService;
     this.esLintBridgeServerPath = initializeParams.getLanguageSpecificRequirements() != null && initializeParams.getLanguageSpecificRequirements().getJsTsRequirements() != null ?
       initializeParams.getLanguageSpecificRequirements().getJsTsRequirements().getBundlePath() : null;
   }
@@ -652,7 +656,8 @@ public class AnalysisService {
     var raisedIssues = new ArrayList<RawIssue>();
     eventPublisher.publishEvent(new AnalysisStartedEvent(configurationScopeId, analysisId, analysisConfig.inputFiles(), enableTracking));
     var analyzeCommand = new AnalyzeCommand(configurationScopeId, analysisConfig,
-      issue -> streamIssue(configurationScopeId, analysisId, issue, ruleDetailsCache, raisedIssues, enableTracking), SonarLintLogger.getTargetForCopy());
+      issue -> streamIssue(configurationScopeId, analysisId, issue, ruleDetailsCache, raisedIssues, enableTracking), SonarLintLogger.getTargetForCopy(),
+      monitoringService.newTrace("AnalysisService", "analyze"));
     var rpcProgressMonitor = new RpcProgressMonitor(client, cancelMonitor, configurationScopeId, analysisId);
     return analysisEngine.post(analyzeCommand, rpcProgressMonitor)
       .whenComplete((results, error) -> {

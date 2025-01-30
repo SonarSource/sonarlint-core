@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.analysis.command;
 
-import io.sentry.Sentry;
-import io.sentry.SpanStatus;
 import java.util.Objects;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
@@ -32,6 +30,7 @@ import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.monitoring.Trace;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 
 import static org.sonarsource.sonarlint.core.commons.util.StringUtils.pluralize;
@@ -42,12 +41,15 @@ public class AnalyzeCommand implements Command<AnalysisResults> {
   private final AnalysisConfiguration configuration;
   private final Consumer<Issue> issueListener;
   private final LogOutput logOutput;
+  @Nullable
+  private final Trace trace;
 
-  public AnalyzeCommand(@Nullable Object moduleKey, AnalysisConfiguration configuration, Consumer<Issue> issueListener, @Nullable LogOutput logOutput) {
+  public AnalyzeCommand(@Nullable Object moduleKey, AnalysisConfiguration configuration, Consumer<Issue> issueListener, @Nullable LogOutput logOutput, @Nullable Trace trace) {
     this.moduleKey = moduleKey;
     this.configuration = configuration;
     this.issueListener = issueListener;
     this.logOutput = logOutput;
+    this.trace = trace;
   }
 
   @Override
@@ -66,25 +68,28 @@ public class AnalyzeCommand implements Command<AnalysisResults> {
       moduleContainer = moduleRegistry.createTransientContainer(configuration.inputFiles());
     }
     Throwable originalException = null;
-    AnalysisResults result = null;
-    var analysisTransaction = Sentry.startTransaction("AnalyzeCommand", "doRunAnalysis");
-    analysisTransaction.setData("filesCount", configuration.inputFiles().size());
-    analysisTransaction.setData("languages", configuration.inputFiles().stream()
-      .map(ClientInputFile::language)
-      .filter(Objects::nonNull)
-      .map(SonarLanguage::getSonarLanguageKey)
-      .toList());
+    if (trace != null) {
+      trace.setData("filesCount", configuration.inputFiles().size());
+      trace.setData("languages", configuration.inputFiles().stream()
+        .map(ClientInputFile::language)
+        .filter(Objects::nonNull)
+        .map(SonarLanguage::getSonarLanguageKey)
+        .toList());
+    }
     try {
-      result = moduleContainer.analyze(configuration, issueListener, progressMonitor, analysisTransaction);
-      analysisTransaction.setData("failedFilesCount", result.failedAnalysisFiles().size());
+      var result = moduleContainer.analyze(configuration, issueListener, progressMonitor, trace);
+      if (trace != null) {
+        trace.setData("failedFilesCount", result.failedAnalysisFiles().size());
+        trace.finishSuccessfully();
+      }
       return result;
     } catch (Throwable e) {
       originalException = e;
-      analysisTransaction.setThrowable(e);
-      analysisTransaction.setStatus(SpanStatus.INTERNAL_ERROR);
+      if (trace != null) {
+        trace.finishExceptionally(e);
+      }
       throw e;
     } finally {
-      analysisTransaction.finish();
       try {
         if (moduleContainer.isTransient()) {
           moduleContainer.stopComponents();

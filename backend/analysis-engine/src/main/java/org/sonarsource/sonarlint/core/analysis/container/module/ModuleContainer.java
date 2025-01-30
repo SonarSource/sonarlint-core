@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.analysis.container.module;
 
-import io.sentry.ITransaction;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
@@ -34,6 +33,7 @@ import org.sonarsource.sonarlint.core.analysis.container.global.AnalysisExtensio
 import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRulesAdapter;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.SonarLintModuleFileSystem;
+import org.sonarsource.sonarlint.core.commons.monitoring.Trace;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentContainer;
 
@@ -62,14 +62,16 @@ public class ModuleContainer extends SpringComponentContainer {
     return isTransient;
   }
 
-  public AnalysisResults analyze(AnalysisConfiguration configuration, Consumer<Issue> issueListener, ProgressMonitor progress, @Nullable ITransaction analysisTransaction) {
+  public AnalysisResults analyze(AnalysisConfiguration configuration, Consumer<Issue> issueListener, ProgressMonitor progress, @Nullable Trace trace) {
     var analysisContainer = new AnalysisContainer(this, progress);
     analysisContainer.add(configuration);
     analysisContainer.add(new IssueListenerHolder(issueListener));
     analysisContainer.add(new ActiveRulesAdapter(configuration.activeRules().stream().map(ActiveRuleAdapter::new).toList()));
     var defaultAnalysisResult = new AnalysisResults();
     analysisContainer.add(defaultAnalysisResult);
-    analysisContainer.add(analysisTransaction);
+    if (trace != null) {
+      analysisContainer.add(trace);
+    }
     analysisContainer.execute();
     return defaultAnalysisResult;
   }
