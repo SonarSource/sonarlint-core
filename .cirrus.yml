@@ -186,7 +186,7 @@ qa_task:
           SQ_VERSION: "SonarCloud"
           JDK_VERSION: "17"
           CATEGORY: "-Dgroups=SonarCloud"
-          SONARCLOUD_IT_PASSWORD: VAULT[development/team/sonarlint/kv/data/sonarcloud-it data.password]
+          SONARCLOUD_IT_TOKEN: VAULT[development/team/sonarlint/kv/data/sonarcloud-it data.token]
           QA_CATEGORY: SonarCloud
       -  env:
           SQ_VERSION: "DEV"
