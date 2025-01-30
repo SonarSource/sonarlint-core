@@ -102,7 +102,7 @@ class AnalysisEngineMediumTests {
       .setBaseDir(baseDir)
       .build();
     List<Issue> issues = new ArrayList<>();
-    analysisEngine.post(new AnalyzeCommand(null, analysisConfig, issues::add, null), progressMonitor).get();
+    analysisEngine.post(new AnalyzeCommand(null, analysisConfig, issues::add, null, null), progressMonitor).get();
     assertThat(issues).hasSize(1);
     assertThat(issues)
       .extracting("ruleKey", "message", "inputFile", "flows", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
@@ -125,7 +125,7 @@ class AnalysisEngineMediumTests {
       .build();
     List<Issue> issues = new ArrayList<>();
     analysisEngine.post(new RegisterModuleCommand(new ClientModuleInfo("moduleKey", aModuleFileSystem())), progressMonitor).get();
-    analysisEngine.post(new AnalyzeCommand("moduleKey", analysisConfig, issues::add, null), progressMonitor).get();
+    analysisEngine.post(new AnalyzeCommand("moduleKey", analysisConfig, issues::add, null, null), progressMonitor).get();
     assertThat(issues).hasSize(1);
     assertThat(issues)
       .extracting("ruleKey", "message", "inputFile", "flows", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
