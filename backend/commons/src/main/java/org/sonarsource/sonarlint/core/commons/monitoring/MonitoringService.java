@@ -28,7 +28,10 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class MonitoringService {
 
-  private static final String TRACES_SAMPLE_RATE_PROPERTY = "sonarlint.internal.monitoring.tracesSampleRate";
+  public static final String DSN_PROPERTY = "sonarlint.internal.monitoring.dsn";
+  private static final String DSN_DEFAULT = "https://ad1c1fe3cb2b12fc2d191ecd25f89866@o1316750.ingest.us.sentry.io/4508201175089152";
+
+  public static final String TRACES_SAMPLE_RATE_PROPERTY = "sonarlint.internal.monitoring.tracesSampleRate";
   private static final double TRACES_SAMPLE_RATE_DEFAULT = 0.01D;
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -59,7 +62,7 @@ public class MonitoringService {
 
   SentryOptions getSentryConfiguration() {
     var sentryOptions = new SentryOptions();
-    sentryOptions.setDsn("https://ad1c1fe3cb2b12fc2d191ecd25f89866@o1316750.ingest.us.sentry.io/4508201175089152");
+    sentryOptions.setDsn(getDsn());
     sentryOptions.setRelease(SonarLintCoreVersion.get());
     sentryOptions.setEnvironment("dogfood");
     sentryOptions.setTag("productKey", initializeParams.getProductKey());
@@ -72,11 +75,18 @@ public class MonitoringService {
     return sentryOptions;
   }
 
-  static double getTracesSampleRate() {
+  private static String getDsn() {
+    return System.getProperty(DSN_PROPERTY, DSN_DEFAULT);
+  }
+
+  private static double getTracesSampleRate() {
     try {
       var sampleRateFromSystemProperty = System.getProperty(TRACES_SAMPLE_RATE_PROPERTY);
-      return Double.parseDouble(sampleRateFromSystemProperty);
+      var parsedSampleRate = Double.parseDouble(sampleRateFromSystemProperty);
+      LOG.debug("Overriding trace sample rate with value from system property: {}", parsedSampleRate);
+      return parsedSampleRate;
     } catch (RuntimeException e) {
+      LOG.debug("Using default trace sample rate: {}", TRACES_SAMPLE_RATE_DEFAULT);
       return TRACES_SAMPLE_RATE_DEFAULT;
     }
   }

@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Commons
+ * SonarLint Core - Medium Tests
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,25 +17,22 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons.monitoring;
+package mediumtest.monitoring;
 
-import io.sentry.ISpan;
-import io.sentry.SpanStatus;
+import org.sonar.api.batch.sensor.Sensor;
+import org.sonar.api.batch.sensor.SensorContext;
+import org.sonar.api.batch.sensor.SensorDescriptor;
 
-public class Span {
+public class ThrowingPhpSensor implements Sensor {
 
-  private final ISpan sentrySpan;
-
-  Span(ISpan sentrySpan) {
-    this.sentrySpan = sentrySpan;
+  @Override
+  public void describe(SensorDescriptor sensorDescriptor) {
+    sensorDescriptor.name("Throwing PHP Sensor")
+      .onlyOnLanguage("php");
   }
 
-  public void finishExceptionally(Throwable throwable) {
-    this.sentrySpan.setThrowable(throwable);
-    this.sentrySpan.finish(SpanStatus.INTERNAL_ERROR);
-  }
-
-  public void finishSuccessfully() {
-    this.sentrySpan.finish(SpanStatus.OK);
+  @Override
+  public void execute(SensorContext sensorContext) {
+    throw new IllegalStateException("This should finish a span and trace exceptionally");
   }
 }

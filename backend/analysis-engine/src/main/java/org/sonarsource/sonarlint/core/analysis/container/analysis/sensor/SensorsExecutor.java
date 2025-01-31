@@ -55,12 +55,12 @@ public class SensorsExecutor {
   @Nullable
   private final Trace trace;
 
-  public SensorsExecutor(DefaultSensorContext context, SensorOptimizer sensorOptimizer, ProgressMonitor progress, @Nullable Trace trace, Optional<List<ProjectSensor>> sensors) {
+  public SensorsExecutor(DefaultSensorContext context, SensorOptimizer sensorOptimizer, ProgressMonitor progress, Optional<Trace> trace, Optional<List<ProjectSensor>> sensors) {
     this.context = context;
     this.sensors = sensors.orElse(List.of());
     this.sensorOptimizer = sensorOptimizer;
     this.progress = progress;
-    this.trace = trace;
+    this.trace = trace.orElse(null);
   }
 
   public void execute() {

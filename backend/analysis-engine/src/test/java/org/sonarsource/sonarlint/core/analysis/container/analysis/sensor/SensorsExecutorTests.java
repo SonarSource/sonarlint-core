@@ -30,7 +30,6 @@ import org.sonar.api.scanner.sensor.ProjectSensor;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.monitoring.Trace;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -69,7 +68,7 @@ class SensorsExecutorTests {
   void testThrowingSensorShouldBeLogged() {
     var sensorOptimizer = mock(SensorOptimizer.class);
     when(sensorOptimizer.shouldExecute(any())).thenReturn(true);
-    var executor = new SensorsExecutor(null, sensorOptimizer, new ProgressMonitor(null), null, Optional.of(List.of(new ThrowingSensor())));
+    var executor = new SensorsExecutor(null, sensorOptimizer, new ProgressMonitor(null), Optional.empty(), Optional.of(List.of(new ThrowingSensor())));
 
     executor.execute();
 
@@ -85,7 +84,7 @@ class SensorsExecutorTests {
     var globalSensor = new GlobalSensor();
     var oldGlobalSensor = new OldGlobalSensor();
 
-    var executor = new SensorsExecutor(null, sensorOptimizer, new ProgressMonitor(null), null, Optional.of(List.of(globalSensor, regularSensor, oldGlobalSensor)));
+    var executor = new SensorsExecutor(null, sensorOptimizer, new ProgressMonitor(null), Optional.empty(), Optional.of(List.of(globalSensor, regularSensor, oldGlobalSensor)));
 
     executor.execute();
 
