@@ -41,6 +41,7 @@ import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.net.URIBuilder;
 import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
+import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
@@ -132,7 +133,8 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
     var tokenName = query.getTokenName();
     var tokenValue = query.getTokenValue();
     return query.isSonarCloud ?
-      new AssistCreatingConnectionParams(new SonarCloudConnectionParams(query.getOrganizationKey(), tokenName, tokenValue))
+      new AssistCreatingConnectionParams(new SonarCloudConnectionParams(query.getOrganizationKey(), tokenName, tokenValue,
+        org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion.valueOf(query.getRegion().name())))
       : new AssistCreatingConnectionParams(new SonarQubeConnectionParams(query.getServerUrl(), tokenName, tokenValue));
   }
 
@@ -208,13 +210,15 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
     }
     boolean isSonarCloud = isSonarCloud(request);
     String serverUrl;
+    SonarCloudRegion region = null;
     if (isSonarCloud) {
-      serverUrl = getServerUrlForSonarCloud(request, sonarCloudActiveEnvironment);
+      serverUrl = getServerUrlForSonarCloud(request);
+      region = sonarCloudActiveEnvironment.getRegionOrThrow(serverUrl);
     } else {
       serverUrl = params.get("server");
     }
     return new ShowIssueQuery(serverUrl, params.get("project"), params.get("issue"), params.get("branch"),
-      params.get("pullRequest"), params.get("tokenName"), params.get("tokenValue"), params.get("organizationKey"), isSonarCloud);
+      params.get("pullRequest"), params.get("tokenName"), params.get("tokenValue"), params.get("organizationKey"), region, isSonarCloud);
   }
 
   @VisibleForTesting
@@ -232,10 +236,12 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
     private final String tokenValue;
     @Nullable
     private final String organizationKey;
+    @Nullable
+    private final SonarCloudRegion region;
     private final boolean isSonarCloud;
 
     public ShowIssueQuery(@Nullable String serverUrl, String projectKey, String issueKey, @Nullable String branch, @Nullable String pullRequest,
-      @Nullable String tokenName, @Nullable String tokenValue, @Nullable String organizationKey, boolean isSonarCloud) {
+      @Nullable String tokenName, @Nullable String tokenValue, @Nullable String organizationKey, @Nullable SonarCloudRegion region, boolean isSonarCloud) {
       this.serverUrl = serverUrl;
       this.projectKey = projectKey;
       this.issueKey = issueKey;
@@ -244,6 +250,7 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
       this.tokenName = tokenName;
       this.tokenValue = tokenValue;
       this.organizationKey = organizationKey;
+      this.region = region != null ? region : SonarCloudRegion.EU;
       this.isSonarCloud = isSonarCloud;
     }
 
@@ -307,6 +314,11 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
     @Nullable
     public String getTokenValue() {
       return tokenValue;
+    }
+
+    @Nullable
+    public SonarCloudRegion getRegion() {
+      return region;
     }
   }
 

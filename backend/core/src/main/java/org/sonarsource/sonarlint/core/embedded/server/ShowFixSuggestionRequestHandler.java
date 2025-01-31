@@ -213,7 +213,7 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
     boolean isSonarCloud = isSonarCloud(origin);
     String serverUrl;
     if (isSonarCloud) {
-      serverUrl = getServerUrlForSonarCloud(request, sonarCloudActiveEnvironment);
+      serverUrl = getServerUrlForSonarCloud(request);
     } else {
       serverUrl = params.get("server");
     }

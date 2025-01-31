@@ -27,11 +27,6 @@ public class SonarCloudConnectionSuggestionDto {
   private final String projectKey;
   private final SonarCloudRegion region;
 
-  @Deprecated(since = "10.14")
-  public SonarCloudConnectionSuggestionDto(String organization, String projectKey) {
-    this(organization, projectKey, SonarCloudRegion.EU);
-  }
-
   public SonarCloudConnectionSuggestionDto(String organization, String projectKey, SonarCloudRegion region) {
     this.organization = organization;
     this.projectKey = projectKey;

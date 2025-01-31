@@ -26,11 +26,6 @@ import static org.apache.commons.lang.StringUtils.removeEnd;
 
 public class SonarCloudActiveEnvironment {
 
-  public static final URI PRODUCTION_EU_URI = URI.create("https://sonarcloud.io");
-  public static final URI PRODUCTION_US_URI = URI.create("https://us.sonarcloud.io");
-  public static final URI WS_EU_ENDPOINT_URI = URI.create("wss://events-api.sonarcloud.io/");
-  public static final URI WS_US_ENDPOINT_URI = URI.create("wss://events-api.us.sonarcloud.io/");
-
   public static SonarCloudActiveEnvironment prod() {
     return new SonarCloudActiveEnvironment();
   }
@@ -38,8 +33,8 @@ public class SonarCloudActiveEnvironment {
   private final Map<SonarCloudRegion, SonarQubeCloudUris> uris;
 
   public SonarCloudActiveEnvironment() {
-    var euUris = new SonarQubeCloudUris(PRODUCTION_EU_URI, WS_EU_ENDPOINT_URI);
-    var usUris = new SonarQubeCloudUris(PRODUCTION_US_URI, WS_US_ENDPOINT_URI);
+    var euUris = new SonarQubeCloudUris(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getWebSocketUri());
+    var usUris = new SonarQubeCloudUris(SonarCloudRegion.US.getProductionUri(), SonarCloudRegion.US.getWebSocketUri());
     this.uris = Map.of(SonarCloudRegion.EU, euUris, SonarCloudRegion.US, usUris);
   }
 

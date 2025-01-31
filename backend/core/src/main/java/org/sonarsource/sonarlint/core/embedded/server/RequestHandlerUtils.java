@@ -21,7 +21,8 @@ package org.sonarsource.sonarlint.core.embedded.server;
 
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ProtocolException;
-import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
+
+import static org.apache.commons.lang3.StringUtils.removeEnd;
 
 public class RequestHandlerUtils {
 
@@ -29,10 +30,9 @@ public class RequestHandlerUtils {
     // util
   }
 
-  public static String getServerUrlForSonarCloud(ClassicHttpRequest request, SonarCloudActiveEnvironment sonarCloudActiveEnvironment) throws ProtocolException {
+  public static String getServerUrlForSonarCloud(ClassicHttpRequest request) throws ProtocolException {
     var originUrl = request.getHeader("Origin").getValue();
     // Since the 'isSonarCloud' check passed, we are sure that the region will be there
-    var region = sonarCloudActiveEnvironment.getRegionOrThrow(originUrl);
-    return sonarCloudActiveEnvironment.getUri(region).toString();
+    return removeEnd(originUrl, "/");
   }
 }

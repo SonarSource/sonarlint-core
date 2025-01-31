@@ -6,6 +6,8 @@
     * Client can implement this method to offer user to change credentials for the connection to fix the problem
     * For now notification is being sent only for 401 Unauthorized HTTP response code since it's corresponds to malformed/wrong token and ignores 403 Forbidden response code since it's a user permissions problem that has to be addressed on the server
     * Also once notification sent, backend doesn't attempt to send any requests to server anymore until credentials changed
+* Add `region` to `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarCloudConnectionParams` and `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarCloudConnectionSuggestionDto` to support multi-region SQC connection configuration
+    * Constructor without region parameter is removed
 
 * Removed `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient#didRaiseIssue` and associated types. See `raiseIssues` and `raiseHotspots` instead.
 * Removed `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer#getIssueTrackingService` and associated types. Tracking is managed by the backend.
@@ -24,7 +26,18 @@
   * `getCleanCodeAttribute`
   * `getImpacts`
   * Use `getSeverityMode` instead.
-* Add SonarCloud region parameter to `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarCloudConnectionParams` to support multi-region SQC connection configuration
+
+## New features
+
+* Add SonarCloud region parameter to 
+  * `org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarCloudConnectionParams` 
+  * `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto`
+  * `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto`
+  * `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.FuzzySearchUserOrganizationsParams`
+  * `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationParams`
+  * `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUserOrganizationsParams` 
+  * This is in order to support multi-region SQC connection configuration. Constructors without region parameter are deprecated
+
 
 # 10.13
 

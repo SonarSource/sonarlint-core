@@ -19,6 +19,25 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import java.net.URI;
+
 public enum SonarCloudRegion {
-  EU, US
+  EU("https://sonarcloud.io", "wss://events-api.sonarcloud.io/"),
+  US("https://us.sonarcloud.io", "wss://events-api.us.sonarcloud.io/");
+
+  private final URI productionUri;
+  private final URI webSocketUri;
+
+  SonarCloudRegion(String productionUri, String webSocketUri) {
+    this.productionUri = URI.create(productionUri);
+    this.webSocketUri = URI.create(webSocketUri);
+  }
+
+  public URI getProductionUri() {
+    return productionUri;
+  }
+
+  public URI getWebSocketUri() {
+    return webSocketUri;
+  }
 }

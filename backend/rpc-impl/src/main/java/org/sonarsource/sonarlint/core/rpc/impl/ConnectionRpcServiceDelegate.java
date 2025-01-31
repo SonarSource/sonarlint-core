@@ -94,7 +94,7 @@ class ConnectionRpcServiceDelegate extends AbstractRpcServiceDelegate implements
   @Override
   public CompletableFuture<FuzzySearchUserOrganizationsResponse> fuzzySearchUserOrganizations(FuzzySearchUserOrganizationsParams params) {
     return requestAsync(cancelMonitor -> new FuzzySearchUserOrganizationsResponse(getBean(OrganizationsCache.class)
-      .fuzzySearchOrganizations(params.getCredentials(), params.getSearchText(), SonarCloudRegion.valueOf(params.getRegion()), cancelMonitor)));
+      .fuzzySearchOrganizations(params.getCredentials(), params.getSearchText(), SonarCloudRegion.valueOf(params.getRegion().name()), cancelMonitor)));
   }
 
   @Override

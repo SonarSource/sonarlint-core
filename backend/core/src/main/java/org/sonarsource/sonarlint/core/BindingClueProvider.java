@@ -25,6 +25,7 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
@@ -234,7 +235,6 @@ public class BindingClueProvider {
     private final String organization;
     private final String serverUrl;
     private final boolean isFromSharedConfiguration;
-    @Nullable
     private final SonarCloudRegion region;
 
     private BindingProperties(@Nullable String projectKey, @Nullable String organization, @Nullable String serverUrl, @Nullable String region, boolean isFromSharedConfiguration) {
@@ -244,9 +244,9 @@ public class BindingClueProvider {
       this.isFromSharedConfiguration = isFromSharedConfiguration;
       SonarCloudRegion configuredRegion;
       try {
-        configuredRegion = region != null ? SonarCloudRegion.valueOf(region) : SonarCloudRegion.EU;
+        configuredRegion = region != null ? SonarCloudRegion.valueOf(region.toUpperCase(Locale.ENGLISH)) : SonarCloudRegion.EU;
       } catch (IllegalArgumentException e) {
-        LOG.warn("Unknown region '{}'", region);
+        LOG.warn("Cannot accept '{}' as a valid SonarQube Cloud region while reading shared Connected Mode settings", region);
         configuredRegion = SonarCloudRegion.EU;
       }
       this.region = configuredRegion;
@@ -263,7 +263,8 @@ public class BindingClueProvider {
     }
     if (scannerProps.serverUrl != null) {
       if (sonarCloudActiveEnvironment.isSonarQubeCloud(scannerProps.serverUrl)) {
-        return new SonarCloudBindingClue(scannerProps.projectKey, null, scannerProps.region, scannerProps.isFromSharedConfiguration);
+        var region = sonarCloudActiveEnvironment.getRegionOrThrow(scannerProps.serverUrl);
+        return new SonarCloudBindingClue(scannerProps.projectKey, null, SonarCloudRegion.valueOf(region.name()), scannerProps.isFromSharedConfiguration);
       } else {
         return new SonarQubeBindingClue(scannerProps.projectKey, scannerProps.serverUrl, scannerProps.isFromSharedConfiguration);
       }
@@ -342,7 +343,7 @@ public class BindingClueProvider {
       this.sonarProjectKey = sonarProjectKey;
       this.organization = organization;
       this.isFromSharedConfiguration = isFromSharedConfiguration;
-      this.region = region;
+      this.region = region != null ? region : SonarCloudRegion.EU;
     }
 
     @Override

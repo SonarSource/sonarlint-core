@@ -29,11 +29,6 @@ public class SonarCloudConnectionParams {
   private final String tokenValue;
   private final SonarCloudRegion region;
 
-  @Deprecated(since = "10.14")
-  public SonarCloudConnectionParams(String organizationKey, @Nullable String tokenName, @Nullable String tokenValue) {
-    this(organizationKey, tokenName, tokenValue, SonarCloudRegion.EU);
-  }
-
   public SonarCloudConnectionParams(String organizationKey, @Nullable String tokenName, @Nullable String tokenValue, SonarCloudRegion region) {
     this.organizationKey = organizationKey;
     this.tokenName = tokenName;
