@@ -37,7 +37,12 @@
   * `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationParams`
   * `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUserOrganizationsParams` 
   * This is in order to support multi-region SQC connection configuration. Constructors without region parameter are deprecated
-
+* `org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService#newTrace(String, String)` can be used internally
+  to initialize a manual trace in Sentry
+* When monitoring is enabled, 1% of all analysis requests are sent to Sentry's performance tracing feature 
+* Two new system properties can be used to tune the behavior of the Sentry integration:
+  * `sonarlint.internal.monitoring.dsn` overrides the default [DSN](https://docs.sentry.io/concepts/key-terms/dsn-explainer/) (e.g. for tests)
+  * `sonarlint.internal.monitoring.tracesSampleRate`, parsed as a `java.lang.Double`, overrides the default sampling rate of analysis requests
 
 # 10.13
 
