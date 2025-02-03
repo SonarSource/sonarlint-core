@@ -26,7 +26,7 @@ import static org.apache.commons.lang.StringUtils.removeEnd;
 
 public class SonarCloudActiveEnvironment {
 
-  private SonarQubeCloudUris uris;
+  private SonarQubeCloudUris alternativeUris;
 
   public static SonarCloudActiveEnvironment prod() {
     return new SonarCloudActiveEnvironment();
@@ -36,19 +36,20 @@ public class SonarCloudActiveEnvironment {
   }
 
   public SonarCloudActiveEnvironment(URI uri, URI webSocketsEndpointUri) {
-    this.uris = new SonarQubeCloudUris(uri, webSocketsEndpointUri);
+    this.alternativeUris = new SonarQubeCloudUris(uri, webSocketsEndpointUri);
   }
 
   public URI getUri(SonarCloudRegion region) {
-    return uris != null ? uris.productionUri : region.getProductionUri();
+    return alternativeUris != null ? alternativeUris.productionUri : region.getProductionUri();
   }
 
   public URI getWebSocketsEndpointUri(SonarCloudRegion region) {
-    return uris != null ? uris.wsUri : region.getWebSocketUri();
+    return alternativeUris != null ? alternativeUris.wsUri : region.getWebSocketUri();
   }
 
   public boolean isSonarQubeCloud(String uri) {
-    return Arrays.stream(SonarCloudRegion.values())
+    return isAlternativeUri(uri) ||
+      Arrays.stream(SonarCloudRegion.values())
       .map(u -> removeEnd(u.getProductionUri().toString(), "/"))
       .anyMatch(u -> u.equals(removeEnd(uri, "/")));
   }
@@ -57,10 +58,17 @@ public class SonarCloudActiveEnvironment {
    *  Before calling this method, caller should make sure URI is SonarCloud
    */
   public SonarCloudRegion getRegionOrThrow(String uri) {
+    if (isAlternativeUri(uri)) {
+      return SonarCloudRegion.EU;
+    }
     return Arrays.stream(SonarCloudRegion.values())
       .filter(e -> removeEnd(e.getProductionUri().toString(), "/").equals(removeEnd(uri, "/")))
       .findFirst()
       .orElseThrow(() -> new IllegalArgumentException("URI should be a known SonarCloud URI"));
+  }
+
+  private boolean isAlternativeUri(String uri) {
+    return alternativeUris != null && removeEnd(alternativeUris.productionUri.toString(), "/").equals(removeEnd(uri, "/"));
   }
 
   private static class SonarQubeCloudUris {
