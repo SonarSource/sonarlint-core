@@ -34,6 +34,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.Tra
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
@@ -194,7 +195,7 @@ class ConnectionSetupMediumTests {
 
     var connectionResponse = backend.getConnectionService()
       .checkSmartNotificationsSupported(new CheckSmartNotificationsSupportedParams(
-        new TransientSonarCloudConnectionDto("https://sonarcloud.io", Either.forLeft(new TokenDto("foo")))))
+        new TransientSonarCloudConnectionDto("https://sonarcloud.io", Either.forLeft(new TokenDto("foo")), SonarCloudRegion.EU)))
       .get();
 
     assertThat(connectionResponse.isSuccess()).isTrue();

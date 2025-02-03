@@ -26,6 +26,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.G
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProjectDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
@@ -58,7 +59,7 @@ class ConnectionGetAllProjectsMediumTests {
       .withSonarCloudUrl(server.baseUrl())
       .start();
 
-    var response = getAllProjects(backend, new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto("token"))));
+    var response = getAllProjects(backend, new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto("token")), SonarCloudRegion.EU));
 
     assertThat(response.getSonarProjects()).isEmpty();
   }
@@ -125,7 +126,7 @@ class ConnectionGetAllProjectsMediumTests {
       .withSonarCloudUrl(server.baseUrl())
       .start();
 
-    var response = getAllProjects(backend, new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto("token"))));
+    var response = getAllProjects(backend, new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto("token")), SonarCloudRegion.EU));
 
     assertThat(response.getSonarProjects())
       .extracting(SonarProjectDto::getKey, SonarProjectDto::getName)

@@ -25,6 +25,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.Tra
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations;
@@ -71,7 +72,7 @@ class ConnectionValidatorMediumTests {
     serverMock.stubFor(get("/api/organizations/search.protobuf?organizations=myOrg&ps=500&p=1")
       .willReturn(aResponse().withResponseBody(protobufBody(Organizations.SearchWsResponse.newBuilder().build()))));
 
-    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto(null))))).join();
+    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto(null)), SonarCloudRegion.EU))).join();
 
     assertThat(response.isSuccess()).isFalse();
     assertThat(response.getMessage()).isEqualTo("No organizations found for key: myOrg");
@@ -96,7 +97,7 @@ class ConnectionValidatorMediumTests {
     serverMock.stubFor(get("/api/organizations/search.protobuf?organizations=myOrg&ps=500&p=2")
       .willReturn(aResponse().withResponseBody(protobufBody(Organizations.SearchWsResponse.newBuilder().build()))));
 
-    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto(null))))).join();
+    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto(null)), SonarCloudRegion.EU))).join();
 
     assertThat(response.isSuccess()).isTrue();
   }
@@ -110,7 +111,7 @@ class ConnectionValidatorMediumTests {
       .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}")));
     serverMock.stubFor(get("/api/authentication/validate?format=json")
       .willReturn(aResponse().withBody("{\"valid\": true}")));
-    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarCloudConnectionDto(null, Either.forLeft(new TokenDto(null))))).join();
+    var response = backend.getConnectionService().validateConnection(new ValidateConnectionParams(new TransientSonarCloudConnectionDto(null, Either.forLeft(new TokenDto(null)), SonarCloudRegion.EU))).join();
 
     assertThat(response.isSuccess()).isTrue();
   }
