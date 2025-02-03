@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,31 +17,27 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.client.connection;
+package org.sonarsource.sonarlint.core;
 
-import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
+import java.net.URI;
 
-public class SonarCloudConnectionSuggestionDto {
+public enum SonarCloudRegion {
+  EU("https://sonarcloud.io", "wss://events-api.sonarcloud.io/"),
+  US("https://us.sonarcloud.io", "wss://events-api.us.sonarcloud.io/");
 
-  private final String organization;
-  private final String projectKey;
-  private final SonarCloudRegion region;
+  private final URI productionUri;
+  private final URI webSocketUri;
 
-  public SonarCloudConnectionSuggestionDto(String organization, String projectKey, SonarCloudRegion region) {
-    this.organization = organization;
-    this.projectKey = projectKey;
-    this.region = region;
+  SonarCloudRegion(String productionUri, String webSocketUri) {
+    this.productionUri = URI.create(productionUri);
+    this.webSocketUri = URI.create(webSocketUri);
   }
 
-  public String getOrganization() {
-    return organization;
+  public URI getProductionUri() {
+    return productionUri;
   }
 
-  public String getProjectKey() {
-    return projectKey;
-  }
-
-  public SonarCloudRegion getRegion() {
-    return region;
+  public URI getWebSocketUri() {
+    return webSocketUri;
   }
 }

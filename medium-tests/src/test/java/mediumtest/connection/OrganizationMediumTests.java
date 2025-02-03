@@ -159,11 +159,11 @@ class OrganizationMediumTests {
       .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Organizations.SearchWsResponse.newBuilder().build()))));
 
     var credentials = Either.<TokenDto, UsernamePasswordDto>forRight(new UsernamePasswordDto("user", "pwd"));
-    var emptySearch = backend.getConnectionService().fuzzySearchUserOrganizations(new FuzzySearchUserOrganizationsParams(credentials, "")).join();
+    var emptySearch = backend.getConnectionService().fuzzySearchUserOrganizations(new FuzzySearchUserOrganizationsParams(credentials, "", org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion.EU)).join();
     assertThat(emptySearch.getTopResults())
       .isEmpty();
 
-    var searchMy = backend.getConnectionService().fuzzySearchUserOrganizations(new FuzzySearchUserOrganizationsParams(credentials, "My")).join();
+    var searchMy = backend.getConnectionService().fuzzySearchUserOrganizations(new FuzzySearchUserOrganizationsParams(credentials, "My", org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion.EU)).join();
     assertThat(searchMy.getTopResults())
       .extracting(OrganizationDto::getKey, OrganizationDto::getName)
       .containsExactly(
@@ -171,14 +171,14 @@ class OrganizationMediumTests {
         Assertions.tuple("org-foo1", "My Company Org Foo 1"),
         Assertions.tuple("org-foo2", "My Company Org Foo 2"));
 
-    var searchFooByName = backend.getConnectionService().fuzzySearchUserOrganizations(new FuzzySearchUserOrganizationsParams(credentials, "Foo")).join();
+    var searchFooByName = backend.getConnectionService().fuzzySearchUserOrganizations(new FuzzySearchUserOrganizationsParams(credentials, "Foo", org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion.EU)).join();
     assertThat(searchFooByName.getTopResults())
       .extracting(OrganizationDto::getKey, OrganizationDto::getName)
       .containsExactly(
         Assertions.tuple("org-foo1", "My Company Org Foo 1"),
         Assertions.tuple("org-foo2", "My Company Org Foo 2"));
 
-    var searchBarByKey = backend.getConnectionService().fuzzySearchUserOrganizations(new FuzzySearchUserOrganizationsParams(credentials, "org-bar")).join();
+    var searchBarByKey = backend.getConnectionService().fuzzySearchUserOrganizations(new FuzzySearchUserOrganizationsParams(credentials, "org-bar", org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion.EU)).join();
     assertThat(searchBarByKey.getTopResults())
       .extracting(OrganizationDto::getKey, OrganizationDto::getName)
       .containsExactly(

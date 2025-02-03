@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org;
 import com.google.gson.annotations.JsonAdapter;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherCredentialsAdapterFactory;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
@@ -29,12 +30,23 @@ public class ListUserOrganizationsParams {
 
   @JsonAdapter(EitherCredentialsAdapterFactory.class)
   private final Either<TokenDto, UsernamePasswordDto> credentials;
+  private final SonarCloudRegion region;
 
+  @Deprecated(since = "10.14")
   public ListUserOrganizationsParams(Either<TokenDto, UsernamePasswordDto> credentials) {
+    this(credentials, SonarCloudRegion.EU);
+  }
+
+  public ListUserOrganizationsParams(Either<TokenDto, UsernamePasswordDto> credentials, SonarCloudRegion region) {
     this.credentials = credentials;
+    this.region = region;
   }
 
   public Either<TokenDto, UsernamePasswordDto> getCredentials() {
     return credentials;
+  }
+
+  public SonarCloudRegion getRegion() {
+    return region;
   }
 }

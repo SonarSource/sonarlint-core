@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.ConnectionService;
 import org.sonarsource.sonarlint.core.OrganizationsCache;
+import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams;
@@ -80,19 +81,20 @@ class ConnectionRpcServiceDelegate extends AbstractRpcServiceDelegate implements
 
   @Override
   public CompletableFuture<ListUserOrganizationsResponse> listUserOrganizations(ListUserOrganizationsParams params) {
-    return requestAsync(cancelMonitor -> new ListUserOrganizationsResponse(getBean(OrganizationsCache.class).listUserOrganizations(params.getCredentials(), cancelMonitor)));
+    return requestAsync(cancelMonitor -> new ListUserOrganizationsResponse(getBean(OrganizationsCache.class)
+      .listUserOrganizations(params.getCredentials(), SonarCloudRegion.valueOf(params.getRegion().name()), cancelMonitor)));
   }
 
   @Override
   public CompletableFuture<GetOrganizationResponse> getOrganization(GetOrganizationParams params) {
     return requestAsync(cancelMonitor -> new GetOrganizationResponse(getBean(OrganizationsCache.class)
-      .getOrganization(params.getCredentials(), params.getOrganizationKey(), cancelMonitor)));
+      .getOrganization(params.getCredentials(), params.getOrganizationKey(), SonarCloudRegion.valueOf(params.getRegion().name()), cancelMonitor)));
   }
 
   @Override
   public CompletableFuture<FuzzySearchUserOrganizationsResponse> fuzzySearchUserOrganizations(FuzzySearchUserOrganizationsParams params) {
     return requestAsync(cancelMonitor -> new FuzzySearchUserOrganizationsResponse(getBean(OrganizationsCache.class)
-      .fuzzySearchOrganizations(params.getCredentials(), params.getSearchText(), cancelMonitor)));
+      .fuzzySearchOrganizations(params.getCredentials(), params.getSearchText(), SonarCloudRegion.valueOf(params.getRegion().name()), cancelMonitor)));
   }
 
   @Override

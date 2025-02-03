@@ -22,16 +22,19 @@ package org.sonarsource.sonarlint.core.repository.connection;
 import java.net.URI;
 import java.util.Objects;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 
 public class SonarCloudConnectionConfiguration extends AbstractConnectionConfiguration {
 
   private final String organization;
+  private final SonarCloudRegion region;
 
-  public SonarCloudConnectionConfiguration(URI uri, String connectionId, String organization, boolean disableNotifications) {
+  public SonarCloudConnectionConfiguration(URI uri, String connectionId, String organization, SonarCloudRegion region, boolean disableNotifications) {
     super(connectionId, ConnectionKind.SONARCLOUD, disableNotifications, uri.toString());
     this.organization = organization;
+    this.region = region;
   }
 
   public String getOrganization() {
@@ -41,6 +44,10 @@ public class SonarCloudConnectionConfiguration extends AbstractConnectionConfigu
   @Override
   public EndpointParams getEndpointParams() {
     return new EndpointParams(getUrl(), true, organization);
+  }
+
+  public SonarCloudRegion getRegion() {
+    return region;
   }
 
   @Override

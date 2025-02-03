@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org;
 import com.google.gson.annotations.JsonAdapter;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherCredentialsAdapterFactory;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
@@ -30,10 +31,17 @@ public class FuzzySearchUserOrganizationsParams {
   @JsonAdapter(EitherCredentialsAdapterFactory.class)
   private final Either<TokenDto, UsernamePasswordDto> credentials;
   private final String searchText;
+  private final SonarCloudRegion region;
 
+  @Deprecated(since = "10.14")
   public FuzzySearchUserOrganizationsParams(Either<TokenDto, UsernamePasswordDto> credentials, String searchText) {
+    this(credentials, searchText, SonarCloudRegion.EU);
+  }
+
+  public FuzzySearchUserOrganizationsParams(Either<TokenDto, UsernamePasswordDto> credentials, String searchText, SonarCloudRegion region) {
     this.credentials = credentials;
     this.searchText = searchText;
+    this.region = region;
   }
 
   public Either<TokenDto, UsernamePasswordDto> getCredentials() {
@@ -42,5 +50,9 @@ public class FuzzySearchUserOrganizationsParams {
 
   public String getSearchText() {
     return searchText;
+  }
+
+  public SonarCloudRegion getRegion() {
+    return region;
   }
 }

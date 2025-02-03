@@ -24,6 +24,7 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.adapter.EitherCredentialsAdapterFactory;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
@@ -33,10 +34,17 @@ public class TransientSonarCloudConnectionDto {
 
   @JsonAdapter(EitherCredentialsAdapterFactory.class)
   private final Either<TokenDto, UsernamePasswordDto> credentials;
+  private final SonarCloudRegion region;
 
+  @Deprecated(since = "10.14")
   public TransientSonarCloudConnectionDto(@Nullable String organization, Either<TokenDto, UsernamePasswordDto> credentials) {
+    this(organization, credentials, SonarCloudRegion.EU);
+  }
+
+  public TransientSonarCloudConnectionDto(@Nullable String organization, Either<TokenDto, UsernamePasswordDto> credentials, SonarCloudRegion region) {
     this.organization = organization;
     this.credentials = credentials;
+    this.region = region;
   }
 
   @CheckForNull
@@ -46,5 +54,9 @@ public class TransientSonarCloudConnectionDto {
 
   public Either<TokenDto, UsernamePasswordDto> getCredentials() {
     return credentials;
+  }
+
+  public SonarCloudRegion getRegion() {
+    return region;
   }
 }

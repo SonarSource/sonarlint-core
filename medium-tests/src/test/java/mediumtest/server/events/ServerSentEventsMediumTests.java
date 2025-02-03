@@ -55,6 +55,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnera
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.StandardModeDetails;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
@@ -451,7 +452,7 @@ class ServerSentEventsMediumTests {
         .start();
 
       backend.getConnectionService()
-        .didUpdateConnections(new DidUpdateConnectionsParams(Collections.emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", true))));
+        .didUpdateConnections(new DidUpdateConnectionsParams(Collections.emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", SonarCloudRegion.EU, true))));
 
       await().during(Duration.ofMillis(300)).until(() -> requestedPaths().isEmpty());
     }

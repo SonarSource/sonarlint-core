@@ -44,6 +44,7 @@ import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
+import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -82,7 +83,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment.PRODUCTION_URI;
 import static testutils.TestUtils.mockServerApiProvider;
 
 class ShowIssueRequestHandlerTests {
@@ -127,7 +127,7 @@ class ShowIssueRequestHandlerTests {
     when(storageService.binding(any())).thenReturn(sonarStorage);
     when(sonarStorage.branches()).thenReturn(branchesStorage);
     var connectionConfiguration = mock(ConnectionConfigurationRepository.class);
-    when(connectionConfiguration.hasConnectionWithOrigin(PRODUCTION_URI.toString())).thenReturn(true);
+    when(connectionConfiguration.hasConnectionWithOrigin(SonarCloudRegion.EU.getProductionUri().toString())).thenReturn(true);
 
     showIssueRequestHandler = spy(new ShowIssueRequestHandler(sonarLintRpcClient, serverApiProvider, telemetryService,
       new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintRpcClient,
@@ -280,7 +280,7 @@ class ShowIssueRequestHandlerTests {
       "?project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
       "&issue=AX2VL6pgAvx3iwyNtLyr" +
       "&organizationKey=sample-organization");
-    request.addHeader("Origin", SonarCloudActiveEnvironment.PRODUCTION_URI);
+    request.addHeader("Origin", SonarCloudRegion.EU.getProductionUri());
     var issueQuery = showIssueRequestHandler.extractQuery(request);
     assertThat(issueQuery.getServerUrl()).isEqualTo("https://sonarcloud.io");
     assertThat(issueQuery.getProjectKey()).isEqualTo("org.sonarsource.sonarlint.core:sonarlint-core-parent");
@@ -298,7 +298,7 @@ class ShowIssueRequestHandlerTests {
       "&issue=AX2VL6pgAvx3iwyNtLyr&tokenName=abc" +
       "&organizationKey=sample-organization" +
       "&tokenValue=123");
-    request.addHeader("Origin", SonarCloudActiveEnvironment.PRODUCTION_URI);
+    request.addHeader("Origin", SonarCloudRegion.EU.getProductionUri());
     var issueQuery = showIssueRequestHandler.extractQuery(request);
     assertThat(issueQuery.getServerUrl()).isEqualTo("https://sonarcloud.io");
     assertThat(issueQuery.getProjectKey()).isEqualTo("org.sonarsource.sonarlint.core:sonarlint-core-parent");
@@ -312,38 +312,38 @@ class ShowIssueRequestHandlerTests {
   @Test
   void should_validate_issue_query_for_sq() {
     assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", null, null, null,
-      false).isValid()).isTrue();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "", "pullRequest", null, null, null, false).isValid()).isTrue();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", null, "pullRequest", null, null, null, false).isValid()).isTrue();
+      SonarCloudRegion.US, false).isValid()).isTrue();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "", "pullRequest", null, null, null, SonarCloudRegion.EU, false).isValid()).isTrue();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", null, "pullRequest", null, null, null, SonarCloudRegion.EU, false).isValid()).isTrue();
 
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("", "project", "issue", "branch", "pullRequest", null, null, null, false).isValid()).isFalse();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "", "issue", "branch", "pullRequest", null, null, null, false).isValid()).isFalse();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "", "branch", "pullRequest", null, null, null, false).isValid()).isFalse();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "", "", null, null, null, false).isValid()).isFalse();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", null, null, null, null, false).isValid()).isTrue();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("", "project", "issue", "branch", "pullRequest", null, null, null, SonarCloudRegion.EU, false).isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "", "issue", "branch", "pullRequest", null, null, null, SonarCloudRegion.EU, false).isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "", "branch", "pullRequest", null, null, null, SonarCloudRegion.EU, false).isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "", "", null, null, null, SonarCloudRegion.EU, false).isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", null, null, null, null, SonarCloudRegion.EU, false).isValid()).isTrue();
 
     assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "name", null, null,
-      false).isValid()).isFalse();
+      SonarCloudRegion.US, false).isValid()).isFalse();
     assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", null, "value", null,
-      false).isValid()).isFalse();
+      SonarCloudRegion.US, false).isValid()).isFalse();
     assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "name", "", null,
-      false).isValid()).isFalse();
+      SonarCloudRegion.US, false).isValid()).isFalse();
     assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "", "value", null,
-      false).isValid()).isFalse();
+      SonarCloudRegion.US, false).isValid()).isFalse();
     assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "name", "value", null
-      , false).isValid()).isTrue();
+      , SonarCloudRegion.US, false).isValid()).isTrue();
   }
 
   @Test
   void should_validate_issue_query_for_sc() {
     assertThat(new ShowIssueRequestHandler.ShowIssueQuery(null, "project", "issue", "branch", "pullRequest", "name", "value",
-      "organizationKey", true).isValid()).isTrue();
+      "organizationKey", SonarCloudRegion.US, true).isValid()).isTrue();
     assertThat(new ShowIssueRequestHandler.ShowIssueQuery(null, "project", "issue", "", "pullRequest", "name", "value", "organizationKey"
-      , true).isValid()).isTrue();
+      , SonarCloudRegion.US, true).isValid()).isTrue();
     assertThat(new ShowIssueRequestHandler.ShowIssueQuery(null, "project", "issue", null, "pullRequest", "name", "value",
-      "organizationKey", true).isValid()).isTrue();
+      "organizationKey", SonarCloudRegion.US, true).isValid()).isTrue();
 
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery(null, "project", "issue", "branch", "pullRequest", "name", "value", null, true).isValid()).isFalse();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery(null, "project", "issue", "branch", "pullRequest", "name", "value", null, SonarCloudRegion.EU, true).isValid()).isFalse();
   }
 
   @Test
@@ -361,12 +361,12 @@ class ShowIssueRequestHandlerTests {
       "&organizationKey=sample-organization" +
       "&tokenValue=123" +
       "&branch=branch");
-    request.addHeader("Origin", PRODUCTION_URI);
+    request.addHeader("Origin", SonarCloudRegion.EU.getProductionUri());
     var response = mock(ClassicHttpResponse.class);
     var context = mock(HttpContext.class);
 
     when(connectionConfigurationRepository.findByOrganization(any())).thenReturn(List.of(
-      new SonarCloudConnectionConfiguration(PRODUCTION_URI, "name", "organizationKey", false)));
+      new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), "name", "organizationKey", SonarCloudRegion.EU, false)));
     when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope"
       , "connectionId", "projectKey")));
     when(sonarLintRpcClient.matchProjectBranch(any())).thenReturn(CompletableFuture.completedFuture(new MatchProjectBranchResponse(false)));
@@ -390,12 +390,12 @@ class ShowIssueRequestHandlerTests {
       "&issue=AX2VL6pgAvx3iwyNtLyr&tokenName=abc" +
       "&organizationKey=sample-organization" +
       "&tokenValue=123");
-    request.addHeader("Origin", PRODUCTION_URI);
+    request.addHeader("Origin", SonarCloudRegion.EU.getProductionUri());
     var response = mock(ClassicHttpResponse.class);
     var context = mock(HttpContext.class);
 
     when(connectionConfigurationRepository.findByOrganization(any())).thenReturn(List.of(
-      new SonarCloudConnectionConfiguration(PRODUCTION_URI, "name", "organizationKey", false)));
+      new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), "name", "organizationKey", SonarCloudRegion.EU, false)));
     when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope"
       , "connectionId", "projectKey")));
     when(sonarLintRpcClient.matchProjectBranch(any())).thenReturn(CompletableFuture.completedFuture(new MatchProjectBranchResponse(true)));
@@ -420,12 +420,12 @@ class ShowIssueRequestHandlerTests {
       "&issue=AX2VL6pgAvx3iwyNtLyr&tokenName=abc" +
       "&organizationKey=sample-organization" +
       "&tokenValue=123");
-    request.addHeader("Origin", PRODUCTION_URI);
+    request.addHeader("Origin", SonarCloudRegion.EU.getProductionUri());
     var response = mock(ClassicHttpResponse.class);
     var context = mock(HttpContext.class);
 
     when(connectionConfigurationRepository.findByOrganization(any())).thenReturn(List.of(
-      new SonarCloudConnectionConfiguration(PRODUCTION_URI, "name", "organizationKey", false)));
+      new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), "name", "organizationKey", SonarCloudRegion.EU, false)));
     when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope"
       , "connectionId", "projectKey")));
     when(sonarLintRpcClient.matchProjectBranch(any())).thenReturn(CompletableFuture.completedFuture(new MatchProjectBranchResponse(true)));

@@ -20,28 +20,72 @@
 package org.sonarsource.sonarlint.core;
 
 import java.net.URI;
+import java.util.Arrays;
+
+import static org.apache.commons.lang.StringUtils.removeEnd;
 
 public class SonarCloudActiveEnvironment {
 
-  public static final URI PRODUCTION_URI = URI.create("https://sonarcloud.io");
+  private SonarQubeCloudUris alternativeUris;
 
   public static SonarCloudActiveEnvironment prod() {
-    return new SonarCloudActiveEnvironment(PRODUCTION_URI, URI.create("wss://events-api.sonarcloud.io/"));
+    return new SonarCloudActiveEnvironment();
   }
 
-  private final URI uri;
-  private final URI webSocketsEndpointUri;
+  public SonarCloudActiveEnvironment() {
+  }
 
   public SonarCloudActiveEnvironment(URI uri, URI webSocketsEndpointUri) {
-    this.uri = uri;
-    this.webSocketsEndpointUri = webSocketsEndpointUri;
+    this.alternativeUris = new SonarQubeCloudUris(uri, webSocketsEndpointUri);
   }
 
-  public URI getUri() {
-    return uri;
+  public URI getUri(SonarCloudRegion region) {
+    return alternativeUris != null ? alternativeUris.productionUri : region.getProductionUri();
   }
 
-  public URI getWebSocketsEndpointUri() {
-    return webSocketsEndpointUri;
+  public URI getWebSocketsEndpointUri(SonarCloudRegion region) {
+    return alternativeUris != null ? alternativeUris.wsUri : region.getWebSocketUri();
+  }
+
+  public boolean isSonarQubeCloud(String uri) {
+    return isAlternativeUri(uri) ||
+      Arrays.stream(SonarCloudRegion.values())
+      .map(u -> removeEnd(u.getProductionUri().toString(), "/"))
+      .anyMatch(u -> u.equals(removeEnd(uri, "/")));
+  }
+
+  /**
+   *  Before calling this method, caller should make sure URI is SonarCloud
+   */
+  public SonarCloudRegion getRegionOrThrow(String uri) {
+    if (isAlternativeUri(uri)) {
+      return SonarCloudRegion.EU;
+    }
+    return Arrays.stream(SonarCloudRegion.values())
+      .filter(e -> removeEnd(e.getProductionUri().toString(), "/").equals(removeEnd(uri, "/")))
+      .findFirst()
+      .orElseThrow(() -> new IllegalArgumentException("URI should be a known SonarCloud URI"));
+  }
+
+  private boolean isAlternativeUri(String uri) {
+    return alternativeUris != null && removeEnd(alternativeUris.productionUri.toString(), "/").equals(removeEnd(uri, "/"));
+  }
+
+  private static class SonarQubeCloudUris {
+    private final URI productionUri;
+    private final URI wsUri;
+
+    public SonarQubeCloudUris(URI productionUri, URI wsUri) {
+      this.productionUri = productionUri;
+      this.wsUri = wsUri;
+    }
+
+    public URI getProductionUri() {
+      return productionUri;
+    }
+
+    public URI getWsUri() {
+      return wsUri;
+    }
   }
 }

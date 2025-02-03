@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - RPC Protocol
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,31 +17,22 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.client.connection;
+package org.sonarsource.sonarlint.core.embedded.server;
 
-import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.http.ProtocolException;
 
-public class SonarCloudConnectionSuggestionDto {
+import static org.apache.commons.lang3.StringUtils.removeEnd;
 
-  private final String organization;
-  private final String projectKey;
-  private final SonarCloudRegion region;
+public class RequestHandlerUtils {
 
-  public SonarCloudConnectionSuggestionDto(String organization, String projectKey, SonarCloudRegion region) {
-    this.organization = organization;
-    this.projectKey = projectKey;
-    this.region = region;
+  private RequestHandlerUtils() {
+    // util
   }
 
-  public String getOrganization() {
-    return organization;
-  }
-
-  public String getProjectKey() {
-    return projectKey;
-  }
-
-  public SonarCloudRegion getRegion() {
-    return region;
+  public static String getServerUrlForSonarCloud(ClassicHttpRequest request) throws ProtocolException {
+    var originUrl = request.getHeader("Origin").getValue();
+    // Since the 'isSonarCloud' check passed, we are sure that the region will be there
+    return removeEnd(originUrl, "/");
   }
 }

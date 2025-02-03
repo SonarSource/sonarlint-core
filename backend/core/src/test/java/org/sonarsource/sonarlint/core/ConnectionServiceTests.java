@@ -55,8 +55,8 @@ class ConnectionServiceTests {
   public static final SonarQubeConnectionConfigurationDto SQ_DTO_1 = new SonarQubeConnectionConfigurationDto("sq1", "http://url1/", true);
   public static final SonarQubeConnectionConfigurationDto SQ_DTO_1_DUP = new SonarQubeConnectionConfigurationDto("sq1", "http://url1_dup/", true);
   public static final SonarQubeConnectionConfigurationDto SQ_DTO_2 = new SonarQubeConnectionConfigurationDto("sq2", "url2", true);
-  public static final SonarCloudConnectionConfigurationDto SC_DTO_1 = new SonarCloudConnectionConfigurationDto("sc1", "org1", true);
-  public static final SonarCloudConnectionConfigurationDto SC_DTO_2 = new SonarCloudConnectionConfigurationDto("sc2", "org2", true);
+  public static final SonarCloudConnectionConfigurationDto SC_DTO_1 = new SonarCloudConnectionConfigurationDto("sc1", "org1", org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion.EU, true);
+  public static final SonarCloudConnectionConfigurationDto SC_DTO_2 = new SonarCloudConnectionConfigurationDto("sc2", "org2", org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion.EU, true);
 
   ApplicationEventPublisher eventPublisher;
   ConnectionService underTest;

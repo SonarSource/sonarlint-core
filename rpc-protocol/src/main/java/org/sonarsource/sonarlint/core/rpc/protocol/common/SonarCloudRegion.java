@@ -17,31 +17,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rpc.protocol.client.connection;
+package org.sonarsource.sonarlint.core.rpc.protocol.common;
 
-import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
-
-public class SonarCloudConnectionSuggestionDto {
-
-  private final String organization;
-  private final String projectKey;
-  private final SonarCloudRegion region;
-
-  public SonarCloudConnectionSuggestionDto(String organization, String projectKey, SonarCloudRegion region) {
-    this.organization = organization;
-    this.projectKey = projectKey;
-    this.region = region;
-  }
-
-  public String getOrganization() {
-    return organization;
-  }
-
-  public String getProjectKey() {
-    return projectKey;
-  }
-
-  public SonarCloudRegion getRegion() {
-    return region;
-  }
+public enum SonarCloudRegion {
+  EU, US
 }

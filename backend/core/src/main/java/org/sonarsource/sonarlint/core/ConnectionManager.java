@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core;
 
-import java.net.URI;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -45,8 +44,6 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverconnection.ServerVersionAndStatusChecker;
 
-import static org.apache.commons.lang.StringUtils.removeEnd;
-
 public class ConnectionManager {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -54,7 +51,7 @@ public class ConnectionManager {
   private final ConnectionAwareHttpClientProvider awareHttpClientProvider;
   private final HttpClientProvider httpClientProvider;
   private final SonarLintRpcClient client;
-  private final URI sonarCloudUri;
+  private final SonarCloudActiveEnvironment sonarCloudActiveEnvironment;
 
   public ConnectionManager(ConnectionConfigurationRepository connectionRepository, ConnectionAwareHttpClientProvider awareHttpClientProvider, HttpClientProvider httpClientProvider,
     SonarCloudActiveEnvironment sonarCloudActiveEnvironment, SonarLintRpcClient client) {
@@ -62,7 +59,7 @@ public class ConnectionManager {
     this.awareHttpClientProvider = awareHttpClientProvider;
     this.httpClientProvider = httpClientProvider;
     this.client = client;
-    this.sonarCloudUri = sonarCloudActiveEnvironment.getUri();
+    this.sonarCloudActiveEnvironment = sonarCloudActiveEnvironment;
   }
 
   public Optional<ServerApi> getServerApiWithoutCredentials(String connectionId) {
@@ -97,7 +94,9 @@ public class ConnectionManager {
   }
 
   public ServerApi getServerApi(String baseUrl, @Nullable String organization, String token) {
-    var params = new EndpointParams(baseUrl, removeEnd(sonarCloudUri.toString(), "/").equals(removeEnd(baseUrl, "/")), organization);
+    var isSonarCloud = sonarCloudActiveEnvironment.isSonarQubeCloud(baseUrl);
+
+    var params = new EndpointParams(baseUrl, isSonarCloud, organization);
     var isBearerSupported = checkIfBearerIsSupported(params);
     return new ServerApi(params, httpClientProvider.getHttpClientWithPreemptiveAuth(token, isBearerSupported));
   }
@@ -115,8 +114,8 @@ public class ConnectionManager {
   /**
    * Used to do SonarCloud requests before knowing the organization
    */
-  public ServerApi getForSonarCloudNoOrg(Either<TokenDto, UsernamePasswordDto> credentials) {
-    var endpointParams = new EndpointParams(sonarCloudUri.toString(), true, null);
+  public ServerApi getForSonarCloudNoOrg(Either<TokenDto, UsernamePasswordDto> credentials, SonarCloudRegion region) {
+    var endpointParams = new EndpointParams(sonarCloudActiveEnvironment.getUri(region).toString(), true, null);
     var httpClient = getClientFor(endpointParams, credentials);
     return new ServerApi(new ServerApiHelper(endpointParams, httpClient));
   }
@@ -124,7 +123,7 @@ public class ConnectionManager {
   public ServerApi getForTransientConnection(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection) {
     var endpointParams = transientConnection.map(
       sq -> new EndpointParams(sq.getServerUrl(), false, null),
-      sc -> new EndpointParams(sonarCloudUri.toString(), true, sc.getOrganization()));
+      sc -> new EndpointParams(sonarCloudActiveEnvironment.getUri(SonarCloudRegion.valueOf(sc.getRegion().toString())).toString(), true, sc.getOrganization()));
     var httpClient = getClientFor(endpointParams, transientConnection
       .map(TransientSonarQubeConnectionDto::getCredentials, TransientSonarCloudConnectionDto::getCredentials));
     return new ServerApi(new ServerApiHelper(endpointParams, httpClient));
@@ -161,10 +160,6 @@ public class ConnectionManager {
   public Optional<ServerConnection> tryGetConnectionWithoutCredentials(String connectionId) {
     return getServerApiWithoutCredentials(connectionId)
       .map(serverApi -> new ServerConnection(connectionId, serverApi, client));
-  }
-
-  public ServerApi getTransientConnection(String token,@Nullable String organization,  String baseUrl) {
-    return getServerApi(baseUrl, organization, token);
   }
 
   public void withValidConnection(String connectionId, Consumer<ServerApi> serverApiConsumer) {
