@@ -166,7 +166,7 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
     String tokenName = query.getTokenName();
     String tokenValue = query.getTokenValue();
     if (query.isSonarCloud) {
-      // It 'isSonarCloud' check passed, we are sure we will have a region
+      // If 'isSonarCloud' check passed, we are sure we will have a region
       var region = sonarCloudActiveEnvironment.getRegionOrThrow(query.getServerUrl());
       return new AssistCreatingConnectionParams(new SonarCloudConnectionParams(query.getOrganizationKey(), tokenName, tokenValue, SonarCloudRegion.valueOf(region.name())));
     } else {

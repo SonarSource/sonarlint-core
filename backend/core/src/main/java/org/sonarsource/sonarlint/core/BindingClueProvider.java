@@ -246,7 +246,7 @@ public class BindingClueProvider {
       try {
         configuredRegion = region != null ? SonarCloudRegion.valueOf(region.toUpperCase(Locale.ENGLISH)) : SonarCloudRegion.EU;
       } catch (IllegalArgumentException e) {
-        LOG.warn("Cannot accept '{}' as a valid SonarQube Cloud region while reading shared Connected Mode settings", region);
+        LOG.warn("Cannot accept '{}' as a valid SonarQube Cloud region while reading shared Connected Mode settings. Falling back to EU region", region);
         configuredRegion = SonarCloudRegion.EU;
       }
       this.region = configuredRegion;

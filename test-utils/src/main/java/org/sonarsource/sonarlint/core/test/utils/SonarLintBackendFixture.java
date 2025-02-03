@@ -46,7 +46,6 @@ import java.util.function.Consumer;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
-import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
@@ -499,7 +498,7 @@ public class SonarLintBackendFixture {
         if (sonarCloudUrl != null || sonarCloudWebSocketsUrl != null) {
           sonarCloudAlternativeEnvironment = new SonarCloudAlternativeEnvironmentDto(
             sonarCloudUrl == null ? SonarCloudRegion.EU.getProductionUri() : URI.create(sonarCloudUrl),
-            sonarCloudWebSocketsUrl == null ? SonarCloudActiveEnvironment.prod().getWebSocketsEndpointUri(SonarCloudRegion.EU) : URI.create(sonarCloudWebSocketsUrl));
+            sonarCloudWebSocketsUrl == null ? SonarCloudRegion.EU.getWebSocketUri() : URI.create(sonarCloudWebSocketsUrl));
         }
 
         var sslConfiguration = new SslConfigurationDto(null, null, null, keyStorePath, keyStorePassword, keyStoreType);

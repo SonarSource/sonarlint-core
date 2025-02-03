@@ -20,39 +20,35 @@
 package org.sonarsource.sonarlint.core;
 
 import java.net.URI;
-import java.util.Map;
+import java.util.Arrays;
 
 import static org.apache.commons.lang.StringUtils.removeEnd;
 
 public class SonarCloudActiveEnvironment {
 
+  private SonarQubeCloudUris uris;
+
   public static SonarCloudActiveEnvironment prod() {
     return new SonarCloudActiveEnvironment();
   }
 
-  private final Map<SonarCloudRegion, SonarQubeCloudUris> uris;
-
   public SonarCloudActiveEnvironment() {
-    var euUris = new SonarQubeCloudUris(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getWebSocketUri());
-    var usUris = new SonarQubeCloudUris(SonarCloudRegion.US.getProductionUri(), SonarCloudRegion.US.getWebSocketUri());
-    this.uris = Map.of(SonarCloudRegion.EU, euUris, SonarCloudRegion.US, usUris);
   }
 
   public SonarCloudActiveEnvironment(URI uri, URI webSocketsEndpointUri) {
-    this.uris = Map.of(SonarCloudRegion.EU, new SonarQubeCloudUris(uri, webSocketsEndpointUri));
+    this.uris = new SonarQubeCloudUris(uri, webSocketsEndpointUri);
   }
 
   public URI getUri(SonarCloudRegion region) {
-    return uris.get(region).getProductionUri();
+    return uris != null ? uris.productionUri : region.getProductionUri();
   }
 
   public URI getWebSocketsEndpointUri(SonarCloudRegion region) {
-    return uris.get(region).getWsUri();
+    return uris != null ? uris.wsUri : region.getWebSocketUri();
   }
 
   public boolean isSonarQubeCloud(String uri) {
-    return uris.values()
-      .stream()
+    return Arrays.stream(SonarCloudRegion.values())
       .map(u -> removeEnd(u.getProductionUri().toString(), "/"))
       .anyMatch(u -> u.equals(removeEnd(uri, "/")));
   }
@@ -61,11 +57,9 @@ public class SonarCloudActiveEnvironment {
    *  Before calling this method, caller should make sure URI is SonarCloud
    */
   public SonarCloudRegion getRegionOrThrow(String uri) {
-    return uris.entrySet()
-      .stream()
-      .filter(e -> removeEnd(e.getValue().getProductionUri().toString(), "/").equals(removeEnd(uri, "/")))
+    return Arrays.stream(SonarCloudRegion.values())
+      .filter(e -> removeEnd(e.getProductionUri().toString(), "/").equals(removeEnd(uri, "/")))
       .findFirst()
-      .map(Map.Entry::getKey)
       .orElseThrow(() -> new IllegalArgumentException("URI should be a known SonarCloud URI"));
   }
 
