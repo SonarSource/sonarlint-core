@@ -28,6 +28,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
@@ -70,7 +71,7 @@ class TimeoutMediumTests {
             .build())
           .build()))));
 
-    var future = backend.getConnectionService().getOrganization(new GetOrganizationParams(Either.forLeft(new TokenDto("token")), "myOrg"));
+    var future = backend.getConnectionService().getOrganization(new GetOrganizationParams(Either.forLeft(new TokenDto("token")), "myOrg", SonarCloudRegion.EU));
 
     assertThat(future)
       .failsWithin(3, TimeUnit.SECONDS)
