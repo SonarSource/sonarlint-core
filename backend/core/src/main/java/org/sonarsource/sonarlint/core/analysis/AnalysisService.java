@@ -38,8 +38,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -67,6 +66,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
@@ -156,7 +156,7 @@ public class AnalysisService {
   private final MonitoringService monitoringService;
   private boolean automaticAnalysisEnabled;
   private final Path esLintBridgeServerPath;
-  private final ScheduledExecutorService scheduledAnalysisExecutor = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "SonarLint Analysis Executor"));
+  private final ExecutorService scheduledAnalysisExecutor = FailSafeExecutors.newSingleThreadExecutor("SonarLint Analysis Executor");
 
   public AnalysisService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
     StorageService storageService, PluginsService pluginsService, RulesService rulesService, RulesRepository rulesRepository,
@@ -894,17 +894,15 @@ public class AnalysisService {
   private UUID triggerForcedAnalysis(String configurationScopeId, List<URI> files, boolean hotspotsOnly) {
     if (isReadyForAnalysis(configurationScopeId)) {
       var analysisId = UUID.randomUUID();
-      scheduledAnalysisExecutor.submit(() -> {
-        analyze(new SonarLintCancelMonitor(), configurationScopeId, analysisId, files, Map.of(), System.currentTimeMillis(), true, hotspotsOnly);
-        return analysisId;
-      });
+      scheduledAnalysisExecutor
+        .execute(() -> analyze(new SonarLintCancelMonitor(), configurationScopeId, analysisId, files, Map.of(), System.currentTimeMillis(), true, hotspotsOnly));
     }
     LOG.debug("Skipping analysis for configuration scope {}. Not ready for analysis", configurationScopeId);
     return null;
   }
 
   private void triggerAnalysis(String configurationScopeId, List<URI> files) {
-    scheduledAnalysisExecutor.submit(() -> {
+    scheduledAnalysisExecutor.execute(() -> {
       if (shouldTriggerAutomaticAnalysis(configurationScopeId)) {
         List<URI> filteredFiles = fileExclusionService.filterOutClientExcludedFiles(configurationScopeId, files);
         analyze(new SonarLintCancelMonitor(), configurationScopeId, UUID.randomUUID(), filteredFiles, Map.of(), System.currentTimeMillis(), true, false);

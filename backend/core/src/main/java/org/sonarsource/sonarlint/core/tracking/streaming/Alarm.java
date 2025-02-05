@@ -20,10 +20,10 @@
 package org.sonarsource.sonarlint.core.tracking.streaming;
 
 import java.time.Duration;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 
 public class Alarm {
   private final Duration duration;
@@ -34,7 +34,7 @@ public class Alarm {
   public Alarm(String name, Duration duration, Runnable endRunnable) {
     this.duration = duration;
     this.endRunnable = endRunnable;
-    executorService = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, name));
+    this.executorService = FailSafeExecutors.newSingleThreadScheduledExecutor(name);
   }
 
   public void schedule() {
