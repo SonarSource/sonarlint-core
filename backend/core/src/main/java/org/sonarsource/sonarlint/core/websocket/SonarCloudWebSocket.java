@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -41,6 +40,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.http.WebSocketClient;
 import org.sonarsource.sonarlint.core.serverapi.push.SonarServerEvent;
 import org.sonarsource.sonarlint.core.serverapi.push.parsing.EventParser;
@@ -74,7 +74,7 @@ public class SonarCloudWebSocket {
   private static final Gson gson = new Gson();
   private CompletableFuture<WebSocket> wsFuture;
   private final History history = new History();
-  private final ScheduledExecutorService sonarCloudWebSocketScheduler = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "sonarcloud-websocket-scheduled-jobs"));
+  private final ScheduledExecutorService sonarCloudWebSocketScheduler = FailSafeExecutors.newSingleThreadScheduledExecutor("sonarcloud-websocket-scheduled-jobs");
 
   private final AtomicBoolean closingInitiated = new AtomicBoolean(false);
   private final CompletableFuture<?> webSocketInputClosed = new CompletableFuture<>();

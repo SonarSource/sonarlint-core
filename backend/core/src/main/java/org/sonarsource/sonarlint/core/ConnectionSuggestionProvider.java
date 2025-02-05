@@ -27,13 +27,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
@@ -70,8 +68,7 @@ public class ConnectionSuggestionProvider {
     this.connectionRepository = connectionRepository;
     this.client = client;
     this.bindingClueProvider = bindingClueProvider;
-    this.executorService = new ExecutorServiceShutdownWatchable<>(new ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS,
-      new LinkedBlockingQueue<>(), r -> new Thread(r, "Connection Suggestion Provider")));
+    this.executorService = new ExecutorServiceShutdownWatchable<>(FailSafeExecutors.newSingleThreadExecutor("Connection Suggestion Provider"));
     this.bindingSuggestionProvider = bindingSuggestionProvider;
     this.clientFs = clientFs;
   }
@@ -106,7 +103,7 @@ public class ConnectionSuggestionProvider {
     if (!listConfigScopeIds.isEmpty()) {
       var cancelMonitor = new SonarLintCancelMonitor();
       cancelMonitor.watchForShutdown(executorService);
-      executorService.submit(() -> suggestConnectionForGivenScopes(listConfigScopeIds, cancelMonitor));
+      executorService.execute(() -> suggestConnectionForGivenScopes(listConfigScopeIds, cancelMonitor));
     }
   }
 
@@ -114,7 +111,7 @@ public class ConnectionSuggestionProvider {
     LOG.debug("Computing connection suggestions");
     var connectionSuggestionsByConfigScopeIds = new HashMap<String, List<ConnectionSuggestionDto>>();
     var bindingSuggestionsForConfigScopeIds = new HashSet<String>();
-    
+
     for (var configScopeId : listOfFilesPerConfigScopeIds) {
       var effectiveBinding = configRepository.getEffectiveBinding(configScopeId);
       if (effectiveBinding.isPresent()) {
@@ -133,8 +130,8 @@ public class ConnectionSuggestionProvider {
             organization -> connectionSuggestionsByConfigScopeIds.computeIfAbsent(configScopeId, s -> new ArrayList<>())
               .add(new ConnectionSuggestionDto(new SonarCloudConnectionSuggestionDto(organization, projectKey,
                 ((BindingClueProvider.SonarCloudBindingClue) bindingClue).getRegion()),
-                bindingClue.isFromSharedConfiguration()))
-          ), () -> bindingSuggestionsForConfigScopeIds.add(configScopeId));
+                bindingClue.isFromSharedConfiguration()))),
+            () -> bindingSuggestionsForConfigScopeIds.add(configScopeId));
         }
       }
     }

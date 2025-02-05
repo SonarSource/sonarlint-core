@@ -27,7 +27,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -38,6 +37,7 @@ import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
@@ -86,7 +86,7 @@ public class SmartNotifications {
     if (!params.getFeatureFlags().shouldManageSmartNotifications()) {
       return;
     }
-    smartNotificationsPolling = new ExecutorServiceShutdownWatchable<>(Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "Smart Notifications Polling")));
+    smartNotificationsPolling = new ExecutorServiceShutdownWatchable<>(FailSafeExecutors.newSingleThreadScheduledExecutor("Smart Notifications Polling"));
     var cancelMonitor = new SonarLintCancelMonitor();
     cancelMonitor.watchForShutdown(smartNotificationsPolling);
     smartNotificationsPolling.getWrapped().scheduleAtFixedRate(() -> this.poll(cancelMonitor), 1, 60, TimeUnit.SECONDS);

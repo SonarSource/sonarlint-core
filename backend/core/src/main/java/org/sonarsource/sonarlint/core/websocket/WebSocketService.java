@@ -26,7 +26,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
@@ -34,6 +33,7 @@ import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
+import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
@@ -64,9 +64,9 @@ public class WebSocketService {
   private final ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider;
   private final ApplicationEventPublisher eventPublisher;
   protected SonarCloudWebSocket sonarCloudWebSocket;
-  private SonarCloudActiveEnvironment sonarCloudActiveEnvironment;
+  private final SonarCloudActiveEnvironment sonarCloudActiveEnvironment;
   private String connectionIdUsedToCreateConnection;
-  private final ExecutorService executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-websocket-subscriber"));
+  private final ExecutorService executorService = FailSafeExecutors.newSingleThreadExecutor("sonarlint-websocket-subscriber");
 
   public WebSocketService(ConnectionConfigurationRepository connectionConfigurationRepository, ConfigurationRepository configurationRepository,
     ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider, InitializeParams params, SonarCloudActiveEnvironment sonarCloudActiveEnvironment,
@@ -80,7 +80,7 @@ public class WebSocketService {
   }
 
   protected void reopenConnectionOnClose() {
-    executorService.submit(() -> {
+    executorService.execute(() -> {
       var connectionId = connectionIdsInterestedInNotifications.stream().findFirst().orElse(null);
       if (this.sonarCloudWebSocket != null && connectionId != null) {
         // If connection already exists, close it and create new one before it expires on its own
@@ -94,7 +94,7 @@ public class WebSocketService {
     if (!shouldEnableWebSockets) {
       return;
     }
-    executorService.submit(() -> considerScope(bindingConfigChangedEvent.getConfigScopeId()));
+    executorService.execute(() -> considerScope(bindingConfigChangedEvent.getConfigScopeId()));
   }
 
   @EventListener
@@ -102,7 +102,7 @@ public class WebSocketService {
     if (!shouldEnableWebSockets) {
       return;
     }
-    executorService.submit(() -> considerAllBoundConfigurationScopes(configurationScopesAddedEvent.getAddedConfigurationScopeIds()));
+    executorService.execute(() -> considerAllBoundConfigurationScopes(configurationScopesAddedEvent.getAddedConfigurationScopeIds()));
   }
 
   @EventListener
@@ -111,7 +111,7 @@ public class WebSocketService {
       return;
     }
     var removedConfigurationScopeId = configurationScopeRemovedEvent.getRemovedConfigurationScopeId();
-    executorService.submit(() -> {
+    executorService.execute(() -> {
       forget(removedConfigurationScopeId);
       closeSocketIfNoMoreNeeded();
     });
@@ -123,7 +123,7 @@ public class WebSocketService {
       return;
     }
     // This is only to handle the case where binding was invalid (connection did not exist) and became valid (matching connection was created)
-    executorService.submit(() -> considerConnection(connectionConfigurationAddedEvent.getAddedConnectionId()));
+    executorService.execute(() -> considerConnection(connectionConfigurationAddedEvent.getAddedConnectionId()));
   }
 
   @EventListener
@@ -132,7 +132,7 @@ public class WebSocketService {
       return;
     }
     var updatedConnectionId = connectionConfigurationUpdatedEvent.getUpdatedConnectionId();
-    executorService.submit(() -> {
+    executorService.execute(() -> {
       if (didDisableNotifications(updatedConnectionId)) {
         forgetConnection(updatedConnectionId, "Notifications were disabled");
       } else if (didEnableNotifications(updatedConnectionId)) {
@@ -147,7 +147,7 @@ public class WebSocketService {
       return;
     }
     String removedConnectionId = connectionConfigurationRemovedEvent.getRemovedConnectionId();
-    executorService.submit(() -> forgetConnection(removedConnectionId, "Connection was removed"));
+    executorService.execute(() -> forgetConnection(removedConnectionId, "Connection was removed"));
   }
 
   @EventListener
@@ -156,7 +156,7 @@ public class WebSocketService {
       return;
     }
     var connectionId = connectionCredentialsChangedEvent.getConnectionId();
-    executorService.submit(() -> {
+    executorService.execute(() -> {
       if (isEligibleConnection(connectionId) && connectionIdsInterestedInNotifications.contains(connectionId)) {
         reopenConnection(connectionId, "Credentials have changed");
       }

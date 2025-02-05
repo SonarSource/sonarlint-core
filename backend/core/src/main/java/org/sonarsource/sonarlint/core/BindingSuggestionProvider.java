@@ -30,13 +30,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
@@ -73,8 +72,7 @@ public class BindingSuggestionProvider {
     this.client = client;
     this.bindingClueProvider = bindingClueProvider;
     this.sonarProjectsCache = sonarProjectsCache;
-    this.executorService = new ExecutorServiceShutdownWatchable<>(new ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS,
-      new LinkedBlockingQueue<>(), r -> new Thread(r, "Binding Suggestion Provider")));
+    this.executorService = new ExecutorServiceShutdownWatchable<>(FailSafeExecutors.newSingleThreadExecutor("Binding Suggestion Provider"));
   }
 
   @EventListener
@@ -116,7 +114,7 @@ public class BindingSuggestionProvider {
   private void queueBindingSuggestionComputation(Set<String> configScopeIds, Set<String> candidateConnectionIds) {
     var cancelMonitor = new SonarLintCancelMonitor();
     cancelMonitor.watchForShutdown(executorService);
-    executorService.submit(() -> {
+    executorService.execute(() -> {
       if (enabled.get()) {
         computeAndNotifyBindingSuggestions(configScopeIds, candidateConnectionIds, cancelMonitor);
       } else {

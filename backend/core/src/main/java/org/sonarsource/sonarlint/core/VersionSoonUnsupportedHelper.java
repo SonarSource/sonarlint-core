@@ -25,14 +25,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -64,8 +63,7 @@ public class VersionSoonUnsupportedHelper {
     this.connectionRepository = connectionRepository;
     this.connectionManager = connectionManager;
     this.synchronizationService = synchronizationService;
-    this.executorService = new ExecutorServiceShutdownWatchable<>(new ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS,
-      new LinkedBlockingQueue<>(), r -> new Thread(r, "Version Soon Unsupported Helper")));
+    this.executorService = new ExecutorServiceShutdownWatchable<>(FailSafeExecutors.newSingleThreadExecutor("Version Soon Unsupported Helper"));
   }
 
   @EventListener
@@ -99,7 +97,7 @@ public class VersionSoonUnsupportedHelper {
   private void queueCheckIfSoonUnsupported(String connectionId, String configScopeId) {
     var cancelMonitor = new SonarLintCancelMonitor();
     cancelMonitor.watchForShutdown(executorService);
-    executorService.submit(() -> {
+    executorService.execute(() -> {
       try {
         var connection = connectionRepository.getConnectionById(connectionId);
         if (connection != null && connection.getKind() == ConnectionKind.SONARQUBE) {

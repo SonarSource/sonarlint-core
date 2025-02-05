@@ -25,8 +25,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
@@ -39,6 +37,7 @@ import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -73,8 +72,7 @@ public class RequestHandlerBindingAssistant {
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.configurationRepository = configurationRepository;
     this.userTokenService = userTokenService;
-    this.executorService = new ExecutorServiceShutdownWatchable<>(new ThreadPoolExecutor(0, 1, 10L, TimeUnit.SECONDS,
-      new LinkedBlockingQueue<>(), r -> new Thread(r, "Show Issue or Hotspot Request Handler")));
+    this.executorService = new ExecutorServiceShutdownWatchable<>(FailSafeExecutors.newSingleThreadExecutor("Show Issue or Hotspot Request Handler"));
     this.sonarCloudActiveEnvironment = sonarCloudActiveEnvironment;
     this.repository = repository;
   }
@@ -86,7 +84,7 @@ public class RequestHandlerBindingAssistant {
   void assistConnectionAndBindingIfNeededAsync(AssistCreatingConnectionParams connectionParams, String projectKey, String origin, Callback callback) {
     var cancelMonitor = new SonarLintCancelMonitor();
     cancelMonitor.watchForShutdown(executorService);
-    executorService.submit(() -> assistConnectionAndBindingIfNeeded(connectionParams, projectKey, origin, callback, cancelMonitor));
+    executorService.execute(() -> assistConnectionAndBindingIfNeeded(connectionParams, projectKey, origin, callback, cancelMonitor));
   }
 
   private void assistConnectionAndBindingIfNeeded(AssistCreatingConnectionParams connectionParams, String projectKey, String origin,
@@ -95,9 +93,8 @@ public class RequestHandlerBindingAssistant {
     LOG.debug("Assist connection and binding if needed for project {} and server {}", projectKey, serverUrl);
     try {
       var isSonarCloud = connectionParams.getConnectionParams().isRight();
-      var connectionsMatchingOrigin = isSonarCloud ?
-        connectionConfigurationRepository.findByOrganization(connectionParams.getConnectionParams().getRight().getOrganizationKey()) :
-        connectionConfigurationRepository.findByUrl(serverUrl);
+      var connectionsMatchingOrigin = isSonarCloud ? connectionConfigurationRepository.findByOrganization(connectionParams.getConnectionParams().getRight().getOrganizationKey())
+        : connectionConfigurationRepository.findByUrl(serverUrl);
       if (connectionsMatchingOrigin.isEmpty()) {
         startFullBindingProcess();
         try {
@@ -130,8 +127,8 @@ public class RequestHandlerBindingAssistant {
   }
 
   private String getServerUrl(AssistCreatingConnectionParams connectionParams) {
-    return connectionParams.getConnectionParams().isLeft() ? connectionParams.getConnectionParams().getLeft().getServerUrl() :
-      sonarCloudActiveEnvironment.getUri(SonarCloudRegion.valueOf(connectionParams.getConnectionParams().getRight().getRegion().name())).toString();
+    return connectionParams.getConnectionParams().isLeft() ? connectionParams.getConnectionParams().getLeft().getServerUrl()
+      : sonarCloudActiveEnvironment.getUri(SonarCloudRegion.valueOf(connectionParams.getConnectionParams().getRight().getRegion().name())).toString();
   }
 
   private AssistCreatingConnectionResponse assistCreatingConnectionAndWaitForRepositoryUpdate(
@@ -247,7 +244,6 @@ public class RequestHandlerBindingAssistant {
     var response = future.join();
     return new NewBinding(connectionId, response.getConfigurationScopeId());
   }
-
 
   static class NewBinding {
     private final String connectionId;

@@ -24,11 +24,11 @@ import java.util.LinkedList;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -49,7 +49,7 @@ public class FindingsSynchronizationService {
     this.pathTranslationService = pathTranslationService;
     this.issueSynchronizationService = issueSynchronizationService;
     this.hotspotSynchronizationService = hotspotSynchronizationService;
-    this.issueUpdaterExecutorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-server-tracking-issue-updater"));
+    this.issueUpdaterExecutorService = FailSafeExecutors.newSingleThreadExecutor("sonarlint-server-tracking-issue-updater");
   }
 
   public void refreshServerFindings(String configurationScopeId, Set<Path> pathsToRefresh) {

@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.serverapi.stream;
 
 import com.google.common.util.concurrent.MoreExecutors;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -28,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpConnectionListener;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
@@ -49,7 +49,7 @@ public class EventStream {
   private final Consumer<Event> eventConsumer;
 
   public EventStream(ServerApiHelper helper, Consumer<Event> eventConsumer) {
-    this(helper, eventConsumer, Executors.newScheduledThreadPool(1));
+    this(helper, eventConsumer, FailSafeExecutors.newSingleThreadScheduledExecutor("sonarlint-event-stream-consumer"));
   }
 
   EventStream(ServerApiHelper helper, Consumer<Event> eventConsumer, ScheduledExecutorService executor) {

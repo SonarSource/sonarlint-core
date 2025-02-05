@@ -36,7 +36,7 @@ public class SingleThreadedMessageConsumer implements MessageConsumer {
   private final LinkedBlockingQueue<Message> queue = new LinkedBlockingQueue<>();
 
   public SingleThreadedMessageConsumer(MessageConsumer syncMessageConsumer, ExecutorService threadPool, Consumer<Throwable> errorLogger) {
-    threadPool.submit(() -> {
+    threadPool.execute(() -> {
       while (true) {
         Message message;
         try {

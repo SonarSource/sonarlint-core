@@ -23,13 +23,13 @@ import com.google.common.util.concurrent.MoreExecutors;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 
 /**
  * A cache with async computation of values, and supporting cancellation.
@@ -58,7 +58,7 @@ public class SmartCancelableLoadingCache<K, V> implements AutoCloseable {
   }
 
   public SmartCancelableLoadingCache(String threadName, BiFunction<K, SonarLintCancelMonitor, V> valueComputer, @Nullable Listener<K, V> listener) {
-    this.executorService = new ExecutorServiceShutdownWatchable<>(Executors.newSingleThreadExecutor(r -> new Thread(r, threadName)));
+    this.executorService = new ExecutorServiceShutdownWatchable<>(FailSafeExecutors.newSingleThreadExecutor(threadName));
     this.threadName = threadName;
     this.valueComputer = valueComputer;
     this.listener = listener;

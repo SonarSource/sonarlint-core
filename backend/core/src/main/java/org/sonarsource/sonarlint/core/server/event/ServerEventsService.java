@@ -20,19 +20,19 @@
 package org.sonarsource.sonarlint.core.server.event;
 
 import com.google.common.util.concurrent.MoreExecutors;
+import jakarta.annotation.PreDestroy;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import jakarta.annotation.PreDestroy;
 import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
+import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
@@ -63,7 +63,7 @@ public class ServerEventsService {
   private final boolean shouldManageServerSentEvents;
   private final ApplicationEventPublisher eventPublisher;
   private final Map<String, SonarQubeEventStream> streamsPerConnectionId = new ConcurrentHashMap<>();
-  private final ExecutorService executorService = Executors.newSingleThreadExecutor(r -> new Thread(r, "sonarlint-server-sent-events-subscriber"));
+  private final ExecutorService executorService = FailSafeExecutors.newSingleThreadExecutor("sonarlint-server-sent-events-subscriber");
 
   public ServerEventsService(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionConfigurationRepository,
     ConnectionManager connectionManager, LanguageSupportRepository languageSupportRepository, InitializeParams initializeParams, ApplicationEventPublisher eventPublisher) {
@@ -80,7 +80,7 @@ public class ServerEventsService {
     if (!shouldManageServerSentEvents) {
       return;
     }
-    executorService.submit(() -> subscribeAll(event.getAddedConfigurationScopeIds()));
+    executorService.execute(() -> subscribeAll(event.getAddedConfigurationScopeIds()));
   }
 
   @EventListener
@@ -94,7 +94,7 @@ public class ServerEventsService {
     if (bindingConfigurationFromRepository == null
       || isBindingDifferent(removedBindingConfiguration, bindingConfigurationFromRepository)) {
       // it has not been re-added in the meantime, or re-added with different binding
-      executorService.submit(() -> unsubscribe(removedBindingConfiguration));
+      executorService.execute(() -> unsubscribe(removedBindingConfiguration));
     }
   }
 
@@ -105,7 +105,7 @@ public class ServerEventsService {
     }
     var previousBinding = event.getPreviousConfig();
     if (isBindingDifferent(previousBinding, event.getNewConfig())) {
-      executorService.submit(() -> {
+      executorService.execute(() -> {
         unsubscribe(previousBinding);
         subscribe(event.getConfigScopeId());
       });
@@ -119,7 +119,7 @@ public class ServerEventsService {
     }
     // This is only to handle the case where binding was invalid (connection did not exist) and became valid (matching connection was created)
     var connectionId = event.getAddedConnectionId();
-    executorService.submit(() -> subscribe(connectionId, configurationRepository.getSonarProjectsUsedForConnection(connectionId)));
+    executorService.execute(() -> subscribe(connectionId, configurationRepository.getSonarProjectsUsedForConnection(connectionId)));
   }
 
   @EventListener
@@ -127,7 +127,7 @@ public class ServerEventsService {
     if (!shouldManageServerSentEvents) {
       return;
     }
-    executorService.submit(() -> {
+    executorService.execute(() -> {
       var stream = streamsPerConnectionId.remove(event.getRemovedConnectionId());
       if (stream != null) {
         stream.stop();
@@ -141,7 +141,7 @@ public class ServerEventsService {
       return;
     }
     // URL might have changed, in doubt resubscribe
-    executorService.submit(() -> resubscribe(event.getUpdatedConnectionId()));
+    executorService.execute(() -> resubscribe(event.getUpdatedConnectionId()));
   }
 
   @EventListener
@@ -149,7 +149,7 @@ public class ServerEventsService {
     if (!shouldManageServerSentEvents) {
       return;
     }
-    executorService.submit(() -> resubscribe(event.getConnectionId()));
+    executorService.execute(() -> resubscribe(event.getConnectionId()));
   }
 
   private static boolean isBindingDifferent(BindingConfiguration previousConfig, BindingConfiguration newConfig) {

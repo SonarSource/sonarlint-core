@@ -20,15 +20,14 @@
 package org.sonarsource.sonarlint.core.http;
 
 import com.google.common.util.concurrent.MoreExecutors;
+import jakarta.annotation.PreDestroy;
 import java.net.ProxySelector;
 import java.nio.file.Files;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLContext;
-import jakarta.annotation.PreDestroy;
 import nl.altindag.ssl.SSLFactory;
 import nl.altindag.ssl.model.TrustManagerParameters;
 import org.apache.commons.lang3.SystemUtils;
@@ -46,6 +45,7 @@ import org.apache.hc.core5.http2.HttpVersionPolicy;
 import org.apache.hc.core5.io.CloseMode;
 import org.apache.hc.core5.util.Timeout;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.http.ssl.SslConfig;
 
 import static org.sonarsource.sonarlint.core.http.ThreadFactories.threadWithNamePrefix;
@@ -68,7 +68,7 @@ public class HttpClientProvider {
   public HttpClientProvider(String userAgent, HttpConfig httpConfig, @Nullable Predicate<TrustManagerParameters> trustManagerParametersPredicate, ProxySelector proxySelector,
     CredentialsProvider proxyCredentialsProvider) {
     this.userAgent = userAgent;
-    this.webSocketThreadPool = Executors.newCachedThreadPool(threadWithNamePrefix("sonarcloud-websocket-"));
+    this.webSocketThreadPool = FailSafeExecutors.newCachedThreadPool(threadWithNamePrefix("sonarcloud-websocket-"));
     var asyncConnectionManager = PoolingAsyncClientConnectionManagerBuilder.create()
       .setTlsStrategy(new DefaultClientTlsStrategy(configureSsl(httpConfig.getSslConfig(), trustManagerParametersPredicate)))
       .setDefaultTlsConfig(TlsConfig.custom()
