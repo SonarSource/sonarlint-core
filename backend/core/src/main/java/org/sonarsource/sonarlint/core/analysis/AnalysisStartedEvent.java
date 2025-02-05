@@ -35,13 +35,11 @@ public class AnalysisStartedEvent {
   private final String configurationScopeId;
   private final UUID analysisId;
   private final List<ClientInputFile> files;
-  private final boolean enableTracking;
 
-  public AnalysisStartedEvent(String configurationScopeId, UUID analysisId, Iterable<ClientInputFile> files, boolean enableTracking) {
+  public AnalysisStartedEvent(String configurationScopeId, UUID analysisId, Iterable<ClientInputFile> files) {
     this.configurationScopeId = configurationScopeId;
     this.analysisId = analysisId;
     this.files = StreamSupport.stream(files.spliterator(), false).toList();
-    this.enableTracking = enableTracking;
   }
 
   public UUID getAnalysisId() {
@@ -58,10 +56,6 @@ public class AnalysisStartedEvent {
 
   public Set<URI> getFileUris() {
     return files.stream().map(ClientInputFile::uri).collect(toSet());
-  }
-
-  public boolean isTrackingEnabled() {
-    return enableTracking;
   }
 
   public UnaryOperator<String> getFileContentProvider() {

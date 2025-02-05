@@ -97,13 +97,11 @@ public class TrackingService {
 
   @EventListener
   public void onAnalysisStarted(AnalysisStartedEvent event) {
-    if (event.isTrackingEnabled()) {
-      var configurationScopeId = event.getConfigurationScopeId();
-      var matchingSession = startMatchingSession(configurationScopeId, event.getFileRelativePaths(), event.getFileContentProvider());
-      matchingSessionByAnalysisId.put(event.getAnalysisId(), matchingSession);
-      reportingService.resetFindingsForFiles(configurationScopeId, event.getFileUris());
-      reportingService.initFilesToAnalyze(event.getAnalysisId(), event.getFileUris());
-    }
+    var configurationScopeId = event.getConfigurationScopeId();
+    var matchingSession = startMatchingSession(configurationScopeId, event.getFileRelativePaths(), event.getFileContentProvider());
+    matchingSessionByAnalysisId.put(event.getAnalysisId(), matchingSession);
+    reportingService.resetFindingsForFiles(configurationScopeId, event.getFileUris());
+    reportingService.initFilesToAnalyze(event.getAnalysisId(), event.getFileUris());
   }
 
   @EventListener
