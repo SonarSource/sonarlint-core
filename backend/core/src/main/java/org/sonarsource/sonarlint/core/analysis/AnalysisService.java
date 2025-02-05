@@ -185,8 +185,9 @@ public class AnalysisService {
     this.automaticAnalysisEnabled = initializeParams.isAutomaticAnalysisEnabled();
     this.clientFileSystemService = clientFileSystemService;
     this.monitoringService = monitoringService;
-    this.esLintBridgeServerPath = initializeParams.getLanguageSpecificRequirements() != null && initializeParams.getLanguageSpecificRequirements().getJsTsRequirements() != null ?
-      initializeParams.getLanguageSpecificRequirements().getJsTsRequirements().getBundlePath() : null;
+    this.esLintBridgeServerPath = initializeParams.getLanguageSpecificRequirements() != null && initializeParams.getLanguageSpecificRequirements().getJsTsRequirements() != null
+      ? initializeParams.getLanguageSpecificRequirements().getJsTsRequirements().getBundlePath()
+      : null;
   }
 
   public List<String> getSupportedFilePatterns(String configScopeId) {
@@ -641,7 +642,7 @@ public class AnalysisService {
   }
 
   public CompletableFuture<AnalysisResults> analyze(SonarLintCancelMonitor cancelMonitor, String configurationScopeId, UUID analysisId, List<URI> filePathsToAnalyze,
-    Map<String, String> extraProperties, long startTime, boolean enableTracking, boolean shouldFetchServerIssues, boolean hotspotsOnly) {
+    Map<String, String> extraProperties, long startTime, boolean shouldFetchServerIssues, boolean hotspotsOnly) {
     var analysisEngine = engineCache.getOrCreateAnalysisEngine(configurationScopeId);
     var analysisConfig = getAnalysisConfigForEngine(configurationScopeId, filePathsToAnalyze, extraProperties, hotspotsOnly);
 
@@ -654,9 +655,9 @@ public class AnalysisService {
 
     cancelMonitor.checkCanceled();
     var raisedIssues = new ArrayList<RawIssue>();
-    eventPublisher.publishEvent(new AnalysisStartedEvent(configurationScopeId, analysisId, analysisConfig.inputFiles(), enableTracking));
+    eventPublisher.publishEvent(new AnalysisStartedEvent(configurationScopeId, analysisId, analysisConfig.inputFiles()));
     var analyzeCommand = new AnalyzeCommand(configurationScopeId, analysisConfig,
-      issue -> streamIssue(configurationScopeId, analysisId, issue, ruleDetailsCache, raisedIssues, enableTracking), SonarLintLogger.getTargetForCopy(),
+      issue -> streamIssue(configurationScopeId, analysisId, issue, ruleDetailsCache, raisedIssues), SonarLintLogger.getTargetForCopy(),
       monitoringService.newTrace("AnalysisService", "analyze"));
     var rpcProgressMonitor = new RpcProgressMonitor(client, cancelMonitor, configurationScopeId, analysisId);
     return analysisEngine.post(analyzeCommand, rpcProgressMonitor)
@@ -668,7 +669,7 @@ public class AnalysisService {
           var analysisDuration = endTime - startTime;
           logSummary(raisedIssues, analysisDuration);
           eventPublisher.publishEvent(new AnalysisFinishedEvent(analysisId, configurationScopeId, analysisDuration,
-            languagePerFile, results.failedAnalysisFiles().isEmpty(), raisedIssues, enableTracking, shouldFetchServerIssues));
+            languagePerFile, results.failedAnalysisFiles().isEmpty(), raisedIssues, shouldFetchServerIssues));
           results.setRawIssues(raisedIssues.stream().map(issue -> toDto(issue.getIssue(), issue.getActiveRule())).toList());
         } else {
           LOG.error("Error during analysis", error);
@@ -684,8 +685,7 @@ public class AnalysisService {
     LOG.info("Analysis detected {} and {} in {}ms", pluralize(issuesCount, "issue"), pluralize(hotspotsCount, "Security Hotspot"), analysisDuration);
   }
 
-  private void streamIssue(String configScopeId, UUID analysisId, Issue issue, ConcurrentHashMap<String, RuleDetailsForAnalysis> ruleDetailsCache, List<RawIssue> rawIssues,
-    boolean enableTracking) {
+  private void streamIssue(String configScopeId, UUID analysisId, Issue issue, ConcurrentHashMap<String, RuleDetailsForAnalysis> ruleDetailsCache, List<RawIssue> rawIssues) {
     var ruleKey = issue.getRuleKey();
     var activeRule = ruleDetailsCache.computeIfAbsent(ruleKey, k -> {
       try {
@@ -700,9 +700,7 @@ public class AnalysisService {
       if (ruleKey.contains("secrets")) {
         client.didDetectSecret(new DidDetectSecretParams(configScopeId));
       }
-      if (enableTracking) {
-        eventPublisher.publishEvent(new RawIssueDetectedEvent(configScopeId, analysisId, rawIssue));
-      }
+      eventPublisher.publishEvent(new RawIssueDetectedEvent(configScopeId, analysisId, rawIssue));
     }
   }
 
@@ -896,7 +894,7 @@ public class AnalysisService {
     if (isReadyForAnalysis(configurationScopeId)) {
       var analysisId = UUID.randomUUID();
       scheduledAnalysisExecutor.submit(() -> {
-        analyze(new SonarLintCancelMonitor(), configurationScopeId, analysisId, files, Map.of(), System.currentTimeMillis(), true, true, hotspotsOnly);
+        analyze(new SonarLintCancelMonitor(), configurationScopeId, analysisId, files, Map.of(), System.currentTimeMillis(), true, hotspotsOnly);
         return analysisId;
       });
     }
@@ -908,7 +906,7 @@ public class AnalysisService {
     scheduledAnalysisExecutor.submit(() -> {
       if (shouldTriggerAutomaticAnalysis(configurationScopeId)) {
         List<URI> filteredFiles = fileExclusionService.filterOutClientExcludedFiles(configurationScopeId, files);
-        analyze(new SonarLintCancelMonitor(), configurationScopeId, UUID.randomUUID(), filteredFiles, Map.of(), System.currentTimeMillis(), true, true, false);
+        analyze(new SonarLintCancelMonitor(), configurationScopeId, UUID.randomUUID(), filteredFiles, Map.of(), System.currentTimeMillis(), true, false);
       }
     });
   }

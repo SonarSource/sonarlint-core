@@ -129,7 +129,8 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
     return requestAsync(cancelChecker -> {
       var analysisResults = getBean(AnalysisService.class)
         .analyze(cancelChecker, params.getConfigurationScopeId(), params.getAnalysisId(), params.getFilesToAnalyze(), params.getExtraProperties(), params.getStartTime(),
-          true, params.isShouldFetchServerIssues(), false).join();
+          params.isShouldFetchServerIssues(), false)
+        .join();
       return generateAnalyzeFilesResponse(analysisResults);
     }, configurationScopeId);
   }
@@ -179,8 +180,7 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
   public CompletableFuture<ShouldUseEnterpriseCSharpAnalyzerResponse> shouldUseEnterpriseCSharpAnalyzer(ShouldUseEnterpriseCSharpAnalyzerParams params) {
     return requestAsync(
       cancelChecker -> new ShouldUseEnterpriseCSharpAnalyzerResponse(getBean(AnalysisService.class)
-        .shouldUseEnterpriseCSharpAnalyzer(params.getConfigurationScopeId()))
-    );
+        .shouldUseEnterpriseCSharpAnalyzer(params.getConfigurationScopeId())));
   }
 
   private static AnalyzeFilesResponse generateAnalyzeFilesResponse(AnalysisResults analysisResults) {
