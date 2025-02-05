@@ -26,13 +26,17 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
+import mediumtest.analysis.sensor.ThrowingSensorConstructor;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -58,6 +62,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSys
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.plugin.DidSkipLoadingPluginParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ProgressEndNotification;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
@@ -82,6 +87,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
+import static org.sonarsource.sonarlint.core.test.utils.plugins.SonarPluginBuilder.newSonarPlugin;
 import static utils.AnalysisUtils.waitForRaisedIssues;
 
 @ExtendWith(LogTestStartAndEnd.class)
@@ -309,6 +315,36 @@ class AnalysisMediumTests {
     assertThat(reportProgressCaptor.getValue())
       .usingRecursiveComparison()
       .isEqualTo(new ReportProgressParams(analysisId.toString(), new ProgressEndNotification()));
+  }
+
+  @SonarLintTest
+  void it_should_print_a_log_when_the_analysis_fails(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "secret.py",
+      "KEY = \"AKIAIGKECZXA7AEIJLMQ\"");
+    var fileUri = filePath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
+      .build();
+    var throwingPluginPath = newSonarPlugin("python")
+      .withSensor(ThrowingSensorConstructor.class)
+      .generate(baseDir);
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPlugin(throwingPluginPath)
+      .withEnabledLanguageInStandaloneMode(Language.PYTHON)
+      .start(client);
+    var analysisId = UUID.randomUUID();
+
+    var future = backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), false, System.currentTimeMillis()));
+
+    assertThat(future)
+      .failsWithin(Duration.ofSeconds(2))
+      .withThrowableOfType(ExecutionException.class)
+      .havingCause()
+      .isInstanceOf(ResponseErrorException.class);
+
+    assertThat(client.getLogs()).extracting(LogParams::getMessage).contains("Error during analysis");
   }
 
   @SonarLintTest

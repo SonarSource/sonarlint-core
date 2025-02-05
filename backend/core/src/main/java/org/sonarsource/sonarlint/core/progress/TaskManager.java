@@ -21,9 +21,10 @@ package org.sonarsource.sonarlint.core.progress;
 
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 import java.util.function.Function;
-import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.api.progress.CanceledException;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ProgressEndNotification;
@@ -38,30 +39,29 @@ public class TaskManager {
     this.client = client;
   }
 
-  @CheckForNull
-  public <T> T startTask(@Nullable String configurationScopeId, String title, @Nullable String message, boolean indeterminate, boolean cancellable,
-    Function<ProgressNotifier, T> task) {
-    return startTask(configurationScopeId, UUID.randomUUID(), title, message, indeterminate, cancellable, task);
+  public void startTask(@Nullable String configurationScopeId, String title, @Nullable String message, boolean indeterminate, boolean cancellable,
+    Consumer<ProgressNotifier> task) {
+    startTask(configurationScopeId, UUID.randomUUID(), title, message, indeterminate, cancellable, progressNotifier -> {
+      task.accept(progressNotifier);
+      return null;
+    });
   }
 
-  @CheckForNull
   public <T> T startTask(@Nullable String configurationScopeId, UUID taskId, String title, @Nullable String message, boolean indeterminate, boolean cancellable,
                         Function<ProgressNotifier, T> task) {
     ProgressNotifier progressNotifier = new ClientProgressNotifier(client, taskId);
     try {
       client.startProgress(new StartProgressParams(taskId.toString(), configurationScopeId, title, message, indeterminate, cancellable)).get();
     } catch (InterruptedException e) {
+      LOG.error("The progress report for the '" + title + "' was interrupted", e);
       Thread.currentThread().interrupt();
-      return null;
+      throw new CanceledException();
     } catch (ExecutionException e) {
       LOG.error("The client was unable to start progress, cause:", e);
       progressNotifier = new NoOpProgressNotifier();
     }
     try {
       return task.apply(progressNotifier);
-    } catch (Exception e) {
-      LOG.error("Error running task '" + title + "'", e);
-      return null;
     } finally {
       client.reportProgress(new ReportProgressParams(taskId.toString(), new ProgressEndNotification()));
     }
