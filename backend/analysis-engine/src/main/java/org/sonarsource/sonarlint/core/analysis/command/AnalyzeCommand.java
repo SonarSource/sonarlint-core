@@ -102,8 +102,4 @@ public class AnalyzeCommand implements Command<AnalysisResults> {
       }
     }
   }
-
-  public Consumer<Issue> getIssueListener() {
-    return issueListener;
-  }
 }

@@ -170,7 +170,6 @@ public class SynchronizationService {
         applicationEventPublisher.publishEvent(new ConfigurationScopesSynchronizedEvent(synchronizedConfScopeIds));
         client.didSynchronizeConfigurationScopes(new DidSynchronizeConfigurationScopeParams(synchronizedConfScopeIds));
       }
-      return null;
     });
   }
 

@@ -32,6 +32,7 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
+import org.sonarsource.sonarlint.core.analysis.AnalysisFailedEvent;
 import org.sonarsource.sonarlint.core.analysis.AnalysisFinishedEvent;
 import org.sonarsource.sonarlint.core.analysis.AnalysisStartedEvent;
 import org.sonarsource.sonarlint.core.analysis.RawIssueDetectedEvent;
@@ -120,6 +121,11 @@ public class TrackingService {
       var trackedIssue = matchingSession.matchWithKnownFinding(requireNonNull(detectedIssue.getIdeRelativePath()), detectedIssue);
       reportingService.streamIssue(event.getConfigurationScopeId(), analysisId, trackedIssue);
     }
+  }
+
+  @EventListener
+  public void onAnalysisFailed(AnalysisFailedEvent event) {
+    matchingSessionByAnalysisId.remove(event.analysisId());
   }
 
   @EventListener

@@ -672,6 +672,7 @@ public class AnalysisService {
           results.setRawIssues(raisedIssues.stream().map(issue -> toDto(issue.getIssue(), issue.getActiveRule())).toList());
         } else {
           LOG.error("Error during analysis", error);
+          eventPublisher.publishEvent(new AnalysisFailedEvent(analysisId));
         }
       });
   }
