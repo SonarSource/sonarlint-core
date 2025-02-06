@@ -55,7 +55,7 @@ public class AnalyzeCommand implements Command<AnalysisResults> {
   @Override
   public AnalysisResults execute(ModuleRegistry moduleRegistry, ProgressMonitor progressMonitor) {
     if (logOutput != null) {
-      SonarLintLogger.setTarget(logOutput);
+      SonarLintLogger.get().setTarget(logOutput);
     }
     return progressMonitor.startTask("Analyzing " + pluralize(configuration.inputFiles().size(), "file"),
       () -> doRunAnalysis(moduleRegistry, progressMonitor));

@@ -53,7 +53,7 @@ public class WebSocketClient {
 
   public CompletableFuture<WebSocket> createWebSocketConnection(URI uri, Consumer<String> messageConsumer, Runnable onClosedRunnable) {
     // TODO handle handshake or other errors
-    var currentThreadOutput = SonarLintLogger.getTargetForCopy();
+    var currentThreadOutput = SonarLintLogger.get().getTargetForCopy();
     return httpClient
       .newWebSocketBuilder()
       .header(AUTHORIZATION_HEADER_NAME, "Bearer " + token)
@@ -78,28 +78,28 @@ public class WebSocketClient {
       // not necessarily inherited
       // See
       // https://github.com/openjdk/jdk/blob/744e0893100d402b2b51762d57bcc2e99ab7fdcc/src/java.net.http/share/classes/jdk/internal/net/http/HttpClientImpl.java#L1069
-      SonarLintLogger.setTarget(currentThreadOutput);
+      SonarLintLogger.get().setTarget(currentThreadOutput);
       LOG.debug("WebSocket opened");
       WebSocket.Listener.super.onOpen(webSocket);
     }
 
     @Override
     public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
-      SonarLintLogger.setTarget(currentThreadOutput);
+      SonarLintLogger.get().setTarget(currentThreadOutput);
       messageConsumer.accept(data.toString());
       return WebSocket.Listener.super.onText(webSocket, data, last);
     }
 
     @Override
     public void onError(WebSocket webSocket, Throwable error) {
-      SonarLintLogger.setTarget(currentThreadOutput);
+      SonarLintLogger.get().setTarget(currentThreadOutput);
       LOG.error("Error occurred on the WebSocket", error);
       onWebSocketInputClosedRunnable.run();
     }
 
     @Override
     public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
-      SonarLintLogger.setTarget(currentThreadOutput);
+      SonarLintLogger.get().setTarget(currentThreadOutput);
       LOG.debug("WebSocket closed, status=" + statusCode + ", reason=" + reason);
       onWebSocketInputClosedRunnable.run();
       return null;

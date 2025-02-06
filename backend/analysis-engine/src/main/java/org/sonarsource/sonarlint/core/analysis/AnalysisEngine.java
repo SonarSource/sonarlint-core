@@ -61,7 +61,7 @@ public class AnalysisEngine {
 
   private void executeQueuedCommands() {
     while (termination.get() == null) {
-      SonarLintLogger.setTarget(logOutput);
+      SonarLintLogger.get().setTarget(logOutput);
       try {
         executingCommand.set(commandQueue.take());
         if (termination.get() == CANCELING_TERMINATION) {

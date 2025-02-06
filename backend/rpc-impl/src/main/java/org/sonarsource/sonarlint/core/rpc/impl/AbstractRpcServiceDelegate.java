@@ -115,27 +115,27 @@ abstract class AbstractRpcServiceDelegate {
   }
 
   private void doWithLogger(Runnable code, @Nullable String configScopeId) {
-    SonarLintLogger.setTarget(logOutputSupplier.get());
+    SonarLintLogger.get().setTarget(logOutputSupplier.get());
     SonarLintMDC.putConfigScopeId(configScopeId);
     logOutputSupplier.get().setConfigScopeId(configScopeId);
     try {
       code.run();
     } finally {
       MDC.clear();
-      SonarLintLogger.setTarget(null);
+      SonarLintLogger.get().setTarget(null);
       logOutputSupplier.get().setConfigScopeId(null);
     }
   }
 
   private <G> G computeWithLogger(Supplier<G> code, @Nullable String configScopeId) {
-    SonarLintLogger.setTarget(logOutputSupplier.get());
+    SonarLintLogger.get().setTarget(logOutputSupplier.get());
     SonarLintMDC.putConfigScopeId(configScopeId);
     logOutputSupplier.get().setConfigScopeId(configScopeId);
     try {
       return code.get();
     } finally {
       MDC.clear();
-      SonarLintLogger.setTarget(null);
+      SonarLintLogger.get().setTarget(null);
       logOutputSupplier.get().setConfigScopeId(null);
     }
   }

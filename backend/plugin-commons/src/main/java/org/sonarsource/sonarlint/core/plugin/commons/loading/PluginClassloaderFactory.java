@@ -48,23 +48,18 @@ public class PluginClassloaderFactory {
 
   // underscores are used to not conflict with plugin keys (if someday a plugin key is "api")
   private static final String API_CLASSLOADER_KEY = "_api_";
-  private static final String SLF4J_CLASSLOADER_KEY = "_slf4j_";
 
   /**
    * Creates as many classloaders as requested by the input parameter.
    */
-  public Map<PluginClassLoaderDef, ClassLoader> create(ClassLoader baseClassLoader, Collection<PluginClassLoaderDef> defs) {
+  Map<PluginClassLoaderDef, ClassLoader> create(ClassLoader baseClassLoader, Collection<PluginClassLoaderDef> defs) {
     var builder = new ClassloaderBuilder();
     builder.newClassloader(API_CLASSLOADER_KEY, baseClassLoader);
     builder.setMask(API_CLASSLOADER_KEY, apiMask());
 
-    builder.newClassloader(SLF4J_CLASSLOADER_KEY, new Slf4jBridgeClassLoader(baseClassLoader));
-    builder.setExportMask(SLF4J_CLASSLOADER_KEY, slf4jMask());
-
     for (var def : defs) {
       builder.newClassloader(def.getBasePluginKey());
       builder.setParent(def.getBasePluginKey(), API_CLASSLOADER_KEY, new Mask());
-      builder.addSibling(def.getBasePluginKey(), SLF4J_CLASSLOADER_KEY, new Mask());
       builder.setLoadingOrder(def.getBasePluginKey(), PARENT_FIRST);
       for (var jar : def.getFiles()) {
         builder.addURL(def.getBasePluginKey(), fileToUrl(jar));
@@ -127,13 +122,9 @@ public class PluginClassloaderFactory {
       .addInclusion("net/sourceforge/pmd/")
       .addInclusion("com/sonarsource/plugins/license/api/")
       .addInclusion("org/sonarsource/sonarlint/plugin/api/")
+      .addInclusion("org/slf4j/")
 
       // API exclusions
       .addExclusion("org/sonar/api/internal/");
-  }
-
-  private static Mask slf4jMask() {
-    return new Mask()
-      .addInclusion("org/slf4j/");
   }
 }

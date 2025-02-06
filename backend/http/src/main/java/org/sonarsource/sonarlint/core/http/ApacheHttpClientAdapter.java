@@ -203,21 +203,21 @@ class ApacheHttpClientAdapter implements HttpClient {
     private final Future<SimpleHttpResponse> wrapped;
 
     private CompletableFutureWrappingFuture(SimpleHttpRequest httpRequest) {
-      var callingThreadLogOutput = SonarLintLogger.getTargetForCopy();
+      var callingThreadLogOutput = SonarLintLogger.get().getTargetForCopy();
       this.wrapped = apacheClient.execute(httpRequest, new FutureCallback<>() {
         @Override
         public void completed(SimpleHttpResponse result) {
-          SonarLintLogger.setTarget(callingThreadLogOutput);
+          SonarLintLogger.get().setTarget(callingThreadLogOutput);
           // getRequestUri may be relative, so we prefer getUri
           try {
             var uri = httpRequest.getUri().toString();
             CompletableFutureWrappingFuture.this.completeAsync(() -> {
-              SonarLintLogger.setTarget(callingThreadLogOutput);
+              SonarLintLogger.get().setTarget(callingThreadLogOutput);
               return new ApacheHttpResponse(uri, result);
             });
           } catch (URISyntaxException e) {
             CompletableFutureWrappingFuture.this.completeAsync(() -> {
-              SonarLintLogger.setTarget(callingThreadLogOutput);
+              SonarLintLogger.get().setTarget(callingThreadLogOutput);
               return new ApacheHttpResponse(httpRequest.getRequestUri(), result);
             });
           }
@@ -225,14 +225,14 @@ class ApacheHttpClientAdapter implements HttpClient {
 
         @Override
         public void failed(Exception ex) {
-          SonarLintLogger.setTarget(callingThreadLogOutput);
+          SonarLintLogger.get().setTarget(callingThreadLogOutput);
           LOG.debug("Request failed", ex);
           CompletableFutureWrappingFuture.this.completeExceptionally(ex);
         }
 
         @Override
         public void cancelled() {
-          SonarLintLogger.setTarget(callingThreadLogOutput);
+          SonarLintLogger.get().setTarget(callingThreadLogOutput);
           LOG.debug("Request cancelled");
           CompletableFutureWrappingFuture.this.cancel();
         }

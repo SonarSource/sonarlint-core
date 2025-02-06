@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.commons.log;
 
+import io.sentry.Sentry;
+import java.util.Optional;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput.Level;
@@ -27,15 +29,20 @@ import org.sonarsource.sonarlint.core.commons.log.LogOutput.Level;
  * This is the logging facade to be used in SonarLint core.
  */
 public class SonarLintLogger {
-  private static final SonarLintLogger logger = new SonarLintLogger(new LogOutputDelegator());
-  private final LogOutputDelegator logOutput;
+  private static final SonarLintLogger logger = new SonarLintLogger();
 
   public static SonarLintLogger get() {
     return logger;
   }
 
-  public static void setTarget(@Nullable LogOutput output) {
-    logger.logOutput.setTarget(output);
+  private final InheritableThreadLocal<LogOutput> target = new InheritableThreadLocal<>();
+
+  SonarLintLogger() {
+    // singleton class
+  }
+
+  public void setTarget(@Nullable LogOutput target) {
+    this.target.set(target);
   }
 
   /**
@@ -43,16 +50,12 @@ public class SonarLintLogger {
    * We have to copy the log output manually, in a similar way to https://logback.qos.ch/manual/mdc.html#managedThreads
    */
   @CheckForNull
-  public static LogOutput getTargetForCopy() {
-    return logger.logOutput.getTarget();
-  }
-
-  SonarLintLogger(LogOutputDelegator logOutput) {
-    this.logOutput = logOutput;
+  public LogOutput getTargetForCopy() {
+    return this.target.get();
   }
 
   public void trace(String msg) {
-    logOutput.log(msg, Level.TRACE, (Throwable) null);
+    log(msg, Level.TRACE, (Throwable) null);
   }
 
   public void trace(String msg, @Nullable Object arg) {
@@ -68,7 +71,7 @@ public class SonarLintLogger {
   }
 
   public void debug(String msg) {
-    logOutput.log(msg, Level.DEBUG, (Throwable) null);
+    log(msg, Level.DEBUG, (Throwable) null);
   }
 
   public void debug(String msg, @Nullable Object arg) {
@@ -84,7 +87,7 @@ public class SonarLintLogger {
   }
 
   public void info(String msg) {
-    logOutput.log(msg, Level.INFO, (Throwable) null);
+    log(msg, Level.INFO, (Throwable) null);
   }
 
   public void info(String msg, @Nullable Object arg) {
@@ -100,11 +103,11 @@ public class SonarLintLogger {
   }
 
   public void warn(String msg) {
-    logOutput.log(msg, Level.WARN, (Throwable) null);
+    log(msg, Level.WARN, (Throwable) null);
   }
 
   public void warn(String msg, Throwable thrown) {
-    logOutput.log(msg, Level.WARN, thrown);
+    log(msg, Level.WARN, thrown);
   }
 
   public void warn(String msg, @Nullable Object arg) {
@@ -120,7 +123,7 @@ public class SonarLintLogger {
   }
 
   public void error(String msg) {
-    logOutput.log(msg, Level.ERROR, (Throwable) null);
+    log(msg, Level.ERROR, (Throwable) null);
   }
 
   public void error(String msg, @Nullable Object arg) {
@@ -136,12 +139,34 @@ public class SonarLintLogger {
   }
 
   public void error(String msg, Throwable thrown) {
-    logOutput.log(msg, Level.ERROR, thrown);
+    log(msg, Level.ERROR, thrown);
   }
 
   private void doLogExtractingThrowable(Level level, String msg, Object[] argArray) {
     var tuple = MessageFormatter.arrayFormat(msg, argArray);
-    logOutput.log(tuple.getMessage(), level, tuple.getThrowable());
+    log(tuple.getMessage(), level, tuple.getThrowable());
+  }
+
+  private void log(@Nullable String formattedMessage, Level level, @Nullable Throwable t) {
+    String stacktrace = null;
+    if (t != null) {
+      Sentry.captureException(t);
+      stacktrace = LogOutput.stackTraceToString(t);
+    }
+    if (formattedMessage != null || t != null) {
+      log(formattedMessage, level, stacktrace);
+    }
+  }
+
+  private void log(@Nullable String formattedMessage, Level level, @Nullable String stackTrace) {
+    var output = Optional.ofNullable(target.get()).orElseThrow(() -> {
+      var noLogOutputConfigured = new IllegalStateException("No log output configured");
+      noLogOutputConfigured.printStackTrace(System.err);
+      return noLogOutputConfigured;
+    });
+    if (output != null) {
+      output.log(formattedMessage, level, stackTrace);
+    }
   }
 
   /**

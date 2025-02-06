@@ -92,55 +92,7 @@
       <artifactId>logback-classic</artifactId>
       <scope>test</scope>
     </dependency>
-
-    <!-- Declare a dependency to force Maven build order -->
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>sonarlint-slf4j-sonar-log</artifactId>
-      <version>${project.version}</version>
-      <!-- Use test dependency just to force build order -->
-      <scope>test</scope>
-    </dependency>
   </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>copy-slf4j-sonar-log</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>unpack</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>${project.groupId}</groupId>
-                  <artifactId>sonarlint-slf4j-sonar-log</artifactId>
-                  <version>${project.version}</version>
-                  <type>jar</type>
-                  <overWrite>false</overWrite>
-                  <outputDirectory>${project.build.outputDirectory}/slf4j-sonar-log</outputDirectory>
-                  <includes>**/*.class</includes>
-                  <fileMappers>
-                    <org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
-                      <pattern>\Q.class\E$</pattern>
-                      <replacement>.clazz</replacement>
-                    </org.codehaus.plexus.components.io.filemappers.RegExpFileMapper>
-                  </fileMappers>
-                </artifactItem>
-              </artifactItems>
-              <overWriteReleases>false</overWriteReleases>
-              <overWriteSnapshots>true</overWriteSnapshots>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
 
   <profiles>
     <!-- Workaround for https://issues.apache.org/jira/projects/MJAR/issues/MJAR-138 -->
