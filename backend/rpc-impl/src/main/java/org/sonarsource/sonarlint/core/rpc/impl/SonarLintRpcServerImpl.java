@@ -143,7 +143,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   @Override
   public CompletableFuture<Void> initialize(InitializeParams params) {
     return CompletableFutures.computeAsync(requestAndNotificationsSequentialExecutor, cancelChecker -> {
-      SonarLintLogger.setTarget(logOutput);
+      SonarLintLogger.get().setTarget(logOutput);
       if (initializeCalled.compareAndSet(false, true) && !initialized.get()) {
         springApplicationContextInitializer = new SpringApplicationContextInitializer(client, params);
         initialized.set(true);
@@ -241,7 +241,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
     LOG.info("SonarLint backend shutting down, instance={}", this);
     var executor = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint Server shutdown"));
     CompletableFuture<Void> future = CompletableFutures.computeAsync(executor, cancelChecker -> {
-      SonarLintLogger.setTarget(logOutput);
+      SonarLintLogger.get().setTarget(logOutput);
       var wasInitialized = initialized.getAndSet(false);
       MoreExecutors.shutdownAndAwaitTermination(requestsExecutor, 1, TimeUnit.SECONDS);
       MoreExecutors.shutdownAndAwaitTermination(requestAndNotificationsSequentialExecutor, 1, TimeUnit.SECONDS);

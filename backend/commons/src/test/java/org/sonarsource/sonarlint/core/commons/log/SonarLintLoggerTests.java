@@ -19,17 +19,25 @@
  */
 package org.sonarsource.sonarlint.core.commons.log;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput.Level;
 
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 
 class SonarLintLoggerTests {
   private static final NullPointerException THROWN = new NullPointerException();
-  private final LogOutputDelegator delegator = mock(LogOutputDelegator.class);
-  private final SonarLintLogger logger = new SonarLintLogger(delegator);
+  private final LogOutput output = mock(LogOutput.class);
+  private final SonarLintLogger logger = new SonarLintLogger();
+
+  @BeforeEach
+  void prepare() {
+    logger.setTarget(output);
+  }
 
   @Test
   void should_log_error() {
@@ -45,13 +53,13 @@ class SonarLintLoggerTests {
     logger.error("msg {}", args);
     logger.error("msg with ex", THROWN);
 
-    var inOrder = Mockito.inOrder(delegator);
-    inOrder.verify(delegator).log("msg1", Level.ERROR, (Throwable) null);
-    inOrder.verify(delegator, times(2)).log("msg", Level.ERROR, (Throwable) null);
-    inOrder.verify(delegator).log("msg a", Level.ERROR, (Throwable) null);
-    inOrder.verify(delegator).log("msg a a", Level.ERROR, (Throwable) null);
-    inOrder.verify(delegator).log("msg b", Level.ERROR, (Throwable) null);
-    inOrder.verify(delegator).log("msg with ex", Level.ERROR, THROWN);
+    var inOrder = Mockito.inOrder(output);
+    inOrder.verify(output).log("msg1", Level.ERROR, null);
+    inOrder.verify(output, times(2)).log("msg", Level.ERROR, null);
+    inOrder.verify(output).log("msg a", Level.ERROR, null);
+    inOrder.verify(output).log("msg a a", Level.ERROR, null);
+    inOrder.verify(output).log("msg b", Level.ERROR, null);
+    inOrder.verify(output).log(eq("msg with ex"), eq(Level.ERROR), argThat(arg -> arg.contains("NullPointerException")));
   }
 
   @Test
@@ -68,13 +76,13 @@ class SonarLintLoggerTests {
     logger.warn("msg {}", args);
     logger.warn("msg with ex", THROWN);
 
-    var inOrder = Mockito.inOrder(delegator);
-    inOrder.verify(delegator).log("msg1", Level.WARN, (Throwable) null);
-    inOrder.verify(delegator, times(2)).log("msg", Level.WARN, (Throwable) null);
-    inOrder.verify(delegator).log("msg a", Level.WARN, (Throwable) null);
-    inOrder.verify(delegator).log("msg a a", Level.WARN, (Throwable) null);
-    inOrder.verify(delegator).log("msg b", Level.WARN, (Throwable) null);
-    inOrder.verify(delegator).log("msg with ex", Level.WARN, THROWN);
+    var inOrder = Mockito.inOrder(output);
+    inOrder.verify(output).log("msg1", Level.WARN, null);
+    inOrder.verify(output, times(2)).log("msg", Level.WARN, null);
+    inOrder.verify(output).log("msg a", Level.WARN, null);
+    inOrder.verify(output).log("msg a a", Level.WARN, null);
+    inOrder.verify(output).log("msg b", Level.WARN, null);
+    inOrder.verify(output).log(eq("msg with ex"), eq(Level.WARN), argThat(arg -> arg.contains("NullPointerException")));
   }
 
   @Test
@@ -90,12 +98,12 @@ class SonarLintLoggerTests {
     var args = new Object[] {"b"};
     logger.info("msg {}", args);
 
-    var inOrder = Mockito.inOrder(delegator);
-    inOrder.verify(delegator).log("msg1", Level.INFO, (Throwable) null);
-    inOrder.verify(delegator, times(2)).log("msg", Level.INFO, (Throwable) null);
-    inOrder.verify(delegator).log("msg a", Level.INFO, (Throwable) null);
-    inOrder.verify(delegator).log("msg a a", Level.INFO, (Throwable) null);
-    inOrder.verify(delegator).log("msg b", Level.INFO, (Throwable) null);
+    var inOrder = Mockito.inOrder(output);
+    inOrder.verify(output).log("msg1", Level.INFO, null);
+    inOrder.verify(output, times(2)).log("msg", Level.INFO, null);
+    inOrder.verify(output).log("msg a", Level.INFO, null);
+    inOrder.verify(output).log("msg a a", Level.INFO, null);
+    inOrder.verify(output).log("msg b", Level.INFO, null);
   }
 
   @Test
@@ -111,12 +119,12 @@ class SonarLintLoggerTests {
     var args = new Object[] {"b"};
     logger.debug("msg {}", args);
 
-    var inOrder = Mockito.inOrder(delegator);
-    inOrder.verify(delegator).log("msg1", Level.DEBUG, (Throwable) null);
-    inOrder.verify(delegator, times(2)).log("msg", Level.DEBUG, (Throwable) null);
-    inOrder.verify(delegator).log("msg a", Level.DEBUG, (Throwable) null);
-    inOrder.verify(delegator).log("msg a a", Level.DEBUG, (Throwable) null);
-    inOrder.verify(delegator).log("msg b", Level.DEBUG, (Throwable) null);
+    var inOrder = Mockito.inOrder(output);
+    inOrder.verify(output).log("msg1", Level.DEBUG, null);
+    inOrder.verify(output, times(2)).log("msg", Level.DEBUG, null);
+    inOrder.verify(output).log("msg a", Level.DEBUG, null);
+    inOrder.verify(output).log("msg a a", Level.DEBUG, null);
+    inOrder.verify(output).log("msg b", Level.DEBUG, null);
   }
 
   @Test
@@ -132,12 +140,12 @@ class SonarLintLoggerTests {
     var args = new Object[] {"b"};
     logger.trace("msg {}", args);
 
-    var inOrder = Mockito.inOrder(delegator);
-    inOrder.verify(delegator).log("msg1", Level.TRACE, (Throwable) null);
-    inOrder.verify(delegator, times(2)).log("msg", Level.TRACE, (Throwable) null);
-    inOrder.verify(delegator).log("msg a", Level.TRACE, (Throwable) null);
-    inOrder.verify(delegator).log("msg a a", Level.TRACE, (Throwable) null);
-    inOrder.verify(delegator).log("msg b", Level.TRACE, (Throwable) null);
+    var inOrder = Mockito.inOrder(output);
+    inOrder.verify(output).log("msg1", Level.TRACE, null);
+    inOrder.verify(output, times(2)).log("msg", Level.TRACE, null);
+    inOrder.verify(output).log("msg a", Level.TRACE, null);
+    inOrder.verify(output).log("msg a a", Level.TRACE, null);
+    inOrder.verify(output).log("msg b", Level.TRACE, null);
   }
 
   // SLCORE-292
@@ -148,9 +156,9 @@ class SonarLintLoggerTests {
     logger.error("msg {}", "a", throwable);
     logger.error("msg {} {}", "a", "a", throwable);
 
-    var inOrder = Mockito.inOrder(delegator);
-    inOrder.verify(delegator).log("msg", Level.ERROR, throwable);
-    inOrder.verify(delegator).log("msg a", Level.ERROR, throwable);
-    inOrder.verify(delegator).log("msg a a", Level.ERROR, throwable);
+    var inOrder = Mockito.inOrder(output);
+    inOrder.verify(output).log(eq("msg"), eq(Level.ERROR), argThat(arg -> arg.contains("thrown")));
+    inOrder.verify(output).log(eq("msg a"), eq(Level.ERROR), argThat(arg -> arg.contains("thrown")));
+    inOrder.verify(output).log(eq("msg a a"), eq(Level.ERROR), argThat(arg -> arg.contains("thrown")));
   }
 }

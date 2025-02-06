@@ -130,7 +130,7 @@ public class SonarLintLogTester implements AfterTestExecutionCallback, BeforeAll
 
   @Override
   public void afterAll(ExtensionContext context) throws Exception {
-    SonarLintLogger.setTarget(null);
+    SonarLintLogger.get().setTarget(null);
     listAppender.stop();
     listAppender.list.clear();
     getRootLogger().detachAppender(listAppender);
@@ -138,7 +138,7 @@ public class SonarLintLogTester implements AfterTestExecutionCallback, BeforeAll
 
   @Override
   public void beforeAll(ExtensionContext context) throws Exception {
-    SonarLintLogger.setTarget(logOutput);
+    SonarLintLogger.get().setTarget(logOutput);
     getRootLogger().addAppender(listAppender);
     listAppender.start();
   }

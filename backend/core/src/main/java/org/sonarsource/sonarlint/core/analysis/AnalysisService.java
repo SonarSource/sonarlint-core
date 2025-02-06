@@ -657,7 +657,7 @@ public class AnalysisService {
     var raisedIssues = new ArrayList<RawIssue>();
     eventPublisher.publishEvent(new AnalysisStartedEvent(configurationScopeId, analysisId, analysisConfig.inputFiles()));
     var analyzeCommand = new AnalyzeCommand(configurationScopeId, analysisConfig,
-      issue -> streamIssue(configurationScopeId, analysisId, issue, ruleDetailsCache, raisedIssues), SonarLintLogger.getTargetForCopy(),
+      issue -> streamIssue(configurationScopeId, analysisId, issue, ruleDetailsCache, raisedIssues), SonarLintLogger.get().getTargetForCopy(),
       monitoringService.newTrace("AnalysisService", "analyze"));
     var rpcProgressMonitor = new RpcProgressMonitor(client, cancelMonitor, configurationScopeId, analysisId);
     return analysisEngine.post(analyzeCommand, rpcProgressMonitor)

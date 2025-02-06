@@ -131,7 +131,7 @@ public class AnalysisEngineCache {
       .setNodeJs(nodeJsPath)
       .setModulesProvider(this::getModules)
       .build();
-    return new AnalysisEngine(analysisEngineConfiguration, plugins, SonarLintLogger.getTargetForCopy());
+    return new AnalysisEngine(analysisEngineConfiguration, plugins, SonarLintLogger.get().getTargetForCopy());
   }
 
   private List<ClientModuleInfo> getModules() {
