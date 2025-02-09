@@ -32,9 +32,11 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.sonar.scanner.protocol.Constants;
+import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
@@ -43,6 +45,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.Bindin
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
@@ -81,6 +84,7 @@ import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBo
 import static org.sonarsource.sonarlint.core.test.utils.plugins.SonarPluginBuilder.newSonarPlugin;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerIssueFixtures.aServerIssue;
 
+@ExtendWith(LogTestStartAndEnd.class)
 class IssueTrackingMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
@@ -124,7 +128,7 @@ class IssueTrackingMediumTests {
     var secondAnalysisPublishedIssues = analyzeFileAndGetAllIssuesOfRule(backend, fileUri, client, ruleKey);
     assertThat(secondAnalysisPublishedIssues).hasSize(2);
 
-    verifyClientLog(client, LogLevel.INFO, String.format("Git Repository not found for %s. The path %s is not in a Git repository", CONFIG_SCOPE_ID, baseDir));
+    verifyClientLog(client, LogLevel.INFO, "Git Repository not found");
   }
 
   @Disabled("https://sonarsource.atlassian.net/browse/SLCORE-873")
@@ -274,28 +278,30 @@ class IssueTrackingMediumTests {
   @SonarLintTest
   void it_should_use_git_blame_to_set_introduction_date_for_git_repos_for_given_content(SonarLintTestHarness harness, @TempDir Path baseDir) throws IOException, GitAPIException {
     var repository = createRepository(baseDir);
-    String committedFileContent = """
+    var committedFileContent = """
       package sonar;
       public interface Foobar
       {}""";
-    var filePath = createFile(baseDir, "Foobar.java",
-      committedFileContent);
+    var filePath = createFile(baseDir, "Foobar.java", committedFileContent);
     commit(repository, filePath.getFileName().toString());
     var fileUri = filePath.toUri();
-    String unsavedFileContent = """
+    var unsavedFileContent = """
       package sonar;
       public interface Foobar
       //TODO introduce new issue
       {}""";
+
     var client = harness.newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, unsavedFileContent, null, true)))
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, committedFileContent, null, true)))
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .start(client);
+    changeFileContent(baseDir, filePath.getFileName().toString(), unsavedFileContent);
 
-    Instant analysisTime = Instant.now();
+    var analysisTime = Instant.now();
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(), List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, unsavedFileContent, null, true)), List.of()));
     var issues = analyzeFileAndGetAllIssues(backend, fileUri, client);
 
     assertThat(issues)

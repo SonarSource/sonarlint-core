@@ -279,6 +279,7 @@ public class TrackingService {
         LOG.error("Cannot access blame info for " + configurationScopeId, e);
       }
     }
+    LOG.debug("Git blame is not working. Falling back to detection date as the introduction date");
     // we keep the detection date as the introduction date
     return (filePath, lineNumber) -> Instant.now();
   }

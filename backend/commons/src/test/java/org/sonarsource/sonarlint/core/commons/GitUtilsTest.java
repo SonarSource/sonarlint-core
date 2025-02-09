@@ -52,12 +52,14 @@ import static java.util.function.Predicate.not;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.jgit.lib.Constants.GITIGNORE_FILENAME;
 import static org.eclipse.jgit.util.FileUtils.RECURSIVE;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.addFileToGitIgnoreAndCommit;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createFile;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRepository;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.modifyFile;
 import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.blameWithFilesGitCommand;
+import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.getBlameResult;
 import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.getVSCChangedFiles;
 
 @ExtendWith(LogTestStartAndEnd.class)
@@ -111,6 +113,25 @@ class GitUtilsTest {
       .mapToObj(lineNumber -> sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(lineNumber))))
       .map(Optional::get)
       .allMatch(date -> date.equals(c1));
+  }
+
+  @Test
+  void it_should_fallback_to_jgit_blame() throws IOException, GitAPIException {
+    createFile(projectDirPath, "fileA", "line1", "line2", "line3");
+    var c1 = commit(git, "fileA");
+
+    var sonarLintBlameResult = getBlameResult(projectDirPath, Set.of(Path.of("fileA")), null, path -> false);
+    assertThat(IntStream.of(1, 2, 3)
+      .mapToObj(lineNumber -> sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(lineNumber))))
+      .map(Optional::get)
+      .allMatch(date -> date.equals(c1));
+  }
+
+  @Test
+  void it_should_throw_if_no_files() {
+    Set<Path> files = Set.of();
+
+    assertThrows(IllegalStateException.class, () -> getBlameResult(projectDirPath, files, null, path -> true));
   }
 
   @Test

@@ -23,21 +23,29 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.regex.Pattern;
 import org.sonar.scm.git.blame.BlameResult;
 import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
 
 public class BlameParser {
+
+  private static final String FILENAME = "filename ";
+  private static final String AUTHOR_MAIL = "author-mail ";
+  private static final String COMMITTER_TIME = "committer-time ";
+  // if this text change between different git versions it will break the implementation
+  private static final String NOT_COMMITTED = "<not.committed.yet>";
   private BlameParser() {
     // Utility class
   }
-  
+
   public static SonarLintBlameResult parseBlameOutput(String blameOutput, String currentFilePath, Path projectBaseDir) throws IOException {
     var blameResult = new BlameResult();
     var currentFileBlame = new BlameResult.FileBlame(currentFilePath, countCommitterTimeOccurrences(blameOutput));
     blameResult.getFileBlameByPath().put(currentFilePath, currentFileBlame);
-    var fileSections = blameOutput.split("filename ");
+    var fileSections = blameOutput.split(FILENAME);
     var currentLineNumber = 0;
 
     for (var fileSection : fileSections) {
@@ -47,11 +55,14 @@ public class BlameParser {
 
       try (var reader = new BufferedReader(new StringReader(fileSection))) {
         String line;
-
         while ((line = reader.readLine()) != null) {
-          if (line.startsWith("author-time ")) {
-            var epochSeconds = Long.parseLong(line.substring(12));
-            var commitDate = new Date(epochSeconds * 1000);
+          if (line.startsWith(AUTHOR_MAIL)) {
+            var authorEmail = line.substring(AUTHOR_MAIL.length());
+            currentFileBlame.getAuthorEmails()[currentLineNumber] = authorEmail;
+          }
+          if (line.startsWith(COMMITTER_TIME) && !currentFileBlame.getAuthorEmails()[currentLineNumber].equals(NOT_COMMITTED)) {
+            var committerTime = line.substring(COMMITTER_TIME.length());
+            var commitDate = Date.from(Instant.ofEpochSecond(Long.parseLong(committerTime)).truncatedTo(ChronoUnit.SECONDS));
             currentFileBlame.getCommitDates()[currentLineNumber] = commitDate;
           }
         }
@@ -63,7 +74,7 @@ public class BlameParser {
   }
 
   public static int countCommitterTimeOccurrences(String blameOutput) {
-    var pattern = Pattern.compile("^committer-time ", Pattern.MULTILINE);
+    var pattern = Pattern.compile("^" + COMMITTER_TIME, Pattern.MULTILINE);
     var matcher = pattern.matcher(blameOutput);
     var count = 0;
     while (matcher.find()) {
