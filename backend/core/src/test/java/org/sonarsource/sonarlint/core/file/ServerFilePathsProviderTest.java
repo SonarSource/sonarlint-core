@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.ConnectionManager;
+import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -85,8 +86,9 @@ class ServerFilePathsProviderTest {
     when(serverApi_B.component()).thenReturn(componentApi_B);
     mockServerFilePaths(componentApi_A, "pathA", "pathB");
     mockServerFilePaths(componentApi_B, "pathC", "pathD");
-
-    underTest = new ServerFilePathsProvider(connectionManager, storageDir);
+    var userPaths = mock(UserPaths.class);
+    when(userPaths.getStorageRoot()).thenReturn(storageDir);
+    underTest = new ServerFilePathsProvider(connectionManager, userPaths);
 
     cacheDirectory = storageDir.resolve("cache");
   }
@@ -96,8 +98,10 @@ class ServerFilePathsProviderTest {
     cacheDirectory = storageDir.resolve("cache");
     Files.createDirectories(cacheDirectory);
     assertThat(cacheDirectory.toFile()).exists();
+    var userPaths = mock(UserPaths.class);
+    when(userPaths.getStorageRoot()).thenReturn(storageDir);
 
-    new ServerFilePathsProvider(null, storageDir);
+    new ServerFilePathsProvider(null, userPaths);
 
     assertThat(cacheDirectory.toFile()).doesNotExist();
   }

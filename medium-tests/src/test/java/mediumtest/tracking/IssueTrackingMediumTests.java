@@ -768,6 +768,7 @@ class IssueTrackingMediumTests {
     var requests = server.getMockServer().getServeEvents().getRequests();
     assertThat(requests).extracting("request.url")
       .contains("/batch/issues?key=projectKey%3Aserver%2Fpath%2Fprefix%2Fpom.xml&branch=main");
+    assertThat(backend.getStorageRoot().resolve("cache")).exists();
   }
 
   @SonarLintTest
