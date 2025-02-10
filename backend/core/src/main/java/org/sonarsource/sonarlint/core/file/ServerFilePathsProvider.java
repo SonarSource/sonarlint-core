@@ -41,6 +41,7 @@ import java.util.concurrent.CancellationException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.ConnectionManager;
+import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -54,9 +55,9 @@ public class ServerFilePathsProvider {
   private final Path cacheDirectoryPath;
   private final Cache<Binding, List<Path>> temporaryInMemoryFilePathCacheByBinding;
 
-  public ServerFilePathsProvider(ConnectionManager connectionManager, Path storageRoot) {
+  public ServerFilePathsProvider(ConnectionManager connectionManager, UserPaths userPaths) {
     this.connectionManager = connectionManager;
-    this.cacheDirectoryPath = storageRoot.resolve("cache");
+    this.cacheDirectoryPath = userPaths.getStorageRoot().resolve("cache");
     this.temporaryInMemoryFilePathCacheByBinding = CacheBuilder.newBuilder()
       .expireAfterWrite(Duration.of(1, ChronoUnit.MINUTES))
       .maximumSize(3)
@@ -104,7 +105,7 @@ public class ServerFilePathsProvider {
     }
     try {
       return connectionManager.withValidConnectionFlatMapOptionalAndReturn(binding.getConnectionId(), serverApi -> {
-        List<Path> paths =  fetchPathsFromServer(serverApi, binding.getSonarProjectKey(), cancelMonitor);
+        List<Path> paths = fetchPathsFromServer(serverApi, binding.getSonarProjectKey(), cancelMonitor);
         cacheServerPaths(binding, paths);
         return Optional.of(paths);
       });
