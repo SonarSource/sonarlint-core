@@ -274,7 +274,8 @@ public class AnalysisService {
     var inferredAnalysisProperties = client.getInferredAnalysisProperties(new GetInferredAnalysisPropertiesParams(configScopeId, filePathsToAnalyze)).join().getProperties();
     analysisProperties.putAll(inferredAnalysisProperties);
     var baseDir = fileSystemService.getBaseDir(configScopeId);
-    var actualBaseDir = baseDir == null ? findCommonPrefix(filePathsToAnalyze) : baseDir;
+    var commonPrefix = findCommonPrefix(filePathsToAnalyze);
+    var actualBaseDir = baseDir == null ? commonPrefix : baseDir;
     return AnalysisConfiguration.builder()
       .addInputFiles(toInputFiles(configScopeId, actualBaseDir, filePathsToAnalyze))
       .putAllExtraProperties(analysisProperties)
