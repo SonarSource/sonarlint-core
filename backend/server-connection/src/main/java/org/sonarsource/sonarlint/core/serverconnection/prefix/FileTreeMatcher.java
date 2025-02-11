@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection.prefix;
 
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
@@ -33,6 +35,7 @@ import javax.annotation.Nullable;
 import static java.util.Collections.reverseOrder;
 
 public class FileTreeMatcher {
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   public Result match(List<Path> serverRelativePaths, List<Path> ideRelativePaths) {
     var reversePathTree = new ReversePathTree();
@@ -44,18 +47,23 @@ public class FileTreeMatcher {
     serverRelativePaths.stream().filter(sqPath -> ideFilenames.contains(sqPath.getFileName())).forEach(reversePathTree::index);
 
     for (Path ide : ideRelativePaths) {
+      LOG.debug("Path match: Computing for file '{}'", ide);
       var match = reversePathTree.findLongestSuffixMatches(ide);
       if (match.matchLen() > 0) {
         var idePrefix = getIdePrefix(ide, match);
 
         for (Path sqPrefix : match.matchPrefixes()) {
           var r = new Result(idePrefix, sqPrefix);
+          LOG.debug("Path match: Result for file " + ide + "is: " + sqPrefix);
           resultScores.compute(r, (p, i) -> computeScore(i, match));
         }
       }
     }
 
-    return higherScoreResult(resultScores);
+    var highestScore = higherScoreResult(resultScores);
+    LOG.debug("Path match: HighestScore " + highestScore.idePrefix + "&" + highestScore.serverPrefix);
+
+    return highestScore;
   }
 
   private static double computeScore(@Nullable Double currentScore, ReversePathTree.Match match) {
