@@ -274,8 +274,7 @@ public class AnalysisService {
     var inferredAnalysisProperties = client.getInferredAnalysisProperties(new GetInferredAnalysisPropertiesParams(configScopeId, filePathsToAnalyze)).join().getProperties();
     analysisProperties.putAll(inferredAnalysisProperties);
     var baseDir = fileSystemService.getBaseDir(configScopeId);
-    var commonPrefix = findCommonPrefix(filePathsToAnalyze);
-    var actualBaseDir = baseDir == null ? commonPrefix : baseDir;
+    var actualBaseDir = baseDir == null ? findCommonPrefix(filePathsToAnalyze) : baseDir;
     return AnalysisConfiguration.builder()
       .addInputFiles(toInputFiles(configScopeId, actualBaseDir, filePathsToAnalyze))
       .putAllExtraProperties(analysisProperties)
@@ -283,7 +282,8 @@ public class AnalysisService {
       // but this line is important for backward compatibility for clients directly triggering analysis
       .putAllExtraProperties(extraProperties)
       .addActiveRules(analysisConfig.getActiveRules().stream().map(r -> {
-        var ar = new ActiveRule(r.getRuleKey(), r.getLanguageKey());
+        var ruleKey = r.getRuleKey();
+        var ar = new ActiveRule(ruleKey, r.getLanguageKey());
         ar.setParams(r.getParams());
         ar.setTemplateRuleKey(r.getTemplateRuleKey());
         return ar;
