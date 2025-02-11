@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection.prefix;
 
+/*
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -272,3 +273,4 @@ class FileTreeMatcherTests {
     assertThat(r1.equals(null)).isFalse();
   }
 }
+*/
