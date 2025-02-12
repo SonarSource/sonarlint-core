@@ -29,6 +29,7 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -39,6 +40,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -46,7 +48,6 @@ import org.eclipse.jgit.diff.RawTextComparator;
 import org.eclipse.jgit.ignore.IgnoreNode;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectLoader;
-import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.revwalk.RevWalk;
@@ -108,7 +109,7 @@ public class GitUtils {
       LOG.debug("Using native git blame");
       return blameFromNativeCommand(projectBaseDir, projectBaseRelativeFilePaths);
     } else {
-      LOG.debug("Falling back to jgit git blame");
+      LOG.debug("Falling back to JGit git blame");
       return blameWithFilesGitCommand(projectBaseDir, projectBaseRelativeFilePaths, fileContentProvider);
     }
   }
@@ -145,25 +146,42 @@ public class GitUtils {
    */
   private static String getNativeGitExecutable() {
     if (!checkedForNativeGitExecutable) {
-      for (var executable : List.of("git", "git.exe")) {
-        try {
-          var process = new ProcessBuilder(executable, "--version").start();
-          var exitCode = process.waitFor();
-          if (exitCode == 0) {
-            nativeGitExecutable = executable;
-            break;
-          }
-        } catch (IOException e) {
-          // Do log the exception stacktrace here as it might not be due to the command not being found but rather something like the
-          // Windows Execution Policy preventing it or something else. In this case this is extremely useful for debugging!
-          LOG.debug("Checking for native Git executable '" + executable + "' failed with an exception", e);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
+      try {
+        var executable = getGitExecutable();
+        var process = new ProcessBuilder(executable, "--version").start();
+        var exitCode = process.waitFor();
+        if (exitCode == 0) {
+          nativeGitExecutable = executable;
         }
+      } catch (IOException e) {
+        LOG.debug("Checking for native Git executable failed", e);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
       }
       checkedForNativeGitExecutable = true;
     }
     return nativeGitExecutable;
+  }
+
+  private static String locateGitOnWindows() throws IOException {
+    // Windows will search current directory in addition to the PATH variable, which is unsecure.
+    // To avoid it we use where.exe to find git binary only in PATH.
+    LOG.debug("Looking for git command in the PATH using where.exe (Windows)");
+    var whereCommandResult = new LinkedList<String>();
+    new ProcessWrapperFactory()
+      .create(null, whereCommandResult::add, "C:\\Windows\\System32\\where.exe", "$PATH:git.exe")
+      .execute();
+
+    if (!whereCommandResult.isEmpty()) {
+      var out = whereCommandResult.get(0).trim();
+      LOG.debug("Found git.exe at {}", out);
+      return out;
+    }
+    throw new IllegalStateException("git.exe not found in PATH. PATH value was: " + System.getProperty("PATH"));
+  }
+
+  private static String getGitExecutable() throws IOException {
+    return SystemUtils.IS_OS_WINDOWS ? locateGitOnWindows() : "git";
   }
 
   private static String executeGitCommand(Path workingDir, String... command) throws IOException {
@@ -226,13 +244,13 @@ public class GitUtils {
   private static boolean isCompatibleGitVersion(String gitVersionCommandOutput) {
     // Due to the danger of argument injection on git blame the use of `--end-of-options` flag is necessary
     // The flag is available only on git versions >= 2.24.0
-    String gitVersion = whitespaceRegex
+    var gitVersion = whitespaceRegex
       .splitAsStream(gitVersionCommandOutput)
       .skip(2)
       .findFirst()
       .orElse("");
 
-    String formattedGitVersion = formatGitSemanticVersion(gitVersion);
+    var formattedGitVersion = formatGitSemanticVersion(gitVersion);
     return Version.create(formattedGitVersion).compareToIgnoreQualifier(Version.create(MINIMUM_REQUIRED_GIT_VERSION)) >= 0;
   }
 
@@ -257,7 +275,7 @@ public class GitUtils {
       }
 
       var repository = repositoryBuilder.build();
-      try (ObjectReader objReader = repository.getObjectDatabase().newReader()) {
+      try (var objReader = repository.getObjectDatabase().newReader()) {
         // SONARSCGIT-2 Force initialization of shallow commits to avoid later concurrent modification issue
         objReader.getShallowCommits();
         return repository;
