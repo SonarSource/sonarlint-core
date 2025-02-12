@@ -23,12 +23,16 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.LinkedList;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ProcessWrapperFactoryTests {
-
+  @RegisterExtension
+  private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   @Test
   void it_should_execute_git(@TempDir Path baseDir) throws IOException {
@@ -36,5 +40,12 @@ class ProcessWrapperFactoryTests {
     new ProcessWrapperFactory().create(baseDir, gitCommandResult::add, "git", "--version").execute();
 
     assertThat(gitCommandResult).hasSize(1);
+  }
+
+  @Test
+  void it_should_throw(@TempDir Path baseDir) {
+    var processWrapper = new ProcessWrapperFactory().create(baseDir, new LinkedList<String>()::add, "git", "-version");
+
+    assertThrows(IllegalStateException.class, processWrapper::execute);
   }
 }
