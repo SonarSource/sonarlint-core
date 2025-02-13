@@ -65,6 +65,7 @@ public class GitUtils {
   private static final String MINIMUM_REQUIRED_GIT_VERSION = "2.24.0";
   private static final Pattern whitespaceRegex = Pattern.compile("\\s+");
   private static final Pattern semanticVersionDelimiter = Pattern.compile("\\.");
+  private static final String BLAME_HISTORY_WINDOW = "--since='6 months ago'";
 
   // So we only have to make the expensive call once (or at most twice) to get the native Git executable!
   private static boolean checkedForNativeGitExecutable = false;
@@ -101,7 +102,7 @@ public class GitUtils {
     return getBlameResult(projectBaseDir, projectBaseRelativeFilePaths, fileContentProvider, GitUtils::checkIfEnabled);
   }
 
-  public static SonarLintBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, @Nullable UnaryOperator<String> fileContentProvider,
+  static SonarLintBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, @Nullable UnaryOperator<String> fileContentProvider,
     Predicate<Path> isEnabled) {
     if (isEnabled.test(projectBaseDir)) {
       LOG.debug("Using native git blame");
@@ -179,7 +180,7 @@ public class GitUtils {
       for (var relativeFilePath : projectBaseRelativeFilePaths) {
         try {
           return parseBlameOutput(executeGitCommand(projectBaseDir,
-              nativeExecutable, "blame", projectBaseDir.resolve(relativeFilePath).toString(), "--line-porcelain", "--encoding=UTF-8"),
+              nativeExecutable, "blame", BLAME_HISTORY_WINDOW, projectBaseDir.resolve(relativeFilePath).toString(), "--line-porcelain", "--encoding=UTF-8"),
             projectBaseDir.resolve(relativeFilePath).toString().replace("\\", "/"), projectBaseDir);
         } catch (IOException e) {
           throw new IllegalStateException("Failed to blame repository files", e);

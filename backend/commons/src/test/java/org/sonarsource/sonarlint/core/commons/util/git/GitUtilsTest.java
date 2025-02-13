@@ -23,10 +23,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.temporal.ChronoUnit;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -55,9 +58,11 @@ import static org.eclipse.jgit.util.FileUtils.RECURSIVE;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.addFileToGitIgnoreAndCommit;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
+import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commitAtDate;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createFile;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRepository;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.modifyFile;
+import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.blameFromNativeCommand;
 import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.blameWithFilesGitCommand;
 import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.getBlameResult;
 import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.getVSCChangedFiles;
@@ -348,6 +353,46 @@ class GitUtilsTest {
     assertThat(sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(3))).isEmpty();
     assertThat(sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of("fileB"), List.of(1, 2))).isPresent();
     assertThat(sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of("fileB"), List.of(3))).isEmpty();
+  }
+
+  @Test
+  void it_should_blame_file_since_provided_period() throws IOException, GitAPIException {
+    var calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+    calendar.add(Calendar.YEAR, -1);
+    var fileAStr = "fileA";
+    createFile(projectDirPath, fileAStr, "line1");
+    var yearAgo = calendar.toInstant();
+    // initial commit 1 year ago
+    commitAtDate(git, yearAgo, fileAStr);
+    var lines = new String[3];
+
+    // second commit 4 months after initial commit
+    calendar.add(Calendar.MONTH, 4);
+    lines[0] = "line1";
+    lines[1] = "line2";
+    var eightMonthsAgo = calendar.toInstant();
+    modifyFile(projectDirPath.resolve(fileAStr), lines);
+    commitAtDate(git, eightMonthsAgo, fileAStr);
+
+    // third commit 4 months after second commit
+    calendar.add(Calendar.MONTH, 4);
+    lines[2] = "line3";
+    var fourMonthsAgo = calendar.toInstant();
+    modifyFile(projectDirPath.resolve(fileAStr), lines);
+    commitAtDate(git, fourMonthsAgo, fileAStr);
+    var fileA = Path.of(fileAStr);
+
+    var blameResult = blameFromNativeCommand(projectDirPath, Set.of(fileA));
+
+    var line1Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(1)).get();
+    var line2Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(2)).get();
+    var line3Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(3)).get();
+    // line 1 was committed 1 year ago but should have commit date of the first commit made earlier than blame time window - 8 months ago
+    assertThat(ChronoUnit.MINUTES.between(line2Date.toInstant(), line1Date.toInstant())).isZero();
+    // line 2 was committed 8 months ago, it's outside the blame time window, but it's a first commit outside the range, so it has real commit date
+    assertThat(ChronoUnit.MINUTES.between(line2Date.toInstant(), eightMonthsAgo)).isZero();
+    // line 3 was committed 4 months ago, it's inside the blame time window, so it has real commit date
+    assertThat(ChronoUnit.MINUTES.between(line3Date.toInstant(), fourMonthsAgo)).isZero();
   }
 
   private static void setUpBareRepo(Map<String, String> filePathContentMap) throws IOException, GitAPIException {
