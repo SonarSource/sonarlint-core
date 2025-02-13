@@ -29,7 +29,6 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -61,6 +60,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import static java.util.Optional.ofNullable;
 import static org.eclipse.jgit.lib.Constants.GITIGNORE_FILENAME;
 import static org.sonarsource.sonarlint.core.commons.util.git.BlameParser.parseBlameOutput;
+import static org.sonarsource.sonarlint.core.commons.util.git.WinGitUtils.locateGitOnWindows;
 
 public class GitUtils {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -161,23 +161,6 @@ public class GitUtils {
       checkedForNativeGitExecutable = true;
     }
     return nativeGitExecutable;
-  }
-
-  private static String locateGitOnWindows() throws IOException {
-    // Windows will search current directory in addition to the PATH variable, which is unsecure.
-    // To avoid it we use where.exe to find git binary only in PATH.
-    LOG.debug("Looking for git command in the PATH using where.exe (Windows)");
-    var whereCommandResult = new LinkedList<String>();
-    new ProcessWrapperFactory()
-      .create(null, whereCommandResult::add, "C:\\Windows\\System32\\where.exe", "$PATH:git.exe")
-      .execute();
-
-    if (!whereCommandResult.isEmpty()) {
-      var out = whereCommandResult.get(0).trim();
-      LOG.debug("Found git.exe at {}", out);
-      return out;
-    }
-    throw new IllegalStateException("git.exe not found in PATH. PATH value was: " + System.getProperty("PATH"));
   }
 
   private static String getGitExecutable() throws IOException {
