@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSpecificRequirements;
+import org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.event.EventListener;
@@ -152,7 +153,7 @@ public class PluginsService {
     pluginsToLoadByKey.putAll(pluginsStorage.getStoredPluginPathsByKey());
     pluginsToLoadByKey.putAll(getEmbeddedPluginPathsByKey(connectionId));
     if (shouldUseEnterpriseCSharpAnalyzer(connectionId) && csharpSupport.csharpEnterprisePluginPath != null) {
-      pluginsToLoadByKey.put(SonarLanguage.CS.getPluginKey(), csharpSupport.csharpEnterprisePluginPath);
+      pluginsToLoadByKey.put(PluginsSynchronizer.CSHARP_ENTERPRISE_PLUGIN_ID, csharpSupport.csharpEnterprisePluginPath);
     } else if (csharpSupport.csharpOssPluginPath != null) {
       pluginsToLoadByKey.put(SonarLanguage.CS.getPluginKey(), csharpSupport.csharpOssPluginPath);
     }

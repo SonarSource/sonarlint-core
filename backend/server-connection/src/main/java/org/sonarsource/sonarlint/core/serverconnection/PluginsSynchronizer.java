@@ -38,6 +38,7 @@ import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
 public class PluginsSynchronizer {
   public static final Version CUSTOM_SECRETS_MIN_SQ_VERSION = Version.create("10.4");
   public static final Version ENTERPRISE_IAC_MIN_SQ_VERSION = Version.create("2025.1");
+  public static final String CSHARP_ENTERPRISE_PLUGIN_ID = "csharpenterprise";
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final Set<String> sonarSourceDisabledPluginKeys;
@@ -105,7 +106,9 @@ public class PluginsSynchronizer {
       LOG.debug("[SYNC] Code analyzer '{}' is up-to-date. Skip downloading it.", serverPlugin.getKey());
       return Optional.of(DownloadSkipReason.UP_TO_DATE);
     }
-    if (!serverPlugin.isSonarLintSupported()) {
+    if (!serverPlugin.isSonarLintSupported() &&
+      // CSharp Enterprise is allowed even though it is not sonarLintSupported
+      !CSHARP_ENTERPRISE_PLUGIN_ID.equals(serverPlugin.getKey())) {
       LOG.debug("[SYNC] Code analyzer '{}' does not support SonarLint. Skip downloading it.", serverPlugin.getKey());
       return Optional.of(DownloadSkipReason.NOT_SONARLINT_SUPPORTED);
     }
