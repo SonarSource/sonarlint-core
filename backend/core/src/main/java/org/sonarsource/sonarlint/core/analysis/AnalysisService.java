@@ -262,7 +262,7 @@ public class AnalysisService {
       var analysisProperties = new HashMap<>(serverProperties);
       analysisProperties.putAll(userAnalysisProperties);
       return new GetAnalysisConfigResponse(buildConnectedActiveRules(binding, hotspotsOnly), analysisProperties, nodeJsDetailsDto,
-        Set.copyOf(pluginsService.getConnectedPluginPaths(binding.getConnectionId())));
+        Set.copyOf(pluginsService.getConnectedPluginPaths(binding.connectionId())));
     })
       .orElseGet(() -> new GetAnalysisConfigResponse(buildStandaloneActiveRules(), userAnalysisProperties, nodeJsDetailsDto,
         Set.copyOf(pluginsService.getEmbeddedPluginPaths())));
@@ -328,23 +328,23 @@ public class AnalysisService {
 
         LOG.debug("  * {}: {} active rules", languageKey, ruleSet.getRules().size());
         for (ServerActiveRule possiblyDeprecatedActiveRuleFromStorage : ruleSet.getRules()) {
-          var activeRuleFromStorage = tryConvertDeprecatedKeys(binding.getConnectionId(), possiblyDeprecatedActiveRuleFromStorage);
+          var activeRuleFromStorage = tryConvertDeprecatedKeys(binding.connectionId(), possiblyDeprecatedActiveRuleFromStorage);
           SonarLintRuleDefinition ruleOrTemplateDefinition;
           if (StringUtils.isNotBlank(activeRuleFromStorage.getTemplateKey())) {
-            ruleOrTemplateDefinition = rulesRepository.getRule(binding.getConnectionId(), activeRuleFromStorage.getTemplateKey()).orElse(null);
+            ruleOrTemplateDefinition = rulesRepository.getRule(binding.connectionId(), activeRuleFromStorage.getTemplateKey()).orElse(null);
             if (ruleOrTemplateDefinition == null) {
               LOG.debug("Rule {} is enabled on the server, but its template {} is not available in SonarLint", activeRuleFromStorage.getRuleKey(),
                 activeRuleFromStorage.getTemplateKey());
               continue;
             }
           } else {
-            ruleOrTemplateDefinition = rulesRepository.getRule(binding.getConnectionId(), activeRuleFromStorage.getRuleKey()).orElse(null);
+            ruleOrTemplateDefinition = rulesRepository.getRule(binding.connectionId(), activeRuleFromStorage.getRuleKey()).orElse(null);
             if (ruleOrTemplateDefinition == null) {
               LOG.debug("Rule {} is enabled on the server, but not available in SonarLint", activeRuleFromStorage.getRuleKey());
               continue;
             }
           }
-          if (shouldIncludeRuleForAnalysis(binding.getConnectionId(), ruleOrTemplateDefinition, hotspotsOnly)) {
+          if (shouldIncludeRuleForAnalysis(binding.connectionId(), ruleOrTemplateDefinition, hotspotsOnly)) {
             result.add(buildActiveRuleDto(ruleOrTemplateDefinition, activeRuleFromStorage));
           }
         }
@@ -618,7 +618,7 @@ public class AnalysisService {
   }
 
   private boolean isReadyForAnalysis(Binding binding) {
-    var pluginsValid = storageService.connection(binding.getConnectionId()).plugins().isValid();
+    var pluginsValid = storageService.connection(binding.connectionId()).plugins().isValid();
     var bindingStorage = storageService.binding(binding);
     var analyzerConfigValid = bindingStorage.analyzerConfiguration().isValid();
     var findingsStorageValid = bindingStorage.findings().wasEverUpdated();
@@ -627,7 +627,7 @@ public class AnalysisService {
       // this is not strictly for analysis but for tracking
       && findingsStorageValid;
     LOG.debug("isReadyForAnalysis(connectionId: {}, sonarProjectKey: {}, plugins: {}, analyzer config: {}, findings: {}) => {}",
-      binding.getConnectionId(), binding.getSonarProjectKey(), pluginsValid, analyzerConfigValid, findingsStorageValid, isReady);
+      binding.connectionId(), binding.sonarProjectKey(), pluginsValid, analyzerConfigValid, findingsStorageValid, isReady);
     return isReady;
   }
 
@@ -636,7 +636,7 @@ public class AnalysisService {
     if (binding.isEmpty()) {
       return false;
     } else {
-      var connectionId = binding.get().getConnectionId();
+      var connectionId = binding.get().connectionId();
       return pluginsService.shouldUseEnterpriseCSharpAnalyzer(connectionId);
     }
   }

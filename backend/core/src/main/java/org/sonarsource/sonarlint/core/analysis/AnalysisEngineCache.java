@@ -83,13 +83,13 @@ public class AnalysisEngineCache {
   @CheckForNull
   public AnalysisEngine getAnalysisEngineIfStarted(String configurationScopeId) {
     return configurationRepository.getEffectiveBinding(configurationScopeId)
-      .map(binding -> getConnectedEngineIfStarted(binding.getConnectionId()))
+      .map(binding -> getConnectedEngineIfStarted(binding.connectionId()))
       .orElseGet(this::getStandaloneEngineIfStarted);
   }
 
   public AnalysisEngine getOrCreateAnalysisEngine(String configurationScopeId) {
     return configurationRepository.getEffectiveBinding(configurationScopeId)
-      .map(binding -> getOrCreateConnectedEngine(binding.getConnectionId()))
+      .map(binding -> getOrCreateConnectedEngine(binding.connectionId()))
       .orElseGet(this::getOrCreateStandaloneEngine);
   }
 

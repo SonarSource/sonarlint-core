@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.serverapi;
 
 import java.util.Optional;
+import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
 /**
@@ -28,18 +29,27 @@ import javax.annotation.Nullable;
 public class EndpointParams {
 
   private final String baseUrl;
+  @Nullable
+  // For SonarQube Cloud, some APIs are located under a dedicated subdomain. Null for SonarQube Server
+  private final String apiBaseUrl;
   private final boolean sonarCloud;
   @Nullable
   private final String organization;
 
-  public EndpointParams(String baseUrl, boolean isSonarCloud, @Nullable String organization) {
+  public EndpointParams(String baseUrl, @Nullable String apiBaseUrl, boolean isSonarCloud, @Nullable String organization) {
     this.baseUrl = baseUrl;
+    this.apiBaseUrl = apiBaseUrl;
     this.sonarCloud = isSonarCloud;
     this.organization = organization;
   }
 
   public String getBaseUrl() {
     return baseUrl;
+  }
+
+  @CheckForNull
+  public String getApiBaseUrl() {
+    return apiBaseUrl;
   }
 
   public boolean isSonarCloud() {

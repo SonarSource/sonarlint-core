@@ -30,6 +30,6 @@ public class SonarQubeConnectionConfiguration extends AbstractConnectionConfigur
 
   @Override
   public EndpointParams getEndpointParams() {
-    return new EndpointParams(getUrl(), false, null);
+    return new EndpointParams(getUrl(), null, false, null);
   }
 }

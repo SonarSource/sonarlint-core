@@ -82,7 +82,7 @@ public class HotspotService {
 
   public void openHotspotInBrowser(String configScopeId, String hotspotKey) {
     var effectiveBinding = configurationRepository.getEffectiveBinding(configScopeId);
-    var endpointParams = effectiveBinding.flatMap(binding -> connectionRepository.getEndpointParams(binding.getConnectionId()));
+    var endpointParams = effectiveBinding.flatMap(binding -> connectionRepository.getEndpointParams(binding.connectionId()));
     if (effectiveBinding.isEmpty() || endpointParams.isEmpty()) {
       LOG.warn("Configuration scope {} is not bound properly, unable to open hotspot", configScopeId);
       return;
@@ -93,7 +93,7 @@ public class HotspotService {
       return;
     }
 
-    var url = buildHotspotUrl(effectiveBinding.get().getSonarProjectKey(), branchName.get(), hotspotKey, endpointParams.get());
+    var url = buildHotspotUrl(effectiveBinding.get().sonarProjectKey(), branchName.get(), hotspotKey, endpointParams.get());
 
     client.openUrlInBrowser(new OpenUrlInBrowserParams(url));
 
@@ -110,7 +110,7 @@ public class HotspotService {
     if (effectiveBinding.isEmpty()) {
       return new CheckLocalDetectionSupportedResponse(false, NO_BINDING_REASON);
     }
-    var connectionId = effectiveBinding.get().getConnectionId();
+    var connectionId = effectiveBinding.get().connectionId();
     if (connectionRepository.getConnectionById(connectionId) == null) {
       var error = new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND, "The provided configuration scope is bound to an unknown connection: " + connectionId,
         connectionId);
@@ -146,7 +146,7 @@ public class HotspotService {
       LOG.debug("No binding for config scope {}", configurationScopeId);
       return;
     }
-    connectionManager.withValidConnection(effectiveBindingOpt.get().getConnectionId(), serverApi -> {
+    connectionManager.withValidConnection(effectiveBindingOpt.get().connectionId(), serverApi -> {
       serverApi.hotspot().changeStatus(hotspotKey, newStatus, cancelMonitor);
       saveStatusInStorage(effectiveBindingOpt.get(), hotspotKey, newStatus);
       telemetryService.hotspotStatusChanged();

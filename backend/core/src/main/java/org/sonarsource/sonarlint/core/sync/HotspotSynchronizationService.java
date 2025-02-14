@@ -69,8 +69,8 @@ public class HotspotSynchronizationService {
   }
 
   public void fetchProjectHotspots(Binding binding, String activeBranch, SonarLintCancelMonitor cancelMonitor) {
-    connectionManager.withValidConnection(binding.getConnectionId(), serverApi ->
-      downloadAllServerHotspots(binding.getConnectionId(), serverApi, binding.getSonarProjectKey(), activeBranch, cancelMonitor));
+    connectionManager.withValidConnection(binding.connectionId(), serverApi ->
+      downloadAllServerHotspots(binding.connectionId(), serverApi, binding.sonarProjectKey(), activeBranch, cancelMonitor));
   }
 
   private void downloadAllServerHotspots(String connectionId, ServerApi serverApi, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
@@ -83,8 +83,8 @@ public class HotspotSynchronizationService {
   }
 
   public void fetchFileHotspots(Binding binding, String activeBranch, Path serverFilePath, SonarLintCancelMonitor cancelMonitor) {
-    connectionManager.withValidConnection(binding.getConnectionId(), serverApi ->
-      downloadAllServerHotspotsForFile(binding.getConnectionId(), serverApi, binding.getSonarProjectKey(), serverFilePath, activeBranch, cancelMonitor));
+    connectionManager.withValidConnection(binding.connectionId(), serverApi ->
+      downloadAllServerHotspotsForFile(binding.connectionId(), serverApi, binding.sonarProjectKey(), serverFilePath, activeBranch, cancelMonitor));
   }
 
   private void downloadAllServerHotspotsForFile(String connectionId, ServerApi serverApi, String projectKey, Path serverRelativeFilePath, String branchName,

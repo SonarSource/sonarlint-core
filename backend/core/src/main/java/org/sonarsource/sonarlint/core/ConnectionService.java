@@ -88,8 +88,9 @@ public class ConnectionService {
   }
 
   private SonarCloudConnectionConfiguration adapt(SonarCloudConnectionConfigurationDto scDto) {
-    return new SonarCloudConnectionConfiguration(sonarCloudActiveEnvironment.getUri(SonarCloudRegion.valueOf(scDto.getRegion().toString())), scDto.getConnectionId(),
-      scDto.getOrganization(), SonarCloudRegion.valueOf(scDto.getRegion().toString()), scDto.isDisableNotifications());
+    var region = SonarCloudRegion.valueOf(scDto.getRegion().toString());
+    return new SonarCloudConnectionConfiguration(sonarCloudActiveEnvironment.getUri(region), sonarCloudActiveEnvironment.getApiUri(region), scDto.getConnectionId(),
+      scDto.getOrganization(), region, scDto.isDisableNotifications());
   }
 
   private static void putAndLogIfDuplicateId(Map<String, AbstractConnectionConfiguration> map, AbstractConnectionConfiguration config) {

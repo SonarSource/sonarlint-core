@@ -28,13 +28,13 @@ class HotspotServiceTests {
 
   @Test
   void testBuildSonarQubeHotspotUrl() {
-    assertThat(HotspotService.buildHotspotUrl("myProject", "myBranch", "hotspotKey", new EndpointParams("http://foo.com", false, null)))
+    assertThat(HotspotService.buildHotspotUrl("myProject", "myBranch", "hotspotKey", new EndpointParams("http://foo.com", "", false, null)))
       .isEqualTo("http://foo.com/security_hotspots?id=myProject&branch=myBranch&hotspots=hotspotKey");
   }
 
   @Test
   void testBuildSonarCloudHotspotUrl() {
-    assertThat(HotspotService.buildHotspotUrl("myProject", "myBranch", "hotspotKey", new EndpointParams("https://sonarcloud.io", true, "myOrg")))
+    assertThat(HotspotService.buildHotspotUrl("myProject", "myBranch", "hotspotKey", new EndpointParams("https://sonarcloud.io", "", true, "myOrg")))
       .isEqualTo("https://sonarcloud.io/project/security_hotspots?id=myProject&branch=myBranch&hotspots=hotspotKey");
   }
 }

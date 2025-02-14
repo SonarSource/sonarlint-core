@@ -366,7 +366,7 @@ class ShowIssueRequestHandlerTests {
     var context = mock(HttpContext.class);
 
     when(connectionConfigurationRepository.findByOrganization(any())).thenReturn(List.of(
-      new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), "name", "organizationKey", SonarCloudRegion.EU, false)));
+      new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "name", "organizationKey", SonarCloudRegion.EU, false)));
     when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope"
       , "connectionId", "projectKey")));
     when(sonarLintRpcClient.matchProjectBranch(any())).thenReturn(CompletableFuture.completedFuture(new MatchProjectBranchResponse(false)));
@@ -395,7 +395,7 @@ class ShowIssueRequestHandlerTests {
     var context = mock(HttpContext.class);
 
     when(connectionConfigurationRepository.findByOrganization(any())).thenReturn(List.of(
-      new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), "name", "organizationKey", SonarCloudRegion.EU, false)));
+      new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "name", "organizationKey", SonarCloudRegion.EU, false)));
     when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope"
       , "connectionId", "projectKey")));
     when(sonarLintRpcClient.matchProjectBranch(any())).thenReturn(CompletableFuture.completedFuture(new MatchProjectBranchResponse(true)));
@@ -425,7 +425,7 @@ class ShowIssueRequestHandlerTests {
     var context = mock(HttpContext.class);
 
     when(connectionConfigurationRepository.findByOrganization(any())).thenReturn(List.of(
-      new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), "name", "organizationKey", SonarCloudRegion.EU, false)));
+      new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "name", "organizationKey", SonarCloudRegion.EU, false)));
     when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope"
       , "connectionId", "projectKey")));
     when(sonarLintRpcClient.matchProjectBranch(any())).thenReturn(CompletableFuture.completedFuture(new MatchProjectBranchResponse(true)));

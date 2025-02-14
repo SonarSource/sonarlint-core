@@ -19,48 +19,5 @@
  */
 package org.sonarsource.sonarlint.core.commons;
 
-import java.util.Objects;
-
-public class Binding {
-
-  private final String connectionId;
-  private final String sonarProjectKey;
-
-  public Binding(String connectionId, String sonarProjectKey) {
-    this.connectionId = connectionId;
-    this.sonarProjectKey = sonarProjectKey;
-  }
-
-  public String getConnectionId() {
-    return connectionId;
-  }
-
-  public String getSonarProjectKey() {
-    return sonarProjectKey;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    var binding = (Binding) o;
-    return Objects.equals(connectionId, binding.connectionId) && Objects.equals(sonarProjectKey, binding.sonarProjectKey);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(connectionId, sonarProjectKey);
-  }
-
-  @Override
-  public String toString() {
-    return "Binding{" +
-      "connectionId='" + connectionId + '\'' +
-      ", sonarProjectKey='" + sonarProjectKey + '\'' +
-      '}';
-  }
+public record Binding(String connectionId, String sonarProjectKey) {
 }

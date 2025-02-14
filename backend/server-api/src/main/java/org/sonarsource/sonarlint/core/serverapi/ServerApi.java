@@ -24,6 +24,7 @@ import org.sonarsource.sonarlint.core.serverapi.authentication.AuthenticationApi
 import org.sonarsource.sonarlint.core.serverapi.branches.ProjectBranchesApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi;
 import org.sonarsource.sonarlint.core.serverapi.developers.DevelopersApi;
+import org.sonarsource.sonarlint.core.serverapi.fixsuggestions.FixSuggestionsApi;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.issue.IssueApi;
 import org.sonarsource.sonarlint.core.serverapi.newcode.NewCodeApi;
@@ -110,6 +111,10 @@ public class ServerApi {
 
   public NewCodeApi newCodeApi() {
     return new NewCodeApi(helper);
+  }
+
+  public FixSuggestionsApi fixSuggestions() {
+    return new FixSuggestionsApi(helper);
   }
 
   public boolean isSonarCloud() {
