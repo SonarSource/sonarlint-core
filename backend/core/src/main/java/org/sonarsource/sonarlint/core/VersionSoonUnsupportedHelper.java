@@ -87,7 +87,7 @@ public class VersionSoonUnsupportedHelper {
     configScopeIds.forEach(configScopeId -> {
       var effectiveBinding = configRepository.getEffectiveBinding(configScopeId);
       if (effectiveBinding.isPresent()) {
-        var connectionId = effectiveBinding.get().getConnectionId();
+        var connectionId = effectiveBinding.get().connectionId();
         oneConfigScopeIdPerConnection.putIfAbsent(connectionId, configScopeId);
       }
     });

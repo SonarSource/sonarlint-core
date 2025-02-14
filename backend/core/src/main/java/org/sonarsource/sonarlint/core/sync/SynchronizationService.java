@@ -388,8 +388,8 @@ public class SynchronizationService {
     if (ignoreBranchEventForScopes.contains(configurationScopeId)) {
       return;
     }
-    configurationRepository.getEffectiveBinding(configurationScopeId).ifPresent(binding -> synchronizeProjectsAsync(Map.of(requireNonNull(binding.getConnectionId()),
-      Map.of(binding.getSonarProjectKey(), List.of(new BoundScope(configurationScopeId, binding.getConnectionId(), binding.getSonarProjectKey()))))));
+    configurationRepository.getEffectiveBinding(configurationScopeId).ifPresent(binding -> synchronizeProjectsAsync(Map.of(requireNonNull(binding.connectionId()),
+      Map.of(binding.sonarProjectKey(), List.of(new BoundScope(configurationScopeId, binding.connectionId(), binding.sonarProjectKey()))))));
   }
 
   @PreDestroy

@@ -31,4 +31,6 @@ public class SonarLintRpcErrorCode {
   public static final int HTTP_REQUEST_FAILED = -8;
   public static final int TASK_EXECUTION_TIMEOUT = -9;
   public static final int PROGRESS_CREATION_FAILED = -10;
+  public static final int CONNECTION_KIND_NOT_SUPPORTED = -11;
+  public static final int FILE_NOT_FOUND = -12;
 }

@@ -19,6 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.test.utils.server;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.google.protobuf.Message;
@@ -37,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -68,6 +73,7 @@ import org.sonarsource.sonarlint.core.test.utils.plugins.Plugin;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.jsonResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
@@ -194,8 +200,7 @@ public class ServerFixture {
     }
 
     public Server start() {
-      var server = new Server(serverKind, serverStatus, organizationKey, version, projectByProjectKey, smartNotificationsSupported, pluginsByKey,
-        qualityProfilesByKey,
+      var server = new Server(serverKind, serverStatus, organizationKey, version, projectByProjectKey, smartNotificationsSupported, pluginsByKey, qualityProfilesByKey,
         tokensRegistered, statusCode);
       server.start();
       if (onStart != null) {
@@ -233,6 +238,7 @@ public class ServerFixture {
       private final List<String> relativeFilePaths = new ArrayList<>();
       private String name = "MyProject";
       private String projectName;
+      private AiCodeFixBuilder aiCodeFix;
 
       private ServerProjectBuilder() {
         branchesByName.put(mainBranchName, new ServerProjectBranchBuilder());
@@ -286,6 +292,12 @@ public class ServerFixture {
 
       public ServerProjectBuilder withFile(String relativeFilePath) {
         this.relativeFilePaths.add(relativeFilePath);
+        return this;
+      }
+
+      public ServerProjectBuilder withAiCodeFix(UnaryOperator<AiCodeFixBuilder> aiCodeFixBuilder) {
+        this.aiCodeFix = new AiCodeFixBuilder();
+        aiCodeFixBuilder.apply(aiCodeFix);
         return this;
       }
 
@@ -425,6 +437,37 @@ public class ServerFixture {
             return filePath;
           }
         }
+      }
+
+      public static class AiCodeFixBuilder {
+        private UUID id = UUID.randomUUID();
+        private String explanation = "default";
+        private final List<AiCodeFixChange> changes = new ArrayList<>();
+
+        public AiCodeFixBuilder withId(UUID id) {
+          this.id = id;
+          return this;
+        }
+
+        public AiCodeFixBuilder withExplanation(String explanation) {
+          this.explanation = explanation;
+          return this;
+        }
+
+        public AiCodeFixBuilder withChange(int startLine, int endLine, String newCode) {
+          this.changes.add(new AiCodeFixChange(startLine, endLine, newCode));
+          return this;
+        }
+
+        public AiCodeFix build() {
+          return new AiCodeFix(id, explanation, changes);
+        }
+      }
+
+      public record AiCodeFix(UUID id, String explanation, List<AiCodeFixChange> changes) {
+      }
+
+      public record AiCodeFixChange(int startLine, int endLine, String newCode) {
       }
 
       public static class ServerProjectPullRequestBuilder extends ServerProjectBranchBuilder {
@@ -585,6 +628,7 @@ public class ServerFixture {
         registerSettingsApiResponses();
         registerTokenApiResponse();
         registerComponentApiResponses();
+        registerFixSuggestionsApiResponses();
       }
     }
 
@@ -1181,6 +1225,19 @@ public class ServerFixture {
     private void registerTokenApiResponse() {
       tokensRegistered.forEach(
         tokenName -> mockServer.stubFor(post("/api/user_tokens/revoke").withRequestBody(WireMock.containing("name=" + tokenName)).willReturn(aResponse().withStatus(statusCode))));
+    }
+
+    private void registerFixSuggestionsApiResponses() {
+      projectsByProjectKey.forEach((projectKey, project) -> {
+        if (project.aiCodeFix != null) {
+          try {
+            mockServer.stubFor(post("/fix-suggestions/ai-suggestions")
+              .willReturn(jsonResponse(new ObjectMapper().setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY).writeValueAsString(project.aiCodeFix.build()), 200)));
+          } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException(e);
+          }
+        }
+      });
     }
 
     public void shutdown() {

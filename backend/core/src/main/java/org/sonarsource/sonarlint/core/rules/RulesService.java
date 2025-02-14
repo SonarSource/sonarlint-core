@@ -137,7 +137,7 @@ public class RulesService {
   }
 
   public RuleDetails getActiveRuleForBinding(String ruleKey, Binding binding, SonarLintCancelMonitor cancelMonitor) {
-    var connectionId = binding.getConnectionId();
+    var connectionId = binding.connectionId();
     connectionManager.getConnectionOrThrow(connectionId);
 
     var serverUsesStandardSeverityMode = !severityModeService.isMQRModeForConnection(connectionId);
@@ -161,7 +161,7 @@ public class RulesService {
     return analyzerConfiguration.getRuleSetByLanguageKey().values().stream()
       .flatMap(s -> s.getRules().stream())
       // XXX is it important to migrate the rule repos in tryConvertDeprecatedKeys?
-      .filter(r -> tryConvertDeprecatedKeys(r, binding.getConnectionId()).getRuleKey().equals(ruleKey)).findFirst();
+      .filter(r -> tryConvertDeprecatedKeys(r, binding.connectionId()).getRuleKey().equals(ruleKey)).findFirst();
   }
 
   private RuleDetails hydrateDetailsWithServer(String connectionId, ServerActiveRule activeRuleFromStorage, boolean skipCleanCodeTaxonomy, SonarLintCancelMonitor cancelMonitor) {
@@ -401,7 +401,7 @@ public class RulesService {
     if (StringUtils.isNotBlank(activeRule.getTemplateKey())) {
       actualRuleKey = activeRule.getTemplateKey();
     }
-    var ruleDefinitionOpt = rulesRepository.getRule(binding.getConnectionId(), actualRuleKey);
+    var ruleDefinitionOpt = rulesRepository.getRule(binding.connectionId(), actualRuleKey);
     if (ruleDefinitionOpt.isEmpty()) {
       throw new RuleNotFoundException(COULD_NOT_FIND_RULE + actualRuleKey + IN_EMBEDDED_RULES, actualRuleKey);
     }

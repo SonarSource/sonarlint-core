@@ -45,7 +45,7 @@ public class StorageService {
   }
 
   public SonarProjectStorage binding(Binding binding) {
-    return connection(binding.getConnectionId()).project(binding.getSonarProjectKey());
+    return connection(binding.connectionId()).project(binding.sonarProjectKey());
   }
 
   @EventListener

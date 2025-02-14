@@ -112,7 +112,7 @@ public class FindingReportingService {
   }
 
   private void triggerStreaming(String configurationScopeId, UUID analysisId) {
-    var connectionId = configurationRepository.getEffectiveBinding(configurationScopeId).map(Binding::getConnectionId).orElse(null);
+    var connectionId = configurationRepository.getEffectiveBinding(configurationScopeId).map(Binding::connectionId).orElse(null);
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId).orElseGet(NewCodeDefinition::withAlwaysNew);
     var isMQRMode = severityModeService.isMQRModeForConnection(connectionId);
     var issuesToRaise = issuesPerFileUri.entrySet().stream()
@@ -129,7 +129,7 @@ public class FindingReportingService {
   public void reportTrackedFindings(String configurationScopeId, UUID analysisId, Map<Path, List<TrackedIssue>> issuesToReport, Map<Path, List<TrackedIssue>> hotspotsToReport) {
     // stop streaming now, we will raise all issues one last time from this method
     stopStreaming(configurationScopeId);
-    var connectionId = configurationRepository.getEffectiveBinding(configurationScopeId).map(Binding::getConnectionId).orElse(null);
+    var connectionId = configurationRepository.getEffectiveBinding(configurationScopeId).map(Binding::connectionId).orElse(null);
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId).orElseGet(NewCodeDefinition::withAlwaysNew);
     var isMQRMode = severityModeService.isMQRModeForConnection(connectionId);
     var issuesToRaise = getIssuesToRaise(issuesToReport, newCodeDefinition, isMQRMode);

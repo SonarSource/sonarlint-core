@@ -243,7 +243,7 @@ public class WebSocketService {
 
   private void considerScope(String scopeId) {
     var binding = getCurrentBinding(scopeId);
-    if (binding != null && isEligibleConnection(binding.getConnectionId())) {
+    if (binding != null && isEligibleConnection(binding.connectionId())) {
       subscribe(scopeId, binding);
     } else if (isSubscribedWithProjectKeyDifferentThanCurrentBinding(scopeId)) {
       forget(scopeId);
@@ -264,8 +264,8 @@ public class WebSocketService {
   }
 
   private void subscribe(String configScopeId, Binding binding) {
-    createConnectionIfNeeded(binding.getConnectionId());
-    var projectKey = binding.getSonarProjectKey();
+    createConnectionIfNeeded(binding.connectionId());
+    var projectKey = binding.sonarProjectKey();
     if (subscribedProjectKeysByConfigScopes.containsKey(configScopeId) && !subscribedProjectKeysByConfigScopes.get(configScopeId).equals(projectKey)) {
       forget(configScopeId);
     }

@@ -101,10 +101,10 @@ public class FileExclusionService {
     if (effectiveBindingOpt.isEmpty()) {
       return false;
     }
-    var storage = storageService.connection(effectiveBindingOpt.get().getConnectionId());
+    var storage = storageService.connection(effectiveBindingOpt.get().connectionId());
     AnalyzerConfiguration analyzerConfig;
     try {
-      analyzerConfig = storage.project(effectiveBindingOpt.get().getSonarProjectKey()).analyzerConfiguration().read();
+      analyzerConfig = storage.project(effectiveBindingOpt.get().sonarProjectKey()).analyzerConfiguration().read();
     } catch (StorageException e) {
       LOG.debug("Unable to read settings in local storage", e);
       return false;

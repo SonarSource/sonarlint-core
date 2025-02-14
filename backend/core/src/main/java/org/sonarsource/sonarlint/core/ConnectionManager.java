@@ -96,7 +96,7 @@ public class ConnectionManager {
   public ServerApi getServerApi(String baseUrl, @Nullable String organization, String token) {
     var isSonarCloud = sonarCloudActiveEnvironment.isSonarQubeCloud(baseUrl);
 
-    var params = new EndpointParams(baseUrl, isSonarCloud, organization);
+    var params = new EndpointParams(baseUrl, baseUrl, isSonarCloud, organization);
     var isBearerSupported = checkIfBearerIsSupported(params);
     return new ServerApi(params, httpClientProvider.getHttpClientWithPreemptiveAuth(token, isBearerSupported));
   }
@@ -115,15 +115,18 @@ public class ConnectionManager {
    * Used to do SonarCloud requests before knowing the organization
    */
   public ServerApi getForSonarCloudNoOrg(Either<TokenDto, UsernamePasswordDto> credentials, SonarCloudRegion region) {
-    var endpointParams = new EndpointParams(sonarCloudActiveEnvironment.getUri(region).toString(), true, null);
+    var endpointParams = new EndpointParams(sonarCloudActiveEnvironment.getUri(region).toString(), sonarCloudActiveEnvironment.getApiUri(region).toString(), true, null);
     var httpClient = getClientFor(endpointParams, credentials);
     return new ServerApi(new ServerApiHelper(endpointParams, httpClient));
   }
 
   public ServerApi getForTransientConnection(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection) {
     var endpointParams = transientConnection.map(
-      sq -> new EndpointParams(sq.getServerUrl(), false, null),
-      sc -> new EndpointParams(sonarCloudActiveEnvironment.getUri(SonarCloudRegion.valueOf(sc.getRegion().toString())).toString(), true, sc.getOrganization()));
+      sq -> new EndpointParams(sq.getServerUrl(), null, false, null),
+      sc -> {
+        var region = SonarCloudRegion.valueOf(sc.getRegion().toString());
+        return new EndpointParams(sonarCloudActiveEnvironment.getUri(region).toString(), sonarCloudActiveEnvironment.getApiUri(region).toString(), true, sc.getOrganization());
+      });
     var httpClient = getClientFor(endpointParams, transientConnection
       .map(TransientSonarQubeConnectionDto::getCredentials, TransientSonarCloudConnectionDto::getCredentials));
     return new ServerApi(new ServerApiHelper(endpointParams, httpClient));

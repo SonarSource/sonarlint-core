@@ -28,13 +28,13 @@ class SonarCloudConnectionConfigurationTest {
 
   @Test
   void testEqualsAndHashCode() {
-    var underTest = new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), "id1", "org1", SonarCloudRegion.EU, true);
+    var underTest = new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "id1", "org1", SonarCloudRegion.EU, true);
     assertThat(underTest)
-      .isEqualTo(new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), "id1", "org1", SonarCloudRegion.EU, true))
-      .isNotEqualTo(new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), "id2", "org1", SonarCloudRegion.EU, true))
-      .isNotEqualTo(new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), "id1", "org2", SonarCloudRegion.EU, true))
+      .isEqualTo(new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "id1", "org1", SonarCloudRegion.EU, true))
+      .isNotEqualTo(new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "id2", "org1", SonarCloudRegion.EU, true))
+      .isNotEqualTo(new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "id1", "org2", SonarCloudRegion.EU, true))
       .isNotEqualTo(new SonarQubeConnectionConfiguration("id1", "http://server1", true))
-      .hasSameHashCodeAs(new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), "id1", "org1", SonarCloudRegion.EU, true));
+      .hasSameHashCodeAs(new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "id1", "org1", SonarCloudRegion.EU, true));
   }
 
 }

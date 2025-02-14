@@ -22,19 +22,25 @@ package org.sonarsource.sonarlint.core;
 import java.net.URI;
 
 public enum SonarCloudRegion {
-  EU("https://sonarcloud.io", "wss://events-api.sonarcloud.io/"),
-  US("https://us.sonarcloud.io", "wss://events-api.us.sonarcloud.io/");
+  EU("https://sonarcloud.io", "https://api.sonarcloud.io", "wss://events-api.sonarcloud.io/"),
+  US("https://us.sonarcloud.io", "https://api.us.sonarcloud.io", "wss://events-api.us.sonarcloud.io/");
 
   private final URI productionUri;
+  private final URI apiProductionUri;
   private final URI webSocketUri;
 
-  SonarCloudRegion(String productionUri, String webSocketUri) {
+  SonarCloudRegion(String productionUri, String apiProductionUri, String webSocketUri) {
     this.productionUri = URI.create(productionUri);
+    this.apiProductionUri = URI.create(apiProductionUri);
     this.webSocketUri = URI.create(webSocketUri);
   }
 
   public URI getProductionUri() {
     return productionUri;
+  }
+
+  public URI getApiProductionUri() {
+    return apiProductionUri;
   }
 
   public URI getWebSocketUri() {

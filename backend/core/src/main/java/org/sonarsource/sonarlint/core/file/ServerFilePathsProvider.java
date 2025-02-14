@@ -98,21 +98,21 @@ public class ServerFilePathsProvider {
   }
 
   private Optional<List<Path>> fetchPathsFromServer(Binding binding, SonarLintCancelMonitor cancelMonitor) {
-    var connectionOpt = connectionManager.tryGetConnection(binding.getConnectionId());
+    var connectionOpt = connectionManager.tryGetConnection(binding.connectionId());
     if (connectionOpt.isEmpty()) {
-      LOG.debug("Connection '{}' does not exist", binding.getConnectionId());
+      LOG.debug("Connection '{}' does not exist", binding.connectionId());
       return Optional.empty();
     }
     try {
-      return connectionManager.withValidConnectionFlatMapOptionalAndReturn(binding.getConnectionId(), serverApi -> {
-        List<Path> paths = fetchPathsFromServer(serverApi, binding.getSonarProjectKey(), cancelMonitor);
+      return connectionManager.withValidConnectionFlatMapOptionalAndReturn(binding.connectionId(), serverApi -> {
+        List<Path> paths = fetchPathsFromServer(serverApi, binding.sonarProjectKey(), cancelMonitor);
         cacheServerPaths(binding, paths);
         return Optional.of(paths);
       });
     } catch (CancellationException e) {
       throw e;
     } catch (Exception e) {
-      LOG.debug("Error while getting server file paths for project '{}'", binding.getSonarProjectKey(), e);
+      LOG.debug("Error while getting server file paths for project '{}'", binding.sonarProjectKey(), e);
       return Optional.empty();
     }
   }

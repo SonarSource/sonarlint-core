@@ -161,13 +161,13 @@ public class ServerEventsService {
     configurationScopeIds.stream()
       .map(configurationRepository::getConfiguredBinding)
       .flatMap(Optional::stream)
-      .collect(Collectors.groupingBy(Binding::getConnectionId, mapping(Binding::getSonarProjectKey, toSet())))
+      .collect(Collectors.groupingBy(Binding::connectionId, mapping(Binding::sonarProjectKey, toSet())))
       .forEach(this::subscribe);
   }
 
   private void subscribe(String scopeId) {
     configurationRepository.getConfiguredBinding(scopeId)
-      .ifPresent(binding -> subscribe(binding.getConnectionId(), Set.of(binding.getSonarProjectKey())));
+      .ifPresent(binding -> subscribe(binding.connectionId(), Set.of(binding.sonarProjectKey())));
   }
 
   private void subscribe(String connectionId, Set<String> possiblyNewProjectKeys) {

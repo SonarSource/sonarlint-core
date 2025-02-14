@@ -79,7 +79,7 @@ public class MockWebServerExtensionWithProtobuf extends MockWebServerExtension {
   }
 
   public EndpointParams endpointParams(@Nullable String organizationKey) {
-    return new EndpointParams(url("/"), organizationKey != null, organizationKey);
+    return new EndpointParams(url("/"), url("/"), organizationKey != null, organizationKey);
   }
 
 }

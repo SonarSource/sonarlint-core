@@ -43,6 +43,10 @@ public class SonarCloudActiveEnvironment {
     return alternativeUris != null ? alternativeUris.productionUri : region.getProductionUri();
   }
 
+  public URI getApiUri(SonarCloudRegion region) {
+    return alternativeUris != null ? alternativeUris.productionUri : region.getApiProductionUri();
+  }
+
   public URI getWebSocketsEndpointUri(SonarCloudRegion region) {
     return alternativeUris != null ? alternativeUris.wsUri : region.getWebSocketUri();
   }
