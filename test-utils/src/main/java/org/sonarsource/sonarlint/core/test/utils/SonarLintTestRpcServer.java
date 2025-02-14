@@ -39,6 +39,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotRpcSer
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.IssueRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.NewCodeRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.AiCodeFixRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityTrackingRpcService;
@@ -141,6 +142,11 @@ public class SonarLintTestRpcServer implements SonarLintRpcServer {
   @Override
   public DogfoodingRpcService getDogfoodingService() {
     return serverUsingRpc.getDogfoodingService();
+  }
+
+  @Override
+  public AiCodeFixRpcService getAiCodeFixRpcService() {
+    return serverUsingRpc.getAiCodeFixRpcService();
   }
 
   public Path getWorkDir() {

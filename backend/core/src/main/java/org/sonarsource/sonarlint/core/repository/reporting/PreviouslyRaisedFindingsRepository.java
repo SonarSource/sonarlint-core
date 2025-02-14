@@ -84,4 +84,10 @@ public class PreviouslyRaisedFindingsRepository {
       .findFirst();
   }
 
+  public Optional<RaisedIssue> findRaisedIssueById(UUID issueId) {
+    return previouslyRaisedIssuesByScopeId.values().stream()
+      .flatMap(issuesByUri -> issuesByUri.entrySet().stream()
+        .flatMap(entry -> entry.getValue().stream().filter(issue -> issue.getId().equals(issueId)).findFirst().map(issue -> new RaisedIssue(entry.getKey(), issue)).stream()))
+      .findFirst();
+  }
 }

@@ -57,8 +57,8 @@ class ConfigurationRepositoryTest {
 
     assertThat(binding)
       .hasValueSatisfying(b -> {
-        assertThat(b.getConnectionId()).isEqualTo("connectionId");
-        assertThat(b.getSonarProjectKey()).isEqualTo("projectKey");
+        assertThat(b.connectionId()).isEqualTo("connectionId");
+        assertThat(b.sonarProjectKey()).isEqualTo("projectKey");
       });
   }
 
@@ -71,8 +71,8 @@ class ConfigurationRepositoryTest {
 
     assertThat(binding)
       .hasValueSatisfying(b -> {
-        assertThat(b.getConnectionId()).isEqualTo("connectionId");
-        assertThat(b.getSonarProjectKey()).isEqualTo("projectKey");
+        assertThat(b.connectionId()).isEqualTo("connectionId");
+        assertThat(b.sonarProjectKey()).isEqualTo("projectKey");
       });
   }
 

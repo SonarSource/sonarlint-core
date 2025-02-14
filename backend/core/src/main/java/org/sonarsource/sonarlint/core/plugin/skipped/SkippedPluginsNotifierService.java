@@ -85,7 +85,7 @@ public class SkippedPluginsNotifierService {
   @CheckForNull
   private List<SkippedPlugin> getSkippedPlugins(String configurationScopeId) {
     return configurationRepository.getEffectiveBinding(configurationScopeId)
-      .map(binding -> skippedPluginsRepository.getSkippedPlugins(binding.getConnectionId()))
+      .map(binding -> skippedPluginsRepository.getSkippedPlugins(binding.connectionId()))
       .orElseGet(skippedPluginsRepository::getSkippedEmbeddedPlugins);
   }
 }
