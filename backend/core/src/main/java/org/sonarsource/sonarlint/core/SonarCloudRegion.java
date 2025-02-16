@@ -23,7 +23,7 @@ import java.net.URI;
 
 public enum SonarCloudRegion {
   EU("https://sonarcloud.io", "https://api.sonarcloud.io", "wss://events-api.sonarcloud.io/"),
-  US("https://us.sonarcloud.io", "https://api.us.sonarcloud.io", "wss://events-api.us.sonarcloud.io/");
+  US("https://us-sc-staging.io", "https://api.us.sonarcloud.io", "wss://events-api.us.sonarcloud.io/");
 
   private final URI productionUri;
   private final URI apiProductionUri;
