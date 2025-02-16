@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Server Connection
+ * SonarLint Core - Server API
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,13 +17,9 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection;
+package org.sonarsource.sonarlint.core.serverapi.organization;
 
-import java.util.Set;
+import java.util.UUID;
 
-public record AiCodeFixSettings(Set<String> supportedRules, boolean isOrganizationEligible, AiCodeFixFeatureEnablement enablement, Set<String> enabledProjectKeys) {
-  public boolean isFeatureEnabled(String projectKey) {
-    return isOrganizationEligible && (enablement.equals(AiCodeFixFeatureEnablement.ENABLED_FOR_ALL_PROJECTS)
-      || (enablement.equals(AiCodeFixFeatureEnablement.ENABLED_FOR_SOME_PROJECTS) && enabledProjectKeys.contains(projectKey)));
-  }
+public record GetOrganizationsResponseDto(String id, UUID uuidV4) {
 }

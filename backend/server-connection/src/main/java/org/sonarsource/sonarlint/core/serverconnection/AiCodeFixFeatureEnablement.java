@@ -19,11 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
-import java.util.Set;
-
-public record AiCodeFixSettings(Set<String> supportedRules, boolean isOrganizationEligible, AiCodeFixFeatureEnablement enablement, Set<String> enabledProjectKeys) {
-  public boolean isFeatureEnabled(String projectKey) {
-    return isOrganizationEligible && (enablement.equals(AiCodeFixFeatureEnablement.ENABLED_FOR_ALL_PROJECTS)
-      || (enablement.equals(AiCodeFixFeatureEnablement.ENABLED_FOR_SOME_PROJECTS) && enabledProjectKeys.contains(projectKey)));
-  }
+public enum AiCodeFixFeatureEnablement {
+  DISABLED,
+  ENABLED_FOR_ALL_PROJECTS,
+  ENABLED_FOR_SOME_PROJECTS
 }

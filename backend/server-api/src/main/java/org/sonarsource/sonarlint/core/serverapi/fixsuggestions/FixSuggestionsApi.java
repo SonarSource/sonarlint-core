@@ -24,6 +24,7 @@ import com.google.gson.GsonBuilder;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnexpectedBodyException;
 
 import static org.sonarsource.sonarlint.core.http.HttpClient.JSON_CONTENT_TYPE;
@@ -53,6 +54,15 @@ public class FixSuggestionsApi {
       return new Gson().fromJson(response.bodyAsString(), SupportedRulesResponseDto.class);
     } catch (Exception e) {
       LOG.error("Error while fetching the list of AI CodeFix supported rules", e);
+      throw new UnexpectedBodyException(e);
+    }
+  }
+
+  public OrganizationConfigsResponseDto getOrganizationConfigs(String organizationId, SonarLintCancelMonitor cancelMonitor) {
+    try (var response = helper.apiGet("/fix-suggestions/organization-configs/" + UrlUtils.urlEncode(organizationId), cancelMonitor)) {
+      return new Gson().fromJson(response.bodyAsString(), OrganizationConfigsResponseDto.class);
+    } catch (Exception e) {
+      LOG.error("Error while fetching the AI CodeFix organization config", e);
       throw new UnexpectedBodyException(e);
     }
   }

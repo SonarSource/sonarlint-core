@@ -69,6 +69,7 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.ProjectBranch
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Qualityprofiles;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Settings;
+import org.sonarsource.sonarlint.core.serverconnection.AiCodeFixFeatureEnablement;
 import org.sonarsource.sonarlint.core.test.utils.plugins.Plugin;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -239,18 +240,37 @@ public class ServerFixture {
 
     public static class AiCodeFixFeatureBuilder {
       private Set<String> supportedRules = Set.of();
+      private boolean organizationEligible = true;
+      private AiCodeFixFeatureEnablement enablement = AiCodeFixFeatureEnablement.DISABLED;
+      private List<String> enabledProjectKeys = List.of();
 
       public AiCodeFixFeatureBuilder withSupportedRules(Set<String> supportedRules) {
         this.supportedRules = supportedRules;
         return this;
       }
 
+      public AiCodeFixFeatureBuilder organizationEligible(boolean organizationEligible) {
+        this.organizationEligible = organizationEligible;
+        return this;
+      }
+
+      public AiCodeFixFeatureBuilder disabled() {
+        this.enablement = AiCodeFixFeatureEnablement.DISABLED;
+        return this;
+      }
+
+      public AiCodeFixFeatureBuilder enabledForProjects(String projectKey) {
+        this.enablement = AiCodeFixFeatureEnablement.ENABLED_FOR_SOME_PROJECTS;
+        this.enabledProjectKeys = List.of(projectKey);
+        return this;
+      }
+
       public AiCodeFixFeature build() {
-        return new AiCodeFixFeature(supportedRules);
+        return new AiCodeFixFeature(supportedRules, enablement);
       }
     }
 
-    public record AiCodeFixFeature(Set<String> rules) {
+    public record AiCodeFixFeature(Set<String> rules, AiCodeFixFeatureEnablement enablement) {
     }
 
     public static class ServerProjectBuilder {
@@ -607,6 +627,10 @@ public class ServerFixture {
     @Nullable
     private final String organizationKey;
     @Nullable
+    private final String organizationId;
+    @Nullable
+    private final UUID organizationUuidV4;
+    @Nullable
     private final Version version;
     private final Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey;
     private final boolean smartNotificationsSupported;
@@ -631,6 +655,13 @@ public class ServerFixture {
       this.tokensRegistered = tokensRegistered;
       this.statusCode = statusCode;
       this.aiCodeFixFeature = aiCodeFixFeature;
+      if (organizationKey != null) {
+        this.organizationId = organizationKey;
+        this.organizationUuidV4 = UUID.randomUUID();
+      } else {
+        this.organizationId = null;
+        this.organizationUuidV4 = null;
+      }
     }
 
     public void start() {
@@ -655,6 +686,7 @@ public class ServerFixture {
         registerTokenApiResponse();
         registerComponentApiResponses();
         registerFixSuggestionsApiResponses();
+        registerOrganizationApiResponses();
       }
     }
 
@@ -1254,27 +1286,31 @@ public class ServerFixture {
     }
 
     private void registerFixSuggestionsApiResponses() {
-      try {
-        projectsByProjectKey.forEach((projectKey, project) -> {
-          try {
-            if (project.aiCodeFixSuggestion != null) {
-              mockServer.stubFor(post("/fix-suggestions/ai-suggestions")
-                .willReturn(jsonResponse(
-                  new ObjectMapper().setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY).writeValueAsString(project.aiCodeFixSuggestion.build()), 200)));
-            }
-          } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException(e);
+      projectsByProjectKey.forEach((projectKey, project) -> {
+        try {
+          if (project.aiCodeFixSuggestion != null) {
+            mockServer.stubFor(post("/fix-suggestions/ai-suggestions")
+              .willReturn(jsonResponse(
+                new ObjectMapper().setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY).writeValueAsString(project.aiCodeFixSuggestion.build()), 200)));
           }
-        });
-
-        if (serverKind == ServerKind.SONARCLOUD) {
-          mockServer.stubFor(get("/fix-suggestions/supported-rules")
-            .willReturn(jsonResponse(
-              new ObjectMapper().setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY).writeValueAsString(aiCodeFixFeature.build()), 200)));
+        } catch (JsonProcessingException e) {
+          throw new IllegalArgumentException(e);
         }
-      } catch (JsonProcessingException e) {
-        throw new IllegalArgumentException(e);
+      });
+
+      if (serverKind == ServerKind.SONARCLOUD) {
+        var feature = aiCodeFixFeature.build();
+        mockServer.stubFor(get("/fix-suggestions/supported-rules")
+          .willReturn(jsonResponse("{\"rules\": [" + String.join(", ", feature.rules.stream().map(rule -> "\"" + rule + "\"").toList()) + "]}", 200)));
+        mockServer.stubFor(get("/fix-suggestions/organization-configs/" + organizationId)
+          .willReturn(jsonResponse("{\"enablement\": \"" + aiCodeFixFeature.enablement.name() + "\", \"organizationEligible\": " + aiCodeFixFeature.organizationEligible
+            + ",  \"enabledProjectKeys\": [" + String.join(", ", aiCodeFixFeature.enabledProjectKeys) + "]}", 200)));
       }
+    }
+
+    private void registerOrganizationApiResponses() {
+      mockServer.stubFor(get("/organizations/organizations?organizationKey=" + organizationKey + "&excludeEligibility=true")
+        .willReturn(jsonResponse("[{\"id\": \"" + organizationId + "\", \"uuidV4\": \"" + organizationUuidV4 + "\"}]", 200)));
     }
 
     public void shutdown() {

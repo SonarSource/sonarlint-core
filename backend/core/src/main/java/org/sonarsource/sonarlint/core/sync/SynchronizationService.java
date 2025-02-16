@@ -64,6 +64,7 @@ import org.sonarsource.sonarlint.core.serverapi.exception.ForbiddenException;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnauthorizedException;
 import org.sonarsource.sonarlint.core.serverconnection.AiCodeFixSettingsSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.LocalStorageSynchronizer;
+import org.sonarsource.sonarlint.core.serverconnection.OrganizationSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.SonarServerSettingsChangedEvent;
 import org.sonarsource.sonarlint.core.storage.StorageService;
@@ -308,7 +309,7 @@ public class SynchronizationService {
     var storage = storageService.connection(connectionId);
     var serverInfoSynchronizer = new ServerInfoSynchronizer(storage);
     var storageSynchronizer = new LocalStorageSynchronizer(enabledLanguagesToSync, connectedModeEmbeddedPluginKeys, serverInfoSynchronizer, storage);
-    var aiCodeFixSynchronizer = new AiCodeFixSettingsSynchronizer(storage);
+    var aiCodeFixSynchronizer = new AiCodeFixSettingsSynchronizer(storage, new OrganizationSynchronizer(storage));
     try {
       LOG.debug("Synchronizing storage of connection '{}'", connectionId);
       var summary = storageSynchronizer.synchronizeServerInfosAndPlugins(serverApi, cancelMonitor);

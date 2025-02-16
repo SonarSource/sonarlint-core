@@ -119,4 +119,35 @@ class FixSuggestionsApiTest {
     }
   }
 
+  @Nested
+  class GetOrganizationConfigs {
+
+    @Test
+    void it_should_throw_an_exception_if_the_body_is_malformed() {
+      mockServer.addStringResponse("/fix-suggestions/organization-configs/orgId", """
+        [
+        """);
+
+      var throwable = catchThrowable(() -> underTest.getOrganizationConfigs("orgId", new SonarLintCancelMonitor()));
+
+      assertThat(throwable).isInstanceOf(UnexpectedBodyException.class);
+    }
+
+    @Test
+    void it_should_return_the_organization_config() {
+      mockServer.addStringResponse("/fix-suggestions/organization-configs/orgId", """
+        {
+          "organizationId": "orgId",
+          "enablement": "DISABLED",
+          "organizationEligible": true
+        }
+        """);
+
+      var response = underTest.getOrganizationConfigs("orgId", new SonarLintCancelMonitor());
+
+      assertThat(response)
+        .isEqualTo(new OrganizationConfigsResponseDto("orgId", true, SuggestionFeatureEnablement.DISABLED, null));
+    }
+  }
+
 }

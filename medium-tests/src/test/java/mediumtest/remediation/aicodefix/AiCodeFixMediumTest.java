@@ -160,7 +160,8 @@ public class AiCodeFixMediumTest {
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR")))
         .withAiCodeFixSettings(aiCodeFix -> aiCodeFix
-          .withSupportedRules(Set.of("xml:S3421"))))
+          .withSupportedRules(Set.of("xml:S3421"))
+          .organizationEligible(true).enabledForAllProjects()))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
       .start(fakeClient);
     var issue = analyzeFileAndGetIssue(fileUri, fakeClient, backend, "configScope");
@@ -201,7 +202,128 @@ public class AiCodeFixMediumTest {
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .withSonarCloudUrl(server.baseUrl())
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
-        .withProject("projectKey", project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S1220", "MAJOR"))))
+        .withProject("projectKey", project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S1220", "MAJOR")))
+        .withAiCodeFixSettings(settings -> settings.organizationEligible(true).enabledForAllProjects()))
+      .withBoundConfigScope("configScope", "connectionId", "projectKey")
+      .start(fakeClient);
+    var issue = analyzeFileAndGetIssue(fileUri, fakeClient, backend, "configScope");
+    assertThat(issue.isAiCodeFixable()).isFalse();
+
+    var future = backend.getAiCodeFixRpcService().suggestFix(new SuggestFixParams("configScope", issue.getId()));
+
+    assertThat(future).failsWithin(Duration.of(1, ChronoUnit.SECONDS))
+      .withThrowableThat()
+      .havingCause()
+      .isInstanceOf(ResponseErrorException.class)
+      .asInstanceOf(InstanceOfAssertFactories.type(ResponseErrorException.class))
+      .extracting(ResponseErrorException::getResponseError)
+      .extracting(ResponseError::getCode, ResponseError::getMessage)
+      .containsExactly(InvalidParams.getValue(), "The provided issue cannot be fixed");
+  }
+
+  @SonarLintTest
+  void it_should_fail_if_the_issue_is_not_fixable_because_the_organization_is_not_eligible(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var sourceCode = "public interface Fubar\n" +
+      "{}";
+    var filePath = createFile(baseDir, "Fubar.java", sourceCode);
+    var fileUri = filePath.toUri();
+    var server = harness.newFakeSonarCloudServer("organizationKey")
+      .withProject("projectKey",
+        project -> project.withBranch("branchName")
+          .withAiCodeFixSuggestion(suggestion -> suggestion
+            .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
+            .withExplanation("This is the explanation")
+            .withChange(0, 0, "This is the new code")))
+      .start();
+    var fakeClient = harness.newFakeClient()
+      .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .withSonarCloudUrl(server.baseUrl())
+      .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
+        .withProject("projectKey", project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S1220", "MAJOR")))
+        .withAiCodeFixSettings(settings -> settings.organizationEligible(false)))
+      .withBoundConfigScope("configScope", "connectionId", "projectKey")
+      .start(fakeClient);
+    var issue = analyzeFileAndGetIssue(fileUri, fakeClient, backend, "configScope");
+    assertThat(issue.isAiCodeFixable()).isFalse();
+
+    var future = backend.getAiCodeFixRpcService().suggestFix(new SuggestFixParams("configScope", issue.getId()));
+
+    assertThat(future).failsWithin(Duration.of(1, ChronoUnit.SECONDS))
+      .withThrowableThat()
+      .havingCause()
+      .isInstanceOf(ResponseErrorException.class)
+      .asInstanceOf(InstanceOfAssertFactories.type(ResponseErrorException.class))
+      .extracting(ResponseErrorException::getResponseError)
+      .extracting(ResponseError::getCode, ResponseError::getMessage)
+      .containsExactly(InvalidParams.getValue(), "The provided issue cannot be fixed");
+  }
+
+  @SonarLintTest
+  void it_should_fail_if_the_issue_is_not_fixable_because_the_feature_is_globally_disabled(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var sourceCode = "public interface Fubar\n" +
+      "{}";
+    var filePath = createFile(baseDir, "Fubar.java", sourceCode);
+    var fileUri = filePath.toUri();
+    var server = harness.newFakeSonarCloudServer("organizationKey")
+      .withProject("projectKey",
+        project -> project.withBranch("branchName")
+          .withAiCodeFixSuggestion(suggestion -> suggestion
+            .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
+            .withExplanation("This is the explanation")
+            .withChange(0, 0, "This is the new code")))
+      .start();
+    var fakeClient = harness.newFakeClient()
+      .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .withSonarCloudUrl(server.baseUrl())
+      .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
+        .withProject("projectKey", project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S1220", "MAJOR")))
+        .withAiCodeFixSettings(settings -> settings.organizationEligible(true).disabled()))
+      .withBoundConfigScope("configScope", "connectionId", "projectKey")
+      .start(fakeClient);
+    var issue = analyzeFileAndGetIssue(fileUri, fakeClient, backend, "configScope");
+    assertThat(issue.isAiCodeFixable()).isFalse();
+
+    var future = backend.getAiCodeFixRpcService().suggestFix(new SuggestFixParams("configScope", issue.getId()));
+
+    assertThat(future).failsWithin(Duration.of(1, ChronoUnit.SECONDS))
+      .withThrowableThat()
+      .havingCause()
+      .isInstanceOf(ResponseErrorException.class)
+      .asInstanceOf(InstanceOfAssertFactories.type(ResponseErrorException.class))
+      .extracting(ResponseErrorException::getResponseError)
+      .extracting(ResponseError::getCode, ResponseError::getMessage)
+      .containsExactly(InvalidParams.getValue(), "The provided issue cannot be fixed");
+  }
+
+  @SonarLintTest
+  void it_should_fail_if_the_issue_is_not_fixable_because_the_feature_is_disabled_for_the_project(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var sourceCode = "public interface Fubar\n" +
+      "{}";
+    var filePath = createFile(baseDir, "Fubar.java", sourceCode);
+    var fileUri = filePath.toUri();
+    var server = harness.newFakeSonarCloudServer("organizationKey")
+      .withProject("projectKey",
+        project -> project.withBranch("branchName")
+          .withAiCodeFixSuggestion(suggestion -> suggestion
+            .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
+            .withExplanation("This is the explanation")
+            .withChange(0, 0, "This is the new code")))
+      .start();
+    var fakeClient = harness.newFakeClient()
+      .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
+      .withSonarCloudUrl(server.baseUrl())
+      .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
+        .withProject("projectKey", project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S1220", "MAJOR")))
+        .withAiCodeFixSettings(settings -> settings.organizationEligible(true).enabledForProjects("otherProjectKey")))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
       .start(fakeClient);
     var issue = analyzeFileAndGetIssue(fileUri, fakeClient, backend, "configScope");
@@ -279,7 +401,9 @@ public class AiCodeFixMediumTest {
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR")))
         .withAiCodeFixSettings(aiCodeFix -> aiCodeFix
-          .withSupportedRules(Set.of("xml:S0000"))))
+          .withSupportedRules(Set.of("xml:S0000"))
+          .organizationEligible(true)
+          .enabledForProjects("projectKey")))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
       .start(fakeClient);
 
@@ -309,7 +433,9 @@ public class AiCodeFixMediumTest {
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR")))
         .withAiCodeFixSettings(aiCodeFix -> aiCodeFix
-          .withSupportedRules(Set.of("xml:S3421"))))
+          .withSupportedRules(Set.of("xml:S3421"))
+          .organizationEligible(true)
+          .enabledForProjects("projectKey")))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
       .start(fakeClient);
 
@@ -339,7 +465,9 @@ public class AiCodeFixMediumTest {
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR")))
         .withAiCodeFixSettings(aiCodeFix -> aiCodeFix
-          .withSupportedRules(Set.of("xml:S3421"))))
+          .withSupportedRules(Set.of("xml:S3421"))
+          .organizationEligible(true)
+          .enabledForProjects("projectKey")))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
       .start(fakeClient);
     var issue = analyzeFileAndGetIssue(fileUri, fakeClient, backend, "configScope");
@@ -363,7 +491,9 @@ public class AiCodeFixMediumTest {
     var filePath = createFile(baseDir, "pom.xml", XML_SOURCE_CODE_WITH_ISSUE);
     var fileUri = filePath.toUri();
     var server = harness.newFakeSonarCloudServer("organizationKey")
-      .withAiCodeFixFeature(feature -> feature.withSupportedRules(Set.of("xml:S3421")))
+      .withAiCodeFixFeature(feature -> feature.withSupportedRules(Set.of("xml:S3421"))
+        .organizationEligible(true)
+        .enabledForProjects("projectKey"))
       .withProject("projectKey",
         project -> project.withBranch("branchName")
           .withAiCodeFixSuggestion(suggestion -> suggestion
@@ -384,7 +514,12 @@ public class AiCodeFixMediumTest {
       .start(fakeClient);
 
     await().untilAsserted(() -> assertThat(readAiCodeFixSettings(backend, "connectionId"))
-      .isEqualTo(Sonarlint.AiCodeFixSettings.newBuilder().addAllSupportedRules(Set.of("xml:S3421")).build()));
+      .isEqualTo(Sonarlint.AiCodeFixSettings.newBuilder()
+        .addAllSupportedRules(Set.of("xml:S3421"))
+        .setOrganizationEligible(true)
+        .setEnablement(Sonarlint.AiCodeFixEnablement.ENABLED_FOR_SOME_PROJECTS)
+        .addAllEnabledProjectKeys(Set.of("projectKey"))
+        .build()));
   }
 
   private Sonarlint.AiCodeFixSettings readAiCodeFixSettings(SonarLintTestRpcServer backend, String connectionId) {

@@ -588,7 +588,8 @@ class SonarCloudTests extends AbstractConnectedTests {
         ImpactSeverity.HIGH);
       assertThat(taintVulnerability.getFlows()).isNotEmpty();
       assertThat(taintVulnerability.isOnNewCode()).isTrue();
-      assertThat(taintVulnerability.isAiCodeFixable()).isTrue();
+      // the feature is not enabled for our org
+      assertThat(taintVulnerability.isAiCodeFixable()).isFalse();
       var flow = taintVulnerability.getFlows().get(0);
       assertThat(flow.getLocations()).isNotEmpty();
       assertThat(flow.getLocations().get(0).getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
