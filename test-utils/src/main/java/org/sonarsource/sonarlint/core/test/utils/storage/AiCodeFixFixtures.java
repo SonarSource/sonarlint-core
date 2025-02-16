@@ -20,7 +20,9 @@
 package org.sonarsource.sonarlint.core.test.utils.storage;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
+import org.sonarsource.sonarlint.core.serverconnection.AiCodeFixFeatureEnablement;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 
@@ -31,17 +33,44 @@ public class AiCodeFixFixtures {
 
   public static class Builder {
     private Set<String> supportedRules = Set.of();
+    private boolean organizationEligible = true;
+    private AiCodeFixFeatureEnablement enablement = AiCodeFixFeatureEnablement.DISABLED;
+    private List<String> enabledProjectKeys = List.of();
 
     public Builder withSupportedRules(Set<String> supportedRules) {
       this.supportedRules = supportedRules;
       return this;
     }
 
+    public Builder organizationEligible(boolean organizationEligible) {
+      this.organizationEligible = organizationEligible;
+      return this;
+    }
+
+    public Builder disabled() {
+      this.enablement = AiCodeFixFeatureEnablement.DISABLED;
+      return this;
+    }
+
+    public Builder enabledForProjects(String projectKey) {
+      this.enablement = AiCodeFixFeatureEnablement.ENABLED_FOR_SOME_PROJECTS;
+      this.enabledProjectKeys = List.of(projectKey);
+      return this;
+    }
+
+    public Builder enabledForAllProjects() {
+      this.enablement = AiCodeFixFeatureEnablement.ENABLED_FOR_ALL_PROJECTS;
+      return this;
+    }
+
     public void create(Path path) {
-      var analyzerConfiguration = Sonarlint.AiCodeFixSettings.newBuilder()
+      var settings = Sonarlint.AiCodeFixSettings.newBuilder()
         .addAllSupportedRules(supportedRules)
+        .setOrganizationEligible(organizationEligible)
+        .setEnablement(Sonarlint.AiCodeFixEnablement.valueOf(enablement.name()))
+        .addAllEnabledProjectKeys(enabledProjectKeys)
         .build();
-      ProtobufFileUtil.writeToFile(analyzerConfiguration, path.resolve("ai_codefix.pb"));
+      ProtobufFileUtil.writeToFile(settings, path.resolve("ai_codefix.pb"));
     }
   }
 }

@@ -112,6 +112,21 @@ message NewCodeDefinition {
   optional string referenceBranch = 5;
 }
 
+message Organization {
+  string id = 1;
+  string uuidV4 = 2;
+}
+
 message AiCodeFixSettings {
   repeated string supportedRules = 1;
+  bool organizationEligible = 2;
+  AiCodeFixEnablement enablement = 3;
+  repeated string enabledProjectKeys = 4;
+}
+
+enum AiCodeFixEnablement {
+  UNKNOWN_ENABLEMENT = 0;
+  DISABLED = 1;
+  ENABLED_FOR_SOME_PROJECTS = 2;
+  ENABLED_FOR_ALL_PROJECTS = 3;
 }

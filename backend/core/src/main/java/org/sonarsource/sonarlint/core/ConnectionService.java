@@ -161,7 +161,7 @@ public class ConnectionService {
       if (validateCredentials.success() && transientConnection.isRight()) {
         var organizationKey = transientConnection.getRight().getOrganization();
         if (organizationKey != null) {
-          var organization = serverApi.organization().getOrganization(organizationKey, cancelMonitor);
+          var organization = serverApi.organization().searchOrganization(organizationKey, cancelMonitor);
           if (organization.isEmpty()) {
             return new ValidateConnectionResponse(false, "No organizations found for key: " + organizationKey);
           }

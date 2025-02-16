@@ -100,7 +100,7 @@ public class OrganizationsCache {
   @CheckForNull
   public OrganizationDto getOrganization(Either<TokenDto, UsernamePasswordDto> credentials, String organizationKey, SonarCloudRegion region, SonarLintCancelMonitor cancelMonitor) {
     var helper = connectionManager.getForSonarCloudNoOrg(credentials, region);
-    var serverOrganization = helper.organization().getOrganization(organizationKey, cancelMonitor);
+    var serverOrganization = helper.organization().searchOrganization(organizationKey, cancelMonitor);
     return serverOrganization.map(o -> new OrganizationDto(o.getKey(), o.getName(), o.getDescription())).orElse(null);
   }
 

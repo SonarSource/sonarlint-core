@@ -19,11 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
-import java.util.Set;
+import java.util.UUID;
 
-public record AiCodeFixSettings(Set<String> supportedRules, boolean isOrganizationEligible, AiCodeFixFeatureEnablement enablement, Set<String> enabledProjectKeys) {
-  public boolean isFeatureEnabled(String projectKey) {
-    return isOrganizationEligible && (enablement.equals(AiCodeFixFeatureEnablement.ENABLED_FOR_ALL_PROJECTS)
-      || (enablement.equals(AiCodeFixFeatureEnablement.ENABLED_FOR_SOME_PROJECTS) && enabledProjectKeys.contains(projectKey)));
-  }
+public record Organization(String id, UUID uuidV4) {
 }

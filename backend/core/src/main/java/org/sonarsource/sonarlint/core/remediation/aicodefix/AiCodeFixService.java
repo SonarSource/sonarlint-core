@@ -82,6 +82,7 @@ public class AiCodeFixService {
 
   public Optional<AiCodeFixFeature> getFeature(Binding binding) {
     return storageService.connection(binding.connectionId()).aiCodeFix().read()
+      .filter(settings -> settings.isFeatureEnabled(binding.sonarProjectKey()))
       .map(AiCodeFixFeature::new);
   }
 

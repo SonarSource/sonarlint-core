@@ -27,16 +27,21 @@ public class AiCodeFixSettingsSynchronizer {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final ConnectionStorage storage;
+  private final OrganizationSynchronizer organizationSynchronizer;
 
-  public AiCodeFixSettingsSynchronizer(ConnectionStorage storage) {
+  public AiCodeFixSettingsSynchronizer(ConnectionStorage storage, OrganizationSynchronizer organizationSynchronizer) {
     this.storage = storage;
+    this.organizationSynchronizer = organizationSynchronizer;
   }
 
   public void synchronize(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
     if (serverApi.isSonarCloud()) {
       try {
         var supportedRules = serverApi.fixSuggestions().getSupportedRules(cancelMonitor);
-        storage.aiCodeFix().store(new AiCodeFixSettings(supportedRules.rules()));
+        var organization = organizationSynchronizer.readOrSynchronizeOrganization(serverApi, cancelMonitor);
+        var organizationConfig = serverApi.fixSuggestions().getOrganizationConfigs(organization.id(), cancelMonitor);
+        storage.aiCodeFix().store(new AiCodeFixSettings(supportedRules.rules(), organizationConfig.organizationEligible(),
+          AiCodeFixFeatureEnablement.valueOf(organizationConfig.enablement().name()), organizationConfig.enabledProjectKeys()));
       } catch (Exception e) {
         LOG.error("Error synchronizing AI CodeFix settings", e);
       }

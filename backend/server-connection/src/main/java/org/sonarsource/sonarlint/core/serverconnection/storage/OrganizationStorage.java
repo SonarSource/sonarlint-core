@@ -22,51 +22,43 @@ package org.sonarsource.sonarlint.core.serverconnection.storage;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
-import java.util.Set;
+import java.util.UUID;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.serverconnection.AiCodeFixFeatureEnablement;
-import org.sonarsource.sonarlint.core.serverconnection.AiCodeFixSettings;
 import org.sonarsource.sonarlint.core.serverconnection.FileUtils;
+import org.sonarsource.sonarlint.core.serverconnection.Organization;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil.writeToFile;
 
-public class AiCodeFixStorage {
-  public static final String AI_CODEFIX_PB = "ai_codefix.pb";
+public class OrganizationStorage {
+  public static final String ORGANIZATION_PB = "organization.pb";
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final Path storageFilePath;
   private final RWLock rwLock = new RWLock();
 
-  public AiCodeFixStorage(Path rootPath) {
-    this.storageFilePath = rootPath.resolve(AI_CODEFIX_PB);
+  public OrganizationStorage(Path rootPath) {
+    this.storageFilePath = rootPath.resolve(ORGANIZATION_PB);
   }
 
-  public void store(AiCodeFixSettings settings) {
+  public void store(Organization organization) {
     FileUtils.mkdirs(storageFilePath.getParent());
-    var settingsToStore = adapt(settings);
-    LOG.debug("Storing AI CodeFix settings in {}", storageFilePath);
+    var settingsToStore = adapt(organization);
+    LOG.debug("Storing organization settings in {}", storageFilePath);
     rwLock.write(() -> writeToFile(settingsToStore, storageFilePath));
-    LOG.debug("Stored AI CodeFix settings");
+    LOG.debug("Stored organization settings");
   }
 
-  public Optional<AiCodeFixSettings> read() {
-    return rwLock.read(() -> Files.exists(storageFilePath) ? Optional.of(adapt(ProtobufFileUtil.readFile(storageFilePath, Sonarlint.AiCodeFixSettings.parser())))
+  public Optional<Organization> read() {
+    return rwLock.read(() -> Files.exists(storageFilePath) ? Optional.of(adapt(ProtobufFileUtil.readFile(storageFilePath, Sonarlint.Organization.parser())))
       : Optional.empty());
   }
 
-  private static Sonarlint.AiCodeFixSettings adapt(AiCodeFixSettings settings) {
-    return Sonarlint.AiCodeFixSettings.newBuilder()
-      .addAllSupportedRules(settings.supportedRules())
-      .setEnablement(Sonarlint.AiCodeFixEnablement.valueOf(settings.enablement().name()))
-      .setOrganizationEligible(settings.isOrganizationEligible())
-      .addAllEnabledProjectKeys(settings.enabledProjectKeys())
-      .build();
+  private static Sonarlint.Organization adapt(Organization organization) {
+    return Sonarlint.Organization.newBuilder().setId(organization.id()).setUuidV4(organization.uuidV4().toString()).build();
   }
 
-  private static AiCodeFixSettings adapt(Sonarlint.AiCodeFixSettings settings) {
-    return new AiCodeFixSettings(Set.copyOf(settings.getSupportedRulesList()), settings.getOrganizationEligible(),
-      AiCodeFixFeatureEnablement.valueOf(settings.getEnablement().name()), Set.copyOf(settings.getEnabledProjectKeysList()));
+  private static Organization adapt(Sonarlint.Organization organization) {
+    return new Organization(organization.getId(), UUID.fromString(organization.getUuidV4()));
   }
-
 }
