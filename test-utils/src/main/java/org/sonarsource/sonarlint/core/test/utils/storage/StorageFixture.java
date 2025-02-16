@@ -64,6 +64,7 @@ public class StorageFixture {
     private final String connectionId;
     private final List<Plugin> plugins = new ArrayList<>();
     private final List<ProjectStorageFixture.ProjectStorageBuilder> projectBuilders = new ArrayList<>();
+    private AiCodeFixFixtures.Builder aiCodeFixBuilder;
     private String serverVersion;
 
     private StorageBuilder(String connectionId) {
@@ -104,6 +105,13 @@ public class StorageFixture {
       return this;
     }
 
+    public StorageBuilder withAiCodeFixSettings(Consumer<AiCodeFixFixtures.Builder> consumer) {
+      var builder = new AiCodeFixFixtures.Builder();
+      consumer.accept(builder);
+      aiCodeFixBuilder = builder;
+      return this;
+    }
+
     public Storage create(Path rootPath) {
       var storagePath = rootPath.resolve("storage");
       var connectionStorage = storagePath.resolve(encodeForFs(connectionId));
@@ -122,6 +130,9 @@ public class StorageFixture {
 
       List<ProjectStorageFixture.ProjectStorage> projectStorages = new ArrayList<>();
       projectBuilders.forEach(project -> projectStorages.add(project.create(projectsFolderPath)));
+      if (aiCodeFixBuilder != null) {
+        aiCodeFixBuilder.create(connectionStorage);
+      }
       return new Storage(storagePath, pluginPaths, projectStorages);
     }
 

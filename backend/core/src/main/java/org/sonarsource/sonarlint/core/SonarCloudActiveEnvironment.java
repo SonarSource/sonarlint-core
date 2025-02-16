@@ -35,8 +35,8 @@ public class SonarCloudActiveEnvironment {
   public SonarCloudActiveEnvironment() {
   }
 
-  public SonarCloudActiveEnvironment(URI uri, URI webSocketsEndpointUri) {
-    this.alternativeUris = new SonarQubeCloudUris(uri, webSocketsEndpointUri);
+  public SonarCloudActiveEnvironment(URI uri, URI apiUri, URI webSocketsEndpointUri) {
+    this.alternativeUris = new SonarQubeCloudUris(uri, apiUri, webSocketsEndpointUri);
   }
 
   public URI getUri(SonarCloudRegion region) {
@@ -44,7 +44,7 @@ public class SonarCloudActiveEnvironment {
   }
 
   public URI getApiUri(SonarCloudRegion region) {
-    return alternativeUris != null ? alternativeUris.productionUri : region.getApiProductionUri();
+    return alternativeUris != null ? alternativeUris.productionApiUri : region.getApiProductionUri();
   }
 
   public URI getWebSocketsEndpointUri(SonarCloudRegion region) {
@@ -75,21 +75,6 @@ public class SonarCloudActiveEnvironment {
     return alternativeUris != null && removeEnd(alternativeUris.productionUri.toString(), "/").equals(removeEnd(uri, "/"));
   }
 
-  private static class SonarQubeCloudUris {
-    private final URI productionUri;
-    private final URI wsUri;
-
-    public SonarQubeCloudUris(URI productionUri, URI wsUri) {
-      this.productionUri = productionUri;
-      this.wsUri = wsUri;
-    }
-
-    public URI getProductionUri() {
-      return productionUri;
-    }
-
-    public URI getWsUri() {
-      return wsUri;
-    }
+  private record SonarQubeCloudUris(URI productionUri, URI productionApiUri, URI wsUri) {
   }
 }

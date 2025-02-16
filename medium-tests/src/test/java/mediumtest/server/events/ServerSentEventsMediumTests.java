@@ -610,7 +610,7 @@ class ServerSentEventsMediumTests {
         .ignoringFields("id")
         .isEqualTo(List.of(new TaintVulnerabilityDto(UUID.randomUUID(), "key1", false, "ruleKey", "msg", Paths.get("file/path"), introductionDate,
           Either.forLeft(new StandardModeDetails(IssueSeverity.MAJOR, org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.BUG)), Collections.emptyList(),
-          new TextRangeWithHashDto(1, 0, 3, 4, "hash"), null, true)));
+          new TextRangeWithHashDto(1, 0, 3, 4, "hash"), null, true, false)));
 
       reset(fakeClient);
       waitAtMost(20, TimeUnit.SECONDS).untilAsserted(() -> assertThat(fakeClient.getTaintVulnerabilityChanges()).isNotEmpty());
@@ -621,7 +621,7 @@ class ServerSentEventsMediumTests {
         .ignoringFields("id")
         .isEqualTo(List.of(new TaintVulnerabilityDto(UUID.randomUUID(), "key1", false, "ruleKey", "msg", Paths.get("file/path"), introductionDate,
           Either.forLeft(new StandardModeDetails(IssueSeverity.MAJOR, org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.BUG)), Collections.emptyList(),
-          new TextRangeWithHashDto(1, 0, 3, 4, "hash"), null, true)));
+          new TextRangeWithHashDto(1, 0, 3, 4, "hash"), null, true, false)));
     }
 
     private void mockEvent(ServerFixture.Server server, String projectKey, String eventPayload) {

@@ -62,6 +62,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeCon
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.exception.ForbiddenException;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnauthorizedException;
+import org.sonarsource.sonarlint.core.serverconnection.AiCodeFixSettingsSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.LocalStorageSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.SonarServerSettingsChangedEvent;
@@ -307,6 +308,7 @@ public class SynchronizationService {
     var storage = storageService.connection(connectionId);
     var serverInfoSynchronizer = new ServerInfoSynchronizer(storage);
     var storageSynchronizer = new LocalStorageSynchronizer(enabledLanguagesToSync, connectedModeEmbeddedPluginKeys, serverInfoSynchronizer, storage);
+    var aiCodeFixSynchronizer = new AiCodeFixSettingsSynchronizer(storage);
     try {
       LOG.debug("Synchronizing storage of connection '{}'", connectionId);
       var summary = storageSynchronizer.synchronizeServerInfosAndPlugins(serverApi, cancelMonitor);
@@ -315,6 +317,7 @@ public class SynchronizationService {
         pluginsRepository.unload(connectionId);
         applicationEventPublisher.publishEvent(new PluginsSynchronizedEvent(connectionId));
       }
+      aiCodeFixSynchronizer.synchronize(serverApi, cancelMonitor);
       scopesToSync = scopesToSync.stream()
         .filter(boundScope -> shouldSynchronizeBinding(new Binding(connectionId, boundScope.getSonarProjectKey()))).toList();
       var scopesPerProjectKey = scopesToSync.stream()
@@ -389,7 +392,7 @@ public class SynchronizationService {
       return;
     }
     configurationRepository.getEffectiveBinding(configurationScopeId).ifPresent(binding -> synchronizeProjectsAsync(Map.of(requireNonNull(binding.connectionId()),
-      Map.of(binding.sonarProjectKey(), List.of(new BoundScope(configurationScopeId, binding.connectionId(), binding.sonarProjectKey()))))));
+      Map.of(binding.sonarProjectKey(), List.of(new BoundScope(configurationScopeId, binding))))));
   }
 
   @PreDestroy
