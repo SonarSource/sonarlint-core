@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.function.Consumer;
@@ -72,24 +73,40 @@ public class ProcessWrapperFactory {
       }
     }
 
+    private static boolean isNotAGitRepo(LinkedList<String> output) {
+      return output.stream().anyMatch(line -> line.contains("not a git repository"));
+    }
+
     public void execute() throws IOException {
-      ProcessBuilder pb = new ProcessBuilder()
+      var output = new LinkedList<String>();
+      var processBuilder = new ProcessBuilder()
         .command(command)
         .directory(baseDir != null ? baseDir.toFile() : null);
-      envVariables.forEach(pb.environment()::put);
+      envVariables.forEach(processBuilder.environment()::put);
+      processBuilder.redirectInput(ProcessBuilder.Redirect.PIPE);
+      processBuilder.redirectOutput(ProcessBuilder.Redirect.PIPE);
+      processBuilder.redirectError(ProcessBuilder.Redirect.PIPE);
 
-      Process p = pb.start();
+      var p = processBuilder.start();
       try {
-        processInputStream(p.getInputStream(), stdOutLineConsumer);
+        processInputStream(p.getInputStream(), line -> {
+          output.add(line);
+          stdOutLineConsumer.accept(line);
+        });
 
         processInputStream(p.getErrorStream(), line -> {
           if (!line.isBlank()) {
+            output.add(line);
             LOG.debug(line);
           }
         });
 
         int exit = p.waitFor();
         if (exit != 0) {
+          if (isNotAGitRepo(output)) {
+            var dirStr = baseDir != null ? baseDir.toString() : "null";
+            throw new GitRepoNotFoundException(dirStr);
+          }
           throw new IllegalStateException(format("Command execution exited with code: %d", exit));
         }
       } catch (InterruptedException e) {
