@@ -58,4 +58,13 @@ public class FixSuggestionsApi {
       throw new UnexpectedBodyException(e);
     }
   }
+
+  public OrganizationConfigsResponseDto getOrganizationConfigs(String organizationKey, SonarLintCancelMonitor cancelMonitor) {
+    try (var response = helper.get("/api/fix-suggestions/organization-configs?organizationKey=" + organizationKey, cancelMonitor)) {
+      return new Gson().fromJson(response.bodyAsString(), OrganizationConfigsResponseDto.class);
+    } catch (Exception e) {
+      LOG.error("Error while fetching the AI CodeFix organization config", e);
+      throw new UnexpectedBodyException(e);
+    }
+  }
 }
