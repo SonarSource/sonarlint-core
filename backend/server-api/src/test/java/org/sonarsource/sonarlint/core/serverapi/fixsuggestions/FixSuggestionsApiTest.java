@@ -20,8 +20,10 @@
 package org.sonarsource.sonarlint.core.serverapi.fixsuggestions;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -46,42 +48,75 @@ class FixSuggestionsApiTest {
     underTest = new FixSuggestionsApi(mockServer.serverApiHelper());
   }
 
-  @Test
-  void it_should_throw_an_exception_if_the_body_is_malformed() {
-    mockServer.addStringResponse("/fix-suggestions/ai-suggestions", """
-      {
-        "id": "XXX
-      }
-      """);
+  @Nested
+  class GetAiSuggestion {
 
-    var throwable = catchThrowable(() -> underTest.getAiSuggestion(
-      new AiSuggestionRequestBodyDto("orgKey", "projectKey", new AiSuggestionRequestBodyDto.Issue("message", 0, 0, "rule:key", "source")), new SonarLintCancelMonitor()));
+    @Test
+    void it_should_throw_an_exception_if_the_body_is_malformed() {
+      mockServer.addStringResponse("/fix-suggestions/ai-suggestions", """
+        {
+          "id": "XXX
+        }
+        """);
 
-    assertThat(throwable).isInstanceOf(UnexpectedBodyException.class);
+      var throwable = catchThrowable(() -> underTest.getAiSuggestion(
+        new AiSuggestionRequestBodyDto("orgKey", "projectKey", new AiSuggestionRequestBodyDto.Issue("message", 0, 0, "rule:key", "source")), new SonarLintCancelMonitor()));
+
+      assertThat(throwable).isInstanceOf(UnexpectedBodyException.class);
+    }
+
+    @Test
+    void it_should_return_the_generated_suggestion() {
+      mockServer.addStringResponse("/fix-suggestions/ai-suggestions", """
+        {
+          "id": "9d4e18f6-f79f-41ad-a480-1c96bd58d58f",
+          "explanation": "This is the way",
+          "changes": [
+            {
+              "startLine": 0,
+              "endLine": 0,
+              "newCode": "This is the new code"
+            }
+          ]
+        }
+        """);
+
+      var response = underTest.getAiSuggestion(new AiSuggestionRequestBodyDto("orgKey", "projectKey", new AiSuggestionRequestBodyDto.Issue("message", 0, 0, "rule:key", "source")),
+        new SonarLintCancelMonitor());
+
+      assertThat(response)
+        .isEqualTo(new AiSuggestionResponseBodyDto(UUID.fromString("9d4e18f6-f79f-41ad-a480-1c96bd58d58f"), "This is the way",
+          List.of(new AiSuggestionResponseBodyDto.ChangeDto(0, 0, "This is the new code"))));
+    }
   }
 
-  @Test
-  void it_should_return_the_generated_suggestion() {
-    mockServer.addStringResponse("/fix-suggestions/ai-suggestions", """
-      {
-        "id": "9d4e18f6-f79f-41ad-a480-1c96bd58d58f",
-        "explanation": "This is the way",
-        "changes": [
-          {
-            "startLine": 0,
-            "endLine": 0,
-            "newCode": "This is the new code"
-          }
-        ]
-      }
-      """);
+  @Nested
+  class GetSupportedRules {
 
-    var response = underTest.getAiSuggestion(new AiSuggestionRequestBodyDto("orgKey", "projectKey", new AiSuggestionRequestBodyDto.Issue("message", 0, 0, "rule:key", "source")),
-      new SonarLintCancelMonitor());
+    @Test
+    void it_should_throw_an_exception_if_the_body_is_malformed() {
+      mockServer.addStringResponse("/fix-suggestions/supported-rules", """
+        [
+        """);
 
-    assertThat(response)
-      .isEqualTo(new AiSuggestionResponseBodyDto(UUID.fromString("9d4e18f6-f79f-41ad-a480-1c96bd58d58f"), "This is the way",
-        List.of(new AiSuggestionResponseBodyDto.ChangeDto(0, 0, "This is the new code"))));
+      var throwable = catchThrowable(() -> underTest.getSupportedRules(new SonarLintCancelMonitor()));
+
+      assertThat(throwable).isInstanceOf(UnexpectedBodyException.class);
+    }
+
+    @Test
+    void it_should_return_the_list_of_supported_rules() {
+      mockServer.addStringResponse("/fix-suggestions/supported-rules", """
+        {
+          "rules": ["repo:rule1", "repo:rule2"]
+        }
+        """);
+
+      var response = underTest.getSupportedRules(new SonarLintCancelMonitor());
+
+      assertThat(response)
+        .isEqualTo(new SupportedRulesResponseDto(Set.of("repo:rule1", "repo:rule2")));
+    }
   }
 
 }

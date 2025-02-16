@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.fixsuggestions;
 
+import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -43,6 +44,15 @@ public class FixSuggestionsApi {
       return gson.fromJson(response.bodyAsString(), AiSuggestionResponseBodyDto.class);
     } catch (Exception e) {
       LOG.error("Error while generating an AI CodeFix", e);
+      throw new UnexpectedBodyException(e);
+    }
+  }
+
+  public SupportedRulesResponseDto getSupportedRules(SonarLintCancelMonitor cancelMonitor) {
+    try (var response = helper.apiGet("/fix-suggestions/supported-rules", cancelMonitor)) {
+      return new Gson().fromJson(response.bodyAsString(), SupportedRulesResponseDto.class);
+    } catch (Exception e) {
+      LOG.error("Error while fetching the list of AI CodeFix supported rules", e);
       throw new UnexpectedBodyException(e);
     }
   }

@@ -80,6 +80,14 @@ public class ServerApiHelper {
     return response;
   }
 
+  public HttpClient.Response apiGet(String path, SonarLintCancelMonitor cancelMonitor) {
+    var response = rawGetUrl(buildApiEndpointUrl(path), cancelMonitor);
+    if (!response.isSuccessful()) {
+      throw handleError(response);
+    }
+    return response;
+  }
+
   public HttpClient.Response post(String relativePath, String contentType, String body, SonarLintCancelMonitor cancelMonitor) {
     return postUrl(buildEndpointUrl(relativePath), contentType, body, cancelMonitor);
   }
@@ -100,9 +108,11 @@ public class ServerApiHelper {
    * Execute GET and don't check response
    */
   public HttpClient.Response rawGet(String relativePath, SonarLintCancelMonitor cancelMonitor) {
-    var startTime = Instant.now();
-    var url = buildEndpointUrl(relativePath);
+    return rawGetUrl(buildEndpointUrl(relativePath), cancelMonitor);
+  }
 
+  private HttpClient.Response rawGetUrl(String url, SonarLintCancelMonitor cancelMonitor) {
+    var startTime = Instant.now();
     var httpFuture = client.getAsync(url);
     return processResponse("GET", cancelMonitor, httpFuture, startTime, url);
   }

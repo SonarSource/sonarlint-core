@@ -1,3 +1,10 @@
+# 10.16
+
+## New features
+
+* Introduce a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.AiCodeFixRpcService` class, containing a `suggestFix(SuggestFixParams)` method.
+* Introduce a new `isAiCodeFixable` method in `org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto`.
+
 # 10.14
 
 ## Breaking changes
