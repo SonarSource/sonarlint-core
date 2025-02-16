@@ -17,39 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.remediation.aicodefix;
 
-/**
- * A configuration scope that is bound to a connection and a Sonar project.
- */
-public class BoundScope {
-
-  private final String configScopeId;
-  private final Binding binding;
-
-  public BoundScope(String configScopeId, String connectionId, String sonarProjectKey) {
-    this(configScopeId, new Binding(connectionId, sonarProjectKey));
-  }
-
-  public BoundScope(String configScopeId, Binding binding) {
-    this.configScopeId = configScopeId;
-    this.binding = binding;
-  }
-
-  public String getConfigScopeId() {
-    return configScopeId;
-  }
-
-  public Binding getBinding() {
-    return binding;
-  }
-
-  public String getConnectionId() {
-    return binding.connectionId();
-  }
-
-  public String getSonarProjectKey() {
-    return binding.sonarProjectKey();
-  }
-
-}
+import javax.annotation.ParametersAreNonnullByDefault;

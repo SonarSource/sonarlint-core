@@ -23,15 +23,34 @@ import java.net.URI;
 
 public class SonarCloudAlternativeEnvironmentDto {
   private final URI uri;
+  private final URI apiUri;
   private final URI webSocketsEndpointUri;
 
+  /**
+   * @deprecated use the other constructor instead
+   */
+  @Deprecated(since = "10.16")
   public SonarCloudAlternativeEnvironmentDto(URI uri, URI webSocketsEndpointUri) {
+    this(uri, uri, webSocketsEndpointUri);
+  }
+
+  /**
+   *
+   * @param uri the base URI, e.g. https://sonarcloud.io
+   * @param apiUri the base URI of new endpoints, e.g. https://api.sonarcloud.io. Must be specified because for some env it cannot be deduced from the base URI (e.g. Dev)
+   */
+  public SonarCloudAlternativeEnvironmentDto(URI uri, URI apiUri, URI webSocketsEndpointUri) {
     this.uri = uri;
+    this.apiUri = apiUri;
     this.webSocketsEndpointUri = webSocketsEndpointUri;
   }
 
   public URI getUri() {
     return uri;
+  }
+
+  public URI getApiUri() {
+    return apiUri;
   }
 
   public URI getWebSocketsEndpointUri() {

@@ -27,7 +27,6 @@ import java.io.PipedOutputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -65,8 +64,6 @@ import org.sonarqube.ws.client.WsResponse;
 import org.sonarqube.ws.client.issues.SearchRequest;
 import org.sonarqube.ws.client.settings.ResetRequest;
 import org.sonarqube.ws.client.settings.SetRequest;
-import org.sonarqube.ws.client.usertokens.GenerateRequest;
-import org.sonarqube.ws.client.usertokens.RevokeRequest;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
@@ -129,12 +126,13 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.XML;
 class SonarCloudTests extends AbstractConnectedTests {
   private static final String SONAR_JAVA_FILE_SUFFIXES = "sonar.java.file.suffixes";
   private static final URI SONARCLOUD_STAGING_URL = URI.create("https://sc-staging.io");
+  private static final URI SONARCLOUD_STAGING_API_URL = URI.create("https://api.sc-staging.io");
   private static final URI SONARCLOUD_WEBSOCKETS_STAGING_URL = URI.create("wss://events-api.sc-staging.io/");
   private static final String SONARCLOUD_ORGANIZATION = "sonarlint-it";
   private static final String SONARCLOUD_TOKEN = System.getenv("SONARCLOUD_IT_TOKEN");
 
   private static final String PROJECT_KEY_JAVA = "sample-java";
-  
+
   public static final String CONNECTION_ID = "sonarcloud";
 
   private static WsClient adminWsClient;
@@ -164,7 +162,9 @@ class SonarCloudTests extends AbstractConnectedTests {
     var languages = Set.of(JAVA, PHP, JS, PYTHON, HTML, RUBY, KOTLIN, SCALA, XML);
     var featureFlags = new FeatureFlagsDto(false, true, true, false, true, true, false, true, false, true, false);
     backend.initialize(
-      new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(), new SonarCloudAlternativeEnvironmentDto(SONARCLOUD_STAGING_URL, SONARCLOUD_WEBSOCKETS_STAGING_URL), featureFlags, sonarUserHome.resolve("storage"),
+      new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(),
+        new SonarCloudAlternativeEnvironmentDto(SONARCLOUD_STAGING_URL, SONARCLOUD_STAGING_API_URL, SONARCLOUD_WEBSOCKETS_STAGING_URL), featureFlags,
+        sonarUserHome.resolve("storage"),
         sonarUserHome.resolve("work"), emptySet(), PluginLocator.getEmbeddedPluginsByKeyForTests(), languages, emptySet(), emptySet(), emptyList(),
         List.of(new SonarCloudConnectionConfigurationDto(CONNECTION_ID, SONARCLOUD_ORGANIZATION, SonarCloudRegion.EU, true)), sonarUserHome.toString(),
         emptyMap(), false, null, false, null));
@@ -175,7 +175,6 @@ class SonarCloudTests extends AbstractConnectedTests {
     restoreProfile("java-sonarlint.xml");
     provisionProject(PROJECT_KEY_JAVA, "Sample Java");
     associateProjectToQualityProfile(PROJECT_KEY_JAVA, "java", "SonarLint IT Java");
-
 
     // Build project to have bytecode
     runMaven(Paths.get("projects/sample-java"), "clean", "compile");
@@ -314,7 +313,6 @@ class SonarCloudTests extends AbstractConnectedTests {
     var projectKeyJs = "sample-javascript";
     provisionProject(projectKeyJs, "Sample Javascript");
     associateProjectToQualityProfile(projectKeyJs, "js", "SonarLint IT Javascript");
-
 
     openBoundConfigurationScope(configScopeId, projectKeyJs);
     waitForAnalysisToBeReady(configScopeId);
@@ -586,9 +584,11 @@ class SonarCloudTests extends AbstractConnectedTests {
       assertThat(taintVulnerability.getRuleDescriptionContextKey()).isNull();
       assertThat(taintVulnerability.getSeverityMode().isRight()).isTrue();
       assertThat(taintVulnerability.getSeverityMode().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.COMPLETE);
-      assertThat(taintVulnerability.getSeverityMode().getRight().getImpacts().get(0)).extracting("softwareQuality", "impactSeverity").containsExactly(SoftwareQuality.SECURITY, ImpactSeverity.HIGH);
+      assertThat(taintVulnerability.getSeverityMode().getRight().getImpacts().get(0)).extracting("softwareQuality", "impactSeverity").containsExactly(SoftwareQuality.SECURITY,
+        ImpactSeverity.HIGH);
       assertThat(taintVulnerability.getFlows()).isNotEmpty();
       assertThat(taintVulnerability.isOnNewCode()).isTrue();
+      assertThat(taintVulnerability.isAiCodeFixable()).isTrue();
       var flow = taintVulnerability.getFlows().get(0);
       assertThat(flow.getLocations()).isNotEmpty();
       assertThat(flow.getLocations().get(0).getTextRange().getHash()).isEqualTo(hash("statement.executeQuery(query)"));
@@ -643,7 +643,7 @@ class SonarCloudTests extends AbstractConnectedTests {
       cmdLine = CommandLine.parse("mvn");
     }
 
-    cmdLine.addArguments(new String[]{"--batch-mode", "--show-version", "--errors"});
+    cmdLine.addArguments(new String[] {"--batch-mode", "--show-version", "--errors"});
     cmdLine.addArguments(args);
     var executor = new DefaultExecutor();
     executor.setWorkingDirectory(workDir.toFile());
@@ -683,18 +683,16 @@ class SonarCloudTests extends AbstractConnectedTests {
     };
   }
 
-  private static List<RaisedIssueDto> analyzeAndGetIssues(String projectKey, String fileName, String configScopeId, String ... properties) {
+  private static List<RaisedIssueDto> analyzeAndGetIssues(String projectKey, String fileName, String configScopeId, String... properties) {
     final var baseDir = Paths.get("projects/" + projectKey).toAbsolutePath();
     final var filePath = baseDir.resolve(fileName);
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(
       List.of(new ClientFileDto(filePath.toUri(), Path.of(fileName), configScopeId, false, null, filePath, null, null, true)),
       List.of(),
-      List.of()
-    ));
+      List.of()));
 
     var analyzeResponse = backend.getAnalysisService().analyzeFilesAndTrack(
-      new AnalyzeFilesAndTrackParams(configScopeId, UUID.randomUUID(), List.of(filePath.toUri()), toMap(properties), true, System.currentTimeMillis())
-    ).join();
+      new AnalyzeFilesAndTrackParams(configScopeId, UUID.randomUUID(), List.of(filePath.toUri()), toMap(properties), true, System.currentTimeMillis())).join();
 
     assertThat(analyzeResponse.getFailedAnalysisFiles()).isEmpty();
     var raisedIssues = ((MockSonarLintRpcClientDelegate) client).getRaisedIssues(configScopeId);
@@ -702,15 +700,14 @@ class SonarCloudTests extends AbstractConnectedTests {
     return raisedIssues != null ? raisedIssues.values().stream().flatMap(List::stream).toList() : List.of();
   }
 
-  private static List<RaisedHotspotDto> analyzeAndGetHotspots(String projectKey, String fileName, String configScopeId, String ... properties) {
+  private static List<RaisedHotspotDto> analyzeAndGetHotspots(String projectKey, String fileName, String configScopeId, String... properties) {
     final var baseDir = Paths.get("projects/" + projectKey).toAbsolutePath();
     final var filePath = baseDir.resolve(fileName);
     backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(),
       List.of(new ClientFileDto(filePath.toUri(), Path.of(fileName), configScopeId, false, null, filePath, null, null, true)), List.of()));
 
     var analyzeResponse = backend.getAnalysisService().analyzeFilesAndTrack(
-      new AnalyzeFilesAndTrackParams(configScopeId, UUID.randomUUID(), List.of(filePath.toUri()), toMap(properties), true, System.currentTimeMillis())
-    ).join();
+      new AnalyzeFilesAndTrackParams(configScopeId, UUID.randomUUID(), List.of(filePath.toUri()), toMap(properties), true, System.currentTimeMillis())).join();
 
     assertThat(analyzeResponse.getFailedAnalysisFiles()).isEmpty();
     var raisedHotspots = ((MockSonarLintRpcClientDelegate) client).getRaisedHotspots(configScopeId);

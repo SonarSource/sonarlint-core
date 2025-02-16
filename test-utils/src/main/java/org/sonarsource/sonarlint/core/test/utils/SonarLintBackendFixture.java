@@ -496,8 +496,10 @@ public class SonarLintBackendFixture {
 
         SonarCloudAlternativeEnvironmentDto sonarCloudAlternativeEnvironment = null;
         if (sonarCloudUrl != null || sonarCloudWebSocketsUrl != null) {
+          var baseUri = sonarCloudUrl == null ? SonarCloudRegion.EU.getProductionUri() : URI.create(sonarCloudUrl);
           sonarCloudAlternativeEnvironment = new SonarCloudAlternativeEnvironmentDto(
-            sonarCloudUrl == null ? SonarCloudRegion.EU.getProductionUri() : URI.create(sonarCloudUrl),
+            baseUri,
+            baseUri,
             sonarCloudWebSocketsUrl == null ? SonarCloudRegion.EU.getWebSocketUri() : URI.create(sonarCloudWebSocketsUrl));
         }
 

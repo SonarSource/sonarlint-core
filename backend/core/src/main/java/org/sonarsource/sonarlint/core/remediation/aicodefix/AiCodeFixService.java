@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.remediation.aicodefix;
 
+import java.util.Optional;
 import java.util.UUID;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
@@ -36,6 +37,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.SuggestFixResponse;
 import org.sonarsource.sonarlint.core.serverapi.fixsuggestions.AiSuggestionRequestBodyDto;
 import org.sonarsource.sonarlint.core.serverapi.fixsuggestions.AiSuggestionResponseBodyDto;
+import org.sonarsource.sonarlint.core.storage.StorageService;
 
 import static java.util.Objects.requireNonNull;
 import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.CONFIG_SCOPE_NOT_BOUND;
@@ -50,14 +52,16 @@ public class AiCodeFixService {
   private final ConnectionManager connectionManager;
   private final PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository;
   private final ClientFileSystemService clientFileSystemService;
+  private final StorageService storageService;
 
   public AiCodeFixService(ConnectionConfigurationRepository connectionRepository, ConfigurationRepository configurationRepository, ConnectionManager connectionManager,
-    PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, ClientFileSystemService clientFileSystemService) {
+    PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, ClientFileSystemService clientFileSystemService, StorageService storageService) {
     this.connectionRepository = connectionRepository;
     this.configurationRepository = configurationRepository;
     this.connectionManager = connectionManager;
     this.previouslyRaisedFindingsRepository = previouslyRaisedFindingsRepository;
     this.clientFileSystemService = clientFileSystemService;
+    this.storageService = storageService;
   }
 
   public SuggestFixResponse suggestFix(String configurationScopeId, UUID issueId, SonarLintCancelMonitor cancelMonitor) {
@@ -65,7 +69,8 @@ public class AiCodeFixService {
     var connection = connectionManager.getConnectionOrThrow(sonarQubeCloudBinding.binding().connectionId());
     var responseBodyDto = connection.withClientApiAndReturn(serverApi -> previouslyRaisedFindingsRepository.findRaisedIssueById(issueId)
       .map(issue -> {
-        if (!isFixable(issue)) {
+        var aiCodeFixFeature = getFeature(sonarQubeCloudBinding.binding());
+        if (!aiCodeFixFeature.map(feature -> feature.isFixable(issue)).orElse(false)) {
           throw new ResponseErrorException(new ResponseError(ResponseErrorCode.InvalidParams, "The provided issue cannot be fixed", issueId));
         }
         return serverApi.fixSuggestions().getAiSuggestion(toDto(sonarQubeCloudBinding.organizationKey, sonarQubeCloudBinding.binding().sonarProjectKey(), issue),
@@ -75,8 +80,9 @@ public class AiCodeFixService {
     return adapt(responseBodyDto);
   }
 
-  private static boolean isFixable(RaisedIssue issue) {
-    return issue.issueDto().getTextRange() != null;
+  public Optional<AiCodeFixFeature> getFeature(Binding binding) {
+    return storageService.connection(binding.connectionId()).aiCodeFix().read()
+      .map(AiCodeFixFeature::new);
   }
 
   private static SuggestFixResponse adapt(AiSuggestionResponseBodyDto responseBodyDto) {

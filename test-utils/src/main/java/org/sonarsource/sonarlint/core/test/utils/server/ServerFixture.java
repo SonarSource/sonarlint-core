@@ -116,7 +116,7 @@ public class ServerFixture {
   }
 
   public static ServerBuilder newSonarCloudServer(@Nullable Consumer<Server> onStart, String organization) {
-    return new ServerBuilder(onStart, ServerKind.SONARCLOUD, organization, null);
+    return new ServerBuilder(onStart, ServerKind.SONARCLOUD, organization, "0.0.0");
   }
 
   private enum ServerKind {
@@ -140,6 +140,7 @@ public class ServerFixture {
     private boolean smartNotificationsSupported;
     private final List<String> tokensRegistered = new ArrayList<>();
     private Integer statusCode = 200;
+    private AiCodeFixFeatureBuilder aiCodeFixFeature = new AiCodeFixFeatureBuilder();
 
     public ServerBuilder(@Nullable Consumer<Server> onStart, ServerKind serverKind, @Nullable String organizationKey, @Nullable String version) {
       this.onStart = onStart;
@@ -199,9 +200,15 @@ public class ServerFixture {
       return this;
     }
 
+    public ServerBuilder withAiCodeFixFeature(UnaryOperator<AiCodeFixFeatureBuilder> aiCodeFixBuilder) {
+      this.aiCodeFixFeature = new AiCodeFixFeatureBuilder();
+      aiCodeFixBuilder.apply(aiCodeFixFeature);
+      return this;
+    }
+
     public Server start() {
       var server = new Server(serverKind, serverStatus, organizationKey, version, projectByProjectKey, smartNotificationsSupported, pluginsByKey, qualityProfilesByKey,
-        tokensRegistered, statusCode);
+        tokensRegistered, statusCode, aiCodeFixFeature);
       server.start();
       if (onStart != null) {
         onStart.accept(server);
@@ -230,6 +237,22 @@ public class ServerFixture {
       }
     }
 
+    public static class AiCodeFixFeatureBuilder {
+      private Set<String> supportedRules = Set.of();
+
+      public AiCodeFixFeatureBuilder withSupportedRules(Set<String> supportedRules) {
+        this.supportedRules = supportedRules;
+        return this;
+      }
+
+      public AiCodeFixFeature build() {
+        return new AiCodeFixFeature(supportedRules);
+      }
+    }
+
+    public record AiCodeFixFeature(Set<String> rules) {
+    }
+
     public static class ServerProjectBuilder {
       private final Map<String, ServerProjectBranchBuilder> branchesByName = new HashMap<>();
       private String mainBranchName = "main";
@@ -238,7 +261,7 @@ public class ServerFixture {
       private final List<String> relativeFilePaths = new ArrayList<>();
       private String name = "MyProject";
       private String projectName;
-      private AiCodeFixBuilder aiCodeFix;
+      private AiCodeFixSuggestionBuilder aiCodeFixSuggestion;
 
       private ServerProjectBuilder() {
         branchesByName.put(mainBranchName, new ServerProjectBranchBuilder());
@@ -295,9 +318,9 @@ public class ServerFixture {
         return this;
       }
 
-      public ServerProjectBuilder withAiCodeFix(UnaryOperator<AiCodeFixBuilder> aiCodeFixBuilder) {
-        this.aiCodeFix = new AiCodeFixBuilder();
-        aiCodeFixBuilder.apply(aiCodeFix);
+      public ServerProjectBuilder withAiCodeFixSuggestion(UnaryOperator<AiCodeFixSuggestionBuilder> aiCodeFixSuggestionBuilder) {
+        this.aiCodeFixSuggestion = new AiCodeFixSuggestionBuilder();
+        aiCodeFixSuggestionBuilder.apply(aiCodeFixSuggestion);
         return this;
       }
 
@@ -439,22 +462,22 @@ public class ServerFixture {
         }
       }
 
-      public static class AiCodeFixBuilder {
+      public static class AiCodeFixSuggestionBuilder {
         private UUID id = UUID.randomUUID();
         private String explanation = "default";
         private final List<AiCodeFixChange> changes = new ArrayList<>();
 
-        public AiCodeFixBuilder withId(UUID id) {
+        public AiCodeFixSuggestionBuilder withId(UUID id) {
           this.id = id;
           return this;
         }
 
-        public AiCodeFixBuilder withExplanation(String explanation) {
+        public AiCodeFixSuggestionBuilder withExplanation(String explanation) {
           this.explanation = explanation;
           return this;
         }
 
-        public AiCodeFixBuilder withChange(int startLine, int endLine, String newCode) {
+        public AiCodeFixSuggestionBuilder withChange(int startLine, int endLine, String newCode) {
           this.changes.add(new AiCodeFixChange(startLine, endLine, newCode));
           return this;
         }
@@ -468,6 +491,7 @@ public class ServerFixture {
       }
 
       public record AiCodeFixChange(int startLine, int endLine, String newCode) {
+
       }
 
       public static class ServerProjectPullRequestBuilder extends ServerProjectBranchBuilder {
@@ -590,11 +614,12 @@ public class ServerFixture {
     private final Map<String, ServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey;
     private final List<String> tokensRegistered;
     private final Integer statusCode;
+    private final ServerBuilder.AiCodeFixFeatureBuilder aiCodeFixFeature;
 
     public Server(ServerKind serverKind, ServerStatus serverStatus, @Nullable String organizationKey, @Nullable String version,
-      Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey,
-      boolean smartNotificationsSupported, Map<String, ServerBuilder.ServerPluginBuilder> pluginsByKey,
-      Map<String, ServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey, List<String> tokensRegistered, Integer statusCode) {
+      Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey, boolean smartNotificationsSupported, Map<String, ServerBuilder.ServerPluginBuilder> pluginsByKey,
+      Map<String, ServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey, List<String> tokensRegistered, Integer statusCode,
+      ServerBuilder.AiCodeFixFeatureBuilder aiCodeFixFeature) {
       this.serverKind = serverKind;
       this.serverStatus = serverStatus;
       this.organizationKey = organizationKey;
@@ -605,6 +630,7 @@ public class ServerFixture {
       this.qualityProfilesByKey = qualityProfilesByKey;
       this.tokensRegistered = tokensRegistered;
       this.statusCode = statusCode;
+      this.aiCodeFixFeature = aiCodeFixFeature;
     }
 
     public void start() {
@@ -1228,16 +1254,27 @@ public class ServerFixture {
     }
 
     private void registerFixSuggestionsApiResponses() {
-      projectsByProjectKey.forEach((projectKey, project) -> {
-        if (project.aiCodeFix != null) {
+      try {
+        projectsByProjectKey.forEach((projectKey, project) -> {
           try {
-            mockServer.stubFor(post("/fix-suggestions/ai-suggestions")
-              .willReturn(jsonResponse(new ObjectMapper().setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY).writeValueAsString(project.aiCodeFix.build()), 200)));
+            if (project.aiCodeFixSuggestion != null) {
+              mockServer.stubFor(post("/fix-suggestions/ai-suggestions")
+                .willReturn(jsonResponse(
+                  new ObjectMapper().setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY).writeValueAsString(project.aiCodeFixSuggestion.build()), 200)));
+            }
           } catch (JsonProcessingException e) {
             throw new IllegalArgumentException(e);
           }
+        });
+
+        if (serverKind == ServerKind.SONARCLOUD) {
+          mockServer.stubFor(get("/fix-suggestions/supported-rules")
+            .willReturn(jsonResponse(
+              new ObjectMapper().setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY).writeValueAsString(aiCodeFixFeature.build()), 200)));
         }
-      });
+      } catch (JsonProcessingException e) {
+        throw new IllegalArgumentException(e);
+      }
     }
 
     public void shutdown() {

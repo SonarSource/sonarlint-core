@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Server Connection
+ * SonarLint Core - Test Utils
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,21 +17,31 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection;
+package org.sonarsource.sonarlint.core.test.utils.storage;
 
 import java.nio.file.Path;
+import java.util.Set;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
 
-public class ComponentsStorage {
-  public static final String COMPONENT_LIST_PB = "component_list.pb";
-  private final Path storageFilePath;
-
-  public ComponentsStorage(Path projectStorageRoot) {
-    this.storageFilePath = projectStorageRoot.resolve(COMPONENT_LIST_PB);
+public class AiCodeFixFixtures {
+  private AiCodeFixFixtures() {
+    // utility class
   }
 
-  public Sonarlint.ProjectComponents read() {
-    return ProtobufFileUtil.readFile(storageFilePath, Sonarlint.ProjectComponents.parser());
+  public static class Builder {
+    private Set<String> supportedRules = Set.of();
+
+    public Builder withSupportedRules(Set<String> supportedRules) {
+      this.supportedRules = supportedRules;
+      return this;
+    }
+
+    public void create(Path path) {
+      var analyzerConfiguration = Sonarlint.AiCodeFixSettings.newBuilder()
+        .addAllSupportedRules(supportedRules)
+        .build();
+      ProtobufFileUtil.writeToFile(analyzerConfiguration, path.resolve("ai_codefix.pb"));
+    }
   }
 }

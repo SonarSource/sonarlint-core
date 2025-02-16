@@ -33,11 +33,9 @@ public class SonarProjectStorage {
   private final String sonarProjectKey;
   private final AnalyzerConfigurationStorage analyzerConfigurationStorage;
   private final ProjectBranchesStorage projectBranchesStorage;
-  private final ComponentsStorage componentsStorage;
   private final SmartNotificationsStorage smartNotificationsStorage;
   private final NewCodeDefinitionStorage newCodeDefinitionStorage;
   private final Path projectStorageRoot;
-
 
   public SonarProjectStorage(Path projectsStorageRoot, ServerIssueStoresManager serverIssueStoresManager, String sonarProjectKey) {
     this.projectStorageRoot = projectsStorageRoot.resolve(encodeForFs(sonarProjectKey));
@@ -45,7 +43,6 @@ public class SonarProjectStorage {
     this.sonarProjectKey = sonarProjectKey;
     this.analyzerConfigurationStorage = new AnalyzerConfigurationStorage(projectStorageRoot);
     this.projectBranchesStorage = new ProjectBranchesStorage(projectStorageRoot);
-    this.componentsStorage = new ComponentsStorage(projectStorageRoot);
     this.smartNotificationsStorage = new SmartNotificationsStorage(projectStorageRoot);
     this.newCodeDefinitionStorage = new NewCodeDefinitionStorage(projectStorageRoot);
   }
@@ -60,10 +57,6 @@ public class SonarProjectStorage {
 
   public ProjectBranchesStorage branches() {
     return projectBranchesStorage;
-  }
-
-  public ComponentsStorage components() {
-    return componentsStorage;
   }
 
   public SmartNotificationsStorage smartNotifications() {
