@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 
@@ -32,16 +33,16 @@ import static org.sonarsource.sonarlint.core.commons.IOExceptionUtils.throwFirst
 import static org.sonarsource.sonarlint.core.commons.IOExceptionUtils.tryAndCollectIOException;
 
 public class PluginsRepository {
-  private LoadedPlugins loadedEmbeddedPlugins;
+  private final AtomicReference<LoadedPlugins> loadedEmbeddedPlugins = new AtomicReference<>();
   private final Map<String, LoadedPlugins> loadedPluginsByConnectionId = new HashMap<>();
 
   public void setLoadedEmbeddedPlugins(LoadedPlugins loadedEmbeddedPlugins) {
-    this.loadedEmbeddedPlugins = loadedEmbeddedPlugins;
+    this.loadedEmbeddedPlugins.set(loadedEmbeddedPlugins);
   }
 
   @CheckForNull
   public LoadedPlugins getLoadedEmbeddedPlugins() {
-    return loadedEmbeddedPlugins;
+    return loadedEmbeddedPlugins.get();
   }
 
   @CheckForNull
@@ -56,9 +57,10 @@ public class PluginsRepository {
   @PreDestroy
   public void unloadAllPlugins() throws IOException {
     Queue<IOException> exceptions = new LinkedList<>();
-    if (loadedEmbeddedPlugins != null) {
-      tryAndCollectIOException(loadedEmbeddedPlugins::close, exceptions);
-      loadedEmbeddedPlugins = null;
+    var embeddedPlugins = loadedEmbeddedPlugins.get();
+    if (embeddedPlugins != null) {
+      tryAndCollectIOException(embeddedPlugins::close, exceptions);
+      loadedEmbeddedPlugins.set(null);
     }
     synchronized (loadedPluginsByConnectionId) {
       loadedPluginsByConnectionId.values().forEach(l -> tryAndCollectIOException(l::close, exceptions));
