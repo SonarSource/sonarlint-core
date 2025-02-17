@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
-import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import java.util.Map;
 import java.util.Set;
@@ -60,9 +59,9 @@ public class LocalStorageSynchronizer {
   }
 
   private static AnalyzerSettingsUpdateSummary diffAnalyzerConfiguration(AnalyzerConfiguration original, AnalyzerConfiguration updated) {
-    Map<String, String> originalSettings = original.getSettings().getAll();
-    Map<String, String> updatedSettings = updated.getSettings().getAll();
-    MapDifference<String, String> diff = Maps.difference(originalSettings, updatedSettings);
+    var originalSettings = original.getSettings().getAll();
+    var updatedSettings = updated.getSettings().getAll();
+    var diff = Maps.difference(originalSettings, updatedSettings);
     var updatedSettingsValueByKey = diff.entriesDiffering().entrySet().stream()
       .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().rightValue()));
     updatedSettingsValueByKey.putAll(diff.entriesOnlyOnRight());

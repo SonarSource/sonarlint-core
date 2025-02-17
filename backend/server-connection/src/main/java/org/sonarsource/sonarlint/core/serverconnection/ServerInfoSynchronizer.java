@@ -60,4 +60,15 @@ public class ServerInfoSynchronizer {
     }
     return null;
   }
+
+  @Nullable
+  private static void retrieveAiCodeFixSettings(ServerApi serverApi) {
+    if (!serverApi.isSonarCloud() && version.compareToIgnoreQualifier(Version.create(MQR_MODE_SETTING_MIN_VERSION)) >= 0) {
+      var mqrModeResponse = serverApi.settings().getGlobalSetting(MQR_MODE_SETTING, cancelMonitor);
+      if (mqrModeResponse != null) {
+        return Boolean.parseBoolean(mqrModeResponse);
+      }
+    }
+    return null;
+  }
 }
