@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
@@ -52,7 +53,7 @@ public class AnalysisEngineCache {
   private final NodeJsService nodeJsService;
   private final Map<String, String> extraProperties = new HashMap<>();
   private final Path csharpOssPluginPath;
-  private AnalysisEngine standaloneEngine;
+  private final AtomicReference<AnalysisEngine> standaloneEngine = new AtomicReference<>();
   private final Map<String, AnalysisEngine> connectedEnginesByConnectionId = new ConcurrentHashMap<>();
 
   public AnalysisEngineCache(ConfigurationRepository configurationRepository, NodeJsService nodeJsService, InitializeParams initializeParams, UserPaths userPaths,
@@ -103,15 +104,17 @@ public class AnalysisEngineCache {
   }
 
   private synchronized AnalysisEngine getOrCreateStandaloneEngine() {
-    if (standaloneEngine == null) {
-      standaloneEngine = createEngine(pluginsService.getEmbeddedPlugins(), csharpOssPluginPath);
+    var engine = standaloneEngine.get();
+    if (engine == null) {
+      engine = createEngine(pluginsService.getEmbeddedPlugins(), csharpOssPluginPath);
+      standaloneEngine.set(engine);
     }
-    return standaloneEngine;
+    return engine;
   }
 
   @CheckForNull
   private synchronized AnalysisEngine getStandaloneEngineIfStarted() {
-    return standaloneEngine;
+    return standaloneEngine.get();
   }
 
   private AnalysisEngine createEngine(LoadedPlugins plugins, @Nullable Path actualCsharpAnalyzerPath) {
@@ -167,18 +170,20 @@ public class AnalysisEngineCache {
   }
 
   private synchronized void stopAllGracefully() {
-    if (this.standaloneEngine != null) {
-      this.standaloneEngine.finishGracefully();
-      this.standaloneEngine = null;
+    var standaloneAnalysisEngine = this.standaloneEngine.get();
+    if (standaloneAnalysisEngine != null) {
+      standaloneAnalysisEngine.finishGracefully();
+      this.standaloneEngine.set(null);
     }
     connectedEnginesByConnectionId.forEach((connectionId, engine) -> engine.finishGracefully());
     connectedEnginesByConnectionId.clear();
   }
 
   private synchronized void stopAll() {
-    if (this.standaloneEngine != null) {
-      this.standaloneEngine.stop();
-      this.standaloneEngine = null;
+    var standaloneAnalysisEngine = this.standaloneEngine.get();
+    if (standaloneAnalysisEngine != null) {
+      standaloneAnalysisEngine.stop();
+      this.standaloneEngine.set(null);
     }
     connectedEnginesByConnectionId.forEach((connectionId, engine) -> engine.stop());
     connectedEnginesByConnectionId.clear();

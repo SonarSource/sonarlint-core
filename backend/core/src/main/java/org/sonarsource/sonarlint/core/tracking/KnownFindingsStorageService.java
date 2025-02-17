@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.tracking;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.PreDestroy;
 import org.sonarsource.sonarlint.core.UserPaths;
 
@@ -28,29 +29,32 @@ public class KnownFindingsStorageService {
 
   private final Path projectsStorageBaseDir;
   private final Path workDir;
-  private XodusKnownFindingsStore trackedIssuesStore;
+  private final AtomicReference<XodusKnownFindingsStore> trackedIssuesStore = new AtomicReference<>();
 
   public KnownFindingsStorageService(UserPaths userPaths) {
     this.projectsStorageBaseDir = userPaths.getStorageRoot();
     this.workDir = userPaths.getWorkDir();
   }
 
-  public XodusKnownFindingsStore get() {
-    if (trackedIssuesStore == null) {
+  public synchronized XodusKnownFindingsStore get() {
+    var store = trackedIssuesStore.get();
+    if (store == null) {
       try {
-        trackedIssuesStore = new XodusKnownFindingsStore(projectsStorageBaseDir, workDir);
-        return trackedIssuesStore;
+        store = new XodusKnownFindingsStore(projectsStorageBaseDir, workDir);
+        trackedIssuesStore.set(store);
+        return store;
       } catch (IOException e) {
         throw new IllegalStateException("Unable to create tracked issues database", e);
       }
     }
-    return trackedIssuesStore;
+    return store;
   }
 
   @PreDestroy
   public void close() {
-    if (trackedIssuesStore != null) {
-      trackedIssuesStore.close();
+    var store = trackedIssuesStore.get();
+    if (store != null) {
+      store.close();
     }
   }
 
