@@ -26,21 +26,25 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.SystemUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.RawTextComparator;
 import org.eclipse.jgit.ignore.IgnoreNode;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectLoader;
-import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.revwalk.RevWalk;
@@ -48,14 +52,23 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.sonar.scm.git.blame.RepositoryBlameCommand;
 import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
 import org.sonarsource.sonarlint.core.commons.SonarLintGitIgnore;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 import static java.util.Optional.ofNullable;
 import static org.eclipse.jgit.lib.Constants.GITIGNORE_FILENAME;
+import static org.sonarsource.sonarlint.core.commons.util.git.BlameParser.parseBlameOutput;
+import static org.sonarsource.sonarlint.core.commons.util.git.WinGitUtils.locateGitOnWindows;
 
 public class GitUtils {
-
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  private static final String MINIMUM_REQUIRED_GIT_VERSION = "2.24.0";
+  private static final Pattern whitespaceRegex = Pattern.compile("\\s+");
+  private static final Pattern semanticVersionDelimiter = Pattern.compile("\\.");
+
+  // So we only have to make the expensive call once (or at most twice) to get the native Git executable!
+  private static boolean checkedForNativeGitExecutable = false;
+  private static String nativeGitExecutable = null;
 
   private GitUtils() {
     // Utility class
@@ -81,6 +94,21 @@ public class GitUtils {
     } catch (GitAPIException | IllegalStateException e) {
       LOG.debug("Git repository access error: ", e);
       return List.of();
+    }
+  }
+
+  public static SonarLintBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, @Nullable UnaryOperator<String> fileContentProvider) {
+    return getBlameResult(projectBaseDir, projectBaseRelativeFilePaths, fileContentProvider, GitUtils::checkIfEnabled);
+  }
+
+  public static SonarLintBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, @Nullable UnaryOperator<String> fileContentProvider,
+    Predicate<Path> isEnabled) {
+    if (isEnabled.test(projectBaseDir)) {
+      LOG.debug("Using native git blame");
+      return blameFromNativeCommand(projectBaseDir, projectBaseRelativeFilePaths);
+    } else {
+      LOG.debug("Falling back to JGit git blame");
+      return blameWithFilesGitCommand(projectBaseDir, projectBaseRelativeFilePaths, fileContentProvider);
     }
   }
 
@@ -110,6 +138,90 @@ public class GitUtils {
     }
   }
 
+  /**
+   * Get the native Git executable by checking for the version of both `git` and `git.exe`. We cache this information
+   * to run these expensive processes more than once (or twice in case of Windows).
+   */
+  private static String getNativeGitExecutable() {
+    if (!checkedForNativeGitExecutable) {
+      try {
+        var executable = getGitExecutable();
+        var process = new ProcessBuilder(executable, "--version").start();
+        var exitCode = process.waitFor();
+        if (exitCode == 0) {
+          nativeGitExecutable = executable;
+        }
+      } catch (IOException e) {
+        LOG.debug("Checking for native Git executable failed", e);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+      checkedForNativeGitExecutable = true;
+    }
+    return nativeGitExecutable;
+  }
+
+  private static String getGitExecutable() throws IOException {
+    return SystemUtils.IS_OS_WINDOWS ? locateGitOnWindows() : "git";
+  }
+
+  private static String executeGitCommand(Path workingDir, String... command) throws IOException {
+    var commandResult = new LinkedList<String>();
+    new ProcessWrapperFactory()
+      .create(workingDir, commandResult::add, command)
+      .execute();
+    return String.join(System.lineSeparator(), commandResult);
+  }
+
+  public static SonarLintBlameResult blameFromNativeCommand(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths) {
+    var nativeExecutable = getNativeGitExecutable();
+    if (nativeExecutable != null) {
+      for (var relativeFilePath : projectBaseRelativeFilePaths) {
+        try {
+          return parseBlameOutput(executeGitCommand(projectBaseDir,
+              nativeExecutable, "blame", projectBaseDir.resolve(relativeFilePath).toString(), "--line-porcelain", "--encoding=UTF-8"),
+            projectBaseDir.resolve(relativeFilePath).toString().replace("\\", "/"), projectBaseDir);
+        } catch (IOException e) {
+          throw new IllegalStateException("Failed to blame repository files", e);
+        }
+      }
+    }
+    throw new IllegalStateException("There is no native Git available");
+  }
+
+  public static boolean checkIfEnabled(Path projectBaseDir) {
+    var nativeExecutable = getNativeGitExecutable();
+    if (nativeExecutable == null) {
+      return false;
+    }
+    try {
+      var output = executeGitCommand(projectBaseDir, nativeExecutable, "--version");
+      return output.contains("git version") && isCompatibleGitVersion(output);
+    } catch (IOException e) {
+      return false;
+    }
+  }
+
+  private static boolean isCompatibleGitVersion(String gitVersionCommandOutput) {
+    // Due to the danger of argument injection on git blame the use of `--end-of-options` flag is necessary
+    // The flag is available only on git versions >= 2.24.0
+    var gitVersion = whitespaceRegex
+      .splitAsStream(gitVersionCommandOutput)
+      .skip(2)
+      .findFirst()
+      .orElse("");
+
+    var formattedGitVersion = formatGitSemanticVersion(gitVersion);
+    return Version.create(formattedGitVersion).compareToIgnoreQualifier(Version.create(MINIMUM_REQUIRED_GIT_VERSION)) >= 0;
+  }
+
+  private static String formatGitSemanticVersion(String version) {
+    return semanticVersionDelimiter
+      .splitAsStream(version)
+      .takeWhile(NumberUtils::isCreatable)
+      .collect(Collectors.joining("."));
+  }
+
   private static Path getRelativePath(Repository gitRepo, Path projectBaseDir) {
     var repoDir = gitRepo.isBare() ? gitRepo.getDirectory() : gitRepo.getWorkTree();
     return repoDir.toPath().relativize(projectBaseDir);
@@ -124,7 +236,7 @@ public class GitUtils {
       }
 
       var repository = repositoryBuilder.build();
-      try (ObjectReader objReader = repository.getObjectDatabase().newReader()) {
+      try (var objReader = repository.getObjectDatabase().newReader()) {
         // SONARSCGIT-2 Force initialization of shallow commits to avoid later concurrent modification issue
         objReader.getShallowCommits();
         return repository;

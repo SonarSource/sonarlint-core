@@ -28,7 +28,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangeAutomaticAnalysisSettingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidCloseFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParams;
@@ -52,7 +54,9 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static utils.AnalysisUtils.createFile;
 import static utils.AnalysisUtils.getPublishedIssues;
+import static utils.AnalysisUtils.waitForRaisedIssues;
 
+@ExtendWith(LogTestStartAndEnd.class)
 class AnalysisTriggeringMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
@@ -183,6 +187,7 @@ class AnalysisTriggeringMediumTests {
           </project>""", null, true)),
         Collections.emptyList()));
 
+    waitForRaisedIssues(client, CONFIG_SCOPE_ID);
     publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
     assertThat(publishedIssues)
       .containsOnlyKeys(fileUri)
@@ -287,6 +292,7 @@ class AnalysisTriggeringMediumTests {
     backend.getRulesService().updateStandaloneRulesConfiguration(new UpdateStandaloneRulesConfigurationParams(Map.of("xml:S3420",
       new StandaloneRuleConfigDto(true, Map.of()))));
 
+    waitForRaisedIssues(client, CONFIG_SCOPE_ID);
     publishedIssues = getPublishedIssues(client, CONFIG_SCOPE_ID);
     assertThat(publishedIssues)
       .containsOnlyKeys(fileUri)
