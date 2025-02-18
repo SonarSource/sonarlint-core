@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -98,15 +99,16 @@ public class GitUtils {
     }
   }
 
-  public static SonarLintBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, @Nullable UnaryOperator<String> fileContentProvider) {
-    return getBlameResult(projectBaseDir, projectBaseRelativeFilePaths, fileContentProvider, GitUtils::checkIfEnabled);
+  public static SonarLintBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths,
+    @Nullable UnaryOperator<String> fileContentProvider, long thresholdDate) {
+    return getBlameResult(projectBaseDir, projectBaseRelativeFilePaths, fileContentProvider, GitUtils::checkIfEnabled, thresholdDate);
   }
 
   static SonarLintBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, @Nullable UnaryOperator<String> fileContentProvider,
-    Predicate<Path> isEnabled) {
+    Predicate<Path> isEnabled, long thresholdDate) {
     if (isEnabled.test(projectBaseDir)) {
       LOG.debug("Using native git blame");
-      return blameFromNativeCommand(projectBaseDir, projectBaseRelativeFilePaths);
+      return blameFromNativeCommand(projectBaseDir, projectBaseRelativeFilePaths, thresholdDate);
     } else {
       LOG.debug("Falling back to JGit git blame");
       return blameWithFilesGitCommand(projectBaseDir, projectBaseRelativeFilePaths, fileContentProvider);
@@ -174,13 +176,14 @@ public class GitUtils {
     return String.join(System.lineSeparator(), commandResult);
   }
 
-  public static SonarLintBlameResult blameFromNativeCommand(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths) {
+  public static SonarLintBlameResult blameFromNativeCommand(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, long thresholdDate) {
     var nativeExecutable = getNativeGitExecutable();
     if (nativeExecutable != null) {
       for (var relativeFilePath : projectBaseRelativeFilePaths) {
         try {
+          var blameHistoryWindow = getBlameHistoryWindow(thresholdDate);
           return parseBlameOutput(executeGitCommand(projectBaseDir,
-              nativeExecutable, "blame", BLAME_HISTORY_WINDOW, projectBaseDir.resolve(relativeFilePath).toString(), "--line-porcelain", "--encoding=UTF-8"),
+              nativeExecutable, "blame", blameHistoryWindow, projectBaseDir.resolve(relativeFilePath).toString(), "--line-porcelain", "--encoding=UTF-8"),
             projectBaseDir.resolve(relativeFilePath).toString().replace("\\", "/"), projectBaseDir);
         } catch (IOException e) {
           throw new IllegalStateException("Failed to blame repository files", e);
@@ -188,6 +191,12 @@ public class GitUtils {
       }
     }
     throw new IllegalStateException("There is no native Git available");
+  }
+
+  private static String getBlameHistoryWindow(long thresholdDate) {
+    var blameLimit = Instant.ofEpochMilli(thresholdDate);
+    var blameLimitString = "--since='" + blameLimit + "'";
+    return thresholdDate > 0 ? blameLimitString : BLAME_HISTORY_WINDOW;
   }
 
   public static boolean checkIfEnabled(Path projectBaseDir) {

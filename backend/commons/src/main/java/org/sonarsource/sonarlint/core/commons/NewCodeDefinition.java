@@ -42,6 +42,14 @@ public interface NewCodeDefinition {
 
   boolean isSupported();
 
+  /**
+   * @param days          the theoretical number of days
+   * @param thresholdDate the actual date in the past that serves for the comparison. Can be different from the number of days as it is updated after analysis on the server side
+   */
+  static NewCodeDefinition withNumberOfDaysWithDate(int days, long thresholdDate) {
+    return new NewCodeNumberOfDaysWithDate(days, thresholdDate);
+  }
+
   static String formatEpochToDate(long epoch) {
     return ZonedDateTime.ofInstant(Instant.ofEpochMilli(epoch), ZoneId.systemDefault()).format(DATETIME_FORMATTER);
   }
@@ -54,13 +62,7 @@ public interface NewCodeDefinition {
     return new NewCodeExactNumberOfDays(days);
   }
 
-  /**
-   * @param days the theoretical number of days
-   * @param thresholdDate the actual date in the past that serves for the comparison. Can be different from the number of days as it is updated after analysis on the server side
-   */
-  static NewCodeDefinition withNumberOfDaysWithDate(int days, long thresholdDate) {
-    return new NewCodeNumberOfDaysWithDate(days, thresholdDate);
-  }
+  long getThresholdDate();
 
   static NewCodeDefinition withPreviousVersion(long thresholdDate, @Nullable String version) {
     return new NewCodePreviousVersion(thresholdDate, version);
@@ -114,6 +116,11 @@ public interface NewCodeDefinition {
     @Override
     public boolean isSupported() {
       return true;
+    }
+
+    @Override
+    public long getThresholdDate() {
+      return Instant.now().minus(days, ChronoUnit.DAYS).toEpochMilli();
     }
 
     // Text used by IDEs in the UI. Communicate changes to IDE squad prior to changing the wording.
@@ -216,6 +223,12 @@ public interface NewCodeDefinition {
       return branchName;
     }
 
+    @Override
+    public long getThresholdDate() {
+      // instead of Long.MAX_VALUE it's set for Instant.now() in case it will be used for git blame limit
+      return Instant.now().toEpochMilli();
+    }
+
     // Text used by IDEs in the UI. Communicate changes to IDE squad prior to changing the wording.
     @Override
     public String toString() {
@@ -237,6 +250,12 @@ public interface NewCodeDefinition {
     @Override
     public boolean isOnNewCode(long creationDate) {
       return true;
+    }
+
+    @Override
+    public long getThresholdDate() {
+      // instead of Long.MAX_VALUE it's set for Instant.now() in case it will be used for git blame limit
+      return Instant.now().toEpochMilli();
     }
 
     @Override

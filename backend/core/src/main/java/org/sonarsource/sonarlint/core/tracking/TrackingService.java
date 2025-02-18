@@ -39,12 +39,14 @@ import org.sonarsource.sonarlint.core.analysis.RawIssueDetectedEvent;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.KnownFinding;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
+import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.util.git.GitRepoNotFoundException;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
+import org.sonarsource.sonarlint.core.newcode.NewCodeService;
 import org.sonarsource.sonarlint.core.reporting.FindingReportingService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -79,10 +81,12 @@ public class TrackingService {
   private final LocalOnlyIssueRepository localOnlyIssueRepository;
   private final LocalOnlyIssueStorageService localOnlyIssueStorageService;
   private final FindingsSynchronizationService findingsSynchronizationService;
+  private final NewCodeService newCodeService;
 
   public TrackingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, SonarProjectBranchTrackingService branchTrackingService,
     PathTranslationService pathTranslationService, FindingReportingService reportingService, KnownFindingsStorageService knownFindingsStorageService, StorageService storageService,
-    LocalOnlyIssueRepository localOnlyIssueRepository, LocalOnlyIssueStorageService localOnlyIssueStorageService, FindingsSynchronizationService findingsSynchronizationService) {
+    LocalOnlyIssueRepository localOnlyIssueRepository, LocalOnlyIssueStorageService localOnlyIssueStorageService, FindingsSynchronizationService findingsSynchronizationService,
+    NewCodeService newCodeService) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.branchTrackingService = branchTrackingService;
@@ -93,6 +97,7 @@ public class TrackingService {
     this.localOnlyIssueRepository = localOnlyIssueRepository;
     this.localOnlyIssueStorageService = localOnlyIssueStorageService;
     this.findingsSynchronizationService = findingsSynchronizationService;
+    this.newCodeService = newCodeService;
   }
 
   @EventListener
@@ -271,7 +276,9 @@ public class TrackingService {
     var baseDir = getBaseDir(configurationScopeId);
     if (baseDir != null) {
       try {
-        var sonarLintBlameResult = getBlameResult(baseDir, fileRelativePaths, fileContentProvider);
+        var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId);
+        var thresholdDate = newCodeDefinition.map(NewCodeDefinition::getThresholdDate).orElse(0L);
+        var sonarLintBlameResult = getBlameResult(baseDir, fileRelativePaths, fileContentProvider, thresholdDate);
         return (filePath, lineNumbers) -> determineIntroductionDate(filePath, lineNumbers, sonarLintBlameResult);
       } catch (GitRepoNotFoundException e) {
         LOG.info("Git Repository not found for {}. The path {} is not in a Git repository", configurationScopeId, e.getPath());
