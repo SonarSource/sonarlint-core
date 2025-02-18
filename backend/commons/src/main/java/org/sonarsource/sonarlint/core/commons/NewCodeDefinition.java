@@ -42,14 +42,6 @@ public interface NewCodeDefinition {
 
   boolean isSupported();
 
-  /**
-   * @param days          the theoretical number of days
-   * @param thresholdDate the actual date in the past that serves for the comparison. Can be different from the number of days as it is updated after analysis on the server side
-   */
-  static NewCodeDefinition withNumberOfDaysWithDate(int days, long thresholdDate) {
-    return new NewCodeNumberOfDaysWithDate(days, thresholdDate);
-  }
-
   static String formatEpochToDate(long epoch) {
     return ZonedDateTime.ofInstant(Instant.ofEpochMilli(epoch), ZoneId.systemDefault()).format(DATETIME_FORMATTER);
   }
@@ -60,6 +52,14 @@ public interface NewCodeDefinition {
 
   static NewCodeDefinition withExactNumberOfDays(int days) {
     return new NewCodeExactNumberOfDays(days);
+  }
+
+  /**
+   * @param days the theoretical number of days
+   * @param thresholdDate the actual date in the past that serves for the comparison. Can be different from the number of days as it is updated after analysis on the server side
+   */
+  static NewCodeDefinition withNumberOfDaysWithDate(int days, long thresholdDate) {
+    return new NewCodeNumberOfDaysWithDate(days, thresholdDate);
   }
 
   long getThresholdDate();
@@ -254,7 +254,7 @@ public interface NewCodeDefinition {
 
     @Override
     public long getThresholdDate() {
-      // instead of Long.MAX_VALUE it's set for Instant.now() in case it will be used for git blame limit
+      // instead of 0L it's set for Instant.now() in case it will be used for git blame limit (which shouldn't normally happen)
       return Instant.now().toEpochMilli();
     }
 

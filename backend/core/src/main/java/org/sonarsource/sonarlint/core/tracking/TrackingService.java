@@ -277,7 +277,7 @@ public class TrackingService {
     if (baseDir != null) {
       try {
         var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId);
-        var thresholdDate = newCodeDefinition.map(NewCodeDefinition::getThresholdDate).orElse(0L);
+        var thresholdDate = newCodeDefinition.map(NewCodeDefinition::getThresholdDate).orElse(NewCodeDefinition.withAlwaysNew().getThresholdDate());
         var sonarLintBlameResult = getBlameResult(baseDir, fileRelativePaths, fileContentProvider, thresholdDate);
         return (filePath, lineNumbers) -> determineIntroductionDate(filePath, lineNumbers, sonarLintBlameResult);
       } catch (GitRepoNotFoundException e) {

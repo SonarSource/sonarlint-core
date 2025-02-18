@@ -66,7 +66,6 @@ public class GitUtils {
   private static final String MINIMUM_REQUIRED_GIT_VERSION = "2.24.0";
   private static final Pattern whitespaceRegex = Pattern.compile("\\s+");
   private static final Pattern semanticVersionDelimiter = Pattern.compile("\\.");
-  private static final String BLAME_HISTORY_WINDOW = "--since='6 months ago'";
 
   // So we only have to make the expensive call once (or at most twice) to get the native Git executable!
   private static boolean checkedForNativeGitExecutable = false;
@@ -195,8 +194,7 @@ public class GitUtils {
 
   private static String getBlameHistoryWindow(long thresholdDate) {
     var blameLimit = Instant.ofEpochMilli(thresholdDate);
-    var blameLimitString = "--since='" + blameLimit + "'";
-    return thresholdDate > 0 ? blameLimitString : BLAME_HISTORY_WINDOW;
+    return "--since='" + blameLimit + "'";
   }
 
   public static boolean checkIfEnabled(Path projectBaseDir) {

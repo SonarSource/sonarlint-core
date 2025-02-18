@@ -358,6 +358,44 @@ class GitUtilsTest {
   }
 
   @Test
+  void it_should_default_to_instant_now_git_blame_history_limit() throws IOException, GitAPIException {
+    var calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+    calendar.add(Calendar.YEAR, -1);
+    var fileAStr = "fileA";
+    createFile(projectDirPath, fileAStr, "line1");
+    var yearAgo = calendar.toInstant();
+    // initial commit 1 year ago
+    commitAtDate(git, yearAgo, fileAStr);
+    var lines = new String[3];
+
+    // second commit 4 months after initial commit
+    calendar.add(Calendar.MONTH, 4);
+    lines[0] = "line1";
+    lines[1] = "line2";
+    var eightMonthsAgo = calendar.toInstant();
+    modifyFile(projectDirPath.resolve(fileAStr), lines);
+    commitAtDate(git, eightMonthsAgo, fileAStr);
+
+    // third commit 4 months after second commit
+    calendar.add(Calendar.MONTH, 4);
+    lines[2] = "line3";
+    var fourMonthsAgo = calendar.toInstant();
+    modifyFile(projectDirPath.resolve(fileAStr), lines);
+    commitAtDate(git, fourMonthsAgo, fileAStr);
+    var fileA = Path.of(fileAStr);
+
+    var blameResult = blameFromNativeCommand(projectDirPath, Set.of(fileA), Instant.now().toEpochMilli());
+
+    var line1Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(1)).get();
+    var line2Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(2)).get();
+    var line3Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(3)).get();
+    // provided blame time limit is 30 days, so all lines are blamed by the latest commit that happened 4 months ago
+    assertThat(ChronoUnit.MINUTES.between(line1Date.toInstant(), fourMonthsAgo)).isZero();
+    assertThat(ChronoUnit.MINUTES.between(line2Date.toInstant(), fourMonthsAgo)).isZero();
+    assertThat(ChronoUnit.MINUTES.between(line3Date.toInstant(), fourMonthsAgo)).isZero();
+  }
+
+  @Test
   void it_should_blame_file_since_provided_period() throws IOException, GitAPIException {
     var calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
     calendar.add(Calendar.YEAR, -1);
@@ -384,50 +422,12 @@ class GitUtilsTest {
     commitAtDate(git, fourMonthsAgo, fileAStr);
     var fileA = Path.of(fileAStr);
 
-    var blameResult = blameFromNativeCommand(projectDirPath, Set.of(fileA), Instant.now().minus(Period.ofDays(30)).toEpochMilli());
+    var blameResult = blameFromNativeCommand(projectDirPath, Set.of(fileA), Instant.now().minus(Period.ofDays(180)).toEpochMilli());
 
     var line1Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(1)).get();
     var line2Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(2)).get();
     var line3Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(3)).get();
-    // provided blame time limit is 30 days, so all lines are blamed by the latest commit that happened 4 months ago
-    assertThat(ChronoUnit.MINUTES.between(line1Date.toInstant(), fourMonthsAgo)).isZero();
-    assertThat(ChronoUnit.MINUTES.between(line2Date.toInstant(), fourMonthsAgo)).isZero();
-    assertThat(ChronoUnit.MINUTES.between(line3Date.toInstant(), fourMonthsAgo)).isZero();
-  }
-
-  @Test
-  void it_should_default_to_6_months_git_blame_history_limit() throws IOException, GitAPIException {
-    var calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-    calendar.add(Calendar.YEAR, -1);
-    var fileAStr = "fileA";
-    createFile(projectDirPath, fileAStr, "line1");
-    var yearAgo = calendar.toInstant();
-    // initial commit 1 year ago
-    commitAtDate(git, yearAgo, fileAStr);
-    var lines = new String[3];
-
-    // second commit 4 months after initial commit
-    calendar.add(Calendar.MONTH, 4);
-    lines[0] = "line1";
-    lines[1] = "line2";
-    var eightMonthsAgo = calendar.toInstant();
-    modifyFile(projectDirPath.resolve(fileAStr), lines);
-    commitAtDate(git, eightMonthsAgo, fileAStr);
-
-    // third commit 4 months after second commit
-    calendar.add(Calendar.MONTH, 4);
-    lines[2] = "line3";
-    var fourMonthsAgo = calendar.toInstant();
-    modifyFile(projectDirPath.resolve(fileAStr), lines);
-    commitAtDate(git, fourMonthsAgo, fileAStr);
-    var fileA = Path.of(fileAStr);
-
-    var blameResult = blameFromNativeCommand(projectDirPath, Set.of(fileA), 0);
-
-    var line1Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(1)).get();
-    var line2Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(2)).get();
-    var line3Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(3)).get();
-    // default git blame limit is 6 months
+    // provided blame time limit is 180 days
     // line 1 was committed 1 year ago but should have commit date of the first commit made earlier than blame time window - 8 months ago
     assertThat(ChronoUnit.MINUTES.between(line2Date.toInstant(), line1Date.toInstant())).isZero();
     // line 2 was committed 8 months ago, it's outside the blame time window, but it's a first commit outside the range, so it has real commit date
