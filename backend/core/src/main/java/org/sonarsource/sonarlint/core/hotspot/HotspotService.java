@@ -231,7 +231,7 @@ public class HotspotService {
 
   private static RaisedHotspotDto changedHotspotUpdater(RaisedHotspotDto raisedHotspotDto, SecurityHotspotChangedEvent event) {
     if (event.getHotspotKey().equals(raisedHotspotDto.getServerKey())) {
-      return raisedHotspotDto.builder().withHotspotStatus(HotspotStatus.valueOf(event.getStatus().name())).buildHotspot();
+      return raisedHotspotDto.withHotspotStatus(HotspotStatus.valueOf(event.getStatus().name()));
     }
     return raisedHotspotDto;
   }

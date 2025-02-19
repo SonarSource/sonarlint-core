@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Server Connection
+ * SonarLint Core - Server API
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,21 +17,9 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.serverconnection;
+package org.sonarsource.sonarlint.core.serverapi.fixsuggestions;
 
-import java.nio.file.Path;
-import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
-import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
+import java.util.Set;
 
-public class ComponentsStorage {
-  public static final String COMPONENT_LIST_PB = "component_list.pb";
-  private final Path storageFilePath;
-
-  public ComponentsStorage(Path projectStorageRoot) {
-    this.storageFilePath = projectStorageRoot.resolve(COMPONENT_LIST_PB);
-  }
-
-  public Sonarlint.ProjectComponents read() {
-    return ProtobufFileUtil.readFile(storageFilePath, Sonarlint.ProjectComponents.parser());
-  }
+public record SupportedRulesResponseDto(Set<String> rules) {
 }

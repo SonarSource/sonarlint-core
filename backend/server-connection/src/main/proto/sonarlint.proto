@@ -41,10 +41,6 @@ message PluginReferences {
   }
 }
 
-message ProjectComponents {
-  repeated string component = 1;
-}
-
 message AnalyzerConfiguration {
   map<string, string> settings = 1;
   map<string, RuleSet> rule_sets_by_language_key = 2;
@@ -114,4 +110,8 @@ message NewCodeDefinition {
   optional int64 thresholdDate = 3;
   optional string version = 4;
   optional string referenceBranch = 5;
+}
+
+message AiCodeFixSettings {
+  repeated string supportedRules = 1;
 }
