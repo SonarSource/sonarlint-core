@@ -62,6 +62,8 @@ public interface NewCodeDefinition {
     return new NewCodeNumberOfDaysWithDate(days, thresholdDate);
   }
 
+  long getThresholdDate();
+
   static NewCodeDefinition withPreviousVersion(long thresholdDate, @Nullable String version) {
     return new NewCodePreviousVersion(thresholdDate, version);
   }
@@ -114,6 +116,11 @@ public interface NewCodeDefinition {
     @Override
     public boolean isSupported() {
       return true;
+    }
+
+    @Override
+    public long getThresholdDate() {
+      return Instant.now().minus(days, ChronoUnit.DAYS).toEpochMilli();
     }
 
     // Text used by IDEs in the UI. Communicate changes to IDE squad prior to changing the wording.
@@ -216,6 +223,12 @@ public interface NewCodeDefinition {
       return branchName;
     }
 
+    @Override
+    public long getThresholdDate() {
+      // instead of Long.MAX_VALUE it's set for Instant.now() in case it will be used for git blame limit
+      return Instant.now().toEpochMilli();
+    }
+
     // Text used by IDEs in the UI. Communicate changes to IDE squad prior to changing the wording.
     @Override
     public String toString() {
@@ -237,6 +250,12 @@ public interface NewCodeDefinition {
     @Override
     public boolean isOnNewCode(long creationDate) {
       return true;
+    }
+
+    @Override
+    public long getThresholdDate() {
+      // instead of 0L it's set for Instant.now() in case it will be used for git blame limit (which shouldn't normally happen)
+      return Instant.now().toEpochMilli();
     }
 
     @Override
