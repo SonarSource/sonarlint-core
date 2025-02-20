@@ -29,9 +29,10 @@ import java.util.Date;
 import java.util.regex.Pattern;
 import org.sonar.scm.git.blame.BlameResult;
 import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class BlameParser {
-
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final String FILENAME = "filename ";
   private static final String AUTHOR_MAIL = "author-mail ";
   private static final String COMMITTER_TIME = "committer-time ";
@@ -43,13 +44,14 @@ public class BlameParser {
 
   public static SonarLintBlameResult parseBlameOutput(String blameOutput, String currentFilePath, Path projectBaseDir) throws IOException {
     var blameResult = new BlameResult();
-    var currentFileBlame = new BlameResult.FileBlame(currentFilePath, countCommitterTimeOccurrences(blameOutput));
+    var numberOfLines = numberOfLinesInBlameOutput(blameOutput);
+    var currentFileBlame = new BlameResult.FileBlame(currentFilePath, numberOfLines);
     blameResult.getFileBlameByPath().put(currentFilePath, currentFileBlame);
     var fileSections = blameOutput.split(FILENAME);
     var currentLineNumber = 0;
 
     for (var fileSection : fileSections) {
-      if (fileSection.isBlank()) {
+      if (shouldSkipSection(fileSection, currentLineNumber >= numberOfLines)) {
         continue;
       }
 
@@ -73,8 +75,19 @@ public class BlameParser {
     return new SonarLintBlameResult(blameResult, projectBaseDir);
   }
 
-  public static int countCommitterTimeOccurrences(String blameOutput) {
-    var pattern = Pattern.compile("^" + COMMITTER_TIME, Pattern.MULTILINE);
+  private static boolean shouldSkipSection(String fileSection, boolean lineNumberIsOff) {
+    if (fileSection.isBlank()) {
+      return true;
+    }
+    if (lineNumberIsOff) {
+      LOG.warn("Number of blame output sections is higher than expected number of lines. Section content: {}", fileSection);
+      return true;
+    }
+    return false;
+  }
+
+  public static int numberOfLinesInBlameOutput(String blameOutput) {
+    var pattern = Pattern.compile("^" + FILENAME, Pattern.MULTILINE);
     var matcher = pattern.matcher(blameOutput);
     var count = 0;
     while (matcher.find()) {
