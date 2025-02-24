@@ -107,7 +107,8 @@ public class ProcessWrapperFactory {
             var dirStr = baseDir != null ? baseDir.toString() : "null";
             throw new GitRepoNotFoundException(dirStr);
           }
-          throw new IllegalStateException(format("Command execution exited with code: %d", exit));
+          var gitBlameOutput = join(System.lineSeparator(), output);
+          throw new IllegalStateException(format("Command execution exited with code: %d and error message: %s", exit, gitBlameOutput));
         }
       } catch (InterruptedException e) {
         LOG.warn(format("Command [%s] interrupted", join(" ", command)), e);
