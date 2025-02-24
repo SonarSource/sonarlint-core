@@ -99,12 +99,12 @@ public class GitUtils {
   }
 
   public static SonarLintBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths,
-    @Nullable UnaryOperator<String> fileContentProvider, long thresholdDate) {
+    @Nullable UnaryOperator<String> fileContentProvider, Instant thresholdDate) {
     return getBlameResult(projectBaseDir, projectBaseRelativeFilePaths, fileContentProvider, GitUtils::checkIfEnabled, thresholdDate);
   }
 
   static SonarLintBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, @Nullable UnaryOperator<String> fileContentProvider,
-    Predicate<Path> isEnabled, long thresholdDate) {
+    Predicate<Path> isEnabled, Instant thresholdDate) {
     if (isEnabled.test(projectBaseDir)) {
       LOG.debug("Using native git blame");
       return blameFromNativeCommand(projectBaseDir, projectBaseRelativeFilePaths, thresholdDate);
@@ -175,12 +175,12 @@ public class GitUtils {
     return String.join(System.lineSeparator(), commandResult);
   }
 
-  public static SonarLintBlameResult blameFromNativeCommand(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, long thresholdDate) {
+  public static SonarLintBlameResult blameFromNativeCommand(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, Instant thresholdDate) {
     var nativeExecutable = getNativeGitExecutable();
     if (nativeExecutable != null) {
       for (var relativeFilePath : projectBaseRelativeFilePaths) {
         try {
-          var blameHistoryWindow = getBlameHistoryWindow(thresholdDate);
+          var blameHistoryWindow = "--since='" + thresholdDate + "'";
           return parseBlameOutput(executeGitCommand(projectBaseDir,
               nativeExecutable, "blame", blameHistoryWindow, projectBaseDir.resolve(relativeFilePath).toString(), "--line-porcelain", "--encoding=UTF-8"),
             projectBaseDir.resolve(relativeFilePath).toString().replace("\\", "/"), projectBaseDir);
@@ -190,11 +190,6 @@ public class GitUtils {
       }
     }
     throw new IllegalStateException("There is no native Git available");
-  }
-
-  private static String getBlameHistoryWindow(long thresholdDate) {
-    var blameLimit = Instant.ofEpochMilli(thresholdDate);
-    return "--since='" + blameLimit + "'";
   }
 
   public static boolean checkIfEnabled(Path projectBaseDir) {

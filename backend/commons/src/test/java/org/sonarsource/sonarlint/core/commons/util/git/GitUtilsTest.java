@@ -127,7 +127,7 @@ class GitUtilsTest {
     createFile(projectDirPath, "fileA", "line1", "line2", "line3");
     var c1 = commit(git, "fileA");
 
-    var sonarLintBlameResult = getBlameResult(projectDirPath, Set.of(Path.of("fileA")), null, path -> false, 0);
+    var sonarLintBlameResult = getBlameResult(projectDirPath, Set.of(Path.of("fileA")), null, path -> false, Instant.now());
     assertThat(IntStream.of(1, 2, 3)
       .mapToObj(lineNumber -> sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(lineNumber))))
       .map(Optional::get)
@@ -138,7 +138,8 @@ class GitUtilsTest {
   void it_should_throw_if_no_files() {
     Set<Path> files = Set.of();
 
-    assertThrows(IllegalStateException.class, () -> getBlameResult(projectDirPath, files, null, path -> true, 0));
+    var now = Instant.now();
+    assertThrows(IllegalStateException.class, () -> getBlameResult(projectDirPath, files, null, path -> true, now));
   }
 
   @Test
@@ -384,7 +385,7 @@ class GitUtilsTest {
     commitAtDate(git, fourMonthsAgo, fileAStr);
     var fileA = Path.of(fileAStr);
 
-    var blameResult = blameFromNativeCommand(projectDirPath, Set.of(fileA), Instant.now().toEpochMilli());
+    var blameResult = blameFromNativeCommand(projectDirPath, Set.of(fileA), Instant.now());
 
     var line1Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(1)).get();
     var line2Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(2)).get();
@@ -422,7 +423,7 @@ class GitUtilsTest {
     commitAtDate(git, fourMonthsAgo, fileAStr);
     var fileA = Path.of(fileAStr);
 
-    var blameResult = blameFromNativeCommand(projectDirPath, Set.of(fileA), Instant.now().minus(Period.ofDays(180)).toEpochMilli());
+    var blameResult = blameFromNativeCommand(projectDirPath, Set.of(fileA), Instant.now().minus(Period.ofDays(180)));
 
     var line1Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(1)).get();
     var line2Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(2)).get();

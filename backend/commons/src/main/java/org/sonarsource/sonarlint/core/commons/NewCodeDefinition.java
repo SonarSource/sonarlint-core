@@ -62,8 +62,6 @@ public interface NewCodeDefinition {
     return new NewCodeNumberOfDaysWithDate(days, thresholdDate);
   }
 
-  long getThresholdDate();
-
   static NewCodeDefinition withPreviousVersion(long thresholdDate, @Nullable String version) {
     return new NewCodePreviousVersion(thresholdDate, version);
   }
@@ -75,6 +73,8 @@ public interface NewCodeDefinition {
   static NewCodeDefinition withSpecificAnalysis(long thresholdDate) {
     return new NewCodeSpecificAnalysis(thresholdDate);
   }
+
+  Instant getThresholdDate();
 
   abstract class NewCodeDefinitionWithDate implements NewCodeDefinition {
     protected final long thresholdDate;
@@ -91,8 +91,8 @@ public interface NewCodeDefinition {
       return true;
     }
 
-    public long getThresholdDate() {
-      return thresholdDate;
+    public Instant getThresholdDate() {
+      return Instant.ofEpochMilli(thresholdDate);
     }
   }
 
@@ -119,8 +119,8 @@ public interface NewCodeDefinition {
     }
 
     @Override
-    public long getThresholdDate() {
-      return Instant.now().minus(days, ChronoUnit.DAYS).toEpochMilli();
+    public Instant getThresholdDate() {
+      return Instant.now().minus(days, ChronoUnit.DAYS);
     }
 
     // Text used by IDEs in the UI. Communicate changes to IDE squad prior to changing the wording.
@@ -224,9 +224,9 @@ public interface NewCodeDefinition {
     }
 
     @Override
-    public long getThresholdDate() {
+    public Instant getThresholdDate() {
       // instead of Long.MAX_VALUE it's set for Instant.now() in case it will be used for git blame limit
-      return Instant.now().toEpochMilli();
+      return Instant.now();
     }
 
     // Text used by IDEs in the UI. Communicate changes to IDE squad prior to changing the wording.
@@ -253,9 +253,9 @@ public interface NewCodeDefinition {
     }
 
     @Override
-    public long getThresholdDate() {
+    public Instant getThresholdDate() {
       // instead of 0L it's set for Instant.now() in case it will be used for git blame limit (which shouldn't normally happen)
-      return Instant.now().toEpochMilli();
+      return Instant.now();
     }
 
     @Override

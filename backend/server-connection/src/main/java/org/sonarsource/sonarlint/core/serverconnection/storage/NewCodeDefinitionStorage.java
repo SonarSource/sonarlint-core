@@ -63,7 +63,7 @@ public class NewCodeDefinitionStorage {
     }
     if (newCodeDefinition.getMode() != NewCodeMode.REFERENCE_BRANCH) {
       var newCodeDefinitionWithDate = (NewCodeDefinition.NewCodeDefinitionWithDate) newCodeDefinition;
-      builder.setThresholdDate(newCodeDefinitionWithDate.getThresholdDate());
+      builder.setThresholdDate(newCodeDefinitionWithDate.getThresholdDate().toEpochMilli());
     } else {
       var newCodeReferenceBranch = (NewCodeDefinition.NewCodeReferenceBranch) newCodeDefinition;
       builder.setReferenceBranch(newCodeReferenceBranch.getBranchName());
