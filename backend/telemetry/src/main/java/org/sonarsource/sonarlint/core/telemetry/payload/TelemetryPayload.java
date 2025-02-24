@@ -107,6 +107,9 @@ public class TelemetryPayload {
   @SerializedName("ai_fix_suggestions")
   private final TelemetryFixSuggestionPayload[] aiFixSuggestionsPayload;
 
+  @SerializedName("count_issues_with_possible_ai_fix_from_ide")
+  private final int countIssuesWithPossibleAiFixFromIde;
+
   @SerializedName("cayc")
   private final CleanAsYouCodePayload cleanAsYouCodePayload;
 
@@ -120,8 +123,7 @@ public class TelemetryPayload {
     TelemetryAnalyzerPerformancePayload[] analyses, TelemetryNotificationsPayload notifications, ShowHotspotPayload showHotspotPayload,
     ShowIssuePayload showIssuePayload, TaintVulnerabilitiesPayload taintVulnerabilitiesPayload, TelemetryRulesPayload telemetryRulesPayload, HotspotPayload hotspotPayload,
     IssuePayload issuePayload, TelemetryHelpAndFeedbackPayload helpAndFeedbackPayload, TelemetryFixSuggestionPayload[] aiFixSuggestionsPayload,
-    CleanAsYouCodePayload cleanAsYouCodePayload,
-    ShareConnectedModePayload shareConnectedModePayload,
+    int countIssuesWithPossibleAiFixFromIde, CleanAsYouCodePayload cleanAsYouCodePayload, ShareConnectedModePayload shareConnectedModePayload,
     Map<String, Object> additionalAttributes) {
     this.daysSinceInstallation = daysSinceInstallation;
     this.daysOfUse = daysOfUse;
@@ -147,6 +149,7 @@ public class TelemetryPayload {
     this.issuePayload = issuePayload;
     this.helpAndFeedbackPayload = helpAndFeedbackPayload;
     this.aiFixSuggestionsPayload = aiFixSuggestionsPayload;
+    this.countIssuesWithPossibleAiFixFromIde = countIssuesWithPossibleAiFixFromIde;
     this.cleanAsYouCodePayload = cleanAsYouCodePayload;
     this.shareConnectedModePayload = shareConnectedModePayload;
     this.additionalAttributes = additionalAttributes;
@@ -260,6 +263,10 @@ public class TelemetryPayload {
     return installTime;
   }
 
+  public int getCountIssuesWithPossibleAiFixFromIde() {
+    return countIssuesWithPossibleAiFixFromIde;
+  }
+
   public String toJson() {
     var gson = new GsonBuilder()
       .registerTypeAdapter(OffsetDateTime.class, new OffsetDateTimeAdapter())
@@ -286,4 +293,5 @@ public class TelemetryPayload {
     }
     return target;
   }
+
 }
