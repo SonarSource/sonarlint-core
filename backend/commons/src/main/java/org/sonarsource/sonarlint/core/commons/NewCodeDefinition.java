@@ -74,6 +74,8 @@ public interface NewCodeDefinition {
     return new NewCodeSpecificAnalysis(thresholdDate);
   }
 
+  Instant getThresholdDate();
+
   abstract class NewCodeDefinitionWithDate implements NewCodeDefinition {
     protected final long thresholdDate;
 
@@ -89,8 +91,8 @@ public interface NewCodeDefinition {
       return true;
     }
 
-    public long getThresholdDate() {
-      return thresholdDate;
+    public Instant getThresholdDate() {
+      return Instant.ofEpochMilli(thresholdDate);
     }
   }
 
@@ -114,6 +116,11 @@ public interface NewCodeDefinition {
     @Override
     public boolean isSupported() {
       return true;
+    }
+
+    @Override
+    public Instant getThresholdDate() {
+      return Instant.now().minus(days, ChronoUnit.DAYS);
     }
 
     // Text used by IDEs in the UI. Communicate changes to IDE squad prior to changing the wording.
@@ -216,6 +223,12 @@ public interface NewCodeDefinition {
       return branchName;
     }
 
+    @Override
+    public Instant getThresholdDate() {
+      // instead of Long.MAX_VALUE it's set for Instant.now() in case it will be used for git blame limit
+      return Instant.now();
+    }
+
     // Text used by IDEs in the UI. Communicate changes to IDE squad prior to changing the wording.
     @Override
     public String toString() {
@@ -237,6 +250,12 @@ public interface NewCodeDefinition {
     @Override
     public boolean isOnNewCode(long creationDate) {
       return true;
+    }
+
+    @Override
+    public Instant getThresholdDate() {
+      // instead of 0L it's set for Instant.now() in case it will be used for git blame limit (which shouldn't normally happen)
+      return Instant.now();
     }
 
     @Override

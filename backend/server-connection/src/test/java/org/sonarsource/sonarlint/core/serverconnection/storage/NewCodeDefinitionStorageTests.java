@@ -57,7 +57,7 @@ class NewCodeDefinitionStorageTests {
     var days = adapt(daysProto);
     assertThat(days.isSupported()).isTrue();
     assertThat(days).isInstanceOf(NewCodeDefinition.NewCodeNumberOfDaysWithDate.class);
-    assertThat(((NewCodeDefinition.NewCodeNumberOfDaysWithDate) days).getThresholdDate()).isEqualTo(1000);
+    assertThat(days.getThresholdDate().toEpochMilli()).isEqualTo(1000);
     assertThat(((NewCodeDefinition.NewCodeNumberOfDaysWithDate) days).getDays()).isEqualTo(30);
 
     var previousWithVersionProto = Sonarlint.NewCodeDefinition.newBuilder()
@@ -68,7 +68,7 @@ class NewCodeDefinitionStorageTests {
     var previousWithVersion = adapt(previousWithVersionProto);
     assertThat(previousWithVersion.isSupported()).isTrue();
     assertThat(previousWithVersion).isInstanceOf(NewCodeDefinition.NewCodePreviousVersion.class);
-    assertThat(((NewCodeDefinition.NewCodePreviousVersion) previousWithVersion).getThresholdDate()).isEqualTo(1000);
+    assertThat(previousWithVersion.getThresholdDate().toEpochMilli()).isEqualTo(1000);
     assertThat(((NewCodeDefinition.NewCodePreviousVersion) previousWithVersion).getVersion()).isEqualTo("1.0-SNAPSHOT");
 
     var previousWithoutVersionProto = Sonarlint.NewCodeDefinition.newBuilder()
@@ -78,7 +78,7 @@ class NewCodeDefinitionStorageTests {
     var previousWithoutVersion = adapt(previousWithoutVersionProto);
     assertThat(previousWithoutVersion.isSupported()).isTrue();
     assertThat(previousWithoutVersion).isInstanceOf(NewCodeDefinition.NewCodePreviousVersion.class);
-    assertThat(((NewCodeDefinition.NewCodePreviousVersion) previousWithoutVersion).getThresholdDate()).isEqualTo(1000);
+    assertThat(previousWithoutVersion.getThresholdDate().toEpochMilli()).isEqualTo(1000);
     assertThat(((NewCodeDefinition.NewCodePreviousVersion) previousWithoutVersion).getVersion()).isNull();
 
     var branchProto = Sonarlint.NewCodeDefinition.newBuilder()
@@ -97,7 +97,7 @@ class NewCodeDefinitionStorageTests {
     var analysis = adapt(analysisProto);
     assertThat(analysis.isSupported()).isTrue();
     assertThat(analysis).isInstanceOf(NewCodeDefinition.NewCodeSpecificAnalysis.class);
-    assertThat(((NewCodeDefinition.NewCodeSpecificAnalysis) analysis).getThresholdDate()).isEqualTo(1000);
+    assertThat(analysis.getThresholdDate().toEpochMilli()).isEqualTo(1000);
 
     var unknownProto = Sonarlint.NewCodeDefinition.newBuilder()
       .setMode(Sonarlint.NewCodeDefinitionMode.UNKNOWN)
