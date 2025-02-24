@@ -21,14 +21,6 @@ package org.sonarsource.sonarlint.core.telemetry.payload;
 
 import com.google.gson.annotations.SerializedName;
 
-public class HotspotPayload {
-  @SerializedName("open_in_browser_count")
-  public final int openInBrowserCount;
-  @SerializedName("status_changed_count")
-  public final int statusChangedCount;
-
-  public HotspotPayload(int openInBrowserCount, int statusChangedCount) {
-    this.openInBrowserCount = openInBrowserCount;
-    this.statusChangedCount = statusChangedCount;
-  }
+public record HotspotPayload(@SerializedName("open_in_browser_count") int openInBrowserCount,
+                             @SerializedName("status_changed_count") int statusChangedCount) {
 }

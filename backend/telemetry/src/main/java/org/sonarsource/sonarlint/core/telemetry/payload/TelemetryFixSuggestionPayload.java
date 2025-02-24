@@ -21,42 +21,13 @@ package org.sonarsource.sonarlint.core.telemetry.payload;
 
 import com.google.gson.annotations.SerializedName;
 import java.util.List;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
 
-public class TelemetryFixSuggestionPayload {
-  @SerializedName("suggestion_id")
-  private final String suggestionId;
-
-  @SerializedName("count_snippets")
-  private final int countSnippets;
-
-  @SerializedName("opened_from")
-  private final AiSuggestionSource openedFrom;
-
-  @SerializedName("snippets")
-  private final List<TelemetryFixSuggestionResolvedPayload> snippets;
-
-  public TelemetryFixSuggestionPayload(String suggestionId, int countSnippets, AiSuggestionSource openedFrom,
-    List<TelemetryFixSuggestionResolvedPayload> snippets) {
-    this.suggestionId = suggestionId;
-    this.countSnippets = countSnippets;
-    this.openedFrom = openedFrom;
-    this.snippets = snippets;
-  }
-
-  public String getSuggestionId() {
-    return suggestionId;
-  }
-
-  public List<TelemetryFixSuggestionResolvedPayload> getSnippets() {
-    return snippets;
-  }
-
-  public int getCountSnippets() {
-    return countSnippets;
-  }
-
-  public AiSuggestionSource getOpenedFrom() {
-    return openedFrom;
-  }
+public record TelemetryFixSuggestionPayload(@SerializedName("suggestion_id") String suggestionId,
+                                            @SerializedName("count_snippets") int countSnippets,
+                                            @SerializedName("ai_fix_suggestion_provider") AiSuggestionSource aiFixSuggestionProvider,
+                                            @SerializedName("snippets") List<TelemetryFixSuggestionResolvedPayload> snippets,
+                                            @SerializedName("was_ai_fix_suggestion_generated_from_ide") boolean wasAiFixSuggestionGeneratedFromIde,
+                                            @SerializedName("is_feedback_positive") @Nullable Boolean isFeedbackPositive){
 }

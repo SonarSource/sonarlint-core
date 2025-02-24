@@ -21,26 +21,5 @@ package org.sonarsource.sonarlint.core.analysis;
 
 import java.util.UUID;
 
-public class RawIssueDetectedEvent {
-  private final String configurationScopeId;
-  private final UUID analysisId;
-  private final RawIssue detectedIssue;
-
-  public RawIssueDetectedEvent(String configurationScopeId, UUID analysisId, RawIssue detectedIssue) {
-    this.configurationScopeId = configurationScopeId;
-    this.analysisId = analysisId;
-    this.detectedIssue = detectedIssue;
-  }
-
-  public String getConfigurationScopeId() {
-    return configurationScopeId;
-  }
-
-  public UUID getAnalysisId() {
-    return analysisId;
-  }
-
-  public RawIssue getDetectedIssue() {
-    return detectedIssue;
-  }
+public record RawIssueDetectedEvent(String configurationScopeId, UUID analysisId, RawIssue detectedIssue) {
 }

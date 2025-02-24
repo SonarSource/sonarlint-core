@@ -118,7 +118,7 @@ class OpenFixSuggestionInIdeMediumTests {
     await().atMost(2, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(backend.telemetryFilePath())
         .content().asBase64Decoded().asString()
-        .contains("\"fixSuggestionReceivedCounter\":{\"eb93b2b4-f7b0-4b5c-9460-50893968c264\":{\"aiSuggestionsSource\":\"SONARCLOUD\",\"snippetsCount\":1}}"));
+        .contains("\"fixSuggestionReceivedCounter\":{\"eb93b2b4-f7b0-4b5c-9460-50893968c264\":{\"aiSuggestionsSource\":\"SONARCLOUD\",\"snippetsCount\":1,\"wasGeneratedFromIde\":false}}"));
   }
 
   @SonarLintTest

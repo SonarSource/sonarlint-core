@@ -110,7 +110,7 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
     }
     telemetryService.fixSuggestionReceived(new FixSuggestionReceivedParams(showFixSuggestionQuery.getFixSuggestion().suggestionId,
       showFixSuggestionQuery.isSonarCloud ? AiSuggestionSource.SONARCLOUD : AiSuggestionSource.SONARQUBE,
-      showFixSuggestionQuery.fixSuggestion.fileEdit.changes.size()));
+      showFixSuggestionQuery.fixSuggestion.fileEdit.changes.size(), false));
 
     AssistCreatingConnectionParams serverConnectionParams = createAssistServerConnectionParams(showFixSuggestionQuery, sonarCloudActiveEnvironment);
 

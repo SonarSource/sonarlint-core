@@ -21,15 +21,5 @@ package org.sonarsource.sonarlint.core.telemetry.payload.cayc;
 
 import com.google.gson.annotations.SerializedName;
 
-public class CleanAsYouCodePayload {
-  @SerializedName("new_code_focus")
-  private final NewCodeFocusPayload newCodeFocusPayload;
-
-  public CleanAsYouCodePayload(NewCodeFocusPayload newCodeFocusPayload) {
-    this.newCodeFocusPayload = newCodeFocusPayload;
-  }
-
-  public NewCodeFocusPayload getNewCodePayload() {
-    return newCodeFocusPayload;
-  }
+public record CleanAsYouCodePayload(@SerializedName("new_code_focus") NewCodeFocusPayload newCodeFocusPayload) {
 }

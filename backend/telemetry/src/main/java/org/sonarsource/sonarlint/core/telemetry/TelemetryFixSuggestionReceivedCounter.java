@@ -21,20 +21,7 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
 
-public class TelemetryFixSuggestionReceivedCounter {
-  private final AiSuggestionSource aiSuggestionsSource;
-  private final int snippetsCount;
-
-  public TelemetryFixSuggestionReceivedCounter(AiSuggestionSource aiSuggestionSource, int snippetsCount) {
-    this.aiSuggestionsSource = aiSuggestionSource;
-    this.snippetsCount = snippetsCount;
-  }
-
-  public AiSuggestionSource getAiSuggestionsSource() {
-    return aiSuggestionsSource;
-  }
-
-  public int getSnippetsCount() {
-    return snippetsCount;
-  }
+public record TelemetryFixSuggestionReceivedCounter(AiSuggestionSource aiSuggestionsSource,
+                                                    int snippetsCount,
+                                                    boolean wasGeneratedFromIde) {
 }
