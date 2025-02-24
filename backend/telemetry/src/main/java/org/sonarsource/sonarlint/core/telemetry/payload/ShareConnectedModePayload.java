@@ -22,26 +22,8 @@ package org.sonarsource.sonarlint.core.telemetry.payload;
 import com.google.gson.annotations.SerializedName;
 import javax.annotation.Nullable;
 
-public class ShareConnectedModePayload {
-
-  @SerializedName("manual_bindings_count")
-  public final Integer manualAddedBindingsCount;
-
-  @SerializedName("imported_bindings_count")
-  public final Integer importedAddedBindingsCount;
-
-  @SerializedName("auto_bindings_count")
-  public final Integer autoAddedBindingsCount;
-
-  @SerializedName("exported_connected_mode_count")
-  public final Integer exportedConnectedModeCount;
-
-  public ShareConnectedModePayload(@Nullable Integer manualAddedBindingsCount, @Nullable Integer importedAddedBindingsCount,
-    @Nullable Integer autoAddedBindingsCount, @Nullable Integer exportedConnectedModeCount) {
-    this.manualAddedBindingsCount = manualAddedBindingsCount;
-    this.importedAddedBindingsCount = importedAddedBindingsCount;
-    this.autoAddedBindingsCount = autoAddedBindingsCount;
-    this.exportedConnectedModeCount = exportedConnectedModeCount;
-  }
-
+public record ShareConnectedModePayload(@SerializedName("manual_bindings_count") @Nullable Integer manualAddedBindingsCount,
+                                        @SerializedName("imported_bindings_count") @Nullable Integer importedAddedBindingsCount,
+                                        @SerializedName("auto_bindings_count") @Nullable Integer autoAddedBindingsCount,
+                                        @SerializedName("exported_connected_mode_count") @Nullable Integer exportedConnectedModeCount) {
 }

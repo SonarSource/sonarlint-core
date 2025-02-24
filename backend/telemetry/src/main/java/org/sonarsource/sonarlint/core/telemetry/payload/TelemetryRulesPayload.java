@@ -22,22 +22,8 @@ package org.sonarsource.sonarlint.core.telemetry.payload;
 import com.google.gson.annotations.SerializedName;
 import java.util.Collection;
 
-public class TelemetryRulesPayload {
-
-  @SerializedName("non_default_enabled")
-  public final Collection<String> nonDefaultEnabled;
-  @SerializedName("default_disabled")
-  public final Collection<String> defaultDisabled;
-  @SerializedName("raised_issues")
-  public final Collection<String> raisedIssues;
-  @SerializedName("quick_fix_applied")
-  public final Collection<String> quickFixesApplied;
-
-  public TelemetryRulesPayload(Collection<String> nonDefaultEnabled, Collection<String> defaultDisabled, Collection<String> raisedIssues, Collection<String> quickFixesApplied) {
-    this.nonDefaultEnabled = nonDefaultEnabled;
-    this.defaultDisabled = defaultDisabled;
-    this.raisedIssues = raisedIssues;
-    this.quickFixesApplied = quickFixesApplied;
-  }
-
+public record TelemetryRulesPayload(@SerializedName("non_default_enabled") Collection<String> nonDefaultEnabled,
+                                    @SerializedName("default_disabled") Collection<String> defaultDisabled,
+                                    @SerializedName("raised_issues") Collection<String> raisedIssues,
+                                    @SerializedName("quick_fix_applied") Collection<String> quickFixesApplied) {
 }

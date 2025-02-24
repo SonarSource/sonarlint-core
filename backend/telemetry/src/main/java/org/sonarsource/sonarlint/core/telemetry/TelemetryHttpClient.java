@@ -119,7 +119,12 @@ public class TelemetryHttpClient {
     var telemetryRulesPayload = new TelemetryRulesPayload(telemetryLiveAttrs.getNonDefaultEnabledRules(),
       telemetryLiveAttrs.getDefaultDisabledRules(), data.getRaisedIssuesRules(), data.getQuickFixesApplied());
     var helpAndFeedbackPayload = new TelemetryHelpAndFeedbackPayload(data.getHelpAndFeedbackLinkClickedCounter());
-    var fixSuggestionPayload = TelemetryUtils.toFixSuggestionResolvedPayload(data.getFixSuggestionReceivedCounter(), data.getFixSuggestionResolved());
+    var fixSuggestionPayload = TelemetryUtils.toFixSuggestionResolvedPayload(
+      data.getFixSuggestionReceivedCounter(),
+      data.getFixSuggestionResolved(),
+      data.getFixSuggestionFeedback()
+    );
+    var countIssuesWithPossibleAiFixFromIde = data.getCountIssuesWithPossibleAiFixFromIde();
     var cleanAsYouCodePayload = new CleanAsYouCodePayload(new NewCodeFocusPayload(data.isFocusOnNewCode(), data.getCodeFocusChangedCount()));
 
     ShareConnectedModePayload shareConnectedModePayload;
@@ -137,8 +142,7 @@ public class TelemetryHttpClient {
       telemetryLiveAttrs.usesConnectedMode(), telemetryLiveAttrs.usesSonarCloud(), systemTime, data.installTime(), platform, jre,
       telemetryLiveAttrs.getNodeVersion(), analyzers, notifications, showHotspotPayload, showIssuePayload,
       taintVulnerabilitiesPayload, telemetryRulesPayload, hotspotPayload, issuePayload, helpAndFeedbackPayload,
-      fixSuggestionPayload, cleanAsYouCodePayload, shareConnectedModePayload,
-      mergedAdditionalAttributes);
+      fixSuggestionPayload, countIssuesWithPossibleAiFixFromIde, cleanAsYouCodePayload, shareConnectedModePayload, mergedAdditionalAttributes);
   }
 
   private TelemetryMetricsPayload createMetricsPayload(TelemetryLocalStorage data, TelemetryLiveAttributes telemetryLiveAttrs) {

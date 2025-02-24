@@ -37,6 +37,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddQuickFixA
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddReportedRulesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDoneOnSingleLanguageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificationsClickedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionFeedbackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
@@ -345,6 +346,16 @@ class TelemetryMediumTests {
     backend.getTelemetryService().fixSuggestionResolved(new FixSuggestionResolvedParams("suggestionId2", FixSuggestionStatus.DECLINED, null));
     await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains(
       "\"fixSuggestionResolved\":{\"suggestionId\":[{\"fixSuggestionResolvedStatus\":\"ACCEPTED\",\"fixSuggestionResolvedSnippetIndex\":0}],\"suggestionId2\":[{\"fixSuggestionResolvedStatus\":\"DECLINED\"}]}"));
+  }
+
+  @SonarLintTest
+  void it_should_record_fixSuggestionFeedbackGiven(SonarLintTestHarness harness) {
+    var backend = setupClientAndBackend(harness);
+
+    backend.getTelemetryService().fixSuggestionFeedbackGiven(new FixSuggestionFeedbackParams("suggestionId", true));
+    backend.getTelemetryService().fixSuggestionFeedbackGiven(new FixSuggestionFeedbackParams("suggestionId2", false));
+    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains(
+      "\"fixSuggestionFeedback\":{\"suggestionId\":{\"isFeedbackPositive\":true},\"suggestionId2\":{\"isFeedbackPositive\":false}}"));
   }
 
   @SonarLintTest

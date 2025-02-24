@@ -26,6 +26,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddQuickFixA
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddReportedRulesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDoneOnSingleLanguageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificationsClickedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionFeedbackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
@@ -94,6 +95,11 @@ class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements 
   @Override
   public void fixSuggestionResolved(FixSuggestionResolvedParams params) {
     notify(() -> getBean(TelemetryService.class).fixSuggestionResolved(params));
+  }
+
+  @Override
+  public void fixSuggestionFeedbackGiven(FixSuggestionFeedbackParams params) {
+    notify(() -> getBean(TelemetryService.class).fixSuggestionFeedbackGiven(params));
   }
 
   @Override

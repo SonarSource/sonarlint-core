@@ -19,20 +19,5 @@
  */
 package org.sonarsource.sonarlint.core.telemetry.payload.cayc;
 
-public class NewCodeFocusPayload {
-  private final boolean enabled;
-  private final int changes;
-
-  public NewCodeFocusPayload(boolean enabled, int changes) {
-    this.enabled = enabled;
-    this.changes = changes;
-  }
-
-  public boolean isEnabled() {
-    return enabled;
-  }
-
-  public int getChanges() {
-    return changes;
-  }
+public record NewCodeFocusPayload(boolean enabled, int changes) {
 }

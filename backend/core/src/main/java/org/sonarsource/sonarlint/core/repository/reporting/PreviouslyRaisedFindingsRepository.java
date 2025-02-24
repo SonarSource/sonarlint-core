@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 public class PreviouslyRaisedFindingsRepository {
   private final Map<String, Map<URI, List<RaisedIssueDto>>> previouslyRaisedIssuesByScopeId = new ConcurrentHashMap<>();
@@ -52,6 +53,24 @@ public class PreviouslyRaisedFindingsRepository {
     return findingsPerFile;
   }
 
+  /**
+   * Increment the telemetry counter for issues that are AI fixable
+   * Avoid incrementing for already known issues, to have a more relevant counter
+   */
+  public void countAiFixableIssuesForTelemetry(String scopeId, Map<URI, List<RaisedIssueDto>> raisedFindings, TelemetryService telemetryService) {
+    var previousFindings = previouslyRaisedIssuesByScopeId.get(scopeId);
+    if (!previousFindings.isEmpty()) {
+      raisedFindings.forEach((uri, issues) -> {
+        var previousFindingsForFile = previousFindings.get(uri);
+        if (!previousFindings.isEmpty()) {
+          issues.stream()
+            .filter(i -> i.isAiCodeFixable() && !previousFindingsForFile.contains(i))
+            .forEach(i -> telemetryService.fixSuggestionApplicable());
+        }
+      });
+    }
+  }
+
   public Map<URI, List<RaisedIssueDto>> getRaisedIssuesForScope(String scopeId) {
     return previouslyRaisedIssuesByScopeId.getOrDefault(scopeId, Map.of());
   }
@@ -68,20 +87,6 @@ public class PreviouslyRaisedFindingsRepository {
   private static <F extends RaisedFindingDto> void resetCacheForFindings(String scopeId, Set<URI> files, Map<String, Map<URI, List<F>>> cache) {
     Map<URI, List<F>> blankCache = files.stream().collect(Collectors.toMap(Function.identity(), e -> new ArrayList<>()));
     cache.compute(scopeId, (file, issues) -> blankCache);
-  }
-
-  public Optional<RaisedIssueDto> getRaisedIssueWithScopeAndId(String scopeId, UUID issueId) {
-    return getRaisedIssuesForScope(scopeId).values().stream()
-      .flatMap(List::stream)
-      .filter(issue -> issue.getId().equals(issueId))
-      .findFirst();
-  }
-
-  public Optional<RaisedHotspotDto> getRaisedHotspotWithScopeAndId(String scopeId, UUID hotspotId) {
-    return getRaisedHotspotsForScope(scopeId).values().stream()
-      .flatMap(List::stream)
-      .filter(hotspot -> hotspot.getId().equals(hotspotId))
-      .findFirst();
   }
 
   public Optional<RaisedIssue> findRaisedIssueById(UUID issueId) {

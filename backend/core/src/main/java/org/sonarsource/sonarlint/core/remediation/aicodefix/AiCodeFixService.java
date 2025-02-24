@@ -35,9 +35,12 @@ import org.sonarsource.sonarlint.core.repository.reporting.PreviouslyRaisedFindi
 import org.sonarsource.sonarlint.core.repository.reporting.RaisedIssue;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.SuggestFixChangeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.SuggestFixResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionReceivedParams;
 import org.sonarsource.sonarlint.core.serverapi.fixsuggestions.AiSuggestionRequestBodyDto;
 import org.sonarsource.sonarlint.core.serverapi.fixsuggestions.AiSuggestionResponseBodyDto;
 import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 import static java.util.Objects.requireNonNull;
 import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.CONFIG_SCOPE_NOT_BOUND;
@@ -53,15 +56,18 @@ public class AiCodeFixService {
   private final PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository;
   private final ClientFileSystemService clientFileSystemService;
   private final StorageService storageService;
+  private final TelemetryService telemetryService;
 
   public AiCodeFixService(ConnectionConfigurationRepository connectionRepository, ConfigurationRepository configurationRepository, ConnectionManager connectionManager,
-    PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, ClientFileSystemService clientFileSystemService, StorageService storageService) {
+    PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, ClientFileSystemService clientFileSystemService, StorageService storageService,
+    TelemetryService telemetryService) {
     this.connectionRepository = connectionRepository;
     this.configurationRepository = configurationRepository;
     this.connectionManager = connectionManager;
     this.previouslyRaisedFindingsRepository = previouslyRaisedFindingsRepository;
     this.clientFileSystemService = clientFileSystemService;
     this.storageService = storageService;
+    this.telemetryService = telemetryService;
   }
 
   public SuggestFixResponse suggestFix(String configurationScopeId, UUID issueId, SonarLintCancelMonitor cancelMonitor) {
@@ -73,8 +79,19 @@ public class AiCodeFixService {
         if (!aiCodeFixFeature.map(feature -> feature.isFixable(issue)).orElse(false)) {
           throw new ResponseErrorException(new ResponseError(ResponseErrorCode.InvalidParams, "The provided issue cannot be fixed", issueId));
         }
-        return serverApi.fixSuggestions().getAiSuggestion(toDto(sonarQubeCloudBinding.organizationKey, sonarQubeCloudBinding.binding().sonarProjectKey(), issue),
+
+        var fixResponseDto = serverApi.fixSuggestions().getAiSuggestion(toDto(sonarQubeCloudBinding.organizationKey, sonarQubeCloudBinding.binding().sonarProjectKey(), issue),
           cancelMonitor);
+
+        telemetryService.fixSuggestionReceived(new FixSuggestionReceivedParams(
+          fixResponseDto.id().toString(),
+          AiSuggestionSource.SONARCLOUD,
+          fixResponseDto.changes().size(),
+          // As of today, this is always true since suggestFix is only called by the clients
+          true
+        ));
+
+        return fixResponseDto;
       })
       .orElseThrow(() -> new ResponseErrorException(new ResponseError(ISSUE_NOT_FOUND, "The provided issue does not exist", issueId))));
     return adapt(responseBodyDto);

@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.event.ServerIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.GetStatusResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionFeedbackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionReceivedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
@@ -160,11 +161,24 @@ public class TelemetryService {
   }
 
   public void fixSuggestionReceived(FixSuggestionReceivedParams params) {
-    updateTelemetry(localStorage -> localStorage.fixSuggestionReceived(params.getSuggestionId(), params.getAiSuggestionsSource(), params.getSnippetsCount()));
+    updateTelemetry(localStorage -> localStorage.fixSuggestionReceived(
+      params.getSuggestionId(),
+      params.getAiSuggestionsSource(),
+      params.getSnippetsCount(),
+      params.wasGeneratedFromIde())
+    );
   }
 
   public void fixSuggestionResolved(FixSuggestionResolvedParams params) {
     updateTelemetry(localStorage -> localStorage.fixSuggestionResolved(params.getSuggestionId(), params.getStatus(), params.getSnippetIndex()));
+  }
+
+  public void fixSuggestionFeedbackGiven(FixSuggestionFeedbackParams params) {
+    updateTelemetry(localStorage -> localStorage.fixSuggestionFeedbackGiven(params.getSuggestionId(), params.getIsFeedbackPositive()));
+  }
+
+  public void fixSuggestionApplicable() {
+    updateTelemetry(TelemetryLocalStorage::incrementCountIssuesWithPossibleAiFixFromIde);
   }
 
   public void smartNotificationsReceived(String eventType) {

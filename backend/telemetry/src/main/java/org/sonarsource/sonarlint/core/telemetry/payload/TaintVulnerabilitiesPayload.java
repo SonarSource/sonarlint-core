@@ -21,15 +21,6 @@ package org.sonarsource.sonarlint.core.telemetry.payload;
 
 import com.google.gson.annotations.SerializedName;
 
-public class TaintVulnerabilitiesPayload {
-  @SerializedName("investigated_locally_count")
-  public final int investigatedLocallyCount;
-
-  @SerializedName("investigated_remotely_count")
-  public final int investigatedRemotelyCount;
-
-  public TaintVulnerabilitiesPayload(int investigatedLocallyCount, int investigatedRemotelyCount) {
-    this.investigatedLocallyCount = investigatedLocallyCount;
-    this.investigatedRemotelyCount = investigatedRemotelyCount;
-  }
+public record TaintVulnerabilitiesPayload(@SerializedName("investigated_locally_count") int investigatedLocallyCount,
+                                          @SerializedName("investigated_remotely_count") int investigatedRemotelyCount) {
 }

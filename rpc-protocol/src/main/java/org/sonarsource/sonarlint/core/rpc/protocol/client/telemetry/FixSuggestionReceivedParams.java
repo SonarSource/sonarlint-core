@@ -23,11 +23,13 @@ public class FixSuggestionReceivedParams {
   private final String suggestionId;
   private final AiSuggestionSource aiSuggestionsSource;
   private final int snippetsCount;
+  private final boolean wasGeneratedFromIde;
 
-  public FixSuggestionReceivedParams(String suggestionId, AiSuggestionSource aiSuggestionsSource, int snippetsCount) {
+  public FixSuggestionReceivedParams(String suggestionId, AiSuggestionSource aiSuggestionsSource, int snippetsCount, boolean wasGeneratedFromIde) {
     this.suggestionId = suggestionId;
     this.aiSuggestionsSource = aiSuggestionsSource;
     this.snippetsCount = snippetsCount;
+    this.wasGeneratedFromIde = wasGeneratedFromIde;
   }
 
   public String getSuggestionId() {
@@ -40,5 +42,9 @@ public class FixSuggestionReceivedParams {
 
   public int getSnippetsCount() {
     return snippetsCount;
+  }
+
+  public boolean wasGeneratedFromIde() {
+    return wasGeneratedFromIde;
   }
 }
