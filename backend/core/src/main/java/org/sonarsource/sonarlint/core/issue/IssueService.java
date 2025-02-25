@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.issue;
 
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -45,6 +46,7 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.LocalOnlyIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.event.ServerIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
+import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.local.only.XodusLocalOnlyIssueStore;
 import org.sonarsource.sonarlint.core.mode.SeverityModeService;
@@ -74,6 +76,7 @@ import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
 import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.sync.FindingsSynchronizationService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
 import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
 import org.springframework.context.ApplicationEventPublisher;
@@ -101,6 +104,7 @@ public class IssueService {
   private final StorageService storageService;
   private final LocalOnlyIssueStorageService localOnlyIssueStorageService;
   private final LocalOnlyIssueRepository localOnlyIssueRepository;
+  private final FindingsSynchronizationService findingsSynchronizationService;
   private final ApplicationEventPublisher eventPublisher;
   private final FindingReportingService findingReportingService;
   private final SeverityModeService severityModeService;
@@ -108,16 +112,19 @@ public class IssueService {
   private final RulesService rulesService;
   private final TaintVulnerabilityTrackingService taintVulnerabilityTrackingService;
   private final AiCodeFixService aiCodeFixService;
+  private final PathTranslationService pathTranslationService;
 
   public IssueService(ConfigurationRepository configurationRepository, ConnectionManager connectionManager, StorageService storageService,
-    LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
+    LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository, FindingsSynchronizationService findingsSynchronizationService,
     ApplicationEventPublisher eventPublisher, FindingReportingService findingReportingService, SeverityModeService severityModeService,
-    NewCodeService newCodeService, RulesService rulesService, TaintVulnerabilityTrackingService taintVulnerabilityTrackingService, AiCodeFixService aiCodeFixService) {
+    NewCodeService newCodeService, RulesService rulesService, TaintVulnerabilityTrackingService taintVulnerabilityTrackingService, AiCodeFixService aiCodeFixService,
+    PathTranslationService pathTranslationService) {
     this.configurationRepository = configurationRepository;
     this.connectionManager = connectionManager;
     this.storageService = storageService;
     this.localOnlyIssueStorageService = localOnlyIssueStorageService;
     this.localOnlyIssueRepository = localOnlyIssueRepository;
+    this.findingsSynchronizationService = findingsSynchronizationService;
     this.eventPublisher = eventPublisher;
     this.findingReportingService = findingReportingService;
     this.severityModeService = severityModeService;
@@ -125,6 +132,7 @@ public class IssueService {
     this.rulesService = rulesService;
     this.taintVulnerabilityTrackingService = taintVulnerabilityTrackingService;
     this.aiCodeFixService = aiCodeFixService;
+    this.pathTranslationService = pathTranslationService;
   }
 
   public void changeStatus(String configurationScopeId, String issueKey, ResolutionStatus newStatus, boolean isTaintIssue, SonarLintCancelMonitor cancelMonitor) {
@@ -456,6 +464,16 @@ public class IssueService {
 
     }
     return updatedIssue;
+  }
+
+  public void syncFindings(String configurationScopeId, List<URI> files) {
+    var pathTranslation = pathTranslationService.getOrComputePathTranslation(configurationScopeId);
+    if (pathTranslation.isEmpty()) {
+      throw new IllegalStateException("Path translation is not available for configuration scope " + configurationScopeId);
+    }
+    var filePathTranslation = pathTranslation.get();
+    var paths = files.stream().map(fileUri -> filePathTranslation.ideToServerPath(Path.of(fileUri))).collect(Collectors.toSet());
+    findingsSynchronizationService.refreshServerFindings(configurationScopeId, paths);
   }
 
   private static List<ImpactDto> mergeImpacts(List<ImpactDto> currentImpacts, List<ImpactDto> overriddenImpacts) {
