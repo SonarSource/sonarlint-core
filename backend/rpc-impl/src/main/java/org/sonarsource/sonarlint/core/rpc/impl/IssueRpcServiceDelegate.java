@@ -38,6 +38,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssues
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssuesForFileResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenIssueParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenIssueResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.SyncFindingsParams;
 import org.sonarsource.sonarlint.core.rules.RuleNotFoundException;
 
 public class IssueRpcServiceDelegate extends AbstractRpcServiceDelegate implements IssueRpcService {
@@ -96,5 +97,11 @@ public class IssueRpcServiceDelegate extends AbstractRpcServiceDelegate implemen
         throw new ResponseErrorException(error);
       }
     });
+  }
+
+  @Override
+  public CompletableFuture<Void> syncFindings(SyncFindingsParams params) {
+    return runAsync(cancelMonitor -> getBean(IssueService.class).syncFindings(params.getConfigurationScopeId(), params.getFiles()),
+      params.getConfigurationScopeId());
   }
 }

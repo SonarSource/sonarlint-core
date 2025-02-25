@@ -127,4 +127,7 @@ public interface IssueRpcService {
 
   @JsonRequest
   CompletableFuture<GetEffectiveIssueDetailsResponse> getEffectiveIssueDetails(GetEffectiveIssueDetailsParams params);
+
+  @JsonRequest
+  CompletableFuture<Void> syncFindings(SyncFindingsParams params);
 }
