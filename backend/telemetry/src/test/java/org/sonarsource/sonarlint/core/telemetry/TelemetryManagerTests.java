@@ -215,7 +215,7 @@ class TelemetryManagerTests {
       data.incrementOpenHotspotInBrowserCount();
       data.incrementShowHotspotRequestCount();
       data.incrementShowIssueRequestCount();
-      data.fixSuggestionReceived("suggestionId", AiSuggestionSource.SONARCLOUD, 2);
+      data.fixSuggestionReceived("suggestionId", AiSuggestionSource.SONARCLOUD, 2, true);
       data.fixSuggestionResolved("suggestionId", FixSuggestionStatus.ACCEPTED, 0);
       data.incrementTaintVulnerabilitiesInvestigatedLocallyCount();
       data.incrementTaintVulnerabilitiesInvestigatedRemotelyCount();

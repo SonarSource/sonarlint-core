@@ -160,11 +160,20 @@ public class TelemetryService {
   }
 
   public void fixSuggestionReceived(FixSuggestionReceivedParams params) {
-    updateTelemetry(localStorage -> localStorage.fixSuggestionReceived(params.getSuggestionId(), params.getAiSuggestionsSource(), params.getSnippetsCount()));
+    updateTelemetry(localStorage -> localStorage.fixSuggestionReceived(
+      params.getSuggestionId(),
+      params.getAiSuggestionsSource(),
+      params.getSnippetsCount(),
+      params.wasGeneratedFromIde())
+    );
   }
 
   public void fixSuggestionResolved(FixSuggestionResolvedParams params) {
     updateTelemetry(localStorage -> localStorage.fixSuggestionResolved(params.getSuggestionId(), params.getStatus(), params.getSnippetIndex()));
+  }
+
+  public void fixSuggestionApplicable() {
+    updateTelemetry(TelemetryLocalStorage::incrementCountIssuesWithPossibleAiFixFromIde);
   }
 
   public void smartNotificationsReceived(String eventType) {

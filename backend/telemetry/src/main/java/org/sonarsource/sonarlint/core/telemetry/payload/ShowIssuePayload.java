@@ -21,11 +21,5 @@ package org.sonarsource.sonarlint.core.telemetry.payload;
 
 import com.google.gson.annotations.SerializedName;
 
-public class ShowIssuePayload {
-  @SerializedName("requests_count")
-  public final int requestsCount;
-
-  public ShowIssuePayload(int requestsCount) {
-    this.requestsCount = requestsCount;
-  }
+public record ShowIssuePayload(@SerializedName("requests_count") int requestsCount) {
 }

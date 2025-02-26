@@ -60,6 +60,7 @@ public class TelemetryLocalStorage {
   private final Map<String, TelemetryHelpAndFeedbackCounter> helpAndFeedbackLinkClickedCount;
   private final Map<String, TelemetryFixSuggestionReceivedCounter> fixSuggestionReceivedCounter;
   private final Map<String, List<TelemetryFixSuggestionResolvedStatus>> fixSuggestionResolved;
+  private int countIssuesWithPossibleAiFixFromIde;
   private boolean isFocusOnNewCode;
   private int codeFocusChangedCount;
   private int manualAddedBindingsCount;
@@ -143,6 +144,10 @@ public class TelemetryLocalStorage {
     return fixSuggestionResolved;
   }
 
+  public int getCountIssuesWithPossibleAiFixFromIde() {
+    return countIssuesWithPossibleAiFixFromIde;
+  }
+
   public boolean isFocusOnNewCode() {
     return isFocusOnNewCode;
   }
@@ -184,6 +189,7 @@ public class TelemetryLocalStorage {
     helpAndFeedbackLinkClickedCount.clear();
     fixSuggestionReceivedCounter.clear();
     fixSuggestionResolved.clear();
+    countIssuesWithPossibleAiFixFromIde = 0;
     codeFocusChangedCount = 0;
     manualAddedBindingsCount = 0;
     importedAddedBindingsCount = 0;
@@ -294,9 +300,9 @@ public class TelemetryLocalStorage {
     showIssueRequestsCount++;
   }
 
-  public void fixSuggestionReceived(String suggestionId, AiSuggestionSource aiSuggestionSource, int snippetsCount) {
+  public void fixSuggestionReceived(String suggestionId, AiSuggestionSource aiSuggestionSource, int snippetsCount, boolean wasGeneratedFromIde) {
     markSonarLintAsUsedToday();
-    this.fixSuggestionReceivedCounter.computeIfAbsent(suggestionId, k -> new TelemetryFixSuggestionReceivedCounter(aiSuggestionSource, snippetsCount));
+    this.fixSuggestionReceivedCounter.computeIfAbsent(suggestionId, k -> new TelemetryFixSuggestionReceivedCounter(aiSuggestionSource, snippetsCount, wasGeneratedFromIde));
   }
 
   public void fixSuggestionResolved(String suggestionId, FixSuggestionStatus status, @Nullable Integer snippetIndex) {
@@ -312,6 +318,11 @@ public class TelemetryLocalStorage {
     // if we already had a status for this snippet, we should replace it
     existingSnippetStatus.ifPresentOrElse(telemetryFixSuggestionResolvedStatus -> telemetryFixSuggestionResolvedStatus.setFixSuggestionResolvedStatus(status),
       () -> fixSuggestionSnippets.add(new TelemetryFixSuggestionResolvedStatus(status, snippetIndex)));
+  }
+
+  public void incrementCountIssuesWithPossibleAiFixFromIde() {
+    markSonarLintAsUsedToday();
+    countIssuesWithPossibleAiFixFromIde++;
   }
 
   public int getShowIssueRequestsCount() {

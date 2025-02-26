@@ -23,23 +23,6 @@ import com.google.gson.annotations.SerializedName;
 import java.math.BigDecimal;
 import java.util.Map;
 
-public class TelemetryAnalyzerPerformancePayload {
-  private final String language;
-
-  @SerializedName("rate_per_duration")
-  private final Map<String, BigDecimal> distribution;
-
-  public TelemetryAnalyzerPerformancePayload(String language, Map<String, BigDecimal> distribution) {
-    this.language = language;
-    this.distribution = distribution;
-  }
-
-  public String language() {
-    return language;
-  }
-
-  public Map<String, BigDecimal> distribution() {
-    return distribution;
-  }
-
+public record TelemetryAnalyzerPerformancePayload(String language,
+                                                  @SerializedName("rate_per_duration") Map<String, BigDecimal> distribution) {
 }
