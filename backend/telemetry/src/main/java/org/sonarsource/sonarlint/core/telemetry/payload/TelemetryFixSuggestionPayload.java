@@ -21,13 +21,11 @@ package org.sonarsource.sonarlint.core.telemetry.payload;
 
 import com.google.gson.annotations.SerializedName;
 import java.util.List;
-import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
 
 public record TelemetryFixSuggestionPayload(@SerializedName("suggestion_id") String suggestionId,
                                             @SerializedName("count_snippets") int countSnippets,
                                             @SerializedName("ai_fix_suggestion_provider") AiSuggestionSource aiFixSuggestionProvider,
                                             @SerializedName("snippets") List<TelemetryFixSuggestionResolvedPayload> snippets,
-                                            @SerializedName("was_ai_fix_suggestion_generated_from_ide") boolean wasAiFixSuggestionGeneratedFromIde,
-                                            @SerializedName("is_feedback_positive") @Nullable Boolean isFeedbackPositive){
+                                            @SerializedName("was_ai_fix_suggestion_generated_from_ide") boolean wasAiFixSuggestionGeneratedFromIde) {
 }

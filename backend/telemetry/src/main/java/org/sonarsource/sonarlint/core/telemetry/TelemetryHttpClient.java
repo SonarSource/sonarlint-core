@@ -121,8 +121,7 @@ public class TelemetryHttpClient {
     var helpAndFeedbackPayload = new TelemetryHelpAndFeedbackPayload(data.getHelpAndFeedbackLinkClickedCounter());
     var fixSuggestionPayload = TelemetryUtils.toFixSuggestionResolvedPayload(
       data.getFixSuggestionReceivedCounter(),
-      data.getFixSuggestionResolved(),
-      data.getFixSuggestionFeedback()
+      data.getFixSuggestionResolved()
     );
     var countIssuesWithPossibleAiFixFromIde = data.getCountIssuesWithPossibleAiFixFromIde();
     var cleanAsYouCodePayload = new CleanAsYouCodePayload(new NewCodeFocusPayload(data.isFocusOnNewCode(), data.getCodeFocusChangedCount()));

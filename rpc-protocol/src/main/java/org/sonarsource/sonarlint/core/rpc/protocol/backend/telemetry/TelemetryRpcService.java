@@ -28,7 +28,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddQuickFixA
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddReportedRulesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDoneOnSingleLanguageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificationsClickedParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionFeedbackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
 
@@ -85,13 +84,6 @@ public interface TelemetryRpcService {
 
   @JsonNotification
   void fixSuggestionResolved(FixSuggestionResolvedParams params);
-
-  /**
-   * Users have the possibility to give a feedback on a generated AI CodeFix in the IDE
-   * true if feedback is positive, false if negative
-   */
-  @JsonNotification
-  void fixSuggestionFeedbackGiven(FixSuggestionFeedbackParams params);
 
   @JsonNotification
   void addedManualBindings();
