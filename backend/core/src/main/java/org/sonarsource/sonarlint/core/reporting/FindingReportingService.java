@@ -96,7 +96,7 @@ public class FindingReportingService {
   }
 
   private static void resetFindingsForFile(Map<URI, Collection<TrackedIssue>> findingsMap, URI fileUri) {
-    findingsMap.computeIfAbsent(fileUri, k -> new ArrayList<>()).clear();
+    findingsMap.computeIfPresent(fileUri, (k, v) -> List.of());
   }
 
   public void streamIssue(String configurationScopeId, UUID analysisId, TrackedIssue trackedIssue) {
@@ -105,15 +105,24 @@ public class FindingReportingService {
     // A quick workaround is to replace the existing issue with the duplicated one (which should be the most up-to-date).
     // Ideally, we should be able to cancel the previous analysis if it's not relevant.
     if (trackedIssue.isSecurityHotspot()) {
-      var securityHotspots = securityHotspotsPerFileUri.computeIfAbsent(trackedIssue.getFileUri(), k -> new ArrayList<>());
-      securityHotspots.removeIf(i -> i.getId().equals(trackedIssue.getId()));
-      securityHotspots.add(trackedIssue);
+      insertTrackedIssue(securityHotspotsPerFileUri, trackedIssue);
     } else {
-      var issues = issuesPerFileUri.computeIfAbsent(trackedIssue.getFileUri(), k -> new ArrayList<>());
-      issues.removeIf(i -> i.getId().equals(trackedIssue.getId()));
-      issues.add(trackedIssue);
+      insertTrackedIssue(issuesPerFileUri, trackedIssue);
     }
     getStreamingDebounceAlarm(configurationScopeId, analysisId).schedule();
+  }
+
+  private static void insertTrackedIssue(Map<URI, Collection<TrackedIssue>> map, TrackedIssue trackedIssue) {
+    map.compute(trackedIssue.getFileUri(), (fileUri, fileFindings) -> {
+      // make sure to return an immutable list as it might be iterated over in parallel
+      if (fileFindings == null) {
+        return List.of(trackedIssue);
+      }
+      var newIssues = new ArrayList<>(fileFindings);
+      newIssues.removeIf(i -> i.getId().equals(trackedIssue.getId()));
+      newIssues.add(trackedIssue);
+      return List.copyOf(newIssues);
+    });
   }
 
   private void triggerStreaming(String configurationScopeId, UUID analysisId) {
