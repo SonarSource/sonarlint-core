@@ -104,7 +104,7 @@ class TelemetryPayloadTests {
       + "\"hotspot\":{\"open_in_browser_count\":5,\"status_changed_count\":3},"
       + "\"issue\":{\"status_changed_rule_keys\":[\"java:S123\"],\"status_changed_count\":1},"
       + "\"help_and_feedback\":{\"count_by_link\":{\"docs\":5,\"faq\":4}},"
-      + "\"ai_fix_suggestions\":[{\"suggestion_id\":\"suggestionId1\",\"count_snippets\":1,\"ai_fix_suggestion_provider\":\"SONARCLOUD\",\"snippets\":[{\"status\":\"ACCEPTED\",\"snippet_index\":0},{\"status\":\"DECLINED\",\"snippet_index\":1}],\"was_ai_fix_suggestion_generated_from_ide\":true,\"is_feedback_positive\":true},{\"suggestion_id\":\"suggestionId2\",\"count_snippets\":2,\"ai_fix_suggestion_provider\":\"SONARCLOUD\",\"snippets\":[{\"status\":\"ACCEPTED\",\"snippet_index\":null}],\"was_ai_fix_suggestion_generated_from_ide\":true,\"is_feedback_positive\":false},{\"suggestion_id\":\"suggestionId3\",\"count_snippets\":3,\"ai_fix_suggestion_provider\":\"SONARCLOUD\",\"snippets\":[{\"status\":null,\"snippet_index\":null}],\"was_ai_fix_suggestion_generated_from_ide\":false,\"is_feedback_positive\":null}],"
+      + "\"ai_fix_suggestions\":[{\"suggestion_id\":\"suggestionId1\",\"count_snippets\":1,\"ai_fix_suggestion_provider\":\"SONARCLOUD\",\"snippets\":[{\"status\":\"ACCEPTED\",\"snippet_index\":0},{\"status\":\"DECLINED\",\"snippet_index\":1}],\"was_ai_fix_suggestion_generated_from_ide\":true},{\"suggestion_id\":\"suggestionId2\",\"count_snippets\":2,\"ai_fix_suggestion_provider\":\"SONARCLOUD\",\"snippets\":[{\"status\":\"ACCEPTED\",\"snippet_index\":null}],\"was_ai_fix_suggestion_generated_from_ide\":true},{\"suggestion_id\":\"suggestionId3\",\"count_snippets\":3,\"ai_fix_suggestion_provider\":\"SONARCLOUD\",\"snippets\":[{\"status\":null,\"snippet_index\":null}],\"was_ai_fix_suggestion_generated_from_ide\":false}],"
       + "\"count_issues_with_possible_ai_fix_from_ide\":1,"
       + "\"cayc\":{\"new_code_focus\":{\"enabled\":true,\"changes\":2}},"
       + "\"shared_connected_mode\":{\"manual_bindings_count\":3,\"imported_bindings_count\":2,\"auto_bindings_count\":1,\"exported_connected_mode_count\":4},"
@@ -172,15 +172,15 @@ class TelemetryPayloadTests {
       AiSuggestionSource.SONARCLOUD,
       List.of(new TelemetryFixSuggestionResolvedPayload(FixSuggestionStatus.ACCEPTED, 0),
         new TelemetryFixSuggestionResolvedPayload(FixSuggestionStatus.DECLINED, 1)),
-      true, true);
+      true);
     var fixSuggestionPayload2 = new TelemetryFixSuggestionPayload("suggestionId2", 2,
       AiSuggestionSource.SONARCLOUD,
       List.of(new TelemetryFixSuggestionResolvedPayload(FixSuggestionStatus.ACCEPTED, null)),
-      true, false);
+      true);
     var fixSuggestionPayload3 = new TelemetryFixSuggestionPayload("suggestionId3", 3,
       AiSuggestionSource.SONARCLOUD,
       List.of(new TelemetryFixSuggestionResolvedPayload(null, null)),
-      false, null);
+      false);
     return new TelemetryFixSuggestionPayload[]{fixSuggestionPayload1, fixSuggestionPayload2, fixSuggestionPayload3};
   }
 

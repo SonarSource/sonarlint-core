@@ -145,12 +145,8 @@ class TelemetryUtilsTests {
     var fixSuggestionResolvedStatus3 = new TelemetryFixSuggestionResolvedStatus(FixSuggestionStatus.DECLINED, null);
     var fixSuggestionResolved = Map.of(suggestionId1, List.of(fixSuggestionResolvedStatus1, fixSuggestionResolvedStatus2),
       suggestionId3, List.of(fixSuggestionResolvedStatus3));
-    var fixSuggestionFeedbackGiven = Map.of(
-      suggestionId1, new TelemetryFixSuggestionFeedback(true),
-      suggestionId2, new TelemetryFixSuggestionFeedback(false)
-    );
 
-    var result = TelemetryUtils.toFixSuggestionResolvedPayload(fixSuggestionReceivedCounter, fixSuggestionResolved, fixSuggestionFeedbackGiven);
+    var result = TelemetryUtils.toFixSuggestionResolvedPayload(fixSuggestionReceivedCounter, fixSuggestionResolved);
 
     assertThat(result).hasSize(3);
     var resultingSuggestion1 = Arrays.stream(result).filter(s -> s.suggestionId().equals(suggestionId1)).findFirst().orElseThrow();
@@ -158,7 +154,6 @@ class TelemetryUtilsTests {
     assertThat(resultingSuggestion1.aiFixSuggestionProvider()).isEqualTo(AiSuggestionSource.SONARCLOUD);
     assertThat(resultingSuggestion1.countSnippets()).isEqualTo(4);
     assertThat(resultingSuggestion1.snippets()).hasSize(2);
-    assertThat(resultingSuggestion1.isFeedbackPositive()).isTrue();
     assertThat(resultingSuggestion1.wasAiFixSuggestionGeneratedFromIde()).isTrue();
 
     var resultingSuggestion2 = Arrays.stream(result).filter(s -> s.suggestionId().equals(suggestionId2)).findFirst().orElseThrow();
@@ -168,7 +163,6 @@ class TelemetryUtilsTests {
     assertThat(resultingSuggestion2.snippets()).hasSize(1);
     assertThat(resultingSuggestion2.snippets().get(0).status()).isNull();
     assertThat(resultingSuggestion2.snippets().get(0).snippetIndex()).isNull();
-    assertThat(resultingSuggestion2.isFeedbackPositive()).isFalse();
     assertThat(resultingSuggestion2.wasAiFixSuggestionGeneratedFromIde()).isTrue();
 
     var resultingSuggestion3 = Arrays.stream(result).filter(s -> s.suggestionId().equals(suggestionId3)).findFirst().orElseThrow();
@@ -179,7 +173,6 @@ class TelemetryUtilsTests {
     var telemetryFixSuggestionResolvedPayload3 = resultingSuggestion3.snippets().get(0);
     assertThat(telemetryFixSuggestionResolvedPayload3.snippetIndex()).isNull();
     assertThat(telemetryFixSuggestionResolvedPayload3.status()).isEqualTo(FixSuggestionStatus.DECLINED);
-    assertThat(resultingSuggestion3.isFeedbackPositive()).isNull();
     assertThat(resultingSuggestion3.wasAiFixSuggestionGeneratedFromIde()).isFalse();
   }
 }

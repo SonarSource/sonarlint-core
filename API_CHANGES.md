@@ -4,10 +4,6 @@
 
 * Introduce a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.AiCodeFixRpcService` class, containing a `suggestFix(SuggestFixParams)` method.
 * Introduce a new `isAiCodeFixable` method in `org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto`.
-* Introduce a new `fixSuggestionFeedbackGiven` method to `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService`
-  * Users have the possibility to give a positive or negative feedback on the suggested AI CodeFix in the IDE
-  * It should only be used for suggestions generated from the IDE
-  * It is not mandatory to give a feedback
 
 ## Deprecation
 
