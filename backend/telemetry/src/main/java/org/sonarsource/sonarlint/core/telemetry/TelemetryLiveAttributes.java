@@ -44,20 +44,20 @@ public class TelemetryLiveAttributes {
   }
 
   public boolean isDevNotificationsDisabled() {
-    return serverAttributes.isDevNotificationsDisabled();
+    return serverAttributes.devNotificationsDisabled();
   }
 
   public List<String> getNonDefaultEnabledRules() {
-    return serverAttributes.getNonDefaultEnabledRules();
+    return serverAttributes.nonDefaultEnabledRules();
   }
 
   public List<String> getDefaultDisabledRules() {
-    return serverAttributes.getDefaultDisabledRules();
+    return serverAttributes.defaultDisabledRules();
   }
 
   @Nullable
   public String getNodeVersion() {
-    return serverAttributes.getNodeVersion();
+    return serverAttributes.nodeVersion();
   }
 
   public Map<String, Object> getAdditionalAttributes() {

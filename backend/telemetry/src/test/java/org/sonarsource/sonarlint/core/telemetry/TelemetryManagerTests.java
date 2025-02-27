@@ -223,6 +223,8 @@ class TelemetryManagerTests {
       data.setNumUseDays(5);
       data.notifications().put(FOO_EVENT, new TelemetryNotificationsCounter(DEFAULT_NOTIF_COUNT, DEFAULT_NOTIF_CLICKED));
       data.getHelpAndFeedbackLinkClickedCounter().put(SUGGEST_FEATURE, new TelemetryHelpAndFeedbackCounter(DEFAULT_HELP_AND_FEEDBACK_COUNT));
+      data.addBoundSQCProjectKey("project_key_sqc");
+      data.addBoundSQSProjectKey("project_key_sqs");
     });
 
     telemetryManager.uploadAndClearTelemetry(telemetryPayload);
@@ -239,6 +241,8 @@ class TelemetryManagerTests {
     assertThat(reloaded.getFixSuggestionResolved()).isEmpty();
     assertThat(reloaded.openHotspotInBrowserCount()).isZero();
     assertThat(reloaded.getHelpAndFeedbackLinkClickedCounter()).isEmpty();
+    assertThat(reloaded.getBoundSQCProjectKeys()).isEmpty();
+    assertThat(reloaded.getBoundSQSProjectKeys()).isEmpty();
   }
 
   private void createAndSaveSampleData(TelemetryLocalStorageManager storage) {

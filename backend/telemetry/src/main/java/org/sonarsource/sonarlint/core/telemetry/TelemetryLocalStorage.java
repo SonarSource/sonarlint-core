@@ -67,6 +67,8 @@ public class TelemetryLocalStorage {
   private int importedAddedBindingsCount;
   private int autoAddedBindingsCount;
   private int exportedConnectedModeCount;
+  private final Set<String> boundSQSProjectKeys;
+  private final Set<String> boundSQCProjectKeys;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -79,6 +81,8 @@ public class TelemetryLocalStorage {
     helpAndFeedbackLinkClickedCount = new LinkedHashMap<>();
     fixSuggestionReceivedCounter = new LinkedHashMap<>();
     fixSuggestionResolved = new LinkedHashMap<>();
+    boundSQSProjectKeys = new HashSet<>();
+    boundSQCProjectKeys = new HashSet<>();
   }
 
   public Collection<String> getRaisedIssuesRules() {
@@ -195,6 +199,8 @@ public class TelemetryLocalStorage {
     importedAddedBindingsCount = 0;
     autoAddedBindingsCount = 0;
     exportedConnectedModeCount = 0;
+    boundSQSProjectKeys.clear();
+    boundSQCProjectKeys.clear();
   }
 
   long numUseDays() {
@@ -428,6 +434,24 @@ public class TelemetryLocalStorage {
 
   public int getExportedConnectedModeCount() {
     return exportedConnectedModeCount;
+  }
+
+  public void addBoundSQSProjectKey(String projectKey) {
+    markSonarLintAsUsedToday();
+    boundSQSProjectKeys.add(projectKey);
+  }
+
+  public Set<String> getBoundSQSProjectKeys() {
+    return boundSQSProjectKeys;
+  }
+
+  public void addBoundSQCProjectKey(String projectKey) {
+    markSonarLintAsUsedToday();
+    boundSQCProjectKeys.add(projectKey);
+  }
+
+  public Set<String> getBoundSQCProjectKeys() {
+    return boundSQCProjectKeys;
   }
 
 }

@@ -41,6 +41,7 @@ import org.sonarsource.sonarlint.core.branch.MatchedSonarProjectBranchChangedEve
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
+import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -56,6 +57,7 @@ import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
 import org.sonarsource.sonarlint.core.progress.ProgressNotifier;
 import org.sonarsource.sonarlint.core.progress.TaskManager;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
@@ -68,6 +70,7 @@ import org.sonarsource.sonarlint.core.serverconnection.OrganizationSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.SonarServerSettingsChangedEvent;
 import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
@@ -84,6 +87,7 @@ public class SynchronizationService {
   private final ConfigurationRepository configurationRepository;
   private final LanguageSupportRepository languageSupportRepository;
   private final ConnectionManager connectionManager;
+  private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final TaskManager taskManager;
   private final StorageService storageService;
   private final Set<String> connectedModeEmbeddedPluginKeys;
@@ -102,12 +106,14 @@ public class SynchronizationService {
   private final ExecutorServiceShutdownWatchable<ScheduledExecutorService> scheduledSynchronizer = new ExecutorServiceShutdownWatchable<>(
     FailSafeExecutors.newSingleThreadScheduledExecutor("SonarLint Local Storage Synchronizer"));
   private final Set<String> ignoreBranchEventForScopes = ConcurrentHashMap.newKeySet();
+  private final TelemetryService telemetryService;
 
   public SynchronizationService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
     ConnectionManager connectionManager, StorageService storageService, InitializeParams params, TaintSynchronizationService taintSynchronizationService,
     IssueSynchronizationService issueSynchronizationService, HotspotSynchronizationService hotspotSynchronizationService,
     SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService, SonarProjectBranchTrackingService sonarProjectBranchTrackingService,
-    PluginsRepository pluginsRepository, ApplicationEventPublisher applicationEventPublisher) {
+    PluginsRepository pluginsRepository, ApplicationEventPublisher applicationEventPublisher, TelemetryService telemetryService,
+    ConnectionConfigurationRepository connectionConfigurationRepository) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
@@ -124,6 +130,8 @@ public class SynchronizationService {
     this.sonarProjectBranchTrackingService = sonarProjectBranchTrackingService;
     this.pluginsRepository = pluginsRepository;
     this.applicationEventPublisher = applicationEventPublisher;
+    this.telemetryService = telemetryService;
+    this.connectionConfigurationRepository = connectionConfigurationRepository;
   }
 
   @PostConstruct
@@ -256,18 +264,26 @@ public class SynchronizationService {
     if (!fullSynchronizationEnabled) {
       return;
     }
-    var configScopeId = event.getConfigScopeId();
+    var configScopeId = event.configScopeId();
     scopeSynchronizationTimestampRepository.clearLastSynchronizationTimestamp(configScopeId);
-    if (event.getPreviousConfig().isBound()) {
+    if (event.previousConfig().isBound()) {
       // when unbinding, we want to let future rebinds trigger a sync
-      var previousBinding = new Binding(requireNonNull(event.getPreviousConfig().getConnectionId()), requireNonNull(event.getPreviousConfig().getSonarProjectKey()));
+      var previousBinding = new Binding(requireNonNull(event.previousConfig().getConnectionId()), requireNonNull(event.previousConfig().getSonarProjectKey()));
       bindingSynchronizationTimestampRepository.clearLastSynchronizationTimestamp(previousBinding);
       branchSynchronizationTimestampRepository.clearLastSynchronizationTimestampIf(branchBinding -> branchBinding.getBinding().equals(previousBinding));
     }
-    var newConnectionId = event.getNewConfig().getConnectionId();
+    var newConnectionId = event.newConfig().getConnectionId();
     if (newConnectionId != null) {
-      synchronizeConnectionAndProjectsIfNeededAsync(newConnectionId,
-        List.of(new BoundScope(configScopeId, newConnectionId, requireNonNull(event.getNewConfig().getSonarProjectKey()))));
+      var projectKey = requireNonNull(event.newConfig().getSonarProjectKey());
+      var connection = connectionConfigurationRepository.getConnectionById(newConnectionId);
+      if (connection != null) {
+        if (connection.getKind() == ConnectionKind.SONARCLOUD) {
+          telemetryService.addBoundSQCProjectKey(projectKey);
+        } else {
+          telemetryService.addBoundSQSProjectKey(projectKey);
+        }
+      }
+      synchronizeConnectionAndProjectsIfNeededAsync(newConnectionId, List.of(new BoundScope(configScopeId, newConnectionId, projectKey)));
     }
   }
 

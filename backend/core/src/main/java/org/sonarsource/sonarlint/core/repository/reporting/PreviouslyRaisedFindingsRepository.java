@@ -62,11 +62,9 @@ public class PreviouslyRaisedFindingsRepository {
     if (!previousFindings.isEmpty()) {
       raisedFindings.forEach((uri, issues) -> {
         var previousFindingsForFile = previousFindings.get(uri);
-        if (!previousFindings.isEmpty()) {
-          issues.stream()
-            .filter(i -> i.isAiCodeFixable() && !previousFindingsForFile.contains(i))
-            .forEach(i -> telemetryService.fixSuggestionApplicable());
-        }
+        issues.stream()
+          .filter(i -> i.isAiCodeFixable() && !previousFindingsForFile.contains(i))
+          .forEach(i -> telemetryService.fixSuggestionApplicable());
       });
     }
   }

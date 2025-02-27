@@ -17,11 +17,11 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.telemetry.metricspayload;
+package org.sonarsource.sonarlint.core.telemetry.measurespayload;
 
 import com.google.gson.annotations.SerializedName;
 
-public class TelemetryMetricsValue {
+public class TelemetryMeasuresValue {
 
   @SerializedName("key")
   private final String key;
@@ -30,12 +30,12 @@ public class TelemetryMetricsValue {
   private final String value;
 
   @SerializedName("type")
-  private final TelemetryMetricsValueType type;
+  private final TelemetryMeasuresValueType type;
 
   @SerializedName("granularity")
-  private final TelemetryMetricsValueGranularity granularity;
+  private final TelemetryMeasuresValueGranularity granularity;
 
-  public TelemetryMetricsValue(String key, String value, TelemetryMetricsValueType type, TelemetryMetricsValueGranularity granularity) {
+  public TelemetryMeasuresValue(String key, String value, TelemetryMeasuresValueType type, TelemetryMeasuresValueGranularity granularity) {
     this.key = key;
     this.value = value;
     this.type = type;

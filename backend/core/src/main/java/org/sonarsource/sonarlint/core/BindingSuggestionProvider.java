@@ -78,8 +78,8 @@ public class BindingSuggestionProvider {
   @EventListener
   public void bindingConfigChanged(BindingConfigChangedEvent event) {
     // Check if binding suggestion was switched on
-    if (!event.getNewConfig().isBindingSuggestionDisabled() && event.getPreviousConfig().isBindingSuggestionDisabled()) {
-      suggestBindingForGivenScopesAndAllConnections(Set.of(event.getConfigScopeId()));
+    if (!event.newConfig().isBindingSuggestionDisabled() && event.previousConfig().isBindingSuggestionDisabled()) {
+      suggestBindingForGivenScopesAndAllConnections(Set.of(event.configScopeId()));
     }
   }
 

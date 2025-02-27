@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.telemetry.metricspayload;
+package org.sonarsource.sonarlint.core.telemetry.measurespayload;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
@@ -25,7 +25,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import org.sonarsource.sonarlint.core.telemetry.OffsetDateTimeAdapter;
 
-public class TelemetryMetricsPayload {
+public class TelemetryMeasuresPayload {
 
   @SerializedName("message_uuid")
   private final String messageUuid;
@@ -40,19 +40,43 @@ public class TelemetryMetricsPayload {
   private final String product;
 
   @SerializedName("dimension")
-  private final TelemetryMetricsDimension dimension;
+  private final TelemetryMeasuresDimension dimension;
 
   @SerializedName("metric_values")
-  private final List<TelemetryMetricsValue> values;
+  private final List<TelemetryMeasuresValue> values;
 
-  public TelemetryMetricsPayload(String messageUuid, String os, OffsetDateTime installTime, String product, TelemetryMetricsDimension dimension,
-      List<TelemetryMetricsValue> values) {
+  public TelemetryMeasuresPayload(String messageUuid, String os, OffsetDateTime installTime, String product, TelemetryMeasuresDimension dimension,
+      List<TelemetryMeasuresValue> values) {
     this.messageUuid = messageUuid;
     this.os = os;
     this.installTime = installTime;
     this.product = product;
     this.dimension = dimension;
     this.values = values;
+  }
+
+  public String getMessageUuid() {
+    return messageUuid;
+  }
+
+  public String getOs() {
+    return os;
+  }
+
+  public OffsetDateTime getInstallTime() {
+    return installTime;
+  }
+
+  public String getProduct() {
+    return product;
+  }
+
+  public TelemetryMeasuresDimension getDimension() {
+    return dimension;
+  }
+
+  public List<TelemetryMeasuresValue> getValues() {
+    return values;
   }
 
   public String toJson() {
@@ -67,4 +91,5 @@ public class TelemetryMetricsPayload {
   public boolean hasMetrics() {
     return !values.isEmpty();
   }
+
 }

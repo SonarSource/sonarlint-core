@@ -235,6 +235,14 @@ public class TelemetryService {
     updateTelemetry(TelemetryLocalStorage::incrementExportedConnectedModeCount);
   }
 
+  public void addBoundSQCProjectKey(String projectKey) {
+    updateTelemetry(telemetryLocalStorage -> telemetryLocalStorage.addBoundSQCProjectKey(projectKey));
+  }
+
+  public void addBoundSQSProjectKey(String projectKey) {
+    updateTelemetry(telemetryLocalStorage -> telemetryLocalStorage.addBoundSQSProjectKey(projectKey));
+  }
+
   @EventListener
   public void onServerIssueStatusChanged(ServerIssueStatusChangedEvent event) {
     issueStatusChanged(event.getFinding().getRuleKey());

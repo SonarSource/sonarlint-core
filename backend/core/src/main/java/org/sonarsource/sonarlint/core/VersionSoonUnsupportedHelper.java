@@ -74,8 +74,8 @@ public class VersionSoonUnsupportedHelper {
 
   @EventListener
   public void bindingConfigChanged(BindingConfigChangedEvent event) {
-    var configScopeId = event.getConfigScopeId();
-    var connectionId = event.getNewConfig().getConnectionId();
+    var configScopeId = event.configScopeId();
+    var connectionId = event.newConfig().getConnectionId();
     if (connectionId != null) {
       queueCheckIfSoonUnsupported(connectionId, configScopeId);
     }

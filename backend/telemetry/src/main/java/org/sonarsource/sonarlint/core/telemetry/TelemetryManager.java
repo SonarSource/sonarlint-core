@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import java.time.LocalDateTime;
 import java.util.function.Consumer;
+import javax.annotation.Nullable;
 
 /**
  * Manage telemetry data and persistent storage, and stateful telemetry actions.
@@ -47,7 +48,7 @@ public class TelemetryManager {
     });
   }
 
-  private static boolean isGracePeriodElapsedAndDayChanged(LocalDateTime lastUploadTime) {
+  private static boolean isGracePeriodElapsedAndDayChanged(@Nullable LocalDateTime lastUploadTime) {
     return TelemetryUtils.isGracePeriodElapsedAndDayChanged(lastUploadTime, MIN_HOURS_BETWEEN_UPLOAD);
   }
 

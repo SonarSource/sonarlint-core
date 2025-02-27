@@ -94,7 +94,7 @@ public class WebSocketService {
     if (!shouldEnableWebSockets) {
       return;
     }
-    executorService.execute(() -> considerScope(bindingConfigChangedEvent.getConfigScopeId()));
+    executorService.execute(() -> considerScope(bindingConfigChangedEvent.configScopeId()));
   }
 
   @EventListener

@@ -62,7 +62,6 @@ class TelemetryHttpClientTests {
     .options(wireMockConfig().dynamicPort())
     .build();
 
-
   @BeforeEach
   void setUp() {
     InitializeParams initializeParams = mock(InitializeParams.class);

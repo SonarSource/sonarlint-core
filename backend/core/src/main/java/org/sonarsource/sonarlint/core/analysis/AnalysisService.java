@@ -504,7 +504,7 @@ public class AnalysisService {
 
   @EventListener
   public void onBindingConfigurationChanged(BindingConfigChangedEvent event) {
-    var configScopeId = event.getConfigScopeId();
+    var configScopeId = event.configScopeId();
     analysisReadinessByConfigScopeId.remove(configScopeId);
     if (!checkIfReadyForAnalysis(configScopeId)) {
       client.didChangeAnalysisReadiness(new DidChangeAnalysisReadinessParams(Set.of(configScopeId), false));

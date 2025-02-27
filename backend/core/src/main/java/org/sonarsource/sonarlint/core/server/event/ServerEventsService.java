@@ -103,11 +103,11 @@ public class ServerEventsService {
     if (!shouldManageServerSentEvents) {
       return;
     }
-    var previousBinding = event.getPreviousConfig();
-    if (isBindingDifferent(previousBinding, event.getNewConfig())) {
+    var previousBinding = event.previousConfig();
+    if (isBindingDifferent(previousBinding, event.newConfig())) {
       executorService.execute(() -> {
         unsubscribe(previousBinding);
-        subscribe(event.getConfigScopeId());
+        subscribe(event.configScopeId());
       });
     }
   }

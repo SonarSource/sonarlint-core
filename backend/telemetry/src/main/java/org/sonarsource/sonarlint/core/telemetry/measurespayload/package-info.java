@@ -17,13 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.telemetry.metricspayload;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.telemetry.measurespayload;
 
-import com.google.gson.annotations.SerializedName;
-
-public enum TelemetryMetricsDimension {
-  @SerializedName("language")
-  LANGUAGE,
-  @SerializedName("installation")
-  INSTALLATION
-}
+import javax.annotation.ParametersAreNonnullByDefault;

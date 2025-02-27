@@ -102,8 +102,8 @@ public class SonarProjectBranchTrackingService {
 
   @EventListener
   public void onBindingChanged(BindingConfigChangedEvent bindingChanged) {
-    var configScopeId = bindingChanged.getConfigScopeId();
-    if (!bindingChanged.getNewConfig().isBound()) {
+    var configScopeId = bindingChanged.configScopeId();
+    if (!bindingChanged.newConfig().isBound()) {
       LOG.debug("Configuration scope '{}' unbound, clearing matched branch", configScopeId);
       cachedMatchingBranchByConfigScope.clear(configScopeId);
     } else {
