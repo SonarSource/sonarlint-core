@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.util.Set;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -40,8 +41,9 @@ public class AiCodeFixSettingsSynchronizer {
         var supportedRules = serverApi.fixSuggestions().getSupportedRules(cancelMonitor);
         var organization = organizationSynchronizer.readOrSynchronizeOrganization(serverApi, cancelMonitor);
         var organizationConfig = serverApi.fixSuggestions().getOrganizationConfigs(organization.id(), cancelMonitor);
+        var enabledProjectKeys = organizationConfig.enabledProjectKeys();
         storage.aiCodeFix().store(new AiCodeFixSettings(supportedRules.rules(), organizationConfig.organizationEligible(),
-          AiCodeFixFeatureEnablement.valueOf(organizationConfig.enablement().name()), organizationConfig.enabledProjectKeys()));
+          AiCodeFixFeatureEnablement.valueOf(organizationConfig.enablement().name()), enabledProjectKeys == null ? Set.of() : enabledProjectKeys));
       } catch (Exception e) {
         LOG.error("Error synchronizing AI CodeFix settings", e);
       }
