@@ -98,16 +98,16 @@ public class GitUtils {
     }
   }
 
-  public static SonarLintBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths,
+  public static SonarLintBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, Set<URI> fileUris,
     @Nullable UnaryOperator<String> fileContentProvider, Instant thresholdDate) {
-    return getBlameResult(projectBaseDir, projectBaseRelativeFilePaths, fileContentProvider, GitUtils::checkIfEnabled, thresholdDate);
+    return getBlameResult(projectBaseDir, projectBaseRelativeFilePaths, fileUris, fileContentProvider, GitUtils::checkIfEnabled, thresholdDate);
   }
 
-  static SonarLintBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, @Nullable UnaryOperator<String> fileContentProvider,
+  static SonarLintBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, Set<URI> fileUris, @Nullable UnaryOperator<String> fileContentProvider,
     Predicate<Path> isEnabled, Instant thresholdDate) {
     if (isEnabled.test(projectBaseDir)) {
       LOG.debug("Using native git blame");
-      return blameFromNativeCommand(projectBaseDir, projectBaseRelativeFilePaths, thresholdDate);
+      return blameFromNativeCommand(projectBaseDir, fileUris, thresholdDate);
     } else {
       LOG.debug("Falling back to JGit git blame");
       return blameWithFilesGitCommand(projectBaseDir, projectBaseRelativeFilePaths, fileContentProvider);
@@ -175,15 +175,16 @@ public class GitUtils {
     return String.join(System.lineSeparator(), commandResult);
   }
 
-  public static SonarLintBlameResult blameFromNativeCommand(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, Instant thresholdDate) {
+  public static SonarLintBlameResult blameFromNativeCommand(Path projectBaseDir, Set<URI> fileUris, Instant thresholdDate) {
     var nativeExecutable = getNativeGitExecutable();
     if (nativeExecutable != null) {
-      for (var relativeFilePath : projectBaseRelativeFilePaths) {
+      for (var fileUri : fileUris) {
         try {
+          var filePath = Path.of(fileUri).toAbsolutePath().toString();
+          var filePathUnix = filePath.replace("\\", "/");
           var blameHistoryWindow = "--since='" + thresholdDate + "'";
-          return parseBlameOutput(executeGitCommand(projectBaseDir,
-              nativeExecutable, "blame", blameHistoryWindow, projectBaseDir.resolve(relativeFilePath).toString(), "--line-porcelain", "--encoding=UTF-8"),
-            projectBaseDir.resolve(relativeFilePath).toString().replace("\\", "/"), projectBaseDir);
+          var command = new String[]{nativeExecutable, "blame", blameHistoryWindow, filePath, "--line-porcelain", "--encoding=UTF-8"};
+          return parseBlameOutput(executeGitCommand(projectBaseDir, command), filePathUnix, projectBaseDir);
         } catch (IOException e) {
           throw new IllegalStateException("Failed to blame repository files", e);
         }
