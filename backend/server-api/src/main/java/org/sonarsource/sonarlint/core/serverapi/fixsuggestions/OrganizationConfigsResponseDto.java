@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.serverapi.fixsuggestions;
 
 import java.util.Set;
+import javax.annotation.Nullable;
 
-public record OrganizationConfigsResponseDto(String organizationId, boolean organizationEligible, SuggestionFeatureEnablement enablement, Set<String> enabledProjectKeys) {
+public record OrganizationConfigsResponseDto(String organizationId, boolean organizationEligible, SuggestionFeatureEnablement enablement,
+  @Nullable Set<String> enabledProjectKeys) {
 }

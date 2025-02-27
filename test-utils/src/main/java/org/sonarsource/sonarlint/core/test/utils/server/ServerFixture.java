@@ -242,7 +242,7 @@ public class ServerFixture {
       private Set<String> supportedRules = Set.of();
       private boolean organizationEligible = true;
       private AiCodeFixFeatureEnablement enablement = AiCodeFixFeatureEnablement.DISABLED;
-      private List<String> enabledProjectKeys = List.of();
+      private List<String> enabledProjectKeys;
 
       public AiCodeFixFeatureBuilder withSupportedRules(Set<String> supportedRules) {
         this.supportedRules = supportedRules;
@@ -262,6 +262,12 @@ public class ServerFixture {
       public AiCodeFixFeatureBuilder enabledForProjects(String projectKey) {
         this.enablement = AiCodeFixFeatureEnablement.ENABLED_FOR_SOME_PROJECTS;
         this.enabledProjectKeys = List.of(projectKey);
+        return this;
+      }
+
+      public AiCodeFixFeatureBuilder enabledForAllProjects() {
+        this.enablement = AiCodeFixFeatureEnablement.ENABLED_FOR_ALL_PROJECTS;
+        this.enabledProjectKeys = null;
         return this;
       }
 
@@ -1302,9 +1308,10 @@ public class ServerFixture {
         var feature = aiCodeFixFeature.build();
         mockServer.stubFor(get("/fix-suggestions/supported-rules")
           .willReturn(jsonResponse("{\"rules\": [" + String.join(", ", feature.rules.stream().map(rule -> "\"" + rule + "\"").toList()) + "]}", 200)));
+        var enabledProjectKeys = aiCodeFixFeature.enabledProjectKeys == null ? null : ("[" + String.join(", ", aiCodeFixFeature.enabledProjectKeys) + "]");
         mockServer.stubFor(get("/fix-suggestions/organization-configs/" + organizationId)
           .willReturn(jsonResponse("{\"enablement\": \"" + aiCodeFixFeature.enablement.name() + "\", \"organizationEligible\": " + aiCodeFixFeature.organizationEligible
-            + ",  \"enabledProjectKeys\": [" + String.join(", ", aiCodeFixFeature.enabledProjectKeys) + "]}", 200)));
+            + ",  \"enabledProjectKeys\": " + enabledProjectKeys + "}", 200)));
       }
     }
 
