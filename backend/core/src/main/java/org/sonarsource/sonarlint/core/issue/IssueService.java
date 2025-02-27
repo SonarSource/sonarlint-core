@@ -69,6 +69,7 @@ import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
 import org.sonarsource.sonarlint.core.rules.RuleNotFoundException;
 import org.sonarsource.sonarlint.core.rules.RulesService;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
@@ -147,7 +148,8 @@ public class IssueService {
           serverConnection.withClientApi(serverApi -> serverApi.issue().changeStatus(issueKey, reviewStatus, cancelMonitor));
           ServerFinding serverFinding = () -> "unknownRuleKey";
           eventPublisher.publishEvent(new ServerIssueStatusChangedEvent(binding.connectionId(), binding.sonarProjectKey(), serverFinding));
-        } catch (RuntimeException ex) {
+          return;
+        } catch (NotFoundException ex) {
           throw issueNotFoundException(issueKey);
         }
       }
