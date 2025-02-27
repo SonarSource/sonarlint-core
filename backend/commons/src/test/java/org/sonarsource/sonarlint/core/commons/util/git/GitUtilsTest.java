@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.commons.util.git;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -127,7 +128,7 @@ class GitUtilsTest {
     createFile(projectDirPath, "fileA", "line1", "line2", "line3");
     var c1 = commit(git, "fileA");
 
-    var sonarLintBlameResult = getBlameResult(projectDirPath, Set.of(Path.of("fileA")), null, path -> false, Instant.now());
+    var sonarLintBlameResult = getBlameResult(projectDirPath, Set.of(Path.of("fileA")), Set.of(Path.of("fileA").toUri()), null, path -> false, Instant.now());
     assertThat(IntStream.of(1, 2, 3)
       .mapToObj(lineNumber -> sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(lineNumber))))
       .map(Optional::get)
@@ -137,9 +138,10 @@ class GitUtilsTest {
   @Test
   void it_should_throw_if_no_files() {
     Set<Path> files = Set.of();
+    Set<URI> uris = Set.of();
 
     var now = Instant.now();
-    assertThrows(IllegalStateException.class, () -> getBlameResult(projectDirPath, files, null, path -> true, now));
+    assertThrows(IllegalStateException.class, () -> getBlameResult(projectDirPath, files, uris, null, path -> true, now));
   }
 
   @Test
@@ -385,7 +387,7 @@ class GitUtilsTest {
     commitAtDate(git, fourMonthsAgo, fileAStr);
     var fileA = Path.of(fileAStr);
 
-    var blameResult = blameFromNativeCommand(projectDirPath, Set.of(fileA), Instant.now());
+    var blameResult = blameFromNativeCommand(projectDirPath, Set.of(projectDirPath.resolve(fileA).toUri()), Instant.now());
 
     var line1Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(1)).get();
     var line2Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(2)).get();
@@ -423,7 +425,7 @@ class GitUtilsTest {
     commitAtDate(git, fourMonthsAgo, fileAStr);
     var fileA = Path.of(fileAStr);
 
-    var blameResult = blameFromNativeCommand(projectDirPath, Set.of(fileA), Instant.now().minus(Period.ofDays(180)));
+    var blameResult = blameFromNativeCommand(projectDirPath, Set.of(projectDirPath.resolve(fileA).toUri()), Instant.now().minus(Period.ofDays(180)));
 
     var line1Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(1)).get();
     var line2Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(2)).get();
