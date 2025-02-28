@@ -56,8 +56,8 @@ public class RaisedHotspotDto extends RaisedFindingDto {
     return status;
   }
 
-  public RaisedHotspotDto withHotspotStatus(HotspotStatus hotspotStatus) {
-    return new RaisedHotspotDto(getId(), getServerKey(), getRuleKey(), getPrimaryMessage(), getSeverityMode(), getIntroductionDate(), isOnNewCode(), isResolved(), getTextRange(),
+  public RaisedHotspotDto withHotspotStatusAndResolution(HotspotStatus hotspotStatus, boolean resolved) {
+    return new RaisedHotspotDto(getId(), getServerKey(), getRuleKey(), getPrimaryMessage(), getSeverityMode(), getIntroductionDate(), isOnNewCode(), resolved, getTextRange(),
       getFlows(), getQuickFixes(), getRuleDescriptionContextKey(), getVulnerabilityProbability(), hotspotStatus);
   }
 }
