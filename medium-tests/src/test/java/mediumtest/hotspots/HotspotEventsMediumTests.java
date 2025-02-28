@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
@@ -62,6 +63,7 @@ import static org.sonarsource.sonarlint.core.test.utils.storage.ServerSecurityHo
 import static utils.AnalysisUtils.analyzeFileAndGetHotspots;
 
 @ExtendWith(LogTestStartAndEnd.class)
+@ResourceLock("SSE_SERVER")
 class HotspotEventsMediumTests {
 
   @RegisterExtension
@@ -337,6 +339,7 @@ class HotspotEventsMediumTests {
       when(client.matchSonarProjectBranch(eq(CONFIG_SCOPE_ID), eq("main"), eq(Set.of("main", branchName)), any())).thenReturn(branchName);
       var introductionDate = Instant.now().truncatedTo(ChronoUnit.SECONDS);
       var serverWithHotspots = harness.newFakeSonarQubeServer("10.4")
+        .withN
         .withQualityProfile("qpKey", qualityProfile -> qualityProfile.withLanguage("java").withActiveRule("java:S2068", activeRule -> activeRule
           .withSeverity(IssueSeverity.MAJOR)
         ))

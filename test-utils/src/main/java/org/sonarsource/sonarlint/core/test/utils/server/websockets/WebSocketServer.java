@@ -21,19 +21,17 @@ package org.sonarsource.sonarlint.core.test.utils.server.websockets;
 
 import java.io.File;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.servlets.DefaultServlet;
 import org.apache.catalina.startup.Tomcat;
+import org.sonarsource.sonarlint.core.test.utils.server.Servers;
 
 public class WebSocketServer {
-  private static final int STARTING_PORT = 54321;
   public static final String CONNECTION_REPOSITORY_ATTRIBUTE_KEY = "connectionRepository";
-  private static final AtomicInteger currentShift = new AtomicInteger();
 
   private Tomcat tomcat;
   private WebSocketConnectionRepository connectionRepository;
-  private final int port = STARTING_PORT + currentShift.getAndIncrement();
+  private final int port = Servers.getAvailablePort();
 
   public void start() {
     try {

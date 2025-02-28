@@ -22,19 +22,19 @@ package org.sonarsource.sonarlint.core.test.utils.server.sse;
 import java.io.File;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.startup.Tomcat;
+import org.sonarsource.sonarlint.core.test.utils.server.Servers;
 
 public class SSEServer {
-
-  public static final int DEFAULT_PORT = 54321;
   private Tomcat tomcat;
   private SSEServlet sseServlet;
+  private final int port = Servers.getAvailablePort();
 
   public void startWithEvent(String payload) {
     try {
       var baseDir = new File("").getAbsoluteFile().getParentFile().getPath();
       tomcat = new Tomcat();
       tomcat.setBaseDir(baseDir);
-      tomcat.setPort(DEFAULT_PORT);
+      tomcat.setPort(port);
       var context = tomcat.addContext("", baseDir);
       sseServlet = new SSEServlet(payload);
       Tomcat.addServlet(context, "sse", sseServlet).addMapping("/");
@@ -56,7 +56,7 @@ public class SSEServer {
   }
 
   public String getUrl() {
-    return "http://localhost:" + DEFAULT_PORT;
+    return "http://localhost:" + port;
   }
 
   public void shouldSendServerEventOnce() {

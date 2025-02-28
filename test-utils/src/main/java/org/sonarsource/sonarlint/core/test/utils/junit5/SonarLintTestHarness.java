@@ -61,10 +61,18 @@ public class SonarLintTestHarness extends TypeBasedParameterResolver<SonarLintTe
   }
 
   private void shutdownAll() {
-    backends.forEach(backend -> backend.shutdown().join());
+    backends.forEach(backend -> failsafe(() -> backend.shutdown().join()));
     backends.clear();
-    servers.forEach(ServerFixture.Server::shutdown);
+    servers.forEach(server -> failsafe(server::shutdown));
     servers.clear();
+  }
+
+  private static void failsafe(Runnable runnable) {
+    try {
+      runnable.run();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 
   public SonarLintBackendFixture.SonarLintBackendBuilder newBackend() {

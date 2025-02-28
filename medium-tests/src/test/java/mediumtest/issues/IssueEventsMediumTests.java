@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.sonar.scanner.protocol.Constants;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.IssueSeverity;
@@ -65,6 +66,7 @@ import static utils.AnalysisUtils.analyzeFileAndGetIssue;
 import static utils.AnalysisUtils.createFile;
 
 @ExtendWith(LogTestStartAndEnd.class)
+@ResourceLock("SSE_SERVER")
 class IssueEventsMediumTests {
 
   @RegisterExtension
