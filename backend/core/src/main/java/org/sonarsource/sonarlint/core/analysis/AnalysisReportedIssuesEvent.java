@@ -17,10 +17,10 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.event;
+package org.sonarsource.sonarlint.core.analysis;
 
-import org.sonarsource.sonarlint.core.commons.ConnectionKind;
+import java.util.List;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 
-public record ConnectionConfigurationAddedEvent(String addedConnectionId, ConnectionKind connectionKind) {
-
+public record AnalysisReportedIssuesEvent(List<RaisedIssueDto> issues) {
 }

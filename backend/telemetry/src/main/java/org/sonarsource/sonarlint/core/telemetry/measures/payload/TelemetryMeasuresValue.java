@@ -17,17 +17,28 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.telemetry.measurespayload;
+package org.sonarsource.sonarlint.core.telemetry.measures.payload;
 
 import com.google.gson.annotations.SerializedName;
 
-public enum TelemetryMeasuresValueType {
-  @SerializedName("string")
-  STRING,
-  @SerializedName("integer")
-  INTEGER,
-  @SerializedName("boolean")
-  BOOLEAN,
-  @SerializedName("float")
-  FLOAT
+public class TelemetryMeasuresValue {
+
+  @SerializedName("key")
+  private final String key;
+
+  @SerializedName("value")
+  private final String value;
+
+  @SerializedName("type")
+  private final TelemetryMeasuresValueType type;
+
+  @SerializedName("granularity")
+  private final TelemetryMeasuresValueGranularity granularity;
+
+  public TelemetryMeasuresValue(String key, String value, TelemetryMeasuresValueType type, TelemetryMeasuresValueGranularity granularity) {
+    this.key = key;
+    this.value = value;
+    this.type = type;
+    this.granularity = granularity;
+  }
 }

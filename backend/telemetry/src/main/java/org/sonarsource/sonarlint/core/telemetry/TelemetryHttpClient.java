@@ -34,9 +34,9 @@ import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
-import org.sonarsource.sonarlint.core.telemetry.measurespayload.TelemetryMeasuresDimension;
-import org.sonarsource.sonarlint.core.telemetry.measurespayload.TelemetryMeasuresValue;
-import org.sonarsource.sonarlint.core.telemetry.measurespayload.TelemetryMeasuresPayload;
+import org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresDimension;
+import org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValue;
+import org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.HotspotPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.IssuePayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.ShareConnectedModePayload;
@@ -49,9 +49,9 @@ import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryRulesPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.cayc.CleanAsYouCodePayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.cayc.NewCodeFocusPayload;
 
-import static org.sonarsource.sonarlint.core.telemetry.measurespayload.TelemetryMeasuresValueGranularity.DAILY;
-import static org.sonarsource.sonarlint.core.telemetry.measurespayload.TelemetryMeasuresValueType.INTEGER;
-import static org.sonarsource.sonarlint.core.telemetry.measurespayload.TelemetryMeasuresValueType.STRING;
+import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueGranularity.DAILY;
+import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueType.INTEGER;
+import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueType.STRING;
 
 public class TelemetryHttpClient {
 
@@ -154,8 +154,8 @@ public class TelemetryHttpClient {
       values.add(new TelemetryMeasuresValue("shared_connected_mode.exported", String.valueOf(data.getExportedConnectedModeCount()), INTEGER, DAILY));
     }
 
-    values.add(new TelemetryMeasuresValue("list_of_SQS_projects_in_connected_mode", data.getBoundSQSProjectKeys().toString(), STRING, DAILY));
-    values.add(new TelemetryMeasuresValue("list_of_SQC_projects_in_connected_mode", data.getBoundSQCProjectKeys().toString(), STRING, DAILY));
+    values.add(new TelemetryMeasuresValue("list_of_SQS_projects_in_connected_mode", data.getBoundSonarQubeServerProjectKeys().toString(), STRING, DAILY));
+    values.add(new TelemetryMeasuresValue("list_of_SQC_projects_in_connected_mode", data.getBoundSonarQubeCloudProjectKeys().toString(), STRING, DAILY));
 
     data.getHelpAndFeedbackLinkClickedCounter().entrySet().stream()
       .filter(e -> e.getValue().getHelpAndFeedbackLinkClickedCount() > 0)

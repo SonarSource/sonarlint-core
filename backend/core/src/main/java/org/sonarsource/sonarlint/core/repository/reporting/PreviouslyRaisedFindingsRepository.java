@@ -32,7 +32,6 @@ import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 public class PreviouslyRaisedFindingsRepository {
   private final Map<String, Map<URI, List<RaisedIssueDto>>> previouslyRaisedIssuesByScopeId = new ConcurrentHashMap<>();
@@ -51,22 +50,6 @@ public class PreviouslyRaisedFindingsRepository {
     var findingsPerFile = previouslyRaisedFindingsByScopeId.computeIfAbsent(scopeId, k -> new ConcurrentHashMap<>());
     findingsPerFile.putAll(raisedFindings);
     return findingsPerFile;
-  }
-
-  /**
-   * Increment the telemetry counter for issues that are AI fixable
-   * Avoid incrementing for already known issues, to have a more relevant counter
-   */
-  public void countAiFixableIssuesForTelemetry(String scopeId, Map<URI, List<RaisedIssueDto>> raisedFindings, TelemetryService telemetryService) {
-    var previousFindings = previouslyRaisedIssuesByScopeId.get(scopeId);
-    if (!previousFindings.isEmpty()) {
-      raisedFindings.forEach((uri, issues) -> {
-        var previousFindingsForFile = previousFindings.get(uri);
-        issues.stream()
-          .filter(i -> i.isAiCodeFixable() && !previousFindingsForFile.contains(i))
-          .forEach(i -> telemetryService.fixSuggestionApplicable());
-      });
-    }
   }
 
   public Map<URI, List<RaisedIssueDto>> getRaisedIssuesForScope(String scopeId) {

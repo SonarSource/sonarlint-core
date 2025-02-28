@@ -118,7 +118,7 @@ public class ServerEventsService {
       return;
     }
     // This is only to handle the case where binding was invalid (connection did not exist) and became valid (matching connection was created)
-    var connectionId = event.getAddedConnectionId();
+    var connectionId = event.addedConnectionId();
     executorService.execute(() -> subscribe(connectionId, configurationRepository.getSonarProjectsUsedForConnection(connectionId)));
   }
 

@@ -37,6 +37,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.analysis.AnalysisReportedIssuesEvent;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.mode.SeverityModeService;
@@ -51,9 +52,9 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotD
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaiseIssuesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.tracking.TrackedIssue;
 import org.sonarsource.sonarlint.core.tracking.streaming.Alarm;
+import org.springframework.context.ApplicationEventPublisher;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
@@ -68,22 +69,22 @@ public class FindingReportingService {
   private final NewCodeService newCodeService;
   private final SeverityModeService severityModeService;
   private final AiCodeFixService aiCodeFixService;
-  private final TelemetryService telemetryService;
   private final PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository;
   private final Map<URI, Collection<TrackedIssue>> issuesPerFileUri = new ConcurrentHashMap<>();
   private final Map<URI, Collection<TrackedIssue>> securityHotspotsPerFileUri = new ConcurrentHashMap<>();
   private final Map<String, Alarm> streamingTriggeringAlarmByConfigScopeId = new ConcurrentHashMap<>();
   private final Map<UUID, Set<URI>> filesPerAnalysis = new ConcurrentHashMap<>();
+  private final ApplicationEventPublisher eventPublisher;
 
   public FindingReportingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, NewCodeService newCodeService, SeverityModeService severityModeService,
-    AiCodeFixService aiCodeFixService, PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, TelemetryService telemetryService) {
+    AiCodeFixService aiCodeFixService, PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, ApplicationEventPublisher eventPublisher) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.newCodeService = newCodeService;
     this.severityModeService = severityModeService;
     this.aiCodeFixService = aiCodeFixService;
-    this.telemetryService = telemetryService;
     this.previouslyRaisedFindingsRepository = previouslyRaisedFindingsRepository;
+    this.eventPublisher = eventPublisher;
   }
 
   public void resetFindingsForFiles(String configurationScopeId, Set<URI> files) {
@@ -156,7 +157,7 @@ public class FindingReportingService {
     var isMQRMode = severityModeService.isMQRModeForConnection(connectionId);
     var aiCodeFixFeature = effectiveBinding.flatMap(aiCodeFixService::getFeature);
     var issuesToRaise = getIssuesToRaise(issuesToReport, newCodeDefinition, isMQRMode, aiCodeFixFeature);
-    aiCodeFixFeature.ifPresent(f -> previouslyRaisedFindingsRepository.countAiFixableIssuesForTelemetry(configurationScopeId, issuesToRaise, telemetryService));
+    this.eventPublisher.publishEvent(new AnalysisReportedIssuesEvent(issuesToRaise.values().stream().flatMap(List::stream).toList()));
     var hotspotsToRaise = getHotspotsToRaise(hotspotsToReport, newCodeDefinition, isMQRMode);
     updateRaisedFindingsCacheAndNotifyClient(configurationScopeId, analysisId, issuesToRaise, hotspotsToRaise, false);
     filesPerAnalysis.remove(analysisId);

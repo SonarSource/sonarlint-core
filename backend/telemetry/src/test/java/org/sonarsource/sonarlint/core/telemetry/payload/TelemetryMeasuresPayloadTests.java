@@ -25,14 +25,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.telemetry.measurespayload.TelemetryMeasuresDimension;
-import org.sonarsource.sonarlint.core.telemetry.measurespayload.TelemetryMeasuresPayload;
-import org.sonarsource.sonarlint.core.telemetry.measurespayload.TelemetryMeasuresValue;
+import org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresDimension;
+import org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresPayload;
+import org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
-import static org.sonarsource.sonarlint.core.telemetry.measurespayload.TelemetryMeasuresValueGranularity.DAILY;
-import static org.sonarsource.sonarlint.core.telemetry.measurespayload.TelemetryMeasuresValueType.INTEGER;
-import static org.sonarsource.sonarlint.core.telemetry.measurespayload.TelemetryMeasuresValueType.STRING;
+import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueGranularity.DAILY;
+import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueType.INTEGER;
+import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueType.STRING;
 
 class TelemetryMeasuresPayloadTests {
 
@@ -70,12 +70,12 @@ class TelemetryMeasuresPayloadTests {
       "}]" +
       "}");
 
-    assertThat(m.getMessageUuid()).isEqualTo(messageUuid);
-    assertThat(m.getOs()).isEqualTo("Linux Ubuntu 24.04");
-    assertThat(m.getInstallTime()).isEqualTo(installTime);
-    assertThat(m.getProduct()).isEqualTo("SonarQube for IDE");
-    assertThat(m.getDimension()).isEqualTo(TelemetryMeasuresDimension.INSTALLATION);
-    assertValues(m.getValues());
+    assertThat(m.messageUuid()).isEqualTo(messageUuid);
+    assertThat(m.os()).isEqualTo("Linux Ubuntu 24.04");
+    assertThat(m.installTime()).isEqualTo(installTime);
+    assertThat(m.product()).isEqualTo("SonarQube for IDE");
+    assertThat(m.dimension()).isEqualTo(TelemetryMeasuresDimension.INSTALLATION);
+    assertValues(m.values());
   }
 
   private List<TelemetryMeasuresValue> generateMeasures() {

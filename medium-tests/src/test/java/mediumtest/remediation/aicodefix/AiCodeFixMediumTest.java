@@ -624,7 +624,6 @@ public class AiCodeFixMediumTest {
 
     assertThat(backend.telemetryFilePath())
       .content().asBase64Decoded().asString()
-      .contains("\"countIssuesWithPossibleAiFixFromIde\":1")
       .contains("\"fixSuggestionReceivedCounter\":{\"e51b7bbd-72bc-4008-a4f1-d75583f3dc98\":{\"aiSuggestionsSource\":\"SONARCLOUD\",\"snippetsCount\":1,\"wasGeneratedFromIde\":true}}");
   }
 

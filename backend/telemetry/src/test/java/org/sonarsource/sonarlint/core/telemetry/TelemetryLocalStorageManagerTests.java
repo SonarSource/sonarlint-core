@@ -239,6 +239,17 @@ class TelemetryLocalStorageManagerTests {
   }
 
   @Test
+  void should_increment_issue_ai_fixable() {
+    var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
+
+    storage.tryUpdateAtomically(TelemetryLocalStorage::incrementCountIssuesWithPossibleAiFixFromIde);
+    storage.tryUpdateAtomically(TelemetryLocalStorage::incrementCountIssuesWithPossibleAiFixFromIde);
+
+    var data = storage.tryRead();
+    assertThat(data.getCountIssuesWithPossibleAiFixFromIde()).isEqualTo(2);
+  }
+
+  @Test
   void tryUpdateAtomically_should_not_crash_if_too_many_read_write_requests() {
     var storageManager = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
 

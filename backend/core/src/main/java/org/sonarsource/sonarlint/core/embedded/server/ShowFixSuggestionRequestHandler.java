@@ -45,6 +45,7 @@ import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.net.URIBuilder;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.event.FixSuggestionReceivedEvent;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -65,6 +66,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestio
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
+import org.springframework.context.ApplicationEventPublisher;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
@@ -76,7 +78,7 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final SonarLintRpcClient client;
-  private final TelemetryService telemetryService;
+  private final ApplicationEventPublisher eventPublisher;
   private final boolean canOpenFixSuggestion;
   private final RequestHandlerBindingAssistant requestHandlerBindingAssistant;
   private final PathTranslationService pathTranslationService;
@@ -84,12 +86,12 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
   private final SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService;
   private final ClientFileSystemService clientFs;
 
-  public ShowFixSuggestionRequestHandler(SonarLintRpcClient client, TelemetryService telemetryService,
+  public ShowFixSuggestionRequestHandler(SonarLintRpcClient client, ApplicationEventPublisher eventPublisher,
     InitializeParams params, RequestHandlerBindingAssistant requestHandlerBindingAssistant,
     PathTranslationService pathTranslationService, SonarCloudActiveEnvironment sonarCloudActiveEnvironment,
     SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService, ClientFileSystemService clientFs) {
     this.client = client;
-    this.telemetryService = telemetryService;
+    this.eventPublisher = eventPublisher;
     this.canOpenFixSuggestion = params.getFeatureFlags().canOpenFixSuggestion();
     this.requestHandlerBindingAssistant = requestHandlerBindingAssistant;
     this.pathTranslationService = pathTranslationService;
@@ -108,7 +110,8 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
       response.setCode(HttpStatus.SC_BAD_REQUEST);
       return;
     }
-    telemetryService.fixSuggestionReceived(new FixSuggestionReceivedParams(showFixSuggestionQuery.getFixSuggestion().suggestionId,
+
+    eventPublisher.publishEvent(new FixSuggestionReceivedEvent(showFixSuggestionQuery.getFixSuggestion().suggestionId,
       showFixSuggestionQuery.isSonarCloud ? AiSuggestionSource.SONARCLOUD : AiSuggestionSource.SONARQUBE,
       showFixSuggestionQuery.fixSuggestion.fileEdit.changes.size(), false));
 

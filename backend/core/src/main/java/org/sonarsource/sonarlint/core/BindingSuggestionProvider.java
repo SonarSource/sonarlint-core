@@ -98,7 +98,7 @@ public class BindingSuggestionProvider {
   @EventListener
   public void connectionAdded(ConnectionConfigurationAddedEvent event) {
     // Double check if added connection has not been removed in the meantime
-    var addedConnectionId = event.getAddedConnectionId();
+    var addedConnectionId = event.addedConnectionId();
     var allConfigScopeIds = configRepository.getConfigScopeIds();
     if (connectionRepository.getConnectionById(addedConnectionId) != null && !allConfigScopeIds.isEmpty()) {
       LOG.debug("Binding suggestions computation queued for connection '{}'...", addedConnectionId);

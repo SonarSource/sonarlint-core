@@ -28,6 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
+import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -107,7 +108,7 @@ class BindingSuggestionProviderTests {
   void trigger_suggest_binding_if_connection_added_and_at_least_one_config_scope() {
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
     when(configRepository.getConfigScopeIds()).thenReturn(Set.of("id1"));
-    underTest.connectionAdded(new ConnectionConfigurationAddedEvent(SQ_1_ID));
+    underTest.connectionAdded(new ConnectionConfigurationAddedEvent(SQ_1_ID, ConnectionKind.SONARQUBE));
 
     assertThat(logTester.logs(LogOutput.Level.DEBUG)).contains("Binding suggestions computation queued for connection '" + SQ_1_ID + "'...");
   }
@@ -117,7 +118,7 @@ class BindingSuggestionProviderTests {
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(SQ_1);
     when(configRepository.getConfigScopeIds()).thenReturn(Set.of());
 
-    underTest.connectionAdded(new ConnectionConfigurationAddedEvent(SQ_1_ID));
+    underTest.connectionAdded(new ConnectionConfigurationAddedEvent(SQ_1_ID, ConnectionKind.SONARQUBE));
 
     assertThat(logTester.logs()).isEmpty();
   }
@@ -126,7 +127,7 @@ class BindingSuggestionProviderTests {
   void dont_trigger_suggest_binding_if_connection_added_but_then_gone() {
     when(connectionRepository.getConnectionById(SQ_1_ID)).thenReturn(null);
 
-    underTest.connectionAdded(new ConnectionConfigurationAddedEvent(SQ_1_ID));
+    underTest.connectionAdded(new ConnectionConfigurationAddedEvent(SQ_1_ID, ConnectionKind.SONARQUBE));
 
     assertThat(logTester.logs(LogOutput.Level.DEBUG)).isEmpty();
   }
@@ -337,7 +338,7 @@ class BindingSuggestionProviderTests {
     when(sonarProjectsCache.getTextSearchIndex(eq(SC_1_ID), any(SonarLintCancelMonitor.class))).thenReturn(searchIndex);
     when(sonarProjectsCache.getTextSearchIndex(eq(SQ_1_ID), any(SonarLintCancelMonitor.class))).thenReturn(searchIndex);
 
-    underTest.connectionAdded(new ConnectionConfigurationAddedEvent(SQ_1_ID));
+    underTest.connectionAdded(new ConnectionConfigurationAddedEvent(SQ_1_ID, ConnectionKind.SONARQUBE));
 
     var captor = ArgumentCaptor.forClass(SuggestBindingParams.class);
     verify(client, timeout(1000)).suggestBinding(captor.capture());

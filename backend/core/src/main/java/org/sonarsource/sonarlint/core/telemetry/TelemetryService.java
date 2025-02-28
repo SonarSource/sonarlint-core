@@ -21,16 +21,25 @@ package org.sonarsource.sonarlint.core.telemetry;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import jakarta.annotation.PreDestroy;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.AnalysisFinishedEvent;
+import org.sonarsource.sonarlint.core.analysis.AnalysisReportedIssuesEvent;
+import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
+import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
+import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
+import org.sonarsource.sonarlint.core.event.FixSuggestionReceivedEvent;
 import org.sonarsource.sonarlint.core.event.LocalOnlyIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.event.ServerIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -55,6 +64,8 @@ public class TelemetryService {
   private final TelemetryServerAttributesProvider telemetryServerAttributesProvider;
   private final SonarLintRpcClient client;
   private final boolean isTelemetryFeatureEnabled;
+  private final Map<String, ConnectionKind> connectionKindByConnectionId;
+  private final Set<UUID> issuesIdSeen;
 
   public TelemetryService(InitializeParams initializeParams, SonarLintRpcClient sonarlintClient,
     TelemetryServerAttributesProvider telemetryServerAttributesProvider, TelemetryManager telemetryManager) {
@@ -63,6 +74,8 @@ public class TelemetryService {
     this.telemetryServerAttributesProvider = telemetryServerAttributesProvider;
     this.telemetryManager = telemetryManager;
     this.scheduledExecutor = FailSafeExecutors.newSingleThreadScheduledExecutor("SonarLint Telemetry");
+    this.connectionKindByConnectionId = new HashMap<>();
+    this.issuesIdSeen = new HashSet<>();
 
     initTelemetryAndScheduleUpload(initializeParams);
   }
@@ -77,9 +90,14 @@ public class TelemetryService {
     scheduledExecutor.scheduleWithFixedDelay(this::upload, initialDelay, TELEMETRY_UPLOAD_DELAY, MINUTES);
   }
 
+  private void clear() {
+    this.issuesIdSeen.clear();
+  }
+
   private void upload() {
     var telemetryLiveAttributes = getTelemetryLiveAttributes();
     if (Objects.nonNull(telemetryLiveAttributes)) {
+      clear();
       telemetryManager.uploadAndClearTelemetry(telemetryLiveAttributes);
     }
   }
@@ -159,7 +177,7 @@ public class TelemetryService {
     updateTelemetry(localStorage -> localStorage.helpAndFeedbackLinkClicked(params.getItemId()));
   }
 
-  public void fixSuggestionReceived(FixSuggestionReceivedParams params) {
+  private void fixSuggestionReceived(FixSuggestionReceivedParams params) {
     updateTelemetry(localStorage -> localStorage.fixSuggestionReceived(
       params.getSuggestionId(),
       params.getAiSuggestionsSource(),
@@ -172,7 +190,7 @@ public class TelemetryService {
     updateTelemetry(localStorage -> localStorage.fixSuggestionResolved(params.getSuggestionId(), params.getStatus(), params.getSnippetIndex()));
   }
 
-  public void fixSuggestionApplicable() {
+  private void fixSuggestionApplicable() {
     updateTelemetry(TelemetryLocalStorage::incrementCountIssuesWithPossibleAiFixFromIde);
   }
 
@@ -235,12 +253,12 @@ public class TelemetryService {
     updateTelemetry(TelemetryLocalStorage::incrementExportedConnectedModeCount);
   }
 
-  public void addBoundSQCProjectKey(String projectKey) {
-    updateTelemetry(telemetryLocalStorage -> telemetryLocalStorage.addBoundSQCProjectKey(projectKey));
+  public void addBoundSonarQubeCloudProjectKey(String projectKey) {
+    updateTelemetry(telemetryLocalStorage -> telemetryLocalStorage.addBoundSonarQubeCloudProjectKey(projectKey));
   }
 
-  public void addBoundSQSProjectKey(String projectKey) {
-    updateTelemetry(telemetryLocalStorage -> telemetryLocalStorage.addBoundSQSProjectKey(projectKey));
+  public void addBoundSonarQubeServerProjectKey(String projectKey) {
+    updateTelemetry(telemetryLocalStorage -> telemetryLocalStorage.addBoundSonarQubeServerProjectKey(projectKey));
   }
 
   @EventListener
@@ -263,6 +281,43 @@ public class TelemetryService {
       analysisDoneOnMultipleFiles();
     }
     addReportedRules(event.getReportedRuleKeys());
+  }
+
+  @EventListener
+  public void onFixSuggestionReceived(FixSuggestionReceivedEvent event) {
+    fixSuggestionReceived(
+      new FixSuggestionReceivedParams(event.fixSuggestionId(), event.source(), event.snippetsCount(), event.wasGeneratedFromIde())
+    );
+  }
+
+  @EventListener
+  public void onConnectionConfigurationAdded(ConnectionConfigurationAddedEvent event) {
+    connectionKindByConnectionId.put(event.addedConnectionId(), event.connectionKind());
+  }
+
+  @EventListener
+  public void onBindingConfigChanged(BindingConfigChangedEvent event) {
+    var connectionId = event.newConfig().getConnectionId();
+    if (connectionId != null) {
+      var projectKey = event.newConfig().getSonarProjectKey();
+      var connectionKind = connectionKindByConnectionId.get(connectionId);
+      if (projectKey != null && connectionKind == ConnectionKind.SONARCLOUD) {
+        addBoundSonarQubeCloudProjectKey(projectKey);
+      } else if (projectKey != null && connectionKind == ConnectionKind.SONARQUBE) {
+        addBoundSonarQubeServerProjectKey(projectKey);
+      }
+    }
+  }
+
+  @EventListener
+  public void onAnalysisReportedIssues(AnalysisReportedIssuesEvent event) {
+    var issues = event.issues();
+    issues.stream()
+      .filter(i -> issuesIdSeen.contains(i.getId()) && i.isAiCodeFixable())
+      .forEach(i -> {
+        fixSuggestionApplicable();
+        issuesIdSeen.add(i.getId());
+      });
   }
 
   @PreDestroy

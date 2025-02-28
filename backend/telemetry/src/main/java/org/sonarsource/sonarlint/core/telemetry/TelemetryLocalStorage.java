@@ -67,8 +67,8 @@ public class TelemetryLocalStorage {
   private int importedAddedBindingsCount;
   private int autoAddedBindingsCount;
   private int exportedConnectedModeCount;
-  private final Set<String> boundSQSProjectKeys;
-  private final Set<String> boundSQCProjectKeys;
+  private final Set<String> boundSonarQubeServerProjectKeys;
+  private final Set<String> boundSonarQubeCloudProjectKeys;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -81,8 +81,8 @@ public class TelemetryLocalStorage {
     helpAndFeedbackLinkClickedCount = new LinkedHashMap<>();
     fixSuggestionReceivedCounter = new LinkedHashMap<>();
     fixSuggestionResolved = new LinkedHashMap<>();
-    boundSQSProjectKeys = new HashSet<>();
-    boundSQCProjectKeys = new HashSet<>();
+    boundSonarQubeServerProjectKeys = new HashSet<>();
+    boundSonarQubeCloudProjectKeys = new HashSet<>();
   }
 
   public Collection<String> getRaisedIssuesRules() {
@@ -199,8 +199,8 @@ public class TelemetryLocalStorage {
     importedAddedBindingsCount = 0;
     autoAddedBindingsCount = 0;
     exportedConnectedModeCount = 0;
-    boundSQSProjectKeys.clear();
-    boundSQCProjectKeys.clear();
+    boundSonarQubeServerProjectKeys.clear();
+    boundSonarQubeCloudProjectKeys.clear();
   }
 
   long numUseDays() {
@@ -436,22 +436,22 @@ public class TelemetryLocalStorage {
     return exportedConnectedModeCount;
   }
 
-  public void addBoundSQSProjectKey(String projectKey) {
+  public void addBoundSonarQubeServerProjectKey(String projectKey) {
     markSonarLintAsUsedToday();
-    boundSQSProjectKeys.add(projectKey);
+    boundSonarQubeServerProjectKeys.add(projectKey);
   }
 
-  public Set<String> getBoundSQSProjectKeys() {
-    return boundSQSProjectKeys;
+  public Set<String> getBoundSonarQubeServerProjectKeys() {
+    return boundSonarQubeServerProjectKeys;
   }
 
-  public void addBoundSQCProjectKey(String projectKey) {
+  public void addBoundSonarQubeCloudProjectKey(String projectKey) {
     markSonarLintAsUsedToday();
-    boundSQCProjectKeys.add(projectKey);
+    boundSonarQubeCloudProjectKeys.add(projectKey);
   }
 
-  public Set<String> getBoundSQCProjectKeys() {
-    return boundSQCProjectKeys;
+  public Set<String> getBoundSonarQubeCloudProjectKeys() {
+    return boundSonarQubeCloudProjectKeys;
   }
 
 }

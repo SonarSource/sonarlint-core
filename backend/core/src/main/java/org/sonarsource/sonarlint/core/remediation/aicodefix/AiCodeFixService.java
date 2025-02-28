@@ -27,6 +27,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
 import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.event.FixSuggestionReceivedEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
@@ -36,11 +37,10 @@ import org.sonarsource.sonarlint.core.repository.reporting.RaisedIssue;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.SuggestFixChangeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.SuggestFixResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionReceivedParams;
 import org.sonarsource.sonarlint.core.serverapi.fixsuggestions.AiSuggestionRequestBodyDto;
 import org.sonarsource.sonarlint.core.serverapi.fixsuggestions.AiSuggestionResponseBodyDto;
 import org.sonarsource.sonarlint.core.storage.StorageService;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
+import org.springframework.context.ApplicationEventPublisher;
 
 import static java.util.Objects.requireNonNull;
 import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.CONFIG_SCOPE_NOT_BOUND;
@@ -56,18 +56,18 @@ public class AiCodeFixService {
   private final PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository;
   private final ClientFileSystemService clientFileSystemService;
   private final StorageService storageService;
-  private final TelemetryService telemetryService;
+  private final ApplicationEventPublisher eventPublisher;
 
   public AiCodeFixService(ConnectionConfigurationRepository connectionRepository, ConfigurationRepository configurationRepository, ConnectionManager connectionManager,
     PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, ClientFileSystemService clientFileSystemService, StorageService storageService,
-    TelemetryService telemetryService) {
+    ApplicationEventPublisher eventPublisher) {
     this.connectionRepository = connectionRepository;
     this.configurationRepository = configurationRepository;
     this.connectionManager = connectionManager;
     this.previouslyRaisedFindingsRepository = previouslyRaisedFindingsRepository;
     this.clientFileSystemService = clientFileSystemService;
     this.storageService = storageService;
-    this.telemetryService = telemetryService;
+    this.eventPublisher = eventPublisher;
   }
 
   public SuggestFixResponse suggestFix(String configurationScopeId, UUID issueId, SonarLintCancelMonitor cancelMonitor) {
@@ -83,13 +83,13 @@ public class AiCodeFixService {
         var fixResponseDto = serverApi.fixSuggestions().getAiSuggestion(toDto(sonarQubeCloudBinding.organizationKey, sonarQubeCloudBinding.binding().sonarProjectKey(), issue),
           cancelMonitor);
 
-        telemetryService.fixSuggestionReceived(new FixSuggestionReceivedParams(
+        eventPublisher.publishEvent(new FixSuggestionReceivedEvent(
           fixResponseDto.id().toString(),
           AiSuggestionSource.SONARCLOUD,
           fixResponseDto.changes().size(),
           // As of today, this is always true since suggestFix is only called by the clients
-          true
-        ));
+          true)
+        );
 
         return fixResponseDto;
       })
