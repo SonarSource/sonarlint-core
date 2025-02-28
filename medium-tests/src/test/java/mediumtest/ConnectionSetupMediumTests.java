@@ -189,7 +189,7 @@ class ConnectionSetupMediumTests {
   }
 
   @SonarLintTest
-  void it_should_support_notifications_if_sonarcloud(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
+  void it_should_always_support_notifications(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
     var fakeClient = harness.newFakeClient().build();
     var backend = harness.newBackend().start(fakeClient);
 
@@ -199,33 +199,5 @@ class ConnectionSetupMediumTests {
       .get();
 
     assertThat(connectionResponse.isSuccess()).isTrue();
-  }
-
-  @SonarLintTest
-  void it_should_support_notifications_if_sonarqube_supports(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
-    var fakeClient = harness.newFakeClient().build();
-    var server = harness.newFakeSonarQubeServer().withSmartNotificationsSupported(true).start();
-    var backend = harness.newBackend().withEmbeddedServer().withSonarQubeConnection("connectionId", server).start(fakeClient);
-
-    var connectionResponse = backend.getConnectionService()
-      .checkSmartNotificationsSupported(new CheckSmartNotificationsSupportedParams(
-        new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto("foo")))))
-      .get();
-
-    assertThat(connectionResponse.isSuccess()).isTrue();
-  }
-
-  @SonarLintTest
-  void it_should_not_support_notifications_if_sonarqube_does_not_support(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
-    var fakeClient = harness.newFakeClient().build();
-    var server = harness.newFakeSonarQubeServer().withSmartNotificationsSupported(false).start();
-    var backend = harness.newBackend().withEmbeddedServer().withSonarQubeConnection("connectionId", server).start(fakeClient);
-
-    var connectionResponse = backend.getConnectionService()
-      .checkSmartNotificationsSupported(new CheckSmartNotificationsSupportedParams(
-        new TransientSonarQubeConnectionDto(server.baseUrl(), Either.forLeft(new TokenDto("foo")))))
-      .get();
-
-    assertThat(connectionResponse.isSuccess()).isFalse();
   }
 }

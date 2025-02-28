@@ -1,3 +1,9 @@
+# 10.17
+
+## Deprecation
+
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService.checkSmartNotificationsSupported` method. It always returns that notifications are supported.
+
 # 10.16
 
 ## New features

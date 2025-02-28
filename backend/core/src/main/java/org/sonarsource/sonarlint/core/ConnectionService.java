@@ -173,13 +173,6 @@ public class ConnectionService {
     }
   }
 
-  public boolean checkSmartNotificationsSupported(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection,
-    SonarLintCancelMonitor cancelMonitor) {
-    var serverApi = connectionManager.getForTransientConnection(transientConnection);
-    var developersApi = serverApi.developers();
-    return developersApi.isSupported(cancelMonitor);
-  }
-
   public HelpGenerateUserTokenResponse helpGenerateUserToken(String serverUrl, SonarLintCancelMonitor cancelMonitor) {
     return tokenGeneratorHelper.helpGenerateUserToken(serverUrl, cancelMonitor);
   }

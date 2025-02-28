@@ -74,9 +74,7 @@ class ConnectionRpcServiceDelegate extends AbstractRpcServiceDelegate implements
 
   @Override
   public CompletableFuture<CheckSmartNotificationsSupportedResponse> checkSmartNotificationsSupported(CheckSmartNotificationsSupportedParams params) {
-    return requestAsync(
-      cancelMonitor -> new CheckSmartNotificationsSupportedResponse(getBean(ConnectionService.class)
-        .checkSmartNotificationsSupported(params.getTransientConnection(), cancelMonitor)));
+    return requestAsync(cancelMonitor -> new CheckSmartNotificationsSupportedResponse(true));
   }
 
   @Override
