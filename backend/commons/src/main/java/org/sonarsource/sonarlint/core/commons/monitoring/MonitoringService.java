@@ -72,6 +72,8 @@ public class MonitoringService {
     sentryOptions.setTag("architecture", SystemUtils.OS_ARCH);
     sentryOptions.addInAppInclude("org.sonarsource.sonarlint");
     sentryOptions.setTracesSampleRate(getTracesSampleRate());
+    // TODO Remove this or hide it behind a flag/property/env variable
+    sentryOptions.setDebug(true);
     return sentryOptions;
   }
 
