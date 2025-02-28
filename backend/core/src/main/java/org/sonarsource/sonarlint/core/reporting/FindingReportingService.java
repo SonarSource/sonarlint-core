@@ -37,7 +37,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.analysis.AnalysisReportedIssuesEvent;
+import org.sonarsource.sonarlint.core.analysis.IssuesRaisedEvent;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.mode.SeverityModeService;
@@ -157,7 +157,7 @@ public class FindingReportingService {
     var isMQRMode = severityModeService.isMQRModeForConnection(connectionId);
     var aiCodeFixFeature = effectiveBinding.flatMap(aiCodeFixService::getFeature);
     var issuesToRaise = getIssuesToRaise(issuesToReport, newCodeDefinition, isMQRMode, aiCodeFixFeature);
-    this.eventPublisher.publishEvent(new AnalysisReportedIssuesEvent(issuesToRaise.values().stream().flatMap(List::stream).toList()));
+    this.eventPublisher.publishEvent(new IssuesRaisedEvent(issuesToRaise.values().stream().flatMap(List::stream).toList()));
     var hotspotsToRaise = getHotspotsToRaise(hotspotsToReport, newCodeDefinition, isMQRMode);
     updateRaisedFindingsCacheAndNotifyClient(configurationScopeId, analysisId, issuesToRaise, hotspotsToRaise, false);
     filesPerAnalysis.remove(analysisId);

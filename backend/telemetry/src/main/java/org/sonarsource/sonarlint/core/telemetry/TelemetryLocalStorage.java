@@ -326,9 +326,9 @@ public class TelemetryLocalStorage {
       () -> fixSuggestionSnippets.add(new TelemetryFixSuggestionResolvedStatus(status, snippetIndex)));
   }
 
-  public void incrementCountIssuesWithPossibleAiFixFromIde() {
+  public void increaseCountIssuesWithPossibleAiFixFromIde(int count) {
     markSonarLintAsUsedToday();
-    countIssuesWithPossibleAiFixFromIde++;
+    countIssuesWithPossibleAiFixFromIde += count;
   }
 
   public int getShowIssueRequestsCount() {

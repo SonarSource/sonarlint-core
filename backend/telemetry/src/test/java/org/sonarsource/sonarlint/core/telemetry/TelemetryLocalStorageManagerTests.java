@@ -242,11 +242,11 @@ class TelemetryLocalStorageManagerTests {
   void should_increment_issue_ai_fixable() {
     var storage = new TelemetryLocalStorageManager(filePath, mock(InitializeParams.class));
 
-    storage.tryUpdateAtomically(TelemetryLocalStorage::incrementCountIssuesWithPossibleAiFixFromIde);
-    storage.tryUpdateAtomically(TelemetryLocalStorage::incrementCountIssuesWithPossibleAiFixFromIde);
+    storage.tryUpdateAtomically(telemetryLocalStorage -> telemetryLocalStorage.increaseCountIssuesWithPossibleAiFixFromIde(2));
+    storage.tryUpdateAtomically(telemetryLocalStorage -> telemetryLocalStorage.increaseCountIssuesWithPossibleAiFixFromIde(3));
 
     var data = storage.tryRead();
-    assertThat(data.getCountIssuesWithPossibleAiFixFromIde()).isEqualTo(2);
+    assertThat(data.getCountIssuesWithPossibleAiFixFromIde()).isEqualTo(5);
   }
 
   @Test
@@ -280,7 +280,6 @@ class TelemetryLocalStorageManagerTests {
 
     assertThat(storageManager.tryRead().getShowIssueRequestsCount()).isZero();
   }
-
 
   /**
    * Disabled on Windows because it doesn't always give the file modification time correctly

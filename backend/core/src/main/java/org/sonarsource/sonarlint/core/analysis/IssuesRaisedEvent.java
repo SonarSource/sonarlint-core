@@ -22,5 +22,5 @@ package org.sonarsource.sonarlint.core.analysis;
 import java.util.List;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 
-public record AnalysisReportedIssuesEvent(List<RaisedIssueDto> issues) {
+public record IssuesRaisedEvent(List<RaisedIssueDto> issues) {
 }

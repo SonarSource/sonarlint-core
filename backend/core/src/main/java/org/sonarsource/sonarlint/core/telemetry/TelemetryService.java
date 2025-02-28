@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.AnalysisFinishedEvent;
-import org.sonarsource.sonarlint.core.analysis.AnalysisReportedIssuesEvent;
+import org.sonarsource.sonarlint.core.analysis.IssuesRaisedEvent;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -177,21 +177,8 @@ public class TelemetryService {
     updateTelemetry(localStorage -> localStorage.helpAndFeedbackLinkClicked(params.getItemId()));
   }
 
-  private void fixSuggestionReceived(FixSuggestionReceivedParams params) {
-    updateTelemetry(localStorage -> localStorage.fixSuggestionReceived(
-      params.getSuggestionId(),
-      params.getAiSuggestionsSource(),
-      params.getSnippetsCount(),
-      params.wasGeneratedFromIde())
-    );
-  }
-
   public void fixSuggestionResolved(FixSuggestionResolvedParams params) {
     updateTelemetry(localStorage -> localStorage.fixSuggestionResolved(params.getSuggestionId(), params.getStatus(), params.getSnippetIndex()));
-  }
-
-  private void fixSuggestionApplicable() {
-    updateTelemetry(TelemetryLocalStorage::incrementCountIssuesWithPossibleAiFixFromIde);
   }
 
   public void smartNotificationsReceived(String eventType) {
@@ -285,8 +272,11 @@ public class TelemetryService {
 
   @EventListener
   public void onFixSuggestionReceived(FixSuggestionReceivedEvent event) {
-    fixSuggestionReceived(
-      new FixSuggestionReceivedParams(event.fixSuggestionId(), event.source(), event.snippetsCount(), event.wasGeneratedFromIde())
+    updateTelemetry(localStorage -> localStorage.fixSuggestionReceived(
+      event.fixSuggestionId(),
+      event.source(),
+      event.snippetsCount(),
+      event.wasGeneratedFromIde())
     );
   }
 
@@ -310,14 +300,12 @@ public class TelemetryService {
   }
 
   @EventListener
-  public void onAnalysisReportedIssues(AnalysisReportedIssuesEvent event) {
-    var issues = event.issues();
-    issues.stream()
-      .filter(i -> issuesIdSeen.contains(i.getId()) && i.isAiCodeFixable())
-      .forEach(i -> {
-        fixSuggestionApplicable();
-        issuesIdSeen.add(i.getId());
-      });
+  public void onAnalysisReportedIssues(IssuesRaisedEvent event) {
+    var count = event.issues().stream()
+      .filter(i -> !issuesIdSeen.contains(i.getId()) && i.isAiCodeFixable())
+      .peek(i -> issuesIdSeen.add(i.getId()))
+      .count();
+    updateTelemetry(localStorage -> localStorage.increaseCountIssuesWithPossibleAiFixFromIde((int) count));
   }
 
   @PreDestroy

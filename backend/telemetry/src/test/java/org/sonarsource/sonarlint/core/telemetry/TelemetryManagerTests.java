@@ -215,6 +215,7 @@ class TelemetryManagerTests {
       data.incrementOpenHotspotInBrowserCount();
       data.incrementShowHotspotRequestCount();
       data.incrementShowIssueRequestCount();
+      data.increaseCountIssuesWithPossibleAiFixFromIde(3);
       data.fixSuggestionReceived("suggestionId", AiSuggestionSource.SONARCLOUD, 2, true);
       data.fixSuggestionResolved("suggestionId", FixSuggestionStatus.ACCEPTED, 0);
       data.incrementTaintVulnerabilitiesInvestigatedLocallyCount();
@@ -237,6 +238,7 @@ class TelemetryManagerTests {
     assertThat(reloaded.taintVulnerabilitiesInvestigatedRemotelyCount()).isZero();
     assertThat(reloaded.hotspotStatusChangedCount()).isZero();
     assertThat(reloaded.getShowIssueRequestsCount()).isZero();
+    assertThat(reloaded.getCountIssuesWithPossibleAiFixFromIde()).isZero();
     assertThat(reloaded.getFixSuggestionReceivedCounter()).isEmpty();
     assertThat(reloaded.getFixSuggestionResolved()).isEmpty();
     assertThat(reloaded.openHotspotInBrowserCount()).isZero();
