@@ -46,16 +46,6 @@ public class DevelopersApi {
     this.helper = helper;
   }
 
-  public boolean isSupported(SonarLintCancelMonitor cancelMonitor) {
-    if (helper.isSonarCloud()) {
-      return true;
-    }
-    var path = getWsPath(Collections.emptyMap());
-    try (var wsResponse = helper.rawGet(path, cancelMonitor)) {
-      return wsResponse.isSuccessful();
-    }
-  }
-
   public List<Event> getEvents(Map<String, ZonedDateTime> projectTimestamps, SonarLintCancelMonitor cancelMonitor) {
     var path = getWsPath(projectTimestamps);
     try (var wsResponse = helper.rawGet(path, cancelMonitor)) {
