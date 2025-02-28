@@ -138,7 +138,6 @@ public class ServerFixture {
     private final Map<String, ServerQualityProfileBuilder> qualityProfilesByKey = new HashMap<>();
     private final Map<String, ServerPluginBuilder> pluginsByKey = new HashMap<>();
     private ServerStatus serverStatus = ServerStatus.UP;
-    private boolean smartNotificationsSupported;
     private final List<String> tokensRegistered = new ArrayList<>();
     private Integer statusCode = 200;
     private Integer issueTransitionStatusCode = 200;
@@ -177,11 +176,6 @@ public class ServerFixture {
       return this;
     }
 
-    public ServerBuilder withSmartNotificationsSupported(boolean smartNotificationsSupported) {
-      this.smartNotificationsSupported = smartNotificationsSupported;
-      return this;
-    }
-
     public ServerBuilder withPlugin(Plugin testPlugin) {
       return withPlugin(testPlugin.getPluginKey(), plugin -> plugin.withJarPath(testPlugin.getPath()).withHash(testPlugin.getHash()));
     }
@@ -214,7 +208,7 @@ public class ServerFixture {
     }
 
     public Server start() {
-      var server = new Server(serverKind, serverStatus, organizationKey, version, projectByProjectKey, smartNotificationsSupported, pluginsByKey, qualityProfilesByKey,
+      var server = new Server(serverKind, serverStatus, organizationKey, version, projectByProjectKey, pluginsByKey, qualityProfilesByKey,
         tokensRegistered, statusCode, issueTransitionStatusCode, aiCodeFixFeature);
       server.start();
       if (onStart != null) {
@@ -645,7 +639,6 @@ public class ServerFixture {
     @Nullable
     private final Version version;
     private final Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey;
-    private final boolean smartNotificationsSupported;
     private final Map<String, ServerBuilder.ServerPluginBuilder> pluginsByKey;
     private final Map<String, ServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey;
     private final List<String> tokensRegistered;
@@ -654,7 +647,7 @@ public class ServerFixture {
     private final ServerBuilder.AiCodeFixFeatureBuilder aiCodeFixFeature;
 
     public Server(ServerKind serverKind, ServerStatus serverStatus, @Nullable String organizationKey, @Nullable String version,
-      Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey, boolean smartNotificationsSupported, Map<String, ServerBuilder.ServerPluginBuilder> pluginsByKey,
+      Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey, Map<String, ServerBuilder.ServerPluginBuilder> pluginsByKey,
       Map<String, ServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey, List<String> tokensRegistered, Integer statusCode, Integer issueTransitionStatusCode,
       ServerBuilder.AiCodeFixFeatureBuilder aiCodeFixFeature) {
       this.serverKind = serverKind;
@@ -662,7 +655,6 @@ public class ServerFixture {
       this.organizationKey = organizationKey;
       this.version = version != null ? Version.create(version) : null;
       this.projectsByProjectKey = projectsByProjectKey;
-      this.smartNotificationsSupported = smartNotificationsSupported;
       this.pluginsByKey = pluginsByKey;
       this.qualityProfilesByKey = qualityProfilesByKey;
       this.tokensRegistered = tokensRegistered;
@@ -1204,9 +1196,7 @@ public class ServerFixture {
     }
 
     private void registerDevelopersApiResponses() {
-      if (smartNotificationsSupported) {
-        mockServer.stubFor(get("/api/developers/search_events?projects=&from=").willReturn(aResponse().withStatus(statusCode)));
-      }
+      mockServer.stubFor(get("/api/developers/search_events?projects=&from=").willReturn(aResponse().withStatus(statusCode)));
     }
 
     private void registerMeasuresApiResponses() {

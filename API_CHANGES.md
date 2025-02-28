@@ -8,6 +8,7 @@
 ## Deprecation
 
 * Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarCloudAlternativeEnvironmentDto` constructor. It is replaced by an overload in which the new API base URL should be provided.
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService.checkSmartNotificationsSupported` method. It always returns that notifications are supported.
 
 # 10.14
 
