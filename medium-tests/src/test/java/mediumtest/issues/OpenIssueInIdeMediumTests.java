@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
@@ -62,6 +63,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
+@ResourceLock("EMBEDDED_SERVER")
 class OpenIssueInIdeMediumTests {
 
   public static final String PROJECT_KEY = "projectKey";

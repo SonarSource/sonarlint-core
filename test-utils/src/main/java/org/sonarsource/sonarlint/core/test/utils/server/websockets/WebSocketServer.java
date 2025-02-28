@@ -21,23 +21,26 @@ package org.sonarsource.sonarlint.core.test.utils.server.websockets;
 
 import java.io.File;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.servlets.DefaultServlet;
 import org.apache.catalina.startup.Tomcat;
 
 public class WebSocketServer {
-
-  public static final int DEFAULT_PORT = 54321;
+  private static final int STARTING_PORT = 54321;
   public static final String CONNECTION_REPOSITORY_ATTRIBUTE_KEY = "connectionRepository";
+  private static final AtomicInteger currentShift = new AtomicInteger();
+
   private Tomcat tomcat;
   private WebSocketConnectionRepository connectionRepository;
+  private final int port = STARTING_PORT + currentShift.getAndIncrement();
 
   public void start() {
     try {
       var baseDir = new File("").getAbsoluteFile().getParentFile().getPath();
       tomcat = new Tomcat();
       tomcat.setBaseDir(baseDir);
-      tomcat.setPort(DEFAULT_PORT);
+      tomcat.setPort(port);
       var context = tomcat.addContext("", baseDir);
       connectionRepository = new WebSocketConnectionRepository();
       context.getServletContext().setAttribute(CONNECTION_REPOSITORY_ATTRIBUTE_KEY, connectionRepository);
@@ -61,7 +64,7 @@ public class WebSocketServer {
   }
 
   public String getUrl() {
-    return "ws://localhost:" + DEFAULT_PORT + "/endpoint";
+    return "ws://localhost:" + port + "/endpoint";
   }
 
   public List<WebSocketConnection> getConnections() {

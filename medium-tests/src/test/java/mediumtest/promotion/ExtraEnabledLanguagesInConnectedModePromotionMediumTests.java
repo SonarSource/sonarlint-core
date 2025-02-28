@@ -57,7 +57,6 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
     var backend = harness.newBackend()
       .withExtraEnabledLanguagesInConnectedMode(Language.ABAP)
       .withUnboundConfigScope("configScopeId")
-      .withEmbeddedServer()
       .withTelemetryEnabled()
       .start(fakeClient);
 
@@ -80,7 +79,6 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
       .withExtraEnabledLanguagesInConnectedMode(Language.ABAP)
       .withSonarQubeConnection("connectionId", server, storage -> storage.withProject("projectKey"))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withEmbeddedServer()
       .withTelemetryEnabled()
       .start(fakeClient);
 
@@ -101,7 +99,6 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
     var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.ABAP)
       .withUnboundConfigScope("configScopeId")
-      .withEmbeddedServer()
       .withTelemetryEnabled()
       .start(fakeClient);
 
@@ -122,7 +119,6 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope("configScopeId")
-      .withEmbeddedServer()
       .withTelemetryEnabled()
       .start(fakeClient);
 

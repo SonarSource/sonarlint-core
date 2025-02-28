@@ -27,6 +27,7 @@ import java.time.Duration;
 import java.util.List;
 import org.apache.commons.lang.RandomStringUtils;
 import org.eclipse.jetty.http.HttpStatus;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
@@ -34,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.when;
 
+@ResourceLock("EMBEDDED_SERVER")
 class EmbeddedServerMediumTests {
 
   @SonarLintTest

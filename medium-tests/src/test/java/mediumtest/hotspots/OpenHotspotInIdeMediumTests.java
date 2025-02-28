@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
@@ -60,6 +61,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
 
+@ResourceLock("EMBEDDED_SERVER")
 class OpenHotspotInIdeMediumTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
