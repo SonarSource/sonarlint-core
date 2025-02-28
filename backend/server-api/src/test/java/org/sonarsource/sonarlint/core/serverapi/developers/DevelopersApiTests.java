@@ -26,13 +26,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
-import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.mockito.Mockito.mock;
 
 class DevelopersApiTests {
   @RegisterExtension
@@ -45,31 +42,6 @@ class DevelopersApiTests {
   @BeforeEach
   void setUp() {
     underTest = new DevelopersApi(mockServer.serverApiHelper());
-  }
-
-  @Test
-  void should_consider_notifications_unsupported_if_endpoint_does_not_exist() {
-    var supported = underTest.isSupported(new SonarLintCancelMonitor());
-
-    assertThat(supported).isFalse();
-  }
-
-  @Test
-  void should_consider_notifications_supported_if_sonarcloud() {
-    var api = new DevelopersApi(new ServerApiHelper(mockServer.endpointParams("orgKey"), mock(HttpClient.class)));
-
-    var supported = api.isSupported(new SonarLintCancelMonitor());
-
-    assertThat(supported).isTrue();
-  }
-
-  @Test
-  void should_consider_notifications_supported_if_endpoint_exists() {
-    mockServer.addStringResponse("/api/developers/search_events?projects=&from=", "");
-
-    var supported = underTest.isSupported(new SonarLintCancelMonitor());
-
-    assertThat(supported).isTrue();
   }
 
   @Test

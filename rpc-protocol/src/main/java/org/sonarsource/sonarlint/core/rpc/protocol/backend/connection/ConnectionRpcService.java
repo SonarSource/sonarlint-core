@@ -97,7 +97,9 @@ public interface ConnectionRpcService {
   /**
    * Check that smart notifications are supported by the server by sending a GET request to /api/developers/search_events?projects=&from=
    * It is successfully when response code is >= 200 and < 300
+   * @deprecated the smart notifications are always supported on SQC and the versions of SQS we support. This will always return true
    */
+  @Deprecated(since = "10.16")
   @JsonRequest
   CompletableFuture<CheckSmartNotificationsSupportedResponse> checkSmartNotificationsSupported(CheckSmartNotificationsSupportedParams params);
 
