@@ -60,12 +60,15 @@ public class TelemetryLocalStorage {
   private final Map<String, TelemetryHelpAndFeedbackCounter> helpAndFeedbackLinkClickedCount;
   private final Map<String, TelemetryFixSuggestionReceivedCounter> fixSuggestionReceivedCounter;
   private final Map<String, List<TelemetryFixSuggestionResolvedStatus>> fixSuggestionResolved;
+  private int countIssuesWithPossibleAiFixFromIde;
   private boolean isFocusOnNewCode;
   private int codeFocusChangedCount;
   private int manualAddedBindingsCount;
   private int importedAddedBindingsCount;
   private int autoAddedBindingsCount;
   private int exportedConnectedModeCount;
+  private final Set<String> boundSonarQubeServerProjectKeys;
+  private final Set<String> boundSonarQubeCloudProjectKeys;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -78,6 +81,8 @@ public class TelemetryLocalStorage {
     helpAndFeedbackLinkClickedCount = new LinkedHashMap<>();
     fixSuggestionReceivedCounter = new LinkedHashMap<>();
     fixSuggestionResolved = new LinkedHashMap<>();
+    boundSonarQubeServerProjectKeys = new HashSet<>();
+    boundSonarQubeCloudProjectKeys = new HashSet<>();
   }
 
   public Collection<String> getRaisedIssuesRules() {
@@ -143,6 +148,10 @@ public class TelemetryLocalStorage {
     return fixSuggestionResolved;
   }
 
+  public int getCountIssuesWithPossibleAiFixFromIde() {
+    return countIssuesWithPossibleAiFixFromIde;
+  }
+
   public boolean isFocusOnNewCode() {
     return isFocusOnNewCode;
   }
@@ -184,11 +193,14 @@ public class TelemetryLocalStorage {
     helpAndFeedbackLinkClickedCount.clear();
     fixSuggestionReceivedCounter.clear();
     fixSuggestionResolved.clear();
+    countIssuesWithPossibleAiFixFromIde = 0;
     codeFocusChangedCount = 0;
     manualAddedBindingsCount = 0;
     importedAddedBindingsCount = 0;
     autoAddedBindingsCount = 0;
     exportedConnectedModeCount = 0;
+    boundSonarQubeServerProjectKeys.clear();
+    boundSonarQubeCloudProjectKeys.clear();
   }
 
   long numUseDays() {
@@ -294,9 +306,9 @@ public class TelemetryLocalStorage {
     showIssueRequestsCount++;
   }
 
-  public void fixSuggestionReceived(String suggestionId, AiSuggestionSource aiSuggestionSource, int snippetsCount) {
+  public void fixSuggestionReceived(String suggestionId, AiSuggestionSource aiSuggestionSource, int snippetsCount, boolean wasGeneratedFromIde) {
     markSonarLintAsUsedToday();
-    this.fixSuggestionReceivedCounter.computeIfAbsent(suggestionId, k -> new TelemetryFixSuggestionReceivedCounter(aiSuggestionSource, snippetsCount));
+    this.fixSuggestionReceivedCounter.computeIfAbsent(suggestionId, k -> new TelemetryFixSuggestionReceivedCounter(aiSuggestionSource, snippetsCount, wasGeneratedFromIde));
   }
 
   public void fixSuggestionResolved(String suggestionId, FixSuggestionStatus status, @Nullable Integer snippetIndex) {
@@ -312,6 +324,11 @@ public class TelemetryLocalStorage {
     // if we already had a status for this snippet, we should replace it
     existingSnippetStatus.ifPresentOrElse(telemetryFixSuggestionResolvedStatus -> telemetryFixSuggestionResolvedStatus.setFixSuggestionResolvedStatus(status),
       () -> fixSuggestionSnippets.add(new TelemetryFixSuggestionResolvedStatus(status, snippetIndex)));
+  }
+
+  public void increaseCountIssuesWithPossibleAiFixFromIde(int count) {
+    markSonarLintAsUsedToday();
+    countIssuesWithPossibleAiFixFromIde += count;
   }
 
   public int getShowIssueRequestsCount() {
@@ -417,6 +434,24 @@ public class TelemetryLocalStorage {
 
   public int getExportedConnectedModeCount() {
     return exportedConnectedModeCount;
+  }
+
+  public void addBoundSonarQubeServerProjectKey(String projectKey) {
+    markSonarLintAsUsedToday();
+    boundSonarQubeServerProjectKeys.add(projectKey);
+  }
+
+  public Set<String> getBoundSonarQubeServerProjectKeys() {
+    return boundSonarQubeServerProjectKeys;
+  }
+
+  public void addBoundSonarQubeCloudProjectKey(String projectKey) {
+    markSonarLintAsUsedToday();
+    boundSonarQubeCloudProjectKeys.add(projectKey);
+  }
+
+  public Set<String> getBoundSonarQubeCloudProjectKeys() {
+    return boundSonarQubeCloudProjectKeys;
   }
 
 }

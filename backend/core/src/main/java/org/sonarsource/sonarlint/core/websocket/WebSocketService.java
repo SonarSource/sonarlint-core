@@ -94,7 +94,7 @@ public class WebSocketService {
     if (!shouldEnableWebSockets) {
       return;
     }
-    executorService.execute(() -> considerScope(bindingConfigChangedEvent.getConfigScopeId()));
+    executorService.execute(() -> considerScope(bindingConfigChangedEvent.configScopeId()));
   }
 
   @EventListener
@@ -123,7 +123,7 @@ public class WebSocketService {
       return;
     }
     // This is only to handle the case where binding was invalid (connection did not exist) and became valid (matching connection was created)
-    executorService.execute(() -> considerConnection(connectionConfigurationAddedEvent.getAddedConnectionId()));
+    executorService.execute(() -> considerConnection(connectionConfigurationAddedEvent.addedConnectionId()));
   }
 
   @EventListener

@@ -215,7 +215,8 @@ class TelemetryManagerTests {
       data.incrementOpenHotspotInBrowserCount();
       data.incrementShowHotspotRequestCount();
       data.incrementShowIssueRequestCount();
-      data.fixSuggestionReceived("suggestionId", AiSuggestionSource.SONARCLOUD, 2);
+      data.increaseCountIssuesWithPossibleAiFixFromIde(3);
+      data.fixSuggestionReceived("suggestionId", AiSuggestionSource.SONARCLOUD, 2, true);
       data.fixSuggestionResolved("suggestionId", FixSuggestionStatus.ACCEPTED, 0);
       data.incrementTaintVulnerabilitiesInvestigatedLocallyCount();
       data.incrementTaintVulnerabilitiesInvestigatedRemotelyCount();
@@ -223,6 +224,8 @@ class TelemetryManagerTests {
       data.setNumUseDays(5);
       data.notifications().put(FOO_EVENT, new TelemetryNotificationsCounter(DEFAULT_NOTIF_COUNT, DEFAULT_NOTIF_CLICKED));
       data.getHelpAndFeedbackLinkClickedCounter().put(SUGGEST_FEATURE, new TelemetryHelpAndFeedbackCounter(DEFAULT_HELP_AND_FEEDBACK_COUNT));
+      data.addBoundSonarQubeCloudProjectKey("project_key_sqc");
+      data.addBoundSonarQubeServerProjectKey("project_key_sqs");
     });
 
     telemetryManager.uploadAndClearTelemetry(telemetryPayload);
@@ -235,10 +238,13 @@ class TelemetryManagerTests {
     assertThat(reloaded.taintVulnerabilitiesInvestigatedRemotelyCount()).isZero();
     assertThat(reloaded.hotspotStatusChangedCount()).isZero();
     assertThat(reloaded.getShowIssueRequestsCount()).isZero();
+    assertThat(reloaded.getCountIssuesWithPossibleAiFixFromIde()).isZero();
     assertThat(reloaded.getFixSuggestionReceivedCounter()).isEmpty();
     assertThat(reloaded.getFixSuggestionResolved()).isEmpty();
     assertThat(reloaded.openHotspotInBrowserCount()).isZero();
     assertThat(reloaded.getHelpAndFeedbackLinkClickedCounter()).isEmpty();
+    assertThat(reloaded.getBoundSonarQubeCloudProjectKeys()).isEmpty();
+    assertThat(reloaded.getBoundSonarQubeServerProjectKeys()).isEmpty();
   }
 
   private void createAndSaveSampleData(TelemetryLocalStorageManager storage) {

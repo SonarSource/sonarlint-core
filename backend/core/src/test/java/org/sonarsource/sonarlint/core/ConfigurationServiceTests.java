@@ -60,7 +60,7 @@ class ConfigurationServiceTests {
   private ConfigurationService underTest;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     eventPublisher = mock(ApplicationEventPublisher.class);
     underTest = new ConfigurationService(eventPublisher, repository);
   }
@@ -156,14 +156,14 @@ class ConfigurationServiceTests {
     verify(eventPublisher).publishEvent(captor.capture());
     var event = captor.getValue();
 
-    assertThat(event.getConfigScopeId()).isEqualTo("id1");
-    assertThat(event.getPreviousConfig().getConnectionId()).isEqualTo(CONNECTION_1);
-    assertThat(event.getPreviousConfig().getSonarProjectKey()).isEqualTo("projectKey1");
-    assertThat(event.getPreviousConfig().isBindingSuggestionDisabled()).isFalse();
+    assertThat(event.configScopeId()).isEqualTo("id1");
+    assertThat(event.previousConfig().getConnectionId()).isEqualTo(CONNECTION_1);
+    assertThat(event.previousConfig().getSonarProjectKey()).isEqualTo("projectKey1");
+    assertThat(event.previousConfig().isBindingSuggestionDisabled()).isFalse();
 
-    assertThat(event.getNewConfig().getConnectionId()).isEqualTo(CONNECTION_1);
-    assertThat(event.getNewConfig().getSonarProjectKey()).isEqualTo("projectKey2");
-    assertThat(event.getNewConfig().isBindingSuggestionDisabled()).isTrue();
+    assertThat(event.newConfig().getConnectionId()).isEqualTo(CONNECTION_1);
+    assertThat(event.newConfig().getSonarProjectKey()).isEqualTo("projectKey2");
+    assertThat(event.newConfig().isBindingSuggestionDisabled()).isTrue();
   }
 
   @Test

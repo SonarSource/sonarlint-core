@@ -21,25 +21,6 @@ package org.sonarsource.sonarlint.core.telemetry.payload;
 
 import com.google.gson.annotations.SerializedName;
 
-public class TelemetryNotificationsCounterPayload {
-
-  @SerializedName("received")
-  private final int devNotificationsCount;
-
-  @SerializedName("clicked")
-  private final int devNotificationsClicked;
-
-  public TelemetryNotificationsCounterPayload(int devNotificationsCount, int devNotificationsClicked) {
-    this.devNotificationsCount = devNotificationsCount;
-    this.devNotificationsClicked = devNotificationsClicked;
-  }
-
-  public int getDevNotificationsClicked() {
-    return devNotificationsClicked;
-  }
-
-  public int getDevNotificationsCount() {
-    return devNotificationsCount;
-  }
-
+public record TelemetryNotificationsCounterPayload(@SerializedName("received") int devNotificationsCount,
+                                                   @SerializedName("clicked") int devNotificationsClicked) {
 }

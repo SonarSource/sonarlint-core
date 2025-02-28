@@ -17,17 +17,13 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.telemetry.metricspayload;
+package org.sonarsource.sonarlint.core.telemetry.measures.payload;
 
 import com.google.gson.annotations.SerializedName;
 
-public enum TelemetryMetricsValueType {
-  @SerializedName("string")
-  STRING,
-  @SerializedName("integer")
-  INTEGER,
-  @SerializedName("boolean")
-  BOOLEAN,
-  @SerializedName("float")
-  FLOAT
+public enum TelemetryMeasuresDimension {
+  @SerializedName("language")
+  LANGUAGE,
+  @SerializedName("installation")
+  INSTALLATION
 }

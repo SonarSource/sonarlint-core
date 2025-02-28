@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.telemetry.metricspayload;
+package org.sonarsource.sonarlint.core.telemetry.measures.payload;
 
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
@@ -25,35 +25,12 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import org.sonarsource.sonarlint.core.telemetry.OffsetDateTimeAdapter;
 
-public class TelemetryMetricsPayload {
-
-  @SerializedName("message_uuid")
-  private final String messageUuid;
-
-  @SerializedName("os")
-  private final String os;
-
-  @SerializedName("install_time")
-  private final OffsetDateTime installTime;
-
-  @SerializedName("sonarlint_product")
-  private final String product;
-
-  @SerializedName("dimension")
-  private final TelemetryMetricsDimension dimension;
-
-  @SerializedName("metric_values")
-  private final List<TelemetryMetricsValue> values;
-
-  public TelemetryMetricsPayload(String messageUuid, String os, OffsetDateTime installTime, String product, TelemetryMetricsDimension dimension,
-      List<TelemetryMetricsValue> values) {
-    this.messageUuid = messageUuid;
-    this.os = os;
-    this.installTime = installTime;
-    this.product = product;
-    this.dimension = dimension;
-    this.values = values;
-  }
+public record TelemetryMeasuresPayload(@SerializedName("message_uuid") String messageUuid,
+                                       @SerializedName("os") String os,
+                                       @SerializedName("install_time") OffsetDateTime installTime,
+                                       @SerializedName("sonarlint_product") String product,
+                                       @SerializedName("dimension") TelemetryMeasuresDimension dimension,
+                                       @SerializedName("metric_values") List<TelemetryMeasuresValue> values) {
 
   public String toJson() {
     var gson = new GsonBuilder()
@@ -67,4 +44,5 @@ public class TelemetryMetricsPayload {
   public boolean hasMetrics() {
     return !values.isEmpty();
   }
+
 }

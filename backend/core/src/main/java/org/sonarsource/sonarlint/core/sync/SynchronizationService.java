@@ -256,18 +256,20 @@ public class SynchronizationService {
     if (!fullSynchronizationEnabled) {
       return;
     }
-    var configScopeId = event.getConfigScopeId();
+    var configScopeId = event.configScopeId();
     scopeSynchronizationTimestampRepository.clearLastSynchronizationTimestamp(configScopeId);
-    if (event.getPreviousConfig().isBound()) {
+    if (event.previousConfig().isBound()) {
       // when unbinding, we want to let future rebinds trigger a sync
-      var previousBinding = new Binding(requireNonNull(event.getPreviousConfig().getConnectionId()), requireNonNull(event.getPreviousConfig().getSonarProjectKey()));
+      var previousBinding = new Binding(requireNonNull(event.previousConfig().getConnectionId()), requireNonNull(event.previousConfig().getSonarProjectKey()));
       bindingSynchronizationTimestampRepository.clearLastSynchronizationTimestamp(previousBinding);
       branchSynchronizationTimestampRepository.clearLastSynchronizationTimestampIf(branchBinding -> branchBinding.getBinding().equals(previousBinding));
     }
-    var newConnectionId = event.getNewConfig().getConnectionId();
+    var newConnectionId = event.newConfig().getConnectionId();
     if (newConnectionId != null) {
-      synchronizeConnectionAndProjectsIfNeededAsync(newConnectionId,
-        List.of(new BoundScope(configScopeId, newConnectionId, requireNonNull(event.getNewConfig().getSonarProjectKey()))));
+      synchronizeConnectionAndProjectsIfNeededAsync(
+        newConnectionId,
+        List.of(new BoundScope(configScopeId, newConnectionId, requireNonNull(event.newConfig().getSonarProjectKey())))
+      );
     }
   }
 
