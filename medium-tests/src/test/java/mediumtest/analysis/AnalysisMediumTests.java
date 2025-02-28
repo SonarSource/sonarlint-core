@@ -850,7 +850,7 @@ class AnalysisMediumTests {
     var connectionId = "connectionId";
     var projectKey2 = "projectKey-2";
     var connectionId2 = "connectionId-2";
-    var server = harness.newFakeSonarQubeServer().withSmartNotificationsSupported(false).start();
+    var server = harness.newFakeSonarQubeServer().start();
     var backend = harness.newBackend()
       .withSonarQubeConnection(connectionId, server,
         storage -> storage.withPlugin(TestPlugin.XML).withProject(projectKey,
@@ -925,7 +925,7 @@ class AnalysisMediumTests {
     var connectionId = "connectionId";
     var projectKey2 = "projectKey-2";
     var connectionId2 = "connectionId-2";
-    var server = harness.newFakeSonarQubeServer().withSmartNotificationsSupported(false).start();
+    var server = harness.newFakeSonarQubeServer().start();
     var backend = harness.newBackend()
       .withSonarQubeConnection(connectionId, server,
         storage -> storage.withPlugin(TestPlugin.XML).withProject(projectKey,

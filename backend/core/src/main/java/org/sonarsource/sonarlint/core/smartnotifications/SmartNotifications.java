@@ -24,7 +24,6 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.ZonedDateTime;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
@@ -64,7 +63,6 @@ public class SmartNotifications {
   private final TelemetryService telemetryService;
   private final WebSocketService webSocketService;
   private final InitializeParams params;
-  private final Map<String, Boolean> isConnectionIdSupported;
   private final LastEventPolling lastEventPollingService;
   private ExecutorServiceShutdownWatchable<ScheduledExecutorService> smartNotificationsPolling;
 
@@ -77,7 +75,6 @@ public class SmartNotifications {
     this.telemetryService = telemetryService;
     this.webSocketService = webSocketService;
     this.params = params;
-    isConnectionIdSupported = new HashMap<>();
     lastEventPollingService = new LastEventPolling(storageService);
   }
 
@@ -107,25 +104,22 @@ public class SmartNotifications {
     AbstractConnectionConfiguration connection, SonarLintCancelMonitor cancelMonitor) {
     var developersApi = serverApi.developers();
     var connectionId = connection.getConnectionId();
-    var isSupported = isConnectionIdSupported.computeIfAbsent(connectionId, v -> developersApi.isSupported(cancelMonitor));
-    if (Boolean.TRUE.equals(isSupported)) {
-      var projectKeysByLastEventPolling = boundScopesPerProjectKey.keySet().stream()
-        .collect(Collectors.toMap(Function.identity(),
-          p -> getLastNotificationTime(lastEventPollingService.getLastEventPolling(connectionId, p))));
+    var projectKeysByLastEventPolling = boundScopesPerProjectKey.keySet().stream()
+      .collect(Collectors.toMap(Function.identity(),
+        p -> getLastNotificationTime(lastEventPollingService.getLastEventPolling(connectionId, p))));
 
-      var notifications = retrieveServerNotifications(developersApi, projectKeysByLastEventPolling, cancelMonitor);
+    var notifications = retrieveServerNotifications(developersApi, projectKeysByLastEventPolling, cancelMonitor);
 
-      for (var n : notifications) {
-        var scopeIds = boundScopesPerProjectKey.get(n.projectKey()).stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet());
-        var smartNotification = new ShowSmartNotificationParams(n.message(), n.link(), scopeIds,
-          n.category(), connectionId);
-        client.showSmartNotification(smartNotification);
-        telemetryService.smartNotificationsReceived(n.category());
-      }
-
-      projectKeysByLastEventPolling.keySet()
-        .forEach(projectKey -> lastEventPollingService.setLastEventPolling(ZonedDateTime.now(), connectionId, projectKey));
+    for (var n : notifications) {
+      var scopeIds = boundScopesPerProjectKey.get(n.projectKey()).stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet());
+      var smartNotification = new ShowSmartNotificationParams(n.message(), n.link(), scopeIds,
+        n.category(), connectionId);
+      client.showSmartNotification(smartNotification);
+      telemetryService.smartNotificationsReceived(n.category());
     }
+
+    projectKeysByLastEventPolling.keySet()
+      .forEach(projectKey -> lastEventPollingService.setLastEventPolling(ZonedDateTime.now(), connectionId, projectKey));
   }
 
   private boolean shouldSkipPolling(AbstractConnectionConfiguration connection) {
