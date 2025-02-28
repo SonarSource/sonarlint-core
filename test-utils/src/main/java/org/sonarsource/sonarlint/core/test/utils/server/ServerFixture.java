@@ -141,6 +141,7 @@ public class ServerFixture {
     private boolean smartNotificationsSupported;
     private final List<String> tokensRegistered = new ArrayList<>();
     private Integer statusCode = 200;
+    private Integer issueTransitionStatusCode = 200;
     private AiCodeFixFeatureBuilder aiCodeFixFeature = new AiCodeFixFeatureBuilder();
 
     public ServerBuilder(@Nullable Consumer<Server> onStart, ServerKind serverKind, @Nullable String organizationKey, @Nullable String version) {
@@ -201,6 +202,11 @@ public class ServerFixture {
       return this;
     }
 
+    public ServerBuilder withIssueTransitionStatusCode(Integer issueTransitionStatusCode) {
+      this.issueTransitionStatusCode = issueTransitionStatusCode;
+      return this;
+    }
+
     public ServerBuilder withAiCodeFixFeature(UnaryOperator<AiCodeFixFeatureBuilder> aiCodeFixBuilder) {
       this.aiCodeFixFeature = new AiCodeFixFeatureBuilder();
       aiCodeFixBuilder.apply(aiCodeFixFeature);
@@ -209,7 +215,7 @@ public class ServerFixture {
 
     public Server start() {
       var server = new Server(serverKind, serverStatus, organizationKey, version, projectByProjectKey, smartNotificationsSupported, pluginsByKey, qualityProfilesByKey,
-        tokensRegistered, statusCode, aiCodeFixFeature);
+        tokensRegistered, statusCode, issueTransitionStatusCode, aiCodeFixFeature);
       server.start();
       if (onStart != null) {
         onStart.accept(server);
@@ -644,11 +650,12 @@ public class ServerFixture {
     private final Map<String, ServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey;
     private final List<String> tokensRegistered;
     private final Integer statusCode;
+    private final Integer issueTransitionStatusCode;
     private final ServerBuilder.AiCodeFixFeatureBuilder aiCodeFixFeature;
 
     public Server(ServerKind serverKind, ServerStatus serverStatus, @Nullable String organizationKey, @Nullable String version,
       Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey, boolean smartNotificationsSupported, Map<String, ServerBuilder.ServerPluginBuilder> pluginsByKey,
-      Map<String, ServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey, List<String> tokensRegistered, Integer statusCode,
+      Map<String, ServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey, List<String> tokensRegistered, Integer statusCode, Integer issueTransitionStatusCode,
       ServerBuilder.AiCodeFixFeatureBuilder aiCodeFixFeature) {
       this.serverKind = serverKind;
       this.serverStatus = serverStatus;
@@ -660,6 +667,7 @@ public class ServerFixture {
       this.qualityProfilesByKey = qualityProfilesByKey;
       this.tokensRegistered = tokensRegistered;
       this.statusCode = statusCode;
+      this.issueTransitionStatusCode = issueTransitionStatusCode;
       this.aiCodeFixFeature = aiCodeFixFeature;
       if (organizationKey != null) {
         this.organizationId = organizationKey;
@@ -1107,7 +1115,7 @@ public class ServerFixture {
     }
 
     private void registerIssuesStatusChangeApiResponses() {
-      mockServer.stubFor(post("/api/issues/do_transition").willReturn(aResponse().withStatus(statusCode)));
+      mockServer.stubFor(post("/api/issues/do_transition").willReturn(aResponse().withStatus(issueTransitionStatusCode)));
     }
 
     private void registerAddIssueCommentApiResponses() {

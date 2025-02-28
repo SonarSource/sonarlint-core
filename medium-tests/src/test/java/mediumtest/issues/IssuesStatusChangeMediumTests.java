@@ -55,6 +55,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static mediumtest.fixtures.LocalOnlyIssueFixtures.aLocalOnlyIssueResolved;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.ServerStatus.DOWN;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerIssueFixtures.aServerIssue;
 import static utils.AnalysisUtils.createFile;
@@ -86,6 +88,47 @@ class IssuesStatusChangeMediumTests {
           .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
           .withRequestBody(equalTo("issue=myIssueKey&transition=wontfix")));
     });
+  }
+
+  @SonarLintTest
+  void it_should_throw_on_update_the_status_on_sonarcloud_if_issue_dont_exist_on_server_and_is_not_synchronized(SonarLintTestHarness harness) {
+    var client = harness.newFakeClient().build();
+    var server = harness.newFakeSonarCloudServer("myOrg")
+      .withProject("projectKey",
+        project -> project.withBranch("main"))
+      .withIssueTransitionStatusCode(404)
+      .start();
+    var backend = harness.newBackend()
+      .withSonarCloudUrl(server.baseUrl())
+      .withSonarCloudConnection(CONNECTION_ID, "myOrg", true, storageBuilder -> storageBuilder
+        .withProject("projectKey", projectStorageBuilder -> projectStorageBuilder.withMainBranch("main")))
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
+      .start(client);
+
+    var issueService = backend.getIssueService();
+    var params = new ChangeIssueStatusParams(CONFIGURATION_SCOPE_ID, "myIssueKey", ResolutionStatus.WONT_FIX, false);
+
+    assertThrows(ExecutionException.class, () -> issueService.changeStatus(params).get());
+  }
+
+  @SonarLintTest
+  void it_should_update_the_status_on_sonarcloud_if_issue_exist_on_server_but_is_not_synchronized(SonarLintTestHarness harness) {
+    var client = harness.newFakeClient().build();
+    var server = harness.newFakeSonarCloudServer("myOrg")
+      .withProject("projectKey",
+        project -> project.withBranch("main"))
+      .start();
+    var backend = harness.newBackend()
+      .withSonarCloudUrl(server.baseUrl())
+      .withSonarCloudConnection(CONNECTION_ID, "myOrg", true, storageBuilder -> storageBuilder
+        .withProject("projectKey", projectStorageBuilder -> projectStorageBuilder.withMainBranch("main")))
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
+      .start(client);
+
+    var issueService = backend.getIssueService();
+    var params = new ChangeIssueStatusParams(CONFIGURATION_SCOPE_ID, "myIssueKey", ResolutionStatus.WONT_FIX, false);
+
+    assertDoesNotThrow(() -> issueService.changeStatus(params).get());
   }
 
   @SonarLintTest
