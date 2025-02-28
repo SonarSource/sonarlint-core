@@ -73,7 +73,6 @@ import org.sonarsource.sonarlint.core.serverapi.exception.NotFoundException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.serverapi.push.IssueChangedEvent;
 import org.sonarsource.sonarlint.core.serverconnection.ServerInfoSynchronizer;
-import org.sonarsource.sonarlint.core.serverconnection.issues.ServerFinding;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProjectServerIssueStore;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
@@ -142,12 +141,10 @@ public class IssueService {
     } else {
       var localIssueOpt = asUUID(issueKey).flatMap(localOnlyIssueRepository::findByKey);
       if (localIssueOpt.isEmpty()) {
-        // this happens in case if VS client trying to change issue of the issue for Roslyn analysed language
+        // this happens in case if VS client trying to change status of the issue for Roslyn analysed language
         // since analysis was executed outside the backend on the client side we trust client to provide valid issue key and send telemetry
         try {
           serverConnection.withClientApi(serverApi -> serverApi.issue().changeStatus(issueKey, reviewStatus, cancelMonitor));
-          ServerFinding serverFinding = () -> "unknownRuleKey";
-          eventPublisher.publishEvent(new ServerIssueStatusChangedEvent(binding.connectionId(), binding.sonarProjectKey(), serverFinding));
           return;
         } catch (NotFoundException ex) {
           throw issueNotFoundException(issueKey);
