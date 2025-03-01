@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,8 +59,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.StandardModeDetails;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
-import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
-import org.sonarsource.sonarlint.core.test.utils.server.sse.SSEServer;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -452,7 +449,8 @@ class ServerSentEventsMediumTests {
         .start();
 
       backend.getConnectionService()
-        .didUpdateConnections(new DidUpdateConnectionsParams(Collections.emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", SonarCloudRegion.EU, true))));
+        .didUpdateConnections(
+          new DidUpdateConnectionsParams(Collections.emptyList(), List.of(new SonarCloudConnectionConfigurationDto("connectionId", "orgKey", SonarCloudRegion.EU, true))));
 
       await().during(Duration.ofMillis(300)).until(() -> requestedPaths().isEmpty());
     }
@@ -553,17 +551,6 @@ class ServerSentEventsMediumTests {
   @Nested
   class WhenReceivingIssueChangedEvent {
 
-    private final SSEServer sseServer = new SSEServer();
-    private ServerFixture.Server serverWithTaintIssues;
-
-    @AfterEach
-    void shutdown() {
-      if (serverWithTaintIssues != null) {
-        serverWithTaintIssues.shutdown();
-      }
-      sseServer.stop();
-    }
-
     @SonarLintTest
     void should_forward_taint_events_to_client(SonarLintTestHarness harness) {
       var fakeClient = harness.newFakeClient().build();
@@ -571,25 +558,14 @@ class ServerSentEventsMediumTests {
       when(fakeClient.matchSonarProjectBranch(eq("configScope"), eq("main"), eq(Set.of("main", branchName)), any())).thenReturn(branchName);
       var projectKey = "projectKey";
       var introductionDate = Instant.now().truncatedTo(ChronoUnit.SECONDS);
-      serverWithTaintIssues = harness.newFakeSonarQubeServer("10.0")
+      var serverWithTaintIssues = harness.newFakeSonarQubeServer("10.0")
+        .withServerSentEventsEnabled()
         .withProject(projectKey,
           project -> project.withBranch(branchName,
             branch -> branch
               .withTaintIssue("key1", "ruleKey", "msg", "author", "file/path", "REVIEWED", "SAFE", introductionDate, new TextRange(1, 0, 3, 4), RuleType.VULNERABILITY)
               .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile"))))
         .start();
-
-      mockEvent(serverWithTaintIssues, projectKey,
-        "event: IssueChanged\n" +
-          "data: {" +
-          "\"projectKey\": \"" + projectKey + "\"," +
-          "\"issues\": [{" +
-          "  \"issueKey\": \"key1\"," +
-          "  \"branchName\": \"" + branchName + "\"" +
-          "}]," +
-          "\"userType\": \"BUG\"" +
-          "}\n\n");
-
       harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -599,10 +575,18 @@ class ServerSentEventsMediumTests {
         .withBoundConfigScope("configScope", "connectionId", projectKey)
         .start(fakeClient);
       fakeClient.waitForSynchronization();
-
       ArgumentCaptor<List<TaintVulnerabilityDto>> captor = ArgumentCaptor.forClass(List.class);
       verify(fakeClient, timeout(3000)).didChangeTaintVulnerabilities(eq("configScope"), eq(Set.of()), captor.capture(), eq(List.of()));
-      sseServer.shouldSendServerEventOnce();
+
+      serverWithTaintIssues.pushEvent("event: IssueChanged\n" +
+        "data: {" +
+        "\"projectKey\": \"" + projectKey + "\"," +
+        "\"issues\": [{" +
+        "  \"issueKey\": \"key1\"," +
+        "  \"branchName\": \"" + branchName + "\"" +
+        "}]," +
+        "\"userType\": \"BUG\"" +
+        "}\n\n");
 
       // initial sync
       assertThat(captor.getValue())
@@ -622,14 +606,6 @@ class ServerSentEventsMediumTests {
         .isEqualTo(List.of(new TaintVulnerabilityDto(UUID.randomUUID(), "key1", false, "ruleKey", "msg", Paths.get("file/path"), introductionDate,
           Either.forLeft(new StandardModeDetails(IssueSeverity.MAJOR, org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType.BUG)), Collections.emptyList(),
           new TextRangeWithHashDto(1, 0, 3, 4, "hash"), null, true, false)));
-    }
-
-    private void mockEvent(ServerFixture.Server server, String projectKey, String eventPayload) {
-      sseServer.startWithEvent(eventPayload);
-      var sseServerUrl = sseServer.getUrl();
-      server.getMockServer().stubFor(get("/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java,js")
-        .willReturn(aResponse().proxiedFrom(sseServerUrl + "/api/push/sonarlint_events?projectKeys=" + projectKey + "&languages=java,js")
-          .withStatus(200)));
     }
   }
 
