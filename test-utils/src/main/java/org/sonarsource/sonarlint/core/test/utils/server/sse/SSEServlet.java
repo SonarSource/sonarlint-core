@@ -19,44 +19,72 @@
  */
 package org.sonarsource.sonarlint.core.test.utils.server.sse;
 
+import jakarta.servlet.AsyncContext;
 import jakarta.servlet.Servlet;
 import jakarta.servlet.ServletConfig;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
+@WebServlet(asyncSupported = true)
 public class SSEServlet implements Servlet {
 
-  private final String payload;
-  private boolean shouldSendEvent = false;
-
-  public SSEServlet(String payload) {
-    this.payload = payload;
-  }
+  private final List<AsyncContext> asyncContexts = new ArrayList<>();
+  private final List<String> pendingEvents = new ArrayList<>();
 
   @Override
-  public void service(ServletRequest request, ServletResponse response) throws IOException {
+  public synchronized void service(ServletRequest request, ServletResponse response) throws IOException {
+    var asyncContext = request.startAsync();
+    asyncContext.setTimeout(0);
+    asyncContexts.add(asyncContext);
+    setHeadersForResponse((HttpServletResponse) response);
+    sendPendingEventsIfNeeded(asyncContext);
+  }
+
+  private static void setHeadersForResponse(HttpServletResponse response) throws IOException {
+    response.setStatus(HttpServletResponse.SC_OK);
+    response.setCharacterEncoding(StandardCharsets.UTF_8.name());
     response.setContentType("text/event-stream");
-    response.setCharacterEncoding("UTF-8");
-    while (true) {
-      if (shouldSendEvent) {
-        var writer = response.getWriter();
-        writer.write(payload);
-        writer.flush();
-        writer.close();
-        shouldSendEvent = false;
-      }
-      try {
-        Thread.sleep(100);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
+    // By adding this header, and not closing the connection,
+    // we disable HTTP chunking, and we can use write()+flush()
+    // to send data in the text/event-stream protocol
+    response.setHeader("Connection", "close");
+    response.flushBuffer();
+  }
+
+  private void sendPendingEventsIfNeeded(AsyncContext asyncContext) {
+    if (!pendingEvents.isEmpty()) {
+      pendingEvents.forEach(event -> sendEventToClient(asyncContext, event));
+      pendingEvents.clear();
     }
   }
 
+  public synchronized void sendEventToAllClients(String eventPayload) {
+    if (asyncContexts.isEmpty()) {
+      pendingEvents.add(eventPayload);
+    } else {
+      asyncContexts.forEach(asyncContext -> sendEventToClient(asyncContext, eventPayload));
+    }
+  }
+
+  private static void sendEventToClient(AsyncContext asyncContext, String eventPayload) {
+    try {
+      var outputStream = asyncContext.getResponse().getOutputStream();
+      outputStream.write(eventPayload.getBytes(StandardCharsets.UTF_8));
+      outputStream.flush();
+    } catch (IOException e) {
+      throw new IllegalStateException("Cannot send event to client", e);
+    }
+
+  }
+
   @Override
-  public void init(ServletConfig config) throws ServletException {
+  public void init(ServletConfig config) {
     // no-op
   }
 
@@ -73,10 +101,5 @@ public class SSEServlet implements Servlet {
   @Override
   public void destroy() {
     // no-op
-  }
-
-
-  public void shouldSendEventOnce() {
-    this.shouldSendEvent = true;
   }
 }

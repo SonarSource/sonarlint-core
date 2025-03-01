@@ -25,6 +25,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
+import com.github.tomakehurst.wiremock.matching.AnythingPattern;
 import com.google.protobuf.Message;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -71,12 +72,15 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Settings;
 import org.sonarsource.sonarlint.core.serverconnection.AiCodeFixFeatureEnablement;
 import org.sonarsource.sonarlint.core.test.utils.plugins.Plugin;
+import org.sonarsource.sonarlint.core.test.utils.server.sse.SSEServer;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.jsonResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
@@ -143,6 +147,7 @@ public class ServerFixture {
     private Integer statusCode = 200;
     private Integer issueTransitionStatusCode = 200;
     private AiCodeFixFeatureBuilder aiCodeFixFeature = new AiCodeFixFeatureBuilder();
+    private boolean serverSentEventsEnabled;
 
     public ServerBuilder(@Nullable Consumer<Server> onStart, ServerKind serverKind, @Nullable String organizationKey, @Nullable String version) {
       this.onStart = onStart;
@@ -213,9 +218,14 @@ public class ServerFixture {
       return this;
     }
 
+    public ServerBuilder withServerSentEventsEnabled() {
+      this.serverSentEventsEnabled = true;
+      return this;
+    }
+
     public Server start() {
       var server = new Server(serverKind, serverStatus, organizationKey, version, projectByProjectKey, smartNotificationsSupported, pluginsByKey, qualityProfilesByKey,
-        tokensRegistered, statusCode, issueTransitionStatusCode, aiCodeFixFeature);
+        tokensRegistered, statusCode, issueTransitionStatusCode, aiCodeFixFeature, serverSentEventsEnabled);
       server.start();
       if (onStart != null) {
         onStart.accept(server);
@@ -652,11 +662,13 @@ public class ServerFixture {
     private final Integer statusCode;
     private final Integer issueTransitionStatusCode;
     private final ServerBuilder.AiCodeFixFeatureBuilder aiCodeFixFeature;
+    private final boolean serverSentEventsEnabled;
+    private SSEServer sseServer;
 
     public Server(ServerKind serverKind, ServerStatus serverStatus, @Nullable String organizationKey, @Nullable String version,
       Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey, boolean smartNotificationsSupported, Map<String, ServerBuilder.ServerPluginBuilder> pluginsByKey,
       Map<String, ServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey, List<String> tokensRegistered, Integer statusCode, Integer issueTransitionStatusCode,
-      ServerBuilder.AiCodeFixFeatureBuilder aiCodeFixFeature) {
+      ServerBuilder.AiCodeFixFeatureBuilder aiCodeFixFeature, boolean serverSentEventsEnabled) {
       this.serverKind = serverKind;
       this.serverStatus = serverStatus;
       this.organizationKey = organizationKey;
@@ -669,6 +681,7 @@ public class ServerFixture {
       this.statusCode = statusCode;
       this.issueTransitionStatusCode = issueTransitionStatusCode;
       this.aiCodeFixFeature = aiCodeFixFeature;
+      this.serverSentEventsEnabled = serverSentEventsEnabled;
       if (organizationKey != null) {
         this.organizationId = organizationKey;
         this.organizationUuidV4 = UUID.randomUUID();
@@ -680,6 +693,10 @@ public class ServerFixture {
 
     public void start() {
       mockServer.start();
+      if (serverSentEventsEnabled) {
+        sseServer = new SSEServer();
+        sseServer.start();
+      }
       registerWebApiResponses();
     }
 
@@ -701,6 +718,7 @@ public class ServerFixture {
         registerComponentApiResponses();
         registerFixSuggestionsApiResponses();
         registerOrganizationApiResponses();
+        registerPushApiResponses();
       }
     }
 
@@ -1328,8 +1346,31 @@ public class ServerFixture {
         .willReturn(jsonResponse("[{\"id\": \"" + organizationId + "\", \"uuidV4\": \"" + organizationUuidV4 + "\"}]", 200)));
     }
 
+    private void registerPushApiResponses() {
+      if (!serverSentEventsEnabled) {
+        return;
+      }
+      // wiremock does not support SSE, so we redirect to our custom SSE server
+      mockServer.stubFor(get(urlPathEqualTo("/api/push/sonarlint_events"))
+        .withQueryParam("projectKeys", equalTo(String.join(",", projectsByProjectKey.keySet())))
+        .withQueryParam("languages", new AnythingPattern())
+        .willReturn(aResponse()
+          .withStatus(302)
+          .withHeader("Location", sseServer.getUrl())));
+    }
+
+    public void pushEvent(String eventPayload) {
+      if (!serverSentEventsEnabled) {
+        throw new IllegalStateException("Please use withServerSentEventsEnabled() first");
+      }
+      sseServer.sendEventToAllClients(eventPayload);
+    }
+
     public void shutdown() {
       mockServer.stop();
+      if (sseServer != null) {
+        sseServer.stop();
+      }
     }
 
     public String baseUrl() {
