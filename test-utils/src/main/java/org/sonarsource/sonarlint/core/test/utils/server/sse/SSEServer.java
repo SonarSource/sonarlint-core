@@ -29,14 +29,14 @@ public class SSEServer {
   private Tomcat tomcat;
   private SSEServlet sseServlet;
 
-  public void startWithEvent(String payload) {
+  public void start() {
     try {
       var baseDir = new File("").getAbsoluteFile().getParentFile().getPath();
       tomcat = new Tomcat();
       tomcat.setBaseDir(baseDir);
       tomcat.setPort(DEFAULT_PORT);
       var context = tomcat.addContext("", baseDir);
-      sseServlet = new SSEServlet(payload);
+      sseServlet = new SSEServlet();
       Tomcat.addServlet(context, "sse", sseServlet).addMapping("/");
       // needed to start the endpoint
       tomcat.getConnector();
@@ -59,8 +59,8 @@ public class SSEServer {
     return "http://localhost:" + DEFAULT_PORT;
   }
 
-  public void shouldSendServerEventOnce() {
-    sseServlet.shouldSendEventOnce();
+  public void sendEventToAllClients(String eventPayload) {
+    sseServlet.sendEventToAllClients(eventPayload);
   }
 
 }
