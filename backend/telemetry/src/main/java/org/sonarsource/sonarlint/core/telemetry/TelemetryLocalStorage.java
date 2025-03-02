@@ -30,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
@@ -60,7 +61,7 @@ public class TelemetryLocalStorage {
   private final Map<String, TelemetryHelpAndFeedbackCounter> helpAndFeedbackLinkClickedCount;
   private final Map<String, TelemetryFixSuggestionReceivedCounter> fixSuggestionReceivedCounter;
   private final Map<String, List<TelemetryFixSuggestionResolvedStatus>> fixSuggestionResolved;
-  private int countIssuesWithPossibleAiFixFromIde;
+  private final Set<UUID> issuesUuidAiFixableSeen;
   private boolean isFocusOnNewCode;
   private int codeFocusChangedCount;
   private int manualAddedBindingsCount;
@@ -81,6 +82,7 @@ public class TelemetryLocalStorage {
     helpAndFeedbackLinkClickedCount = new LinkedHashMap<>();
     fixSuggestionReceivedCounter = new LinkedHashMap<>();
     fixSuggestionResolved = new LinkedHashMap<>();
+    issuesUuidAiFixableSeen = new HashSet<>();
     boundSonarQubeServerProjectKeys = new HashSet<>();
     boundSonarQubeCloudProjectKeys = new HashSet<>();
   }
@@ -149,7 +151,7 @@ public class TelemetryLocalStorage {
   }
 
   public int getCountIssuesWithPossibleAiFixFromIde() {
-    return countIssuesWithPossibleAiFixFromIde;
+    return issuesUuidAiFixableSeen.size();
   }
 
   public boolean isFocusOnNewCode() {
@@ -193,7 +195,7 @@ public class TelemetryLocalStorage {
     helpAndFeedbackLinkClickedCount.clear();
     fixSuggestionReceivedCounter.clear();
     fixSuggestionResolved.clear();
-    countIssuesWithPossibleAiFixFromIde = 0;
+    issuesUuidAiFixableSeen.clear();
     codeFocusChangedCount = 0;
     manualAddedBindingsCount = 0;
     importedAddedBindingsCount = 0;
@@ -326,9 +328,9 @@ public class TelemetryLocalStorage {
       () -> fixSuggestionSnippets.add(new TelemetryFixSuggestionResolvedStatus(status, snippetIndex)));
   }
 
-  public void increaseCountIssuesWithPossibleAiFixFromIde(int count) {
+  public void addIssuesWithPossibleAiFixFromIde(Set<UUID> issues) {
     markSonarLintAsUsedToday();
-    countIssuesWithPossibleAiFixFromIde += count;
+    issuesUuidAiFixableSeen.addAll(issues);
   }
 
   public int getShowIssueRequestsCount() {

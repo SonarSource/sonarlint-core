@@ -22,14 +22,13 @@ package org.sonarsource.sonarlint.core.telemetry;
 import com.google.common.util.concurrent.MoreExecutors;
 import jakarta.annotation.PreDestroy;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.AnalysisFinishedEvent;
 import org.sonarsource.sonarlint.core.analysis.IssuesRaisedEvent;
@@ -46,6 +45,8 @@ import org.sonarsource.sonarlint.core.event.ServerIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.GetStatusResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
@@ -65,7 +66,6 @@ public class TelemetryService {
   private final SonarLintRpcClient client;
   private final boolean isTelemetryFeatureEnabled;
   private final Map<String, ConnectionKind> connectionKindByConnectionId;
-  private final Set<UUID> issuesIdSeen;
 
   public TelemetryService(InitializeParams initializeParams, SonarLintRpcClient sonarlintClient,
     TelemetryServerAttributesProvider telemetryServerAttributesProvider, TelemetryManager telemetryManager) {
@@ -79,7 +79,6 @@ public class TelemetryService {
       this.connectionKindByConnectionId.put(connection.getConnectionId(), ConnectionKind.SONARQUBE));
     initializeParams.getSonarCloudConnections().forEach(connection ->
       this.connectionKindByConnectionId.put(connection.getConnectionId(), ConnectionKind.SONARCLOUD));
-    this.issuesIdSeen = new HashSet<>();
 
     initTelemetryAndScheduleUpload(initializeParams);
   }
@@ -94,14 +93,9 @@ public class TelemetryService {
     scheduledExecutor.scheduleWithFixedDelay(this::upload, initialDelay, TELEMETRY_UPLOAD_DELAY, MINUTES);
   }
 
-  private void clear() {
-    this.issuesIdSeen.clear();
-  }
-
   private void upload() {
     var telemetryLiveAttributes = getTelemetryLiveAttributes();
     if (Objects.nonNull(telemetryLiveAttributes)) {
-      clear();
       telemetryManager.uploadAndClearTelemetry(telemetryLiveAttributes);
     }
   }
@@ -317,9 +311,11 @@ public class TelemetryService {
 
   @EventListener
   public void onIssuesRaised(IssuesRaisedEvent event) {
-    var issuesToReport = event.issues().stream().filter(i -> !issuesIdSeen.contains(i.getId()) && i.isAiCodeFixable()).toList();
-    issuesToReport.forEach(i -> issuesIdSeen.add(i.getId()));
-    updateTelemetry(localStorage -> localStorage.increaseCountIssuesWithPossibleAiFixFromIde(issuesToReport.size()));
+    var issuesToReport = event.issues().stream()
+      .filter(RaisedIssueDto::isAiCodeFixable)
+      .map(RaisedFindingDto::getId)
+      .collect(Collectors.toSet());
+    updateTelemetry(localStorage -> localStorage.addIssuesWithPossibleAiFixFromIde(issuesToReport));
   }
 
   @PreDestroy
