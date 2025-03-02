@@ -167,14 +167,13 @@ public class ProjectStorageFixture {
       Map<String, Sonarlint.RuleSet> protoRuleSets = new HashMap<>();
       ruleSets.forEach(ruleSet -> {
         var ruleSetBuilder = Sonarlint.RuleSet.newBuilder();
-        ruleSet.activeRules.forEach(activeRule -> {
+        ruleSet.activeRules.forEach(activeRule ->
           ruleSetBuilder.addRule(Sonarlint.RuleSet.ActiveRule.newBuilder()
             .setRuleKey(activeRule.ruleKey)
             .setSeverity(activeRule.severity)
             .setTemplateKey(trimToEmpty(activeRule.templateKey))
             .putAllParams(activeRule.params)
-            .build());
-        });
+            .build()));
         protoRuleSets.put(ruleSet.languageKey, ruleSetBuilder.build());
       });
       var analyzerConfiguration = Sonarlint.AnalyzerConfiguration.newBuilder()

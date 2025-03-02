@@ -316,7 +316,7 @@ public class TelemetryService {
   }
 
   @EventListener
-  public void onAnalysisReportedIssues(IssuesRaisedEvent event) {
+  public void onIssuesRaised(IssuesRaisedEvent event) {
     var issuesToReport = event.issues().stream().filter(i -> !issuesIdSeen.contains(i.getId()) && i.isAiCodeFixable()).toList();
     issuesToReport.forEach(i -> issuesIdSeen.add(i.getId()));
     updateTelemetry(localStorage -> localStorage.increaseCountIssuesWithPossibleAiFixFromIde(issuesToReport.size()));
