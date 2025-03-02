@@ -49,7 +49,7 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
-import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionCredentialsChangedEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
@@ -215,12 +215,12 @@ public class SynchronizationService {
   }
 
   @EventListener
-  public void onConfigurationsScopeAdded(ConfigurationScopesAddedEvent event) {
+  public void onConfigurationsScopeAdded(ConfigurationScopesAddedWithBindingEvent event) {
     if (!fullSynchronizationEnabled) {
       return;
     }
-    LOG.debug("Synchronizing new configuration scopes: {}", event.getAddedConfigurationScopeIds());
-    var scopesToSynchronize = event.getAddedConfigurationScopeIds()
+    LOG.debug("Synchronizing new configuration scopes: {}", event.getConfigScopeIds());
+    var scopesToSynchronize = event.getConfigScopeIds()
       .stream().map(configurationRepository::getBoundScope)
       .filter(Objects::nonNull)
       .collect(groupingBy(BoundScope::getConnectionId));

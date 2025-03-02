@@ -20,16 +20,15 @@
 package org.sonarsource.sonarlint.core.event;
 
 import java.util.Set;
+import java.util.stream.Collectors;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationScopeWithBinding;
 
-public class ConfigurationScopesAddedEvent {
+public record ConfigurationScopesAddedWithBindingEvent(Set<ConfigurationScopeWithBinding> addedConfigurationScopes) {
 
-  private final Set<String> addedConfigurationScopeIds;
-
-  public ConfigurationScopesAddedEvent(Set<String> addedConfigurationScopeIds) {
-    this.addedConfigurationScopeIds = addedConfigurationScopeIds;
+  public Set<String> getConfigScopeIds() {
+    return addedConfigurationScopes.stream()
+      .map(configScope -> configScope.scope().getId())
+      .collect(Collectors.toSet());
   }
 
-  public Set<String> getAddedConfigurationScopeIds() {
-    return addedConfigurationScopeIds;
-  }
 }

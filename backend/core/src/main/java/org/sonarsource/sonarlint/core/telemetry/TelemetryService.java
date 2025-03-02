@@ -38,6 +38,7 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.event.FixSuggestionReceivedEvent;
 import org.sonarsource.sonarlint.core.event.LocalOnlyIssueStatusChangedEvent;
@@ -45,7 +46,6 @@ import org.sonarsource.sonarlint.core.event.ServerIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.GetStatusResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionReceivedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
@@ -75,6 +75,10 @@ public class TelemetryService {
     this.telemetryManager = telemetryManager;
     this.scheduledExecutor = FailSafeExecutors.newSingleThreadScheduledExecutor("SonarLint Telemetry");
     this.connectionKindByConnectionId = new HashMap<>();
+    initializeParams.getSonarQubeConnections().forEach(connection ->
+      this.connectionKindByConnectionId.put(connection.getConnectionId(), ConnectionKind.SONARQUBE));
+    initializeParams.getSonarCloudConnections().forEach(connection ->
+      this.connectionKindByConnectionId.put(connection.getConnectionId(), ConnectionKind.SONARCLOUD));
     this.issuesIdSeen = new HashSet<>();
 
     initTelemetryAndScheduleUpload(initializeParams);
@@ -287,9 +291,21 @@ public class TelemetryService {
 
   @EventListener
   public void onBindingConfigChanged(BindingConfigChangedEvent event) {
-    var connectionId = event.newConfig().getConnectionId();
+    addBoundProjectKey(event.newConfig().getConnectionId(), event.newConfig().getSonarProjectKey());
+  }
+
+  @EventListener
+  public void onConfigurationScopeAdded(ConfigurationScopesAddedWithBindingEvent event) {
+    event.addedConfigurationScopes().forEach(addedScope -> {
+      var binding = addedScope.bindingConfiguration();
+      if (binding != null) {
+        addBoundProjectKey(binding.getConnectionId(), binding.getSonarProjectKey());
+      }
+    });
+  }
+
+  private void addBoundProjectKey(@Nullable String connectionId, @Nullable String projectKey) {
     if (connectionId != null) {
-      var projectKey = event.newConfig().getSonarProjectKey();
       var connectionKind = connectionKindByConnectionId.get(connectionId);
       if (projectKey != null && connectionKind == ConnectionKind.SONARCLOUD) {
         addBoundSonarQubeCloudProjectKey(projectKey);
@@ -301,11 +317,9 @@ public class TelemetryService {
 
   @EventListener
   public void onAnalysisReportedIssues(IssuesRaisedEvent event) {
-    var count = event.issues().stream()
-      .filter(i -> !issuesIdSeen.contains(i.getId()) && i.isAiCodeFixable())
-      .peek(i -> issuesIdSeen.add(i.getId()))
-      .count();
-    updateTelemetry(localStorage -> localStorage.increaseCountIssuesWithPossibleAiFixFromIde((int) count));
+    var issuesToReport = event.issues().stream().filter(i -> !issuesIdSeen.contains(i.getId()) && i.isAiCodeFixable()).toList();
+    issuesToReport.forEach(i -> issuesIdSeen.add(i.getId()));
+    updateTelemetry(localStorage -> localStorage.increaseCountIssuesWithPossibleAiFixFromIde(issuesToReport.size()));
   }
 
   @PreDestroy

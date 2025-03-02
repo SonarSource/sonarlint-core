@@ -69,7 +69,7 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
-import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
 import org.sonarsource.sonarlint.core.file.WindowsShortcutUtils;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
@@ -490,9 +490,9 @@ public class AnalysisService {
   }
 
   @EventListener
-  public void onConfigurationScopeAdded(ConfigurationScopesAddedEvent event) {
-    event.getAddedConfigurationScopeIds().forEach(engineCache::registerModuleIfLeafConfigScope);
-    checkIfReadyForAnalysis(event.getAddedConfigurationScopeIds());
+  public void onConfigurationScopeAdded(ConfigurationScopesAddedWithBindingEvent event) {
+    event.getConfigScopeIds().forEach(engineCache::registerModuleIfLeafConfigScope);
+    checkIfReadyForAnalysis(event.getConfigScopeIds());
   }
 
   @EventListener

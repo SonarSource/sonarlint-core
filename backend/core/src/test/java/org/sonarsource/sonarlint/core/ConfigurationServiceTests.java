@@ -29,7 +29,7 @@ import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
-import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -82,11 +82,11 @@ class ConfigurationServiceTests {
     assertThat(repository.getConfigScopeIds()).containsOnly("id2");
     assertThat(repository.getBindingConfiguration("id2")).usingRecursiveComparison().isEqualTo(BINDING_DTO_2);
 
-    ArgumentCaptor<ConfigurationScopesAddedEvent> captor = ArgumentCaptor.forClass(ConfigurationScopesAddedEvent.class);
+    ArgumentCaptor<ConfigurationScopesAddedWithBindingEvent> captor = ArgumentCaptor.forClass(ConfigurationScopesAddedWithBindingEvent.class);
     verify(eventPublisher).publishEvent(captor.capture());
     var event = captor.getValue();
 
-    assertThat(event.getAddedConfigurationScopeIds()).containsOnly("id2");
+    assertThat(event.getConfigScopeIds()).containsOnly("id2");
   }
 
   @Test
@@ -97,11 +97,11 @@ class ConfigurationServiceTests {
     assertThat(repository.getBindingConfiguration("id1")).usingRecursiveComparison().isEqualTo(BINDING_DTO_1);
     assertThat(repository.getBindingConfiguration("id2")).usingRecursiveComparison().isEqualTo(BINDING_DTO_2);
 
-    ArgumentCaptor<ConfigurationScopesAddedEvent> captor = ArgumentCaptor.forClass(ConfigurationScopesAddedEvent.class);
+    ArgumentCaptor<ConfigurationScopesAddedWithBindingEvent> captor = ArgumentCaptor.forClass(ConfigurationScopesAddedWithBindingEvent.class);
     verify(eventPublisher).publishEvent(captor.capture());
     var event = captor.getValue();
 
-    assertThat(event.getAddedConfigurationScopeIds()).containsOnly("id1", "id2");
+    assertThat(event.getConfigScopeIds()).containsOnly("id1", "id2");
   }
 
   @Test

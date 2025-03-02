@@ -37,7 +37,7 @@ import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
-import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
@@ -98,11 +98,11 @@ public class WebSocketService {
   }
 
   @EventListener
-  public void handleEvent(ConfigurationScopesAddedEvent configurationScopesAddedEvent) {
+  public void handleEvent(ConfigurationScopesAddedWithBindingEvent configurationScopesAddedEvent) {
     if (!shouldEnableWebSockets) {
       return;
     }
-    executorService.execute(() -> considerAllBoundConfigurationScopes(configurationScopesAddedEvent.getAddedConfigurationScopeIds()));
+    executorService.execute(() -> considerAllBoundConfigurationScopes(configurationScopesAddedEvent.getConfigScopeIds()));
   }
 
   @EventListener

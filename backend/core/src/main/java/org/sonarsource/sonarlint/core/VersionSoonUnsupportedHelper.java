@@ -33,7 +33,7 @@ import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWa
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
-import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -67,8 +67,8 @@ public class VersionSoonUnsupportedHelper {
   }
 
   @EventListener
-  public void configurationScopesAdded(ConfigurationScopesAddedEvent event) {
-    var configScopeIds = event.getAddedConfigurationScopeIds();
+  public void configurationScopesAdded(ConfigurationScopesAddedWithBindingEvent event) {
+    var configScopeIds = event.getConfigScopeIds();
     checkIfSoonUnsupportedOncePerConnection(configScopeIds);
   }
 
