@@ -70,20 +70,6 @@ public class PreviouslyRaisedFindingsRepository {
     cache.compute(scopeId, (file, issues) -> blankCache);
   }
 
-  public Optional<RaisedIssueDto> getRaisedIssueWithScopeAndId(String scopeId, UUID issueId) {
-    return getRaisedIssuesForScope(scopeId).values().stream()
-      .flatMap(List::stream)
-      .filter(issue -> issue.getId().equals(issueId))
-      .findFirst();
-  }
-
-  public Optional<RaisedHotspotDto> getRaisedHotspotWithScopeAndId(String scopeId, UUID hotspotId) {
-    return getRaisedHotspotsForScope(scopeId).values().stream()
-      .flatMap(List::stream)
-      .filter(hotspot -> hotspot.getId().equals(hotspotId))
-      .findFirst();
-  }
-
   public Optional<RaisedIssue> findRaisedIssueById(UUID issueId) {
     return previouslyRaisedIssuesByScopeId.values().stream()
       .flatMap(issuesByUri -> issuesByUri.entrySet().stream()

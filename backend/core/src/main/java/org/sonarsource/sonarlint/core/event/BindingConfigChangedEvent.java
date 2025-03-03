@@ -21,26 +21,5 @@ package org.sonarsource.sonarlint.core.event;
 
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 
-public class BindingConfigChangedEvent {
-  private final String configScopeId;
-  private final BindingConfiguration previousConfig;
-  private final BindingConfiguration newConfig;
-
-  public BindingConfigChangedEvent(String configScopeId, BindingConfiguration previousConfig, BindingConfiguration newConfig) {
-    this.configScopeId = configScopeId;
-    this.previousConfig = previousConfig;
-    this.newConfig = newConfig;
-  }
-
-  public String getConfigScopeId() {
-    return configScopeId;
-  }
-
-  public BindingConfiguration getPreviousConfig() {
-    return previousConfig;
-  }
-
-  public BindingConfiguration getNewConfig() {
-    return newConfig;
-  }
+public record BindingConfigChangedEvent(String configScopeId, BindingConfiguration previousConfig, BindingConfiguration newConfig) {
 }

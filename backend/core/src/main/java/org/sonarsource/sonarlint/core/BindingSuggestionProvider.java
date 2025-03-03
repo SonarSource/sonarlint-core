@@ -78,8 +78,8 @@ public class BindingSuggestionProvider {
   @EventListener
   public void bindingConfigChanged(BindingConfigChangedEvent event) {
     // Check if binding suggestion was switched on
-    if (!event.getNewConfig().isBindingSuggestionDisabled() && event.getPreviousConfig().isBindingSuggestionDisabled()) {
-      suggestBindingForGivenScopesAndAllConnections(Set.of(event.getConfigScopeId()));
+    if (!event.newConfig().isBindingSuggestionDisabled() && event.previousConfig().isBindingSuggestionDisabled()) {
+      suggestBindingForGivenScopesAndAllConnections(Set.of(event.configScopeId()));
     }
   }
 
@@ -98,7 +98,7 @@ public class BindingSuggestionProvider {
   @EventListener
   public void connectionAdded(ConnectionConfigurationAddedEvent event) {
     // Double check if added connection has not been removed in the meantime
-    var addedConnectionId = event.getAddedConnectionId();
+    var addedConnectionId = event.addedConnectionId();
     var allConfigScopeIds = configRepository.getConfigScopeIds();
     if (connectionRepository.getConnectionById(addedConnectionId) != null && !allConfigScopeIds.isEmpty()) {
       LOG.debug("Binding suggestions computation queued for connection '{}'...", addedConnectionId);

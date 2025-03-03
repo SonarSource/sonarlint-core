@@ -32,7 +32,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
-import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.DidChangeMatchedSonarProjectBranchParams;
@@ -86,8 +86,8 @@ public class SonarProjectBranchTrackingService {
   }
 
   @EventListener
-  public void onConfigurationScopesAdded(ConfigurationScopesAddedEvent event) {
-    var configScopeIds = event.getAddedConfigurationScopeIds();
+  public void onConfigurationScopesAdded(ConfigurationScopesAddedWithBindingEvent event) {
+    var configScopeIds = event.getConfigScopeIds();
     configScopeIds.forEach(configScopeId -> {
       var effectiveBinding = configurationRepository.getEffectiveBinding(configScopeId);
       if (effectiveBinding.isPresent()) {
@@ -102,8 +102,8 @@ public class SonarProjectBranchTrackingService {
 
   @EventListener
   public void onBindingChanged(BindingConfigChangedEvent bindingChanged) {
-    var configScopeId = bindingChanged.getConfigScopeId();
-    if (!bindingChanged.getNewConfig().isBound()) {
+    var configScopeId = bindingChanged.configScopeId();
+    if (!bindingChanged.newConfig().isBound()) {
       LOG.debug("Configuration scope '{}' unbound, clearing matched branch", configScopeId);
       cachedMatchingBranchByConfigScope.clear(configScopeId);
     } else {

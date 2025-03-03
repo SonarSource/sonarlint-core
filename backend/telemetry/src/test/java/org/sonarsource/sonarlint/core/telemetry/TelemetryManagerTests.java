@@ -25,6 +25,8 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -215,7 +217,8 @@ class TelemetryManagerTests {
       data.incrementOpenHotspotInBrowserCount();
       data.incrementShowHotspotRequestCount();
       data.incrementShowIssueRequestCount();
-      data.fixSuggestionReceived("suggestionId", AiSuggestionSource.SONARCLOUD, 2);
+      data.addIssuesWithPossibleAiFixFromIde(Set.of(UUID.randomUUID(), UUID.randomUUID()));
+      data.fixSuggestionReceived("suggestionId", AiSuggestionSource.SONARCLOUD, 2, true);
       data.fixSuggestionResolved("suggestionId", FixSuggestionStatus.ACCEPTED, 0);
       data.incrementTaintVulnerabilitiesInvestigatedLocallyCount();
       data.incrementTaintVulnerabilitiesInvestigatedRemotelyCount();
@@ -223,6 +226,8 @@ class TelemetryManagerTests {
       data.setNumUseDays(5);
       data.notifications().put(FOO_EVENT, new TelemetryNotificationsCounter(DEFAULT_NOTIF_COUNT, DEFAULT_NOTIF_CLICKED));
       data.getHelpAndFeedbackLinkClickedCounter().put(SUGGEST_FEATURE, new TelemetryHelpAndFeedbackCounter(DEFAULT_HELP_AND_FEEDBACK_COUNT));
+      data.addBoundSonarQubeCloudProjectKey("project_key_sqc");
+      data.addBoundSonarQubeServerProjectKey("project_key_sqs");
     });
 
     telemetryManager.uploadAndClearTelemetry(telemetryPayload);
@@ -235,10 +240,13 @@ class TelemetryManagerTests {
     assertThat(reloaded.taintVulnerabilitiesInvestigatedRemotelyCount()).isZero();
     assertThat(reloaded.hotspotStatusChangedCount()).isZero();
     assertThat(reloaded.getShowIssueRequestsCount()).isZero();
+    assertThat(reloaded.getCountIssuesWithPossibleAiFixFromIde()).isZero();
     assertThat(reloaded.getFixSuggestionReceivedCounter()).isEmpty();
     assertThat(reloaded.getFixSuggestionResolved()).isEmpty();
     assertThat(reloaded.openHotspotInBrowserCount()).isZero();
     assertThat(reloaded.getHelpAndFeedbackLinkClickedCounter()).isEmpty();
+    assertThat(reloaded.getBoundSonarQubeCloudProjectKeys()).isEmpty();
+    assertThat(reloaded.getBoundSonarQubeServerProjectKeys()).isEmpty();
   }
 
   private void createAndSaveSampleData(TelemetryLocalStorageManager storage) {

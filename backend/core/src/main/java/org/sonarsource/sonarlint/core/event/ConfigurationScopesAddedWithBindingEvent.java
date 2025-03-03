@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Telemetry
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,9 +17,18 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.telemetry.payload;
+package org.sonarsource.sonarlint.core.event;
 
-import com.google.gson.annotations.SerializedName;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationScopeWithBinding;
 
-public record ShowIssuePayload(@SerializedName("requests_count") int requestsCount) {
+public record ConfigurationScopesAddedWithBindingEvent(Set<ConfigurationScopeWithBinding> addedConfigurationScopes) {
+
+  public Set<String> getConfigScopeIds() {
+    return addedConfigurationScopes.stream()
+      .map(configScope -> configScope.scope().getId())
+      .collect(Collectors.toSet());
+  }
+
 }

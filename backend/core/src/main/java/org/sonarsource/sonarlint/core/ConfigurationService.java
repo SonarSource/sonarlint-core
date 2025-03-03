@@ -21,17 +21,17 @@ package org.sonarsource.sonarlint.core;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
-import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationScopeWithBinding;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.springframework.context.ApplicationEventPublisher;
@@ -50,25 +50,21 @@ public class ConfigurationService {
   }
 
   public void didAddConfigurationScopes(List<ConfigurationScopeDto> addedScopes) {
-    Set<String> addedIds = new HashSet<>();
+    var addedIds = new HashSet<ConfigurationScopeWithBinding>();
     for (var addedDto : addedScopes) {
-      var previous = addOrUpdateRepository(addedDto);
+      var configScopeInReferential = adapt(addedDto);
+      var bindingDto = addedDto.getBinding();
+      var bindingConfigInReferential = adapt(bindingDto);
+      var previous = repository.addOrReplace(configScopeInReferential, bindingConfigInReferential);
       if (previous != null) {
         LOG.error("Duplicate configuration scope registered: {}", addedDto.getId());
       } else {
-        addedIds.add(addedDto.getId());
+        addedIds.add(new ConfigurationScopeWithBinding(configScopeInReferential, bindingConfigInReferential));
       }
     }
     if (!addedIds.isEmpty()) {
-      applicationEventPublisher.publishEvent(new ConfigurationScopesAddedEvent(addedIds));
+      applicationEventPublisher.publishEvent(new ConfigurationScopesAddedWithBindingEvent(addedIds));
     }
-  }
-
-  private ConfigurationScope addOrUpdateRepository(ConfigurationScopeDto dto) {
-    var configScopeInReferential = adapt(dto);
-    var bindingDto = dto.getBinding();
-    var bindingConfigInReferential = adapt(bindingDto);
-    return repository.addOrReplace(configScopeInReferential, bindingConfigInReferential);
   }
 
   private static BindingConfiguration adapt(@Nullable BindingConfigurationDto dto) {
@@ -87,7 +83,7 @@ public class ConfigurationService {
     if (removed == null) {
       LOG.debug("Attempt to remove configuration scope '{}' that was not registered", removedId);
     } else {
-      applicationEventPublisher.publishEvent(new ConfigurationScopeRemovedEvent(removed.getScope(), removed.getBindingConfiguration()));
+      applicationEventPublisher.publishEvent(new ConfigurationScopeRemovedEvent(removed.scope(), removed.bindingConfiguration()));
     }
   }
 
