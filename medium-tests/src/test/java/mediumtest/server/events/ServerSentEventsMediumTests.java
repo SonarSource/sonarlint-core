@@ -37,6 +37,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -551,6 +552,7 @@ class ServerSentEventsMediumTests {
   }
 
   @Nested
+  @ResourceLock("SSE_SERVER")
   class WhenReceivingIssueChangedEvent {
 
     private final SSEServer sseServer = new SSEServer();

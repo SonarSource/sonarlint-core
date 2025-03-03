@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.test.utils.server.sse;
 
 import jakarta.servlet.Servlet;
 import jakarta.servlet.ServletConfig;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import java.io.IOException;
@@ -56,7 +55,7 @@ public class SSEServlet implements Servlet {
   }
 
   @Override
-  public void init(ServletConfig config) throws ServletException {
+  public void init(ServletConfig config) {
     // no-op
   }
 

@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -64,6 +65,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static utils.AnalysisUtils.createFile;
 
+@ResourceLock("EMBEDDED_SERVER")
 class OpenFixSuggestionInIdeMediumTests {
 
   public static final String PROJECT_KEY = "projectKey";
