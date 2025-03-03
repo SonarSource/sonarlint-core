@@ -447,7 +447,7 @@ class TelemetryMediumTests {
   }
 
   @SonarLintTest
-  void it_should_increment_issue_count_when_ai_fixable(SonarLintTestHarness harness, @TempDir Path baseDir) {
+  void it_should_add_issue_uuid_when_ai_fixable(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml", """
     <?xml version="1.0" encoding="UTF-8"?>
     <project>
@@ -472,9 +472,9 @@ class TelemetryMediumTests {
       .withTelemetryEnabled()
       .start(fakeClient);
 
-    analyzeFileAndGetIssue(fileUri, fakeClient, backend, "configScope");
+    var issue = analyzeFileAndGetIssue(fileUri, fakeClient, backend, "configScope");
 
-    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"countIssuesWithPossibleAiFixFromIde\":1"));
+    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"issuesUuidAiFixableSeen\":[\"" + issue.getId() + "\"]"));
   }
 
   @SonarLintTest
