@@ -40,6 +40,8 @@ public class ServerSecurityHotspotFixture {
     private String assignee;
     private TextRangeWithHash textRangeWithHash = new TextRangeWithHash(1, 2, 3, 4, "rangeHash");
     private String ruleKey = "ruleKey";
+    private String filePath = Path.of("file/path").toString();
+    private String message = "message";
 
     public ServerSecurityHotspotBuilder(String key) {
       this.key = key;
@@ -75,8 +77,18 @@ public class ServerSecurityHotspotFixture {
       return this;
     }
 
+    public ServerSecurityHotspotBuilder withFilePath(String filePath) {
+      this.filePath = filePath;
+      return this;
+    }
+
+    public ServerSecurityHotspotBuilder withMessage(String message) {
+      this.message = message;
+      return this;
+    }
+
     public ServerHotspot build() {
-      return new ServerHotspot(key, ruleKey, "message", Path.of("file/path").toString(), introductionDate, null, textRangeWithHash, status, vulnerabilityProbability, assignee);
+      return new ServerHotspot(key, ruleKey, message, filePath, introductionDate, null, textRangeWithHash, status, vulnerabilityProbability, assignee);
     }
   }
 
