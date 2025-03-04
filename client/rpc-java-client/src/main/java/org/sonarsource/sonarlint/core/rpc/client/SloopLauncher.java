@@ -129,7 +129,7 @@ public class SloopLauncher {
     commands.add(jreJavaExePath.toAbsolutePath().normalize().toString());
     var sonarlintEnvJvmOpts = System.getenv("SONARLINT_JVM_OPTS");
     if (sonarlintEnvJvmOpts != null) {
-      commands.add(sonarlintEnvJvmOpts);
+      commands.addAll(Arrays.asList(sonarlintEnvJvmOpts.split(" ")));
     }
     if (clientJvmOpts != null) {
       commands.addAll(Arrays.asList(clientJvmOpts.split(" ")));
