@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
@@ -234,7 +235,7 @@ public class RequestHandlerBindingAssistant {
     var configScopeCandidates = bindingCandidatesFinder.findConfigScopesToBind(connectionId, projectKey, cancelMonitor);
     // For now, we decided to only support automatic binding if there is only one clear candidate
     if (configScopeCandidates.size() != 1) {
-      client.noBindingSuggestionFound(new NoBindingSuggestionFoundParams(projectKey, isSonarCloud));
+      client.noBindingSuggestionFound(new NoBindingSuggestionFoundParams(StringEscapeUtils.escapeHtml(projectKey), isSonarCloud));
       return new NewBinding(connectionId, null);
     }
     var bindableConfig = configScopeCandidates.iterator().next();
