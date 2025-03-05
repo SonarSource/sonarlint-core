@@ -52,3 +52,6 @@ scripts/patches/*license*.txt
 
 # Visual Studio
 .vs
+
+# Run configurations
+.run

@@ -20,6 +20,7 @@
 package mediumtest.http;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import java.net.URI;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -27,6 +28,7 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
@@ -58,7 +60,7 @@ class TimeoutMediumTests {
       .build();
     var backend = harness.newBackend()
       .withHttpResponseTimeout(Duration.ofSeconds(1))
-      .withSonarCloudUrl(sonarcloudMock.baseUrl())
+      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(sonarcloudMock.baseUrl()), null, null))
       .start(fakeClient);
     sonarcloudMock.stubFor(get("/api/organizations/search.protobuf?organizations=myOrg&ps=500&p=1")
       .willReturn(aResponse().withStatus(200)

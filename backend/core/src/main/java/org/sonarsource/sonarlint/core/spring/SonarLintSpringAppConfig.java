@@ -88,6 +88,7 @@ import org.sonarsource.sonarlint.core.repository.reporting.PreviouslyRaisedFindi
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SslConfigurationDto;
 import org.sonarsource.sonarlint.core.rules.RulesExtractionHelper;
 import org.sonarsource.sonarlint.core.rules.RulesService;
@@ -209,7 +210,7 @@ public class SonarLintSpringAppConfig {
   SonarCloudActiveEnvironment provideSonarCloudActiveEnvironment(InitializeParams params) {
     var alternativeSonarCloudEnv = params.getAlternativeSonarCloudEnvironment();
     return alternativeSonarCloudEnv == null ? SonarCloudActiveEnvironment.prod()
-      : new SonarCloudActiveEnvironment(alternativeSonarCloudEnv.getUri(), alternativeSonarCloudEnv.getApiUri(), alternativeSonarCloudEnv.getWebSocketsEndpointUri());
+      : new SonarCloudActiveEnvironment(alternativeSonarCloudEnv.getEuRegion(), alternativeSonarCloudEnv.getUsRegion());
   }
 
   @Bean

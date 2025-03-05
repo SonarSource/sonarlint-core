@@ -46,6 +46,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpd
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
@@ -758,7 +759,7 @@ class IssueTrackingMediumTests {
     var backend = harness.newBackend()
       .withSonarCloudConnection(connectionId, orgKey, true, storage -> {})
       .withFullSynchronization()
-      .withSonarCloudUrl(server.baseUrl())
+      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(server.baseUrl()), null, null))
       .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .start(client);
