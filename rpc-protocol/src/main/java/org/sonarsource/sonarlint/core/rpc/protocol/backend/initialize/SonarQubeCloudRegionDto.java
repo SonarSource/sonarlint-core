@@ -19,22 +19,35 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
 
+import java.net.URI;
 
-/** This contains the alternative environment information for SonarQube Cloud with both the EU and US region */
-public class SonarCloudAlternativeEnvironmentDto {
-  private final SonarQubeCloudRegionDto euRegion;
-  private final SonarQubeCloudRegionDto usRegion;
-  
-  public SonarCloudAlternativeEnvironmentDto(SonarQubeCloudRegionDto euRegion, SonarQubeCloudRegionDto usRegion) {
-    this.euRegion = euRegion;
-    this.usRegion = usRegion;
+/** This is used to configure the required URIs for a SonarQube Cloud Region */
+public class SonarQubeCloudRegionDto {
+  private final URI uri;
+  private final URI apiUri;
+  private final URI webSocketsEndpointUri;
+
+  /**
+   *  All of the URIs can be null!
+   *  
+   *  @param uri the base URI, e.g. https://sonarcloud.io
+   *  @param apiUri the base URI of new endpoints, e.g. https://api.sonarcloud.io. Must be specified because for some env it cannot be deduced from the base URI (e.g. Dev)
+   */
+  public SonarQubeCloudRegionDto(URI uri, URI apiUri, URI webSocketsEndpointUri) {
+    this.uri = uri;
+    this.apiUri = apiUri;
+    this.webSocketsEndpointUri = webSocketsEndpointUri;
   }
 
-  public SonarQubeCloudRegionDto getEuRegion() {
-    return euRegion;
+  public URI getUri() {
+    return uri;
   }
 
-  public SonarQubeCloudRegionDto getUsRegion() {
-    return usRegion;
+  public URI getApiUri() {
+    return apiUri;
+  }
+
+  public URI getWebSocketsEndpointUri() {
+    return webSocketsEndpointUri;
   }
 }

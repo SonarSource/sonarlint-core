@@ -19,7 +19,9 @@
  */
 package mediumtest.rules;
 
+import java.net.URI;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetRuleDetailsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.RuleType;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
@@ -59,7 +61,7 @@ class RuleDetailsMediumTests {
         project -> project.withBranch("branchName"))
       .start();
     var backend = harness.newBackend()
-      .withSonarCloudUrl(server.baseUrl())
+      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(server.baseUrl()), null, null))
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.TEXT)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
       .withSonarCloudConnection("connectionId",
@@ -80,7 +82,7 @@ class RuleDetailsMediumTests {
         project -> project.withBranch("branchName"))
       .start();
     var backend = harness.newBackend()
-      .withSonarCloudUrl(server.baseUrl())
+      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(server.baseUrl()), null, null))
       .withStandaloneEmbeddedPlugin(TestPlugin.PYTHON)
       .withEnabledLanguageInStandaloneMode(Language.IPYTHON)
       .withSonarCloudConnection("connectionId",

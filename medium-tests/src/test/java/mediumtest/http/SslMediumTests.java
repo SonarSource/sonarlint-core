@@ -20,6 +20,7 @@
 package mediumtest.http;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
@@ -42,6 +43,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.http.X509CertificateDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
@@ -109,7 +111,7 @@ class SslMediumTests {
     void it_should_not_trust_server_self_signed_certificate_by_default(SonarLintTestHarness harness) {
       var fakeClient = harness.newFakeClient().build();
       var backend = harness.newBackend()
-        .withSonarCloudUrl(sonarcloudMock.baseUrl())
+        .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(sonarcloudMock.baseUrl()), null, null))
         .start(fakeClient);
 
       var future = backend.getConnectionService().getOrganization(new GetOrganizationParams(Either.forLeft(new TokenDto("token")), "myOrg", SonarCloudRegion.EU));
@@ -123,7 +125,7 @@ class SslMediumTests {
       var fakeClient = harness.newFakeClient().build();
 
       var backend = harness.newBackend()
-        .withSonarCloudUrl(sonarcloudMock.baseUrl())
+        .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(sonarcloudMock.baseUrl()), null, null))
         .start(fakeClient);
 
       when(fakeClient.checkServerTrusted(any(), any()))
@@ -195,7 +197,7 @@ class SslMediumTests {
     void it_should_fail_if_client_certificate_not_provided(SonarLintTestHarness harness) {
       var fakeClient = harness.newFakeClient().build();
       var backend = harness.newBackend()
-        .withSonarCloudUrl(sonarcloudMock.baseUrl())
+        .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(sonarcloudMock.baseUrl()), null, null))
         .start(fakeClient);
 
       when(fakeClient.checkServerTrusted(any(), any()))
@@ -214,7 +216,7 @@ class SslMediumTests {
       var fakeClient = harness.newFakeClient().build();
       var backend = harness.newBackend()
         .withKeyStore(toPath(Objects.requireNonNull(SslMediumTests.class.getResource("/ssl/client.p12"))), "pwdClientCertP12", null)
-        .withSonarCloudUrl(sonarcloudMock.baseUrl())
+        .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(sonarcloudMock.baseUrl()), null, null))
         .start(fakeClient);
 
       when(fakeClient.checkServerTrusted(any(), any()))
