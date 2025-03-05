@@ -19,6 +19,20 @@
  */
 package mediumtest.issues;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static mediumtest.fixtures.LocalOnlyIssueFixtures.aLocalOnlyIssueResolved;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.waitAtMost;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.ServerStatus.DOWN;
+import static org.sonarsource.sonarlint.core.test.utils.storage.ServerIssueFixtures.aServerIssue;
+import static utils.AnalysisUtils.createFile;
+import static utils.AnalysisUtils.waitForRaisedIssues;
+
 import com.github.tomakehurst.wiremock.client.WireMock;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -47,20 +61,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
-
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static mediumtest.fixtures.LocalOnlyIssueFixtures.aLocalOnlyIssueResolved;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.waitAtMost;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.ServerStatus.DOWN;
-import static org.sonarsource.sonarlint.core.test.utils.storage.ServerIssueFixtures.aServerIssue;
-import static utils.AnalysisUtils.createFile;
-import static utils.AnalysisUtils.waitForRaisedIssues;
 
 class IssuesStatusChangeMediumTests {
 
@@ -96,7 +96,7 @@ class IssuesStatusChangeMediumTests {
     var server = harness.newFakeSonarCloudServer("myOrg")
       .withProject("projectKey",
         project -> project.withBranch("main"))
-      .withIssueTransitionStatusCode(404)
+      .withResponseCodes(responseCodes -> responseCodes.withIssueTransitionStatusCode(404))
       .start();
     var backend = harness.newBackend()
       .withSonarCloudUrl(server.baseUrl())
@@ -108,7 +108,8 @@ class IssuesStatusChangeMediumTests {
     var issueService = backend.getIssueService();
     var params = new ChangeIssueStatusParams(CONFIGURATION_SCOPE_ID, "myIssueKey", ResolutionStatus.WONT_FIX, false);
 
-    assertThrows(ExecutionException.class, () -> issueService.changeStatus(params).get());
+    var changeStatusFuture = issueService.changeStatus(params);
+    assertThrows(ExecutionException.class, changeStatusFuture::get);
   }
 
   @SonarLintTest
@@ -128,7 +129,50 @@ class IssuesStatusChangeMediumTests {
     var issueService = backend.getIssueService();
     var params = new ChangeIssueStatusParams(CONFIGURATION_SCOPE_ID, "myIssueKey", ResolutionStatus.WONT_FIX, false);
 
-    assertDoesNotThrow(() -> issueService.changeStatus(params).get());
+    var changeStatusFuture = issueService.changeStatus(params);
+    assertDoesNotThrow(() -> changeStatusFuture.get());
+  }
+
+  @SonarLintTest
+  void it_should_throw_on_add_issue_comment_on_sonarcloud_if_issue_dont_exist_on_server_and_is_not_synchronized(SonarLintTestHarness harness) {
+    var client = harness.newFakeClient().build();
+    var server = harness.newFakeSonarCloudServer("myOrg")
+      .withProject("projectKey",
+        project -> project.withBranch("main"))
+      .withResponseCodes(responseCodes -> responseCodes.withAddCommentStatusCode(404))
+      .start();
+    var backend = harness.newBackend()
+      .withSonarCloudUrl(server.baseUrl())
+      .withSonarCloudConnection(CONNECTION_ID, "myOrg", true, storageBuilder -> storageBuilder
+        .withProject("projectKey", projectStorageBuilder -> projectStorageBuilder.withMainBranch("main")))
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
+      .start(client);
+
+    var issueService = backend.getIssueService();
+    var params = new AddIssueCommentParams(CONFIGURATION_SCOPE_ID, "myIssueKey", "comment");
+    var addCommentFuture = issueService.addComment(params);
+    assertThrows(ExecutionException.class, addCommentFuture::get);
+  }
+
+  @SonarLintTest
+  void it_should_add_issue_comment_on_sonarcloud_if_issue_exist_on_server_but_is_not_synchronized(SonarLintTestHarness harness) {
+    var client = harness.newFakeClient().build();
+    var server = harness.newFakeSonarCloudServer("myOrg")
+      .withProject("projectKey",
+        project -> project.withBranch("main"))
+      .start();
+    var backend = harness.newBackend()
+      .withSonarCloudUrl(server.baseUrl())
+      .withSonarCloudConnection(CONNECTION_ID, "myOrg", true, storageBuilder -> storageBuilder
+        .withProject("projectKey", projectStorageBuilder -> projectStorageBuilder.withMainBranch("main")))
+      .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
+      .start(client);
+
+    var issueService = backend.getIssueService();
+    var params = new AddIssueCommentParams(CONFIGURATION_SCOPE_ID, "myIssueKey", "comment");
+
+    var addCommentFuture = issueService.addComment(params);
+    assertDoesNotThrow(() -> addCommentFuture.get());
   }
 
   @SonarLintTest
@@ -424,7 +468,9 @@ class IssuesStatusChangeMediumTests {
 
   @SonarLintTest
   void it_should_throw_if_issue_is_unknown_when_adding_a_comment(SonarLintTestHarness harness) {
-    var server = harness.newFakeSonarQubeServer().start();
+    var server = harness.newFakeSonarQubeServer()
+      .withResponseCodes(responseCodes -> responseCodes.withAddCommentStatusCode(404))
+      .start();
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")

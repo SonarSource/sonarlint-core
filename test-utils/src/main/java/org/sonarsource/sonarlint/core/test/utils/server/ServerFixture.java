@@ -19,6 +19,23 @@
  */
 package org.sonarsource.sonarlint.core.test.utils.server;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.jsonResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
+import static org.sonarsource.sonarlint.core.serverapi.rules.RulesApi.TAINT_REPOS_BY_LANGUAGE;
+import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBody;
+import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBodyDelimited;
+
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -74,23 +91,6 @@ import org.sonarsource.sonarlint.core.serverconnection.AiCodeFixFeatureEnablemen
 import org.sonarsource.sonarlint.core.test.utils.plugins.Plugin;
 import org.sonarsource.sonarlint.core.test.utils.server.sse.SSEServer;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.jsonResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.post;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.mapping;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
-import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
-import static org.sonarsource.sonarlint.core.serverapi.rules.RulesApi.TAINT_REPOS_BY_LANGUAGE;
-import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBody;
-import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBodyDelimited;
-
 public class ServerFixture {
   public static ServerBuilder newSonarQubeServer() {
     return newSonarQubeServer((Consumer<Server>) null);
@@ -143,8 +143,7 @@ public class ServerFixture {
     private final Map<String, ServerPluginBuilder> pluginsByKey = new HashMap<>();
     private ServerStatus serverStatus = ServerStatus.UP;
     private final List<String> tokensRegistered = new ArrayList<>();
-    private Integer statusCode = 200;
-    private Integer issueTransitionStatusCode = 200;
+    private ResponseCodesBuilder responseCodes = new ResponseCodesBuilder();
     private AiCodeFixFeatureBuilder aiCodeFixFeature = new AiCodeFixFeatureBuilder();
     private boolean serverSentEventsEnabled;
 
@@ -196,16 +195,6 @@ public class ServerFixture {
       return this;
     }
 
-    public ServerBuilder withResponseCode(Integer status) {
-      this.statusCode = status;
-      return this;
-    }
-
-    public ServerBuilder withIssueTransitionStatusCode(Integer issueTransitionStatusCode) {
-      this.issueTransitionStatusCode = issueTransitionStatusCode;
-      return this;
-    }
-
     public ServerBuilder withAiCodeFixFeature(UnaryOperator<AiCodeFixFeatureBuilder> aiCodeFixBuilder) {
       this.aiCodeFixFeature = new AiCodeFixFeatureBuilder();
       aiCodeFixBuilder.apply(aiCodeFixFeature);
@@ -217,9 +206,15 @@ public class ServerFixture {
       return this;
     }
 
+    public ServerBuilder withResponseCodes(UnaryOperator<ResponseCodesBuilder> responseCodes) {
+      this.responseCodes = new ResponseCodesBuilder();
+      responseCodes.apply(this.responseCodes);
+      return this;
+    }
+
     public Server start() {
       var server = new Server(serverKind, serverStatus, organizationKey, version, projectByProjectKey, pluginsByKey, qualityProfilesByKey,
-        tokensRegistered, statusCode, issueTransitionStatusCode, aiCodeFixFeature, serverSentEventsEnabled);
+        tokensRegistered, responseCodes.build(), aiCodeFixFeature, serverSentEventsEnabled);
       server.start();
       if (onStart != null) {
         onStart.accept(server);
@@ -286,7 +281,35 @@ public class ServerFixture {
       }
     }
 
+    public static class ResponseCodesBuilder {
+      private int statusCode = 200;
+      private int issueTransitionStatusCode = 200;
+      private int addCommentStatusCode = 200;
+
+      public ResponseCodesBuilder withStatusCode(int statusCode) {
+        this.statusCode = statusCode;
+        return this;
+      }
+
+      public ResponseCodesBuilder withIssueTransitionStatusCode(int issueTransitionStatusCode) {
+        this.issueTransitionStatusCode = issueTransitionStatusCode;
+        return this;
+      }
+
+      public ResponseCodesBuilder withAddCommentStatusCode(int addCommentStatusCode) {
+        this.addCommentStatusCode = addCommentStatusCode;
+        return this;
+      }
+
+      public ResponseCodes build() {
+        return new ResponseCodes(this.statusCode, this.issueTransitionStatusCode, this.addCommentStatusCode);
+      }
+    }
+
     public record AiCodeFixFeature(Set<String> rules, AiCodeFixFeatureEnablement enablement) {
+    }
+
+    public record ResponseCodes(int statusCode, int issueTransitionStatusCode, int addCommentStatusCode) {
     }
 
     public static class ServerProjectBuilder {
@@ -652,15 +675,14 @@ public class ServerFixture {
     private final Map<String, ServerBuilder.ServerPluginBuilder> pluginsByKey;
     private final Map<String, ServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey;
     private final List<String> tokensRegistered;
-    private final Integer statusCode;
-    private final Integer issueTransitionStatusCode;
+    private final ServerBuilder.ResponseCodes responseCodes;
     private final ServerBuilder.AiCodeFixFeatureBuilder aiCodeFixFeature;
     private final boolean serverSentEventsEnabled;
     private SSEServer sseServer;
 
     public Server(ServerKind serverKind, ServerStatus serverStatus, @Nullable String organizationKey, @Nullable String version,
       Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey, Map<String, ServerBuilder.ServerPluginBuilder> pluginsByKey,
-      Map<String, ServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey, List<String> tokensRegistered, Integer statusCode, Integer issueTransitionStatusCode,
+      Map<String, ServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey, List<String> tokensRegistered, ServerBuilder.ResponseCodes responseCodes,
       ServerBuilder.AiCodeFixFeatureBuilder aiCodeFixFeature, boolean serverSentEventsEnabled) {
       this.serverKind = serverKind;
       this.serverStatus = serverStatus;
@@ -670,8 +692,7 @@ public class ServerFixture {
       this.pluginsByKey = pluginsByKey;
       this.qualityProfilesByKey = qualityProfilesByKey;
       this.tokensRegistered = tokensRegistered;
-      this.statusCode = statusCode;
-      this.issueTransitionStatusCode = issueTransitionStatusCode;
+      this.responseCodes = responseCodes;
       this.aiCodeFixFeature = aiCodeFixFeature;
       this.serverSentEventsEnabled = serverSentEventsEnabled;
       if (organizationKey != null) {
@@ -728,7 +749,7 @@ public class ServerFixture {
     public void registerSystemApiResponses() {
       // API is public, so it can't return 401 or 403 status
       var statusesToSkip = Set.of(401, 403);
-      var status = statusesToSkip.contains(statusCode) ? 200 : statusCode;
+      var status = statusesToSkip.contains(responseCodes.statusCode) ? 200 : responseCodes.statusCode;
       mockServer.stubFor(get("/api/system/status")
         .willReturn(aResponse().withStatus(status).withBody("{\"id\": \"20160308094653\",\"version\": \"" + version + "\",\"status\": " +
           "\"" + serverStatus + "\"}")));
@@ -741,7 +762,7 @@ public class ServerFixture {
 
     private void registerPluginsInstalledResponses() {
       mockServer.stubFor(get("/api/plugins/installed")
-        .willReturn(aResponse().withStatus(statusCode).withBody("{\"plugins\": [" +
+        .willReturn(aResponse().withStatus(responseCodes.statusCode).withBody("{\"plugins\": [" +
           pluginsByKey.entrySet().stream().map(
             entry -> {
               var pluginKey = entry.getKey();
@@ -759,7 +780,7 @@ public class ServerFixture {
         try {
           var pluginContent = Files.exists(plugin.jarPath) ? Files.readAllBytes(plugin.jarPath) : new byte[0];
           mockServer.stubFor(get("/api/plugins/download?plugin=" + pluginKey)
-            .willReturn(aResponse().withStatus(statusCode).withBody(pluginContent)));
+            .willReturn(aResponse().withStatus(responseCodes.statusCode).withBody(pluginContent)));
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
@@ -773,7 +794,7 @@ public class ServerFixture {
           urlBuilder.append("&organization=").append(organizationKey);
         }
         mockServer.stubFor(get(urlBuilder.toString())
-          .willReturn(aResponse().withStatus(statusCode).withResponseBody(protobufBody(Qualityprofiles.SearchWsResponse.newBuilder().addAllProfiles(
+          .willReturn(aResponse().withStatus(responseCodes.statusCode).withResponseBody(protobufBody(Qualityprofiles.SearchWsResponse.newBuilder().addAllProfiles(
             project.qualityProfileKeys.stream().map(qualityProfileKey -> {
               var qualityProfile = qualityProfilesByKey.get(qualityProfileKey);
               return Qualityprofiles.SearchWsResponse.QualityProfile.newBuilder()
@@ -798,7 +819,7 @@ public class ServerFixture {
         }
         url += "&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY,SECURITY_HOTSPOT&s=key&ps=500&p=1";
         mockServer.stubFor(get(url)
-          .willReturn(aResponse().withStatus(statusCode).withResponseBody(protobufBody(Rules.SearchResponse.newBuilder()
+          .willReturn(aResponse().withStatus(responseCodes.statusCode).withResponseBody(protobufBody(Rules.SearchResponse.newBuilder()
             .addAllRules(qualityProfile.activeRulesByKey.entrySet().stream().map(entry -> Rules.Rule.newBuilder()
               .setKey(entry.getKey())
               .setSeverity(entry.getValue().issueSeverity.name())
@@ -818,7 +839,7 @@ public class ServerFixture {
       }
       url += "&f=repo&s=key&ps=500&p=1";
       mockServer.stubFor(get(url)
-        .willReturn(aResponse().withStatus(statusCode).withResponseBody(protobufBody(Rules.SearchResponse.newBuilder()
+        .willReturn(aResponse().withStatus(responseCodes.statusCode).withResponseBody(protobufBody(Rules.SearchResponse.newBuilder()
           .addAllRules(taintActiveRulesByKey.entrySet().stream().map(entry -> Rules.Rule.newBuilder()
             .setKey(entry.getKey())
             .setSeverity(entry.getValue().issueSeverity.name())
@@ -836,7 +857,7 @@ public class ServerFixture {
         var rule = entry.getValue();
         var rulesShowUrl = "/api/rules/show.protobuf?key=" + ruleKey;
         mockServer.stubFor(get(rulesShowUrl)
-          .willReturn(aResponse().withStatus(statusCode).withResponseBody(protobufBody(Rules.ShowResponse.newBuilder()
+          .willReturn(aResponse().withStatus(responseCodes.statusCode).withResponseBody(protobufBody(Rules.ShowResponse.newBuilder()
             .setRule(Rules.Rule.newBuilder()
               .setKey(ruleKey)
               .setName("fakeName")
@@ -856,7 +877,7 @@ public class ServerFixture {
 
     private void registerProjectBranchesApiResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> mockServer.stubFor(get("/api/project_branches/list.protobuf?project=" + projectKey)
-        .willReturn(aResponse().withStatus(statusCode).withResponseBody(protobufBody(ProjectBranches.ListWsResponse.newBuilder()
+        .willReturn(aResponse().withStatus(responseCodes.statusCode).withResponseBody(protobufBody(ProjectBranches.ListWsResponse.newBuilder()
           .addAllBranches(project.branchesByName.keySet().stream()
             .filter(Objects::nonNull)
             .map(branchName -> ProjectBranches.Branch.newBuilder().setName(branchName).setIsMain(project.mainBranchName.equals(branchName)).setType(Common.BranchType.LONG).build())
@@ -1074,7 +1095,7 @@ public class ServerFixture {
     }
 
     private void registerHotspotsStatusChangeApiResponses() {
-      mockServer.stubFor(post("/api/hotspots/change_status").willReturn(aResponse().withStatus(statusCode)));
+      mockServer.stubFor(post("/api/hotspots/change_status").willReturn(aResponse().withStatus(responseCodes.statusCode)));
     }
 
     private void registerIssuesApiResponses() {
@@ -1125,11 +1146,11 @@ public class ServerFixture {
     }
 
     private void registerIssuesStatusChangeApiResponses() {
-      mockServer.stubFor(post("/api/issues/do_transition").willReturn(aResponse().withStatus(issueTransitionStatusCode)));
+      mockServer.stubFor(post("/api/issues/do_transition").willReturn(aResponse().withStatus(responseCodes.issueTransitionStatusCode)));
     }
 
     private void registerAddIssueCommentApiResponses() {
-      mockServer.stubFor(post("/api/issues/add_comment").willReturn(aResponse().withStatus(statusCode)));
+      mockServer.stubFor(post("/api/issues/add_comment").willReturn(aResponse().withStatus(responseCodes.addCommentStatusCode)));
     }
 
     private void registerApiIssuesPullResponses() {
@@ -1193,7 +1214,7 @@ public class ServerFixture {
     }
 
     private void registerIssueAnticipateTransitionResponses() {
-      mockServer.stubFor(post("/api/issues/anticipated_transitions?projectKey=projectKey").willReturn(aResponse().withStatus(statusCode)));
+      mockServer.stubFor(post("/api/issues/anticipated_transitions?projectKey=projectKey").willReturn(aResponse().withStatus(responseCodes.statusCode)));
     }
 
     private void registerSourceApiResponses() {
@@ -1214,7 +1235,7 @@ public class ServerFixture {
     }
 
     private void registerDevelopersApiResponses() {
-      mockServer.stubFor(get("/api/developers/search_events?projects=&from=").willReturn(aResponse().withStatus(statusCode)));
+      mockServer.stubFor(get("/api/developers/search_events?projects=&from=").willReturn(aResponse().withStatus(responseCodes.statusCode)));
     }
 
     private void registerMeasuresApiResponses() {
@@ -1304,7 +1325,8 @@ public class ServerFixture {
 
     private void registerTokenApiResponse() {
       tokensRegistered.forEach(
-        tokenName -> mockServer.stubFor(post("/api/user_tokens/revoke").withRequestBody(WireMock.containing("name=" + tokenName)).willReturn(aResponse().withStatus(statusCode))));
+        tokenName -> mockServer.stubFor(post("/api/user_tokens/revoke").withRequestBody(WireMock.containing("name=" + tokenName))
+          .willReturn(aResponse().withStatus(responseCodes.statusCode))));
     }
 
     private void registerFixSuggestionsApiResponses() {
@@ -1313,7 +1335,8 @@ public class ServerFixture {
           if (project.aiCodeFixSuggestion != null) {
             mockServer.stubFor(post("/fix-suggestions/ai-suggestions")
               .willReturn(jsonResponse(
-                new ObjectMapper().setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY).writeValueAsString(project.aiCodeFixSuggestion.build()), 200)));
+                new ObjectMapper().setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY).writeValueAsString(project.aiCodeFixSuggestion.build()),
+                responseCodes.statusCode)));
           }
         } catch (JsonProcessingException e) {
           throw new IllegalArgumentException(e);
@@ -1323,17 +1346,17 @@ public class ServerFixture {
       if (serverKind == ServerKind.SONARCLOUD) {
         var feature = aiCodeFixFeature.build();
         mockServer.stubFor(get("/fix-suggestions/supported-rules")
-          .willReturn(jsonResponse("{\"rules\": [" + String.join(", ", feature.rules.stream().map(rule -> "\"" + rule + "\"").toList()) + "]}", 200)));
+          .willReturn(jsonResponse("{\"rules\": [" + String.join(", ", feature.rules.stream().map(rule -> "\"" + rule + "\"").toList()) + "]}", responseCodes.statusCode)));
         var enabledProjectKeys = aiCodeFixFeature.enabledProjectKeys == null ? null : ("[" + String.join(", ", aiCodeFixFeature.enabledProjectKeys) + "]");
         mockServer.stubFor(get("/fix-suggestions/organization-configs/" + organizationId)
           .willReturn(jsonResponse("{\"enablement\": \"" + aiCodeFixFeature.enablement.name() + "\", \"organizationEligible\": " + aiCodeFixFeature.organizationEligible
-            + ",  \"enabledProjectKeys\": " + enabledProjectKeys + "}", 200)));
+            + ",  \"enabledProjectKeys\": " + enabledProjectKeys + "}", responseCodes.statusCode)));
       }
     }
 
     private void registerOrganizationApiResponses() {
       mockServer.stubFor(get("/organizations/organizations?organizationKey=" + organizationKey + "&excludeEligibility=true")
-        .willReturn(jsonResponse("[{\"id\": \"" + organizationId + "\", \"uuidV4\": \"" + organizationUuidV4 + "\"}]", 200)));
+        .willReturn(jsonResponse("[{\"id\": \"" + organizationId + "\", \"uuidV4\": \"" + organizationUuidV4 + "\"}]", responseCodes.statusCode)));
     }
 
     private void registerPushApiResponses() {

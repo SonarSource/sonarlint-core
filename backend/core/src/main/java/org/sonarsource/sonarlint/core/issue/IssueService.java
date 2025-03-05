@@ -142,7 +142,7 @@ public class IssueService {
       var localIssueOpt = asUUID(issueKey).flatMap(localOnlyIssueRepository::findByKey);
       if (localIssueOpt.isEmpty()) {
         // this happens in case if VS client trying to change status of the issue for Roslyn analysed language
-        // since analysis was executed outside the backend on the client side we trust client to provide valid issue key and send telemetry
+        // since analysis was executed outside the backend on the client side we trust client to provide valid issue key
         try {
           serverConnection.withClientApi(serverApi -> serverApi.issue().changeStatus(issueKey, reviewStatus, cancelMonitor));
           return;
@@ -260,7 +260,13 @@ public class IssueService {
       if (optionalId.isPresent()) {
         setCommentOnLocalOnlyIssue(configurationScopeId, optionalId.get(), text, cancelMonitor);
       } else {
-        throw issueNotFoundException(issueKey);
+        // this happens in case if VS client trying to add comment of the issue for Roslyn analysed language
+        // since analysis was executed outside the backend on the client side we trust client to provide valid issue key
+        try {
+          addCommentOnServerIssue(configurationScopeId, issueKey, text, cancelMonitor);
+        } catch (NotFoundException ex) {
+          throw issueNotFoundException(issueKey);
+        }
       }
     }
   }
