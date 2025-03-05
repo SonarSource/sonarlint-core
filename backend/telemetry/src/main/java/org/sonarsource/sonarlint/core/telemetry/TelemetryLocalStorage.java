@@ -30,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
@@ -60,12 +61,15 @@ public class TelemetryLocalStorage {
   private final Map<String, TelemetryHelpAndFeedbackCounter> helpAndFeedbackLinkClickedCount;
   private final Map<String, TelemetryFixSuggestionReceivedCounter> fixSuggestionReceivedCounter;
   private final Map<String, List<TelemetryFixSuggestionResolvedStatus>> fixSuggestionResolved;
+  private final Set<UUID> issuesUuidAiFixableSeen;
   private boolean isFocusOnNewCode;
   private int codeFocusChangedCount;
   private int manualAddedBindingsCount;
   private int importedAddedBindingsCount;
   private int autoAddedBindingsCount;
   private int exportedConnectedModeCount;
+  private final Set<String> boundSonarQubeServerProjectKeys;
+  private final Set<String> boundSonarQubeCloudProjectKeys;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -78,6 +82,9 @@ public class TelemetryLocalStorage {
     helpAndFeedbackLinkClickedCount = new LinkedHashMap<>();
     fixSuggestionReceivedCounter = new LinkedHashMap<>();
     fixSuggestionResolved = new LinkedHashMap<>();
+    issuesUuidAiFixableSeen = new HashSet<>();
+    boundSonarQubeServerProjectKeys = new HashSet<>();
+    boundSonarQubeCloudProjectKeys = new HashSet<>();
   }
 
   public Collection<String> getRaisedIssuesRules() {
@@ -143,6 +150,10 @@ public class TelemetryLocalStorage {
     return fixSuggestionResolved;
   }
 
+  public int getCountIssuesWithPossibleAiFixFromIde() {
+    return issuesUuidAiFixableSeen.size();
+  }
+
   public boolean isFocusOnNewCode() {
     return isFocusOnNewCode;
   }
@@ -184,11 +195,14 @@ public class TelemetryLocalStorage {
     helpAndFeedbackLinkClickedCount.clear();
     fixSuggestionReceivedCounter.clear();
     fixSuggestionResolved.clear();
+    issuesUuidAiFixableSeen.clear();
     codeFocusChangedCount = 0;
     manualAddedBindingsCount = 0;
     importedAddedBindingsCount = 0;
     autoAddedBindingsCount = 0;
     exportedConnectedModeCount = 0;
+    boundSonarQubeServerProjectKeys.clear();
+    boundSonarQubeCloudProjectKeys.clear();
   }
 
   long numUseDays() {
@@ -294,9 +308,9 @@ public class TelemetryLocalStorage {
     showIssueRequestsCount++;
   }
 
-  public void fixSuggestionReceived(String suggestionId, AiSuggestionSource aiSuggestionSource, int snippetsCount) {
+  public void fixSuggestionReceived(String suggestionId, AiSuggestionSource aiSuggestionSource, int snippetsCount, boolean wasGeneratedFromIde) {
     markSonarLintAsUsedToday();
-    this.fixSuggestionReceivedCounter.computeIfAbsent(suggestionId, k -> new TelemetryFixSuggestionReceivedCounter(aiSuggestionSource, snippetsCount));
+    this.fixSuggestionReceivedCounter.computeIfAbsent(suggestionId, k -> new TelemetryFixSuggestionReceivedCounter(aiSuggestionSource, snippetsCount, wasGeneratedFromIde));
   }
 
   public void fixSuggestionResolved(String suggestionId, FixSuggestionStatus status, @Nullable Integer snippetIndex) {
@@ -312,6 +326,11 @@ public class TelemetryLocalStorage {
     // if we already had a status for this snippet, we should replace it
     existingSnippetStatus.ifPresentOrElse(telemetryFixSuggestionResolvedStatus -> telemetryFixSuggestionResolvedStatus.setFixSuggestionResolvedStatus(status),
       () -> fixSuggestionSnippets.add(new TelemetryFixSuggestionResolvedStatus(status, snippetIndex)));
+  }
+
+  public void addIssuesWithPossibleAiFixFromIde(Set<UUID> issues) {
+    markSonarLintAsUsedToday();
+    issuesUuidAiFixableSeen.addAll(issues);
   }
 
   public int getShowIssueRequestsCount() {
@@ -417,6 +436,24 @@ public class TelemetryLocalStorage {
 
   public int getExportedConnectedModeCount() {
     return exportedConnectedModeCount;
+  }
+
+  public void addBoundSonarQubeServerProjectKey(String projectKey) {
+    markSonarLintAsUsedToday();
+    boundSonarQubeServerProjectKeys.add(projectKey);
+  }
+
+  public Set<String> getBoundSonarQubeServerProjectKeys() {
+    return boundSonarQubeServerProjectKeys;
+  }
+
+  public void addBoundSonarQubeCloudProjectKey(String projectKey) {
+    markSonarLintAsUsedToday();
+    boundSonarQubeCloudProjectKeys.add(projectKey);
+  }
+
+  public Set<String> getBoundSonarQubeCloudProjectKeys() {
+    return boundSonarQubeCloudProjectKeys;
   }
 
 }

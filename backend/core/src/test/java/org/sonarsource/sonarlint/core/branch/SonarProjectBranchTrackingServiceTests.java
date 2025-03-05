@@ -28,9 +28,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
+import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationScopeWithBinding;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchSonarProjectBranchResponse;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBranches;
@@ -90,7 +92,11 @@ class SonarProjectBranchTrackingServiceTests {
       .thenReturn(CompletableFuture.completedFuture(new MatchSonarProjectBranchResponse("feature")));
 
     // This should queue a first branch matching
-    underTest.onConfigurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID)));
+    underTest.onConfigurationScopesAdded(new ConfigurationScopesAddedWithBindingEvent(Set.of(
+      new ConfigurationScopeWithBinding(
+        new ConfigurationScope(CONFIG_SCOPE_ID, null, true, "scope"),
+        BindingConfiguration.noBinding()
+      ))));
     // Wait for the RPC client to be called
     verify(sonarLintRpcClient, timeout(1000)).matchSonarProjectBranch(any());
 
@@ -114,7 +120,11 @@ class SonarProjectBranchTrackingServiceTests {
       .thenReturn(rpcFuture);
 
     // This should queue a first branch matching
-    underTest.onConfigurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID)));
+    underTest.onConfigurationScopesAdded(new ConfigurationScopesAddedWithBindingEvent(Set.of(
+      new ConfigurationScopeWithBinding(
+        new ConfigurationScope(CONFIG_SCOPE_ID, null, true, "scope"),
+        BindingConfiguration.noBinding()
+      ))));
     // Wait for the RPC client to be called
     verify(sonarLintRpcClient, timeout(1000)).matchSonarProjectBranch(any());
 

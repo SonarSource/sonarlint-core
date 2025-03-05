@@ -49,7 +49,7 @@ import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
-import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionCredentialsChangedEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
@@ -215,12 +215,12 @@ public class SynchronizationService {
   }
 
   @EventListener
-  public void onConfigurationsScopeAdded(ConfigurationScopesAddedEvent event) {
+  public void onConfigurationsScopeAdded(ConfigurationScopesAddedWithBindingEvent event) {
     if (!fullSynchronizationEnabled) {
       return;
     }
-    LOG.debug("Synchronizing new configuration scopes: {}", event.getAddedConfigurationScopeIds());
-    var scopesToSynchronize = event.getAddedConfigurationScopeIds()
+    LOG.debug("Synchronizing new configuration scopes: {}", event.getConfigScopeIds());
+    var scopesToSynchronize = event.getConfigScopeIds()
       .stream().map(configurationRepository::getBoundScope)
       .filter(Objects::nonNull)
       .collect(groupingBy(BoundScope::getConnectionId));
@@ -256,18 +256,20 @@ public class SynchronizationService {
     if (!fullSynchronizationEnabled) {
       return;
     }
-    var configScopeId = event.getConfigScopeId();
+    var configScopeId = event.configScopeId();
     scopeSynchronizationTimestampRepository.clearLastSynchronizationTimestamp(configScopeId);
-    if (event.getPreviousConfig().isBound()) {
+    if (event.previousConfig().isBound()) {
       // when unbinding, we want to let future rebinds trigger a sync
-      var previousBinding = new Binding(requireNonNull(event.getPreviousConfig().getConnectionId()), requireNonNull(event.getPreviousConfig().getSonarProjectKey()));
+      var previousBinding = new Binding(requireNonNull(event.previousConfig().getConnectionId()), requireNonNull(event.previousConfig().getSonarProjectKey()));
       bindingSynchronizationTimestampRepository.clearLastSynchronizationTimestamp(previousBinding);
       branchSynchronizationTimestampRepository.clearLastSynchronizationTimestampIf(branchBinding -> branchBinding.getBinding().equals(previousBinding));
     }
-    var newConnectionId = event.getNewConfig().getConnectionId();
+    var newConnectionId = event.newConfig().getConnectionId();
     if (newConnectionId != null) {
-      synchronizeConnectionAndProjectsIfNeededAsync(newConnectionId,
-        List.of(new BoundScope(configScopeId, newConnectionId, requireNonNull(event.getNewConfig().getSonarProjectKey()))));
+      synchronizeConnectionAndProjectsIfNeededAsync(
+        newConnectionId,
+        List.of(new BoundScope(configScopeId, newConnectionId, requireNonNull(event.newConfig().getSonarProjectKey())))
+      );
     }
   }
 

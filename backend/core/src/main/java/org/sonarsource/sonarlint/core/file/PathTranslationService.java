@@ -93,7 +93,7 @@ public class PathTranslationService {
 
   @EventListener
   public void onBindingChanged(BindingConfigChangedEvent event) {
-    var configScopeId = event.getConfigScopeId();
+    var configScopeId = event.configScopeId();
     cachedPathsTranslationByConfigScope.refreshAsync(configScopeId);
   }
 

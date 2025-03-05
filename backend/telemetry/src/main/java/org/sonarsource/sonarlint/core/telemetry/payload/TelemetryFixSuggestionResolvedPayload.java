@@ -23,23 +23,6 @@ import com.google.gson.annotations.SerializedName;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
 
-public class TelemetryFixSuggestionResolvedPayload {
-  @SerializedName("status")
-  private final FixSuggestionStatus status;
-
-  @SerializedName("snippet_index")
-  private final Integer snippetIndex;
-
-  public TelemetryFixSuggestionResolvedPayload(@Nullable FixSuggestionStatus status, @Nullable Integer snippetIndex) {
-    this.status = status;
-    this.snippetIndex = snippetIndex;
-  }
-
-  public FixSuggestionStatus getStatus() {
-    return status;
-  }
-
-  public Integer getSnippetIndex() {
-    return snippetIndex;
-  }
+public record TelemetryFixSuggestionResolvedPayload(@SerializedName("status") @Nullable FixSuggestionStatus status,
+                                                    @SerializedName("snippet_index") @Nullable Integer snippetIndex) {
 }

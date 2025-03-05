@@ -46,6 +46,7 @@ import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.event.FixSuggestionReceivedEvent;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
@@ -63,11 +64,13 @@ import org.sonarsource.sonarlint.core.serverconnection.ProjectBranches;
 import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.usertoken.UserTokenService;
+import org.springframework.context.ApplicationEventPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -81,7 +84,7 @@ class ShowFixSuggestionRequestHandlerTests {
   private FeatureFlagsDto featureFlagsDto;
   private InitializeParams initializeParams;
   private ShowFixSuggestionRequestHandler showFixSuggestionRequestHandler;
-  private TelemetryService telemetryService;
+  private ApplicationEventPublisher eventPublisher;
   private ClientFile clientFile;
   private FilePathTranslation filePathTranslation;
 
@@ -101,7 +104,7 @@ class ShowFixSuggestionRequestHandlerTests {
     initializeParams = mock(InitializeParams.class);
     when(initializeParams.getFeatureFlags()).thenReturn(featureFlagsDto);
     var sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
-    telemetryService = mock(TelemetryService.class);
+    eventPublisher = mock(ApplicationEventPublisher.class);
     var sonarProjectBranchesSynchronizationService = mock(SonarProjectBranchesSynchronizationService.class);
     when(sonarProjectBranchesSynchronizationService.getProjectBranches(any(), any(), any())).thenReturn(new ProjectBranches(Set.of(), "main"));
     clientFile = mock(ClientFile.class);
@@ -110,7 +113,7 @@ class ShowFixSuggestionRequestHandlerTests {
     var connectionConfiguration = mock(ConnectionConfigurationRepository.class);
     when(connectionConfiguration.hasConnectionWithOrigin(SonarCloudRegion.EU.getProductionUri().toString())).thenReturn(true);
 
-    showFixSuggestionRequestHandler = new ShowFixSuggestionRequestHandler(sonarLintRpcClient, telemetryService, initializeParams,
+    showFixSuggestionRequestHandler = new ShowFixSuggestionRequestHandler(sonarLintRpcClient, eventPublisher, initializeParams,
       new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintRpcClient, connectionConfigurationRepository,
         configurationRepository, userTokenService, sonarCloudActiveEnvironment, connectionConfiguration), pathTranslationService,
       sonarCloudActiveEnvironment, sonarProjectBranchesSynchronizationService, clientFs);
@@ -147,8 +150,7 @@ class ShowFixSuggestionRequestHandlerTests {
 
     showFixSuggestionRequestHandler.handle(request, response, context);
 
-    verify(telemetryService).fixSuggestionReceived(any());
-    verifyNoMoreInteractions(telemetryService);
+    verify(eventPublisher, times(1)).publishEvent(any(FixSuggestionReceivedEvent.class));
   }
 
   @Test

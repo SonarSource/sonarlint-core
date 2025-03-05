@@ -32,7 +32,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.ExecutorServiceShutdownWatchable;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
-import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.fs.FileSystemUpdatedEvent;
@@ -84,8 +84,8 @@ public class ConnectionSuggestionProvider {
   }
 
   @EventListener
-  public void configurationScopesAdded(ConfigurationScopesAddedEvent event) {
-    var listConfigScopeIds = event.getAddedConfigurationScopeIds().stream()
+  public void configurationScopesAdded(ConfigurationScopesAddedWithBindingEvent event) {
+    var listConfigScopeIds = event.getConfigScopeIds().stream()
       .map(clientFs::getFiles)
       .flatMap(List::stream)
       .filter(f -> ALL_BINDING_CLUE_FILENAMES.contains(f.getFileName()) || f.isSonarlintConfigurationFile())
@@ -95,7 +95,7 @@ public class ConnectionSuggestionProvider {
     if (!listConfigScopeIds.isEmpty()) {
       queueConnectionSuggestion(listConfigScopeIds);
     } else {
-      bindingSuggestionProvider.suggestBindingForGivenScopesAndAllConnections(event.getAddedConfigurationScopeIds());
+      bindingSuggestionProvider.suggestBindingForGivenScopesAndAllConnections(event.getConfigScopeIds());
     }
   }
 

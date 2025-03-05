@@ -31,10 +31,11 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.connection.ServerConnection;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
-import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationScope;
+import org.sonarsource.sonarlint.core.repository.config.ConfigurationScopeWithBinding;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
@@ -90,8 +91,16 @@ class VersionSoonUnsupportedHelperTests {
     when(connectionManager.tryGetConnection(SQ_CONNECTION_ID)).thenReturn(Optional.of(new ServerConnection(SQ_CONNECTION_ID, serverApi, null)));
     when(synchronizationService.readOrSynchronizeServerVersion(eq(SQ_CONNECTION_ID), eq(serverApi), any(SonarLintCancelMonitor.class))).thenReturn(VersionUtils.getMinimalSupportedVersion());
 
-
-    underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID, CONFIG_SCOPE_ID_2)));
+    underTest.configurationScopesAdded(new ConfigurationScopesAddedWithBindingEvent(Set.of(
+      new ConfigurationScopeWithBinding(
+        new ConfigurationScope(CONFIG_SCOPE_ID, null, true, "scope1"),
+        BindingConfiguration.noBinding()
+      ),
+      new ConfigurationScopeWithBinding(
+        new ConfigurationScope(CONFIG_SCOPE_ID_2, null, true, "scope2"),
+        BindingConfiguration.noBinding()
+      )
+    )));
 
     await().untilAsserted(() -> assertThat(logTester.logs(LogOutput.Level.DEBUG))
       .containsOnly("Connection '" + SQ_CONNECTION_ID + "' with version '" + VersionUtils.getMinimalSupportedVersion().getName() + "' is detected to be soon unsupported"));
@@ -112,7 +121,16 @@ class VersionSoonUnsupportedHelperTests {
     when(synchronizationService.readOrSynchronizeServerVersion(eq(SQ_CONNECTION_ID), eq(serverApi), any(SonarLintCancelMonitor.class))).thenReturn(VersionUtils.getMinimalSupportedVersion());
     when(synchronizationService.readOrSynchronizeServerVersion(eq(SQ_CONNECTION_ID_2), eq(serverApi2), any(SonarLintCancelMonitor.class))).thenReturn(Version.create(VersionUtils.getMinimalSupportedVersion() + ".9"));
 
-    underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID, CONFIG_SCOPE_ID_2)));
+    underTest.configurationScopesAdded(new ConfigurationScopesAddedWithBindingEvent(Set.of(
+      new ConfigurationScopeWithBinding(
+        new ConfigurationScope(CONFIG_SCOPE_ID, null, true, "scope1"),
+        BindingConfiguration.noBinding()
+      ),
+      new ConfigurationScopeWithBinding(
+        new ConfigurationScope(CONFIG_SCOPE_ID_2, null, true, "scope2"),
+        BindingConfiguration.noBinding()
+      )
+    )));
 
     await().untilAsserted(() -> assertThat(logTester.logs(LogOutput.Level.DEBUG))
       .containsOnly(
@@ -123,7 +141,12 @@ class VersionSoonUnsupportedHelperTests {
 
   @Test
   void should_not_trigger_notification_when_config_scope_has_no_effective_binding() {
-    underTest.configurationScopesAdded(new ConfigurationScopesAddedEvent(Set.of(CONFIG_SCOPE_ID)));
+    underTest.configurationScopesAdded(new ConfigurationScopesAddedWithBindingEvent(Set.of(
+      new ConfigurationScopeWithBinding(
+        new ConfigurationScope(CONFIG_SCOPE_ID, null, true, "scope1"),
+        BindingConfiguration.noBinding()
+      )
+    )));
 
     assertThat(logTester.logs()).isEmpty();
   }

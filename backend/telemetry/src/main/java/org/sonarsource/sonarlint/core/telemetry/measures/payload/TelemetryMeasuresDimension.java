@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Telemetry
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,19 +17,13 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.event;
+package org.sonarsource.sonarlint.core.telemetry.measures.payload;
 
-import java.util.Set;
+import com.google.gson.annotations.SerializedName;
 
-public class ConfigurationScopesAddedEvent {
-
-  private final Set<String> addedConfigurationScopeIds;
-
-  public ConfigurationScopesAddedEvent(Set<String> addedConfigurationScopeIds) {
-    this.addedConfigurationScopeIds = addedConfigurationScopeIds;
-  }
-
-  public Set<String> getAddedConfigurationScopeIds() {
-    return addedConfigurationScopeIds;
-  }
+public enum TelemetryMeasuresDimension {
+  @SerializedName("language")
+  LANGUAGE,
+  @SerializedName("installation")
+  INSTALLATION
 }
