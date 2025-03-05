@@ -36,6 +36,7 @@ import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
+import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
@@ -49,6 +50,7 @@ import utils.TestPlugin;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -175,14 +177,14 @@ class HotspotEventsMediumTests {
             .withQualityProfile("qpKey")
             .withBranch(branchName,
               branch -> branch.withHotspot(serverHotspotKey1, hotspot -> hotspot
-                .withFilePath(baseDir.relativize(filePath).toString())
-                .withStatus(HotspotReviewStatus.TO_REVIEW)
-                .withVulnerabilityProbability(VulnerabilityProbability.HIGH)
-                .withTextRange(new TextRange(4, 11, 4, 19))
-                .withRuleKey("java:S2068")
-                .withMessage("'password' detected in this expression, review this potentially hard-coded password.")
-                .withCreationDate(introductionDate)
-                .withAuthor("author"))
+                  .withFilePath(baseDir.relativize(filePath).toString())
+                  .withStatus(HotspotReviewStatus.TO_REVIEW)
+                  .withVulnerabilityProbability(VulnerabilityProbability.HIGH)
+                  .withTextRange(new TextRange(4, 11, 4, 19))
+                  .withRuleKey("java:S2068")
+                  .withMessage("'password' detected in this expression, review this potentially hard-coded password.")
+                  .withCreationDate(introductionDate)
+                  .withAuthor("author"))
                 .withHotspot(serverHotspotKey2, hotspot -> hotspot
                   .withFilePath(baseDir.relativize(filePath).toString())
                   .withStatus(HotspotReviewStatus.TO_REVIEW)
@@ -263,6 +265,90 @@ class HotspotEventsMediumTests {
       await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readHotspots(backend, "connectionId", "projectKey", "branchName", "file/path"))
         .extracting(ServerHotspot::getKey, ServerHotspot::getStatus)
         .containsOnly(tuple("AYhSN6mVrRF_krvNbHl1", HotspotReviewStatus.SAFE)));
+    }
+
+    @SonarLintTest
+    void it_should_update_known_findings_store_when_changing_status(SonarLintTestHarness harness, @TempDir Path baseDir) {
+      // create a file with hotspot in it
+      var filePath = createFile(baseDir, "Foo.java", """
+        public class Foo {
+          String ip = "192.168.12.42"; // Sensitive
+          Socket socket = new Socket(ip, 6667);
+        }
+        """);
+      var fileUri = filePath.toUri();
+
+      var connectionId = "connectionId";
+      var branchName = "branchName";
+      String projectKey = "projectKey";
+      var serverHotspotKey = "myHotspotKey";
+
+      var client = harness.newFakeClient()
+        .withToken(connectionId, "token")
+        .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
+        .withMatchedBranch(CONFIG_SCOPE_ID, branchName)
+        .build();
+
+      var server = harness.newFakeSonarQubeServer("10.4")
+        .withProject(projectKey,
+          project -> project
+            .withBranch(branchName))
+        .withServerSentEventsEnabled()
+        .start();
+
+      // initialize backend with pre-filled storage with matching hotspot and active rule
+      var backend = harness.newBackend()
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
+        .withServerSentEventsEnabled()
+        .withSecurityHotspotsEnabled()
+        .withSonarQubeConnection(connectionId, server,
+          storage -> storage.withProject(projectKey,
+              project -> project
+                .withMainBranch(branchName, branch -> branch.withHotspot(aServerHotspot(serverHotspotKey)
+                  .withStatus(HotspotReviewStatus.TO_REVIEW)
+                  .withFilePath(baseDir.relativize(filePath).toString())
+                  .withTextRange(new TextRangeWithHash(2, 14, 2, 29, "c50a46d24d0975188e037e408583ad30"))
+                  .withRuleKey("java:S1313")
+                  .withMessage("Make sure using this hardcoded IP address is safe here.")
+                  .withVulnerabilityProbability(VulnerabilityProbability.LOW)
+                ))
+                .withRuleSet("java", ruleSetBuilder -> ruleSetBuilder.withActiveRule("java:S1313", "BLOCKER"))
+            )
+            .withPlugin(TestPlugin.JAVA))
+        .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
+        .start(client);
+
+      // run analysis in order to populate known findings repository
+      analyzeFileAndGetHotspots(fileUri, client, backend, CONFIG_SCOPE_ID);
+
+      // trigger an SSE
+      server.pushEvent(String.format("""
+        event: SecurityHotspotChanged
+        data: {\
+          "key": "%s",\
+          "projectKey": %s,\
+          "updateDate": 1685007187000,\
+          "status": "REVIEWED",\
+          "assignee": "assigneeEmail",\
+          "resolution": "SAFE",\
+          "filePath": "%s"\
+        }
+        
+        """, serverHotspotKey, projectKey, baseDir.relativize(filePath)));
+
+      // assert that the backend has updated the hotspot status
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(readHotspots(backend, connectionId, projectKey, branchName, baseDir.relativize(filePath).toString()))
+        .extracting(ServerHotspot::getKey, ServerHotspot::getStatus)
+        .containsOnly(tuple(serverHotspotKey, HotspotReviewStatus.SAFE)));
+
+      // assert that the client has updated the known findings store
+      await().atMost(Duration.ofMinutes(1)).untilAsserted(() -> assertThat(client.getRaisedHotspotsForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
+      var raisedHotspots = client.getRaisedHotspotsForScopeId(CONFIG_SCOPE_ID).get(fileUri);
+
+      assertThat(raisedHotspots).isNotEmpty();
+      var raisedIssueDto = raisedHotspots.get(0);
+      assertTrue(raisedIssueDto.isResolved());
+      assertThat(raisedIssueDto.getServerKey()).isEqualTo(serverHotspotKey);
     }
 
     @SonarLintTest
