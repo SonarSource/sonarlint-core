@@ -660,6 +660,7 @@ public class AnalysisService {
       issue -> streamIssue(configurationScopeId, analysisId, issue, ruleDetailsCache, raisedIssues), SonarLintLogger.get().getTargetForCopy(),
       monitoringService.newTrace("AnalysisService", "analyze"));
     var rpcProgressMonitor = new RpcProgressMonitor(client, cancelMonitor, configurationScopeId, analysisId);
+    // TODO submit analysis task to AnalysisScheduler
     return analysisEngine.post(analyzeCommand, rpcProgressMonitor)
       .whenComplete((results, error) -> {
         long endTime = System.currentTimeMillis();
