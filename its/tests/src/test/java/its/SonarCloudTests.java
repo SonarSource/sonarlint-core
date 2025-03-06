@@ -164,7 +164,8 @@ class SonarCloudTests extends AbstractConnectedTests {
     var featureFlags = new FeatureFlagsDto(false, true, true, false, true, true, false, true, false, true, false);
     backend.initialize(
       new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(),
-        new SonarCloudAlternativeEnvironmentDto(new SonarQubeCloudRegionDto(SONARCLOUD_STAGING_URL, SONARCLOUD_STAGING_API_URL, SONARCLOUD_WEBSOCKETS_STAGING_URL), null),
+        new SonarCloudAlternativeEnvironmentDto(new SonarQubeCloudRegionDto(SONARCLOUD_STAGING_URL, SONARCLOUD_STAGING_API_URL, SONARCLOUD_WEBSOCKETS_STAGING_URL),
+          new SonarQubeCloudRegionDto(null, null, null)),
         featureFlags,
         sonarUserHome.resolve("storage"),
         sonarUserHome.resolve("work"), emptySet(), PluginLocator.getEmbeddedPluginsByKeyForTests(), languages, emptySet(), emptySet(), emptyList(),

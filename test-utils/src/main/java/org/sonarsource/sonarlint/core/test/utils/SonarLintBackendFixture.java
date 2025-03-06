@@ -496,11 +496,10 @@ public class SonarLintBackendFixture {
         var clientInfo = new ClientConstantInfoDto(clientName, userAgent, 0);
         var featureFlags = new FeatureFlagsDto(manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, startEmbeddedServer, areSecurityHotspotsEnabled,
           manageServerSentEvents, enableDataflowBugDetection, shouldManageFullSynchronization, telemetryEnabled, canOpenFixSuggestion, monitoringEnabled);
-
-        SonarCloudAlternativeEnvironmentDto sonarCloudAlternativeEnvironment = null;
-        if (euRegionDto != null || usRegionDto != null) {
-          sonarCloudAlternativeEnvironment = new SonarCloudAlternativeEnvironmentDto(euRegionDto, usRegionDto);
-        }
+        
+        var actualEuRegionDto = euRegionDto != null ? euRegionDto : new SonarQubeCloudRegionDto(null, null, null);
+        var actualUsRegionDto = usRegionDto != null ? usRegionDto : new SonarQubeCloudRegionDto(null, null, null);
+        var sonarCloudAlternativeEnvironment = new SonarCloudAlternativeEnvironmentDto(actualEuRegionDto, actualUsRegionDto);
 
         var sslConfiguration = new SslConfigurationDto(null, null, null, keyStorePath, keyStorePassword, keyStoreType);
         var httpConfiguration = new HttpConfigurationDto(sslConfiguration, null, null, null, responseTimeout);

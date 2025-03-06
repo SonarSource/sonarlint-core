@@ -34,93 +34,94 @@ class SonarCloudActiveEnvironmentTests {
   private static SonarQubeCloudRegionDto regionWithBaseUri = new SonarQubeCloudRegionDto(baseUri, null, null);
   private static SonarQubeCloudRegionDto regionWithApiUri = new SonarQubeCloudRegionDto(null, apiUri, null);
   private static SonarQubeCloudRegionDto regionWithWebSocketUri = new SonarQubeCloudRegionDto(null, null, webSocketUri);
+  private static SonarQubeCloudRegionDto empty = new SonarQubeCloudRegionDto(null, null, null);
   
   @Test
   void test_getUri() {
-    assertThat(new SonarCloudActiveEnvironment(null, null).getUri(SonarCloudRegion.EU))
+    assertThat(new SonarCloudActiveEnvironment(empty, empty).getUri(SonarCloudRegion.EU))
       .isEqualTo(SonarCloudRegion.EU.getProductionUri());
-    assertThat(new SonarCloudActiveEnvironment(null, null).getUri(SonarCloudRegion.US))
+    assertThat(new SonarCloudActiveEnvironment(empty, empty).getUri(SonarCloudRegion.US))
       .isEqualTo(SonarCloudRegion.US.getProductionUri());
 
-    assertThat(new SonarCloudActiveEnvironment(regionWithBaseUri, null).getUri(SonarCloudRegion.EU))
+    assertThat(new SonarCloudActiveEnvironment(regionWithBaseUri, empty).getUri(SonarCloudRegion.EU))
       .isEqualTo(baseUri);
-    assertThat(new SonarCloudActiveEnvironment(null, regionWithBaseUri).getUri(SonarCloudRegion.US))
+    assertThat(new SonarCloudActiveEnvironment(empty, regionWithBaseUri).getUri(SonarCloudRegion.US))
       .isEqualTo(baseUri);
 
-    assertThat(new SonarCloudActiveEnvironment(regionWithApiUri, null).getUri(SonarCloudRegion.EU))
+    assertThat(new SonarCloudActiveEnvironment(regionWithApiUri, empty).getUri(SonarCloudRegion.EU))
       .isEqualTo(SonarCloudRegion.EU.getProductionUri());
-    assertThat(new SonarCloudActiveEnvironment(null, regionWithApiUri).getUri(SonarCloudRegion.US))
+    assertThat(new SonarCloudActiveEnvironment(empty, regionWithApiUri).getUri(SonarCloudRegion.US))
       .isEqualTo(SonarCloudRegion.US.getProductionUri());
   }
 
   @Test
   void test_getApiUri() {
-    assertThat(new SonarCloudActiveEnvironment(null, null).getApiUri(SonarCloudRegion.EU))
+    assertThat(new SonarCloudActiveEnvironment(empty, empty).getApiUri(SonarCloudRegion.EU))
       .isEqualTo(SonarCloudRegion.EU.getApiProductionUri());
-    assertThat(new SonarCloudActiveEnvironment(null, null).getApiUri(SonarCloudRegion.US))
+    assertThat(new SonarCloudActiveEnvironment(empty, empty).getApiUri(SonarCloudRegion.US))
       .isEqualTo(SonarCloudRegion.US.getApiProductionUri());
 
-    assertThat(new SonarCloudActiveEnvironment(regionWithApiUri, null).getApiUri(SonarCloudRegion.EU))
+    assertThat(new SonarCloudActiveEnvironment(regionWithApiUri, empty).getApiUri(SonarCloudRegion.EU))
       .isEqualTo(apiUri);
-    assertThat(new SonarCloudActiveEnvironment(null, regionWithApiUri).getApiUri(SonarCloudRegion.US))
+    assertThat(new SonarCloudActiveEnvironment(empty, regionWithApiUri).getApiUri(SonarCloudRegion.US))
       .isEqualTo(apiUri);
 
-    assertThat(new SonarCloudActiveEnvironment(regionWithBaseUri, null).getApiUri(SonarCloudRegion.EU))
+    assertThat(new SonarCloudActiveEnvironment(regionWithBaseUri, empty).getApiUri(SonarCloudRegion.EU))
       .isEqualTo(SonarCloudRegion.EU.getApiProductionUri());
-    assertThat(new SonarCloudActiveEnvironment(null, regionWithBaseUri).getApiUri(SonarCloudRegion.US))
+    assertThat(new SonarCloudActiveEnvironment(empty, regionWithBaseUri).getApiUri(SonarCloudRegion.US))
       .isEqualTo(SonarCloudRegion.US.getApiProductionUri());
   }
 
   @Test
   void test_getWebSocketsEndpointUri() {
-    assertThat(new SonarCloudActiveEnvironment(null, null).getWebSocketsEndpointUri(SonarCloudRegion.EU))
+    assertThat(new SonarCloudActiveEnvironment(empty, empty).getWebSocketsEndpointUri(SonarCloudRegion.EU))
       .isEqualTo(SonarCloudRegion.EU.getWebSocketUri());
-    assertThat(new SonarCloudActiveEnvironment(null, null).getWebSocketsEndpointUri(SonarCloudRegion.US))
+    assertThat(new SonarCloudActiveEnvironment(empty, empty).getWebSocketsEndpointUri(SonarCloudRegion.US))
       .isEqualTo(SonarCloudRegion.US.getWebSocketUri());
 
-    assertThat(new SonarCloudActiveEnvironment(regionWithWebSocketUri, null).getWebSocketsEndpointUri(SonarCloudRegion.EU))
+    assertThat(new SonarCloudActiveEnvironment(regionWithWebSocketUri, empty).getWebSocketsEndpointUri(SonarCloudRegion.EU))
       .isEqualTo(webSocketUri);
-    assertThat(new SonarCloudActiveEnvironment(null, regionWithWebSocketUri).getWebSocketsEndpointUri(SonarCloudRegion.US))
+    assertThat(new SonarCloudActiveEnvironment(empty, regionWithWebSocketUri).getWebSocketsEndpointUri(SonarCloudRegion.US))
       .isEqualTo(webSocketUri);
 
-    assertThat(new SonarCloudActiveEnvironment(regionWithBaseUri, null).getWebSocketsEndpointUri(SonarCloudRegion.EU))
+    assertThat(new SonarCloudActiveEnvironment(regionWithBaseUri, empty).getWebSocketsEndpointUri(SonarCloudRegion.EU))
       .isEqualTo(SonarCloudRegion.EU.getWebSocketUri());
-    assertThat(new SonarCloudActiveEnvironment(null, regionWithBaseUri).getWebSocketsEndpointUri(SonarCloudRegion.US))
+    assertThat(new SonarCloudActiveEnvironment(empty, regionWithBaseUri).getWebSocketsEndpointUri(SonarCloudRegion.US))
       .isEqualTo(SonarCloudRegion.US.getWebSocketUri());
   }
   
   @Test
   void test_isSonarQubeCloud() {
-    assertThat(new SonarCloudActiveEnvironment(null, null).isSonarQubeCloud("aaaa")).isFalse();
+    assertThat(new SonarCloudActiveEnvironment(empty, empty).isSonarQubeCloud("aaaa")).isFalse();
 
-    assertThat(new SonarCloudActiveEnvironment(null, null)
+    assertThat(new SonarCloudActiveEnvironment(empty, empty)
       .isSonarQubeCloud(SonarCloudRegion.EU.getProductionUri().toString())).isTrue();
-    assertThat(new SonarCloudActiveEnvironment(null, null)
+    assertThat(new SonarCloudActiveEnvironment(empty, empty)
       .isSonarQubeCloud(SonarCloudRegion.US.getProductionUri().toString())).isTrue();
 
-    assertThat(new SonarCloudActiveEnvironment(regionWithBaseUri, null)
+    assertThat(new SonarCloudActiveEnvironment(regionWithBaseUri, empty)
       .isSonarQubeCloud(baseUri.toString())).isTrue();
-    assertThat(new SonarCloudActiveEnvironment(regionWithApiUri, null)
+    assertThat(new SonarCloudActiveEnvironment(regionWithApiUri, empty)
       .isSonarQubeCloud(SonarCloudRegion.EU.getProductionUri().toString())).isTrue();
-    assertThat(new SonarCloudActiveEnvironment(null, regionWithBaseUri)
+    assertThat(new SonarCloudActiveEnvironment(empty, regionWithBaseUri)
       .isSonarQubeCloud(baseUri.toString())).isTrue();
-    assertThat(new SonarCloudActiveEnvironment(null, regionWithApiUri)
+    assertThat(new SonarCloudActiveEnvironment(empty, regionWithApiUri)
       .isSonarQubeCloud(SonarCloudRegion.US.getProductionUri().toString())).isTrue();
   }
 
   @Test
   void test_getRegionOrThrow() {
-    assertThatThrownBy(() -> new SonarCloudActiveEnvironment(null, null).getRegionOrThrow("aaaa"))
+    assertThatThrownBy(() -> new SonarCloudActiveEnvironment(empty, empty).getRegionOrThrow("aaaa"))
       .isInstanceOf(IllegalArgumentException.class);
 
-    assertThat(new SonarCloudActiveEnvironment(null, null)
+    assertThat(new SonarCloudActiveEnvironment(empty, empty)
       .getRegionOrThrow(SonarCloudRegion.EU.getProductionUri().toString())).isEqualTo(SonarCloudRegion.EU);
-    assertThat(new SonarCloudActiveEnvironment(null, null)
+    assertThat(new SonarCloudActiveEnvironment(empty, empty)
       .getRegionOrThrow(SonarCloudRegion.US.getProductionUri().toString())).isEqualTo(SonarCloudRegion.US);
 
-    assertThat(new SonarCloudActiveEnvironment(regionWithBaseUri, null)
+    assertThat(new SonarCloudActiveEnvironment(regionWithBaseUri, empty)
       .getRegionOrThrow(baseUri.toString())).isEqualTo(SonarCloudRegion.EU);
-    assertThat(new SonarCloudActiveEnvironment(null, regionWithBaseUri)
+    assertThat(new SonarCloudActiveEnvironment(empty, regionWithBaseUri)
       .getRegionOrThrow(baseUri.toString())).isEqualTo(SonarCloudRegion.US);
   }
 }

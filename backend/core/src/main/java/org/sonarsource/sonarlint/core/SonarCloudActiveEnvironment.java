@@ -20,70 +20,65 @@
 package org.sonarsource.sonarlint.core;
 
 import java.net.URI;
-import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 
 import static org.apache.commons.lang.StringUtils.removeEnd;
 
 public class SonarCloudActiveEnvironment {
-  @Nullable
   private SonarQubeCloudRegionDto alternativeEuRegion;
-  @Nullable
   private SonarQubeCloudRegionDto alternativeUsRegion;
 
   public static SonarCloudActiveEnvironment prod() {
-    return new SonarCloudActiveEnvironment();
-  }
-
-  public SonarCloudActiveEnvironment() {
+    return new SonarCloudActiveEnvironment(new SonarQubeCloudRegionDto(null, null, null),
+      new SonarQubeCloudRegionDto(null, null, null));
   }
   
-  public SonarCloudActiveEnvironment(@Nullable SonarQubeCloudRegionDto alternativeEuRegion, @Nullable SonarQubeCloudRegionDto alternativeUsRegion) {
+  public SonarCloudActiveEnvironment(SonarQubeCloudRegionDto alternativeEuRegion, SonarQubeCloudRegionDto alternativeUsRegion) {
     this.alternativeEuRegion = alternativeEuRegion;
     this.alternativeUsRegion = alternativeUsRegion;
   }
 
   public URI getUri(SonarCloudRegion region) {
-    if (region.equals(SonarCloudRegion.EU)) {
-      return alternativeEuRegion != null && alternativeEuRegion.getUri() != null
-        ? alternativeEuRegion.getUri()
-        : SonarCloudRegion.EU.getProductionUri();
+    if (region.equals(SonarCloudRegion.US)) {
+      return alternativeUsRegion.getUri() != null
+        ? alternativeUsRegion.getUri()
+        : SonarCloudRegion.US.getProductionUri();
     }
-    return alternativeUsRegion != null && alternativeUsRegion.getUri() != null
-      ? alternativeUsRegion.getUri()
-      : SonarCloudRegion.US.getProductionUri();
+    return alternativeEuRegion.getUri() != null
+      ? alternativeEuRegion.getUri()
+      : SonarCloudRegion.EU.getProductionUri();
   }
 
   public URI getApiUri(SonarCloudRegion region) {
-    if (region.equals(SonarCloudRegion.EU)) {
-      return alternativeEuRegion != null && alternativeEuRegion.getApiUri() != null
-        ? alternativeEuRegion.getApiUri()
-        : SonarCloudRegion.EU.getApiProductionUri();
+    if (region.equals(SonarCloudRegion.US)) {
+      return alternativeUsRegion.getApiUri() != null
+        ? alternativeUsRegion.getApiUri()
+        : SonarCloudRegion.US.getApiProductionUri();
     }
-    return alternativeUsRegion != null && alternativeUsRegion.getApiUri() != null
-      ? alternativeUsRegion.getApiUri()
-      : SonarCloudRegion.US.getApiProductionUri();
+    return alternativeEuRegion.getApiUri() != null
+      ? alternativeEuRegion.getApiUri()
+      : SonarCloudRegion.EU.getApiProductionUri();
   }
 
   public URI getWebSocketsEndpointUri(SonarCloudRegion region) {
-    if (region.equals(SonarCloudRegion.EU)) {
-      return alternativeEuRegion != null && alternativeEuRegion.getWebSocketsEndpointUri() != null
-        ? alternativeEuRegion.getWebSocketsEndpointUri()
-        : SonarCloudRegion.EU.getWebSocketUri();
+    if (region.equals(SonarCloudRegion.US)) {
+      return alternativeUsRegion.getWebSocketsEndpointUri() != null
+        ? alternativeUsRegion.getWebSocketsEndpointUri()
+        : SonarCloudRegion.US.getWebSocketUri();
     }
-    return alternativeUsRegion != null && alternativeUsRegion.getWebSocketsEndpointUri() != null
-      ? alternativeUsRegion.getWebSocketsEndpointUri()
-      : SonarCloudRegion.US.getWebSocketUri();
+    return alternativeEuRegion.getWebSocketsEndpointUri() != null
+      ? alternativeEuRegion.getWebSocketsEndpointUri()
+      : SonarCloudRegion.EU.getWebSocketUri();
   }
 
   public boolean isSonarQubeCloud(String uri) {
     var cleanedUri = removeEnd(uri, "/");
-    if (isAlternativeEuUri(cleanedUri) || isAlternativeUsUri(cleanedUri)) {
+    if (isAlternativeUsUri(cleanedUri) || isAlternativeEuUri(cleanedUri)) {
       return true;
     }
     
-    return removeEnd(SonarCloudRegion.EU.getProductionUri().toString(), "/").equals(cleanedUri) ||
-      removeEnd(SonarCloudRegion.US.getProductionUri().toString(), "/").equals(cleanedUri);
+    return removeEnd(SonarCloudRegion.US.getProductionUri().toString(), "/").equals(cleanedUri) ||
+      removeEnd(SonarCloudRegion.EU.getProductionUri().toString(), "/").equals(cleanedUri);
   }
 
   /**
@@ -91,26 +86,24 @@ public class SonarCloudActiveEnvironment {
    */
   public SonarCloudRegion getRegionOrThrow(String uri) {
     var cleanedUri = removeEnd(uri, "/");
-    if (isAlternativeEuUri(cleanedUri) ||
-      removeEnd(SonarCloudRegion.EU.getProductionUri().toString(), "/").equals(cleanedUri)) {
-      return SonarCloudRegion.EU;
-    } else if (isAlternativeUsUri(cleanedUri) ||
+    if (isAlternativeUsUri(cleanedUri) ||
       removeEnd(SonarCloudRegion.US.getProductionUri().toString(), "/").equals(cleanedUri)) {
       return SonarCloudRegion.US;
+    } else if (isAlternativeEuUri(cleanedUri) ||
+      removeEnd(SonarCloudRegion.EU.getProductionUri().toString(), "/").equals(cleanedUri)) {
+      return SonarCloudRegion.EU;
     }
     
     throw new IllegalArgumentException("URI should be a known SonarCloud URI");
   }
   
   private boolean isAlternativeEuUri(String uri) {
-    return alternativeEuRegion != null
-      && alternativeEuRegion.getUri() != null
+    return alternativeEuRegion.getUri() != null
       && removeEnd(alternativeEuRegion.getUri().toString(), "/").equals(uri);
   }
 
   private boolean isAlternativeUsUri(String uri) {
-    return alternativeUsRegion != null
-      && alternativeUsRegion.getUri() != null
+    return alternativeUsRegion.getUri() != null
       && removeEnd(alternativeUsRegion.getUri().toString(), "/").equals(uri);
   }
 }
