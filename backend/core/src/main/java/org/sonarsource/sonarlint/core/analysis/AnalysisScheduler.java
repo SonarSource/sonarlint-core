@@ -202,9 +202,7 @@ public class AnalysisScheduler {
           break;
         }
         var task = executingTask.get();
-        var analysisConfig = getAnalysisConfig(task.getConfigScopeId(), task.isHotspotsOnly());
-        var analysisProperties = analysisConfig.getAnalysisProperties();
-        var analysisConfigForEngine = getAnalysisConfigForEngine(task.getConfigScopeId(), task.getFilePathsToAnalyze(), analysisProperties, task.isHotspotsOnly());
+        var analysisConfigForEngine = getAnalysisConfigForEngine(task.getConfigScopeId(), task.getFilePathsToAnalyze(), task.getExtraProperties(), task.isHotspotsOnly());
         var analyzeCommand = new AnalyzeCommand(task.getConfigScopeId(), analysisConfigForEngine, task.getIssueStreamingListener(), logOutput, monitoringService.newTrace(
           "AnalysisService", "analyze"));
         engine.post(analyzeCommand, task.getProgressMonitor())
