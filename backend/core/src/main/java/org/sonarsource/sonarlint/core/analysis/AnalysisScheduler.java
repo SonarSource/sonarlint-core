@@ -42,7 +42,12 @@ import org.sonarsource.sonarlint.core.analysis.api.ActiveRule;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
+import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
+import org.sonarsource.sonarlint.core.analysis.command.NotifyModuleEventCommand;
+import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
+import org.sonarsource.sonarlint.core.analysis.command.UnregisterModuleCommand;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.RuleType;
@@ -50,6 +55,7 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.file.WindowsShortcutUtils;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
@@ -67,6 +73,7 @@ import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rules.RulesService;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.storage.StorageService;
+import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
 
 import static java.util.Optional.ofNullable;
 import static java.util.function.Predicate.not;
@@ -120,6 +127,8 @@ public class AnalysisScheduler {
     this.clientFileSystemService = clientFileSystemService;
     this.client = client;
     this.esLintBridgeServerPath = esLintBridgeServerPath;
+
+    analysisThread.start();
   }
 
   private static Path findCommonPrefix(List<URI> uris) {
@@ -215,6 +224,26 @@ public class AnalysisScheduler {
 
   public void finishGracefully() {
     termination.compareAndSet(null, this::honorPendingTasks);
+    engine.finishGracefully();
+  }
+
+  public void stop() {
+    if (!analysisThread.isAlive()) {
+      return;
+    }
+    if (!termination.compareAndSet(null, CANCELING_TERMINATION)) {
+      // already terminating
+      return;
+    }
+    var task = executingTask.get();
+    if (task != null) {
+      task.getProgressMonitor().cancel();
+    }
+    analysisThread.interrupt();
+    List<AnalysisTask> pendingCommands = new ArrayList<>();
+    analysisQueue.drainTo(pendingCommands);
+    pendingCommands.forEach(c -> c.getResult().cancel(false));
+    engine.stop();
   }
 
   private void honorPendingTasks() {
@@ -478,4 +507,16 @@ public class AnalysisScheduler {
     }
   }
 
+  public void registerModule(ClientModuleInfo moduleInfo) {
+    engine.post(new RegisterModuleCommand(moduleInfo), new ProgressMonitor(null));
+  }
+
+  public void unregisterModule(String scopeId) {
+    engine.post(new UnregisterModuleCommand(scopeId), new ProgressMonitor(null));
+  }
+
+  public void notifyModuleEvent(String scopeId, ClientFile file, ModuleFileEvent.Type type) {
+    engine.post(new NotifyModuleEventCommand(scopeId,
+      ClientModuleFileEvent.of(new BackendInputFile(file), type)), new ProgressMonitor(null)).join();
+  }
 }
