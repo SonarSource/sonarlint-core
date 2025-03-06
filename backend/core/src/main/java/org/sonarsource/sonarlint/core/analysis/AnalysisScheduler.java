@@ -199,10 +199,18 @@ public class AnalysisScheduler {
         var analysisConfig = getAnalysisConfig(task.getConfigScopeId(), task.isHotspotsOnly());
         var analysisProperties = analysisConfig.getAnalysisProperties();
         var analysisConfigForEngine = getAnalysisConfigForEngine(task.getConfigScopeId(), task.getFilePathsToAnalyze(), analysisProperties, task.isHotspotsOnly());
-        var analyzeCommand = new AnalyzeCommand(task.getConfigScopeId(), analysisConfigForEngine, issue -> {
-        }, logOutput, monitoringService.newTrace("AnalysisService", "analyze"));
-        engine.post(analyzeCommand, task.getProgressMonitor());
-        // executingCommand.set(null);
+        var analyzeCommand = new AnalyzeCommand(task.getConfigScopeId(), analysisConfigForEngine, task.getIssueStreamingListener(), logOutput, monitoringService.newTrace(
+          "AnalysisService", "analyze"));
+        engine.post(analyzeCommand, task.getProgressMonitor())
+          .handle((res, err) -> {
+            if (err != null) {
+              task.getResult().completeExceptionally(err);
+            } else {
+              task.getResult().complete(res);
+            }
+            return res;
+          });
+        executingTask.set(null);
       } catch (InterruptedException e) {
         if (termination.get() != CANCELING_TERMINATION) {
           LOG.error("Analysis engine interrupted", e);
