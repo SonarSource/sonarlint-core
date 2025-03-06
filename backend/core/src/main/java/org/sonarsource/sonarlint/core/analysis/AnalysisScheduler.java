@@ -26,12 +26,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
@@ -44,6 +47,7 @@ import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
+import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.analysis.command.NotifyModuleEventCommand;
 import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
@@ -52,6 +56,7 @@ import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.RuleKey;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
@@ -69,15 +74,30 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.ActiveRuleDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.NodeJsDetailsDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidDetectSecretParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.FileEditDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetInferredAnalysisPropertiesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.QuickFixDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueFlowDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueLocationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.TextEditDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
+import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
 import org.sonarsource.sonarlint.core.rules.RulesService;
 import org.sonarsource.sonarlint.core.serverapi.rules.ServerActiveRule;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.plugin.api.module.file.ModuleFileEvent;
+import org.springframework.context.ApplicationEventPublisher;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 import static java.util.function.Predicate.not;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.trimToNull;
 import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.createSonarLintGitIgnore;
@@ -108,6 +128,7 @@ public class AnalysisScheduler {
   private final FileExclusionService fileExclusionService;
   private final ClientFileSystemService clientFileSystemService;
   private final SonarLintRpcClient client;
+  private final ApplicationEventPublisher eventPublisher;
   private final Path esLintBridgeServerPath;
   private final Thread analysisThread = new Thread(this::executeAnalysisTasks, "sonarlint-analysis-scheduler");
 
@@ -115,7 +136,8 @@ public class AnalysisScheduler {
     UserAnalysisPropertiesRepository userAnalysisPropertiesRepository, StorageService storageService, PluginsService pluginsService, RulesRepository rulesRepository,
     RulesService rulesService, LanguageSupportRepository languageSupportRepository, ClientFileSystemService fileSystemService, MonitoringService monitoringService,
     FileExclusionService fileExclusionService, ClientFileSystemService clientFileSystemService, SonarLintRpcClient client,
-    ConnectionConfigurationRepository connectionConfigurationRepository, boolean hotspotEnabled, Path esLintBridgeServerPath) {
+    ConnectionConfigurationRepository connectionConfigurationRepository, boolean hotspotEnabled,
+    ApplicationEventPublisher eventPublisher, Path esLintBridgeServerPath) {
     this.engine = engine;
     this.configurationRepository = configurationRepository;
     this.nodeJsService = nodeJsService;
@@ -132,6 +154,7 @@ public class AnalysisScheduler {
     this.fileExclusionService = fileExclusionService;
     this.clientFileSystemService = clientFileSystemService;
     this.client = client;
+    this.eventPublisher = eventPublisher;
     this.esLintBridgeServerPath = esLintBridgeServerPath;
 
     analysisThread.start();
@@ -192,6 +215,54 @@ public class AnalysisScheduler {
     return effectiveParams;
   }
 
+  private static TextRangeDto adapt(TextRange textRange) {
+    return new TextRangeDto(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset());
+  }
+
+  static RawIssueDto toDto(Issue issue, RuleDetailsForAnalysis activeRule) {
+    var range = issue.getTextRange();
+    var textRange = range != null ? adapt(range) : null;
+    var impacts = new EnumMap<SoftwareQuality, ImpactSeverity>(SoftwareQuality.class);
+    impacts.putAll(activeRule.getImpacts().entrySet().stream()
+      .collect(toMap(e -> RuleDetailsAdapter.adapt(e.getKey()), e -> RuleDetailsAdapter.adapt(e.getValue()))));
+    impacts
+      .putAll(
+        issue.getOverriddenImpacts().entrySet().stream().map(entry -> Map.entry(SoftwareQuality.valueOf(entry.getKey().name()), ImpactSeverity.valueOf(entry.getValue().name())))
+          .collect(toMap(Map.Entry::getKey, Map.Entry::getValue)));
+    var inputFile = issue.getInputFile();
+    var fileUri = inputFile == null ? null : inputFile.uri();
+    var flows = issue.flows().stream().map(flow -> {
+      var locations = flow.locations().stream().map(location -> {
+        var locationTextRange = location.getTextRange();
+        var locationTextRangeDto = locationTextRange == null ? null : adapt(locationTextRange);
+        var locationInputFile = location.getInputFile();
+        var locationFileUri = locationInputFile == null ? null : locationInputFile.uri();
+        return new RawIssueLocationDto(locationTextRangeDto, location.getMessage(), locationFileUri);
+      }).toList();
+      return new RawIssueFlowDto(locations);
+    }).toList();
+    return new RawIssueDto(
+      RuleDetailsAdapter.adapt(activeRule.getSeverity()),
+      RuleDetailsAdapter.adapt(activeRule.getType()),
+      RuleDetailsAdapter.adapt(activeRule.getCleanCodeAttribute()),
+      impacts,
+      issue.getRuleKey(),
+      requireNonNull(issue.getMessage()),
+      fileUri,
+      flows,
+      issue.quickFixes().stream()
+        .map(quickFix -> new QuickFixDto(
+          quickFix.inputFileEdits().stream()
+            .map(fileEdit -> new FileEditDto(fileEdit.target().uri(),
+              fileEdit.textEdits().stream().map(textEdit -> new TextEditDto(adapt(textEdit.range()), textEdit.newText())).toList()))
+            .toList(),
+          quickFix.message()))
+        .toList(),
+      textRange,
+      issue.getRuleDescriptionContextKey().orElse(null),
+      RuleDetailsAdapter.adapt(activeRule.getVulnerabilityProbability()));
+  }
+
   private void executeAnalysisTasks() {
     while (termination.get() == null) {
       SonarLintLogger.get().setTarget(logOutput);
@@ -202,15 +273,28 @@ public class AnalysisScheduler {
           break;
         }
         var task = executingTask.get();
-        var analysisConfigForEngine = getAnalysisConfigForEngine(task.getConfigScopeId(), task.getFilePathsToAnalyze(), task.getExtraProperties(), task.isHotspotsOnly());
-        var analyzeCommand = new AnalyzeCommand(task.getConfigScopeId(), analysisConfigForEngine, task.getIssueStreamingListener(), logOutput, monitoringService.newTrace(
+
+        var configScopeId = task.getConfigScopeId();
+        var analysisConfigForEngine = getAnalysisConfigForEngine(configScopeId, task.getFilePathsToAnalyze(), task.getExtraProperties(), task.isHotspotsOnly());
+        var analyzeCommand = new AnalyzeCommand(configScopeId, analysisConfigForEngine, task.getIssueStreamingListener(), logOutput, monitoringService.newTrace(
           "AnalysisService", "analyze"));
+        eventPublisher.publishEvent(new AnalysisStartedEvent(configScopeId, task.getAnalysisId(), analysisConfigForEngine.inputFiles()));
         engine.post(analyzeCommand, task.getProgressMonitor())
           .handle((res, err) -> {
+            var endTime = System.currentTimeMillis();
             if (err != null) {
               task.getResult().completeExceptionally(err);
+              LOG.error("Error during analysis", err);
+              eventPublisher.publishEvent(new AnalysisFailedEvent(task.getAnalysisId()));
             } else {
               task.getResult().complete(res);
+              var languagePerFile = res.languagePerFile().entrySet().stream().collect(HashMap<URI, SonarLanguage>::new,
+                (map, entry) -> map.put(entry.getKey().uri(), entry.getValue()), HashMap::putAll);
+              var analysisDuration = endTime - task.getStartTime();
+              // logSummary(raisedIssues, analysisDuration);
+              eventPublisher.publishEvent(new AnalysisFinishedEvent(task.getAnalysisId(), configScopeId, analysisDuration,
+                languagePerFile, res.failedAnalysisFiles().isEmpty(), task.getRaisedIssues(), task.isShouldFetchServerIssues()));
+              res.setRawIssues(task.getRaisedIssues().stream().map(issue -> toDto(issue.getIssue(), issue.getActiveRule())).toList());
             }
             return res;
           });
@@ -539,5 +623,34 @@ public class AnalysisScheduler {
   public void notifyModuleEvent(String scopeId, ClientFile file, ModuleFileEvent.Type type) {
     engine.post(new NotifyModuleEventCommand(scopeId,
       ClientModuleFileEvent.of(new BackendInputFile(file), type)), new ProgressMonitor(null)).join();
+  }
+
+  private boolean isStandalone(String configScopeId) {
+    return configurationRepository.getEffectiveBinding(configScopeId).isEmpty();
+  }
+
+  private void sendModuleEvents(List<ClientFile> filesToProcess, ModuleFileEvent.Type type) {
+    var filesByScopeId = filesToProcess.stream().collect(groupingBy(ClientFile::getConfigScopeId));
+    filesByScopeId.forEach((scopeId, files) ->
+      files.forEach(file -> notifyModuleEvent(scopeId, file, type)));
+  }
+
+  private void streamIssue(String configScopeId, UUID analysisId, Issue issue, ConcurrentHashMap<String, RuleDetailsForAnalysis> ruleDetailsCache, List<RawIssue> rawIssues) {
+    var ruleKey = issue.getRuleKey();
+    var activeRule = ruleDetailsCache.computeIfAbsent(ruleKey, k -> {
+      try {
+        return rulesService.getRuleDetailsForAnalysis(configScopeId, k);
+      } catch (Exception e) {
+        return null;
+      }
+    });
+    if (activeRule != null) {
+      var rawIssue = new RawIssue(issue, activeRule);
+      rawIssues.add(rawIssue);
+      if (ruleKey.contains("secrets")) {
+        client.didDetectSecret(new DidDetectSecretParams(configScopeId));
+      }
+      eventPublisher.publishEvent(new RawIssueDetectedEvent(configScopeId, analysisId, rawIssue));
+    }
   }
 }
