@@ -46,7 +46,6 @@ import java.util.function.Consumer;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
-import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintCancelChecker;
@@ -65,6 +64,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.JsTsRequirementsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSpecificRequirements;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarCloudAlternativeEnvironmentDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SslConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryMigrationDto;
@@ -161,8 +161,11 @@ public class SonarLintBackendFixture {
     private boolean isFocusOnNewCode;
     private boolean enableDataflowBugDetection;
 
-    private String sonarCloudUrl;
-    private String sonarCloudWebSocketsUrl;
+    @Nullable
+    private SonarQubeCloudRegionDto euRegionDto;
+    @Nullable
+    private SonarQubeCloudRegionDto usRegionDto;
+    
     private Duration responseTimeout;
     private Path keyStorePath;
     private String keyStorePassword;
@@ -234,14 +237,14 @@ public class SonarLintBackendFixture {
       storages.add(storage);
       return this;
     }
-
-    public SonarLintBackendBuilder withSonarCloudUrl(String sonarCloudUrl) {
-      this.sonarCloudUrl = sonarCloudUrl;
+    
+    public SonarLintBackendBuilder withSonarQubeCloudEuRegionDto(@Nullable SonarQubeCloudRegionDto euRegionDto) {
+      this.euRegionDto = euRegionDto;
       return this;
     }
 
-    public SonarLintBackendBuilder withSonarCloudWebSocketsUrl(String sonarCloudWebSocketsUrl) {
-      this.sonarCloudWebSocketsUrl = sonarCloudWebSocketsUrl;
+    public SonarLintBackendBuilder withSonarQubeCloudUsRegionDto(@Nullable SonarQubeCloudRegionDto usRegionDto) {
+      this.usRegionDto = usRegionDto;
       return this;
     }
 
@@ -495,12 +498,8 @@ public class SonarLintBackendFixture {
           manageServerSentEvents, enableDataflowBugDetection, shouldManageFullSynchronization, telemetryEnabled, canOpenFixSuggestion, monitoringEnabled);
 
         SonarCloudAlternativeEnvironmentDto sonarCloudAlternativeEnvironment = null;
-        if (sonarCloudUrl != null || sonarCloudWebSocketsUrl != null) {
-          var baseUri = sonarCloudUrl == null ? SonarCloudRegion.EU.getProductionUri() : URI.create(sonarCloudUrl);
-          sonarCloudAlternativeEnvironment = new SonarCloudAlternativeEnvironmentDto(
-            baseUri,
-            baseUri,
-            sonarCloudWebSocketsUrl == null ? SonarCloudRegion.EU.getWebSocketUri() : URI.create(sonarCloudWebSocketsUrl));
+        if (euRegionDto != null || usRegionDto != null) {
+          sonarCloudAlternativeEnvironment = new SonarCloudAlternativeEnvironmentDto(euRegionDto, usRegionDto);
         }
 
         var sslConfiguration = new SslConfigurationDto(null, null, null, keyStorePath, keyStorePassword, keyStoreType);

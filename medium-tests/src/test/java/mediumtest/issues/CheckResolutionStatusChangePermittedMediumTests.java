@@ -21,6 +21,7 @@ package mediumtest.issues;
 
 import com.google.protobuf.Message;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -44,6 +45,7 @@ import org.sonar.scanner.protocol.Constants;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
@@ -128,7 +130,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
   void it_should_allow_2_statuses_when_user_has_permission_for_sonarcloud(SonarLintTestHarness harness) {
     fakeServerWithIssue("issueKey", "orgKey", List.of("wontfix", "falsepositive"));
     var backend = harness.newBackend()
-      .withSonarCloudUrl(mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(mockWebServerExtension.endpointParams().getBaseUrl()), null, null))
       .withSonarCloudConnection(CONNECTION_ID, "orgKey")
       .start();
 

@@ -1,5 +1,11 @@
 # 10.17
 
+## Breaking Changes
+
+* Change `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarCloudAlternativeEnvironmentDto` to accept region specific URIs (in a DTO each) in the constructor.
+    * Per region a `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto` must be provided that contains the *base*, *API* and *WebSocket* URIs.
+    * `null` values are accepted for every URI as well for the whole region DTO object - it will internally fallback to the actual region URIs for a `null` value encountered.
+
 ## Deprecation
 
 * Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService.checkSmartNotificationsSupported` method. It always returns that notifications are supported.

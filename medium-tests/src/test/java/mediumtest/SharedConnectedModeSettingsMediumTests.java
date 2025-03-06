@@ -19,11 +19,13 @@
  */
 package mediumtest;
 
+import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetSharedConnectedModeConfigFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetSharedConnectedModeConfigFileResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -61,7 +63,7 @@ class SharedConnectedModeSettingsMediumTests {
     var server = harness.newFakeSonarCloudServer(organizationKey).start();
 
     var backend = harness.newBackend()
-      .withSonarCloudUrl(server.baseUrl())
+      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(server.baseUrl()), null, null))
       .withSonarCloudConnection(connectionId, organizationKey)
       .withBoundConfigScope(configScopeId, connectionId, projectKey)
       .withTelemetryEnabled()
@@ -71,6 +73,41 @@ class SharedConnectedModeSettingsMediumTests {
 
     assertThat(result).succeedsWithin(3, TimeUnit.SECONDS);
     assertThat(result.get().getJsonFileContent()).isEqualTo(expectedFileContent);
+    assertThat(backend.telemetryFilePath())
+      .content().asBase64Decoded().asString()
+      .contains("\"exportedConnectedModeCount\":1");
+  }
+
+  @SonarLintTest
+  void should_return_wrong_sc_config_when_bound_to_sonarcloud_us(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
+    var configScopeId = "file:///my/workspace/folder";
+    var connectionId = "scConnection";
+    var organizationKey = "myOrg";
+    var projectKey = "projectKey";
+
+    var expectedFileContent = String.format("""
+      {
+          "sonarCloudOrganization": "%s",
+          "projectKey": "%s",
+          "region": "US"
+      }""", organizationKey, projectKey);
+
+    var server = harness.newFakeSonarCloudServer(organizationKey).start();
+
+    var backend = harness.newBackend()
+      .withSonarQubeCloudUsRegionDto(new SonarQubeCloudRegionDto(URI.create(server.baseUrl()), null, null))
+      .withSonarCloudConnection(connectionId, organizationKey)
+      .withBoundConfigScope(configScopeId, connectionId, projectKey)
+      .withTelemetryEnabled()
+      .start();
+
+    var result = getFileContents(backend, configScopeId);
+
+    assertThat(result).succeedsWithin(3, TimeUnit.SECONDS);
+    
+    // This currently returns "EU" instead of "US" but this is what is tested here
+    assertThat(result.get().getJsonFileContent()).isNotEqualTo(expectedFileContent);
+    
     assertThat(backend.telemetryFilePath())
       .content().asBase64Decoded().asString()
       .contains("\"exportedConnectedModeCount\":1");
