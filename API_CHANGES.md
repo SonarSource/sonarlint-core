@@ -9,6 +9,8 @@
 ## Deprecation
 
 * Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService.checkSmartNotificationsSupported` method. It always returns that notifications are supported.
+* Deprecate `org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient.didChangeAnalysisReadiness` method. Client should not care about readiness anymore. It should just send
+  related events and publish issues.
 
 # 10.16
 
