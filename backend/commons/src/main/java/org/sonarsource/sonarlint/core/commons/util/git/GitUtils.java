@@ -55,6 +55,7 @@ import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
 import org.sonarsource.sonarlint.core.commons.SonarLintGitIgnore;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.util.git.exceptions.GitRepoNotFoundException;
 
 import static java.util.Optional.ofNullable;
 import static org.eclipse.jgit.lib.Constants.GITIGNORE_FILENAME;
