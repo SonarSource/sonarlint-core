@@ -40,6 +40,7 @@ import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -63,6 +64,8 @@ public class AnalysisSchedulerCache {
   private final InitializeParams initializeParams;
   private final ConfigurationRepository configurationRepository;
   private final UserAnalysisPropertiesRepository userAnalysisPropertiesRepository;
+  private final ConnectionConfigurationRepository connectionConfigurationRepository;
+  private final boolean hotspotEnabled;
   private final StorageService storageService;
   private final PluginsService pluginsService;
   private final NodeJsService nodeJsService;
@@ -74,7 +77,8 @@ public class AnalysisSchedulerCache {
   public AnalysisSchedulerCache(InitializeParams initializeParams, UserPaths userPaths, ConfigurationRepository configurationRepository, NodeJsService nodeJsService,
     UserAnalysisPropertiesRepository userAnalysisPropertiesRepository, StorageService storageService, PluginsService pluginsService, RulesRepository rulesRepository,
     RulesService rulesService, LanguageSupportRepository languageSupportRepository, ClientFileSystemService fileSystemService, MonitoringService monitoringService,
-    FileExclusionService fileExclusionService, ClientFileSystemService clientFileSystemService, SonarLintRpcClient client, Path esLintBridgeServerPath) {
+    FileExclusionService fileExclusionService, ClientFileSystemService clientFileSystemService, SonarLintRpcClient client,
+    ConnectionConfigurationRepository connectionConfigurationRepository, Path esLintBridgeServerPath) {
     this.initializeParams = initializeParams;
     this.configurationRepository = configurationRepository;
     this.userAnalysisPropertiesRepository = userAnalysisPropertiesRepository;
@@ -90,6 +94,8 @@ public class AnalysisSchedulerCache {
     this.fileExclusionService = fileExclusionService;
     this.clientFileSystemService = clientFileSystemService;
     this.client = client;
+    this.connectionConfigurationRepository = connectionConfigurationRepository;
+    this.hotspotEnabled = initializeParams.getFeatureFlags().isEnableSecurityHotspots();
     this.esLintBridgeServerPath = esLintBridgeServerPath;
     var shouldSupportCsharp = initializeParams.getEnabledLanguagesInStandaloneMode().contains(Language.CS);
     var languageSpecificRequirements = initializeParams.getLanguageSpecificRequirements();
@@ -136,7 +142,8 @@ public class AnalysisSchedulerCache {
     if (scheduler == null) {
       var engine = createEngine(pluginsService.getEmbeddedPlugins(), csharpOssPluginPath);
       scheduler = new AnalysisScheduler(engine, configurationRepository, nodeJsService, userAnalysisPropertiesRepository, storageService, pluginsService, rulesRepository,
-        rulesService, languageSupportRepository, fileSystemService, monitoringService, fileExclusionService, clientFileSystemService, client, esLintBridgeServerPath);
+        rulesService, languageSupportRepository, fileSystemService, monitoringService, fileExclusionService, clientFileSystemService, client, connectionConfigurationRepository,
+        hotspotEnabled, esLintBridgeServerPath);
       standaloneScheduler.set(scheduler);
     }
     return scheduler;
@@ -150,7 +157,8 @@ public class AnalysisSchedulerCache {
   private AnalysisScheduler createScheduler(LoadedPlugins plugins, @Nullable Path actualCsharpAnalyzerPath) {
     return new AnalysisScheduler(createEngine(plugins, actualCsharpAnalyzerPath), configurationRepository, nodeJsService, userAnalysisPropertiesRepository, storageService,
       pluginsService, rulesRepository,
-      rulesService, languageSupportRepository, fileSystemService, monitoringService, fileExclusionService, clientFileSystemService, client, esLintBridgeServerPath);
+      rulesService, languageSupportRepository, fileSystemService, monitoringService, fileExclusionService, clientFileSystemService, client, connectionConfigurationRepository,
+      hotspotEnabled, esLintBridgeServerPath);
   }
 
   private AnalysisEngine createEngine(LoadedPlugins plugins, @Nullable Path actualCsharpAnalyzerPath) {

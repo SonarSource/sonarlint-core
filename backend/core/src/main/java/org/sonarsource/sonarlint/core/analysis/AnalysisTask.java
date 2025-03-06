@@ -33,7 +33,6 @@ public class AnalysisTask {
   private final String configScopeId;
   private final List<URI> filePathsToAnalyze;
   private final Map<String, String> extraProperties;
-  // TODO do we need this boolean?
   private final boolean hotspotsOnly;
   private final CompletableFuture<AnalysisResults> result = new CompletableFuture<>();
   private final ProgressMonitor progressMonitor;

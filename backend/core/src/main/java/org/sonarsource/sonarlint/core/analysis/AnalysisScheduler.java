@@ -63,6 +63,7 @@ import org.sonarsource.sonarlint.core.fs.FileExclusionService;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.ActiveRuleDto;
@@ -95,6 +96,8 @@ public class AnalysisScheduler {
   private final ConfigurationRepository configurationRepository;
   private final NodeJsService nodeJsService;
   private final UserAnalysisPropertiesRepository userAnalysisPropertiesRepository;
+  private final ConnectionConfigurationRepository connectionConfigurationRepository;
+  private final boolean hotspotEnabled;
   private final StorageService storageService;
   private final PluginsService pluginsService;
   private final RulesRepository rulesRepository;
@@ -111,11 +114,14 @@ public class AnalysisScheduler {
   public AnalysisScheduler(AnalysisEngine engine, ConfigurationRepository configurationRepository, NodeJsService nodeJsService,
     UserAnalysisPropertiesRepository userAnalysisPropertiesRepository, StorageService storageService, PluginsService pluginsService, RulesRepository rulesRepository,
     RulesService rulesService, LanguageSupportRepository languageSupportRepository, ClientFileSystemService fileSystemService, MonitoringService monitoringService,
-    FileExclusionService fileExclusionService, ClientFileSystemService clientFileSystemService, SonarLintRpcClient client, Path esLintBridgeServerPath) {
+    FileExclusionService fileExclusionService, ClientFileSystemService clientFileSystemService, SonarLintRpcClient client,
+    ConnectionConfigurationRepository connectionConfigurationRepository, boolean hotspotEnabled, Path esLintBridgeServerPath) {
     this.engine = engine;
     this.configurationRepository = configurationRepository;
     this.nodeJsService = nodeJsService;
     this.userAnalysisPropertiesRepository = userAnalysisPropertiesRepository;
+    this.connectionConfigurationRepository = connectionConfigurationRepository;
+    this.hotspotEnabled = hotspotEnabled;
     this.storageService = storageService;
     this.pluginsService = pluginsService;
     this.rulesRepository = rulesRepository;
@@ -225,7 +231,7 @@ public class AnalysisScheduler {
       analysisQueue.put(task);
       return task.getResult();
     } catch (InterruptedException e) {
-      // TODO what do we do?
+      Thread.currentThread().interrupt();
       return CompletableFuture.failedFuture(e);
     }
   }
@@ -480,8 +486,17 @@ public class AnalysisScheduler {
 
   private boolean shouldIncludeRuleForAnalysis(String connectionId, SonarLintRuleDefinition ruleDefinition, boolean hotspotsOnly) {
     var isHotspot = ruleDefinition.getType().equals(RuleType.SECURITY_HOTSPOT);
-    // TODO work on condition - || (isHotspot && hotspotEnabled && isHotspotTrackingPossible(connectionId))
-    return (!isHotspot && !hotspotsOnly);
+    return (!isHotspot && !hotspotsOnly) || (isHotspot && hotspotEnabled && isHotspotTrackingPossible(connectionId));
+  }
+
+  public boolean isHotspotTrackingPossible(String connectionId) {
+    var connection = connectionConfigurationRepository.getConnectionById(connectionId);
+    if (connection == null) {
+      // Connection is gone
+      return false;
+    }
+    // when storage is not present, consider hotspots should not be detected
+    return storageService.connection(connectionId).serverInfo().read().isPresent();
   }
 
   public ActiveRuleDto buildActiveRuleDto(SonarLintRuleDefinition ruleOrTemplateDefinition, ServerActiveRule activeRule) {
