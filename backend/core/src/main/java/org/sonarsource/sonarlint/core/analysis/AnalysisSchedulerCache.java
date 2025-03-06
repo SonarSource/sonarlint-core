@@ -61,7 +61,6 @@ public class AnalysisSchedulerCache {
   private final ClientFileSystemService clientFileSystemService;
   private final SonarLintRpcClient client;
   private final Path esLintBridgeServerPath;
-  private final InitializeParams initializeParams;
   private final ConfigurationRepository configurationRepository;
   private final UserAnalysisPropertiesRepository userAnalysisPropertiesRepository;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
@@ -79,7 +78,6 @@ public class AnalysisSchedulerCache {
     RulesService rulesService, LanguageSupportRepository languageSupportRepository, ClientFileSystemService fileSystemService, MonitoringService monitoringService,
     FileExclusionService fileExclusionService, ClientFileSystemService clientFileSystemService, SonarLintRpcClient client,
     ConnectionConfigurationRepository connectionConfigurationRepository, Path esLintBridgeServerPath) {
-    this.initializeParams = initializeParams;
     this.configurationRepository = configurationRepository;
     this.userAnalysisPropertiesRepository = userAnalysisPropertiesRepository;
     this.storageService = storageService;

@@ -60,7 +60,6 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
@@ -149,7 +148,6 @@ public class AnalysisService {
   private final Map<String, Boolean> analysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
   private final OpenFilesRepository openFilesRepository;
   private final ClientFileSystemService clientFileSystemService;
-  private final MonitoringService monitoringService;
   private boolean automaticAnalysisEnabled;
   private final Path esLintBridgeServerPath;
   private final ExecutorService scheduledAnalysisExecutor = FailSafeExecutors.newSingleThreadExecutor("SonarLint Analysis Executor");
@@ -159,8 +157,7 @@ public class AnalysisService {
     ConnectionConfigurationRepository connectionConfigurationRepository, InitializeParams initializeParams, NodeJsService nodeJsService,
     AnalysisSchedulerCache schedulerCache, ClientFileSystemService fileSystemService, FileExclusionService fileExclusionService,
     ApplicationEventPublisher eventPublisher,
-    UserAnalysisPropertiesRepository clientAnalysisPropertiesRepository, OpenFilesRepository openFilesRepository, ClientFileSystemService clientFileSystemService,
-    MonitoringService monitoringService) {
+    UserAnalysisPropertiesRepository clientAnalysisPropertiesRepository, OpenFilesRepository openFilesRepository, ClientFileSystemService clientFileSystemService) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.languageSupportRepository = languageSupportRepository;
@@ -180,7 +177,6 @@ public class AnalysisService {
     this.openFilesRepository = openFilesRepository;
     this.automaticAnalysisEnabled = initializeParams.isAutomaticAnalysisEnabled();
     this.clientFileSystemService = clientFileSystemService;
-    this.monitoringService = monitoringService;
     this.esLintBridgeServerPath = initializeParams.getLanguageSpecificRequirements() != null && initializeParams.getLanguageSpecificRequirements().getJsTsRequirements() != null
       ? initializeParams.getLanguageSpecificRequirements().getJsTsRequirements().getBundlePath()
       : null;
@@ -372,10 +368,6 @@ public class AnalysisService {
       effectiveParams.put(paramName, paramValue);
     });
     return effectiveParams;
-  }
-
-  public ActiveRuleDto buildActiveRuleDto(SonarLintRuleDefinition rule) {
-    return new ActiveRuleDto(rule.getKey(), rule.getLanguage().getSonarLanguageKey(), rule.getDefaultParams(), null);
   }
 
   private boolean shouldIncludeRuleForAnalysis(String connectionId, SonarLintRuleDefinition ruleDefinition, boolean hotspotsOnly) {

@@ -84,7 +84,7 @@ import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.createSon
 
 public class AnalysisScheduler {
 
-  private final static SonarLintLogger LOG = SonarLintLogger.get();
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final String SONAR_INTERNAL_BUNDLE_PATH_ANALYSIS_PROP = "sonar.js.internal.bundlePath";
   private static final Runnable CANCELING_TERMINATION = () -> {
   };
