@@ -40,7 +40,7 @@ import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.TokenGeneratorHelper;
 import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.VersionSoonUnsupportedHelper;
-import org.sonarsource.sonarlint.core.analysis.AnalysisEngineCache;
+import org.sonarsource.sonarlint.core.analysis.AnalysisSchedulerCache;
 import org.sonarsource.sonarlint.core.analysis.AnalysisService;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.analysis.UserAnalysisPropertiesRepository;
@@ -178,7 +178,7 @@ import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_S
   OrganizationsCache.class,
   BindingCandidatesFinder.class,
   SharedConnectedModeSettingsProvider.class,
-  AnalysisEngineCache.class,
+  AnalysisSchedulerCache.class,
   PromotionService.class,
   KnownFindingsStorageService.class,
   TrackingService.class,
