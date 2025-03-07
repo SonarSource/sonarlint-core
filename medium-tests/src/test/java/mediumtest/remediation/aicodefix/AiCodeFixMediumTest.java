@@ -54,7 +54,6 @@ import static utils.AnalysisUtils.analyzeFileAndGetIssue;
 import static utils.AnalysisUtils.createFile;
 
 public class AiCodeFixMediumTest {
-
   public static final String XML_SOURCE_CODE_WITH_ISSUE = """
     <?xml version="1.0" encoding="UTF-8"?>
     <project>
@@ -594,6 +593,42 @@ public class AiCodeFixMediumTest {
         .setOrganizationEligible(true)
         .setEnablement(Sonarlint.AiCodeFixEnablement.ENABLED_FOR_ALL_PROJECTS)
         .build()));
+  }
+
+  @SonarLintTest
+  void it_should_register_telemetry(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "pom.xml", XML_SOURCE_CODE_WITH_ISSUE);
+    var fileUri = filePath.toUri();
+    var server = harness.newFakeSonarCloudServer("organizationKey")
+      .withProject("projectKey",
+        project -> project.withBranch("branchName")
+          .withAiCodeFixSuggestion(suggestion -> suggestion
+            .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
+            .withExplanation("This is the explanation")
+            .withChange(0, 0, "This is the new code")))
+      .start();
+    var fakeClient = harness.newFakeClient()
+      .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .withSonarCloudUrl(server.baseUrl())
+      .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
+        .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR")))
+        .withAiCodeFixSettings(aiCodeFix -> aiCodeFix
+          .withSupportedRules(Set.of("xml:S3421"))
+          .organizationEligible(true)
+          .enabledForProjects("projectKey")))
+      .withBoundConfigScope("configScope", "connectionId", "projectKey")
+      .withTelemetryEnabled()
+      .start(fakeClient);
+    var issue = analyzeFileAndGetIssue(fileUri, fakeClient, backend, "configScope");
+
+    backend.getAiCodeFixRpcService().suggestFix(new SuggestFixParams("configScope", issue.getId())).join();
+
+    assertThat(backend.telemetryFilePath())
+      .content().asBase64Decoded().asString()
+      .contains("\"fixSuggestionReceivedCounter\":{\"e51b7bbd-72bc-4008-a4f1-d75583f3dc98\":{\"aiSuggestionsSource\":\"SONARCLOUD\",\"snippetsCount\":1,\"wasGeneratedFromIde\":true}}");
   }
 
   private Sonarlint.AiCodeFixSettings readAiCodeFixSettings(SonarLintTestRpcServer backend, String connectionId) {

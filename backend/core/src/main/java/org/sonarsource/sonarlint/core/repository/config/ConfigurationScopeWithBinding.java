@@ -19,21 +19,5 @@
  */
 package org.sonarsource.sonarlint.core.repository.config;
 
-public class ConfigurationScopeWithBinding {
-
-  private final ConfigurationScope scope;
-  private final BindingConfiguration bindingConfiguration;
-
-  public ConfigurationScopeWithBinding(ConfigurationScope scope, BindingConfiguration bindingConfiguration) {
-    this.scope = scope;
-    this.bindingConfiguration = bindingConfiguration;
-  }
-
-  public ConfigurationScope getScope() {
-    return scope;
-  }
-
-  public BindingConfiguration getBindingConfiguration() {
-    return bindingConfiguration;
-  }
+public record ConfigurationScopeWithBinding(ConfigurationScope scope, BindingConfiguration bindingConfiguration) {
 }

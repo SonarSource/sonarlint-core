@@ -52,16 +52,15 @@ import static org.mockito.Mockito.when;
 class TelemetryHttpClientTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
+  private static final String PLATFORM = SystemUtils.OS_NAME;
+  private static final String ARCHITECTURE = SystemUtils.OS_ARCH;
 
   private TelemetryHttpClient underTest;
-  private static final String platform = SystemUtils.OS_NAME;
-  private static final String architecture = SystemUtils.OS_ARCH;
 
   @RegisterExtension
   static WireMockExtension telemetryMock = WireMockExtension.newInstance()
     .options(wireMockConfig().dynamicPort())
     .build();
-
 
   @BeforeEach
   void setUp() {
@@ -79,13 +78,11 @@ class TelemetryHttpClientTests {
 
     underTest.optOut(new TelemetryLocalStorage(), getTelemetryLiveAttributesDto());
 
-    await().untilAsserted(() -> {
-      telemetryMock.verify(deleteRequestedFor(urlEqualTo("/"))
-        .withRequestBody(
-          equalToJson(
-            "{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"" + platform + "\",\"architecture\":\"" + architecture + "\"}",
-            true, true)));
-    });
+    await().untilAsserted(() -> telemetryMock.verify(deleteRequestedFor(urlEqualTo("/"))
+      .withRequestBody(
+        equalToJson(
+          "{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"" + PLATFORM + "\",\"architecture\":\"" + ARCHITECTURE + "\"}",
+          true, true))));
   }
 
   @Test
@@ -101,7 +98,7 @@ class TelemetryHttpClientTests {
     await().untilAsserted(() -> {
       assertTelemetryUploaded(true);
       assertThat(logTester.logs(Level.INFO)).anyMatch(l -> l.matches("Sending telemetry payload."));
-      assertThat(logTester.logs(Level.INFO)).anyMatch(l -> l.contains("{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\""+platform+"\",\"architecture\":\""+architecture+"\""));
+      assertThat(logTester.logs(Level.INFO)).anyMatch(l -> l.contains("{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\""+ PLATFORM +"\",\"architecture\":\""+ ARCHITECTURE +"\""));
     });
   }
 
@@ -117,13 +114,13 @@ class TelemetryHttpClientTests {
     telemetryMock.verify(postRequestedFor(urlEqualTo("/"))
       .withRequestBody(
         equalToJson(
-          "{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"" + platform + "\",\"architecture\":\""+architecture+ "\",\"additionalKey\" : \"additionalValue\",\"help_and_feedback\":{\"count_by_link\":{\"docs\":1}}}",
+          "{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"" + PLATFORM + "\",\"architecture\":\""+ ARCHITECTURE + "\",\"additionalKey\" : \"additionalValue\",\"help_and_feedback\":{\"count_by_link\":{\"docs\":1}}}",
           true, true)));
 
     telemetryMock.verify(postRequestedFor(urlEqualTo("/metrics"))
       .withRequestBody(
         equalToJson(
-          "{\"sonarlint_product\":\"product\",\"os\":\"" + platform + "\",\"dimension\":\"installation\",\"metric_values\": [{\"key\":\"shared_connected_mode.manual\",\"value\":\"0\",\"type\":\"integer\",\"granularity\":\"daily\"},{\"key\":\"help_and_feedback.docs\",\"value\":\"1\",\"type\":\"integer\",\"granularity\":\"daily\"}]}",
+          "{\"sonarlint_product\":\"product\",\"os\":\"" + PLATFORM + "\",\"dimension\":\"installation\",\"metric_values\": [{\"key\":\"shared_connected_mode.manual\",\"value\":\"0\",\"type\":\"integer\",\"granularity\":\"daily\"},{\"key\":\"help_and_feedback.docs\",\"value\":\"1\",\"type\":\"integer\",\"granularity\":\"daily\"}]}",
           true, true)));
   }
 

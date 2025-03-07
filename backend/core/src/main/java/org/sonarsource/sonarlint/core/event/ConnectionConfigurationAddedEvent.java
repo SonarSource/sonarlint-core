@@ -19,15 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.event;
 
-public class ConnectionConfigurationAddedEvent {
+import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 
-  private final String addedConnectionId;
+public record ConnectionConfigurationAddedEvent(String addedConnectionId, ConnectionKind connectionKind) {
 
-  public ConnectionConfigurationAddedEvent(String addedConnectionId) {
-    this.addedConnectionId = addedConnectionId;
-  }
-
-  public String getAddedConnectionId() {
-    return addedConnectionId;
-  }
 }

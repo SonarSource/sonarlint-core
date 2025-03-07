@@ -128,7 +128,7 @@ public class ConnectionService {
 
   private void addConnection(AbstractConnectionConfiguration connectionConfiguration) {
     repository.addOrReplace(connectionConfiguration);
-    applicationEventPublisher.publishEvent(new ConnectionConfigurationAddedEvent(connectionConfiguration.getConnectionId()));
+    applicationEventPublisher.publishEvent(new ConnectionConfigurationAddedEvent(connectionConfiguration.getConnectionId(), connectionConfiguration.getKind()));
   }
 
   private void removeConnection(String removedConnectionId) {
@@ -145,7 +145,7 @@ public class ConnectionService {
     var previous = repository.addOrReplace(connectionConfiguration);
     if (previous == null) {
       LOG.debug("Attempt to update connection '{}' that was not registered. Possibly a race condition?", connectionId);
-      applicationEventPublisher.publishEvent(new ConnectionConfigurationAddedEvent(connectionConfiguration.getConnectionId()));
+      applicationEventPublisher.publishEvent(new ConnectionConfigurationAddedEvent(connectionConfiguration.getConnectionId(), connectionConfiguration.getKind()));
     } else {
       applicationEventPublisher.publishEvent(new ConnectionConfigurationUpdatedEvent(connectionConfiguration.getConnectionId()));
     }

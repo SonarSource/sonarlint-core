@@ -20,7 +20,11 @@
 package mediumtest;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import org.apache.commons.lang3.SystemUtils;
@@ -29,6 +33,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.OpenHotspotInBrowserParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryMigrationDto;
@@ -41,12 +46,14 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestio
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.telemetry.InternalDebug;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryLocalStorageManager;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
+import utils.TestPlugin;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalToJson;
@@ -60,6 +67,7 @@ import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.telemetry.TelemetrySpringConfig.PROPERTY_TELEMETRY_ENDPOINT;
+import static utils.AnalysisUtils.analyzeFileAndGetIssue;
 
 class TelemetryMediumTests {
 
@@ -421,6 +429,55 @@ class TelemetryMediumTests {
   }
 
   @SonarLintTest
+  void it_should_add_bound_sonarqube_server_project(SonarLintTestHarness harness) {
+    var backend = setupClientAndBackend(harness);
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"boundSonarQubeServerProjectKeys\":[\"projectKey\"]"));
+  }
+
+  @SonarLintTest
+  void it_should_add_bound_sonarqube_cloud_project(SonarLintTestHarness harness) {
+    var backend = harness.newBackend()
+      .withSonarCloudConnection("connectionId")
+      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withTelemetryEnabled()
+      .start();
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"boundSonarQubeCloudProjectKeys\":[\"projectKey\"]"));
+  }
+
+  @SonarLintTest
+  void it_should_add_issue_uuid_when_ai_fixable(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "pom.xml", """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <project>
+      <modelVersion>4.0.0</modelVersion>
+      <groupId>com.foo</groupId>
+      <artifactId>bar</artifactId>
+      <version>${pom.version}</version>
+    </project>""");
+    var fileUri = filePath.toUri();
+    var fakeClient = harness.newFakeClient()
+      .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
+        .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR")))
+        .withAiCodeFixSettings(aiCodeFix -> aiCodeFix
+          .withSupportedRules(Set.of("xml:S3421"))
+          .organizationEligible(true)
+          .enabledForProjects("projectKey")))
+      .withBoundConfigScope("configScope", "connectionId", "projectKey")
+      .withTelemetryEnabled()
+      .start(fakeClient);
+
+    var issue = analyzeFileAndGetIssue(fileUri, fakeClient, backend, "configScope");
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"issuesUuidAiFixableSeen\":[\"" + issue.getId() + "\"]"));
+  }
+
+  @SonarLintTest
   void it_should_apply_telemetry_migration(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
     var backend = harness.newBackend()
       .withTelemetryMigration(new TelemetryMigrationDto(OffsetDateTime.now(), 42, false))
@@ -436,6 +493,16 @@ class TelemetryMediumTests {
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withTelemetryEnabled()
       .start();
+  }
+
+  private static Path createFile(Path folderPath, String fileName, String content) {
+    var filePath = folderPath.resolve(fileName);
+    try {
+      Files.writeString(filePath, content);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    return filePath;
   }
 
 }

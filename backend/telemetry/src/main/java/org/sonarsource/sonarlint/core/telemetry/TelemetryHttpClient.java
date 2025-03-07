@@ -34,9 +34,9 @@ import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
-import org.sonarsource.sonarlint.core.telemetry.metricspayload.TelemetryMetricsDimension;
-import org.sonarsource.sonarlint.core.telemetry.metricspayload.TelemetryMetricsPayload;
-import org.sonarsource.sonarlint.core.telemetry.metricspayload.TelemetryMetricsValue;
+import org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresDimension;
+import org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValue;
+import org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.HotspotPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.IssuePayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.ShareConnectedModePayload;
@@ -49,8 +49,9 @@ import org.sonarsource.sonarlint.core.telemetry.payload.TelemetryRulesPayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.cayc.CleanAsYouCodePayload;
 import org.sonarsource.sonarlint.core.telemetry.payload.cayc.NewCodeFocusPayload;
 
-import static org.sonarsource.sonarlint.core.telemetry.metricspayload.TelemetryMetricsValueGranularity.DAILY;
-import static org.sonarsource.sonarlint.core.telemetry.metricspayload.TelemetryMetricsValueType.INTEGER;
+import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueGranularity.DAILY;
+import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueType.INTEGER;
+import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueType.STRING;
 
 public class TelemetryHttpClient {
 
@@ -86,7 +87,7 @@ public class TelemetryHttpClient {
       }
     }
     try {
-      sendMetricsPostIfNeeded(createMetricsPayload(data, telemetryLiveAttributes));
+      sendMetricsPostIfNeeded(createMeasuresPayload(data, telemetryLiveAttributes));
     } catch (Throwable catchEmAll) {
       if (InternalDebug.isEnabled()) {
         LOG.error("Failed to upload telemetry metrics data", catchEmAll);
@@ -119,7 +120,11 @@ public class TelemetryHttpClient {
     var telemetryRulesPayload = new TelemetryRulesPayload(telemetryLiveAttrs.getNonDefaultEnabledRules(),
       telemetryLiveAttrs.getDefaultDisabledRules(), data.getRaisedIssuesRules(), data.getQuickFixesApplied());
     var helpAndFeedbackPayload = new TelemetryHelpAndFeedbackPayload(data.getHelpAndFeedbackLinkClickedCounter());
-    var fixSuggestionPayload = TelemetryUtils.toFixSuggestionResolvedPayload(data.getFixSuggestionReceivedCounter(), data.getFixSuggestionResolved());
+    var fixSuggestionPayload = TelemetryUtils.toFixSuggestionResolvedPayload(
+      data.getFixSuggestionReceivedCounter(),
+      data.getFixSuggestionResolved()
+    );
+    var countIssuesWithPossibleAiFixFromIde = data.getCountIssuesWithPossibleAiFixFromIde();
     var cleanAsYouCodePayload = new CleanAsYouCodePayload(new NewCodeFocusPayload(data.isFocusOnNewCode(), data.getCodeFocusChangedCount()));
 
     ShareConnectedModePayload shareConnectedModePayload;
@@ -137,22 +142,24 @@ public class TelemetryHttpClient {
       telemetryLiveAttrs.usesConnectedMode(), telemetryLiveAttrs.usesSonarCloud(), systemTime, data.installTime(), platform, jre,
       telemetryLiveAttrs.getNodeVersion(), analyzers, notifications, showHotspotPayload, showIssuePayload,
       taintVulnerabilitiesPayload, telemetryRulesPayload, hotspotPayload, issuePayload, helpAndFeedbackPayload,
-      fixSuggestionPayload, cleanAsYouCodePayload, shareConnectedModePayload,
-      mergedAdditionalAttributes);
+      fixSuggestionPayload, countIssuesWithPossibleAiFixFromIde, cleanAsYouCodePayload, shareConnectedModePayload, mergedAdditionalAttributes);
   }
 
-  private TelemetryMetricsPayload createMetricsPayload(TelemetryLocalStorage data, TelemetryLiveAttributes telemetryLiveAttrs) {
-    var values = new ArrayList<TelemetryMetricsValue>();
+  private TelemetryMeasuresPayload createMeasuresPayload(TelemetryLocalStorage data, TelemetryLiveAttributes telemetryLiveAttrs) {
+    var values = new ArrayList<TelemetryMeasuresValue>();
     if (telemetryLiveAttrs.usesConnectedMode()) {
-      values.add(new TelemetryMetricsValue("shared_connected_mode.manual", String.valueOf(data.getManualAddedBindingsCount()), INTEGER, DAILY));
-      values.add(new TelemetryMetricsValue("shared_connected_mode.imported", String.valueOf(data.getImportedAddedBindingsCount()), INTEGER, DAILY));
-      values.add(new TelemetryMetricsValue("shared_connected_mode.auto", String.valueOf(data.getAutoAddedBindingsCount()), INTEGER, DAILY));
-      values.add(new TelemetryMetricsValue("shared_connected_mode.exported", String.valueOf(data.getExportedConnectedModeCount()), INTEGER, DAILY));
+      values.add(new TelemetryMeasuresValue("shared_connected_mode.manual", String.valueOf(data.getManualAddedBindingsCount()), INTEGER, DAILY));
+      values.add(new TelemetryMeasuresValue("shared_connected_mode.imported", String.valueOf(data.getImportedAddedBindingsCount()), INTEGER, DAILY));
+      values.add(new TelemetryMeasuresValue("shared_connected_mode.auto", String.valueOf(data.getAutoAddedBindingsCount()), INTEGER, DAILY));
+      values.add(new TelemetryMeasuresValue("shared_connected_mode.exported", String.valueOf(data.getExportedConnectedModeCount()), INTEGER, DAILY));
     }
+
+    values.add(new TelemetryMeasuresValue("list_of_SQS_projects_in_connected_mode", data.getBoundSonarQubeServerProjectKeys().toString(), STRING, DAILY));
+    values.add(new TelemetryMeasuresValue("list_of_SQC_projects_in_connected_mode", data.getBoundSonarQubeCloudProjectKeys().toString(), STRING, DAILY));
 
     data.getHelpAndFeedbackLinkClickedCounter().entrySet().stream()
       .filter(e -> e.getValue().getHelpAndFeedbackLinkClickedCount() > 0)
-      .map(e -> new TelemetryMetricsValue(
+      .map(e -> new TelemetryMeasuresValue(
         "help_and_feedback." + e.getKey().toLowerCase(Locale.ROOT),
         String.valueOf(e.getValue().getHelpAndFeedbackLinkClickedCount()),
         INTEGER,
@@ -160,7 +167,7 @@ public class TelemetryHttpClient {
       ))
       .forEach(values::add);
 
-    return new TelemetryMetricsPayload(UUID.randomUUID().toString(), platform, data.installTime(), product, TelemetryMetricsDimension.INSTALLATION, values);
+    return new TelemetryMeasuresPayload(UUID.randomUUID().toString(), platform, data.installTime(), product, TelemetryMeasuresDimension.INSTALLATION, values);
   }
 
   private void sendPost(TelemetryPayload payload) {
@@ -169,7 +176,7 @@ public class TelemetryHttpClient {
     handleTelemetryResponse(responseCompletableFuture, "data");
   }
 
-  private void sendMetricsPostIfNeeded(TelemetryMetricsPayload payload) {
+  private void sendMetricsPostIfNeeded(TelemetryMeasuresPayload payload) {
     if (!payload.hasMetrics()) {
       // No metrics to send
       if (isTelemetryLogEnabled()) {
@@ -190,7 +197,7 @@ public class TelemetryHttpClient {
     }
   }
 
-  private void logTelemetryMetricsPayload(TelemetryMetricsPayload payload) {
+  private void logTelemetryMetricsPayload(TelemetryMeasuresPayload payload) {
     if (isTelemetryLogEnabled()) {
       LOG.info("Sending telemetry metrics payload.");
       LOG.info(payload.toJson());

@@ -29,7 +29,7 @@ import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
-import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -60,7 +60,7 @@ class ConfigurationServiceTests {
   private ConfigurationService underTest;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     eventPublisher = mock(ApplicationEventPublisher.class);
     underTest = new ConfigurationService(eventPublisher, repository);
   }
@@ -82,11 +82,11 @@ class ConfigurationServiceTests {
     assertThat(repository.getConfigScopeIds()).containsOnly("id2");
     assertThat(repository.getBindingConfiguration("id2")).usingRecursiveComparison().isEqualTo(BINDING_DTO_2);
 
-    ArgumentCaptor<ConfigurationScopesAddedEvent> captor = ArgumentCaptor.forClass(ConfigurationScopesAddedEvent.class);
+    ArgumentCaptor<ConfigurationScopesAddedWithBindingEvent> captor = ArgumentCaptor.forClass(ConfigurationScopesAddedWithBindingEvent.class);
     verify(eventPublisher).publishEvent(captor.capture());
     var event = captor.getValue();
 
-    assertThat(event.getAddedConfigurationScopeIds()).containsOnly("id2");
+    assertThat(event.getConfigScopeIds()).containsOnly("id2");
   }
 
   @Test
@@ -97,11 +97,11 @@ class ConfigurationServiceTests {
     assertThat(repository.getBindingConfiguration("id1")).usingRecursiveComparison().isEqualTo(BINDING_DTO_1);
     assertThat(repository.getBindingConfiguration("id2")).usingRecursiveComparison().isEqualTo(BINDING_DTO_2);
 
-    ArgumentCaptor<ConfigurationScopesAddedEvent> captor = ArgumentCaptor.forClass(ConfigurationScopesAddedEvent.class);
+    ArgumentCaptor<ConfigurationScopesAddedWithBindingEvent> captor = ArgumentCaptor.forClass(ConfigurationScopesAddedWithBindingEvent.class);
     verify(eventPublisher).publishEvent(captor.capture());
     var event = captor.getValue();
 
-    assertThat(event.getAddedConfigurationScopeIds()).containsOnly("id1", "id2");
+    assertThat(event.getConfigScopeIds()).containsOnly("id1", "id2");
   }
 
   @Test
@@ -156,14 +156,14 @@ class ConfigurationServiceTests {
     verify(eventPublisher).publishEvent(captor.capture());
     var event = captor.getValue();
 
-    assertThat(event.getConfigScopeId()).isEqualTo("id1");
-    assertThat(event.getPreviousConfig().getConnectionId()).isEqualTo(CONNECTION_1);
-    assertThat(event.getPreviousConfig().getSonarProjectKey()).isEqualTo("projectKey1");
-    assertThat(event.getPreviousConfig().isBindingSuggestionDisabled()).isFalse();
+    assertThat(event.configScopeId()).isEqualTo("id1");
+    assertThat(event.previousConfig().getConnectionId()).isEqualTo(CONNECTION_1);
+    assertThat(event.previousConfig().getSonarProjectKey()).isEqualTo("projectKey1");
+    assertThat(event.previousConfig().isBindingSuggestionDisabled()).isFalse();
 
-    assertThat(event.getNewConfig().getConnectionId()).isEqualTo(CONNECTION_1);
-    assertThat(event.getNewConfig().getSonarProjectKey()).isEqualTo("projectKey2");
-    assertThat(event.getNewConfig().isBindingSuggestionDisabled()).isTrue();
+    assertThat(event.newConfig().getConnectionId()).isEqualTo(CONNECTION_1);
+    assertThat(event.newConfig().getSonarProjectKey()).isEqualTo("projectKey2");
+    assertThat(event.newConfig().isBindingSuggestionDisabled()).isTrue();
   }
 
   @Test

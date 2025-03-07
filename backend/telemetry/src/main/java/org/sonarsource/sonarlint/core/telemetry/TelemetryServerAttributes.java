@@ -22,71 +22,16 @@ package org.sonarsource.sonarlint.core.telemetry;
 import java.util.List;
 import javax.annotation.Nullable;
 
-public class TelemetryServerAttributes {
-  /**
-   * At least one project in the IDE is bound to a SQ server or SC
-   */
-  private final boolean usesConnectedMode;
-
-  /**
-   * At least one project in the IDE is bound to SC
-   */
-  private final boolean usesSonarCloud;
-
-  /**
-   * Are dev notifications disabled (if multiple connections are configured, return true if feature is disabled for at least one connection)
-   */
-  private final boolean devNotificationsDisabled;
-
-  /**
-   * Rule keys for rules that disabled by default, but was enabled by user in settings.
-   */
-  private final List<String> nonDefaultEnabledRules;
-
-  /**
-   * Rule keys for rules that enabled by default, but was disabled by user in settings.
-   */
-  private final List<String> defaultDisabledRules;
-
-  /**
-   * Node.js version used by analyzers (detected or configured by the user).
-   * Empty if no node present/detected/configured
-   */
-  @Nullable
-  private final String nodeVersion;
-
-  public TelemetryServerAttributes(boolean usesConnectedMode, boolean usesSonarCloud, boolean devNotificationsDisabled,
-    List<String> nonDefaultEnabledRules, List<String> defaultDisabledRules, @Nullable String nodeVersion) {
-    this.usesConnectedMode = usesConnectedMode;
-    this.usesSonarCloud = usesSonarCloud;
-    this.devNotificationsDisabled = devNotificationsDisabled;
-    this.nonDefaultEnabledRules = nonDefaultEnabledRules;
-    this.defaultDisabledRules = defaultDisabledRules;
-    this.nodeVersion = nodeVersion;
-  }
-
-  public boolean usesConnectedMode() {
-    return usesConnectedMode;
-  }
-
-  public boolean usesSonarCloud() {
-    return usesSonarCloud;
-  }
-
-  public boolean isDevNotificationsDisabled() {
-    return devNotificationsDisabled;
-  }
-
-  public List<String> getNonDefaultEnabledRules() {
-    return nonDefaultEnabledRules;
-  }
-
-  public List<String> getDefaultDisabledRules() {
-    return defaultDisabledRules;
-  }
-
-  @Nullable
-  public String getNodeVersion() {
-    return nodeVersion;
-  }
+/**
+ * @param usesConnectedMode        At least one project in the IDE is bound to a SQ server or SC
+ * @param usesSonarCloud           At least one project in the IDE is bound to SC
+ * @param devNotificationsDisabled Are dev notifications disabled (if multiple connections are configured, return true if feature is disabled for at least one connection)
+ * @param nonDefaultEnabledRules   Rule keys for rules that disabled by default, but was enabled by user in settings.
+ * @param defaultDisabledRules     Rule keys for rules that enabled by default, but was disabled by user in settings.
+ * @param nodeVersion              Node.js version used by analyzers (detected or configured by the user).
+ *                                 Empty if no node present/detected/configured
+ */
+public record TelemetryServerAttributes(boolean usesConnectedMode, boolean usesSonarCloud, boolean devNotificationsDisabled,
+                                        List<String> nonDefaultEnabledRules, List<String> defaultDisabledRules,
+                                        @Nullable String nodeVersion) {
 }

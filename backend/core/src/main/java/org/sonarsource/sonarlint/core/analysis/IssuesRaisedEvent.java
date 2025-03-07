@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Telemetry
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,17 +17,10 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.telemetry.metricspayload;
+package org.sonarsource.sonarlint.core.analysis;
 
-import com.google.gson.annotations.SerializedName;
+import java.util.List;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 
-public enum TelemetryMetricsValueType {
-  @SerializedName("string")
-  STRING,
-  @SerializedName("integer")
-  INTEGER,
-  @SerializedName("boolean")
-  BOOLEAN,
-  @SerializedName("float")
-  FLOAT
+public record IssuesRaisedEvent(List<RaisedIssueDto> issues) {
 }

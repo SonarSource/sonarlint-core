@@ -36,7 +36,7 @@ import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
-import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedEvent;
+import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
@@ -76,11 +76,11 @@ public class ServerEventsService {
   }
 
   @EventListener
-  public void handle(ConfigurationScopesAddedEvent event) {
+  public void handle(ConfigurationScopesAddedWithBindingEvent event) {
     if (!shouldManageServerSentEvents) {
       return;
     }
-    executorService.execute(() -> subscribeAll(event.getAddedConfigurationScopeIds()));
+    executorService.execute(() -> subscribeAll(event.getConfigScopeIds()));
   }
 
   @EventListener
@@ -103,11 +103,11 @@ public class ServerEventsService {
     if (!shouldManageServerSentEvents) {
       return;
     }
-    var previousBinding = event.getPreviousConfig();
-    if (isBindingDifferent(previousBinding, event.getNewConfig())) {
+    var previousBinding = event.previousConfig();
+    if (isBindingDifferent(previousBinding, event.newConfig())) {
       executorService.execute(() -> {
         unsubscribe(previousBinding);
-        subscribe(event.getConfigScopeId());
+        subscribe(event.configScopeId());
       });
     }
   }
@@ -118,7 +118,7 @@ public class ServerEventsService {
       return;
     }
     // This is only to handle the case where binding was invalid (connection did not exist) and became valid (matching connection was created)
-    var connectionId = event.getAddedConnectionId();
+    var connectionId = event.addedConnectionId();
     executorService.execute(() -> subscribe(connectionId, configurationRepository.getSonarProjectsUsedForConnection(connectionId)));
   }
 

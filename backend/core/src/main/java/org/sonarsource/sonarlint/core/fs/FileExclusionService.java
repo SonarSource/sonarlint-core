@@ -132,17 +132,17 @@ public class FileExclusionService {
 
   @EventListener
   public void onBindingChanged(BindingConfigChangedEvent event) {
-    if (event.getNewConfig().isBound()) {
-      var connectionId = requireNonNull(event.getNewConfig().getConnectionId());
-      var projectKey = requireNonNull(event.getNewConfig().getSonarProjectKey());
+    if (event.newConfig().isBound()) {
+      var connectionId = requireNonNull(event.newConfig().getConnectionId());
+      var projectKey = requireNonNull(event.newConfig().getSonarProjectKey());
       // do not recompute exclusions if storage does not yet contain settings (will be done by onFileExclusionSettingsChanged later)
       if (storageService.connection(connectionId).project(projectKey).analyzerConfiguration().isValid()) {
-        LOG.debug("Binding changed for config scope '{}', recompute file exclusions...", event.getConfigScopeId());
-        clientFileSystemService.getFiles(event.getConfigScopeId()).forEach(f -> serverExclusionByUriCache.refreshAsync(f.getUri()));
+        LOG.debug("Binding changed for config scope '{}', recompute file exclusions...", event.configScopeId());
+        clientFileSystemService.getFiles(event.configScopeId()).forEach(f -> serverExclusionByUriCache.refreshAsync(f.getUri()));
       }
     } else {
-      LOG.debug("Binding removed for config scope '{}', clearing file exclusions...", event.getConfigScopeId());
-      clientFileSystemService.getFiles(event.getConfigScopeId()).forEach(f -> serverExclusionByUriCache.clear(f.getUri()));
+      LOG.debug("Binding removed for config scope '{}', clearing file exclusions...", event.configScopeId());
+      clientFileSystemService.getFiles(event.configScopeId()).forEach(f -> serverExclusionByUriCache.clear(f.getUri()));
     }
   }
 

@@ -94,14 +94,15 @@ class TelemetryUtils {
   ) {
     return fixSuggestionReceivedCounter.entrySet().stream().map(e -> {
       var suggestionId = e.getKey();
-      var snippetsCount = e.getValue().getSnippetsCount();
-      var source = e.getValue().getAiSuggestionsSource();
-      var resolvedSnippetStatues = fixSuggestionResolved.getOrDefault(suggestionId, List.of(new TelemetryFixSuggestionResolvedStatus(null, null)));
-      var resolvedSnippetPayload = resolvedSnippetStatues.stream()
+      var snippetsCount = e.getValue().snippetsCount();
+      var source = e.getValue().aiSuggestionsSource();
+      var resolvedSnippetStatus = fixSuggestionResolved.getOrDefault(suggestionId, List.of(new TelemetryFixSuggestionResolvedStatus(null, null)));
+      var resolvedSnippetPayload = resolvedSnippetStatus.stream()
         .map(s -> new TelemetryFixSuggestionResolvedPayload(s.getFixSuggestionResolvedStatus(),
         s.getFixSuggestionResolvedSnippetIndex())).toList();
+      var wasGeneratedFromIde = e.getValue().wasGeneratedFromIde();
 
-      return new TelemetryFixSuggestionPayload(suggestionId, snippetsCount, source, resolvedSnippetPayload);
+      return new TelemetryFixSuggestionPayload(suggestionId, snippetsCount, source, resolvedSnippetPayload, wasGeneratedFromIde);
     }).toArray(TelemetryFixSuggestionPayload[]::new);
   }
 

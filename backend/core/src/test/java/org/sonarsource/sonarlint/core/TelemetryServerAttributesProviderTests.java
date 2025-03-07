@@ -59,9 +59,9 @@ class TelemetryServerAttributesProviderTests {
     var telemetryLiveAttributes = underTest.getTelemetryServerLiveAttributes();
     assertThat(telemetryLiveAttributes.usesConnectedMode()).isTrue();
     assertThat(telemetryLiveAttributes.usesSonarCloud()).isTrue();
-    assertThat(telemetryLiveAttributes.isDevNotificationsDisabled()).isFalse();
-    assertThat(telemetryLiveAttributes.getNonDefaultEnabledRules()).isEmpty();
-    assertThat(telemetryLiveAttributes.getDefaultDisabledRules()).isEmpty();
+    assertThat(telemetryLiveAttributes.devNotificationsDisabled()).isFalse();
+    assertThat(telemetryLiveAttributes.nonDefaultEnabledRules()).isEmpty();
+    assertThat(telemetryLiveAttributes.defaultDisabledRules()).isEmpty();
   }
 
   @Test
@@ -85,9 +85,9 @@ class TelemetryServerAttributesProviderTests {
     var telemetryLiveAttributes = underTest.getTelemetryServerLiveAttributes();
     assertThat(telemetryLiveAttributes.usesConnectedMode()).isTrue();
     assertThat(telemetryLiveAttributes.usesSonarCloud()).isFalse();
-    assertThat(telemetryLiveAttributes.isDevNotificationsDisabled()).isTrue();
-    assertThat(telemetryLiveAttributes.getNonDefaultEnabledRules()).isEmpty();
-    assertThat(telemetryLiveAttributes.getDefaultDisabledRules()).isEmpty();
+    assertThat(telemetryLiveAttributes.devNotificationsDisabled()).isTrue();
+    assertThat(telemetryLiveAttributes.nonDefaultEnabledRules()).isEmpty();
+    assertThat(telemetryLiveAttributes.defaultDisabledRules()).isEmpty();
   }
 
   @Test
@@ -112,11 +112,11 @@ class TelemetryServerAttributesProviderTests {
     var underTest = new TelemetryServerAttributesProvider(mock(ConfigurationRepository.class), mock(ConnectionConfigurationRepository.class), rulesService, rulesRepository, mock(NodeJsService.class));
     var telemetryLiveAttributes = underTest.getTelemetryServerLiveAttributes();
 
-    assertThat(telemetryLiveAttributes.getNonDefaultEnabledRules()).containsExactly("ruleKey_2");
-    assertThat(telemetryLiveAttributes.getDefaultDisabledRules()).containsExactly("ruleKey_3");
+    assertThat(telemetryLiveAttributes.nonDefaultEnabledRules()).containsExactly("ruleKey_2");
+    assertThat(telemetryLiveAttributes.defaultDisabledRules()).containsExactly("ruleKey_3");
     assertThat(telemetryLiveAttributes.usesConnectedMode()).isFalse();
     assertThat(telemetryLiveAttributes.usesSonarCloud()).isFalse();
-    assertThat(telemetryLiveAttributes.isDevNotificationsDisabled()).isFalse();
+    assertThat(telemetryLiveAttributes.devNotificationsDisabled()).isFalse();
   }
 
   @Test
@@ -126,7 +126,7 @@ class TelemetryServerAttributesProviderTests {
     when(nodeJsService.getActiveNodeJsVersion()).thenReturn(Optional.of(Version.create(version)));
     var underTest = new TelemetryServerAttributesProvider(mock(ConfigurationRepository.class), mock(ConnectionConfigurationRepository.class),  mock(RulesService.class), mock(RulesRepository.class), nodeJsService);
 
-    assertThat(underTest.getTelemetryServerLiveAttributes().getNodeVersion()).isEqualTo(version);
+    assertThat(underTest.getTelemetryServerLiveAttributes().nodeVersion()).isEqualTo(version);
   }
 
   @NotNull
