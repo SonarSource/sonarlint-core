@@ -19,7 +19,6 @@
  */
 package mediumtest.hotspots;
 
-import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -28,7 +27,6 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckStatusChangePermittedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -55,7 +53,7 @@ class HotspotCheckStatusChangePermittedMediumTests {
   void it_should_return_3_statuses_for_sonarcloud(SonarLintTestHarness harness) {
     var server = harness.newFakeSonarCloudServer().withProject("projectKey", project -> project.withDefaultBranch(branch -> branch.withHotspot("hotspotKey"))).start();
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(server.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .withSonarCloudConnection("connectionId", "orgKey")
       .start();
 

@@ -20,12 +20,10 @@
 package mediumtest.connection;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
-import java.net.URI;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
@@ -50,7 +48,7 @@ class ConnectionValidatorMediumTests {
   @SonarLintTest
   void testConnection_ok(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(serverMock.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(serverMock.baseUrl())
       .start();
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}")));
@@ -65,7 +63,7 @@ class ConnectionValidatorMediumTests {
   @SonarLintTest
   void testConnectionOrganizationNotFound(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(serverMock.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(serverMock.baseUrl())
       .start();
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}")));
@@ -83,7 +81,7 @@ class ConnectionValidatorMediumTests {
   @SonarLintTest
   void testConnection_ok_with_org(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(serverMock.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(serverMock.baseUrl())
       .start();
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}")));
@@ -107,7 +105,7 @@ class ConnectionValidatorMediumTests {
   @SonarLintTest
   void testConnection_ok_without_org(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(serverMock.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(serverMock.baseUrl())
       .start();
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"9.9\",\"status\": \"UP\"}")));
@@ -121,7 +119,7 @@ class ConnectionValidatorMediumTests {
   @SonarLintTest
   void testUnsupportedServer(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(serverMock.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(serverMock.baseUrl())
       .start();
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withBody("{\"id\": \"20160308094653\",\"version\": \"6.7\",\"status\": \"UP\"}")));
@@ -135,7 +133,7 @@ class ConnectionValidatorMediumTests {
   @SonarLintTest
   void testClientError(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(serverMock.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(serverMock.baseUrl())
       .start();
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withStatus(400)));
@@ -150,7 +148,7 @@ class ConnectionValidatorMediumTests {
   @SonarLintTest
   void testResponseError(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(serverMock.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(serverMock.baseUrl())
       .start();
     serverMock.stubFor(get("/api/system/status")
       .willReturn(aResponse().withBody("{\"id\": }")));

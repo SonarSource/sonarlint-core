@@ -20,11 +20,12 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
 
 import java.net.URI;
+import java.util.Map;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 
 /** This contains the alternative environment information for SonarQube Cloud with both the EU and US region */
 public class SonarCloudAlternativeEnvironmentDto {
-  private final SonarQubeCloudRegionDto euRegion;
-  private final SonarQubeCloudRegionDto usRegion;
+  private final Map<SonarCloudRegion, SonarQubeCloudRegionDto> alternativeRegionUris;
 
   /**
    * @deprecated use the other constructor instead
@@ -42,19 +43,14 @@ public class SonarCloudAlternativeEnvironmentDto {
    */
   @Deprecated(since = "10.17")
   public SonarCloudAlternativeEnvironmentDto(URI uri, URI apiUri, URI webSocketsEndpointUri) {
-    this(new SonarQubeCloudRegionDto(uri, apiUri, webSocketsEndpointUri), new SonarQubeCloudRegionDto(null, null, null));
+    this(Map.of(SonarCloudRegion.EU, new SonarQubeCloudRegionDto(uri, apiUri, webSocketsEndpointUri)));
   }
   
-  public SonarCloudAlternativeEnvironmentDto(SonarQubeCloudRegionDto euRegion, SonarQubeCloudRegionDto usRegion) {
-    this.euRegion = euRegion;
-    this.usRegion = usRegion;
-  }
-  
-  public SonarQubeCloudRegionDto getEuRegion() {
-    return euRegion;
+  public SonarCloudAlternativeEnvironmentDto(Map<SonarCloudRegion, SonarQubeCloudRegionDto> alternateRegionUris) {
+    this.alternativeRegionUris = alternateRegionUris;
   }
 
-  public SonarQubeCloudRegionDto getUsRegion() {
-    return usRegion;
+  public Map<SonarCloudRegion, SonarQubeCloudRegionDto> getAlternateRegionUris() {
+    return alternativeRegionUris;
   }
 }

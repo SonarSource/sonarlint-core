@@ -22,7 +22,6 @@ package mediumtest.server.events;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
-import java.net.URI;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
@@ -51,7 +50,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.Did
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TextRangeWithHashDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
@@ -117,7 +115,7 @@ class ServerSentEventsMediumTests {
     @SonarLintTest
     void should_not_subscribe_for_events_if_sonarcloud_connection(SonarLintTestHarness harness) {
       var backend = harness.newBackend()
-        .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(sonarServerMock.baseUrl()), null, null))
+        .withSonarQubeCloudEuRegionUri(sonarServerMock.baseUrl())
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -254,7 +252,7 @@ class ServerSentEventsMediumTests {
     @SonarLintTest
     void should_not_subscribe_if_bound_to_sonarcloud(SonarLintTestHarness harness) {
       var backend = harness.newBackend()
-        .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(sonarServerMock.baseUrl()), null, null))
+        .withSonarQubeCloudEuRegionUri(sonarServerMock.baseUrl())
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -293,7 +291,7 @@ class ServerSentEventsMediumTests {
     @SonarLintTest
     void should_do_nothing_if_scope_was_bound_to_sonarcloud(SonarLintTestHarness harness) {
       var backend = harness.newBackend()
-        .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(sonarServerMock.baseUrl()), null, null))
+        .withSonarQubeCloudEuRegionUri(sonarServerMock.baseUrl())
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -391,7 +389,7 @@ class ServerSentEventsMediumTests {
     @SonarLintTest
     void should_do_nothing_if_sonarcloud(SonarLintTestHarness harness) {
       var backend = harness.newBackend()
-        .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(sonarServerMock.baseUrl()), null, null))
+        .withSonarQubeCloudEuRegionUri(sonarServerMock.baseUrl())
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -480,7 +478,7 @@ class ServerSentEventsMediumTests {
     @SonarLintTest
     void should_do_nothing_if_sonarcloud(SonarLintTestHarness harness) {
       var backend = harness.newBackend()
-        .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(sonarServerMock.baseUrl()), null, null))
+        .withSonarQubeCloudEuRegionUri(sonarServerMock.baseUrl())
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()
@@ -536,7 +534,7 @@ class ServerSentEventsMediumTests {
     @SonarLintTest
     void should_not_resubscribe_if_sonarcloud(SonarLintTestHarness harness) {
       var backend = harness.newBackend()
-        .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(sonarServerMock.baseUrl()), null, null))
+        .withSonarQubeCloudEuRegionUri(sonarServerMock.baseUrl())
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
         .withServerSentEventsEnabled()

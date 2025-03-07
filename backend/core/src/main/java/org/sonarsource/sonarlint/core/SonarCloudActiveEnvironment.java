@@ -20,90 +20,77 @@
 package org.sonarsource.sonarlint.core;
 
 import java.net.URI;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 
 import static org.apache.commons.lang.StringUtils.removeEnd;
 
 public class SonarCloudActiveEnvironment {
-  private SonarQubeCloudRegionDto alternativeEuRegion;
-  private SonarQubeCloudRegionDto alternativeUsRegion;
+  private final Map<SonarCloudRegion, SonarQubeCloudRegionDto> alternativeRegionUris;
 
   public static SonarCloudActiveEnvironment prod() {
-    return new SonarCloudActiveEnvironment(new SonarQubeCloudRegionDto(null, null, null),
-      new SonarQubeCloudRegionDto(null, null, null));
+    return new SonarCloudActiveEnvironment(Map.of());
   }
-  
-  public SonarCloudActiveEnvironment(SonarQubeCloudRegionDto alternativeEuRegion, SonarQubeCloudRegionDto alternativeUsRegion) {
-    this.alternativeEuRegion = alternativeEuRegion;
-    this.alternativeUsRegion = alternativeUsRegion;
+
+  public SonarCloudActiveEnvironment(Map<org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion, SonarQubeCloudRegionDto> alternativeRegionUris) {
+    this.alternativeRegionUris = alternativeRegionUris.entrySet().stream()
+      .collect(Collectors.toMap(entry -> SonarCloudRegion.valueOf(entry.getKey().name()), Map.Entry::getValue));
   }
 
   public URI getUri(SonarCloudRegion region) {
-    if (region.equals(SonarCloudRegion.US)) {
-      return alternativeUsRegion.getUri() != null
-        ? alternativeUsRegion.getUri()
-        : SonarCloudRegion.US.getProductionUri();
+    if (alternativeRegionUris.containsKey(region) && alternativeRegionUris.get(region).getUri() != null) {
+      return alternativeRegionUris.get(region).getUri();
     }
-    return alternativeEuRegion.getUri() != null
-      ? alternativeEuRegion.getUri()
-      : SonarCloudRegion.EU.getProductionUri();
+    return region.getProductionUri();
   }
 
   public URI getApiUri(SonarCloudRegion region) {
-    if (region.equals(SonarCloudRegion.US)) {
-      return alternativeUsRegion.getApiUri() != null
-        ? alternativeUsRegion.getApiUri()
-        : SonarCloudRegion.US.getApiProductionUri();
+    if (alternativeRegionUris.containsKey(region) && alternativeRegionUris.get(region).getApiUri() != null) {
+      return alternativeRegionUris.get(region).getApiUri();
     }
-    return alternativeEuRegion.getApiUri() != null
-      ? alternativeEuRegion.getApiUri()
-      : SonarCloudRegion.EU.getApiProductionUri();
+    return region.getApiProductionUri();
   }
 
   public URI getWebSocketsEndpointUri(SonarCloudRegion region) {
-    if (region.equals(SonarCloudRegion.US)) {
-      return alternativeUsRegion.getWebSocketsEndpointUri() != null
-        ? alternativeUsRegion.getWebSocketsEndpointUri()
-        : SonarCloudRegion.US.getWebSocketUri();
+    if (alternativeRegionUris.containsKey(region) && alternativeRegionUris.get(region).getWebSocketsEndpointUri() != null) {
+      return alternativeRegionUris.get(region).getWebSocketsEndpointUri();
     }
-    return alternativeEuRegion.getWebSocketsEndpointUri() != null
-      ? alternativeEuRegion.getWebSocketsEndpointUri()
-      : SonarCloudRegion.EU.getWebSocketUri();
+    return region.getWebSocketUri();
   }
 
   public boolean isSonarQubeCloud(String uri) {
-    var cleanedUri = removeEnd(uri, "/");
-    if (isAlternativeUsUri(cleanedUri) || isAlternativeEuUri(cleanedUri)) {
-      return true;
-    }
-    
-    return removeEnd(SonarCloudRegion.US.getProductionUri().toString(), "/").equals(cleanedUri) ||
-      removeEnd(SonarCloudRegion.EU.getProductionUri().toString(), "/").equals(cleanedUri);
+    return getRegionByUri(uri).isPresent();
   }
 
   /**
    *  Before calling this method, caller should make sure URI is SonarCloud
    */
   public SonarCloudRegion getRegionOrThrow(String uri) {
-    var cleanedUri = removeEnd(uri, "/");
-    if (isAlternativeUsUri(cleanedUri) ||
-      removeEnd(SonarCloudRegion.US.getProductionUri().toString(), "/").equals(cleanedUri)) {
-      return SonarCloudRegion.US;
-    } else if (isAlternativeEuUri(cleanedUri) ||
-      removeEnd(SonarCloudRegion.EU.getProductionUri().toString(), "/").equals(cleanedUri)) {
-      return SonarCloudRegion.EU;
+    var regionOpt = getRegionByUri(uri);
+    if (regionOpt.isPresent()) {
+      return regionOpt.get();
     }
     
     throw new IllegalArgumentException("URI should be a known SonarCloud URI");
   }
   
-  private boolean isAlternativeEuUri(String uri) {
-    return alternativeEuRegion.getUri() != null
-      && removeEnd(alternativeEuRegion.getUri().toString(), "/").equals(uri);
-  }
+  private Optional<SonarCloudRegion> getRegionByUri(String uri) {
+    var cleanedUri = removeEnd(uri, "/");
+    for (var entry : alternativeRegionUris.entrySet()) {
+      var regionDto = entry.getValue();
+      if (regionDto.getUri() != null && removeEnd(regionDto.getUri().toString(), "/").equals(cleanedUri)) {
+        return Optional.of(entry.getKey());
+      }
+    }
 
-  private boolean isAlternativeUsUri(String uri) {
-    return alternativeUsRegion.getUri() != null
-      && removeEnd(alternativeUsRegion.getUri().toString(), "/").equals(uri);
+    for (var region : SonarCloudRegion.values()) {
+      if (removeEnd(region.getProductionUri().toString(), "/").equals(cleanedUri)) {
+        return Optional.of(region);
+      }
+    }
+    
+    return Optional.empty();
   }
 }

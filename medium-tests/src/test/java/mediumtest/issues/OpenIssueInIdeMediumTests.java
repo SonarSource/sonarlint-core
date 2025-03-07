@@ -38,7 +38,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.Bindin
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
@@ -311,7 +310,7 @@ class OpenIssueInIdeMediumTests {
     var fakeClient = harness.newFakeClient().build();
     var fakeServerWithIssue = fakeServerWithIssue(harness).start();
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create("https://sonar.my"), null, null))
+      .withSonarQubeCloudEuRegionUri("https://sonar.my")
       .withUnboundConfigScope(CONFIG_SCOPE_ID, SONAR_PROJECT_NAME)
       .withEmbeddedServer()
       .beforeInitialize(createdBackend -> {
@@ -341,7 +340,7 @@ class OpenIssueInIdeMediumTests {
     doThrow(RuntimeException.class).when(fakeClient).assistCreatingConnection(any(), any());
 
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create("https://sonar.my"), null, null))
+      .withSonarQubeCloudEuRegionUri("https://sonar.my")
       .withUnboundConfigScope(CONFIG_SCOPE_ID, SONAR_PROJECT_NAME)
       .withEmbeddedServer()
       .start(fakeClient);

@@ -38,7 +38,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.Bindin
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
@@ -102,7 +101,7 @@ class OpenFixSuggestionInIdeMediumTests {
       .build();
     var scServer = buildSonarCloudServer(harness).start();
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(scServer.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(scServer.baseUrl())
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withEmbeddedServer()
       .withTelemetryEnabled()
@@ -130,7 +129,7 @@ class OpenFixSuggestionInIdeMediumTests {
       .build();
     var scServer = buildSonarCloudServer(harness).start();
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(scServer.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(scServer.baseUrl())
       .withSonarCloudConnection(CONNECTION_ID, ORG_KEY)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withEmbeddedServer()
@@ -167,7 +166,7 @@ class OpenFixSuggestionInIdeMediumTests {
 
     var scServer = buildSonarCloudServer(harness).start();
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(scServer.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(scServer.baseUrl())
       .withUnboundConfigScope(CONFIG_SCOPE_ID, PROJECT_KEY)
       .withEmbeddedServer()
       .withOpenFixSuggestion()
@@ -192,7 +191,7 @@ class OpenFixSuggestionInIdeMediumTests {
       .build();
     var scServer = buildSonarCloudServer(harness).start();
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(scServer.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(scServer.baseUrl())
       .withUnboundConfigScope("configScopeA", PROJECT_KEY + " 1")
       .withUnboundConfigScope("configScopeB", PROJECT_KEY + " 2")
       .withEmbeddedServer()
@@ -220,7 +219,7 @@ class OpenFixSuggestionInIdeMediumTests {
       .build();
     var scServer = buildSonarCloudServer(harness).start();
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(scServer.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(scServer.baseUrl())
       .withUnboundConfigScope("configScopeParent", PROJECT_KEY)
       .withUnboundConfigScope("configScopeChild", PROJECT_KEY, "configScopeParent")
       .withEmbeddedServer()
@@ -247,7 +246,7 @@ class OpenFixSuggestionInIdeMediumTests {
 
     var scServer = buildSonarCloudServer(harness).start();
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(scServer.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(scServer.baseUrl())
       .withUnboundConfigScope(CONFIG_SCOPE_ID, PROJECT_KEY)
       .withEmbeddedServer()
       .withOpenFixSuggestion()
@@ -279,7 +278,7 @@ class OpenFixSuggestionInIdeMediumTests {
 
     var scServer = buildSonarCloudServer(harness).start();
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(scServer.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(scServer.baseUrl())
       .withUnboundConfigScope(CONFIG_SCOPE_ID, PROJECT_KEY)
       .withEmbeddedServer()
       .withOpenFixSuggestion()
@@ -337,7 +336,7 @@ class OpenFixSuggestionInIdeMediumTests {
     var fakeClient = harness.newFakeClient().build();
     var scServer = buildSonarCloudServer(harness).start();
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(scServer.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(scServer.baseUrl())
       .withSonarCloudConnection(CONNECTION_ID, ORG_KEY)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withEmbeddedServer()
@@ -364,7 +363,7 @@ class OpenFixSuggestionInIdeMediumTests {
       .build();
     var scServer = buildSonarCloudServer(harness).start();
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(scServer.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(scServer.baseUrl())
       .withSonarCloudConnection(CONNECTION_ID, ORG_KEY)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
       .withEmbeddedServer()

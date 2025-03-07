@@ -19,14 +19,12 @@
  */
 package mediumtest.issues;
 
-import java.net.URI;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckAnticipatedStatusChangeSupportedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckAnticipatedStatusChangeSupportedResponse;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
@@ -61,7 +59,7 @@ class CheckAnticipatedStatusChangeSupportedMediumTests {
   @SonarLintTest
   void it_should_not_be_available_for_sonarcloud(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(mockWebServerExtension.endpointParams().getBaseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(mockWebServerExtension.endpointParams().getBaseUrl())
       .withSonarCloudConnection("connectionId", "orgKey")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .start();

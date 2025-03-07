@@ -19,14 +19,12 @@
  */
 package mediumtest.connection;
 
-import java.net.URI;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.FuzzySearchProjectsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetAllProjectsResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.SonarProjectDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
@@ -58,7 +56,7 @@ class ConnectionGetAllProjectsMediumTests {
   void it_should_return_an_empty_response_if_no_projects_in_sonarcloud_organization(SonarLintTestHarness harness) {
     var server = harness.newFakeSonarCloudServer("myOrg").start();
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(server.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .start();
 
     var response = getAllProjects(backend, new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto("token")), SonarCloudRegion.EU));
@@ -125,7 +123,7 @@ class ConnectionGetAllProjectsMediumTests {
       .withProject("projectKey2", project -> project.withName("MyProject2"))
       .start();
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(server.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .start();
 
     var response = getAllProjects(backend, new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto("token")), SonarCloudRegion.EU));

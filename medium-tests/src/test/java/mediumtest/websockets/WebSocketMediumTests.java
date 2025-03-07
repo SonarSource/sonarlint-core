@@ -19,7 +19,6 @@
  */
 package mediumtest.websockets;
 
-import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -40,7 +39,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.Did
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
@@ -1450,8 +1448,7 @@ class WebSocketMediumTests {
   public SonarLintBackendFixture.SonarLintBackendBuilder newBackendWithWebSockets(SonarLintTestHarness harness) {
     return harness.newBackend()
       .withServerSentEventsEnabled()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(null, null, URI.create(webSocketServer.getUrl())))
-      .withSonarQubeCloudUsRegionDto(null);
+      .withSonarQubeCloudEuRegionWebSocketUri(webSocketServer.getUrl());
   }
 
   public static class WebSocketPayloadBuilder {

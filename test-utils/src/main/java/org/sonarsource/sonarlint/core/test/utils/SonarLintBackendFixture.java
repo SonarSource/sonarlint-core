@@ -96,6 +96,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryCli
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.test.utils.plugins.Plugin;
@@ -162,9 +163,18 @@ public class SonarLintBackendFixture {
     private boolean enableDataflowBugDetection;
 
     @Nullable
-    private SonarQubeCloudRegionDto euRegionDto;
+    private String euRegionUri;
     @Nullable
-    private SonarQubeCloudRegionDto usRegionDto;
+    private String euRegionApiUri;
+    @Nullable
+    private String euRegionWebSocketUri;
+
+    @Nullable
+    private String usRegionUri;
+    @Nullable
+    private String usRegionApiUri;
+    @Nullable
+    private String usRegionWebSocketUri;
     
     private Duration responseTimeout;
     private Path keyStorePath;
@@ -238,13 +248,33 @@ public class SonarLintBackendFixture {
       return this;
     }
     
-    public SonarLintBackendBuilder withSonarQubeCloudEuRegionDto(@Nullable SonarQubeCloudRegionDto euRegionDto) {
-      this.euRegionDto = euRegionDto;
+    public SonarLintBackendBuilder withSonarQubeCloudEuRegionUri(String euRegionUri) {
+      this.euRegionUri = euRegionUri;
       return this;
     }
 
-    public SonarLintBackendBuilder withSonarQubeCloudUsRegionDto(@Nullable SonarQubeCloudRegionDto usRegionDto) {
-      this.usRegionDto = usRegionDto;
+    public SonarLintBackendBuilder withSonarQubeCloudEuRegionApiUri(String euRegionApiUri) {
+      this.euRegionApiUri = euRegionApiUri;
+      return this;
+    }
+
+    public SonarLintBackendBuilder withSonarQubeCloudEuRegionWebSocketUri(String euRegionWebSocketUri) {
+      this.euRegionWebSocketUri = euRegionWebSocketUri;
+      return this;
+    }
+
+    public SonarLintBackendBuilder withSonarQubeCloudUsRegionUri(String usRegionUri) {
+      this.usRegionUri = usRegionUri;
+      return this;
+    }
+
+    public SonarLintBackendBuilder withSonarQubeCloudUsRegionApiUri(String usRegionApiUri) {
+      this.usRegionApiUri = usRegionApiUri;
+      return this;
+    }
+
+    public SonarLintBackendBuilder withSonarQubeCloudUsRegionWebSocketUri(String usRegionWebSocketUri) {
+      this.usRegionWebSocketUri = usRegionWebSocketUri;
       return this;
     }
 
@@ -497,9 +527,12 @@ public class SonarLintBackendFixture {
         var featureFlags = new FeatureFlagsDto(manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, startEmbeddedServer, areSecurityHotspotsEnabled,
           manageServerSentEvents, enableDataflowBugDetection, shouldManageFullSynchronization, telemetryEnabled, canOpenFixSuggestion, monitoringEnabled);
         
-        var actualEuRegionDto = euRegionDto != null ? euRegionDto : new SonarQubeCloudRegionDto(null, null, null);
-        var actualUsRegionDto = usRegionDto != null ? usRegionDto : new SonarQubeCloudRegionDto(null, null, null);
-        var sonarCloudAlternativeEnvironment = new SonarCloudAlternativeEnvironmentDto(actualEuRegionDto, actualUsRegionDto);
+        // If more regions are added in the future, extend this by adding a new entry set and add the fields / methods above!
+        var sonarCloudAlternativeEnvironment = new SonarCloudAlternativeEnvironmentDto(Map.of(
+          SonarCloudRegion.EU,
+          new SonarQubeCloudRegionDto(createUriFromString(euRegionUri), createUriFromString(euRegionApiUri), createUriFromString(euRegionWebSocketUri)),
+          SonarCloudRegion.US,
+          new SonarQubeCloudRegionDto(createUriFromString(usRegionUri), createUriFromString(usRegionApiUri), createUriFromString(usRegionWebSocketUri))));
 
         var sslConfiguration = new SslConfigurationDto(null, null, null, keyStorePath, keyStorePassword, keyStoreType);
         var httpConfiguration = new HttpConfigurationDto(sslConfiguration, null, null, null, responseTimeout);
@@ -519,6 +552,10 @@ public class SonarLintBackendFixture {
       } catch (Exception e) {
         throw new IllegalStateException("Cannot initialize the backend", e);
       }
+    }
+    
+    private static URI createUriFromString(@Nullable String uri) {
+      return uri == null ? null : URI.create(uri);
     }
 
     private static SonarLintTestRpcServer createTestBackend(SonarLintRpcClientDelegate client) throws IOException {

@@ -19,14 +19,12 @@
  */
 package mediumtest.connection;
 
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetProjectNamesByKeyParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.projects.GetProjectNamesByKeyResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
@@ -60,7 +58,7 @@ class ConnectionGetProjectNameByKeyMediumTests {
   void it_should_return_null_if_no_projects_in_sonarcloud_organization(SonarLintTestHarness harness) {
     var server = harness.newFakeSonarCloudServer("myOrg").start();
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(server.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .start();
 
     var response = getProjectNamesByKey(backend, new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto("token")), SonarCloudRegion.EU), List.of(
@@ -97,7 +95,7 @@ class ConnectionGetProjectNameByKeyMediumTests {
       .withProject("projectKey3", project -> project.withName("MyProject3"))
       .start();
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(server.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .start();
 
     var response = getProjectNamesByKey(backend, new TransientSonarCloudConnectionDto("myOrg", Either.forLeft(new TokenDto("token")), SonarCloudRegion.EU),

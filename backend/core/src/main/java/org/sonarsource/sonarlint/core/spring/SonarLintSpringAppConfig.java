@@ -209,7 +209,7 @@ public class SonarLintSpringAppConfig {
   SonarCloudActiveEnvironment provideSonarCloudActiveEnvironment(InitializeParams params) {
     var alternativeSonarCloudEnv = params.getAlternativeSonarCloudEnvironment();
     return alternativeSonarCloudEnv == null ? SonarCloudActiveEnvironment.prod()
-      : new SonarCloudActiveEnvironment(alternativeSonarCloudEnv.getEuRegion(), alternativeSonarCloudEnv.getUsRegion());
+      : new SonarCloudActiveEnvironment(alternativeSonarCloudEnv.getAlternateRegionUris());
   }
 
   @Bean

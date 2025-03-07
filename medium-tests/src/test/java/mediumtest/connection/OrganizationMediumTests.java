@@ -20,7 +20,6 @@
 package mediumtest.connection;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.concurrent.ExecutionException;
@@ -30,7 +29,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.FuzzyS
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.ListUserOrganizationsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.OrganizationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
@@ -62,7 +60,7 @@ class OrganizationMediumTests {
     var fakeClient = harness.newFakeClient()
       .build();
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(sonarcloudMock.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(sonarcloudMock.baseUrl())
       .start(fakeClient);
     sonarcloudMock.stubFor(get("/api/organizations/search.protobuf?member=true&ps=500&p=1")
       .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Organizations.SearchWsResponse.newBuilder()
@@ -76,7 +74,7 @@ class OrganizationMediumTests {
   @SonarLintTest
   void it_should_list_user_organizations(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(sonarcloudMock.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(sonarcloudMock.baseUrl())
       .start();
     sonarcloudMock.stubFor(get("/api/organizations/search.protobuf?member=true&ps=500&p=1")
       .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Organizations.SearchWsResponse.newBuilder()
@@ -111,7 +109,7 @@ class OrganizationMediumTests {
   @SonarLintTest
   void it_should_get_organizations_by_key(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(sonarcloudMock.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(sonarcloudMock.baseUrl())
       .start();
     sonarcloudMock.stubFor(get("/api/organizations/search.protobuf?organizations=myCustomOrg&ps=500&p=1")
       .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Organizations.SearchWsResponse.newBuilder()
@@ -138,7 +136,7 @@ class OrganizationMediumTests {
   @SonarLintTest
   void it_should_fuzzy_search_and_cache_organizations_on_sonarcloud(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(sonarcloudMock.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(sonarcloudMock.baseUrl())
       .start();
     sonarcloudMock.stubFor(get("/api/organizations/search.protobuf?member=true&ps=500&p=1")
       .willReturn(aResponse().withStatus(200).withResponseBody(protobufBody(Organizations.SearchWsResponse.newBuilder()

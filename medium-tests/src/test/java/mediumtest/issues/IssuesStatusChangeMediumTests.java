@@ -20,7 +20,6 @@
 package mediumtest.issues;
 
 import com.github.tomakehurst.wiremock.client.WireMock;
-import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
@@ -38,7 +37,6 @@ import org.sonarsource.sonarlint.core.commons.LocalOnlyIssueResolution;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.AddIssueCommentParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ChangeIssueStatusParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssuesForFileParams;
@@ -101,7 +99,7 @@ class IssuesStatusChangeMediumTests {
       .withIssueTransitionStatusCode(404)
       .start();
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(server.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .withSonarCloudConnection(CONNECTION_ID, "myOrg", true, storageBuilder -> storageBuilder
         .withProject("projectKey", projectStorageBuilder -> projectStorageBuilder.withMainBranch("main")))
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
@@ -121,7 +119,7 @@ class IssuesStatusChangeMediumTests {
         project -> project.withBranch("main"))
       .start();
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(server.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .withSonarCloudConnection(CONNECTION_ID, "myOrg", true, storageBuilder -> storageBuilder
         .withProject("projectKey", projectStorageBuilder -> projectStorageBuilder.withMainBranch("main")))
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")

@@ -19,13 +19,11 @@
  */
 package mediumtest;
 
-import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetSharedConnectedModeConfigFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.binding.GetSharedConnectedModeConfigFileResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -63,7 +61,7 @@ class SharedConnectedModeSettingsMediumTests {
     var server = harness.newFakeSonarCloudServer(organizationKey).start();
 
     var backend = harness.newBackend()
-      .withSonarQubeCloudEuRegionDto(new SonarQubeCloudRegionDto(URI.create(server.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .withSonarCloudConnection(connectionId, organizationKey)
       .withBoundConfigScope(configScopeId, connectionId, projectKey)
       .withTelemetryEnabled()
@@ -95,7 +93,7 @@ class SharedConnectedModeSettingsMediumTests {
     var server = harness.newFakeSonarCloudServer(organizationKey).start();
 
     var backend = harness.newBackend()
-      .withSonarQubeCloudUsRegionDto(new SonarQubeCloudRegionDto(URI.create(server.baseUrl()), null, null))
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .withSonarCloudConnection(connectionId, organizationKey)
       .withBoundConfigScope(configScopeId, connectionId, projectKey)
       .withTelemetryEnabled()
