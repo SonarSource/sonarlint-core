@@ -41,6 +41,7 @@ import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
@@ -123,7 +124,11 @@ public class SmartNotifications {
   }
 
   private boolean shouldSkipPolling(AbstractConnectionConfiguration connection) {
-    return connection.getKind() == ConnectionKind.SONARCLOUD && webSocketService.hasOpenConnection();
+    if (connection.getKind() == ConnectionKind.SONARCLOUD) {
+      var region = ((SonarCloudConnectionConfiguration)  connection).getRegion();
+      return webSocketService.hasOpenConnection(region);
+    }
+    return false;
   }
 
   @PreDestroy
