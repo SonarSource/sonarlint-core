@@ -17,16 +17,10 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons.util.git;
+package org.sonarsource.sonarlint.core.commons.util.git.exceptions;
 
-public class GitRepoNotFoundException extends IllegalStateException {
-  private final String path;
-
-  public GitRepoNotFoundException(String path) {
-    this.path = path;
-  }
-
-  public String getPath() {
-    return path;
+public class NoSuchPathException extends GitException {
+  public NoSuchPathException(String path) {
+    super(path);
   }
 }

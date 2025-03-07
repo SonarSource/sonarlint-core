@@ -53,6 +53,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.util.git.exceptions.NoSuchPathException;
 
 import static java.util.function.Predicate.not;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -121,6 +122,17 @@ class GitUtilsTest {
       .mapToObj(lineNumber -> sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(lineNumber))))
       .map(Optional::get)
       .allMatch(date -> date.equals(c1));
+  }
+
+  @Test
+  void it_should_not_blame_new_file() throws IOException {
+    createFile(projectDirPath, "fileA", "line1", "line2", "line3");
+
+    var fileAPath = projectDirPath.resolve("fileA");
+    var filePaths = Set.of(fileAPath);
+    var fileUris = Set.of(fileAPath.toUri());
+    var now = Instant.now();
+    assertThrows(NoSuchPathException.class, () -> getBlameResult(projectDirPath, filePaths, fileUris, path -> "", now));
   }
 
   @Test
