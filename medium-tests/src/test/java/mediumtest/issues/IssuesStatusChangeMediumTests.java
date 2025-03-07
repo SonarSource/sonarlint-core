@@ -99,7 +99,7 @@ class IssuesStatusChangeMediumTests {
       .withResponseCodes(responseCodes -> responseCodes.withIssueTransitionStatusCode(404))
       .start();
     var backend = harness.newBackend()
-      .withSonarCloudUrl(server.baseUrl())
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .withSonarCloudConnection(CONNECTION_ID, "myOrg", true, storageBuilder -> storageBuilder
         .withProject("projectKey", projectStorageBuilder -> projectStorageBuilder.withMainBranch("main")))
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
@@ -120,7 +120,7 @@ class IssuesStatusChangeMediumTests {
         project -> project.withBranch("main"))
       .start();
     var backend = harness.newBackend()
-      .withSonarCloudUrl(server.baseUrl())
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .withSonarCloudConnection(CONNECTION_ID, "myOrg", true, storageBuilder -> storageBuilder
         .withProject("projectKey", projectStorageBuilder -> projectStorageBuilder.withMainBranch("main")))
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")

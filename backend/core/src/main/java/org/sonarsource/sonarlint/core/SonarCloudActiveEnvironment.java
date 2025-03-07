@@ -20,61 +20,77 @@
 package org.sonarsource.sonarlint.core;
 
 import java.net.URI;
-import java.util.Arrays;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 
 import static org.apache.commons.lang.StringUtils.removeEnd;
 
 public class SonarCloudActiveEnvironment {
-
-  private SonarQubeCloudUris alternativeUris;
+  private final Map<SonarCloudRegion, SonarQubeCloudRegionDto> alternativeRegionUris;
 
   public static SonarCloudActiveEnvironment prod() {
-    return new SonarCloudActiveEnvironment();
+    return new SonarCloudActiveEnvironment(Map.of());
   }
 
-  public SonarCloudActiveEnvironment() {
-  }
-
-  public SonarCloudActiveEnvironment(URI uri, URI apiUri, URI webSocketsEndpointUri) {
-    this.alternativeUris = new SonarQubeCloudUris(uri, apiUri, webSocketsEndpointUri);
+  public SonarCloudActiveEnvironment(Map<org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion, SonarQubeCloudRegionDto> alternativeRegionUris) {
+    this.alternativeRegionUris = alternativeRegionUris.entrySet().stream()
+      .collect(Collectors.toMap(entry -> SonarCloudRegion.valueOf(entry.getKey().name()), Map.Entry::getValue));
   }
 
   public URI getUri(SonarCloudRegion region) {
-    return alternativeUris != null ? alternativeUris.productionUri : region.getProductionUri();
+    if (alternativeRegionUris.containsKey(region) && alternativeRegionUris.get(region).getUri() != null) {
+      return alternativeRegionUris.get(region).getUri();
+    }
+    return region.getProductionUri();
   }
 
   public URI getApiUri(SonarCloudRegion region) {
-    return alternativeUris != null ? alternativeUris.productionApiUri : region.getApiProductionUri();
+    if (alternativeRegionUris.containsKey(region) && alternativeRegionUris.get(region).getApiUri() != null) {
+      return alternativeRegionUris.get(region).getApiUri();
+    }
+    return region.getApiProductionUri();
   }
 
   public URI getWebSocketsEndpointUri(SonarCloudRegion region) {
-    return alternativeUris != null ? alternativeUris.wsUri : region.getWebSocketUri();
+    if (alternativeRegionUris.containsKey(region) && alternativeRegionUris.get(region).getWebSocketsEndpointUri() != null) {
+      return alternativeRegionUris.get(region).getWebSocketsEndpointUri();
+    }
+    return region.getWebSocketUri();
   }
 
   public boolean isSonarQubeCloud(String uri) {
-    return isAlternativeUri(uri) ||
-      Arrays.stream(SonarCloudRegion.values())
-      .map(u -> removeEnd(u.getProductionUri().toString(), "/"))
-      .anyMatch(u -> u.equals(removeEnd(uri, "/")));
+    return getRegionByUri(uri).isPresent();
   }
 
   /**
    *  Before calling this method, caller should make sure URI is SonarCloud
    */
   public SonarCloudRegion getRegionOrThrow(String uri) {
-    if (isAlternativeUri(uri)) {
-      return SonarCloudRegion.EU;
+    var regionOpt = getRegionByUri(uri);
+    if (regionOpt.isPresent()) {
+      return regionOpt.get();
     }
-    return Arrays.stream(SonarCloudRegion.values())
-      .filter(e -> removeEnd(e.getProductionUri().toString(), "/").equals(removeEnd(uri, "/")))
-      .findFirst()
-      .orElseThrow(() -> new IllegalArgumentException("URI should be a known SonarCloud URI"));
+    
+    throw new IllegalArgumentException("URI should be a known SonarCloud URI");
   }
+  
+  private Optional<SonarCloudRegion> getRegionByUri(String uri) {
+    var cleanedUri = removeEnd(uri, "/");
+    for (var entry : alternativeRegionUris.entrySet()) {
+      var regionDto = entry.getValue();
+      if (regionDto.getUri() != null && removeEnd(regionDto.getUri().toString(), "/").equals(cleanedUri)) {
+        return Optional.of(entry.getKey());
+      }
+    }
 
-  private boolean isAlternativeUri(String uri) {
-    return alternativeUris != null && removeEnd(alternativeUris.productionUri.toString(), "/").equals(removeEnd(uri, "/"));
-  }
-
-  private record SonarQubeCloudUris(URI productionUri, URI productionApiUri, URI wsUri) {
+    for (var region : SonarCloudRegion.values()) {
+      if (removeEnd(region.getProductionUri().toString(), "/").equals(cleanedUri)) {
+        return Optional.of(region);
+      }
+    }
+    
+    return Optional.empty();
   }
 }

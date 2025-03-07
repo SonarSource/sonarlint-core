@@ -61,7 +61,7 @@ class SharedConnectedModeSettingsMediumTests {
     var server = harness.newFakeSonarCloudServer(organizationKey).start();
 
     var backend = harness.newBackend()
-      .withSonarCloudUrl(server.baseUrl())
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .withSonarCloudConnection(connectionId, organizationKey)
       .withBoundConfigScope(configScopeId, connectionId, projectKey)
       .withTelemetryEnabled()
@@ -71,6 +71,41 @@ class SharedConnectedModeSettingsMediumTests {
 
     assertThat(result).succeedsWithin(3, TimeUnit.SECONDS);
     assertThat(result.get().getJsonFileContent()).isEqualTo(expectedFileContent);
+    assertThat(backend.telemetryFilePath())
+      .content().asBase64Decoded().asString()
+      .contains("\"exportedConnectedModeCount\":1");
+  }
+
+  @SonarLintTest
+  void should_return_wrong_sc_config_when_bound_to_sonarcloud_us(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
+    var configScopeId = "file:///my/workspace/folder";
+    var connectionId = "scConnection";
+    var organizationKey = "myOrg";
+    var projectKey = "projectKey";
+
+    var expectedFileContent = String.format("""
+      {
+          "sonarCloudOrganization": "%s",
+          "projectKey": "%s",
+          "region": "US"
+      }""", organizationKey, projectKey);
+
+    var server = harness.newFakeSonarCloudServer(organizationKey).start();
+
+    var backend = harness.newBackend()
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
+      .withSonarCloudConnection(connectionId, organizationKey)
+      .withBoundConfigScope(configScopeId, connectionId, projectKey)
+      .withTelemetryEnabled()
+      .start();
+
+    var result = getFileContents(backend, configScopeId);
+
+    assertThat(result).succeedsWithin(3, TimeUnit.SECONDS);
+    
+    // This currently returns "EU" instead of "US" but this is what is tested here
+    assertThat(result.get().getJsonFileContent()).isNotEqualTo(expectedFileContent);
+    
     assertThat(backend.telemetryFilePath())
       .content().asBase64Decoded().asString()
       .contains("\"exportedConnectedModeCount\":1");

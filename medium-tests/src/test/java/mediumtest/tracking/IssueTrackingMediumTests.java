@@ -758,7 +758,7 @@ class IssueTrackingMediumTests {
     var backend = harness.newBackend()
       .withSonarCloudConnection(connectionId, orgKey, true, storage -> {})
       .withFullSynchronization()
-      .withSonarCloudUrl(server.baseUrl())
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .start(client);

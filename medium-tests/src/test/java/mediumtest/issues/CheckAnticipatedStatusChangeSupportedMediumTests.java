@@ -59,7 +59,7 @@ class CheckAnticipatedStatusChangeSupportedMediumTests {
   @SonarLintTest
   void it_should_not_be_available_for_sonarcloud(SonarLintTestHarness harness) {
     var backend = harness.newBackend()
-      .withSonarCloudUrl(mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeCloudEuRegionUri(mockWebServerExtension.endpointParams().getBaseUrl())
       .withSonarCloudConnection("connectionId", "orgKey")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .start();

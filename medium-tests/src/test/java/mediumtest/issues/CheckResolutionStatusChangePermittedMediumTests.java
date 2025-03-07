@@ -128,7 +128,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
   void it_should_allow_2_statuses_when_user_has_permission_for_sonarcloud(SonarLintTestHarness harness) {
     fakeServerWithIssue("issueKey", "orgKey", List.of("wontfix", "falsepositive"));
     var backend = harness.newBackend()
-      .withSonarCloudUrl(mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeCloudEuRegionUri(mockWebServerExtension.endpointParams().getBaseUrl())
       .withSonarCloudConnection(CONNECTION_ID, "orgKey")
       .start();
 

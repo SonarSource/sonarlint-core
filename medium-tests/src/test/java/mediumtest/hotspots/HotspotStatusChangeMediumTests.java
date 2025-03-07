@@ -82,7 +82,7 @@ class HotspotStatusChangeMediumTests {
     var server = harness.newFakeSonarCloudServer().start();
 
     var backend = harness.newBackend()
-      .withSonarCloudUrl(server.baseUrl())
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .withSonarCloudConnection("connectionId", "orgKey")
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .start();

@@ -257,7 +257,7 @@ class SmartNotificationsMediumTests {
       UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1);
 
     harness.newBackend()
-      .withSonarCloudUrl(mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeCloudEuRegionUri(mockWebServerExtension.endpointParams().getBaseUrl())
       .withSonarCloudConnectionAndNotifications(CONNECTION_ID, "myOrg", storage -> storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
       .withBoundConfigScope("scopeId", CONNECTION_ID, PROJECT_KEY)
       .withSmartNotifications()
@@ -281,8 +281,8 @@ class SmartNotificationsMediumTests {
       UrlUtils.urlEncode(STORED_DATE.format(TIME_FORMATTER)), EVENT_PROJECT_1);
 
     harness.newBackend()
-      .withSonarCloudUrl(mockWebServerExtension.endpointParams().getBaseUrl())
-      .withSonarCloudWebSocketsUrl(webSocketServer.getUrl())
+      .withSonarQubeCloudEuRegionUri(mockWebServerExtension.endpointParams().getBaseUrl())
+      .withSonarQubeCloudEuRegionWebSocketUri(webSocketServer.getUrl())
       .withSonarCloudConnectionAndNotifications(CONNECTION_ID, "myOrg", storage -> storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
       .withBoundConfigScope("scopeId", CONNECTION_ID, PROJECT_KEY)
       .withSmartNotifications()

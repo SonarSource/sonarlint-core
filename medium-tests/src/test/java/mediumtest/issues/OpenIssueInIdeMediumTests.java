@@ -310,7 +310,7 @@ class OpenIssueInIdeMediumTests {
     var fakeClient = harness.newFakeClient().build();
     var fakeServerWithIssue = fakeServerWithIssue(harness).start();
     var backend = harness.newBackend()
-      .withSonarCloudUrl("https://sonar.my")
+      .withSonarQubeCloudEuRegionUri("https://sonar.my")
       .withUnboundConfigScope(CONFIG_SCOPE_ID, SONAR_PROJECT_NAME)
       .withEmbeddedServer()
       .beforeInitialize(createdBackend -> {
@@ -340,7 +340,7 @@ class OpenIssueInIdeMediumTests {
     doThrow(RuntimeException.class).when(fakeClient).assistCreatingConnection(any(), any());
 
     var backend = harness.newBackend()
-      .withSonarCloudUrl("https://sonar.my")
+      .withSonarQubeCloudEuRegionUri("https://sonar.my")
       .withUnboundConfigScope(CONFIG_SCOPE_ID, SONAR_PROJECT_NAME)
       .withEmbeddedServer()
       .start(fakeClient);

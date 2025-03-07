@@ -1448,7 +1448,7 @@ class WebSocketMediumTests {
   public SonarLintBackendFixture.SonarLintBackendBuilder newBackendWithWebSockets(SonarLintTestHarness harness) {
     return harness.newBackend()
       .withServerSentEventsEnabled()
-      .withSonarCloudWebSocketsUrl(webSocketServer.getUrl());
+      .withSonarQubeCloudEuRegionWebSocketUri(webSocketServer.getUrl());
   }
 
   public static class WebSocketPayloadBuilder {

@@ -20,11 +20,12 @@
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
 
 import java.net.URI;
+import java.util.Map;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 
+/** This contains the alternative environment information for SonarQube Cloud with both the EU and US region */
 public class SonarCloudAlternativeEnvironmentDto {
-  private final URI uri;
-  private final URI apiUri;
-  private final URI webSocketsEndpointUri;
+  private final Map<SonarCloudRegion, SonarQubeCloudRegionDto> alternativeRegionUris;
 
   /**
    * @deprecated use the other constructor instead
@@ -36,24 +37,20 @@ public class SonarCloudAlternativeEnvironmentDto {
 
   /**
    *
+   * @deprecated use the other constructor instead
    * @param uri the base URI, e.g. https://sonarcloud.io
    * @param apiUri the base URI of new endpoints, e.g. https://api.sonarcloud.io. Must be specified because for some env it cannot be deduced from the base URI (e.g. Dev)
    */
+  @Deprecated(since = "10.17")
   public SonarCloudAlternativeEnvironmentDto(URI uri, URI apiUri, URI webSocketsEndpointUri) {
-    this.uri = uri;
-    this.apiUri = apiUri;
-    this.webSocketsEndpointUri = webSocketsEndpointUri;
+    this(Map.of(SonarCloudRegion.EU, new SonarQubeCloudRegionDto(uri, apiUri, webSocketsEndpointUri)));
+  }
+  
+  public SonarCloudAlternativeEnvironmentDto(Map<SonarCloudRegion, SonarQubeCloudRegionDto> alternateRegionUris) {
+    this.alternativeRegionUris = alternateRegionUris;
   }
 
-  public URI getUri() {
-    return uri;
-  }
-
-  public URI getApiUri() {
-    return apiUri;
-  }
-
-  public URI getWebSocketsEndpointUri() {
-    return webSocketsEndpointUri;
+  public Map<SonarCloudRegion, SonarQubeCloudRegionDto> getAlternateRegionUris() {
+    return alternativeRegionUris;
   }
 }

@@ -59,7 +59,7 @@ class RuleDetailsMediumTests {
         project -> project.withBranch("branchName"))
       .start();
     var backend = harness.newBackend()
-      .withSonarCloudUrl(server.baseUrl())
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.TEXT)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
       .withSonarCloudConnection("connectionId",
@@ -80,7 +80,7 @@ class RuleDetailsMediumTests {
         project -> project.withBranch("branchName"))
       .start();
     var backend = harness.newBackend()
-      .withSonarCloudUrl(server.baseUrl())
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .withStandaloneEmbeddedPlugin(TestPlugin.PYTHON)
       .withEnabledLanguageInStandaloneMode(Language.IPYTHON)
       .withSonarCloudConnection("connectionId",

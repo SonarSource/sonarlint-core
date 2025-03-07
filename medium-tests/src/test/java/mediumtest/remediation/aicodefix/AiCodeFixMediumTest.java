@@ -156,7 +156,7 @@ public class AiCodeFixMediumTest {
       .build();
     var backend = harness.newBackend()
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .withSonarCloudUrl(server.baseUrl())
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR")))
         .withAiCodeFixSettings(aiCodeFix -> aiCodeFix
@@ -200,7 +200,7 @@ public class AiCodeFixMediumTest {
       .build();
     var backend = harness.newBackend()
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .withSonarCloudUrl(server.baseUrl())
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S1220", "MAJOR")))
         .withAiCodeFixSettings(settings -> settings.organizationEligible(true).enabledForAllProjects()))
@@ -240,7 +240,7 @@ public class AiCodeFixMediumTest {
       .build();
     var backend = harness.newBackend()
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .withSonarCloudUrl(server.baseUrl())
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S1220", "MAJOR")))
         .withAiCodeFixSettings(settings -> settings.organizationEligible(false)))
@@ -280,7 +280,7 @@ public class AiCodeFixMediumTest {
       .build();
     var backend = harness.newBackend()
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .withSonarCloudUrl(server.baseUrl())
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S1220", "MAJOR")))
         .withAiCodeFixSettings(settings -> settings.organizationEligible(true).disabled()))
@@ -320,7 +320,7 @@ public class AiCodeFixMediumTest {
       .build();
     var backend = harness.newBackend()
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
-      .withSonarCloudUrl(server.baseUrl())
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S1220", "MAJOR")))
         .withAiCodeFixSettings(settings -> settings.organizationEligible(true).enabledForProjects("otherProjectKey")))
@@ -397,7 +397,7 @@ public class AiCodeFixMediumTest {
       .build();
     var backend = harness.newBackend()
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .withSonarCloudUrl(server.baseUrl())
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR")))
         .withAiCodeFixSettings(aiCodeFix -> aiCodeFix
@@ -429,7 +429,7 @@ public class AiCodeFixMediumTest {
       .build();
     var backend = harness.newBackend()
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .withSonarCloudUrl(server.baseUrl())
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR")))
         .withAiCodeFixSettings(aiCodeFix -> aiCodeFix
@@ -461,7 +461,8 @@ public class AiCodeFixMediumTest {
       .build();
     var backend = harness.newBackend()
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .withSonarCloudUrl(server.baseUrl())
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
+      .withSonarQubeCloudEuRegionApiUri(server.baseUrl())
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR")))
         .withAiCodeFixSettings(aiCodeFix -> aiCodeFix
@@ -506,7 +507,8 @@ public class AiCodeFixMediumTest {
       .build();
     var backend = harness.newBackend()
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .withSonarCloudUrl(server.baseUrl())
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
+      .withSonarQubeCloudEuRegionApiUri(server.baseUrl())
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR"))))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -541,7 +543,8 @@ public class AiCodeFixMediumTest {
       .build();
     var backend = harness.newBackend()
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .withSonarCloudUrl(server.baseUrl())
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
+      .withSonarQubeCloudEuRegionApiUri(server.baseUrl())
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR"))))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -577,7 +580,8 @@ public class AiCodeFixMediumTest {
       .build();
     var backend = harness.newBackend()
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .withSonarCloudUrl(server.baseUrl())
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
+      .withSonarQubeCloudEuRegionApiUri(server.baseUrl())
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR"))))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
