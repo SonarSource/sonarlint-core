@@ -154,10 +154,10 @@ public class GitUtils {
         if (exitCode == 0) {
           nativeGitExecutable = executable;
         }
-      } catch (IOException e) {
-        LOG.debug("Checking for native Git executable failed", e);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
+      } catch (Exception e) {
+        LOG.debug("Checking for native Git executable failed", e);
       }
       checkedForNativeGitExecutable = true;
     }
