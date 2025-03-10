@@ -166,6 +166,35 @@ class WebSocketMediumTests {
     }
 
     @SonarLintTest
+    void should_unsubscribe_from_old_region_and_subscribe_to_new_when_connection_and_region_changed(SonarLintTestHarness harness) {
+      var client = harness.newFakeClient()
+        .withToken("connectionId", "token")
+        .withToken("connectionIdUS", "token")
+        .build();
+
+      // backend with two sonarqube cloud connections - one EU and one US; bound initially to EU
+      var backend = newBackendWithWebSockets(harness)
+        .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
+        .withSonarCloudConnection("connectionIdUS", "orgKey", false, null, SonarCloudRegion.US)
+        .withBoundConfigScope("configScope", "connectionId", "projectKey")
+        .start(client);
+      awaitUntilFirstWebSocketSubscribedTo("projectKey");
+
+      // Change binding to US connection
+      bind(backend, "configScope", "connectionIdUS", "projectKey");
+
+      // assert unsubscribed and closed connection to EU region; subscribed to US region.
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
+        assertThat(webSocketServer.getConnections())
+          .hasSize(2)
+          .extracting(WebSocketConnection::isOpened, WebSocketConnection::getReceivedMessages)
+          .containsExactly(tuple(false, webSocketPayloadBuilder().subscribeWithProjectKey("projectKey").unsubscribeWithProjectKey(
+              "projectKey").build()),
+            tuple(true, webSocketPayloadBuilder().subscribeWithProjectKey("projectKey").build()));
+      });
+    }
+
+    @SonarLintTest
     void should_not_open_connection_or_subscribe_if_notifications_disabled_on_connection(SonarLintTestHarness harness) {
       var client = harness.newFakeClient()
         .withToken("connectionId", "token")
@@ -1448,7 +1477,8 @@ class WebSocketMediumTests {
   public SonarLintBackendFixture.SonarLintBackendBuilder newBackendWithWebSockets(SonarLintTestHarness harness) {
     return harness.newBackend()
       .withServerSentEventsEnabled()
-      .withSonarQubeCloudEuRegionWebSocketUri(webSocketServer.getUrl());
+      .withSonarQubeCloudEuRegionWebSocketUri(webSocketServer.getUrl())
+      .withSonarQubeCloudUsRegionWebSocketUri(webSocketServer.getUrl());
   }
 
   public static class WebSocketPayloadBuilder {

@@ -21,8 +21,6 @@ package org.sonarsource.sonarlint.core.websocket;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import jakarta.annotation.PreDestroy;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -30,11 +28,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
+import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
-import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
@@ -42,13 +41,12 @@ import org.sonarsource.sonarlint.core.event.ConnectionConfigurationAddedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionCredentialsChangedEvent;
-import org.sonarsource.sonarlint.core.event.SonarServerEventReceivedEvent;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
+import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
-import org.sonarsource.sonarlint.core.serverapi.push.SonarServerEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
@@ -56,16 +54,10 @@ import static java.util.Objects.requireNonNull;
 
 public class WebSocketService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private final Map<String, String> subscribedProjectKeysByConfigScopes = new HashMap<>();
-  private final Set<String> connectionIdsInterestedInNotifications = new HashSet<>();
   private final boolean shouldEnableWebSockets;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
   private final ConfigurationRepository configurationRepository;
-  private final ConnectionAwareHttpClientProvider connectionAwareHttpClientProvider;
-  private final ApplicationEventPublisher eventPublisher;
-  protected SonarCloudWebSocket sonarCloudWebSocket;
-  private final SonarCloudActiveEnvironment sonarCloudActiveEnvironment;
-  private String connectionIdUsedToCreateConnection;
+  private final Map<SonarCloudRegion, WebSocketManager> webSocketsByRegion;
   private final ExecutorService executorService = FailSafeExecutors.newSingleThreadExecutor("sonarlint-websocket-subscriber");
 
   public WebSocketService(ConnectionConfigurationRepository connectionConfigurationRepository, ConfigurationRepository configurationRepository,
@@ -73,20 +65,11 @@ public class WebSocketService {
     ApplicationEventPublisher eventPublisher) {
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.configurationRepository = configurationRepository;
-    this.connectionAwareHttpClientProvider = connectionAwareHttpClientProvider;
     this.shouldEnableWebSockets = params.getFeatureFlags().shouldManageServerSentEvents();
-    this.sonarCloudActiveEnvironment = sonarCloudActiveEnvironment;
-    this.eventPublisher = eventPublisher;
-  }
-
-  protected void reopenConnectionOnClose() {
-    executorService.execute(() -> {
-      var connectionId = connectionIdsInterestedInNotifications.stream().findFirst().orElse(null);
-      if (this.sonarCloudWebSocket != null && connectionId != null) {
-        // If connection already exists, close it and create new one before it expires on its own
-        reopenConnection(connectionId, "WebSocket was closed by server or reached EOL");
-      }
-    });
+    this.webSocketsByRegion = Map.of(
+      SonarCloudRegion.US, new WebSocketManager(SonarCloudRegion.US, eventPublisher, sonarCloudActiveEnvironment, connectionAwareHttpClientProvider, configurationRepository),
+      SonarCloudRegion.EU, new WebSocketManager(SonarCloudRegion.EU, eventPublisher, sonarCloudActiveEnvironment, connectionAwareHttpClientProvider, configurationRepository)
+    );
   }
 
   @EventListener
@@ -95,6 +78,16 @@ public class WebSocketService {
       return;
     }
     executorService.execute(() -> considerScope(bindingConfigChangedEvent.configScopeId()));
+    // possible change of region for the binding; need to unsubscribe from the old region (subscription to the new one will be done in considerScope)
+    if (didChangeRegion(bindingConfigChangedEvent.previousConfig(), bindingConfigChangedEvent.newConfig())) {
+      executorService.execute(() -> {
+        // will only enter this block if previous connection (and connectionId) existed
+        var previousRegion = ((SonarCloudConnectionConfiguration) connectionConfigurationRepository
+        .getConnectionById(bindingConfigChangedEvent.previousConfig().getConnectionId())).getRegion();
+        webSocketsByRegion.get(previousRegion).forget(bindingConfigChangedEvent.configScopeId());
+        webSocketsByRegion.get(previousRegion).closeSocketIfNoMoreNeeded();
+      });
+    }
   }
 
   @EventListener
@@ -111,10 +104,12 @@ public class WebSocketService {
       return;
     }
     var removedConfigurationScopeId = configurationScopeRemovedEvent.getRemovedConfigurationScopeId();
-    executorService.execute(() -> {
-      forget(removedConfigurationScopeId);
-      closeSocketIfNoMoreNeeded();
-    });
+    executorService.execute(() -> 
+      webSocketsByRegion.forEach((region, webSocketManager) -> {
+        webSocketManager.forget(removedConfigurationScopeId);
+        webSocketManager.closeSocketIfNoMoreNeeded();
+      })
+    );
   }
 
   @EventListener
@@ -134,7 +129,9 @@ public class WebSocketService {
     var updatedConnectionId = connectionConfigurationUpdatedEvent.getUpdatedConnectionId();
     executorService.execute(() -> {
       if (didDisableNotifications(updatedConnectionId)) {
-        forgetConnection(updatedConnectionId, "Notifications were disabled");
+        webSocketsByRegion.forEach((region, webSocketManager) -> 
+          webSocketManager.forgetConnection(updatedConnectionId, "Notifications were disabled")
+        );
       } else if (didEnableNotifications(updatedConnectionId)) {
         considerConnection(updatedConnectionId);
       }
@@ -147,7 +144,11 @@ public class WebSocketService {
       return;
     }
     String removedConnectionId = connectionConfigurationRemovedEvent.getRemovedConnectionId();
-    executorService.execute(() -> forgetConnection(removedConnectionId, "Connection was removed"));
+    executorService.execute(() -> 
+      webSocketsByRegion.forEach((region, webSocketManager) -> 
+        webSocketManager.forgetConnection(removedConnectionId, "Connection was removed")
+      )
+    );
   }
 
   @EventListener
@@ -157,50 +158,11 @@ public class WebSocketService {
     }
     var connectionId = connectionCredentialsChangedEvent.getConnectionId();
     executorService.execute(() -> {
-      if (isEligibleConnection(connectionId) && connectionIdsInterestedInNotifications.contains(connectionId)) {
-        reopenConnection(connectionId, "Credentials have changed");
+      if (isEligibleConnection(connectionId) && isInterestedInNotifications(connectionId)) {
+        var region = ((SonarCloudConnectionConfiguration) connectionConfigurationRepository.getConnectionById(connectionId)).getRegion();
+        webSocketsByRegion.get(region).reopenConnection(connectionId, "Credentials have changed");
       }
     });
-  }
-
-  private boolean isEligibleConnection(String connectionId) {
-    var connection = connectionConfigurationRepository.getConnectionById(connectionId);
-    return connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD) && !connection.isDisableNotifications();
-  }
-
-  private String getBoundProjectKey(String configScopeId) {
-    var bindingConfiguration = configurationRepository.getBindingConfiguration(configScopeId);
-    if (bindingConfiguration != null && bindingConfiguration.isBound()) {
-      return bindingConfiguration.getSonarProjectKey();
-    }
-    return null;
-  }
-
-  @CheckForNull
-  private Binding getCurrentBinding(String configScopeId) {
-    var bindingConfiguration = configurationRepository.getBindingConfiguration(configScopeId);
-    if (bindingConfiguration != null && bindingConfiguration.isBound()) {
-      return new Binding(requireNonNull(bindingConfiguration.getConnectionId()), requireNonNull(bindingConfiguration.getSonarProjectKey()));
-    }
-    return null;
-  }
-
-  private void closeSocketIfNoMoreNeeded() {
-    if (subscribedProjectKeysByConfigScopes.isEmpty()) {
-      closeSocket("No more bound project");
-    }
-  }
-
-  private boolean didDisableNotifications(String connectionId) {
-    if (connectionIdsInterestedInNotifications.contains(connectionId)) {
-      var connection = connectionConfigurationRepository.getConnectionById(connectionId);
-      return connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD) && connection.isDisableNotifications();
-    }
-    return false;
-  }
-
-  private boolean didEnableNotifications(String connectionId) {
-    return !connectionIdsInterestedInNotifications.contains(connectionId) && isEligibleConnection(connectionId);
   }
 
   private void considerConnection(String connectionId) {
@@ -208,31 +170,6 @@ public class WebSocketService {
       .stream().map(BoundScope::getConfigScopeId)
       .collect(Collectors.toSet());
     considerAllBoundConfigurationScopes(configScopeIds);
-  }
-
-  private void forgetConnection(String connectionId, String reason) {
-    var previouslyInterestedInNotifications = connectionIdsInterestedInNotifications.remove(connectionId);
-    if (!previouslyInterestedInNotifications) {
-      return;
-    }
-    if (connectionIdsInterestedInNotifications.isEmpty()) {
-      closeSocket(reason);
-      subscribedProjectKeysByConfigScopes.clear();
-    } else if (connectionIdUsedToCreateConnection.equals(connectionId)) {
-      // stop using the credentials, switch to another connection
-      var otherConnectionId = connectionIdsInterestedInNotifications.stream().findAny().orElseThrow();
-      removeProjectsFromSubscriptionListForConnection(connectionId);
-      reopenConnection(otherConnectionId, reason + ", reopening for other SC connection");
-    } else {
-      configurationRepository.getBoundScopesToConnection(connectionId)
-        .forEach(configScope -> forget(configScope.getConfigScopeId()));
-    }
-  }
-
-  private void reopenConnection(String connectionId, String reason) {
-    closeSocket(reason);
-    createConnectionIfNeeded(connectionId);
-    resubscribeAll();
   }
 
   private void considerAllBoundConfigurationScopes(Set<String> configScopeIds) {
@@ -244,76 +181,77 @@ public class WebSocketService {
   private void considerScope(String scopeId) {
     var binding = getCurrentBinding(scopeId);
     if (binding != null && isEligibleConnection(binding.connectionId())) {
-      subscribe(scopeId, binding);
-    } else if (isSubscribedWithProjectKeyDifferentThanCurrentBinding(scopeId)) {
-      forget(scopeId);
-      closeSocketIfNoMoreNeeded();
+      var connection = requireNonNull(connectionConfigurationRepository.getConnectionById(binding.connectionId()));
+      var region = ((SonarCloudConnectionConfiguration) connection).getRegion();
+      webSocketsByRegion.get(region).subscribe(scopeId, binding);
+    } else if (isSubscribedToAProject(scopeId)) {
+      // no binding or binding is not eligible, unsubscribe from all regions if it was subscribed to a project
+      webSocketsByRegion.forEach((region, webSocketManager) -> {
+        webSocketManager.forget(scopeId);
+        webSocketManager.closeSocketIfNoMoreNeeded();
+      });
     }
   }
 
-  private boolean isSubscribedWithProjectKeyDifferentThanCurrentBinding(String configScopeId) {
-    var previousSubscribedProjectKeyForScope = subscribedProjectKeysByConfigScopes.get(configScopeId);
-    return previousSubscribedProjectKeyForScope != null && !previousSubscribedProjectKeyForScope.equals(getBoundProjectKey(configScopeId));
+  private boolean isInterestedInNotifications(String connectionId) {
+    return webSocketsByRegion.values().stream().anyMatch(webSocketManager -> webSocketManager.isInterestedInNotifications(connectionId));
   }
 
-  private void removeProjectsFromSubscriptionListForConnection(String updatedConnectionId) {
-    var configurationScopesToUnsubscribe = configurationRepository.getBoundScopesToConnection(updatedConnectionId);
-    for (var configScope : configurationScopesToUnsubscribe) {
-      subscribedProjectKeysByConfigScopes.remove(configScope.getConfigScopeId());
-    }
-  }
-
-  private void subscribe(String configScopeId, Binding binding) {
-    createConnectionIfNeeded(binding.connectionId());
-    var projectKey = binding.sonarProjectKey();
-    if (subscribedProjectKeysByConfigScopes.containsKey(configScopeId) && !subscribedProjectKeysByConfigScopes.get(configScopeId).equals(projectKey)) {
-      forget(configScopeId);
-    }
-    if (!subscribedProjectKeysByConfigScopes.containsValue(projectKey)) {
-      sonarCloudWebSocket.subscribe(projectKey);
-    }
-    subscribedProjectKeysByConfigScopes.put(configScopeId, projectKey);
-  }
-
-  private void forget(String configScopeId) {
-    var projectKey = subscribedProjectKeysByConfigScopes.remove(configScopeId);
-    if (projectKey != null && !subscribedProjectKeysByConfigScopes.containsValue(projectKey) && sonarCloudWebSocket != null) {
-      sonarCloudWebSocket.unsubscribe(projectKey);
-    }
-  }
-
-  private void resubscribeAll() {
-    var uniqueProjectKeys = new HashSet<>(subscribedProjectKeysByConfigScopes.values());
-    uniqueProjectKeys.forEach(projectKey -> sonarCloudWebSocket.subscribe(projectKey));
-  }
-
-  private void createConnectionIfNeeded(String connectionId) {
-    connectionIdsInterestedInNotifications.add(connectionId);
+  private boolean isEligibleConnection(String connectionId) {
     var connection = connectionConfigurationRepository.getConnectionById(connectionId);
-    var region = connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD) ? ((SonarCloudConnectionConfiguration) connection).getRegion() : null;
-    if (this.sonarCloudWebSocket == null && region != null) {
-      this.sonarCloudWebSocket = SonarCloudWebSocket.create(sonarCloudActiveEnvironment.getWebSocketsEndpointUri(region),
-        connectionAwareHttpClientProvider.getWebSocketClient(connectionId),
-        this::handleSonarServerEvent, this::reopenConnectionOnClose);
-      this.connectionIdUsedToCreateConnection = connectionId;
+    return connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD) && !connection.isDisableNotifications();
+  }
+
+  private boolean didChangeRegion(BindingConfiguration previousBindingConfiguration, BindingConfiguration newBindingConfiguration) {
+    var previousConnectionId = previousBindingConfiguration.getConnectionId();
+    var previousConnection = previousConnectionId != null ? connectionConfigurationRepository.getConnectionById(previousConnectionId) : null;
+    var newConnectionId = newBindingConfiguration.getConnectionId();
+    var newConnection = newConnectionId != null ? connectionConfigurationRepository.getConnectionById(newConnectionId) : null;
+    if (newConnection == null || previousConnection == null) {
+      // nothing to do
+      return false;
+    } else if (previousConnection instanceof SonarCloudConnectionConfiguration previousConn && 
+               newConnection instanceof SonarCloudConnectionConfiguration newConn) {
+      // was SonarCloud connection and still is - check if region changed
+      return previousConn.getRegion() != newConn.getRegion();
     }
+    return false;
   }
 
-  private void handleSonarServerEvent(SonarServerEvent event) {
-    connectionIdsInterestedInNotifications.forEach(id -> eventPublisher.publishEvent(new SonarServerEventReceivedEvent(id, event)));
-  }
-
-  private void closeSocket(String reason) {
-    if (this.sonarCloudWebSocket != null) {
-      var socket = this.sonarCloudWebSocket;
-      this.sonarCloudWebSocket = null;
-      this.connectionIdUsedToCreateConnection = null;
-      socket.close(reason);
+  @CheckForNull
+  private Binding getCurrentBinding(String configScopeId) {
+    var bindingConfiguration = configurationRepository.getBindingConfiguration(configScopeId);
+    if (bindingConfiguration != null && bindingConfiguration.isBound()) {
+      return new Binding(requireNonNull(bindingConfiguration.getConnectionId()), requireNonNull(bindingConfiguration.getSonarProjectKey()));
     }
+    return null;
   }
 
-  public boolean hasOpenConnection() {
-    return sonarCloudWebSocket != null && sonarCloudWebSocket.isOpen();
+  private boolean didDisableNotifications(String connectionId) {
+    if (isInterestedInNotifications(connectionId)) {
+      var connection = connectionConfigurationRepository.getConnectionById(connectionId);
+      return connection != null && connection.getKind().equals(ConnectionKind.SONARCLOUD) && connection.isDisableNotifications();
+    }
+    return false;
+  }
+
+  private boolean didEnableNotifications(String connectionId) {
+    return isEligibleConnection(connectionId) && !isInterestedInNotifications(connectionId);
+  }
+
+  private boolean isSubscribedToAProject(String configScopeId) {
+    for (var webSocketManager : webSocketsByRegion.values()) {
+      var subscribedProjectKey = webSocketManager.getSubscribedProjectKeysByConfigScopes().get(configScopeId);
+      if (subscribedProjectKey != null) {
+        // we are interested if it was subscribed to a project in any region
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public boolean hasOpenConnection(SonarCloudRegion region) {
+    return webSocketsByRegion.get(region).getSonarCloudWebSocket() != null && webSocketsByRegion.get(region).getSonarCloudWebSocket().isOpen();
   }
 
   @PreDestroy
@@ -321,8 +259,10 @@ public class WebSocketService {
     if (!MoreExecutors.shutdownAndAwaitTermination(executorService, 1, TimeUnit.SECONDS)) {
       LOG.warn("Unable to stop websockets subscriber service in a timely manner");
     }
-    connectionIdsInterestedInNotifications.clear();
-    subscribedProjectKeysByConfigScopes.clear();
-    closeSocket("Backend is shutting down");
+    webSocketsByRegion.forEach((region, webSocketManager) -> {
+      webSocketManager.closeSocket("Backend is shutting down");
+      webSocketManager.getSubscribedProjectKeysByConfigScopes().clear();
+      webSocketManager.getConnectionIdsInterestedInNotifications().clear();
+    });
   }
 }
