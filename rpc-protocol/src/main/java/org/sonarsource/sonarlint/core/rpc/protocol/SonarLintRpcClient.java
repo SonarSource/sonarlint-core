@@ -248,9 +248,11 @@ public interface SonarLintRpcClient {
   void noBindingSuggestionFound(NoBindingSuggestionFoundParams params);
 
   /**
+   * @deprecated Client should not need to know it anymore, it's backend's concern
    * Called when the backend is ready for analyzes to be triggered. The client is supposed to start analyzes only after receiving this notification.
    * The backend can also notify clients if analyzes become un-ready to be triggered. It can be the case when changing the binding and conditions are not met yet (e.g. no storage)
    */
+  @Deprecated(since = "10.17")
   @JsonNotification
   void didChangeAnalysisReadiness(DidChangeAnalysisReadinessParams params);
 
