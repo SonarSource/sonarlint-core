@@ -35,6 +35,7 @@ For each xref:../glossary.adoc#configuration_scope[configuration scope]:
 - `sonar.projectKey`
 - `sonar.host.url`
 - `sonar.organization`
+- `sonar.region`
 
 3. For each filename + tuple of properties, try to guess if we are looking for a SonarQube or SonarCloud connection, using the following heuristic:
 - if the file is `.sonarcloud.properties`, this is SonarCloud (AutoScan)
@@ -56,6 +57,7 @@ At the end of this step, we should have a possibly empty list of binding clues h
 |SonarCloud Binding Clue
 |projectKey: string?
 |organization: string?
+|region: string?
 |=======
 
 [%autowidth,options="header"]
