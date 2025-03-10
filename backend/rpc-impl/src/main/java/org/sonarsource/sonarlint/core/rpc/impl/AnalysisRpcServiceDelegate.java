@@ -27,7 +27,6 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.analysis.AnalysisService;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
-import org.sonarsource.sonarlint.core.analysis.TriggerType;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
@@ -129,8 +128,8 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
     var configurationScopeId = params.getConfigurationScopeId();
     return requestAsync(cancelChecker -> {
       var analysisResults = getBean(AnalysisService.class)
-        .analyze(cancelChecker, params.getConfigurationScopeId(), params.getAnalysisId(), params.getFilesToAnalyze(), params.getExtraProperties(), params.getStartTime(),
-          params.isShouldFetchServerIssues(), false, TriggerType.FORCED)
+        .scheduleForcedAnalysis(params.getConfigurationScopeId(), params.getAnalysisId(), params.getFilesToAnalyze(), params.getExtraProperties(), params.getStartTime(),
+          params.isShouldFetchServerIssues())
         .join();
       return generateAnalyzeFilesResponse(analysisResults);
     }, configurationScopeId);
