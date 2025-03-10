@@ -221,7 +221,7 @@ public class BindingClueProvider {
         return null;
       }
       return new BindingProperties(getAndTrim(properties, "sonar.projectKey"), getAndTrim(properties, "sonar.organization"),
-        getAndTrim(properties, "sonar.host.url"), null, false);
+        getAndTrim(properties, "sonar.host.url"), getAndTrim(properties, "sonar.region"), false);
     }
   }
 
@@ -256,15 +256,14 @@ public class BindingClueProvider {
   @CheckForNull
   private BindingClue computeBindingClue(String filename, BindingProperties scannerProps) {
     if (AUTOSCAN_CONFIG_FILENAME.equals(filename)) {
-      return new SonarCloudBindingClue(scannerProps.projectKey, scannerProps.organization, null, scannerProps.isFromSharedConfiguration);
+      return new SonarCloudBindingClue(scannerProps.projectKey, scannerProps.organization, scannerProps.region, scannerProps.isFromSharedConfiguration);
     }
     if (scannerProps.organization != null) {
       return new SonarCloudBindingClue(scannerProps.projectKey, scannerProps.organization, scannerProps.region, scannerProps.isFromSharedConfiguration);
     }
     if (scannerProps.serverUrl != null) {
       if (sonarCloudActiveEnvironment.isSonarQubeCloud(scannerProps.serverUrl)) {
-        var region = sonarCloudActiveEnvironment.getRegionOrThrow(scannerProps.serverUrl);
-        return new SonarCloudBindingClue(scannerProps.projectKey, null, SonarCloudRegion.valueOf(region.name()), scannerProps.isFromSharedConfiguration);
+        return new SonarCloudBindingClue(scannerProps.projectKey, null, scannerProps.region, scannerProps.isFromSharedConfiguration);
       } else {
         return new SonarQubeBindingClue(scannerProps.projectKey, scannerProps.serverUrl, scannerProps.isFromSharedConfiguration);
       }

@@ -280,13 +280,18 @@ public class SonarLintBackendFixture {
 
     public SonarLintBackendBuilder withSonarCloudConnection(String connectionId, String organizationKey, boolean disableNotifications,
       @Nullable Consumer<StorageFixture.StorageBuilder> storageBuilder) {
+      return withSonarCloudConnection(connectionId, organizationKey, SonarCloudRegion.EU.name(), disableNotifications, storageBuilder);
+    }
+
+    public SonarLintBackendBuilder withSonarCloudConnection(String connectionId, String organizationKey, String region, boolean disableNotifications,
+      @Nullable Consumer<StorageFixture.StorageBuilder> storageBuilder) {
       if (storageBuilder != null) {
         var storage = newStorage(connectionId);
         storageBuilder.accept(storage);
         storages.add(storage);
       }
       sonarCloudConnections.add(new SonarCloudConnectionConfigurationDto(connectionId, organizationKey,
-        SonarCloudRegion.EU, disableNotifications));
+        SonarCloudRegion.valueOf(region), disableNotifications));
       return this;
     }
 
@@ -300,6 +305,10 @@ public class SonarLintBackendFixture {
 
     public SonarLintBackendBuilder withSonarCloudConnection(String connectionId, String organizationKey) {
       return withSonarCloudConnection(connectionId, organizationKey, true, null);
+    }
+
+    public SonarLintBackendBuilder withSonarCloudConnection(String connectionId, String organizationKey, String region) {
+      return withSonarCloudConnection(connectionId, organizationKey, region, true, null);
     }
 
     public SonarLintBackendBuilder withUnboundConfigScope(String configurationScopeId) {

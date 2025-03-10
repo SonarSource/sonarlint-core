@@ -94,7 +94,7 @@ class SharedConnectedModeSettingsMediumTests {
 
     var backend = harness.newBackend()
       .withSonarQubeCloudEuRegionUri(server.baseUrl())
-      .withSonarCloudConnection(connectionId, organizationKey)
+      .withSonarCloudConnection(connectionId, organizationKey, "US")
       .withBoundConfigScope(configScopeId, connectionId, projectKey)
       .withTelemetryEnabled()
       .start();
@@ -102,10 +102,7 @@ class SharedConnectedModeSettingsMediumTests {
     var result = getFileContents(backend, configScopeId);
 
     assertThat(result).succeedsWithin(3, TimeUnit.SECONDS);
-    
-    // This currently returns "EU" instead of "US" but this is what is tested here
-    assertThat(result.get().getJsonFileContent()).isNotEqualTo(expectedFileContent);
-    
+    assertThat(result.get().getJsonFileContent()).isEqualTo(expectedFileContent);
     assertThat(backend.telemetryFilePath())
       .content().asBase64Decoded().asString()
       .contains("\"exportedConnectedModeCount\":1");

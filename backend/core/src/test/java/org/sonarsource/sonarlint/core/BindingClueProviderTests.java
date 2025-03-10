@@ -118,6 +118,25 @@ class BindingClueProviderTests {
   }
 
   @Test
+  void should_detect_sonar_scanner_for_sonarcloud_based_on_url_and_region() {
+    mockFindFileByNamesInScope(
+      List.of(buildClientFile("sonar-project.properties", "path/to/sonar-project.properties", "sonar.host.url=https://sonarcloud.io\nsonar.projectKey=" + PROJECT_KEY_1 + "\nsonar.region=US")));
+
+    when(connectionRepository.getConnectionById(SC_CONNECTION_ID_1)).thenReturn(new SonarCloudConnectionConfiguration(SonarCloudRegion.US.getProductionUri(), SonarCloudRegion.US.getApiProductionUri(), SC_CONNECTION_ID_1, MY_ORG_1, SonarCloudRegion.US, true));
+
+    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SC_CONNECTION_ID_1), new SonarLintCancelMonitor());
+
+    assertThat(bindingClueWithConnections).hasSize(1);
+    var bindingClueWithConnections1 = bindingClueWithConnections.get(0);
+    assertThat(bindingClueWithConnections1.getBindingClue()).isInstanceOf(BindingClueProvider.SonarCloudBindingClue.class);
+    assertThat(bindingClueWithConnections1.getBindingClue().getSonarProjectKey()).isEqualTo(PROJECT_KEY_1);
+    assertThat(bindingClueWithConnections1.getConnectionIds()).containsOnly(SC_CONNECTION_ID_1);
+    assertThat(bindingClueWithConnections1.getBindingClue().getClass()).isEqualTo(BindingClueProvider.SonarCloudBindingClue.class);
+    var sonarCloudBindingClue = (BindingClueProvider.SonarCloudBindingClue) bindingClueWithConnections1.getBindingClue();
+    assertThat(sonarCloudBindingClue.getRegion().name()).isEqualTo(SonarCloudRegion.US.name());
+  }
+
+  @Test
   void should_detect_sonar_scanner_for_sonarcloud_based_on_organization() {
     mockFindFileByNamesInScope(List.of(buildClientFile("sonar-project.properties", "path/to/sonar-project.properties", "sonar.organization=" + MY_ORG_2)));
 
@@ -147,6 +166,24 @@ class BindingClueProviderTests {
     assertThat(bindingClueWithConnections1.getBindingClue()).isInstanceOf(BindingClueProvider.SonarCloudBindingClue.class);
     assertThat(bindingClueWithConnections1.getBindingClue().getSonarProjectKey()).isEqualTo(PROJECT_KEY_1);
     assertThat(bindingClueWithConnections1.getConnectionIds()).containsOnly(SC_CONNECTION_ID_1);
+  }
+
+  @Test
+  void should_detect_autoscan_for_sonarcloud_and_region() {
+    mockFindFileByNamesInScope(List.of(buildClientFile(".sonarcloud.properties", "path/to/.sonarcloud.properties", "sonar.projectKey=" + PROJECT_KEY_1 + "\nsonar.region=US")));
+
+    when(connectionRepository.getConnectionById(SC_CONNECTION_ID_1)).thenReturn(new SonarCloudConnectionConfiguration(SonarCloudRegion.US.getProductionUri(), SonarCloudRegion.US.getApiProductionUri(), SC_CONNECTION_ID_1, MY_ORG_1, SonarCloudRegion.US, true));
+
+    var bindingClueWithConnections = underTest.collectBindingCluesWithConnections(CONFIG_SCOPE_ID, Set.of(SC_CONNECTION_ID_1, SQ_CONNECTION_ID_1), new SonarLintCancelMonitor());
+
+    assertThat(bindingClueWithConnections).hasSize(1);
+    var bindingClueWithConnections1 = bindingClueWithConnections.get(0);
+    assertThat(bindingClueWithConnections1.getBindingClue()).isInstanceOf(BindingClueProvider.SonarCloudBindingClue.class);
+    assertThat(bindingClueWithConnections1.getBindingClue().getSonarProjectKey()).isEqualTo(PROJECT_KEY_1);
+    assertThat(bindingClueWithConnections1.getConnectionIds()).containsOnly(SC_CONNECTION_ID_1);
+    assertThat(bindingClueWithConnections1.getBindingClue().getClass()).isEqualTo(BindingClueProvider.SonarCloudBindingClue.class);
+    var sonarCloudBindingClue = (BindingClueProvider.SonarCloudBindingClue) bindingClueWithConnections1.getBindingClue();
+    assertThat(sonarCloudBindingClue.getRegion().name()).isEqualTo(SonarCloudRegion.US.name());
   }
 
   @Test
