@@ -100,6 +100,7 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.trimToNull;
+import static org.sonarsource.sonarlint.core.commons.util.StringUtils.pluralize;
 import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.createSonarLintGitIgnore;
 
 public class AnalysisScheduler {
@@ -275,6 +276,8 @@ public class AnalysisScheduler {
         var task = executingTask.get();
 
         var configScopeId = task.getConfigScopeId();
+        // TODO apply exclusions when automatic analysis, see fileExclusionService.filterOutClientExcludedFiles
+        // TODO check if automatic analysis is enabled
         var analysisConfigForEngine = getAnalysisConfigForEngine(configScopeId, task.getFilePathsToAnalyze(), task.getExtraProperties(), task.isHotspotsOnly());
         var analyzeCommand = new AnalyzeCommand(configScopeId, analysisConfigForEngine, task.getIssueStreamingListener(), logOutput, monitoringService.newTrace(
           "AnalysisService", "analyze"));
@@ -291,7 +294,7 @@ public class AnalysisScheduler {
               var languagePerFile = res.languagePerFile().entrySet().stream().collect(HashMap<URI, SonarLanguage>::new,
                 (map, entry) -> map.put(entry.getKey().uri(), entry.getValue()), HashMap::putAll);
               var analysisDuration = endTime - task.getStartTime();
-              // logSummary(raisedIssues, analysisDuration);
+              logSummary(task.getRaisedIssues(), analysisDuration);
               eventPublisher.publishEvent(new AnalysisFinishedEvent(task.getAnalysisId(), configScopeId, analysisDuration,
                 languagePerFile, res.failedAnalysisFiles().isEmpty(), task.getRaisedIssues(), task.isShouldFetchServerIssues()));
               res.setRawIssues(task.getRaisedIssues().stream().map(issue -> toDto(issue.getIssue(), issue.getActiveRule())).toList());
@@ -344,6 +347,14 @@ public class AnalysisScheduler {
 
   private void honorPendingTasks() {
     // no-op for now, do we need it
+  }
+
+  private static void logSummary(List<RawIssue> rawIssues, long analysisDuration) {
+    // ignore project-level issues for now
+    var fileRawIssues = rawIssues.stream().filter(issue -> issue.getTextRange() != null).toList();
+    var issuesCount = fileRawIssues.stream().filter(not(RawIssue::isSecurityHotspot)).count();
+    var hotspotsCount = fileRawIssues.stream().filter(RawIssue::isSecurityHotspot).count();
+    LOG.info("Analysis detected {} and {} in {}ms", pluralize(issuesCount, "issue"), pluralize(hotspotsCount, "Security Hotspot"), analysisDuration);
   }
 
   private AnalysisConfiguration getAnalysisConfigForEngine(String configScopeId, List<URI> filePathsToAnalyze, Map<String, String> extraProperties, boolean hotspotsOnly) {
