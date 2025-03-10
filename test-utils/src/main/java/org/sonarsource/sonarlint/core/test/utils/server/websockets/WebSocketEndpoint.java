@@ -31,7 +31,7 @@ import static org.sonarsource.sonarlint.core.test.utils.server.websockets.WebSoc
 @ServerEndpoint(value = "/endpoint", configurator = ServletAwareConfig.class)
 public class WebSocketEndpoint {
   public static final String WS_REQUEST_KEY = "wsRequest";
-  private static WebSocketConnection connection;
+  private WebSocketConnection connection;
 
   @OnOpen
   public void onOpen(final Session session) {

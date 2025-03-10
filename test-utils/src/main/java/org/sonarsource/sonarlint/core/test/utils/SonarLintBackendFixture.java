@@ -290,6 +290,18 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintBackendBuilder withSonarCloudConnection(String connectionId, String organizationKey, boolean disableNotifications,
+      @Nullable Consumer<StorageFixture.StorageBuilder> storageBuilder, SonarCloudRegion region) {
+      if (storageBuilder != null) {
+        var storage = newStorage(connectionId);
+        storageBuilder.accept(storage);
+        storages.add(storage);
+      }
+      sonarCloudConnections.add(new SonarCloudConnectionConfigurationDto(connectionId, organizationKey,
+        region, disableNotifications));
+      return this;
+    }
+
     public SonarLintBackendBuilder withSonarCloudConnection(String connectionId) {
       return withSonarCloudConnection(connectionId, "orgKey");
     }
