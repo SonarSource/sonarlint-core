@@ -183,11 +183,19 @@ qa_task:
     MAVEN_OPTS: '-Xmx4G'
   matrix:
       -  env:
-          SQ_VERSION: "SonarCloud"
+          SQ_VERSION: "SonarCloudEU"
           JDK_VERSION: "17"
           CATEGORY: "-Dgroups=SonarCloud"
           SONARCLOUD_IT_TOKEN: VAULT[development/team/sonarlint/kv/data/sonarcloud-it data.token]
-          QA_CATEGORY: SonarCloud
+          SONARCLOUD_REGION: EU
+          QA_CATEGORY: SonarCloudEU
+      - env:
+          SQ_VERSION: "SonarCloudUS"
+          JDK_VERSION: "17"
+          CATEGORY: "-Dgroups=SonarCloud"
+          SONARCLOUD_IT_TOKEN: VAULT[development/team/sonarlint/kv/data/sonarcloud-it-US data.token]
+          SONARCLOUD_REGION: US
+          QA_CATEGORY: SonarCloudUS
       -  env:
           SQ_VERSION: "DEV"
           JDK_VERSION: "17"
