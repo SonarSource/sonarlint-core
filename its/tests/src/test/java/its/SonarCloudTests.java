@@ -28,6 +28,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -43,6 +44,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -90,6 +92,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFla
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarCloudAlternativeEnvironmentDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarQubeCloudRegionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
@@ -125,9 +128,16 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.XML;
 @Tag("SonarCloud")
 class SonarCloudTests extends AbstractConnectedTests {
   private static final String SONAR_JAVA_FILE_SUFFIXES = "sonar.java.file.suffixes";
-  private static final URI SONARCLOUD_STAGING_URL = URI.create("https://sc-staging.io");
-  private static final URI SONARCLOUD_STAGING_API_URL = URI.create("https://api.sc-staging.io");
-  private static final URI SONARCLOUD_WEBSOCKETS_STAGING_URL = URI.create("wss://events-api.sc-staging.io/");
+  private static final Map<SonarCloudRegion, SonarQubeCloudRegionDto> SONARCLOUD_STAGING_URIS = new EnumMap<>(SonarCloudRegion.class);
+  static {
+    SONARCLOUD_STAGING_URIS.put(SonarCloudRegion.EU, new SonarQubeCloudRegionDto(URI.create("https://sc-staging.io"), URI.create("https://api.sc-staging.io"),
+      URI.create("wss://events-api.sc-staging.io/")));
+    SONARCLOUD_STAGING_URIS.put(SonarCloudRegion.US, new SonarQubeCloudRegionDto(URI.create("https://us-sc-staging.io"), URI.create("https://api.us-sc-staging.io"),
+      URI.create("wss://events-api.us-sc-staging.io/")));
+  }
+  private static final SonarCloudRegion region = StringUtils.isNotBlank(System.getenv("SONARCLOUD_REGION")) ?
+    SonarCloudRegion.valueOf(System.getenv("SONARCLOUD_REGION")) : SonarCloudRegion.EU;
+  private static final URI SONARCLOUD_STAGING_URL = SONARCLOUD_STAGING_URIS.get(region).getUri();
   private static final String SONARCLOUD_ORGANIZATION = "sonarlint-it";
   private static final String SONARCLOUD_TOKEN = System.getenv("SONARCLOUD_IT_TOKEN");
 
@@ -163,10 +173,10 @@ class SonarCloudTests extends AbstractConnectedTests {
     var featureFlags = new FeatureFlagsDto(false, true, true, false, true, true, false, true, false, true, false);
     backend.initialize(
       new InitializeParams(IT_CLIENT_INFO, IT_TELEMETRY_ATTRIBUTES, HttpConfigurationDto.defaultConfig(),
-        new SonarCloudAlternativeEnvironmentDto(SONARCLOUD_STAGING_URL, SONARCLOUD_STAGING_API_URL, SONARCLOUD_WEBSOCKETS_STAGING_URL), featureFlags,
+        new SonarCloudAlternativeEnvironmentDto(SONARCLOUD_STAGING_URIS), featureFlags,
         sonarUserHome.resolve("storage"),
         sonarUserHome.resolve("work"), emptySet(), PluginLocator.getEmbeddedPluginsByKeyForTests(), languages, emptySet(), emptySet(), emptyList(),
-        List.of(new SonarCloudConnectionConfigurationDto(CONNECTION_ID, SONARCLOUD_ORGANIZATION, SonarCloudRegion.EU, true)), sonarUserHome.toString(),
+        List.of(new SonarCloudConnectionConfigurationDto(CONNECTION_ID, SONARCLOUD_ORGANIZATION, SonarCloudRegion.valueOf(region.name()), true)), sonarUserHome.toString(),
         emptyMap(), false, null, false, null));
     randomPositiveInt = new Random().nextInt() & Integer.MAX_VALUE;
 
@@ -266,7 +276,7 @@ class SonarCloudTests extends AbstractConnectedTests {
   void getAllProjects() {
     provisionProject("foo-bar", "Foo");
     var getAllProjectsParams = new GetAllProjectsParams(new TransientSonarCloudConnectionDto(SONARCLOUD_ORGANIZATION,
-      Either.forLeft(new TokenDto(SONARCLOUD_TOKEN))));
+      Either.forLeft(new TokenDto(SONARCLOUD_TOKEN)), region));
 
     waitAtMost(1, TimeUnit.MINUTES).untilAsserted(() -> assertThat(backend.getConnectionService().getAllProjects(getAllProjectsParams).get().getSonarProjects())
       .extracting(SonarProjectDto::getKey)
@@ -394,14 +404,14 @@ class SonarCloudTests extends AbstractConnectedTests {
   @Test
   void downloadUserOrganizations() throws ExecutionException, InterruptedException {
     var response = backend.getConnectionService()
-      .listUserOrganizations(new ListUserOrganizationsParams(Either.forLeft(new TokenDto(SONARCLOUD_TOKEN)))).get();
+      .listUserOrganizations(new ListUserOrganizationsParams(Either.forLeft(new TokenDto(SONARCLOUD_TOKEN)), region)).get();
     assertThat(response.getUserOrganizations()).hasSize(1);
   }
 
   @Test
   void getOrganization() throws ExecutionException, InterruptedException {
     var response = backend.getConnectionService()
-      .getOrganization(new GetOrganizationParams(Either.forLeft(new TokenDto(SONARCLOUD_TOKEN)), SONARCLOUD_ORGANIZATION)).get();
+      .getOrganization(new GetOrganizationParams(Either.forLeft(new TokenDto(SONARCLOUD_TOKEN)), SONARCLOUD_ORGANIZATION, region)).get();
     var org = response.getOrganization();
     assertThat(org).isNotNull();
     assertThat(org.getKey()).isEqualTo(SONARCLOUD_ORGANIZATION);
@@ -472,18 +482,18 @@ class SonarCloudTests extends AbstractConnectedTests {
   void testConnection() throws ExecutionException, InterruptedException {
     var successResponse = backend.getConnectionService()
       .validateConnection(
-        new ValidateConnectionParams(new TransientSonarCloudConnectionDto(SONARCLOUD_ORGANIZATION, Either.forLeft(new TokenDto(SONARCLOUD_TOKEN)))))
+        new ValidateConnectionParams(new TransientSonarCloudConnectionDto(SONARCLOUD_ORGANIZATION, Either.forLeft(new TokenDto(SONARCLOUD_TOKEN)), region)))
       .get();
     assertThat(successResponse.isSuccess()).isTrue();
     assertThat(successResponse.getMessage()).isEqualTo("Authentication successful");
 
     var failIfWrongOrg = backend.getConnectionService().validateConnection(
-      new ValidateConnectionParams(new TransientSonarCloudConnectionDto("not-exists", Either.forLeft(new TokenDto(SONARCLOUD_TOKEN))))).get();
+      new ValidateConnectionParams(new TransientSonarCloudConnectionDto("not-exists", Either.forLeft(new TokenDto(SONARCLOUD_TOKEN)), region))).get();
     assertThat(failIfWrongOrg.isSuccess()).isFalse();
     assertThat(failIfWrongOrg.getMessage()).isEqualTo("No organizations found for key: not-exists");
 
     var failIfWrongCredentials = backend.getConnectionService()
-      .validateConnection(new ValidateConnectionParams(new TransientSonarCloudConnectionDto(SONARCLOUD_ORGANIZATION, Either.forLeft(new TokenDto("foo"))))).get();
+      .validateConnection(new ValidateConnectionParams(new TransientSonarCloudConnectionDto(SONARCLOUD_ORGANIZATION, Either.forLeft(new TokenDto("foo")), region))).get();
     assertThat(failIfWrongCredentials.isSuccess()).isFalse();
     assertThat(failIfWrongCredentials.getMessage()).isEqualTo("Authentication failed");
   }
