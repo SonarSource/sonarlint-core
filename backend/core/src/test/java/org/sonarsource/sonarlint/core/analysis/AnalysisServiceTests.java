@@ -66,7 +66,7 @@ class AnalysisServiceTests {
       org.sonarsource.sonarlint.core.commons.RuleType.BUG, org.sonarsource.sonarlint.core.commons.CleanCodeAttribute.CLEAR,
       Map.of(), org.sonarsource.sonarlint.core.commons.VulnerabilityProbability.HIGH);
 
-    var rawIssueDto = AnalysisScheduler.toDto(issue, ruleDetailsResponse);
+    var rawIssueDto = AnalysisExecutor.toDto(issue, ruleDetailsResponse);
 
     assertThat(rawIssueDto.getRuleKey()).isEqualTo("repo:ruleKey");
     var rawIssueLocationDto = rawIssueDto.getFlows().get(0).getLocations().get(0);

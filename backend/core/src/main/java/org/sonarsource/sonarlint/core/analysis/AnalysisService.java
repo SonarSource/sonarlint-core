@@ -21,8 +21,6 @@ package org.sonarsource.sonarlint.core.analysis;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import java.net.URI;
-import java.nio.file.FileSystemNotFoundException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -30,9 +28,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -41,15 +39,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
-import org.sonarsource.sonarlint.core.analysis.api.ActiveRule;
-import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
-import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.MultivalueProperty;
 import org.sonarsource.sonarlint.core.commons.Binding;
@@ -63,10 +57,8 @@ import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
-import org.sonarsource.sonarlint.core.file.WindowsShortcutUtils;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
-import org.sonarsource.sonarlint.core.fs.FileExclusionService;
 import org.sonarsource.sonarlint.core.fs.FileOpenedEvent;
 import org.sonarsource.sonarlint.core.fs.FileSystemUpdatedEvent;
 import org.sonarsource.sonarlint.core.fs.OpenFilesRepository;
@@ -83,8 +75,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisC
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetGlobalConfigurationResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.NodeJsDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnalysisReadinessParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidDetectSecretParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.GetInferredAnalysisPropertiesParams;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 import org.sonarsource.sonarlint.core.rules.NewRulesActivatedOnServer;
 import org.sonarsource.sonarlint.core.rules.RulesService;
@@ -105,7 +97,6 @@ import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.trimToNull;
 import static org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.LanguageDetection.sanitizeExtension;
-import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.createSonarLintGitIgnore;
 import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.getVSCChangedFiles;
 
 public class AnalysisService {
@@ -124,11 +115,10 @@ public class AnalysisService {
   private final boolean hotspotEnabled;
   private final NodeJsService nodeJsService;
   private final AnalysisSchedulerCache schedulerCache;
-  private final ClientFileSystemService fileSystemService;
-  private final FileExclusionService fileExclusionService;
   private final ApplicationEventPublisher eventPublisher;
   private final UserAnalysisPropertiesRepository userAnalysisPropertiesRepository;
   private final boolean isDataflowBugDetectionEnabled;
+  private final Map<String, Boolean> analysisReadinessByConfigScopeId = new ConcurrentHashMap<>();
   private final OpenFilesRepository openFilesRepository;
   private final ClientFileSystemService clientFileSystemService;
   private final Path esLintBridgeServerPath;
@@ -138,8 +128,7 @@ public class AnalysisService {
   public AnalysisService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, LanguageSupportRepository languageSupportRepository,
     StorageService storageService, PluginsService pluginsService, RulesService rulesService, RulesRepository rulesRepository,
     ConnectionConfigurationRepository connectionConfigurationRepository, InitializeParams initializeParams, NodeJsService nodeJsService,
-    AnalysisSchedulerCache schedulerCache, ClientFileSystemService fileSystemService, FileExclusionService fileExclusionService,
-    ApplicationEventPublisher eventPublisher,
+    AnalysisSchedulerCache schedulerCache, ApplicationEventPublisher eventPublisher,
     UserAnalysisPropertiesRepository clientAnalysisPropertiesRepository, OpenFilesRepository openFilesRepository, ClientFileSystemService clientFileSystemService) {
     this.client = client;
     this.configurationRepository = configurationRepository;
@@ -153,8 +142,6 @@ public class AnalysisService {
     this.isDataflowBugDetectionEnabled = initializeParams.getFeatureFlags().isEnableDataflowBugDetection();
     this.nodeJsService = nodeJsService;
     this.schedulerCache = schedulerCache;
-    this.fileSystemService = fileSystemService;
-    this.fileExclusionService = fileExclusionService;
     this.eventPublisher = eventPublisher;
     this.userAnalysisPropertiesRepository = clientAnalysisPropertiesRepository;
     this.openFilesRepository = openFilesRepository;
@@ -266,29 +253,6 @@ public class AnalysisService {
     })
       .orElseGet(() -> new GetAnalysisConfigResponse(buildStandaloneActiveRules(), userAnalysisProperties, nodeJsDetailsDto,
         Set.copyOf(pluginsService.getEmbeddedPluginPaths())));
-  }
-
-  private AnalysisConfiguration getAnalysisConfigForEngine(String configScopeId, List<URI> filePathsToAnalyze, Map<String, String> extraProperties, boolean hotspotsOnly) {
-    var analysisConfig = getAnalysisConfig(configScopeId, hotspotsOnly);
-    var analysisProperties = analysisConfig.getAnalysisProperties();
-    var inferredAnalysisProperties = client.getInferredAnalysisProperties(new GetInferredAnalysisPropertiesParams(configScopeId, filePathsToAnalyze)).join().getProperties();
-    analysisProperties.putAll(inferredAnalysisProperties);
-    var baseDir = fileSystemService.getBaseDir(configScopeId);
-    var actualBaseDir = baseDir == null ? findCommonPrefix(filePathsToAnalyze) : baseDir;
-    return AnalysisConfiguration.builder()
-      .addInputFiles(toInputFiles(configScopeId, actualBaseDir, filePathsToAnalyze))
-      .putAllExtraProperties(analysisProperties)
-      // properties sent by client using new API were merged above
-      // but this line is important for backward compatibility for clients directly triggering analysis
-      .putAllExtraProperties(extraProperties)
-      .addActiveRules(analysisConfig.getActiveRules().stream().map(r -> {
-        var ar = new ActiveRule(r.getRuleKey(), r.getLanguageKey());
-        ar.setParams(r.getParams());
-        ar.setTemplateRuleKey(r.getTemplateRuleKey());
-        return ar;
-      }).toList())
-      .setBaseDir(actualBaseDir)
-      .build();
   }
 
   public void setUserAnalysisProperties(String configScopeId, Map<String, String> properties) {
@@ -456,33 +420,47 @@ public class AnalysisService {
 
   @EventListener
   public void onPluginsSynchronized(PluginsSynchronizedEvent event) {
-    configurationRepository.getBoundScopesToConnection(event.getConnectionId())
+    var connectionId = event.getConnectionId();
+    checkIfReadyForAnalysis(configurationRepository.getBoundScopesToConnection(connectionId)
+      .stream().map(BoundScope::getConfigScopeId).collect(Collectors.toSet()));
+    configurationRepository.getBoundScopesToConnection(connectionId)
       .stream().map(BoundScope::getConfigScopeId).forEach(this::analyzeOpenFiles);
   }
 
   @EventListener
   public void onConfigurationScopeAdded(ConfigurationScopesAddedWithBindingEvent event) {
-    event.getConfigScopeIds().forEach(schedulerCache::registerModuleIfLeafConfigScope);
-    event.getConfigScopeIds().forEach(this::analyzeOpenFiles);
+    var configScopeIds = event.getConfigScopeIds();
+    configScopeIds.forEach(schedulerCache::registerModuleIfLeafConfigScope);
+    checkIfReadyForAnalysis(configScopeIds);
+    configScopeIds.forEach(this::analyzeOpenFiles);
   }
 
   @EventListener
   public void onConfigurationScopeRemoved(ConfigurationScopeRemovedEvent event) {
-    schedulerCache.unregisterModule(event.getRemovedConfigurationScopeId());
+    var removedConfigurationScopeId = event.getRemovedConfigurationScopeId();
+    analysisReadinessByConfigScopeId.remove(removedConfigurationScopeId);
+    schedulerCache.unregisterModule(removedConfigurationScopeId);
   }
 
   @EventListener
   public void onBindingConfigurationChanged(BindingConfigChangedEvent event) {
     // TODO re-schedule analysis and MAYBE remove pending tasks for old binding
+    var configScopeId = event.configScopeId();
+    analysisReadinessByConfigScopeId.remove(configScopeId);
+    if (!checkIfReadyForAnalysis(configScopeId)) {
+      client.didChangeAnalysisReadiness(new DidChangeAnalysisReadinessParams(Set.of(configScopeId), false));
+    }
   }
 
   @EventListener
   public void onAnalyzerConfigurationSynchronized(AnalyzerConfigurationSynchronized event) {
+    checkIfReadyForAnalysis(event.getConfigScopeIds());
     event.getConfigScopeIds().forEach(this::analyzeOpenFiles);
   }
 
   @EventListener
   public void onConfigurationScopesSynchronized(ConfigurationScopesSynchronizedEvent event) {
+    checkIfReadyForAnalysis(event.getConfigScopeIds());
     // TODO revisit if we really need to schedule analysis in this and similar cases
     event.getConfigScopeIds().forEach(this::analyzeOpenFiles);
   }
@@ -579,106 +557,60 @@ public class AnalysisService {
     }
   }
 
-  private List<ClientInputFile> toInputFiles(String configScopeId, Path actualBaseDir, List<URI> fileUrisToAnalyze) {
-    var sonarLintGitIgnore = createSonarLintGitIgnore(actualBaseDir);
-    // INFO: When there are additional filters coming at some point, add them here and log them down below as well!
-    var filteredURIsFromExclusionService = new ArrayList<URI>();
-    var filteredURIsFromGitIgnore = new ArrayList<URI>();
-    var filteredURIsNotUserDefined = new ArrayList<URI>();
-    var filteredURIsFromSymbolicLink = new ArrayList<URI>();
-    var filteredURIsFromWindowsShortcut = new ArrayList<URI>();
-    var filteredURIsNoInputFile = new ArrayList<URI>();
-
-    // Do the actual filtering and in case of a filtered out URI, save them for later logging!
-    var actualFilesToAnalyze = fileUrisToAnalyze.stream()
-      .filter(uri -> {
-        if (fileExclusionService.isExcluded(uri)) {
-          filteredURIsFromExclusionService.add(uri);
-          return false;
-        }
-        return true;
-      })
-      .filter(uri -> {
-        var clientFile = clientFileSystemService.getClientFile(uri);
-        if (clientFile == null) {
-          LOG.error("File to analyze was not found in the file system: {}", uri);
-          return false;
-        }
-        if (sonarLintGitIgnore.isFileIgnored(clientFile.getClientRelativePath())) {
-          filteredURIsFromGitIgnore.add(uri);
-          return false;
-        }
-        return true;
-      })
-      .filter(uri -> {
-        if (!isUserDefined(configScopeId, uri)) {
-          filteredURIsNotUserDefined.add(uri);
-          return false;
-        }
-        return true;
-      })
-      .filter(uri -> {
-        // On protocols with schemes like "temp" (used by IntelliJ in the integration tests) or "rse" (the Eclipse Remote System Explorer)
-        // and maybe others the check for a symbolic link or Windows shortcut will fail as these file systems cannot be resolved for the
-        // operations.
-        // If this happens, we won't exclude the file as the chance for someone to use a protocol with such a scheme while also using
-        // symbolic links or Windows shortcuts should be near zero and this is less error-prone than excluding the
-        try {
-          if (Files.isSymbolicLink(Path.of(uri))) {
-            filteredURIsFromSymbolicLink.add(uri);
-            return false;
-          } else if (WindowsShortcutUtils.isWindowsShortcut(uri)) {
-            filteredURIsFromWindowsShortcut.add(uri);
-            return false;
-          }
-          return true;
-        } catch (FileSystemNotFoundException err) {
-          LOG.debug("Checking for symbolic links or Windows shortcuts in the file system is not possible for the URI '" + uri
-            + "'. Therefore skipping the checks due to the underlying protocol / its scheme.", err);
-          return true;
-        }
-      })
-      .map(uri -> {
-        var inputFile = toInputFile(configScopeId, uri);
-        if (inputFile == null) {
-          filteredURIsNoInputFile.add(uri);
-        }
-        return inputFile;
-      })
-      .filter(Objects::nonNull)
-      .toList();
-
-    // Log all the filtered out URIs but not for the filters where there were none
-    logFilteredURIs("Filtered out URIs based on the exclusion service", filteredURIsFromExclusionService);
-    logFilteredURIs("Filtered out URIs ignored by Git", filteredURIsFromGitIgnore);
-    logFilteredURIs("Filtered out URIs not user-defined", filteredURIsNotUserDefined);
-    logFilteredURIs("Filtered out URIs that are symbolic links", filteredURIsFromSymbolicLink);
-    logFilteredURIs("Filtered out URIs that are Windows shortcuts", filteredURIsFromWindowsShortcut);
-    logFilteredURIs("Filtered out URIs having no input file", filteredURIsNoInputFile);
-
-    return actualFilesToAnalyze;
+  private void checkIfReadyForAnalysis(Set<String> configurationScopeIds) {
+    var readyConfigScopeIds = configurationScopeIds.stream()
+      .filter(this::isReadyForAnalysis)
+      .collect(toSet());
+    saveAndNotifyReadyForAnalysis(readyConfigScopeIds);
   }
 
-  private void logFilteredURIs(String reason, ArrayList<URI> uris) {
-    if (!uris.isEmpty()) {
-      SonarLintLogger.get().debug(reason + ": " + uris.stream().map(Object::toString).collect(Collectors.joining(", ")));
+  private boolean checkIfReadyForAnalysis(String configurationScopeId) {
+    if (isReadyForAnalysis(configurationScopeId)) {
+      saveAndNotifyReadyForAnalysis(Set.of(configurationScopeId));
+      return true;
+    }
+    return false;
+  }
+
+  private void saveAndNotifyReadyForAnalysis(Set<String> configScopeIds) {
+    var scopeIdsThatBecameReady = new HashSet<String>();
+    configScopeIds.forEach(configScopeId -> {
+      if (analysisReadinessByConfigScopeId.get(configScopeId) != Boolean.TRUE) {
+        analysisReadinessByConfigScopeId.put(configScopeId, Boolean.TRUE);
+        scopeIdsThatBecameReady.add(configScopeId);
+      }
+    });
+    if (!scopeIdsThatBecameReady.isEmpty()) {
+      reanalyseOpenFiles(scopeIdsThatBecameReady::contains);
+      scopeIdsThatBecameReady.forEach(scopeId -> {
+        var scheduler = schedulerCache.getOrCreateAnalysisScheduler(scopeId);
+        if (scheduler != null) {
+          scheduler.notifyScopeReady(scopeId);
+        }
+      });
+      client.didChangeAnalysisReadiness(new DidChangeAnalysisReadinessParams(scopeIdsThatBecameReady, true));
     }
   }
 
-  private boolean isUserDefined(String configurationScopeId, URI uri) {
-    return ofNullable(fileSystemService.getClientFiles(configurationScopeId, uri))
-      .map(ClientFile::isUserDefined)
-      .orElse(false);
+  private boolean isReadyForAnalysis(String configScopeId) {
+    return configurationRepository.getEffectiveBinding(configScopeId)
+      .map(this::isReadyForAnalysis)
+      // standalone mode
+      .orElse(true);
   }
 
-  @CheckForNull
-  private ClientInputFile toInputFile(String configScopeId, URI fileUriToAnalyze) {
-    var clientFile = fileSystemService.getClientFiles(configScopeId, fileUriToAnalyze);
-    if (clientFile == null) {
-      LOG.error("File to analyze was not found in the file system: {}", fileUriToAnalyze);
-      return null;
-    }
-    return new BackendInputFile(clientFile);
+  private boolean isReadyForAnalysis(Binding binding) {
+    var pluginsValid = storageService.connection(binding.connectionId()).plugins().isValid();
+    var bindingStorage = storageService.binding(binding);
+    var analyzerConfigValid = bindingStorage.analyzerConfiguration().isValid();
+    var findingsStorageValid = bindingStorage.findings().wasEverUpdated();
+    var isReady = pluginsValid
+      && analyzerConfigValid
+      // this is not strictly for analysis but for tracking
+      && findingsStorageValid;
+    LOG.debug("isReadyForAnalysis(connectionId: {}, sonarProjectKey: {}, plugins: {}, analyzer config: {}, findings: {}) => {}",
+      binding.connectionId(), binding.sonarProjectKey(), pluginsValid, analyzerConfigValid, findingsStorageValid, isReady);
+    return isReady;
   }
 
   public InstalledNodeJs getAutoDetectedNodeJs() {
@@ -719,7 +651,8 @@ public class AnalysisService {
     return analysisId;
   }
 
-  public CompletableFuture<AnalysisResults> scheduleForcedAnalysis(String configurationScopeId, UUID analysisId, List<URI> files, Map<String, String> extraProperties, long startTime, boolean shouldFetchServerIssues) {
+  public CompletableFuture<AnalysisResults> scheduleForcedAnalysis(String configurationScopeId, UUID analysisId, List<URI> files, Map<String, String> extraProperties,
+    long startTime, boolean shouldFetchServerIssues) {
     var raisedIssues = new ArrayList<RawIssue>();
     var ruleDetailsCache = new ConcurrentHashMap<String, RuleDetailsForAnalysis>();
     var progressMonitor = new RpcProgressMonitor(client, new SonarLintCancelMonitor(), configurationScopeId, analysisId);
