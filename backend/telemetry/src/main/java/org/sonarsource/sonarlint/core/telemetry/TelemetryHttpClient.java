@@ -51,7 +51,6 @@ import org.sonarsource.sonarlint.core.telemetry.payload.cayc.NewCodeFocusPayload
 
 import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueGranularity.DAILY;
 import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueType.INTEGER;
-import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueType.STRING;
 
 public class TelemetryHttpClient {
 
@@ -153,9 +152,6 @@ public class TelemetryHttpClient {
       values.add(new TelemetryMeasuresValue("shared_connected_mode.auto", String.valueOf(data.getAutoAddedBindingsCount()), INTEGER, DAILY));
       values.add(new TelemetryMeasuresValue("shared_connected_mode.exported", String.valueOf(data.getExportedConnectedModeCount()), INTEGER, DAILY));
     }
-
-    values.add(new TelemetryMeasuresValue("list_of_SQS_projects_in_connected_mode", data.getBoundSonarQubeServerProjectKeys().toString(), STRING, DAILY));
-    values.add(new TelemetryMeasuresValue("list_of_SQC_projects_in_connected_mode", data.getBoundSonarQubeCloudProjectKeys().toString(), STRING, DAILY));
 
     data.getHelpAndFeedbackLinkClickedCounter().entrySet().stream()
       .filter(e -> e.getValue().getHelpAndFeedbackLinkClickedCount() > 0)

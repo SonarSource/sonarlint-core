@@ -23,7 +23,6 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresDimension;
 import org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresPayload;
@@ -32,7 +31,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueGranularity.DAILY;
 import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueType.INTEGER;
-import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueType.STRING;
 
 class TelemetryMeasuresPayloadTests {
 
@@ -64,8 +62,6 @@ class TelemetryMeasuresPayloadTests {
       "{\"key\":\"shared_connected_mode.imported\",\"value\":\"2\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"shared_connected_mode.auto\",\"value\":\"3\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"shared_connected_mode.exported\",\"value\":\"4\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
-      "{\"key\":\"list_of_SQS_projects_in_connected_mode\",\"value\":\"[project_key_1]\",\"type\":\"string\",\"granularity\":\"daily\"}," +
-      "{\"key\":\"list_of_SQC_projects_in_connected_mode\",\"value\":\"[]\",\"type\":\"string\",\"granularity\":\"daily\"}," +
       "{\"key\":\"help_and_feedback.doc_link\",\"value\":\"5\",\"type\":\"integer\",\"granularity\":\"daily\"" +
       "}]" +
       "}");
@@ -86,9 +82,6 @@ class TelemetryMeasuresPayloadTests {
     values.add(new TelemetryMeasuresValue("shared_connected_mode.auto", String.valueOf(3), INTEGER, DAILY));
     values.add(new TelemetryMeasuresValue("shared_connected_mode.exported", String.valueOf(4), INTEGER, DAILY));
 
-    values.add(new TelemetryMeasuresValue("list_of_SQS_projects_in_connected_mode", Set.of("project_key_1").toString(), STRING, DAILY));
-    values.add(new TelemetryMeasuresValue("list_of_SQC_projects_in_connected_mode", Set.of().toString(), STRING, DAILY));
-
     values.add(new TelemetryMeasuresValue("help_and_feedback.doc_link", String.valueOf(5), INTEGER, DAILY));
 
     return values;
@@ -100,8 +93,6 @@ class TelemetryMeasuresPayloadTests {
       .contains(tuple("shared_connected_mode.imported", "2", INTEGER, DAILY))
       .contains(tuple("shared_connected_mode.auto", "3", INTEGER, DAILY))
       .contains(tuple("shared_connected_mode.exported", "4", INTEGER, DAILY))
-      .contains(tuple("list_of_SQS_projects_in_connected_mode", "[project_key_1]", STRING, DAILY))
-      .contains(tuple("list_of_SQC_projects_in_connected_mode", "[]", STRING, DAILY))
       .contains(tuple("help_and_feedback.doc_link", "5", INTEGER, DAILY));
   }
 

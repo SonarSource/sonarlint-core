@@ -68,8 +68,6 @@ public class TelemetryLocalStorage {
   private int importedAddedBindingsCount;
   private int autoAddedBindingsCount;
   private int exportedConnectedModeCount;
-  private final Set<String> boundSonarQubeServerProjectKeys;
-  private final Set<String> boundSonarQubeCloudProjectKeys;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -83,8 +81,6 @@ public class TelemetryLocalStorage {
     fixSuggestionReceivedCounter = new LinkedHashMap<>();
     fixSuggestionResolved = new LinkedHashMap<>();
     issuesUuidAiFixableSeen = new HashSet<>();
-    boundSonarQubeServerProjectKeys = new HashSet<>();
-    boundSonarQubeCloudProjectKeys = new HashSet<>();
   }
 
   public Collection<String> getRaisedIssuesRules() {
@@ -201,8 +197,6 @@ public class TelemetryLocalStorage {
     importedAddedBindingsCount = 0;
     autoAddedBindingsCount = 0;
     exportedConnectedModeCount = 0;
-    boundSonarQubeServerProjectKeys.clear();
-    boundSonarQubeCloudProjectKeys.clear();
   }
 
   long numUseDays() {
@@ -436,24 +430,6 @@ public class TelemetryLocalStorage {
 
   public int getExportedConnectedModeCount() {
     return exportedConnectedModeCount;
-  }
-
-  public void addBoundSonarQubeServerProjectKey(String projectKey) {
-    markSonarLintAsUsedToday();
-    boundSonarQubeServerProjectKeys.add(projectKey);
-  }
-
-  public Set<String> getBoundSonarQubeServerProjectKeys() {
-    return boundSonarQubeServerProjectKeys;
-  }
-
-  public void addBoundSonarQubeCloudProjectKey(String projectKey) {
-    markSonarLintAsUsedToday();
-    boundSonarQubeCloudProjectKeys.add(projectKey);
-  }
-
-  public Set<String> getBoundSonarQubeCloudProjectKeys() {
-    return boundSonarQubeCloudProjectKeys;
   }
 
 }
