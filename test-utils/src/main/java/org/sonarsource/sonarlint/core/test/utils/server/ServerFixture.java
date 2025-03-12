@@ -19,23 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.test.utils.server;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.jsonResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.post;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
-import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.mapping;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
-import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
-import static org.sonarsource.sonarlint.core.serverapi.rules.RulesApi.TAINT_REPOS_BY_LANGUAGE;
-import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBody;
-import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBodyDelimited;
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -90,6 +73,23 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Settings;
 import org.sonarsource.sonarlint.core.serverconnection.AiCodeFixFeatureEnablement;
 import org.sonarsource.sonarlint.core.test.utils.plugins.Plugin;
 import org.sonarsource.sonarlint.core.test.utils.server.sse.SSEServer;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.jsonResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.options;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
+import static org.sonarsource.sonarlint.core.serverapi.UrlUtils.urlEncode;
+import static org.sonarsource.sonarlint.core.serverapi.rules.RulesApi.TAINT_REPOS_BY_LANGUAGE;
+import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBody;
+import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBodyDelimited;
 
 public class ServerFixture {
   public static ServerBuilder newSonarQubeServer() {
@@ -1239,8 +1239,9 @@ public class ServerFixture {
     }
 
     private void registerMeasuresApiResponses() {
+      var periodFieldName = this.serverKind == ServerKind.SONARCLOUD ? "periods" : "period";
       projectsByProjectKey.forEach((projectKey, project) -> {
-        var uriPath = "/api/measures/component.protobuf?additionalFields=period&metricKeys=projects&component=" + projectKey;
+        var uriPath = "/api/measures/component.protobuf?additionalFields=" + periodFieldName + "&metricKeys=projects&component=" + projectKey;
         mockServer.stubFor(get(uriPath)
           .willReturn(aResponse().withResponseBody(protobufBody(
             // TODO Override with whatever is set on the branch fixture?
@@ -1318,8 +1319,8 @@ public class ServerFixture {
             .setValue("true"))
           .build();
 
-        projectsByProjectKey.forEach((projectKey, project) -> mockServer.stubFor(get("/api/settings/values.protobuf?keys=sonar.multi-quality-mode.enabled")
-          .willReturn(aResponse().withResponseBody(protobufBody(response)))));
+        mockServer.stubFor(get("/api/settings/values.protobuf?keys=sonar.multi-quality-mode.enabled")
+          .willReturn(aResponse().withResponseBody(protobufBody(response))));
       }
     }
 

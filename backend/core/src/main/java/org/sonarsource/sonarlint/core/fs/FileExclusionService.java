@@ -20,7 +20,9 @@
 package org.sonarsource.sonarlint.core.fs;
 
 import java.net.URI;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
@@ -33,15 +35,19 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import javax.annotation.CheckForNull;
 import org.sonar.api.CoreProperties;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonarsource.sonarlint.core.ServerFileExclusions;
+import org.sonarsource.sonarlint.core.analysis.AnalysisTask;
+import org.sonarsource.sonarlint.core.analysis.TriggerType;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
 import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
+import org.sonarsource.sonarlint.core.file.WindowsShortcutUtils;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -56,6 +62,7 @@ import org.springframework.context.event.EventListener;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
+import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.createSonarLintGitIgnore;
 
 public class FileExclusionService {
 
@@ -76,8 +83,8 @@ public class FileExclusionService {
   private final ClientFileSystemService clientFileSystemService;
   private final SonarLintRpcClient client;
 
-  private final SmartCancelableLoadingCache<URI, Boolean> serverExclusionByUriCache =
-    new SmartCancelableLoadingCache<>("sonarlint-file-exclusions", this::computeIfExcluded, (key, oldValue, newValue) -> {
+  private final SmartCancelableLoadingCache<URI, Boolean> serverExclusionByUriCache = new SmartCancelableLoadingCache<>("sonarlint-file-exclusions", this::computeIfExcluded,
+    (key, oldValue, newValue) -> {
     });
 
   public FileExclusionService(ConfigurationRepository configRepo, StorageService storageService, PathTranslationService pathTranslationService,
@@ -185,7 +192,120 @@ public class FileExclusionService {
     return Boolean.TRUE.equals(serverExclusionByUriCache.get(fileUri));
   }
 
-  public List<URI> filterOutClientExcludedFiles(String configurationScopeId, List<URI> files) {
+  public List<ClientFile> refineAnalysisScope(AnalysisTask task, Path baseDir) {
+    var configScopeId = task.getConfigScopeId();
+    var requestedFileUris = task.getFilesToAnalyze();
+    if (task.getTriggerType().equals(TriggerType.FORCED)) {
+      var filteredURIsNoFile = new ArrayList<URI>();
+      var filesToAnalyze = requestedFileUris.stream().map(uri -> {
+        var file = findFile(configScopeId, uri);
+        if (file == null) {
+          filteredURIsNoFile.add(uri);
+        }
+        return file;
+      })
+        .filter(Objects::nonNull)
+        .toList();
+      logFilteredURIs("Filtered out URIs having no file", filteredURIsNoFile);
+      return filesToAnalyze;
+    }
+    return filterOutExcludedFiles(configScopeId, baseDir, requestedFileUris);
+  }
+
+  private List<ClientFile> filterOutExcludedFiles(String configurationScopeId, Path baseDir, List<URI> files) {
+    var sonarLintGitIgnore = createSonarLintGitIgnore(baseDir);
+    // INFO: When there are additional filters coming at some point, add them here and log them down below as well!
+    var filteredURIsFromExclusionService = new ArrayList<URI>();
+    var filteredURIsFromGitIgnore = new ArrayList<URI>();
+    var filteredURIsNotUserDefined = new ArrayList<URI>();
+    var filteredURIsFromSymbolicLink = new ArrayList<URI>();
+    var filteredURIsFromWindowsShortcut = new ArrayList<URI>();
+    var filteredURIsNoFile = new ArrayList<URI>();
+
+    // Do the actual filtering and in case of a filtered out URI, save them for later logging!
+    var actualFilesToAnalyze = filterOutClientExcludedFiles(configurationScopeId, files)
+      .stream()
+      .map(uri -> {
+        var file = findFile(configurationScopeId, uri);
+        if (file == null) {
+          filteredURIsNoFile.add(uri);
+        }
+        return file;
+      })
+      .filter(Objects::nonNull)
+      .filter(file -> {
+        if (isExcluded(file.getUri())) {
+          filteredURIsFromExclusionService.add(file.getUri());
+          return false;
+        }
+        return true;
+      })
+      .filter(file -> {
+        if (sonarLintGitIgnore.isFileIgnored(file.getClientRelativePath())) {
+          filteredURIsFromGitIgnore.add(file.getUri());
+          return false;
+        }
+        return true;
+      })
+      .filter(file -> {
+        if (!file.isUserDefined()) {
+          filteredURIsNotUserDefined.add(file.getUri());
+          return false;
+        }
+        return true;
+      })
+      .filter(file -> {
+        // On protocols with schemes like "temp" (used by IntelliJ in the integration tests) or "rse" (the Eclipse Remote System Explorer)
+        // and maybe others the check for a symbolic link or Windows shortcut will fail as these file systems cannot be resolved for the
+        // operations.
+        // If this happens, we won't exclude the file as the chance for someone to use a protocol with such a scheme while also using
+        // symbolic links or Windows shortcuts should be near zero and this is less error-prone than excluding the
+        try {
+          var uri = file.getUri();
+          if (Files.isSymbolicLink(Path.of(uri))) {
+            filteredURIsFromSymbolicLink.add(uri);
+            return false;
+          } else if (WindowsShortcutUtils.isWindowsShortcut(uri)) {
+            filteredURIsFromWindowsShortcut.add(uri);
+            return false;
+          }
+          return true;
+        } catch (FileSystemNotFoundException err) {
+          LOG.debug("Checking for symbolic links or Windows shortcuts in the file system is not possible for the URI '" + file
+            + "'. Therefore skipping the checks due to the underlying protocol / its scheme.", err);
+          return true;
+        }
+      })
+      .toList();
+
+    // Log all the filtered out URIs but not for the filters where there were none
+    logFilteredURIs("Filtered out URIs based on the exclusion service", filteredURIsFromExclusionService);
+    logFilteredURIs("Filtered out URIs ignored by Git", filteredURIsFromGitIgnore);
+    logFilteredURIs("Filtered out URIs not user-defined", filteredURIsNotUserDefined);
+    logFilteredURIs("Filtered out URIs that are symbolic links", filteredURIsFromSymbolicLink);
+    logFilteredURIs("Filtered out URIs that are Windows shortcuts", filteredURIsFromWindowsShortcut);
+    logFilteredURIs("Filtered out URIs having no file", filteredURIsNoFile);
+
+    return actualFilesToAnalyze;
+  }
+
+  @CheckForNull
+  private ClientFile findFile(String configScopeId, URI fileUriToAnalyze) {
+    var clientFile = clientFileSystemService.getClientFiles(configScopeId, fileUriToAnalyze);
+    if (clientFile == null) {
+      LOG.error("File to analyze was not found in the file system: {}", fileUriToAnalyze);
+      return null;
+    }
+    return clientFile;
+  }
+
+  private void logFilteredURIs(String reason, ArrayList<URI> uris) {
+    if (!uris.isEmpty()) {
+      SonarLintLogger.get().debug(reason + ": " + String.join(", ", uris.stream().map(Object::toString).toList()));
+    }
+  }
+
+  private List<URI> filterOutClientExcludedFiles(String configurationScopeId, List<URI> files) {
     if (isConnectedMode(configurationScopeId)) {
       // client-defined file exclusions only apply in standalone mode
       return files;

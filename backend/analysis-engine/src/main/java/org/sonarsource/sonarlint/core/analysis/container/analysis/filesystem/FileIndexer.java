@@ -77,7 +77,6 @@ public class FileIndexer {
     }
     var totalIndexed = progress.count();
     progressReport.stop(totalIndexed + " " + pluralizeFiles(totalIndexed) + " indexed");
-    analysisResult.setIndexedFileCount(totalIndexed);
   }
 
   private static String pluralizeFiles(int count) {

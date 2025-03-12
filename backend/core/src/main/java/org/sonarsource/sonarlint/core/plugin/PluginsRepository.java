@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
-import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -54,8 +53,7 @@ public class PluginsRepository {
     loadedPluginsByConnectionId.put(connectionId, loadedPlugins);
   }
 
-  @PreDestroy
-  public void unloadAllPlugins() throws IOException {
+  void unloadAllPlugins() throws IOException {
     Queue<IOException> exceptions = new LinkedList<>();
     var embeddedPlugins = loadedEmbeddedPlugins.get();
     if (embeddedPlugins != null) {
@@ -69,7 +67,7 @@ public class PluginsRepository {
     throwFirstWithOtherSuppressed(exceptions);
   }
 
-  public void unload(String connectionId){
+  public void unload(String connectionId) {
     var loadedPlugins = loadedPluginsByConnectionId.remove(connectionId);
     if (loadedPlugins != null) {
       try {

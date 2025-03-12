@@ -25,8 +25,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
-import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 
 public class AnalysisTask {
@@ -36,17 +34,14 @@ public class AnalysisTask {
   private final List<URI> filePathsToAnalyze;
   private final Map<String, String> extraProperties;
   private final boolean hotspotsOnly;
-  private final CompletableFuture<AnalysisResults> result = new CompletableFuture<>();
+  private final CompletableFuture<AnalysisResult> result = new CompletableFuture<>();
   private final ProgressMonitor progressMonitor;
-  private final Consumer<Issue> issueStreamingListener;
-  private final Map<String, RuleDetailsForAnalysis> ruleDetailsCache;
-  private final List<RawIssue> raisedIssues;
+  private final Consumer<RawIssue> issueStreamingListener;
   private final long startTime;
   private final boolean shouldFetchServerIssues;
 
   public AnalysisTask(UUID analysisId, TriggerType triggerType, String configScopeId, List<URI> filePathsToAnalyze, Map<String, String> extraProperties, boolean hotspotsOnly,
-    ProgressMonitor progressMonitor, Consumer<Issue> issueStreamingListener, Map<String, RuleDetailsForAnalysis> ruleDetailsCache, List<RawIssue> raisedIssues, long startTime,
-    boolean shouldFetchServerIssues) {
+    ProgressMonitor progressMonitor, Consumer<RawIssue> issueStreamingListener, long startTime, boolean shouldFetchServerIssues) {
     this.analysisId = analysisId;
     this.triggerType = triggerType;
     this.configScopeId = configScopeId;
@@ -55,8 +50,6 @@ public class AnalysisTask {
     this.hotspotsOnly = hotspotsOnly;
     this.progressMonitor = progressMonitor;
     this.issueStreamingListener = issueStreamingListener;
-    this.ruleDetailsCache = ruleDetailsCache;
-    this.raisedIssues = raisedIssues;
     this.startTime = startTime;
     this.shouldFetchServerIssues = shouldFetchServerIssues;
   }
@@ -69,7 +62,7 @@ public class AnalysisTask {
     return configScopeId;
   }
 
-  public List<URI> getFilePathsToAnalyze() {
+  public List<URI> getFilesToAnalyze() {
     return filePathsToAnalyze;
   }
 
@@ -81,7 +74,7 @@ public class AnalysisTask {
     return hotspotsOnly;
   }
 
-  public CompletableFuture<AnalysisResults> getResult() {
+  public CompletableFuture<AnalysisResult> getResult() {
     return result;
   }
 
@@ -97,19 +90,11 @@ public class AnalysisTask {
     return startTime;
   }
 
-  public Map<String, RuleDetailsForAnalysis> getRuleDetailsCache() {
-    return ruleDetailsCache;
-  }
-
-  public List<RawIssue> getRaisedIssues() {
-    return raisedIssues;
-  }
-
   public boolean isShouldFetchServerIssues() {
     return shouldFetchServerIssues;
   }
 
-  public Consumer<Issue> getIssueStreamingListener() {
+  public Consumer<RawIssue> getIssueStreamingListener() {
     return issueStreamingListener;
   }
 }

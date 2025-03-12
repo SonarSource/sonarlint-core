@@ -19,14 +19,5 @@
  */
 package org.sonarsource.sonarlint.core.sync;
 
-public class PluginsSynchronizedEvent {
-  private final String connectionId;
-
-  public PluginsSynchronizedEvent(String connectionId) {
-    this.connectionId = connectionId;
-  }
-
-  public String getConnectionId() {
-    return connectionId;
-  }
+public record PluginsSynchronizedEvent(String connectionId) {
 }

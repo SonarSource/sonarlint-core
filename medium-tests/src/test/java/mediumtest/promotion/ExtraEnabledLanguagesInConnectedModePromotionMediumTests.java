@@ -75,10 +75,12 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
     var fakeClient = harness.newFakeClient()
       .withInitialFs("configScopeId", tempDir, List.of(new ClientFileDto(abapFile.toUri(), tempDir.relativize(abapFile), "configScopeId", false, null, abapFile, null, null, true)))
       .build();
-    var server = harness.newFakeSonarQubeServer().start();
+    var server = harness.newFakeSonarQubeServer()
+      .withProject("projectKey")
+      .start();
     var backend = harness.newBackend()
       .withExtraEnabledLanguagesInConnectedMode(Language.ABAP)
-      .withSonarQubeConnection("connectionId", server, storage -> storage.withProject("projectKey"))
+      .withSonarQubeConnection("connectionId", server, storage -> storage.withProject("projectKey", project -> project.withRuleSet("abap", ruleSet -> ruleSet.withActiveRule("abap:S100", "MAJOR")).withMainBranch("main")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withEmbeddedServer()
       .withTelemetryEnabled()
