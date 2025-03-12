@@ -21,11 +21,12 @@ package org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis;
 
 import java.util.UUID;
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 
 public class ForceAnalyzeResponse {
   UUID analysisId;
 
-  public ForceAnalyzeResponse(UUID analysisId) {
+  public ForceAnalyzeResponse(@Nullable UUID analysisId) {
     this.analysisId = analysisId;
   }
 

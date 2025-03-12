@@ -72,6 +72,7 @@ class AnalysisReadinessMediumTests {
         </project>""");
     var fileUri = filePath.toUri();
     var server = harness.newFakeSonarQubeServer()
+      .withPlugin(TestPlugin.XML)
       .withProject("projectKey")
       .start();
     var client = harness.newFakeClient()

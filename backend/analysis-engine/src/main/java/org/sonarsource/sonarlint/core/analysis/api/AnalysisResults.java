@@ -19,27 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.analysis.api;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueDto;
 
 public class AnalysisResults {
   private final Set<ClientInputFile> failedAnalysisFiles = new LinkedHashSet<>();
-  private int indexedFileCount;
   private final Map<ClientInputFile, SonarLanguage> languagePerFile = new LinkedHashMap<>();
-  private List<RawIssueDto> rawIssues = new ArrayList<>();
-
-  public AnalysisResults setIndexedFileCount(int indexedFileCount) {
-    this.indexedFileCount = indexedFileCount;
-    return this;
-  }
 
   public void addFailedAnalysisFile(ClientInputFile inputFile) {
     failedAnalysisFiles.add(inputFile);
@@ -58,26 +48,10 @@ public class AnalysisResults {
   }
 
   /**
-   * Number of file indexed. This number can be different than number of provided {@link ClientInputFile} since
-   * InputFileFilter can exclude some files.
-   */
-  public int indexedFileCount() {
-    return indexedFileCount;
-  }
-
-  /**
    * Input files for which there were analysis errors. The analyzers failed to correctly handle these files, and therefore there might be issues
    * missing or no issues at all for these files.
    */
   public Collection<ClientInputFile> failedAnalysisFiles() {
     return failedAnalysisFiles;
-  }
-
-  public void setRawIssues(List<RawIssueDto> rawIssues) {
-    this.rawIssues = rawIssues;
-  }
-
-  public List<RawIssueDto> getRawIssues() {
-    return rawIssues;
   }
 }

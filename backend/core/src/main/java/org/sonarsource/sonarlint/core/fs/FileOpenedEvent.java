@@ -21,20 +21,5 @@ package org.sonarsource.sonarlint.core.fs;
 
 import java.net.URI;
 
-public class FileOpenedEvent {
-  private final String configurationScopeId;
-  private final URI fileUri;
-
-  public FileOpenedEvent(String configurationScopeId, URI fileUri) {
-    this.configurationScopeId = configurationScopeId;
-    this.fileUri = fileUri;
-  }
-
-  public String getConfigurationScopeId() {
-    return configurationScopeId;
-  }
-
-  public URI getFileUri() {
-    return fileUri;
-  }
+public record FileOpenedEvent(String configurationScopeId, URI fileUri) {
 }

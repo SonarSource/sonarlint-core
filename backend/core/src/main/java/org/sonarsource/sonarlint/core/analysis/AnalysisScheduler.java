@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
-import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.analysis.command.NotifyModuleEventCommand;
@@ -53,7 +53,6 @@ public class AnalysisScheduler {
   private static final Runnable CANCELING_TERMINATION = () -> {
   };
   private final LogOutput logOutput = SonarLintLogger.get().getTargetForCopy();
-  private final AnalysisEngine engine;
   private final AnalysisTaskQueue analysisQueue = new AnalysisTaskQueue();
   private final AtomicReference<Runnable> termination = new AtomicReference<>();
   private final AtomicReference<AnalysisTask> executingTask = new AtomicReference<>();
@@ -63,14 +62,17 @@ public class AnalysisScheduler {
   public AnalysisScheduler(AnalysisEngine engine, ConfigurationRepository configurationRepository, NodeJsService nodeJsService,
     UserAnalysisPropertiesRepository userAnalysisPropertiesRepository, StorageService storageService, PluginsService pluginsService, RulesRepository rulesRepository,
     RulesService rulesService, LanguageSupportRepository languageSupportRepository, ClientFileSystemService fileSystemService, MonitoringService monitoringService,
-    FileExclusionService fileExclusionService, ClientFileSystemService clientFileSystemService, SonarLintRpcClient client,
+    FileExclusionService fileExclusionService, SonarLintRpcClient client,
     ConnectionConfigurationRepository connectionConfigurationRepository, boolean hotspotEnabled,
-    ApplicationEventPublisher eventPublisher, Path esLintBridgeServerPath) {
-    this.engine = engine;
+    ApplicationEventPublisher eventPublisher, @Nullable Path esLintBridgeServerPath) {
     this.analysisExecutor = new AnalysisExecutor(configurationRepository, nodeJsService, userAnalysisPropertiesRepository, connectionConfigurationRepository, hotspotEnabled,
-      storageService, pluginsService, rulesRepository, rulesService, languageSupportRepository, fileSystemService, monitoringService, fileExclusionService, clientFileSystemService,
+      storageService, pluginsService, rulesRepository, rulesService, languageSupportRepository, fileSystemService, monitoringService, fileExclusionService,
       client, eventPublisher, esLintBridgeServerPath, engine);
     analysisThread.start();
+  }
+
+  public void replaceEngine(AnalysisEngine engine) {
+    this.analysisExecutor.replaceEngine(engine);
   }
 
   private void executeAnalysisTasks() {
@@ -94,19 +96,9 @@ public class AnalysisScheduler {
     termination.get().run();
   }
 
-  public CompletableFuture<AnalysisResults> schedule(AnalysisTask task) {
-    try {
-      analysisQueue.enqueue(task);
-      return task.getResult();
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      return CompletableFuture.failedFuture(e);
-    }
-  }
-
-  public void finishGracefully() {
-    termination.compareAndSet(null, this::honorPendingTasks);
-    engine.finishGracefully();
+  public CompletableFuture<AnalysisResult> schedule(AnalysisTask task) {
+    analysisQueue.enqueue(task);
+    return task.getResult();
   }
 
   public void stop() {
@@ -125,23 +117,19 @@ public class AnalysisScheduler {
     List<AnalysisTask> pendingCommands = new ArrayList<>();
     analysisQueue.drainTo(pendingCommands);
     pendingCommands.forEach(c -> c.getResult().cancel(false));
-    engine.stop();
-  }
-
-  private void honorPendingTasks() {
-    // no-op for now, do we need it
+    analysisExecutor.stop();
   }
 
   public void registerModule(ClientModuleInfo moduleInfo) {
-    engine.post(new RegisterModuleCommand(moduleInfo), new ProgressMonitor(null));
+    analysisExecutor.post(new RegisterModuleCommand(moduleInfo), new ProgressMonitor(null));
   }
 
   public void unregisterModule(String scopeId) {
-    engine.post(new UnregisterModuleCommand(scopeId), new ProgressMonitor(null));
+    analysisExecutor.post(new UnregisterModuleCommand(scopeId), new ProgressMonitor(null));
   }
 
   public void notifyModuleEvent(String scopeId, ClientFile file, ModuleFileEvent.Type type) {
-    engine.post(new NotifyModuleEventCommand(scopeId,
+    analysisExecutor.post(new NotifyModuleEventCommand(scopeId,
       ClientModuleFileEvent.of(new BackendInputFile(file), type)), new ProgressMonitor(null)).join();
   }
 

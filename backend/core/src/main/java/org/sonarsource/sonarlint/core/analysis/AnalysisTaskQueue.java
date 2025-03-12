@@ -29,7 +29,7 @@ public class AnalysisTaskQueue {
   private final List<AnalysisTask> queue = new ArrayList<>();
   private final Set<String> readyConfigScopeIds = new HashSet<>();
 
-  public synchronized void enqueue(AnalysisTask task) throws InterruptedException {
+  public synchronized void enqueue(AnalysisTask task) {
     queue.add(task);
     notifyAll();
   }
@@ -58,7 +58,8 @@ public class AnalysisTaskQueue {
       .findFirst();
   }
 
-  public void drainTo(List<AnalysisTask> pendingTasks) {
-
+  public synchronized void drainTo(List<AnalysisTask> pendingTasks) {
+    pendingTasks.addAll(queue);
+    queue.clear();
   }
 }
