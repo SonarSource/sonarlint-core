@@ -31,13 +31,22 @@ public class WebSocketServer {
   public static final String CONNECTION_REPOSITORY_ATTRIBUTE_KEY = "connectionRepository";
   private Tomcat tomcat;
   private WebSocketConnectionRepository connectionRepository;
+  private final int port;
+
+  public WebSocketServer(int port) {
+    this.port = port;
+  }
+
+  public WebSocketServer() {
+    this(DEFAULT_PORT);
+  }
 
   public void start() {
     try {
       var baseDir = new File("").getAbsoluteFile().getParentFile().getPath();
       tomcat = new Tomcat();
       tomcat.setBaseDir(baseDir);
-      tomcat.setPort(DEFAULT_PORT);
+      tomcat.setPort(port);
       var context = tomcat.addContext("", baseDir);
       connectionRepository = new WebSocketConnectionRepository();
       context.getServletContext().setAttribute(CONNECTION_REPOSITORY_ATTRIBUTE_KEY, connectionRepository);
@@ -61,7 +70,7 @@ public class WebSocketServer {
   }
 
   public String getUrl() {
-    return "ws://localhost:" + DEFAULT_PORT + "/endpoint";
+    return "ws://localhost:" + port + "/endpoint";
   }
 
   public List<WebSocketConnection> getConnections() {

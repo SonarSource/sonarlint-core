@@ -125,7 +125,7 @@ public class SmartNotifications {
 
   private boolean shouldSkipPolling(AbstractConnectionConfiguration connection) {
     if (connection.getKind() == ConnectionKind.SONARCLOUD) {
-      var region = ((SonarCloudConnectionConfiguration)  connection).getRegion();
+      var region = ((SonarCloudConnectionConfiguration) connection).getRegion();
       return webSocketService.hasOpenConnection(region);
     }
     return false;
