@@ -108,12 +108,11 @@ public class IssueService {
   private final NewCodeService newCodeService;
   private final RulesService rulesService;
   private final TaintVulnerabilityTrackingService taintVulnerabilityTrackingService;
-  private final AiCodeFixService aiCodeFixService;
 
   public IssueService(ConfigurationRepository configurationRepository, ConnectionManager connectionManager, StorageService storageService,
     LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
     ApplicationEventPublisher eventPublisher, FindingReportingService findingReportingService, SeverityModeService severityModeService,
-    NewCodeService newCodeService, RulesService rulesService, TaintVulnerabilityTrackingService taintVulnerabilityTrackingService, AiCodeFixService aiCodeFixService) {
+    NewCodeService newCodeService, RulesService rulesService, TaintVulnerabilityTrackingService taintVulnerabilityTrackingService) {
     this.configurationRepository = configurationRepository;
     this.connectionManager = connectionManager;
     this.storageService = storageService;
@@ -125,7 +124,6 @@ public class IssueService {
     this.newCodeService = newCodeService;
     this.rulesService = rulesService;
     this.taintVulnerabilityTrackingService = taintVulnerabilityTrackingService;
-    this.aiCodeFixService = aiCodeFixService;
   }
 
   public void changeStatus(String configurationScopeId, String issueKey, ResolutionStatus newStatus, boolean isTaintIssue, SonarLintCancelMonitor cancelMonitor) {
@@ -369,7 +367,7 @@ public class IssueService {
     }
     var isMQRMode = severityModeService.isMQRModeForConnection(connectionId);
     var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId).orElseGet(NewCodeDefinition::withAlwaysNew);
-    var aiCodeFixFeature = effectiveBinding.flatMap(aiCodeFixService::getFeature);
+    var aiCodeFixFeature = effectiveBinding.flatMap(b -> AiCodeFixService.getFeature(storageService, b));
     var maybeIssue = findingReportingService.findReportedIssue(findingId, newCodeDefinition, isMQRMode, aiCodeFixFeature);
     var maybeHotspot = findingReportingService.findReportedHotspot(findingId, newCodeDefinition, isMQRMode);
     var maybeTaint = taintVulnerabilityTrackingService.getTaintVulnerability(configurationScopeId, findingId, cancelMonitor);
