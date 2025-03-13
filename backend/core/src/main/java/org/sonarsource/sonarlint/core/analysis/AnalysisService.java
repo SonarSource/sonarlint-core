@@ -126,8 +126,8 @@ import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.trimToNull;
 import static org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.LanguageDetection.sanitizeExtension;
 import static org.sonarsource.sonarlint.core.commons.util.StringUtils.pluralize;
-import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.createSonarLintGitIgnore;
-import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.getVSCChangedFiles;
+import static org.sonarsource.sonarlint.core.commons.util.git.GitService.createSonarLintGitIgnore;
+import static org.sonarsource.sonarlint.core.commons.util.git.GitService.getVSCChangedFiles;
 
 public class AnalysisService {
 
