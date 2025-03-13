@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Rule Extractor
+ * SonarLint Core - Medium Tests
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,33 +17,13 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.rule.extractor;
+package mediumtest.rules;
 
-import java.util.List;
-import java.util.Optional;
 import org.sonar.api.server.rule.RulesDefinition;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
-/**
- * Load rules directly from plugins {@link RulesDefinition}
- */
-public class RuleDefinitionsLoader {
-
-  private final RulesDefinition.Context context;
-
-  public RuleDefinitionsLoader(Optional<List<RulesDefinition>> pluginDefs) {
-    context = new RulesDefinition.Context();
-    for (var pluginDefinition : pluginDefs.orElse(List.of())) {
-      try {
-        pluginDefinition.define(context);
-      } catch (Exception e) {
-        SonarLintLogger.get().warn(String.format("Failed to load rule definitions for %s, associated rules will be skipped", pluginDefinition), e);
-      }
-    }
+class ThrowingRulesDefinition implements RulesDefinition {
+  @Override
+  public void define(Context ignored) {
+    throw new IllegalStateException("Nope, not gonna happen");
   }
-
-  public RulesDefinition.Context getContext() {
-    return context;
-  }
-
 }
