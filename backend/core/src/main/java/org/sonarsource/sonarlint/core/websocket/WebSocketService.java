@@ -67,8 +67,10 @@ public class WebSocketService {
     this.configurationRepository = configurationRepository;
     this.shouldEnableWebSockets = params.getFeatureFlags().shouldManageServerSentEvents();
     this.webSocketsByRegion = Map.of(
-      SonarCloudRegion.US, new WebSocketManager(SonarCloudRegion.US, eventPublisher, sonarCloudActiveEnvironment, connectionAwareHttpClientProvider, configurationRepository),
-      SonarCloudRegion.EU, new WebSocketManager(SonarCloudRegion.EU, eventPublisher, sonarCloudActiveEnvironment, connectionAwareHttpClientProvider, configurationRepository)
+      SonarCloudRegion.US,
+      new WebSocketManager(eventPublisher, connectionAwareHttpClientProvider, configurationRepository, sonarCloudActiveEnvironment.getWebSocketsEndpointUri(SonarCloudRegion.US)),
+      SonarCloudRegion.EU,
+      new WebSocketManager(eventPublisher, connectionAwareHttpClientProvider, configurationRepository, sonarCloudActiveEnvironment.getWebSocketsEndpointUri(SonarCloudRegion.EU))
     );
   }
 
@@ -77,17 +79,17 @@ public class WebSocketService {
     if (!shouldEnableWebSockets) {
       return;
     }
-    executorService.execute(() -> considerScope(bindingConfigChangedEvent.configScopeId()));
-    // possible change of region for the binding; need to unsubscribe from the old region (subscription to the new one will be done in considerScope)
-    if (didChangeRegion(bindingConfigChangedEvent.previousConfig(), bindingConfigChangedEvent.newConfig())) {
-      executorService.execute(() -> {
+    executorService.execute(() -> {
+      considerScope(bindingConfigChangedEvent.configScopeId());
+      // possible change of region for the binding; need to unsubscribe from the old region (subscription to the new one will be done in considerScope)
+      if (didChangeRegion(bindingConfigChangedEvent.previousConfig(), bindingConfigChangedEvent.newConfig())) {
         // will only enter this block if previous connection (and connectionId) existed
         var previousRegion = ((SonarCloudConnectionConfiguration) connectionConfigurationRepository
-        .getConnectionById(bindingConfigChangedEvent.previousConfig().getConnectionId())).getRegion();
+          .getConnectionById(bindingConfigChangedEvent.previousConfig().getConnectionId())).getRegion();
         webSocketsByRegion.get(previousRegion).forget(bindingConfigChangedEvent.configScopeId());
         webSocketsByRegion.get(previousRegion).closeSocketIfNoMoreNeeded();
-      });
-    }
+      }
+    });
   }
 
   @EventListener
@@ -104,7 +106,7 @@ public class WebSocketService {
       return;
     }
     var removedConfigurationScopeId = configurationScopeRemovedEvent.getRemovedConfigurationScopeId();
-    executorService.execute(() -> 
+    executorService.execute(() ->
       webSocketsByRegion.forEach((region, webSocketManager) -> {
         webSocketManager.forget(removedConfigurationScopeId);
         webSocketManager.closeSocketIfNoMoreNeeded();
@@ -129,7 +131,7 @@ public class WebSocketService {
     var updatedConnectionId = connectionConfigurationUpdatedEvent.getUpdatedConnectionId();
     executorService.execute(() -> {
       if (didDisableNotifications(updatedConnectionId)) {
-        webSocketsByRegion.forEach((region, webSocketManager) -> 
+        webSocketsByRegion.forEach((region, webSocketManager) ->
           webSocketManager.forgetConnection(updatedConnectionId, "Notifications were disabled")
         );
       } else if (didEnableNotifications(updatedConnectionId)) {
@@ -144,8 +146,8 @@ public class WebSocketService {
       return;
     }
     String removedConnectionId = connectionConfigurationRemovedEvent.getRemovedConnectionId();
-    executorService.execute(() -> 
-      webSocketsByRegion.forEach((region, webSocketManager) -> 
+    executorService.execute(() ->
+      webSocketsByRegion.forEach((region, webSocketManager) ->
         webSocketManager.forgetConnection(removedConnectionId, "Connection was removed")
       )
     );
@@ -210,8 +212,8 @@ public class WebSocketService {
     if (newConnection == null || previousConnection == null) {
       // nothing to do
       return false;
-    } else if (previousConnection instanceof SonarCloudConnectionConfiguration previousConn && 
-               newConnection instanceof SonarCloudConnectionConfiguration newConn) {
+    } else if (previousConnection instanceof SonarCloudConnectionConfiguration previousConn &&
+      newConnection instanceof SonarCloudConnectionConfiguration newConn) {
       // was SonarCloud connection and still is - check if region changed
       return previousConn.getRegion() != newConn.getRegion();
     }
@@ -251,7 +253,8 @@ public class WebSocketService {
   }
 
   public boolean hasOpenConnection(SonarCloudRegion region) {
-    return webSocketsByRegion.get(region).getSonarCloudWebSocket() != null && webSocketsByRegion.get(region).getSonarCloudWebSocket().isOpen();
+    var sonarCloudWebSocket = webSocketsByRegion.get(region).getSonarCloudWebSocket();
+    return sonarCloudWebSocket != null && sonarCloudWebSocket.isOpen();
   }
 
   @PreDestroy
