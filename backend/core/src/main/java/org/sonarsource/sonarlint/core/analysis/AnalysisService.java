@@ -126,8 +126,8 @@ import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.trimToNull;
 import static org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.LanguageDetection.sanitizeExtension;
 import static org.sonarsource.sonarlint.core.commons.util.StringUtils.pluralize;
-import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.createSonarLintGitIgnore;
-import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.getVSCChangedFiles;
+import static org.sonarsource.sonarlint.core.commons.util.git.GitService.createSonarLintGitIgnore;
+import static org.sonarsource.sonarlint.core.commons.util.git.GitService.getVSCChangedFiles;
 
 public class AnalysisService {
 
@@ -754,6 +754,7 @@ public class AnalysisService {
   }
 
   private List<ClientInputFile> toInputFiles(String configScopeId, Path actualBaseDir, List<URI> fileUrisToAnalyze) {
+
     var sonarLintGitIgnore = createSonarLintGitIgnore(actualBaseDir);
     // INFO: When there are additional filters coming at some point, add them here and log them down below as well!
     var filteredURIsFromExclusionService = new ArrayList<URI>();
