@@ -50,6 +50,7 @@ public class FixSuggestionsApi {
   }
 
   public SupportedRulesResponseDto getSupportedRules(SonarLintCancelMonitor cancelMonitor) {
+
     try (var response = helper.apiGet("/fix-suggestions/supported-rules", cancelMonitor)) {
       return new Gson().fromJson(response.bodyAsString(), SupportedRulesResponseDto.class);
     } catch (Exception e) {

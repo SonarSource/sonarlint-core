@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.remediation.aicodefix;
 
 import org.sonarsource.sonarlint.core.repository.reporting.RaisedIssue;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
 import org.sonarsource.sonarlint.core.serverconnection.AiCodeFixSettings;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerTaintIssue;
 import org.sonarsource.sonarlint.core.tracking.TrackedIssue;
@@ -35,5 +36,9 @@ public record AiCodeFixFeature(AiCodeFixSettings settings) {
 
   public boolean isFixable(ServerTaintIssue serverTaintIssue) {
     return settings.supportedRules().contains(serverTaintIssue.getRuleKey()) && serverTaintIssue.getTextRange() != null;
+  }
+
+  public boolean isFixable(TaintVulnerabilityDto taintDto) {
+    return settings.supportedRules().contains(taintDto.getRuleKey()) && taintDto.getTextRange() != null;
   }
 }

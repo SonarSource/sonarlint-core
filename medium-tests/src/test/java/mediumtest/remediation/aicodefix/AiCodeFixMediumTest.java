@@ -29,9 +29,11 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.SuggestFixChangeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.SuggestFixParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
@@ -50,6 +52,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.
 import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.FILE_NOT_FOUND;
 import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.ISSUE_NOT_FOUND;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
+import static org.sonarsource.sonarlint.core.test.utils.storage.ServerTaintIssueFixtures.aServerTaintIssue;
 import static utils.AnalysisUtils.analyzeFileAndGetIssue;
 import static utils.AnalysisUtils.createFile;
 
@@ -136,7 +139,7 @@ public class AiCodeFixMediumTest {
       .asInstanceOf(InstanceOfAssertFactories.type(ResponseErrorException.class))
       .extracting(ResponseErrorException::getResponseError)
       .extracting(ResponseError::getCode, ResponseError::getMessage)
-      .containsExactly(ISSUE_NOT_FOUND, "The provided issue does not exist");
+      .containsExactly(ISSUE_NOT_FOUND, "The provided issue or taint does not exist");
   }
 
   @SonarLintTest
@@ -444,7 +447,7 @@ public class AiCodeFixMediumTest {
   }
 
   @SonarLintTest
-  void it_should_return_the_suggestion_from_sonarqube_cloud(SonarLintTestHarness harness, @TempDir Path baseDir) {
+  void it_should_return_the_suggestion_from_sonarqube_cloud_for_an_issue(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml", XML_SOURCE_CODE_WITH_ISSUE);
     var fileUri = filePath.toUri();
     var server = harness.newFakeSonarCloudServer("organizationKey")
@@ -484,6 +487,145 @@ public class AiCodeFixMediumTest {
         """
           {"organizationKey":"organizationKey","projectKey":"projectKey","issue":{"message":"Replace \\"pom.version\\" with \\"project.version\\".","startLine":6,"endLine":6,"ruleKey":"xml:S3421","sourceCode":"%s"}}"""
           .formatted(XML_SOURCE_CODE_WITH_ISSUE.replace("\\", "\\\\").replace("\n", "\\n").replace("\"", "\\\"")));
+  }
+
+  @SonarLintTest
+  void it_should_return_the_suggestion_from_sonarqube_cloud_for_a_taint_issue(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "File.java", "source");
+    var fileUri = filePath.toUri();
+    var server = harness.newFakeSonarCloudServer("organizationKey")
+      .withProject("projectKey",
+        project -> project.withBranch("branchName")
+          .withAiCodeFixSuggestion(suggestion -> suggestion
+            .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
+            .withExplanation("This is the explanation")
+            .withChange(0, 0, "This is the new code")))
+      .start();
+    var fakeClient = harness.newFakeClient()
+      .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
+      .withSonarQubeCloudEuRegionApiUri(server.baseUrl())
+      .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
+        .withProject("projectKey", project -> project
+          .withMainBranch("main", branch -> branch.withTaintIssue(aServerTaintIssue("key")
+            .withRuleKey("javasecurity:S2076")
+            .withFilePath("File.java")
+            .withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")))))
+        .withAiCodeFixSettings(aiCodeFix -> aiCodeFix
+          .withSupportedRules(Set.of("javasecurity:S2076"))
+          .organizationEligible(true)
+          .enabledForProjects("projectKey")))
+      .withBoundConfigScope("configScope", "connectionId", "projectKey")
+      .start(fakeClient);
+    var listAllResponse = backend.getTaintVulnerabilityTrackingService().listAll(new ListAllParams("configScope")).join();
+    var taintVulnerabilityDto = listAllResponse.getTaintVulnerabilities().get(0);
+
+    var fixSuggestion = backend.getAiCodeFixRpcService().suggestFix(new SuggestFixParams("configScope", taintVulnerabilityDto.getId())).join();
+
+    assertThat(fixSuggestion.getId()).isEqualTo(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"));
+    assertThat(fixSuggestion.getExplanation()).isEqualTo("This is the explanation");
+    assertThat(fixSuggestion.getChanges())
+      .extracting(SuggestFixChangeDto::getStartLine, SuggestFixChangeDto::getEndLine, SuggestFixChangeDto::getNewCode)
+      .containsExactly(tuple(0, 0, "This is the new code"));
+    assertThat(server.getMockServer().getAllServeEvents().get(0).getRequest().getBodyAsString())
+      .isEqualTo(
+        """
+          {"organizationKey":"organizationKey","projectKey":"projectKey","issue":{"message":"message","startLine":1,"endLine":3,"ruleKey":"javasecurity:S2076","sourceCode":"source"}}""");
+  }
+
+  @SonarLintTest
+  void it_should_fail_if_the_taint_issue_is_not_fixable_because_rule_is_not_supported(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "File.java", "source");
+    var fileUri = filePath.toUri();
+    var server = harness.newFakeSonarCloudServer("organizationKey")
+      .withProject("projectKey",
+        project -> project.withBranch("branchName")
+          .withAiCodeFixSuggestion(suggestion -> suggestion
+            .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
+            .withExplanation("This is the explanation")
+            .withChange(0, 0, "This is the new code")))
+      .start();
+    var fakeClient = harness.newFakeClient()
+      .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
+      .withSonarQubeCloudEuRegionApiUri(server.baseUrl())
+      .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
+        .withProject("projectKey", project -> project
+          .withMainBranch("main", branch -> branch.withTaintIssue(aServerTaintIssue("key")
+            .withRuleKey("javasecurity:S2076")
+            .withFilePath("File.java")
+            .withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")))))
+        .withAiCodeFixSettings(aiCodeFix -> aiCodeFix
+          .withSupportedRules(Set.of("javasecurity:SXXXX"))
+          .organizationEligible(true)
+          .enabledForProjects("projectKey")))
+      .withBoundConfigScope("configScope", "connectionId", "projectKey")
+      .start(fakeClient);
+    var listAllResponse = backend.getTaintVulnerabilityTrackingService().listAll(new ListAllParams("configScope")).join();
+    var taintVulnerabilityDto = listAllResponse.getTaintVulnerabilities().get(0);
+
+    var future = backend.getAiCodeFixRpcService().suggestFix(new SuggestFixParams("configScope", taintVulnerabilityDto.getId()));
+
+    assertThat(future).failsWithin(Duration.of(1, ChronoUnit.SECONDS))
+      .withThrowableThat()
+      .havingCause()
+      .isInstanceOf(ResponseErrorException.class)
+      .asInstanceOf(InstanceOfAssertFactories.type(ResponseErrorException.class))
+      .extracting(ResponseErrorException::getResponseError)
+      .extracting(ResponseError::getCode, ResponseError::getMessage)
+      .containsExactly(InvalidParams.getValue(), "The provided taint cannot be fixed");
+  }
+
+  @SonarLintTest
+  void it_should_fail_if_the_taint_issue_is_not_fixable_because_file_was_removed(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "File.java", "source");
+    var fileUri = filePath.toUri();
+    var server = harness.newFakeSonarCloudServer("organizationKey")
+      .withProject("projectKey",
+        project -> project.withBranch("branchName")
+          .withAiCodeFixSuggestion(suggestion -> suggestion
+            .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
+            .withExplanation("This is the explanation")
+            .withChange(0, 0, "This is the new code")))
+      .start();
+    var fakeClient = harness.newFakeClient()
+      .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
+      .withSonarQubeCloudEuRegionApiUri(server.baseUrl())
+      .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
+        .withProject("projectKey", project -> project
+          .withMainBranch("main", branch -> branch.withTaintIssue(aServerTaintIssue("key")
+            .withRuleKey("javasecurity:S2076")
+            .withFilePath("OtherFile.java")
+            .withTextRange(new TextRangeWithHash(1, 2, 3, 4, "hash")))))
+        .withAiCodeFixSettings(aiCodeFix -> aiCodeFix
+          .withSupportedRules(Set.of("javasecurity:S2076"))
+          .organizationEligible(true)
+          .enabledForProjects("projectKey")))
+      .withBoundConfigScope("configScope", "connectionId", "projectKey")
+      .start(fakeClient);
+    var listAllResponse = backend.getTaintVulnerabilityTrackingService().listAll(new ListAllParams("configScope")).join();
+    var taintVulnerabilityDto = listAllResponse.getTaintVulnerabilities().get(0);
+
+    var future = backend.getAiCodeFixRpcService().suggestFix(new SuggestFixParams("configScope", taintVulnerabilityDto.getId()));
+
+    assertThat(future).failsWithin(Duration.of(1, ChronoUnit.SECONDS))
+      .withThrowableThat()
+      .havingCause()
+      .isInstanceOf(ResponseErrorException.class)
+      .asInstanceOf(InstanceOfAssertFactories.type(ResponseErrorException.class))
+      .extracting(ResponseErrorException::getResponseError)
+      .extracting(ResponseError::getCode, ResponseError::getMessage)
+      .containsExactly(FILE_NOT_FOUND, "The provided taint ID corresponds to an unknown file");
   }
 
   @SonarLintTest
@@ -629,7 +771,8 @@ public class AiCodeFixMediumTest {
 
     assertThat(backend.telemetryFilePath())
       .content().asBase64Decoded().asString()
-      .contains("\"fixSuggestionReceivedCounter\":{\"e51b7bbd-72bc-4008-a4f1-d75583f3dc98\":{\"aiSuggestionsSource\":\"SONARCLOUD\",\"snippetsCount\":1,\"wasGeneratedFromIde\":true}}");
+      .contains(
+        "\"fixSuggestionReceivedCounter\":{\"e51b7bbd-72bc-4008-a4f1-d75583f3dc98\":{\"aiSuggestionsSource\":\"SONARCLOUD\",\"snippetsCount\":1,\"wasGeneratedFromIde\":true}}");
   }
 
   private Sonarlint.AiCodeFixSettings readAiCodeFixSettings(SonarLintTestRpcServer backend, String connectionId) {
