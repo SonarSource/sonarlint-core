@@ -46,6 +46,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
+import org.sonar.scm.git.blame.BlameResult;
 import org.sonar.scm.git.blame.RepositoryBlameCommand;
 import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
 import org.sonarsource.sonarlint.core.commons.SonarLintGitIgnore;
@@ -220,35 +221,34 @@ public class GitService {
     }
   }
 
-  public Optional<SonarLintBlameResult> getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, Set<URI> fileUris,
+  public SonarLintBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, Set<URI> fileUris,
     @Nullable UnaryOperator<String> fileContentProvider, Instant thresholdDate) {
     return getBlameResult(projectBaseDir, projectBaseRelativeFilePaths, fileUris, fileContentProvider, nativeGit::checkIfNativeGitEnabled, thresholdDate);
   }
 
-  Optional<SonarLintBlameResult> getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, Set<URI> fileUris, @Nullable UnaryOperator<String> fileContentProvider,
+  SonarLintBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, Set<URI> fileUris, @Nullable UnaryOperator<String> fileContentProvider,
     Predicate<Path> isEnabled, Instant thresholdDate) {
     if (isEnabled.test(projectBaseDir)) {
       LOG.debug("Using native git blame");
       return blameFromNativeCommand(projectBaseDir, fileUris, thresholdDate);
     } else {
       LOG.debug("Falling back to JGit git blame");
-      return Optional.of(blameWithFilesGitCommand(projectBaseDir, projectBaseRelativeFilePaths, fileContentProvider));
+      return blameWithFilesGitCommand(projectBaseDir, projectBaseRelativeFilePaths, fileContentProvider);
     }
   }
 
-  public Optional<SonarLintBlameResult> blameFromNativeCommand(Path projectBaseDir, Set<URI> fileUris, Instant thresholdDate) {
+  public SonarLintBlameResult blameFromNativeCommand(Path projectBaseDir, Set<URI> fileUris, Instant thresholdDate) {
     var nativeExecutable = nativeGit.getNativeGitExecutable();
-    if (nativeExecutable != null) {
-      for (var fileUri : fileUris) {
-        var filePath = Path.of(fileUri).toAbsolutePath().toString();
-        var filePathUnix = filePath.replace("\\", "/");
-        var blameHistoryWindow = "--since='" + thresholdDate + "'";
-        var command = new String[]{nativeExecutable, "blame", blameHistoryWindow, filePath, "--line-porcelain", "--encoding=UTF-8"};
-        return nativeGit.executeGitCommand(projectBaseDir, command)
-          .flatMap(commandResult -> parseBlameOutput(commandResult, filePathUnix, projectBaseDir));
-      }
+    var blameResult = new BlameResult();
+    for (var fileUri : fileUris) {
+      var filePath = Path.of(fileUri).toAbsolutePath().toString();
+      var filePathUnix = filePath.replace("\\", "/");
+      var blameHistoryWindow = "--since='" + thresholdDate + "'";
+      var command = new String[]{nativeExecutable, "blame", blameHistoryWindow, filePath, "--line-porcelain", "--encoding=UTF-8"};
+      nativeGit.executeGitCommand(projectBaseDir, command)
+        .ifPresent(blameOutput -> parseBlameOutput(blameOutput, filePathUnix, blameResult));
     }
-    throw new IllegalStateException("There is no native Git available");
+    return new SonarLintBlameResult(blameResult, projectBaseDir);
   }
 
 }

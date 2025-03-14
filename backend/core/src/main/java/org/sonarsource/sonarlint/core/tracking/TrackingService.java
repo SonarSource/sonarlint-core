@@ -288,9 +288,7 @@ public class TrackingService {
         var thresholdDate = newCodeDefinition.map(NewCodeDefinition::getThresholdDate).orElse(NewCodeDefinition.withAlwaysNew().getThresholdDate());
         var gitService = GitService.create();
         var blameResult = gitService.getBlameResult(baseDir, fileRelativePaths, fileUris, fileContentProvider, thresholdDate);
-        if (blameResult.isPresent()) {
-          return (filePath, lineNumbers) -> determineIntroductionDate(filePath, lineNumbers, blameResult.get());
-        }
+        return (filePath, lineNumbers) -> determineIntroductionDate(filePath, lineNumbers, blameResult);
       } catch (GitException e) {
         LOG.info("Could not get git blame data for file {} in {}. ", e.getPath(), configurationScopeId);
       } catch (Exception e) {

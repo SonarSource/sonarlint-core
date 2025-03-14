@@ -22,14 +22,11 @@ package org.sonarsource.sonarlint.core.commons.util.git;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
-import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.Optional;
 import java.util.regex.Pattern;
 import org.sonar.scm.git.blame.BlameResult;
-import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class BlameParser {
@@ -44,11 +41,10 @@ public class BlameParser {
     // Utility class
   }
 
-  public static Optional<SonarLintBlameResult> parseBlameOutput(String blameOutput, String currentFilePath, Path projectBaseDir) {
-    var blameResult = new BlameResult();
+  public static void parseBlameOutput(String blameOutput, String currentFilePath, BlameResult blameResult) {
     var numberOfLines = numberOfLinesInBlameOutput(blameOutput);
     if (numberOfLines == 0) {
-      return Optional.empty();
+      return;
     }
     var currentFileBlame = new BlameResult.FileBlame(currentFilePath, numberOfLines);
     blameResult.getFileBlameByPath().put(currentFilePath, currentFileBlame);
@@ -75,12 +71,10 @@ public class BlameParser {
         }
       } catch (IOException e) {
         LOG.warn("Failed to blame repository files", e);
-        return Optional.empty();
+        return;
       }
       currentLineNumber++;
     }
-
-    return Optional.of(new SonarLintBlameResult(blameResult, projectBaseDir));
   }
 
   private static boolean shouldSkipSection(String fileSection, boolean lineNumberIsOff) {
