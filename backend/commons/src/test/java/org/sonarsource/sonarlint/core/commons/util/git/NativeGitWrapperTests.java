@@ -21,32 +21,39 @@ package org.sonarsource.sonarlint.core.commons.util.git;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.LinkedList;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.commons.util.git.exceptions.GitException;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.spy;
 
-class ProcessWrapperFactoryTests {
+class NativeGitWrapperTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
+  private final NativeGitWrapper nativeGit = spy(new NativeGitWrapper());
 
   @Test
-  void it_should_execute_git(@TempDir Path baseDir) throws IOException {
-    var gitCommandResult = new LinkedList<String>();
-    new ProcessWrapperFactory().create(baseDir, gitCommandResult::add, "git", "--version").execute();
+  void shouldReturnEmptyGitExecutable() throws IOException {
+    doThrow(new RuntimeException()).when(nativeGit).getGitExecutable();
 
-    assertThat(gitCommandResult).hasSize(1);
+    assertThat(nativeGit.getNativeGitExecutable()).isNull();
   }
 
   @Test
-  void it_should_throw(@TempDir Path baseDir) {
-    var processWrapper = new ProcessWrapperFactory().create(baseDir, new LinkedList<String>()::add, "git", "-version");
+  void shouldConsiderNativeGitNotAvailableOnException() throws IOException {
+    doThrow(new RuntimeException()).when(nativeGit).getGitExecutable();
 
-    assertThrows(GitException.class, processWrapper::execute);
+    assertThat(nativeGit.checkIfNativeGitEnabled(Path.of(""))).isFalse();
   }
+
+  @Test
+  void shouldConsiderNativeGitNotAvailableOnNull() throws IOException {
+    doReturn(null).when(nativeGit).getGitExecutable();
+
+    assertThat(nativeGit.checkIfNativeGitEnabled(Path.of(""))).isFalse();
+  }
+
 }

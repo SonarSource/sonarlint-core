@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.util.git.GitService;
 import org.sonarsource.sonarlint.core.commons.util.git.exceptions.GitException;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
@@ -67,7 +68,6 @@ import org.springframework.context.event.EventListener;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
-import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.getBlameResult;
 
 public class TrackingService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -99,6 +99,71 @@ public class TrackingService {
     this.localOnlyIssueStorageService = localOnlyIssueStorageService;
     this.findingsSynchronizationService = findingsSynchronizationService;
     this.newCodeService = newCodeService;
+  }
+
+  private static void storeTrackedIssues(XodusKnownFindingsStore knownIssuesStore, String configurationScopeId, Path clientRelativePath, Collection<TrackedIssue> newKnownIssues) {
+    knownIssuesStore.storeKnownIssues(configurationScopeId, clientRelativePath,
+      newKnownIssues.stream().map(i -> new KnownFinding(i.getId(), i.getServerKey(), i.getTextRangeWithHash(), i.getLineWithHash(), i.getRuleKey(), i.getMessage(),
+        i.getIntroductionDate())).toList());
+  }
+
+  private static void storeTrackedSecurityHotspots(XodusKnownFindingsStore knownIssuesStore, String configurationScopeId, Path clientRelativePath,
+    Collection<TrackedIssue> newKnownSecurityHotspots) {
+    knownIssuesStore.storeKnownSecurityHotspots(configurationScopeId, clientRelativePath,
+      newKnownSecurityHotspots.stream().map(i -> new KnownFinding(i.getId(), i.getServerKey(), i.getTextRangeWithHash(), i.getLineWithHash(), i.getRuleKey(), i.getMessage(),
+        i.getIntroductionDate())).toList());
+  }
+
+  private static List<TrackedIssue> matchWithServerHotspots(Collection<ServerHotspot> serverHotspots, Collection<TrackedIssue> trackedIssues) {
+    var serverIssueMatcher = new IssueMatcher<>(new TrackedIssueFindingMatchingAttributeMapper(), new ServerHotspotMatchingAttributesMapper());
+    var serverMatchingResult = serverIssueMatcher.match(trackedIssues, serverHotspots);
+    return trackedIssues.stream().map(trackedIssue -> {
+      var matchToServer = serverMatchingResult.getMatch(trackedIssue);
+      if (matchToServer != null) {
+        return updateRawHotspotWithServerData(trackedIssue, matchToServer);
+      } else {
+        return trackedIssue;
+      }
+    }).toList();
+  }
+
+  private static LocalOnlyIssue newLocalOnlyIssue(Path serverRelativePath, TrackedIssue issue) {
+    return new LocalOnlyIssue(issue.getId(), serverRelativePath, issue.getTextRangeWithHash(), issue.getLineWithHash(),
+      issue.getRuleKey(), issue.getMessage(), null);
+  }
+
+  private static TrackedIssue updateTrackedIssueWithServerData(TrackedIssue trackedIssue, ServerIssue<?> serverIssue) {
+    var serverSeverity = serverIssue.getUserSeverity();
+    var severity = serverSeverity != null ? serverSeverity : trackedIssue.getSeverity();
+    var impacts = serverIssue.getImpacts().isEmpty() ? trackedIssue.getImpacts() : serverIssue.getImpacts();
+    return new TrackedIssue(trackedIssue.getId(), trackedIssue.getMessage(), serverIssue.getCreationDate(),
+      serverIssue.isResolved(), severity, serverIssue.getType(), serverIssue.getRuleKey(), trackedIssue.getTextRangeWithHash(),
+      trackedIssue.getLineWithHash(), serverIssue.getKey(), impacts, trackedIssue.getFlows(),
+      trackedIssue.getQuickFixes(), trackedIssue.getVulnerabilityProbability(), trackedIssue.getHotspotStatus(), trackedIssue.getRuleDescriptionContextKey(),
+      trackedIssue.getCleanCodeAttribute(), trackedIssue.getFileUri());
+  }
+
+  private static TrackedIssue updateRawHotspotWithServerData(TrackedIssue trackedHotspot, ServerHotspot serverHotspot) {
+    return new TrackedIssue(trackedHotspot.getId(), trackedHotspot.getMessage(), serverHotspot.getCreationDate(),
+      serverHotspot.getStatus().isResolved(), trackedHotspot.getSeverity(), RuleType.SECURITY_HOTSPOT, trackedHotspot.getRuleKey(),
+      trackedHotspot.getTextRangeWithHash(), trackedHotspot.getLineWithHash(),
+      serverHotspot.getKey(), trackedHotspot.getImpacts(), trackedHotspot.getFlows(), trackedHotspot.getQuickFixes(),
+      serverHotspot.getVulnerabilityProbability(), HotspotStatus.valueOf(serverHotspot.getStatus().name()), trackedHotspot.getRuleDescriptionContextKey(),
+      trackedHotspot.getCleanCodeAttribute(), trackedHotspot.getFileUri());
+  }
+
+  private static TrackedIssue updateTrackedIssueWithLocalOnlyIssueData(TrackedIssue trackedIssue, LocalOnlyIssue localOnlyIssue) {
+    return new TrackedIssue(trackedIssue.getId(), trackedIssue.getMessage(), trackedIssue.getIntroductionDate(),
+      localOnlyIssue.getResolution() != null, trackedIssue.getSeverity(), trackedIssue.getType(), trackedIssue.getRuleKey(), trackedIssue.getTextRangeWithHash(),
+      trackedIssue.getLineWithHash(), trackedIssue.getServerKey(), trackedIssue.getImpacts(), trackedIssue.getFlows(),
+      trackedIssue.getQuickFixes(), trackedIssue.getVulnerabilityProbability(), trackedIssue.getHotspotStatus(), trackedIssue.getRuleDescriptionContextKey(),
+      trackedIssue.getCleanCodeAttribute(), trackedIssue.getFileUri());
+  }
+
+  private static Instant determineIntroductionDate(Path path, Collection<Integer> lineNumbers, SonarLintBlameResult sonarLintBlameResult) {
+    return sonarLintBlameResult.getLatestChangeDateForLinesInFile(path, lineNumbers)
+      .map(Date::toInstant)
+      .orElse(Instant.now());
   }
 
   @EventListener
@@ -180,19 +245,6 @@ public class TrackingService {
     return new MatchingResult(issuesToReport, hotspotsToReport);
   }
 
-  private static void storeTrackedIssues(XodusKnownFindingsStore knownIssuesStore, String configurationScopeId, Path clientRelativePath, Collection<TrackedIssue> newKnownIssues) {
-    knownIssuesStore.storeKnownIssues(configurationScopeId, clientRelativePath,
-      newKnownIssues.stream().map(i -> new KnownFinding(i.getId(), i.getServerKey(), i.getTextRangeWithHash(), i.getLineWithHash(), i.getRuleKey(), i.getMessage(),
-        i.getIntroductionDate())).toList());
-  }
-
-  private static void storeTrackedSecurityHotspots(XodusKnownFindingsStore knownIssuesStore, String configurationScopeId, Path clientRelativePath,
-    Collection<TrackedIssue> newKnownSecurityHotspots) {
-    knownIssuesStore.storeKnownSecurityHotspots(configurationScopeId, clientRelativePath,
-      newKnownSecurityHotspots.stream().map(i -> new KnownFinding(i.getId(), i.getServerKey(), i.getTextRangeWithHash(), i.getLineWithHash(), i.getRuleKey(), i.getMessage(),
-        i.getIntroductionDate())).toList());
-  }
-
   private List<TrackedIssue> matchWithServerIssues(Path serverRelativePath, List<ServerIssue<?>> serverIssues,
     List<LocalOnlyIssue> localOnlyIssues, Collection<TrackedIssue> trackedIssues) {
     var serverIssueMatcher = new IssueMatcher<>(new TrackedIssueFindingMatchingAttributeMapper(), new ServerIssueMatchingAttributesMapper());
@@ -216,52 +268,6 @@ public class TrackingService {
     return matches;
   }
 
-  private static List<TrackedIssue> matchWithServerHotspots(Collection<ServerHotspot> serverHotspots, Collection<TrackedIssue> trackedIssues) {
-    var serverIssueMatcher = new IssueMatcher<>(new TrackedIssueFindingMatchingAttributeMapper(), new ServerHotspotMatchingAttributesMapper());
-    var serverMatchingResult = serverIssueMatcher.match(trackedIssues, serverHotspots);
-    return trackedIssues.stream().map(trackedIssue -> {
-      var matchToServer = serverMatchingResult.getMatch(trackedIssue);
-      if (matchToServer != null) {
-        return updateRawHotspotWithServerData(trackedIssue, matchToServer);
-      } else {
-        return trackedIssue;
-      }
-    }).toList();
-  }
-
-  private static LocalOnlyIssue newLocalOnlyIssue(Path serverRelativePath, TrackedIssue issue) {
-    return new LocalOnlyIssue(issue.getId(), serverRelativePath, issue.getTextRangeWithHash(), issue.getLineWithHash(),
-      issue.getRuleKey(), issue.getMessage(), null);
-  }
-
-  private static TrackedIssue updateTrackedIssueWithServerData(TrackedIssue trackedIssue, ServerIssue<?> serverIssue) {
-    var serverSeverity = serverIssue.getUserSeverity();
-    var severity = serverSeverity != null ? serverSeverity : trackedIssue.getSeverity();
-    var impacts = serverIssue.getImpacts().isEmpty() ? trackedIssue.getImpacts() : serverIssue.getImpacts();
-    return new TrackedIssue(trackedIssue.getId(), trackedIssue.getMessage(), serverIssue.getCreationDate(),
-      serverIssue.isResolved(), severity, serverIssue.getType(), serverIssue.getRuleKey(), trackedIssue.getTextRangeWithHash(),
-      trackedIssue.getLineWithHash(), serverIssue.getKey(), impacts, trackedIssue.getFlows(),
-      trackedIssue.getQuickFixes(), trackedIssue.getVulnerabilityProbability(), trackedIssue.getHotspotStatus(), trackedIssue.getRuleDescriptionContextKey(),
-      trackedIssue.getCleanCodeAttribute(), trackedIssue.getFileUri());
-  }
-
-  private static TrackedIssue updateRawHotspotWithServerData(TrackedIssue trackedHotspot, ServerHotspot serverHotspot) {
-    return new TrackedIssue(trackedHotspot.getId(), trackedHotspot.getMessage(), serverHotspot.getCreationDate(),
-      serverHotspot.getStatus().isResolved(), trackedHotspot.getSeverity(), RuleType.SECURITY_HOTSPOT, trackedHotspot.getRuleKey(),
-      trackedHotspot.getTextRangeWithHash(), trackedHotspot.getLineWithHash(),
-      serverHotspot.getKey(), trackedHotspot.getImpacts(), trackedHotspot.getFlows(), trackedHotspot.getQuickFixes(),
-      serverHotspot.getVulnerabilityProbability(), HotspotStatus.valueOf(serverHotspot.getStatus().name()), trackedHotspot.getRuleDescriptionContextKey(),
-      trackedHotspot.getCleanCodeAttribute(), trackedHotspot.getFileUri());
-  }
-
-  private static TrackedIssue updateTrackedIssueWithLocalOnlyIssueData(TrackedIssue trackedIssue, LocalOnlyIssue localOnlyIssue) {
-    return new TrackedIssue(trackedIssue.getId(), trackedIssue.getMessage(), trackedIssue.getIntroductionDate(),
-      localOnlyIssue.getResolution() != null, trackedIssue.getSeverity(), trackedIssue.getType(), trackedIssue.getRuleKey(), trackedIssue.getTextRangeWithHash(),
-      trackedIssue.getLineWithHash(), trackedIssue.getServerKey(), trackedIssue.getImpacts(), trackedIssue.getFlows(),
-      trackedIssue.getQuickFixes(), trackedIssue.getVulnerabilityProbability(), trackedIssue.getHotspotStatus(), trackedIssue.getRuleDescriptionContextKey(),
-      trackedIssue.getCleanCodeAttribute(), trackedIssue.getFileUri());
-  }
-
   private MatchingSession startMatchingSession(String configurationScopeId, Set<Path> fileRelativePaths, Set<URI> fileUris, UnaryOperator<String> fileContentProvider) {
     var knownFindingsStore = knownFindingsStorageService.get();
     var issuesByRelativePath = fileRelativePaths.stream()
@@ -280,8 +286,9 @@ public class TrackingService {
       try {
         var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId);
         var thresholdDate = newCodeDefinition.map(NewCodeDefinition::getThresholdDate).orElse(NewCodeDefinition.withAlwaysNew().getThresholdDate());
-        var sonarLintBlameResult = getBlameResult(baseDir, fileRelativePaths, fileUris, fileContentProvider, thresholdDate);
-        return (filePath, lineNumbers) -> determineIntroductionDate(filePath, lineNumbers, sonarLintBlameResult);
+        var gitService = GitService.create();
+        var blameResult = gitService.getBlameResult(baseDir, fileRelativePaths, fileUris, fileContentProvider, thresholdDate);
+        return (filePath, lineNumbers) -> determineIntroductionDate(filePath, lineNumbers, blameResult);
       } catch (GitException e) {
         LOG.info("Could not get git blame data for file {} in {}. ", e.getPath(), configurationScopeId);
       } catch (Exception e) {
@@ -301,12 +308,6 @@ public class TrackingService {
       LOG.error("Error when requesting the base dir", e);
       return null;
     }
-  }
-
-  private static Instant determineIntroductionDate(Path path, Collection<Integer> lineNumbers, SonarLintBlameResult sonarLintBlameResult) {
-    return sonarLintBlameResult.getLatestChangeDateForLinesInFile(path, lineNumbers)
-      .map(Date::toInstant)
-      .orElse(Instant.now());
   }
 
   private static class MatchingResult {

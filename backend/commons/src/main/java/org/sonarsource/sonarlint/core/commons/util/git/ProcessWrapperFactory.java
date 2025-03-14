@@ -30,8 +30,7 @@ import java.util.Scanner;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.util.git.exceptions.GitRepoNotFoundException;
-import org.sonarsource.sonarlint.core.commons.util.git.exceptions.NoSuchPathException;
+import org.sonarsource.sonarlint.core.commons.util.git.exceptions.GitException;
 
 import static java.lang.String.format;
 import static java.lang.String.join;
@@ -75,18 +74,6 @@ public class ProcessWrapperFactory {
       }
     }
 
-    private static boolean isNotAGitRepo(LinkedList<String> output) {
-      return outputContains(output, "not a git repository");
-    }
-
-    private static boolean noSuchPath(LinkedList<String> output) {
-      return outputContains(output, "no such path");
-    }
-
-    private static boolean outputContains(LinkedList<String> output, String text) {
-      return output.stream().anyMatch(line -> line.contains(text));
-    }
-
     public void execute() throws IOException {
       var output = new LinkedList<String>();
       var processBuilder = new ProcessBuilder()
@@ -113,14 +100,8 @@ public class ProcessWrapperFactory {
 
         int exit = p.waitFor();
         if (exit != 0) {
-          if (isNotAGitRepo(output)) {
-            throw new GitRepoNotFoundException(getBaseDir());
-          }
-          if (noSuchPath(output)) {
-            throw new NoSuchPathException(getBaseDir());
-          }
           var gitBlameOutput = join(System.lineSeparator(), output);
-          throw new IllegalStateException(format("Command execution exited with code: %d and error message: %s", exit, gitBlameOutput));
+          throw new GitException(format("Command execution exited with code: %d and error message: %s", exit, gitBlameOutput));
         }
       } catch (InterruptedException e) {
         LOG.warn(format("Command [%s] interrupted", join(" ", command)), e);
@@ -130,9 +111,6 @@ public class ProcessWrapperFactory {
       }
     }
 
-    private String getBaseDir() {
-      return baseDir != null ? baseDir.toString() : "null";
-    }
   }
 
 }

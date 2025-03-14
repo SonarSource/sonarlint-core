@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.commons.util.git;
 import java.io.IOException;
 import java.util.LinkedList;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.util.git.exceptions.GitException;
 
 public class WinGitUtils {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -44,6 +45,6 @@ public class WinGitUtils {
       LOG.debug("Found git.exe at {}", out);
       return out;
     }
-    throw new IllegalStateException("git.exe not found in PATH. PATH value was: " + System.getProperty("PATH"));
+    throw new GitException("git.exe not found in PATH. PATH value was: " + System.getProperty("PATH"));
   }
 }

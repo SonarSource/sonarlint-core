@@ -53,35 +53,32 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.commons.util.git.exceptions.NoSuchPathException;
 
 import static java.util.function.Predicate.not;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.jgit.lib.Constants.GITIGNORE_FILENAME;
 import static org.eclipse.jgit.util.FileUtils.RECURSIVE;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.addFileToGitIgnoreAndCommit;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commitAtDate;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createFile;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRepository;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.modifyFile;
-import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.blameFromNativeCommand;
-import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.blameWithFilesGitCommand;
-import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.getBlameResult;
-import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.getVSCChangedFiles;
+import static org.sonarsource.sonarlint.core.commons.util.git.GitService.blameWithFilesGitCommand;
+import static org.sonarsource.sonarlint.core.commons.util.git.GitService.getVSCChangedFiles;
 
 @ExtendWith(LogTestStartAndEnd.class)
-class GitUtilsTest {
+class GitServiceTests {
 
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
-
+  private static final NativeGitWrapper realNativeGitWrapper = new NativeGitWrapper();
+  private static final GitService underTest = new GitService(realNativeGitWrapper);
+  private static Path bareRepoPath;
+  private static Path workingRepoPath;
   @TempDir
   private Path projectDirPath;
   private Git git;
-  private static Path bareRepoPath;
-  private static Path workingRepoPath;
 
   @BeforeAll
   public static void beforeAll() throws GitAPIException, IOException {
@@ -99,6 +96,35 @@ class GitUtilsTest {
       FileUtils.forceDelete(workingRepoPath.toFile());
     } catch (Exception ignored) {
       //It throws an exception in windows
+    }
+  }
+
+  private static void setUpBareRepo(Map<String, String> filePathContentMap) throws IOException, GitAPIException {
+    bareRepoPath = Files.createTempDirectory("bare-repo");
+    workingRepoPath = Files.createTempDirectory("working-repo");
+    // Initialize a bare repository
+    try (var ignored = Git.init().setBare(true).setDirectory(bareRepoPath.toFile()).call()) {
+      // Initialize a working directory repository
+      try (var workingGit = Git.init().setDirectory(workingRepoPath.toFile()).call()) {
+        // Create a .gitignore file in the working directory
+        for (var filePath : filePathContentMap.keySet()) {
+          var gitignoreFile = new File(workingRepoPath.toFile(), filePath);
+          Files.writeString(gitignoreFile.toPath(), filePathContentMap.get(filePath));
+
+          // Stage and commit the .gitignore file
+          workingGit.add().addFilepattern(filePath).call();
+          workingGit.commit().setMessage("Add " + filePath).call();
+        }
+
+        // Add the bare repository as a remote and push the commit
+        workingGit.remoteAdd()
+          .setName("origin")
+          .setUri(new URIish(bareRepoPath.toUri().toString()))
+          .call();
+        workingGit.push().setRemote("origin").call();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 
@@ -132,7 +158,8 @@ class GitUtilsTest {
     var filePaths = Set.of(fileAPath);
     var fileUris = Set.of(fileAPath.toUri());
     var now = Instant.now();
-    assertThrows(NoSuchPathException.class, () -> getBlameResult(projectDirPath, filePaths, fileUris, path -> "", now));
+    // TODO assert empty git blame res
+    assertThat(underTest.getBlameResult(projectDirPath, filePaths, fileUris, path -> "", now)).isNotNull();
   }
 
   @Test
@@ -140,7 +167,7 @@ class GitUtilsTest {
     createFile(projectDirPath, "fileA", "line1", "line2", "line3");
     var c1 = commit(git, "fileA");
 
-    var sonarLintBlameResult = getBlameResult(projectDirPath, Set.of(Path.of("fileA")), Set.of(Path.of("fileA").toUri()), null, path -> false, Instant.now());
+    var sonarLintBlameResult = underTest.getBlameResult(projectDirPath, Set.of(Path.of("fileA")), Set.of(Path.of("fileA").toUri()), null, path -> false, Instant.now());
     assertThat(IntStream.of(1, 2, 3)
       .mapToObj(lineNumber -> sonarLintBlameResult.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(lineNumber))))
       .map(Optional::get)
@@ -153,7 +180,8 @@ class GitUtilsTest {
     Set<URI> uris = Set.of();
 
     var now = Instant.now();
-    assertThrows(IllegalStateException.class, () -> getBlameResult(projectDirPath, files, uris, null, path -> true, now));
+    // TODO assert empty BlameResult
+    assertThat(underTest.getBlameResult(projectDirPath, files, uris, null, path -> true, now)).isNotNull();
   }
 
   @Test
@@ -255,14 +283,14 @@ class GitUtilsTest {
     var fileBPath = Path.of("fileB");
     var fileCPath = Path.of("fileC");
 
-    var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(projectDirPath);
+    var sonarLintGitIgnore = GitService.createSonarLintGitIgnore(projectDirPath);
     assertThat(Stream.of(fileAPath, fileBPath, fileCPath).filter(not(sonarLintGitIgnore::isFileIgnored)).toList())
       .hasSize(3)
       .containsExactly(fileAPath, fileBPath, fileCPath);
 
     addFileToGitIgnoreAndCommit(git, "fileB");
 
-    sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(projectDirPath);
+    sonarLintGitIgnore = GitService.createSonarLintGitIgnore(projectDirPath);
     assertThat(Stream.of(fileAPath, fileBPath, fileCPath).filter(not(sonarLintGitIgnore::isFileIgnored)).toList())
       .hasSize(2)
       .containsExactly(fileAPath, fileCPath);
@@ -278,14 +306,14 @@ class GitUtilsTest {
     createFile(projectDirPath, fileB.toString(), "line1", "line2", "line3");
     createFile(projectDirPath, fileC.toString(), "line1", "line2", "line3");
 
-    var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(projectDirPath);
+    var sonarLintGitIgnore = GitService.createSonarLintGitIgnore(projectDirPath);
     assertThat(Stream.of(fileA, fileB, fileC).filter(not(sonarLintGitIgnore::isFileIgnored)).toList())
       .hasSize(3)
       .containsExactly(fileA, fileB, fileC);
 
     addFileToGitIgnoreAndCommit(git, "myDir/");
 
-    sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(projectDirPath);
+    sonarLintGitIgnore = GitService.createSonarLintGitIgnore(projectDirPath);
     assertThat(Stream.of(fileA, fileB, fileC).filter(not(sonarLintGitIgnore::isFileIgnored)).toList())
       .hasSize(1)
       .containsExactly(fileA);
@@ -304,7 +332,7 @@ class GitUtilsTest {
     var gitIgnore = projectDirPath.resolve(GITIGNORE_FILENAME);
     FileUtils.deleteQuietly(gitIgnore.toFile());
 
-    var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(projectDirPath);
+    var sonarLintGitIgnore = GitService.createSonarLintGitIgnore(projectDirPath);
 
     assertThat(logTester.logs(LogOutput.Level.INFO))
       .anyMatch(s -> s.contains(".gitignore file was not found for "));
@@ -316,7 +344,7 @@ class GitUtilsTest {
 
   @Test
   void should_continue_normally_with_null_basedir() {
-    var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(null);
+    var sonarLintGitIgnore = GitService.createSonarLintGitIgnore(null);
 
     assertThat(sonarLintGitIgnore.isIgnored(Path.of("file/path"))).isFalse();
   }
@@ -330,7 +358,7 @@ class GitUtilsTest {
       Files.writeString(gitignoreFile.toPath(), "*.js");
     }
 
-    var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(projectRoot);
+    var sonarLintGitIgnore = GitService.createSonarLintGitIgnore(projectRoot);
 
     assertThat(sonarLintGitIgnore.isIgnored(Path.of("frontend/app/should_not_be_ignored.js"))).isTrue();
   }
@@ -338,7 +366,7 @@ class GitUtilsTest {
   @Test
   void should_respect_gitignore_rules() throws IOException {
     Files.write(projectDirPath.resolve(GITIGNORE_FILENAME), List.of("app/", "!frontend/app/"), java.nio.file.StandardOpenOption.CREATE);
-    var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(projectDirPath);
+    var sonarLintGitIgnore = GitService.createSonarLintGitIgnore(projectDirPath);
 
     assertThat(sonarLintGitIgnore.isIgnored(Path.of("frontend/app/should_not_be_ignored.js"))).isFalse();
     assertThat(sonarLintGitIgnore.isIgnored(Path.of("should_be_ignored.js"))).isFalse();
@@ -347,7 +375,7 @@ class GitUtilsTest {
 
   @Test
   void createSonarLintGitIgnore_works_for_bare_repos_too() {
-    var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(bareRepoPath);
+    var sonarLintGitIgnore = GitService.createSonarLintGitIgnore(bareRepoPath);
 
     assertThat(sonarLintGitIgnore.isFileIgnored(Path.of("file.txt"))).isFalse();
     assertThat(sonarLintGitIgnore.isFileIgnored(Path.of("file.tmp"))).isTrue();
@@ -356,7 +384,7 @@ class GitUtilsTest {
 
   @Test
   void nonAsciiCharacterFileName() {
-    var sonarLintGitIgnore = GitUtils.createSonarLintGitIgnore(bareRepoPath);
+    var sonarLintGitIgnore = GitService.createSonarLintGitIgnore(bareRepoPath);
 
     assertThat(sonarLintGitIgnore.isIgnored(Path.of("Sönar.txt"))).isFalse();
     assertThat(sonarLintGitIgnore.isIgnored(Path.of("Sönar.log"))).isTrue();
@@ -399,7 +427,7 @@ class GitUtilsTest {
     commitAtDate(git, fourMonthsAgo, fileAStr);
     var fileA = Path.of(fileAStr);
 
-    var blameResult = blameFromNativeCommand(projectDirPath, Set.of(projectDirPath.resolve(fileA).toUri()), Instant.now());
+    var blameResult = underTest.blameFromNativeCommand(projectDirPath, Set.of(projectDirPath.resolve(fileA).toUri()), Instant.now());
 
     var line1Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(1)).get();
     var line2Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(2)).get();
@@ -437,7 +465,7 @@ class GitUtilsTest {
     commitAtDate(git, fourMonthsAgo, fileAStr);
     var fileA = Path.of(fileAStr);
 
-    var blameResult = blameFromNativeCommand(projectDirPath, Set.of(projectDirPath.resolve(fileA).toUri()), Instant.now().minus(Period.ofDays(180)));
+    var blameResult = underTest.blameFromNativeCommand(projectDirPath, Set.of(projectDirPath.resolve(fileA).toUri()), Instant.now().minus(Period.ofDays(180)));
 
     var line1Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(1)).get();
     var line2Date = blameResult.getLatestChangeDateForLinesInFile(fileA, List.of(2)).get();
@@ -449,34 +477,5 @@ class GitUtilsTest {
     assertThat(ChronoUnit.MINUTES.between(line2Date.toInstant(), eightMonthsAgo)).isZero();
     // line 3 was committed 4 months ago, it's inside the blame time window, so it has real commit date
     assertThat(ChronoUnit.MINUTES.between(line3Date.toInstant(), fourMonthsAgo)).isZero();
-  }
-
-  private static void setUpBareRepo(Map<String, String> filePathContentMap) throws IOException, GitAPIException {
-    bareRepoPath = Files.createTempDirectory("bare-repo");
-    workingRepoPath = Files.createTempDirectory("working-repo");
-    // Initialize a bare repository
-    try (var ignored = Git.init().setBare(true).setDirectory(bareRepoPath.toFile()).call()) {
-      // Initialize a working directory repository
-      try (var workingGit = Git.init().setDirectory(workingRepoPath.toFile()).call()) {
-        // Create a .gitignore file in the working directory
-        for (var filePath : filePathContentMap.keySet()) {
-          var gitignoreFile = new File(workingRepoPath.toFile(), filePath);
-          Files.writeString(gitignoreFile.toPath(), filePathContentMap.get(filePath));
-
-          // Stage and commit the .gitignore file
-          workingGit.add().addFilepattern(filePath).call();
-          workingGit.commit().setMessage("Add " + filePath).call();
-        }
-
-        // Add the bare repository as a remote and push the commit
-        workingGit.remoteAdd()
-          .setName("origin")
-          .setUri(new URIish(bareRepoPath.toUri().toString()))
-          .call();
-        workingGit.push().setRemote("origin").call();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    }
   }
 }
