@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.util.git.exceptions.GitException;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -46,6 +47,6 @@ class ProcessWrapperFactoryTests {
   void it_should_throw(@TempDir Path baseDir) {
     var processWrapper = new ProcessWrapperFactory().create(baseDir, new LinkedList<String>()::add, "git", "-version");
 
-    assertThrows(IllegalStateException.class, processWrapper::execute);
+    assertThrows(GitException.class, processWrapper::execute);
   }
 }

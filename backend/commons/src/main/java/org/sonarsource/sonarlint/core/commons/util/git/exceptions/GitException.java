@@ -19,7 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.commons.util.git.exceptions;
 
-public class GitException extends IllegalStateException {
+public class GitException extends RuntimeException {
   private final String path;
 
   public GitException(String path) {

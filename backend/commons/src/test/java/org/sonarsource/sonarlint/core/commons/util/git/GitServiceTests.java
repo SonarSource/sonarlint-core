@@ -68,7 +68,7 @@ import static org.sonarsource.sonarlint.core.commons.util.git.GitService.blameWi
 import static org.sonarsource.sonarlint.core.commons.util.git.GitService.getVSCChangedFiles;
 
 @ExtendWith(LogTestStartAndEnd.class)
-class GitServiceTest {
+class GitServiceTests {
 
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();

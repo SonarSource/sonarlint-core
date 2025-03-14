@@ -51,6 +51,7 @@ import org.sonar.scm.git.blame.RepositoryBlameCommand;
 import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
 import org.sonarsource.sonarlint.core.commons.SonarLintGitIgnore;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.util.git.exceptions.GitException;
 import org.sonarsource.sonarlint.core.commons.util.git.exceptions.GitRepoNotFoundException;
 
 import static java.util.Optional.ofNullable;
@@ -59,7 +60,6 @@ import static org.sonarsource.sonarlint.core.commons.util.git.BlameParser.parseB
 
 public class GitService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-
 
   private final NativeGitWrapper nativeGit;
 
@@ -88,7 +88,7 @@ public class GitService {
       return Stream.concat(uncommitted, untracked)
         .map(file -> baseDir.resolve(file).toUri())
         .toList();
-    } catch (GitAPIException | IllegalStateException e) {
+    } catch (GitAPIException | GitException e) {
       LOG.debug("Git repository access error: ", e);
       return List.of();
     }

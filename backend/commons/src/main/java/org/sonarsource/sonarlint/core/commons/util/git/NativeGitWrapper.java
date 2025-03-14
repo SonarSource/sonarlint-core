@@ -25,6 +25,7 @@ import java.util.LinkedList;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import javax.annotation.CheckForNull;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.sonarsource.sonarlint.core.commons.Version;
@@ -38,14 +39,14 @@ public class NativeGitWrapper {
   private static final Pattern whitespaceRegex = Pattern.compile("\\s+");
   private static final Pattern semanticVersionDelimiter = Pattern.compile("\\.");
   // So we only have to make the expensive call once (or at most twice) to get the native Git executable
-  private static boolean checkedForNativeGitExecutable = false;
-  private static String nativeGitExecutable = null;
+  private boolean checkedForNativeGitExecutable = false;
+  private String nativeGitExecutable = null;
 
-  private static String getGitExecutable() throws IOException {
+  String getGitExecutable() throws IOException {
     return SystemUtils.IS_OS_WINDOWS ? locateGitOnWindows() : "git";
   }
 
-  private static String executeCommandAndRecordOutput(Path workingDir, String[] command) throws IOException {
+  private String executeCommandAndRecordOutput(Path workingDir, String[] command) throws IOException {
     var commandResult = new LinkedList<String>();
     new ProcessWrapperFactory()
       .create(workingDir, commandResult::add, command)
@@ -53,7 +54,7 @@ public class NativeGitWrapper {
     return String.join(System.lineSeparator(), commandResult);
   }
 
-  private static boolean isCompatibleGitVersion(String gitVersionCommandOutput) {
+  private boolean isCompatibleGitVersion(String gitVersionCommandOutput) {
     // Due to the danger of argument injection on git blame the use of `--end-of-options` flag is necessary
     // The flag is available only on git versions >= 2.24.0
     var gitVersion = whitespaceRegex
@@ -86,6 +87,7 @@ public class NativeGitWrapper {
    * Get the native Git executable by checking for the version of both `git` and `git.exe`. We cache this information
    * to run these expensive processes more than once (or twice in case of Windows).
    */
+  @CheckForNull
   public String getNativeGitExecutable() {
     if (!checkedForNativeGitExecutable) {
       try {
@@ -110,8 +112,8 @@ public class NativeGitWrapper {
     if (nativeExecutable == null) {
       return false;
     }
-    var output = executeGitCommand(projectBaseDir, nativeExecutable, "--version").get();
-    return output.contains("git version") && isCompatibleGitVersion(output);
+    var output = executeGitCommand(projectBaseDir, nativeExecutable, "--version");
+    return output.map(out -> out.contains("git version") && isCompatibleGitVersion(out)).orElse(false);
   }
 
 }
