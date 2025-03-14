@@ -42,6 +42,7 @@ public class ServerTaintIssueFixtures {
   public static class ServerTaintIssueBuilder extends AbstractServerTaintIssueBuilder<ServerTaintIssueBuilder> {
     private TextRangeWithHash textRangeWithHash = new TextRangeWithHash(1, 2, 3, 4, "rangeHash");
     private String ruleKey = "ruleKey";
+    private String filePath = "file/path";
 
     public ServerTaintIssueBuilder(String key) {
       super(key);
@@ -52,13 +53,18 @@ public class ServerTaintIssueFixtures {
       return this;
     }
 
+    public ServerTaintIssueBuilder withFilePath(String filePath) {
+      this.filePath = filePath;
+      return this;
+    }
+
     public ServerTaintIssueBuilder withTextRange(TextRangeWithHash textRange) {
       this.textRangeWithHash = textRange;
       return this;
     }
 
     public ServerTaintIssue build() {
-      return new ServerTaintIssue(key, resolved, ruleKey, "message", Path.of("file/path").toString(), introductionDate,
+      return new ServerTaintIssue(key, resolved, ruleKey, "message", Path.of(filePath).toString(), introductionDate,
         issueSeverity, ruleType, textRangeWithHash, "contextKey", CleanCodeAttribute.CONVENTIONAL, Map.of(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.MEDIUM));
     }
   }

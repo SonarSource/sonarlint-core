@@ -116,8 +116,7 @@ public class AiCodeFixService {
       AiSuggestionSource.SONARCLOUD,
       fixResponseDto.changes().size(),
       // As of today, this is always true since suggestFix is only called by the clients
-      true)
-    );
+      true));
 
     return fixResponseDto;
   }
@@ -129,7 +128,8 @@ public class AiCodeFixService {
       throw new ResponseErrorException(new ResponseError(ResponseErrorCode.InvalidParams, "The provided taint cannot be fixed", taint.getId()));
     }
 
-    var fixResponseDto = serverApi.fixSuggestions().getAiSuggestion(toDto(sonarQubeCloudBinding.organizationKey, sonarQubeCloudBinding.binding().sonarProjectKey(), taint, configScopeId),
+    var fixResponseDto = serverApi.fixSuggestions().getAiSuggestion(
+      toDto(sonarQubeCloudBinding.organizationKey, sonarQubeCloudBinding.binding().sonarProjectKey(), taint, configScopeId),
       cancelMonitor);
 
     eventPublisher.publishEvent(new FixSuggestionReceivedEvent(
@@ -137,8 +137,7 @@ public class AiCodeFixService {
       AiSuggestionSource.SONARCLOUD,
       fixResponseDto.changes().size(),
       // As of today, this is always true since suggestFix is only called by the clients
-      true)
-    );
+      true));
 
     return fixResponseDto;
   }
