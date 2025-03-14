@@ -19,18 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.rpc.impl;
 
-import java.net.URI;
-import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
+import org.sonarsource.sonarlint.core.analysis.AnalysisResult;
 import org.sonarsource.sonarlint.core.analysis.AnalysisService;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
+import org.sonarsource.sonarlint.core.analysis.RawIssue;
 import org.sonarsource.sonarlint.core.analysis.TriggerType;
-import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
-import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
-import org.sonarsource.sonarlint.core.fs.ClientFile;
+import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalysisRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFileListParams;
@@ -57,9 +55,21 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetSupported
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.NodeJsDetailsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.ShouldUseEnterpriseCSharpAnalyzerParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.ShouldUseEnterpriseCSharpAnalyzerResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.FileEditDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.QuickFixDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueFlowDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.RawIssueLocationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.TextEditDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.ImpactSeverity;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.SoftwareQuality;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TextRangeDto;
+import org.sonarsource.sonarlint.core.rules.RuleDetailsAdapter;
 import org.sonarsource.sonarlint.core.rules.RuleNotFoundException;
 import org.sonarsource.sonarlint.core.rules.RulesService;
 
+import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toMap;
 import static org.sonarsource.sonarlint.core.DtoMapper.toRuleDetailsResponse;
 
 class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements AnalysisRpcService {
@@ -129,8 +139,9 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
     var configurationScopeId = params.getConfigurationScopeId();
     return requestAsync(cancelChecker -> {
       var analysisResults = getBean(AnalysisService.class)
-        .analyze(cancelChecker, params.getConfigurationScopeId(), params.getAnalysisId(), params.getFilesToAnalyze(), params.getExtraProperties(), params.getStartTime(),
-          params.isShouldFetchServerIssues(), false, TriggerType.FORCED)
+        .scheduleAnalysis(params.getConfigurationScopeId(), params.getAnalysisId(), params.getFilesToAnalyze(), params.getExtraProperties(), params.getStartTime(),
+          // consider this method as an automatic analysis. This will take exclusions into account
+          params.isShouldFetchServerIssues(), TriggerType.AUTO)
         .join();
       return generateAnalyzeFilesResponse(analysisResults);
     }, configurationScopeId);
@@ -168,7 +179,7 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
   @Override
   public CompletableFuture<ForceAnalyzeResponse> analyzeOpenFiles(AnalyzeOpenFilesParams params) {
     return requestAsync(
-      cancelChecker -> new ForceAnalyzeResponse(getBean(AnalysisService.class).analyzeOpenFiles(params.getConfigScopeId())));
+      cancelChecker -> new ForceAnalyzeResponse(getBean(AnalysisService.class).forceAnalyzeOpenFiles(params.getConfigScopeId())));
   }
 
   @Override
@@ -184,12 +195,48 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
         .shouldUseEnterpriseCSharpAnalyzer(params.getConfigurationScopeId())));
   }
 
-  private static AnalyzeFilesResponse generateAnalyzeFilesResponse(AnalysisResults analysisResults) {
-    Set<URI> failedAnalysisFiles = analysisResults
-      .failedAnalysisFiles().stream()
-      .map(ClientInputFile::getClientObject)
-      .map(clientObj -> ((ClientFile) clientObj).getUri())
-      .collect(Collectors.toSet());
-    return new AnalyzeFilesResponse(failedAnalysisFiles, analysisResults.getRawIssues());
+  private static AnalyzeFilesResponse generateAnalyzeFilesResponse(AnalysisResult analysisResults) {
+    return new AnalyzeFilesResponse(analysisResults.failedAnalysisFiles(), analysisResults.rawIssues().stream().map(AnalysisRpcServiceDelegate::toDto).toList());
+  }
+
+  static RawIssueDto toDto(RawIssue issue) {
+    var range = issue.getTextRange();
+    var textRange = range != null ? adapt(range) : null;
+    var fileUri = issue.getFileUri();
+    var flows = issue.getFlows().stream().map(flow -> {
+      var locations = flow.locations().stream().map(location -> {
+        var locationTextRange = location.getTextRange();
+        var locationTextRangeDto = locationTextRange == null ? null : adapt(locationTextRange);
+        var locationInputFile = location.getInputFile();
+        var locationFileUri = locationInputFile == null ? null : locationInputFile.uri();
+        return new RawIssueLocationDto(locationTextRangeDto, location.getMessage(), locationFileUri);
+      }).toList();
+      return new RawIssueFlowDto(locations);
+    }).toList();
+    return new RawIssueDto(
+      RuleDetailsAdapter.adapt(issue.getSeverity()),
+      RuleDetailsAdapter.adapt(issue.getRuleType()),
+      RuleDetailsAdapter.adapt(issue.getCleanCodeAttribute()),
+      issue.getImpacts().entrySet().stream().map(entry -> Map.entry(SoftwareQuality.valueOf(entry.getKey().name()), ImpactSeverity.valueOf(entry.getValue().name())))
+        .collect(toMap(Map.Entry::getKey, Map.Entry::getValue)),
+      issue.getRuleKey(),
+      requireNonNull(issue.getMessage()),
+      fileUri,
+      flows,
+      issue.getQuickFixes().stream()
+        .map(quickFix -> new QuickFixDto(
+          quickFix.inputFileEdits().stream()
+            .map(fileEdit -> new FileEditDto(fileEdit.target().uri(),
+              fileEdit.textEdits().stream().map(textEdit -> new TextEditDto(adapt(textEdit.range()), textEdit.newText())).toList()))
+            .toList(),
+          quickFix.message()))
+        .toList(),
+      textRange,
+      issue.getRuleDescriptionContextKey(),
+      RuleDetailsAdapter.adapt(issue.getVulnerabilityProbability()));
+  }
+
+  private static TextRangeDto adapt(TextRange textRange) {
+    return new TextRangeDto(textRange.getStartLine(), textRange.getStartLineOffset(), textRange.getEndLine(), textRange.getEndLineOffset());
   }
 }

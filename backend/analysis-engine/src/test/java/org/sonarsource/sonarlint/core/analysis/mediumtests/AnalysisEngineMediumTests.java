@@ -146,21 +146,6 @@ class AnalysisEngineMediumTests {
   }
 
   @Test
-  void should_execute_pending_commands_when_gracefully_finishing() {
-    var futureWaitCommand1 = analysisEngine.post(waitCommand(1000L), progressMonitor);
-    var futureWaitCommand2 = analysisEngine.post(waitCommand(1000L), progressMonitor);
-    var futureWaitCommand3 = analysisEngine.post(waitCommand(1000L), progressMonitor);
-
-    analysisEngine.finishGracefully();
-    engineStopped = true;
-
-    await().until(futureWaitCommand3::isDone);
-    assertThat(futureWaitCommand3).isCompletedWithValue("SUCCESS");
-    assertThat(futureWaitCommand1).isCompleted();
-    assertThat(futureWaitCommand2).isCompleted();
-  }
-
-  @Test
   void should_cancel_progress_monitor_of_executing_command_when_stopping() {
     var futureLongCommand = analysisEngine.post((moduleRegistry, progressMonitor) -> {
       await().atMost(Duration.ofSeconds(5)).until(progressMonitor::isCanceled);

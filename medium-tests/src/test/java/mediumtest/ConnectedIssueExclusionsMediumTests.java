@@ -79,6 +79,7 @@ class ConnectedIssueExclusionsMediumTests {
         .withPlugin(TestPlugin.JAVA)
         .withProject("test-project")
         .withProject(JAVA_MODULE_KEY, project -> project
+          .withMainBranch("main")
           .withRuleSet("java", ruleSet -> ruleSet
             .withActiveRule("java:S106", "MAJOR")
             .withActiveRule("java:S1220", "MINOR")

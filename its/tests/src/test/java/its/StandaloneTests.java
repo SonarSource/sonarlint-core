@@ -48,6 +48,8 @@ import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
@@ -106,6 +108,7 @@ class StandaloneTests {
           languages, Collections.emptySet(), Collections.emptySet(), Collections.emptyList(), Collections.emptyList(), sonarUserHome.toString(), Map.of(),
           false, null, false, null))
         .get();
+      backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, false, CONFIG_SCOPE_ID, null))));
       System.out.println("After backend initialize");
     } catch (Exception e) {
       throw new IllegalStateException("Cannot initialize the backend", e);

@@ -316,8 +316,6 @@ public class SynchronizationService {
       LOG.debug("Synchronizing storage of connection '{}'", connectionId);
       var summary = storageSynchronizer.synchronizeServerInfosAndPlugins(serverApi, cancelMonitor);
       if (summary.anyPluginSynchronized()) {
-        // TODO re-review this solution before merging
-        pluginsRepository.unload(connectionId);
         applicationEventPublisher.publishEvent(new PluginsSynchronizedEvent(connectionId));
       }
       aiCodeFixSynchronizer.synchronize(serverApi, cancelMonitor);

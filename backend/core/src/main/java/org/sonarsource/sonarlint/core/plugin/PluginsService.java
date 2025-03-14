@@ -83,6 +83,11 @@ public class PluginsService {
     this.csharpSupport = new CSharpSupport(params.getLanguageSpecificRequirements());
   }
 
+  public LoadedPlugins reloadPluginsFromStorage(String connectionId) {
+    pluginsRepository.unload(connectionId);
+    return getPlugins(connectionId);
+  }
+
   static class CSharpSupport {
     final Path csharpOssPluginPath;
     final Path csharpEnterprisePluginPath;

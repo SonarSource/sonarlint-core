@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Analysis Engine
+ * SonarLint Core - Implementation
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,15 +17,11 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.analysis.api;
+package org.sonarsource.sonarlint.core.analysis;
 
-import org.junit.jupiter.api.Test;
+import java.net.URI;
+import java.util.List;
+import java.util.Set;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-class AnalysisResultsTest {
-  @Test
-  void raw_issues_returns_empty_list_without_calling_setter() {
-    assertThat(new AnalysisResults().getRawIssues()).isEmpty();
-  }
+public record AnalysisResult(Set<URI> failedAnalysisFiles, List<RawIssue> rawIssues) {
 }
