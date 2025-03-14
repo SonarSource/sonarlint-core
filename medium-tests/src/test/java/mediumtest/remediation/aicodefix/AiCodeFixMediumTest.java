@@ -136,7 +136,7 @@ public class AiCodeFixMediumTest {
       .asInstanceOf(InstanceOfAssertFactories.type(ResponseErrorException.class))
       .extracting(ResponseErrorException::getResponseError)
       .extracting(ResponseError::getCode, ResponseError::getMessage)
-      .containsExactly(ISSUE_NOT_FOUND, "The provided issue does not exist");
+      .containsExactly(ISSUE_NOT_FOUND, "The provided issue or taint does not exist");
   }
 
   @SonarLintTest
