@@ -42,16 +42,9 @@ public class Issue implements IssueLocation {
   public Issue(ActiveRuleAdapter activeRule, @Nullable String primaryMessage, Map<SoftwareQuality, ImpactSeverity> overriddenImpacts,
     @Nullable org.sonar.api.batch.fs.TextRange textRange, @Nullable ClientInputFile clientInputFile, List<Flow> flows, List<QuickFix> quickFixes,
     Optional<String> ruleDescriptionContextKey) {
-    this(activeRule.ruleKey().toString(), primaryMessage, overriddenImpacts, Optional.ofNullable(textRange).map(WithTextRange::convert).orElse(null), clientInputFile, flows,
-      quickFixes,
-      ruleDescriptionContextKey);
-  }
-
-  public Issue(String ruleKey, @Nullable String primaryMessage, Map<SoftwareQuality, ImpactSeverity> overriddenImpacts, @Nullable TextRange textRange,
-    @Nullable ClientInputFile clientInputFile, List<Flow> flows, List<QuickFix> quickFixes, Optional<String> ruleDescriptionContextKey) {
     this.overriddenImpacts = overriddenImpacts;
-    this.textRange = textRange;
-    this.ruleKey = ruleKey;
+    this.textRange = Optional.ofNullable(textRange).map(WithTextRange::convert).orElse(null);
+    this.ruleKey = activeRule.ruleKey().toString();
     this.primaryMessage = primaryMessage;
     this.clientInputFile = clientInputFile;
     this.flows = flows;

@@ -63,7 +63,7 @@ class ConnectedStorageProblemsMediumTests {
         .withPlugin(TestPlugin.JAVA)
         .withPlugin(SonarLanguage.JS.getPluginKey(), createFakePlugin(), "hash")
         .withProject(CONFIG_SCOPE_ID,
-          project -> project.withRuleSet(SonarLanguage.JS.getSonarLanguageKey(),
+          project -> project.withMainBranch("main").withRuleSet(SonarLanguage.JS.getSonarLanguageKey(),
             ruleSet -> ruleSet.withActiveRule("java:S106", "BLOCKER"))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, CONFIG_SCOPE_ID)
       .withEnabledLanguageInStandaloneMode(org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA)

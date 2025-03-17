@@ -35,11 +35,6 @@
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
     </dependency>
-    <dependency>
-      <groupId>org.sonarsource.sonarlint.core</groupId>
-      <artifactId>sonarlint-rpc-protocol</artifactId>
-      <version>${project.version}</version>
-    </dependency>
 
     <!-- Tests -->
     <dependency>
