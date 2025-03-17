@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.plugin;
 
+import jakarta.annotation.PreDestroy;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -81,6 +83,11 @@ public class PluginsService {
     this.nodeJsService = nodeJsService;
     this.disabledPluginKeysForAnalysis = params.getDisabledPluginKeysForAnalysis();
     this.csharpSupport = new CSharpSupport(params.getLanguageSpecificRequirements());
+  }
+
+  public LoadedPlugins reloadPluginsFromStorage(String connectionId) {
+    pluginsRepository.unload(connectionId);
+    return getPlugins(connectionId);
   }
 
   static class CSharpSupport {
@@ -239,5 +246,14 @@ public class PluginsService {
   @CheckForNull
   public Path getEffectivePathToCsharpAnalyzer(String connectionId) {
     return shouldUseEnterpriseCSharpAnalyzer(connectionId) ? csharpSupport.csharpEnterprisePluginPath : csharpSupport.csharpOssPluginPath;
+  }
+
+  @PreDestroy
+  public void shutdown() throws IOException {
+    try {
+      pluginsRepository.unloadAllPlugins();
+    } catch (Exception e) {
+      SonarLintLogger.get().error("Error shutting down plugins service", e);
+    }
   }
 }
