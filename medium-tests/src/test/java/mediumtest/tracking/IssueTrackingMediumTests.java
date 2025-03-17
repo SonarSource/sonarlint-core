@@ -212,8 +212,7 @@ class IssueTrackingMediumTests {
           "OPEN", null, Instant.now().minus(1, ChronoUnit.DAYS), new TextRange(1, 0, 1, 16))
         .withIssue("uuid2", "java:S1134", message, "author", ideFilePath, "395d7a96efa8afd1b66ab6b680d0e637", Constants.Severity.BLOCKER,
           org.sonarsource.sonarlint.core.commons.RuleType.BUG,
-          "OPEN", null, Instant.now().plus(1, ChronoUnit.DAYS), new TextRange(2, 0, 2, 16))
-      ))
+          "OPEN", null, Instant.now().plus(1, ChronoUnit.DAYS), new TextRange(2, 0, 2, 16))))
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("java")
         .withActiveRule(ruleKey, activeRule -> activeRule.withSeverity(IssueSeverity.MAJOR)))
       .start();
@@ -292,7 +291,8 @@ class IssueTrackingMediumTests {
       {}""";
 
     var client = harness.newFakeClient()
-      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, committedFileContent, null, true)))
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir,
+        List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, committedFileContent, null, true)))
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
@@ -301,7 +301,8 @@ class IssueTrackingMediumTests {
     changeFileContent(baseDir, filePath.getFileName().toString(), unsavedFileContent);
 
     var analysisTime = Instant.now();
-    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(), List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, unsavedFileContent, null, true)), List.of()));
+    backend.getFileService().didUpdateFileSystem(new DidUpdateFileSystemParams(List.of(),
+      List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, unsavedFileContent, null, true)), List.of()));
     var issues = analyzeFileAndGetAllIssues(backend, fileUri, client);
 
     assertThat(issues)
@@ -316,7 +317,7 @@ class IssueTrackingMediumTests {
     var filePath = createFile(baseDir, ideFilePath,
       """
         package devoxx;
-        
+
         public class Foo {
           public void run() {
             prepare("action1");
@@ -513,11 +514,11 @@ class IssueTrackingMediumTests {
     var filePath = createFile(baseDir, "FileHelper.java",
       """
         package myapp.helpers;
-        
+
         import java.io.IOException;
         import java.nio.file.*;
         import java.lang.Runnable;  // Noncompliant - java.lang is imported by default
-        
+
         public class FileHelper {
             public static String readFirstLine(String filePath) throws IOException {
                 return Files.readAllLines(Paths.get(filePath)).get(0);
@@ -605,7 +606,8 @@ class IssueTrackingMediumTests {
     var server = harness.newFakeSonarQubeServer().start();
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server,
-        storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MINOR"))))
+        storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey", project -> project.withMainBranch("main")
+          .withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MINOR"))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
       .start(client);
@@ -628,7 +630,8 @@ class IssueTrackingMediumTests {
     var server = harness.newFakeSonarQubeServer().start();
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server,
-        storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MINOR"))))
+        storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey",
+          project -> project.withMainBranch("main").withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MINOR"))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
       .start(client);
@@ -746,25 +749,23 @@ class IssueTrackingMediumTests {
     var server = harness.newFakeSonarCloudServer(orgKey)
       .withProject(projectKey, project -> project
         .withFile("server/path/prefix/pom.xml")
-          .withQualityProfile("qp")
-      )
+        .withQualityProfile("qp"))
       .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("xml")
         .withActiveRule("xml:S3421", rule -> rule.withSeverity(IssueSeverity.MAJOR)))
-      .withVersion("8.0.0.55884")
       .start();
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
     var backend = harness.newBackend()
-      .withSonarCloudConnection(connectionId, orgKey, true, storage -> {})
+      .withSonarCloudConnection(connectionId, orgKey, true, storage -> {
+        storage.withProject(projectKey, project -> project.withMainBranch("main"));
+      })
       .withFullSynchronization()
       .withSonarQubeCloudEuRegionUri(server.baseUrl())
+      .withSonarQubeCloudEuRegionApiUri(server.baseUrl())
       .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
       .start(client);
-
-    backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID,
-      new BindingConfigurationDto(connectionId, projectKey, true)));
     client.waitForSynchronization();
 
     backend.getAnalysisService().analyzeFilesAndTrack(
@@ -881,8 +882,8 @@ class IssueTrackingMediumTests {
       new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), true, System.currentTimeMillis()))
       .join();
 
+    verify(client, timeout(300)).raiseIssues(eq(CONFIG_SCOPE_ID), eq(Map.of(fileUri, List.of())), eq(false), any());
     verify(client, never()).raiseIssues(eq(CONFIG_SCOPE_ID), any(), eq(true), any());
-    verify(client).raiseIssues(eq(CONFIG_SCOPE_ID), eq(Map.of(fileUri, List.of())), eq(false), any());
   }
 
   private List<RaisedIssueDto> analyzeFileAndGetAllIssuesOfRule(SonarLintTestRpcServer backend, URI fileUri, SonarLintRpcClientDelegate client, String ruleKey) {

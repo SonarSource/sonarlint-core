@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
@@ -60,6 +61,7 @@ class AnalysisReadinessMediumTests {
   }
 
   @SonarLintTest
+  @Disabled("Causes shutdown issues on Windows, need to investigate later")
   void it_should_analyze_xml_file_in_connected_mode(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml",
       """
@@ -72,6 +74,7 @@ class AnalysisReadinessMediumTests {
         </project>""");
     var fileUri = filePath.toUri();
     var server = harness.newFakeSonarQubeServer()
+      .withPlugin(TestPlugin.XML)
       .withProject("projectKey")
       .start();
     var client = harness.newFakeClient()

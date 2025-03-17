@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.analysis;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -46,11 +47,13 @@ public class RawIssue {
 
   private final Issue issue;
   private final RuleDetailsForAnalysis activeRule;
-
+  private final Map<SoftwareQuality, ImpactSeverity> impacts = new EnumMap<>(SoftwareQuality.class);
 
   public RawIssue(Issue issue, RuleDetailsForAnalysis activeRule) {
     this.issue = issue;
     this.activeRule = activeRule;
+    this.impacts.putAll(activeRule.getImpacts());
+    this.impacts.putAll(issue.getOverriddenImpacts());
   }
 
   public IssueSeverity getSeverity() {
@@ -70,7 +73,7 @@ public class RawIssue {
   }
 
   public Map<SoftwareQuality, ImpactSeverity> getImpacts() {
-    return activeRule.getImpacts();
+    return impacts;
   }
 
   public String getRuleKey() {

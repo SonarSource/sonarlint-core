@@ -98,7 +98,7 @@ class AnalysisMediumTests {
   private static final boolean COMMERCIAL_ENABLED = System.getProperty("commercial") != null;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     javaVersion = System2.INSTANCE.property("java.specification.version");
   }
 
@@ -230,7 +230,8 @@ class AnalysisMediumTests {
     var server = harness.newFakeSonarQubeServer().start();
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server,
-        storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "BLOCKER"))))
+        storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey",
+          project -> project.withMainBranch("main").withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "BLOCKER"))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
       .start(client);
@@ -240,6 +241,7 @@ class AnalysisMediumTests {
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), false, System.currentTimeMillis())).join();
 
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
+    await().untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
     var raisedIssueDto = client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID).get(fileUri).get(0);
     assertThat(raisedIssueDto.getSeverityMode().isRight()).isTrue();
     assertThat(raisedIssueDto.getSeverityMode().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.CONVENTIONAL);
@@ -421,6 +423,7 @@ class AnalysisMediumTests {
       .build();
     var backend = harness.newBackend()
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .start(client);
     var analysisId = UUID.randomUUID();
 
@@ -430,8 +433,6 @@ class AnalysisMediumTests {
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     await().during(2, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isEmpty());
 
-    backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
-      new ConfigurationScopeDto(CONFIG_SCOPE_ID, null, false, CONFIG_SCOPE_ID, null))));
     backend.getFileService().didUpdateFileSystem(
       new DidUpdateFileSystemParams(
         List.of(new ClientFileDto(fileIssueUri, baseDir.relativize(fileIssue), CONFIG_SCOPE_ID, false, null, fileIssue, null, null, true),
@@ -850,7 +851,10 @@ class AnalysisMediumTests {
     var connectionId = "connectionId";
     var projectKey2 = "projectKey-2";
     var connectionId2 = "connectionId-2";
-    var server = harness.newFakeSonarQubeServer().start();
+    var server = harness.newFakeSonarQubeServer()
+      .withProject(projectKey)
+      .withProject(projectKey2)
+      .start();
     var backend = harness.newBackend()
       .withSonarQubeConnection(connectionId, server,
         storage -> storage.withPlugin(TestPlugin.XML).withProject(projectKey,
@@ -925,7 +929,7 @@ class AnalysisMediumTests {
     var connectionId = "connectionId";
     var projectKey2 = "projectKey-2";
     var connectionId2 = "connectionId-2";
-    var server = harness.newFakeSonarQubeServer().start();
+    var server = harness.newFakeSonarQubeServer().withProject(projectKey).withProject(projectKey2).start();
     var backend = harness.newBackend()
       .withSonarQubeConnection(connectionId, server,
         storage -> storage.withPlugin(TestPlugin.XML).withProject(projectKey,

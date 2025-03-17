@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - RPC Implementation
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,13 +17,15 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.analysis;
+package org.sonarsource.sonarlint.core.rpc.impl;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.sonar.api.batch.sensor.issue.IssueLocation;
+import org.sonarsource.sonarlint.core.analysis.RawIssue;
+import org.sonarsource.sonarlint.core.analysis.RuleDetailsForAnalysis;
 import org.sonarsource.sonarlint.core.analysis.api.ActiveRule;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFileEdit;
@@ -37,7 +39,7 @@ import org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.Son
 import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -50,23 +52,23 @@ class AnalysisServiceTests {
     when(inputComponent.isFile()).thenReturn(true);
     when(inputComponent.key()).thenReturn("inputComponentKey");
     when(issueLocation.message()).thenReturn("issue location message");
-    when(issueLocation.textRange()).thenReturn(new DefaultTextRange(new DefaultTextPointer(1,2),
-      new DefaultTextPointer(3,4)));
+    when(issueLocation.textRange()).thenReturn(new DefaultTextRange(new DefaultTextPointer(1, 2),
+      new DefaultTextPointer(3, 4)));
     when(issueLocation.inputComponent()).thenReturn(inputComponent);
     var clientInputFile = mock(ClientInputFile.class);
 
     var issue = new Issue(new ActiveRuleAdapter(new ActiveRule("repo:ruleKey", "languageKey")),
       "primary message", Map.of(),
-      new DefaultTextRange(new DefaultTextPointer(1,1), new DefaultTextPointer(1,1)),
+      new DefaultTextRange(new DefaultTextPointer(1, 1), new DefaultTextPointer(1, 1)),
       clientInputFile, List.of(new Flow(List.of(issueLocation))), List.of(new QuickFix(List.of(
       new ClientInputFileEdit(clientInputFile, List.of(new TextEdit(
-        new TextRange(5,6,7,8), "Quick fix text")))),
+        new TextRange(5, 6, 7, 8), "Quick fix text")))),
       "Quick fix message")), Optional.of(""));
     var ruleDetailsResponse = new RuleDetailsForAnalysis(org.sonarsource.sonarlint.core.commons.IssueSeverity.BLOCKER,
       org.sonarsource.sonarlint.core.commons.RuleType.BUG, org.sonarsource.sonarlint.core.commons.CleanCodeAttribute.CLEAR,
       Map.of(), org.sonarsource.sonarlint.core.commons.VulnerabilityProbability.HIGH);
 
-    var rawIssueDto = AnalysisService.toDto(issue, ruleDetailsResponse);
+    var rawIssueDto = AnalysisRpcServiceDelegate.toDto(new RawIssue(issue, ruleDetailsResponse));
 
     assertThat(rawIssueDto.getRuleKey()).isEqualTo("repo:ruleKey");
     var rawIssueLocationDto = rawIssueDto.getFlows().get(0).getLocations().get(0);

@@ -98,17 +98,6 @@ public class AnalysisEngine {
     return asyncCommand.future;
   }
 
-  public void finishGracefully() {
-    termination.compareAndSet(null, this::honorPendingCommands);
-  }
-
-  private void honorPendingCommands() {
-    List<AsyncCommand<?>> pendingCommands = new ArrayList<>();
-    commandQueue.drainTo(pendingCommands);
-    pendingCommands.forEach(c -> c.execute(getModuleRegistry()));
-    globalAnalysisContainer.stopComponents();
-  }
-
   public void stop() {
     if (!analysisThread.isAlive()) {
       return;

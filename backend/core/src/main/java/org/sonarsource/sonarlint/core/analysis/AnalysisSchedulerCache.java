@@ -48,6 +48,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.rules.RulesService;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.PluginsSynchronizedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
 public class AnalysisSchedulerCache {
@@ -68,6 +69,7 @@ public class AnalysisSchedulerCache {
   private final StorageService storageService;
   private final PluginsService pluginsService;
   private final NodeJsService nodeJsService;
+  private final ApplicationEventPublisher eventPublisher;
   private final Map<String, String> extraProperties = new HashMap<>();
   private final Path csharpOssPluginPath;
   private final AtomicReference<AnalysisScheduler> standaloneScheduler = new AtomicReference<>();
@@ -77,7 +79,7 @@ public class AnalysisSchedulerCache {
     UserAnalysisPropertiesRepository userAnalysisPropertiesRepository, StorageService storageService, PluginsService pluginsService, RulesRepository rulesRepository,
     RulesService rulesService, LanguageSupportRepository languageSupportRepository, ClientFileSystemService fileSystemService, MonitoringService monitoringService,
     FileExclusionService fileExclusionService, ClientFileSystemService clientFileSystemService, SonarLintRpcClient client,
-    ConnectionConfigurationRepository connectionConfigurationRepository, Path esLintBridgeServerPath) {
+    ConnectionConfigurationRepository connectionConfigurationRepository, ApplicationEventPublisher eventPublisher) {
     this.configurationRepository = configurationRepository;
     this.userAnalysisPropertiesRepository = userAnalysisPropertiesRepository;
     this.storageService = storageService;
@@ -94,7 +96,10 @@ public class AnalysisSchedulerCache {
     this.client = client;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.hotspotEnabled = initializeParams.getFeatureFlags().isEnableSecurityHotspots();
-    this.esLintBridgeServerPath = esLintBridgeServerPath;
+    this.esLintBridgeServerPath = initializeParams.getLanguageSpecificRequirements() != null && initializeParams.getLanguageSpecificRequirements().getJsTsRequirements() != null
+      ? initializeParams.getLanguageSpecificRequirements().getJsTsRequirements().getBundlePath()
+      : null;
+    this.eventPublisher = eventPublisher;
     var shouldSupportCsharp = initializeParams.getEnabledLanguagesInStandaloneMode().contains(Language.CS);
     var languageSpecificRequirements = initializeParams.getLanguageSpecificRequirements();
     if (shouldSupportCsharp && languageSpecificRequirements != null) {
@@ -138,10 +143,7 @@ public class AnalysisSchedulerCache {
   private synchronized AnalysisScheduler getOrCreateStandaloneScheduler() {
     var scheduler = standaloneScheduler.get();
     if (scheduler == null) {
-      var engine = createEngine(pluginsService.getEmbeddedPlugins(), csharpOssPluginPath);
-      scheduler = new AnalysisScheduler(engine, configurationRepository, nodeJsService, userAnalysisPropertiesRepository, storageService, pluginsService, rulesRepository,
-        rulesService, languageSupportRepository, fileSystemService, monitoringService, fileExclusionService, clientFileSystemService, client, connectionConfigurationRepository,
-        hotspotEnabled, esLintBridgeServerPath);
+      scheduler = createScheduler(pluginsService.getEmbeddedPlugins(), csharpOssPluginPath);
       standaloneScheduler.set(scheduler);
     }
     return scheduler;
@@ -155,8 +157,8 @@ public class AnalysisSchedulerCache {
   private AnalysisScheduler createScheduler(LoadedPlugins plugins, @Nullable Path actualCsharpAnalyzerPath) {
     return new AnalysisScheduler(createEngine(plugins, actualCsharpAnalyzerPath), configurationRepository, nodeJsService, userAnalysisPropertiesRepository, storageService,
       pluginsService, rulesRepository,
-      rulesService, languageSupportRepository, fileSystemService, monitoringService, fileExclusionService, clientFileSystemService, client, connectionConfigurationRepository,
-      hotspotEnabled, esLintBridgeServerPath);
+      rulesService, languageSupportRepository, fileSystemService, monitoringService, fileExclusionService, client, connectionConfigurationRepository,
+      hotspotEnabled, eventPublisher, esLintBridgeServerPath);
   }
 
   private AnalysisEngine createEngine(LoadedPlugins plugins, @Nullable Path actualCsharpAnalyzerPath) {
@@ -186,39 +188,43 @@ public class AnalysisSchedulerCache {
 
   @EventListener
   public void onConnectionRemoved(ConnectionConfigurationRemovedEvent event) {
-    stopSchedulerGracefully(event.getRemovedConnectionId());
+    stop(event.getRemovedConnectionId());
   }
 
   @EventListener
   public void onPluginsSynchronized(PluginsSynchronizedEvent event) {
-    stopSchedulerGracefully(event.getConnectionId());
+    var newPlugins = pluginsService.reloadPluginsFromStorage(event.connectionId());
+    restartEngineForScheduler(event.connectionId(), newPlugins);
   }
 
   @EventListener
   public void onClientNodeJsPathChanged(ClientNodeJsPathChanged event) {
-    stopAllGracefully();
+    resetStartedEngines();
   }
 
   @PreDestroy
   public void shutdown() {
-    stopAll();
-  }
-
-  private synchronized void stopSchedulerGracefully(String event) {
-    var scheduler = connectedSchedulersByConnectionId.remove(event);
-    if (scheduler != null) {
-      scheduler.finishGracefully();
+    try {
+      stopAll();
+    } catch (Exception e) {
+      SonarLintLogger.get().error("Error shutting down analysis scheduler cache", e);
     }
   }
 
-  private synchronized void stopAllGracefully() {
+  private synchronized void restartEngineForScheduler(String connectionId, LoadedPlugins newPlugins) {
+    connectedSchedulersByConnectionId.computeIfPresent(connectionId, (k, scheduler) -> {
+      scheduler.replaceEngine(createEngine(newPlugins, pluginsService.getEffectivePathToCsharpAnalyzer(connectionId)));
+      return scheduler;
+    });
+  }
+
+  private synchronized void resetStartedEngines() {
     var standaloneAnalysisScheduler = this.standaloneScheduler.get();
     if (standaloneAnalysisScheduler != null) {
-      standaloneAnalysisScheduler.finishGracefully();
-      this.standaloneScheduler.set(null);
+      standaloneAnalysisScheduler.replaceEngine(createEngine(pluginsService.getEmbeddedPlugins(), csharpOssPluginPath));
     }
-    connectedSchedulersByConnectionId.forEach((connectionId, scheduler) -> scheduler.finishGracefully());
-    connectedSchedulersByConnectionId.clear();
+    connectedSchedulersByConnectionId.forEach(
+      (connectionId, scheduler) -> scheduler.replaceEngine(createEngine(pluginsService.getPlugins(connectionId), pluginsService.getEffectivePathToCsharpAnalyzer(connectionId))));
   }
 
   private synchronized void stopAll() {
@@ -229,6 +235,13 @@ public class AnalysisSchedulerCache {
     }
     connectedSchedulersByConnectionId.forEach((connectionId, scheduler) -> scheduler.stop());
     connectedSchedulersByConnectionId.clear();
+  }
+
+  private synchronized void stop(String connectionId) {
+    var scheduler = connectedSchedulersByConnectionId.remove(connectionId);
+    if (scheduler != null) {
+      scheduler.stop();
+    }
   }
 
   public void registerModuleIfLeafConfigScope(String scopeId) {
