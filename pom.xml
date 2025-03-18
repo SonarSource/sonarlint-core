@@ -85,6 +85,7 @@
     <sonar.coverage.exclusions>backend/commons/src/main/java/org/sonarsource/sonarlint/core/commons/util/git/WinGitUtils.java</sonar.coverage.exclusions>
     <!-- Exclude from the duplication detection deprecated DTOs that were replaced by new types. They should be removed in 10.3 -->
     <sonar.cpd.exclusions>rpc-protocol/src/main/java/org/sonarsource/sonarlint/core/rpc/protocol/client/analysis/*Dto.java</sonar.cpd.exclusions>
+    <sonar.sca.debug>true</sonar.sca.debug>
   </properties>
 
   <dependencyManagement>
