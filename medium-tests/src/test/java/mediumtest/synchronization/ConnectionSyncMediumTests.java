@@ -19,20 +19,11 @@
  */
 package mediumtest.synchronization;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
-import static org.mockito.Mockito.when;
-import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
-import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
-import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
-
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidChangeCredentialsParams;
@@ -43,6 +34,16 @@ import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+import static org.mockito.Mockito.when;
+import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newBackend;
+import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.newFakeClient;
+import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
 
 class ConnectionSyncMediumTests {
   public static final String CONNECTION_ID = "connectionId";
@@ -132,7 +133,7 @@ class ConnectionSyncMediumTests {
   }
 
   @SonarLintTest
-  void it_should_notify_client_if_invalid_token() {
+  void it_should_notify_client_on_invalid_token_exactly_once() {
     var status = 401;
     var client = newFakeClient()
       .withCredentials(CONNECTION_ID, "user", "pw")
@@ -155,7 +156,8 @@ class ConnectionSyncMediumTests {
 
     backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams(CONNECTION_ID));
 
-    await().untilAsserted(() -> assertThat(client.getConnectionIdsWithInvalidToken()).containsExactly(CONNECTION_ID));
+    await().untilAsserted(() -> assertThat(client.getConnectionIdsWithInvalidToken(CONNECTION_ID)).isEqualTo(1));
+    await().during(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(client.getConnectionIdsWithInvalidToken(CONNECTION_ID)).isEqualTo(1));
   }
 
   private EffectiveRuleDetailsDto getEffectiveRuleDetails(SonarLintTestRpcServer backend, String configScopeId, String ruleKey) {
