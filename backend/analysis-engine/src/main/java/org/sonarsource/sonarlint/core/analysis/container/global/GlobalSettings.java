@@ -20,12 +20,12 @@
 package org.sonarsource.sonarlint.core.analysis.container.global;
 
 import org.sonar.api.config.PropertyDefinitions;
-import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisSchedulerConfiguration;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
 
 public class GlobalSettings extends MapSettings {
 
-  public GlobalSettings(AnalysisEngineConfiguration config, PropertyDefinitions propertyDefinitions) {
+  public GlobalSettings(AnalysisSchedulerConfiguration config, PropertyDefinitions propertyDefinitions) {
     super(propertyDefinitions, config.getEffectiveSettings());
   }
 

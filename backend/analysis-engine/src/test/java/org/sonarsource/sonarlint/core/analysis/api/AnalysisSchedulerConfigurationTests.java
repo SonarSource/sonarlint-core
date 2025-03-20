@@ -28,7 +28,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.analysis.AnalysisEngine;
+import org.sonarsource.sonarlint.core.analysis.AnalysisScheduler;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
 
@@ -37,13 +37,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
-class AnalysisEngineConfigurationTests {
+class AnalysisSchedulerConfigurationTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   @Test
   void testDefaults() {
-    var config = AnalysisEngineConfiguration.builder()
+    var config = AnalysisSchedulerConfiguration.builder()
       .build();
     assertThat(config.getWorkDir()).isNull();
     assertThat(config.getEffectiveSettings()).isEmpty();
@@ -54,7 +54,7 @@ class AnalysisEngineConfigurationTests {
   void extraProps() {
     Map<String, String> extraProperties = new HashMap<>();
     extraProperties.put("foo", "bar");
-    var config = AnalysisEngineConfiguration.builder()
+    var config = AnalysisSchedulerConfiguration.builder()
       .setExtraProperties(extraProperties)
       .build();
     assertThat(config.getEffectiveSettings()).containsOnly(entry("foo", "bar"));
@@ -64,7 +64,7 @@ class AnalysisEngineConfigurationTests {
   void effectiveConfig_should_add_nodejs() {
     Map<String, String> extraProperties = new HashMap<>();
     extraProperties.put("foo", "bar");
-    var config = AnalysisEngineConfiguration.builder()
+    var config = AnalysisSchedulerConfiguration.builder()
       .setExtraProperties(extraProperties)
       .setNodeJs(Paths.get("nodejsPath"))
       .build();
@@ -74,7 +74,7 @@ class AnalysisEngineConfigurationTests {
   @Test
   void overrideDirs(@TempDir Path temp) throws Exception {
     var work = createDirectory(temp.resolve("work"));
-    var config = AnalysisEngineConfiguration.builder()
+    var config = AnalysisSchedulerConfiguration.builder()
       .setWorkDir(work)
       .build();
     assertThat(config.getWorkDir()).isEqualTo(work);
@@ -82,16 +82,16 @@ class AnalysisEngineConfigurationTests {
 
   @Test
   void providePid() {
-    var config = AnalysisEngineConfiguration.builder().setClientPid(123).build();
+    var config = AnalysisSchedulerConfiguration.builder().setClientPid(123).build();
     assertThat(config.getClientPid()).isEqualTo(123);
   }
 
   @Test
   void should_not_fail_if_module_supplier_is_not_provided(@TempDir Path workDir) {
     assertDoesNotThrow(() -> {
-      var analysisGlobalConfig = AnalysisEngineConfiguration.builder().setClientPid(1234L).setWorkDir(workDir).build();
+      var analysisGlobalConfig = AnalysisSchedulerConfiguration.builder().setClientPid(1234L).setWorkDir(workDir).build();
       var result = new PluginsLoader().load(new PluginsLoader.Configuration(Set.of(), Set.of(), false, Optional.empty()), Set.of());
-      new AnalysisEngine(analysisGlobalConfig, result.getLoadedPlugins(), logTester.getLogOutput());
+      new AnalysisScheduler(analysisGlobalConfig, result.getLoadedPlugins(), logTester.getLogOutput());
     });
   }
 }
