@@ -31,7 +31,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.utils.TempFolder;
-import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisSchedulerConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -45,7 +45,7 @@ class GlobalTempFolderProviderTests {
   @Test
   void createTempFolderProps() throws Exception {
 
-    TempFolder tempFolder = tempFolderProvider.provide(AnalysisEngineConfiguration.builder().setWorkDir(workingDir).build());
+    TempFolder tempFolder = tempFolderProvider.provide(AnalysisSchedulerConfiguration.builder().setWorkDir(workingDir).build());
     tempFolder.newDir();
     tempFolder.newFile();
     assertThat(getCreatedTempDir(workingDir)).exists();
@@ -65,7 +65,7 @@ class GlobalTempFolderProviderTests {
       setFileCreationDate(tmp, creationTime);
     }
 
-    tempFolderProvider.provide(AnalysisEngineConfiguration.builder().setWorkDir(workingDir).build());
+    tempFolderProvider.provide(AnalysisSchedulerConfiguration.builder().setWorkDir(workingDir).build());
     // this also checks that all other temps were deleted
     assertThat(getCreatedTempDir(workingDir)).exists();
 

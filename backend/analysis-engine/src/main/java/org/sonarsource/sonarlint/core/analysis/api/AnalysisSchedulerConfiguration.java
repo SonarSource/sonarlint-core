@@ -30,7 +30,7 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 @Immutable
-public class AnalysisEngineConfiguration {
+public class AnalysisSchedulerConfiguration {
 
   private static final String NODE_EXECUTABLE_PROPERTY = "sonar.nodejs.executable";
 
@@ -40,7 +40,7 @@ public class AnalysisEngineConfiguration {
   private final long clientPid;
   private final Supplier<List<ClientModuleInfo>> modulesProvider;
 
-  private AnalysisEngineConfiguration(Builder builder) {
+  private AnalysisSchedulerConfiguration(Builder builder) {
     this.workDir = builder.workDir;
     this.extraProperties = new LinkedHashMap<>(builder.extraProperties);
     this.nodeJsPath = builder.nodeJsPath;
@@ -117,8 +117,8 @@ public class AnalysisEngineConfiguration {
       return this;
     }
 
-    public AnalysisEngineConfiguration build() {
-      return new AnalysisEngineConfiguration(this);
+    public AnalysisSchedulerConfiguration build() {
+      return new AnalysisSchedulerConfiguration(this);
     }
   }
 

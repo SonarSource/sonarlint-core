@@ -26,7 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FileUtils;
-import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisSchedulerConfiguration;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.springframework.context.annotation.Bean;
 
@@ -39,7 +39,7 @@ public class GlobalTempFolderProvider {
   private GlobalTempFolder tempFolder;
 
   @Bean("GlobalTempFolder")
-  public GlobalTempFolder provide(AnalysisEngineConfiguration globalConfiguration) {
+  public GlobalTempFolder provide(AnalysisSchedulerConfiguration globalConfiguration) {
     if (tempFolder == null) {
       tempFolder = cleanAndCreateTempFolder(globalConfiguration.getWorkDir());
     }

@@ -21,9 +21,8 @@ package org.sonarsource.sonarlint.core.analysis.command;
 
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 
-public class RegisterModuleCommand implements Command<Void> {
+public class RegisterModuleCommand extends Command {
   private final ClientModuleInfo module;
 
   public RegisterModuleCommand(ClientModuleInfo module) {
@@ -31,8 +30,7 @@ public class RegisterModuleCommand implements Command<Void> {
   }
 
   @Override
-  public Void execute(ModuleRegistry moduleRegistry, ProgressMonitor progressMonitor) {
+  public void execute(ModuleRegistry moduleRegistry) {
     moduleRegistry.registerModule(module);
-    return null;
   }
 }

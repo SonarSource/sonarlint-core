@@ -23,7 +23,7 @@ import java.time.Clock;
 import org.sonar.api.SonarQubeVersion;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.UriReader;
-import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisSchedulerConfiguration;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.commons.ApiVersions;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
@@ -35,10 +35,10 @@ public class GlobalAnalysisContainer extends SpringComponentContainer {
 
   private GlobalExtensionContainer globalExtensionContainer;
   private ModuleRegistry moduleRegistry;
-  private final AnalysisEngineConfiguration analysisGlobalConfig;
+  private final AnalysisSchedulerConfiguration analysisGlobalConfig;
   private final LoadedPlugins loadedPlugins;
 
-  public GlobalAnalysisContainer(AnalysisEngineConfiguration analysisGlobalConfig, LoadedPlugins loadedPlugins) {
+  public GlobalAnalysisContainer(AnalysisSchedulerConfiguration analysisGlobalConfig, LoadedPlugins loadedPlugins) {
     this.analysisGlobalConfig = analysisGlobalConfig;
     this.loadedPlugins = loadedPlugins;
   }

@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonar.api.config.PropertyDefinitions;
 import org.sonar.api.utils.System2;
-import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisSchedulerConfiguration;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,7 +36,7 @@ class GlobalSettingsTests {
 
   @Test
   void emptyNodePathPropertyForSonarJS() {
-    var underTest = new GlobalSettings(AnalysisEngineConfiguration.builder().build(), new PropertyDefinitions(System2.INSTANCE));
+    var underTest = new GlobalSettings(AnalysisSchedulerConfiguration.builder().build(), new PropertyDefinitions(System2.INSTANCE));
 
     var nodeJsExecutableValue = underTest.getString("sonar.nodejs.executable");
 
@@ -46,7 +46,7 @@ class GlobalSettingsTests {
   @Test
   void customNodePathPropertyForSonarJS() {
     var providedNodePath = Paths.get("foo/bar/node");
-    var underTest = new GlobalSettings(AnalysisEngineConfiguration.builder().setNodeJs(providedNodePath).build(),
+    var underTest = new GlobalSettings(AnalysisSchedulerConfiguration.builder().setNodeJs(providedNodePath).build(),
       new PropertyDefinitions(System2.INSTANCE));
 
     var nodeJsExecutableValue = underTest.getString("sonar.nodejs.executable");

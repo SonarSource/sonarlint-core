@@ -20,7 +20,6 @@
 package org.sonarsource.sonarlint.core.progress;
 
 import java.util.UUID;
-import java.util.function.Supplier;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
@@ -40,8 +39,8 @@ public class RpcProgressMonitor extends ProgressMonitor {
   }
 
   @Override
-  public <T> T startTask(String message, Supplier<T> task) {
-    return taskManager.startTask(configurationScopeId, taskId, message, null, true, false, notifier -> task.get());
+  public void startTask(String message, Runnable task) {
+    taskManager.startTask(configurationScopeId, taskId, message, null, true, false, notifier -> task.run());
   }
 
   @Override
