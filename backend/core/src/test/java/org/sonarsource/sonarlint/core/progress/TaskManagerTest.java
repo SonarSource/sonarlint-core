@@ -47,8 +47,6 @@ class TaskManagerTest {
     var thread = new Thread(() -> {
       try {
         taskManager.startTask("configScopeId", UUID.randomUUID(), "Title", null, true, true, progressNotifier -> {
-          // unreachable
-          return null;
         });
       } catch (Exception e) {
         caughtException.set(e);

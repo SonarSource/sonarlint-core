@@ -17,26 +17,25 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.analysis.command;
+package org.sonarsource.sonarlint.core.analysis;
 
-import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileEvent;
-import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
-import org.sonarsource.sonarlint.core.analysis.container.module.ModuleFileEventNotifier;
+import org.junit.jupiter.api.Test;
+import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
+import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
 
-public class NotifyModuleEventCommand extends Command {
-  private final Object moduleKey;
-  private final ClientModuleFileEvent event;
+import static org.assertj.core.api.Assertions.assertThat;
 
-  public NotifyModuleEventCommand(Object moduleKey, ClientModuleFileEvent event) {
-    this.moduleKey = moduleKey;
-    this.event = event;
-  }
+class AnalysisQueueTest {
 
-  @Override
-  public void execute(ModuleRegistry moduleRegistry) {
-    var moduleContainer = moduleRegistry.getContainerFor(moduleKey);
-    if (moduleContainer != null) {
-      moduleContainer.getComponentByType(ModuleFileEventNotifier.class).fireModuleFileEvent(event);
-    }
+  @Test
+  void it_should_prioritize_register_module_commands_over_analyses() throws InterruptedException {
+    var analysisQueue = new AnalysisQueue();
+    analysisQueue.post(new AnalyzeCommand(null, null, null, null, null, null, () -> true));
+    var registerModuleCommand = new RegisterModuleCommand(null);
+    analysisQueue.post(registerModuleCommand);
+
+    var command = analysisQueue.takeNextCommand();
+
+    assertThat(command).isEqualTo(registerModuleCommand);
   }
 }

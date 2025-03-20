@@ -19,56 +19,60 @@
  */
 package org.sonarsource.sonarlint.core.analysis;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.analysis.api.AnalysisEngineConfiguration;
+import org.sonarsource.sonarlint.core.analysis.api.AnalysisSchedulerConfiguration;
 import org.sonarsource.sonarlint.core.analysis.command.Command;
 import org.sonarsource.sonarlint.core.analysis.container.global.GlobalAnalysisContainer;
-import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 
-public class AnalysisEngine {
+public class AnalysisScheduler {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final Runnable CANCELING_TERMINATION = () -> {
   };
 
-  private final GlobalAnalysisContainer globalAnalysisContainer;
-  private final BlockingQueue<AsyncCommand<?>> commandQueue = new LinkedBlockingQueue<>();
-  private final Thread analysisThread = new Thread(this::executeQueuedCommands, "sonarlint-analysis-engine");
+  private final AtomicReference<GlobalAnalysisContainer> globalAnalysisContainer = new AtomicReference<>();
+  private final AnalysisQueue analysisQueue = new AnalysisQueue();
+  private final Thread analysisThread = new Thread(this::executeQueuedCommands, "sonarlint-analysis-scheduler");
   private final LogOutput logOutput;
   private final AtomicReference<Runnable> termination = new AtomicReference<>();
-  private final AtomicReference<AsyncCommand<?>> executingCommand = new AtomicReference<>();
+  private final AtomicReference<Command> executingCommand = new AtomicReference<>();
 
-  public AnalysisEngine(AnalysisEngineConfiguration analysisGlobalConfig, LoadedPlugins loadedPlugins, @Nullable LogOutput logOutput) {
-    globalAnalysisContainer = new GlobalAnalysisContainer(analysisGlobalConfig, loadedPlugins);
+  public AnalysisScheduler(AnalysisSchedulerConfiguration analysisGlobalConfig, LoadedPlugins loadedPlugins, @Nullable LogOutput logOutput) {
     this.logOutput = logOutput;
-    start();
+    // if the container cannot be started, the thread won't be started
+    startContainer(analysisGlobalConfig, loadedPlugins);
+    analysisThread.start();
   }
 
-  private void start() {
-    // if the container cannot be started, the thread won't be started
-    globalAnalysisContainer.startComponents();
-    analysisThread.start();
+  public void reset(AnalysisSchedulerConfiguration analysisGlobalConfig, LoadedPlugins loadedPlugins) {
+    // recreate the context
+    globalAnalysisContainer.get().stopComponents();
+    startContainer(analysisGlobalConfig, loadedPlugins);
+    analysisQueue.clearAllButAnalyses();
+  }
+
+  private void startContainer(AnalysisSchedulerConfiguration analysisGlobalConfig, LoadedPlugins loadedPlugins) {
+    globalAnalysisContainer.set(new GlobalAnalysisContainer(analysisGlobalConfig, loadedPlugins));
+    globalAnalysisContainer.get().startComponents();
+  }
+
+  public void wakeUp() {
+    analysisQueue.wakeUp();
   }
 
   private void executeQueuedCommands() {
     while (termination.get() == null) {
       SonarLintLogger.get().setTarget(logOutput);
       try {
-        executingCommand.set(commandQueue.take());
+        executingCommand.set(analysisQueue.takeNextCommand());
         if (termination.get() == CANCELING_TERMINATION) {
           executingCommand.get().cancel();
           break;
         }
-        executingCommand.get().execute(getModuleRegistry());
+        executingCommand.get().execute(globalAnalysisContainer.get().getModuleRegistry());
         executingCommand.set(null);
       } catch (InterruptedException e) {
         if (termination.get() != CANCELING_TERMINATION) {
@@ -79,23 +83,18 @@ public class AnalysisEngine {
     termination.get().run();
   }
 
-  public <T> CompletableFuture<T> post(Command<T> command, ProgressMonitor progressMonitor) {
+  public void post(Command command) {
     if (termination.get() != null) {
       LOG.error("Analysis engine stopping, ignoring command");
-      return CompletableFuture.completedFuture(null);
+      command.cancel();
+      return;
     }
     if (!analysisThread.isAlive()) {
       LOG.error("Analysis engine not started, ignoring command");
-      return CompletableFuture.completedFuture(null);
+      command.cancel();
+      return;
     }
-
-    var asyncCommand = new AsyncCommand<>(command, progressMonitor);
-    try {
-      commandQueue.put(asyncCommand);
-    } catch (InterruptedException e) {
-      asyncCommand.future.completeExceptionally(e);
-    }
-    return asyncCommand.future;
+    analysisQueue.post(command);
   }
 
   public void stop() {
@@ -111,37 +110,7 @@ public class AnalysisEngine {
       command.cancel();
     }
     analysisThread.interrupt();
-    List<AsyncCommand<?>> pendingCommands = new ArrayList<>();
-    commandQueue.drainTo(pendingCommands);
-    pendingCommands.forEach(c -> c.future.cancel(false));
-    globalAnalysisContainer.stopComponents();
-  }
-
-  private ModuleRegistry getModuleRegistry() {
-    return globalAnalysisContainer.getModuleRegistry();
-  }
-
-  public static class AsyncCommand<T> {
-    private final CompletableFuture<T> future = new CompletableFuture<>();
-    private final Command<T> command;
-    private final ProgressMonitor progressMonitor;
-
-    public AsyncCommand(Command<T> command, ProgressMonitor progressMonitor) {
-      this.command = command;
-      this.progressMonitor = progressMonitor;
-    }
-
-    public void execute(ModuleRegistry moduleRegistry) {
-      try {
-        var result = command.execute(moduleRegistry, progressMonitor);
-        future.complete(result);
-      } catch (Throwable e) {
-        future.completeExceptionally(e);
-      }
-    }
-
-    public void cancel() {
-      progressMonitor.cancel();
-    }
+    analysisQueue.removeAll().forEach(Command::cancel);
+    globalAnalysisContainer.get().stopComponents();
   }
 }

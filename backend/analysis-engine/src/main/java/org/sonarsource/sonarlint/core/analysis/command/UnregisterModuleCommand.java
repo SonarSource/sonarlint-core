@@ -20,18 +20,21 @@
 package org.sonarsource.sonarlint.core.analysis.command;
 
 import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 
-public class UnregisterModuleCommand implements Command<Void> {
-  private final Object moduleKey;
+public final class UnregisterModuleCommand extends Command {
+  private final String moduleKey;
 
-  public UnregisterModuleCommand(Object moduleKey) {
+  public UnregisterModuleCommand(String moduleKey) {
     this.moduleKey = moduleKey;
   }
 
   @Override
-  public Void execute(ModuleRegistry moduleRegistry, ProgressMonitor progressMonitor) {
+  public void execute(ModuleRegistry moduleRegistry) {
     moduleRegistry.unregisterModule(moduleKey);
-    return null;
   }
+
+  public String getModuleKey() {
+    return moduleKey;
+  }
+
 }

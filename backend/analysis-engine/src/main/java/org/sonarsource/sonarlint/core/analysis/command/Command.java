@@ -19,9 +19,24 @@
  */
 package org.sonarsource.sonarlint.core.analysis.command;
 
+import java.util.concurrent.atomic.AtomicLong;
 import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 
-public interface Command<R> {
-  R execute(ModuleRegistry moduleRegistry, ProgressMonitor progressMonitor);
+public abstract class Command {
+  private static final AtomicLong analysisGlobalNumber = new AtomicLong();
+  private final long sequenceNumber = analysisGlobalNumber.incrementAndGet();
+
+  public abstract void execute(ModuleRegistry moduleRegistry);
+
+  public final long getSequenceNumber() {
+    return sequenceNumber;
+  }
+
+  public boolean isReady() {
+    return true;
+  }
+
+  public void cancel() {
+    // most commands are not cancelable
+  }
 }
