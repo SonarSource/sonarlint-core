@@ -155,9 +155,7 @@ class TaintVulnerabilitiesMediumTests {
 
     var taintVulnerabilities = refreshAndListAllTaintVulnerabilities(backend, "configScopeId");
 
-    assertThat(taintVulnerabilities)
-      .extracting(TaintVulnerabilityDto::getIntroductionDate)
-      .contains(newestIntroductionDate);
+    assertThat(ChronoUnit.MINUTES.between(taintVulnerabilities.get(0).getIntroductionDate(), newestIntroductionDate)).isZero();
   }
 
   private List<TaintVulnerabilityDto> listAllTaintVulnerabilities(SonarLintTestRpcServer backend, String configScopeId) {

@@ -19,7 +19,9 @@
  */
 package org.sonarsource.sonarlint.core;
 
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -52,6 +54,7 @@ public class ConnectionManager {
   private final HttpClientProvider httpClientProvider;
   private final SonarLintRpcClient client;
   private final SonarCloudActiveEnvironment sonarCloudActiveEnvironment;
+  private final Map<String, ServerConnection> connectionCache = new ConcurrentHashMap<>();
 
   public ConnectionManager(ConnectionConfigurationRepository connectionRepository, ConnectionAwareHttpClientProvider awareHttpClientProvider, HttpClientProvider httpClientProvider,
     SonarCloudActiveEnvironment sonarCloudActiveEnvironment, SonarLintRpcClient client) {
@@ -145,16 +148,18 @@ public class ConnectionManager {
    * Throws ResponseErrorException if connection with provided ID is not found in ConnectionConfigurationRepository
    */
   public ServerConnection getConnectionOrThrow(String connectionId) {
-    var serverApi = getServerApiOrThrow(connectionId);
-    return new ServerConnection(connectionId, serverApi, client);
+    return connectionCache.computeIfAbsent(connectionId, connId -> {
+      var serverApi = getServerApiOrThrow(connId);
+      return new ServerConnection(connId, serverApi, client);
+    });
   }
 
   /**
    * Returns empty Optional if connection with provided ID is not found in ConnectionConfigurationRepository
    */
   public Optional<ServerConnection> tryGetConnection(String connectionId) {
-    return getServerApi(connectionId)
-      .map(serverApi -> new ServerConnection(connectionId, serverApi, client));
+    return Optional.ofNullable(connectionCache.computeIfAbsent(connectionId, connId ->
+      getServerApi(connId).map(serverApi -> new ServerConnection(connId, serverApi, client)).orElse(null)));
   }
 
   /**
@@ -162,7 +167,7 @@ public class ConnectionManager {
    */
   public Optional<ServerConnection> tryGetConnectionWithoutCredentials(String connectionId) {
     return getServerApiWithoutCredentials(connectionId)
-      .map(serverApi -> new ServerConnection(connectionId, serverApi, client));
+      .map(serverApi -> new ServerConnection(connectionId, serverApi, client, true));
   }
 
   public void withValidConnection(String connectionId, Consumer<ServerApi> serverApiConsumer) {

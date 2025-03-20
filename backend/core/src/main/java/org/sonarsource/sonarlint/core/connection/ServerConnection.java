@@ -38,11 +38,17 @@ public class ServerConnection {
   private ConnectionState state = ConnectionState.ACTIVE;
   @Nullable
   private Instant lastNotificationTime;
+  private final boolean withoutCredentials;
 
   public ServerConnection(String connectionId, ServerApi serverApi, SonarLintRpcClient client) {
+    this(connectionId, serverApi, client, false);
+  }
+
+  public ServerConnection(String connectionId, ServerApi serverApi, SonarLintRpcClient client, boolean withoutCredentials) {
     this.connectionId = connectionId;
     this.serverApi = serverApi;
     this.client = client;
+    this.withoutCredentials = withoutCredentials;
   }
 
   public boolean isSonarCloud() {
@@ -78,6 +84,9 @@ public class ServerConnection {
   }
 
   private boolean shouldNotifyAboutWrongToken() {
+    if (withoutCredentials) {
+      return false;
+    }
     if (state != ConnectionState.INVALID_CREDENTIALS && state != ConnectionState.MISSING_PERMISSION) {
       return false;
     }

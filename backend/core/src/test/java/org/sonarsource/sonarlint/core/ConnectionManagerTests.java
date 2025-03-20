@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core;
 import java.net.URI;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -37,9 +38,13 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnauthorizedException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class ConnectionManagerTests {
@@ -49,9 +54,15 @@ class ConnectionManagerTests {
   private final ConnectionConfigurationRepository connectionRepository = mock(ConnectionConfigurationRepository.class);
   private final ConnectionAwareHttpClientProvider awareHttpClientProvider = mock(ConnectionAwareHttpClientProvider.class);
   private final HttpClientProvider httpClientProvider = mock(HttpClientProvider.class);
-  private final SonarLintRpcClient client = mock(SonarLintRpcClient.class);
-  private final ConnectionManager underTest = new ConnectionManager(connectionRepository, awareHttpClientProvider, httpClientProvider,
-    SonarCloudActiveEnvironment.prod(), client);
+  private SonarLintRpcClient client;
+  private ConnectionManager underTest;
+
+  @BeforeEach
+  void setUp() {
+    client = mock(SonarLintRpcClient.class);
+    underTest = new ConnectionManager(connectionRepository, awareHttpClientProvider, httpClientProvider,
+      SonarCloudActiveEnvironment.prod(), client);
+  }
 
   @Test
   void getServerApi_for_sonarqube() {
@@ -143,7 +154,7 @@ class ConnectionManagerTests {
   }
 
   @Test
-  void should_log_invalid_connection() {
+  void should_log_invalid_connection_and_notify_client() {
     var connectionId = "connectionId";
     ConnectionManager spy = spy(underTest);
     var serverApi = mock(ServerApi.class);
@@ -158,5 +169,25 @@ class ConnectionManagerTests {
     spy.withValidConnection(connectionId, api -> {});
 
     assertThat(logTester.logs()).contains("Connection 'connectionId' is invalid");
+    verify(client, times(1)).invalidToken(any());
+  }
+
+  @Test
+  void should_log_invalid_connection_and_not_notify_client() {
+    var connectionId = "connectionId";
+    ConnectionManager spy = spy(underTest);
+    var serverApi = mock(ServerApi.class);
+    var serverConnection = new ServerConnection(connectionId, serverApi, client, true);
+    doReturn(Optional.of(serverConnection)).when(spy).tryGetConnection(connectionId);
+
+    // switch connection to invalid state
+    spy.withValidConnection(connectionId, api -> {
+      throw new UnauthorizedException("401");
+    });
+    // attempt to get connection
+    spy.withValidConnection(connectionId, api -> {});
+
+    assertThat(logTester.logs()).contains("Connection 'connectionId' is invalid");
+    verifyNoInteractions(client);
   }
 }
