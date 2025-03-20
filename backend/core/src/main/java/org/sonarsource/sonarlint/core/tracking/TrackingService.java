@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.commons.NewCodeDefinition;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.util.git.GitService;
 import org.sonarsource.sonarlint.core.commons.util.git.exceptions.GitException;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
@@ -67,7 +68,6 @@ import org.springframework.context.event.EventListener;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toMap;
-import static org.sonarsource.sonarlint.core.commons.util.git.GitUtils.getBlameResult;
 
 public class TrackingService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -280,8 +280,9 @@ public class TrackingService {
       try {
         var newCodeDefinition = newCodeService.getFullNewCodeDefinition(configurationScopeId);
         var thresholdDate = newCodeDefinition.map(NewCodeDefinition::getThresholdDate).orElse(NewCodeDefinition.withAlwaysNew().getThresholdDate());
-        var sonarLintBlameResult = getBlameResult(baseDir, fileRelativePaths, fileUris, fileContentProvider, thresholdDate);
-        return (filePath, lineNumbers) -> determineIntroductionDate(filePath, lineNumbers, sonarLintBlameResult);
+        var gitService = GitService.create();
+        var blameResult = gitService.getBlameResult(baseDir, fileRelativePaths, fileUris, fileContentProvider, thresholdDate);
+        return (filePath, lineNumbers) -> determineIntroductionDate(filePath, lineNumbers, blameResult);
       } catch (GitException e) {
         LOG.info("Could not get git blame data for file {} in {}. ", e.getPath(), configurationScopeId);
       } catch (Exception e) {
@@ -304,6 +305,9 @@ public class TrackingService {
   }
 
   private static Instant determineIntroductionDate(Path path, Collection<Integer> lineNumbers, SonarLintBlameResult sonarLintBlameResult) {
+    if (sonarLintBlameResult.isEmpty()) {
+      return Instant.now();
+    }
     return sonarLintBlameResult.getLatestChangeDateForLinesInFile(path, lineNumbers)
       .map(Date::toInstant)
       .orElse(Instant.now());

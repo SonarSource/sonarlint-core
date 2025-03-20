@@ -21,31 +21,71 @@ package org.sonarsource.sonarlint.core.commons.util.git;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.LinkedList;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.spy;
 
 class ProcessWrapperFactoryTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
   @Test
-  void it_should_execute_git(@TempDir Path baseDir) throws IOException {
-    var gitCommandResult = new LinkedList<String>();
-    new ProcessWrapperFactory().create(baseDir, gitCommandResult::add, "git", "--version").execute();
+  void it_should_execute_git(@TempDir Path baseDir) {
+    assumeTrue(new NativeGitWrapper().getNativeGitExecutable().isPresent());
+    var result = new ProcessWrapperFactory().create(baseDir, "git", "--version").execute();
 
-    assertThat(gitCommandResult).hasSize(1);
+    assertThat(result.exitCode()).isZero();
+    assertThat(result.output()).contains("git version ");
   }
 
   @Test
-  void it_should_throw(@TempDir Path baseDir) {
-    var processWrapper = new ProcessWrapperFactory().create(baseDir, new LinkedList<String>()::add, "git", "-version");
+  void it_should_return_output_for_invalid_command(@TempDir Path baseDir) {
+    assumeTrue(new NativeGitWrapper().getNativeGitExecutable().isPresent());
+    var processWrapper = new ProcessWrapperFactory().create(baseDir, "git", "-version");
+    var result = processWrapper.execute();
+    assertThat(result.exitCode()).isEqualTo(129);
+    assertThat(result.output()).contains("unknown option: -version");
+  }
 
-    assertThrows(IllegalStateException.class, processWrapper::execute);
+  @Test
+  void it_should_gracefully_return_output_for_interrupted_exception(@TempDir Path baseDir) throws InterruptedException {
+    assumeTrue(new NativeGitWrapper().getNativeGitExecutable().isPresent());
+    var processWrapper = new ProcessWrapperFactory().create(baseDir, "git", "--version");
+    var spy = spy(processWrapper);
+    doThrow(InterruptedException.class).when(spy).runProcessAndGetOutput(any(), any());
+    var result = spy.execute();
+
+    assertThat(result.exitCode()).isEqualTo(-1);
+    assertThat(result.output()).contains("");
+  }
+
+  @Test
+  void it_should_gracefully_return_output_for_exception(@TempDir Path baseDir) throws InterruptedException {
+    assumeTrue(new NativeGitWrapper().getNativeGitExecutable().isPresent());
+    var processWrapper = new ProcessWrapperFactory().create(baseDir, "git", "--version");
+    var spy = spy(processWrapper);
+    doThrow(RuntimeException.class).when(spy).runProcessAndGetOutput(any(), any());
+    var result = spy.execute();
+
+    assertThat(result.exitCode()).isEqualTo(-1);
+    assertThat(result.output()).contains("");
+  }
+
+  @Test
+  void it_should_gracefully_return_output_when_not_able_to_create_process(@TempDir Path baseDir) throws IOException {
+    var processWrapper = new ProcessWrapperFactory().create(baseDir, "git", "--version");
+    var spy = spy(processWrapper);
+    doThrow(IOException.class).when(spy).createProcess();
+    var result = spy.execute();
+
+    assertThat(result.exitCode()).isEqualTo(-2);
+    assertThat(result.output()).contains("");
   }
 }

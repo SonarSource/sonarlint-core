@@ -17,10 +17,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.commons.util.git.exceptions;
+package org.sonarsource.sonarlint.core.commons.util.git;
 
-public class NoSuchPathException extends GitException {
-  public NoSuchPathException(String path) {
-    super(path);
+import org.junit.jupiter.api.Test;
+import org.sonar.scm.git.blame.BlameResult;
+
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+
+class BlameParserTests {
+
+  @Test
+  void shouldNotPopulateGitBlameResultForEmptyBlameOutput() {
+    var blameResult = new BlameResult();
+    BlameParser.parseBlameOutput("", "", blameResult);
+
+    assertThat(blameResult.getFileBlameByPath()).isEmpty();
   }
 }

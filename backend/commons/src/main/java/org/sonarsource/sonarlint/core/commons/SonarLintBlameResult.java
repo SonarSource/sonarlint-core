@@ -56,6 +56,10 @@ public class SonarLintBlameResult {
       .map(fileBlame -> getTheLatestChange(fileBlame, lineNumbers));
   }
 
+  public boolean isEmpty() {
+    return blameResult.getFileBlameByPath().isEmpty();
+  }
+
   private static Date getTheLatestChange(BlameResult.FileBlame blameForFile, Collection<Integer> lineNumbers) {
     Date latestDate = null;
     for (var lineNumber : lineNumbers) {
