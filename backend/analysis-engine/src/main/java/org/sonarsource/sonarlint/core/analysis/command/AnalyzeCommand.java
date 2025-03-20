@@ -19,8 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.analysis.command;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
@@ -28,40 +32,91 @@ import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
-import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.monitoring.Trace;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 
 import static org.sonarsource.sonarlint.core.commons.util.StringUtils.pluralize;
 
-public class AnalyzeCommand implements Command<AnalysisResults> {
-  @Nullable
-  private final Object moduleKey;
-  private final AnalysisConfiguration configuration;
+public class AnalyzeCommand extends Command {
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
+
+  private final String moduleKey;
+  private final Supplier<AnalysisConfiguration> configurationSupplier;
   private final Consumer<Issue> issueListener;
-  private final LogOutput logOutput;
   @Nullable
   private final Trace trace;
+  private final CompletableFuture<AnalysisResults> result = new CompletableFuture<>();
+  private final ProgressMonitor progressMonitor;
+  private final Consumer<List<ClientInputFile>> analysisStarted;
+  private final Supplier<Boolean> isReadySupplier;
 
-  public AnalyzeCommand(@Nullable Object moduleKey, AnalysisConfiguration configuration, Consumer<Issue> issueListener, @Nullable LogOutput logOutput, @Nullable Trace trace) {
+  public AnalyzeCommand(@Nullable String moduleKey, Supplier<AnalysisConfiguration> configurationSupplier, Consumer<Issue> issueListener,
+    @Nullable Trace trace, ProgressMonitor progressMonitor, Consumer<List<ClientInputFile>> analysisStarted, Supplier<Boolean> isReadySupplier) {
     this.moduleKey = moduleKey;
-    this.configuration = configuration;
+    this.configurationSupplier = configurationSupplier;
     this.issueListener = issueListener;
-    this.logOutput = logOutput;
     this.trace = trace;
+    this.progressMonitor = progressMonitor;
+    this.analysisStarted = analysisStarted;
+    this.isReadySupplier = isReadySupplier;
   }
 
   @Override
-  public AnalysisResults execute(ModuleRegistry moduleRegistry, ProgressMonitor progressMonitor) {
-    if (logOutput != null) {
-      SonarLintLogger.get().setTarget(logOutput);
-    }
-    return progressMonitor.startTask("Analyzing " + pluralize(configuration.inputFiles().size(), "file"),
-      () -> doRunAnalysis(moduleRegistry, progressMonitor));
+  public boolean isReady() {
+    return isReadySupplier.get();
   }
 
-  private AnalysisResults doRunAnalysis(ModuleRegistry moduleRegistry, ProgressMonitor progressMonitor) {
+  public String getModuleKey() {
+    return moduleKey;
+  }
+
+  public CompletableFuture<AnalysisResults> getResult() {
+    return result;
+  }
+
+  @Override
+  public void execute(ModuleRegistry moduleRegistry) {
+    try {
+      var configuration = configurationSupplier.get();
+      progressMonitor.startTask("Analyzing " + pluralize(configuration.inputFiles().size(), "file"),
+        () -> execute(moduleRegistry, progressMonitor, configuration));
+    } catch (Exception e) {
+      handleAnalysisFailed(e);
+    }
+  }
+
+  void execute(ModuleRegistry moduleRegistry, ProgressMonitor progressMonitor, AnalysisConfiguration configuration) {
+    try {
+      doExecute(moduleRegistry, progressMonitor, configuration);
+    } catch (Exception e) {
+      handleAnalysisFailed(e);
+    }
+  }
+
+  void doExecute(ModuleRegistry moduleRegistry, ProgressMonitor progressMonitor, AnalysisConfiguration analysisConfig) {
+    if (analysisConfig.inputFiles().isEmpty()) {
+      LOG.info("No file to analyze");
+      result.complete(new AnalysisResults());
+      return;
+    }
+    try {
+      var analysisResults = doRunAnalysis(moduleRegistry, progressMonitor, analysisConfig);
+      result.complete(analysisResults);
+    } catch (CompletionException e) {
+      handleAnalysisFailed(e.getCause());
+    } catch (Exception e) {
+      handleAnalysisFailed(e);
+    }
+  }
+
+  private void handleAnalysisFailed(Throwable throwable) {
+    LOG.error("Error during analysis", throwable);
+    result.completeExceptionally(throwable);
+  }
+
+  private AnalysisResults doRunAnalysis(ModuleRegistry moduleRegistry, ProgressMonitor progressMonitor, AnalysisConfiguration configuration) {
+    analysisStarted.accept(configuration.inputFiles());
     var moduleContainer = moduleKey != null ? moduleRegistry.getContainerFor(moduleKey) : null;
     if (moduleContainer == null) {
       // if not found, means we are outside of any module (e.g. single file analysis on VSCode)
@@ -101,5 +156,11 @@ public class AnalyzeCommand implements Command<AnalysisResults> {
         throw e;
       }
     }
+  }
+
+  @Override
+  public void cancel() {
+    progressMonitor.cancel();
+    result.cancel(true);
   }
 }

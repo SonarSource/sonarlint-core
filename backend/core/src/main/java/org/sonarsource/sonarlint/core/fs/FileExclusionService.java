@@ -39,8 +39,7 @@ import javax.annotation.CheckForNull;
 import org.sonar.api.CoreProperties;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonarsource.sonarlint.core.ServerFileExclusions;
-import org.sonarsource.sonarlint.core.analysis.AnalysisTask;
-import org.sonarsource.sonarlint.core.analysis.TriggerType;
+import org.sonarsource.sonarlint.core.analysis.api.TriggerType;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
 import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -192,10 +191,8 @@ public class FileExclusionService {
     return Boolean.TRUE.equals(serverExclusionByUriCache.get(fileUri));
   }
 
-  public List<ClientFile> refineAnalysisScope(AnalysisTask task, Path baseDir) {
-    var configScopeId = task.getConfigScopeId();
-    var requestedFileUris = task.getFilesToAnalyze();
-    if (task.getTriggerType().equals(TriggerType.FORCED)) {
+  public List<ClientFile> refineAnalysisScope(String configScopeId, List<URI> requestedFileUris, TriggerType triggerType, Path baseDir) {
+    if (triggerType.equals(TriggerType.FORCED)) {
       var filteredURIsNoFile = new ArrayList<URI>();
       var filesToAnalyze = requestedFileUris.stream().map(uri -> {
         var file = findFile(configScopeId, uri);
