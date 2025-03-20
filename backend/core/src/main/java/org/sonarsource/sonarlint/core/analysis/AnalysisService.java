@@ -693,8 +693,8 @@ public class AnalysisService {
   }
 
   public CompletableFuture<AnalysisResult> scheduleAnalysis(String configurationScopeId, UUID analysisId, List<URI> files, Map<String, String> extraProperties,
-    long startTime, boolean shouldFetchServerIssues, TriggerType triggerType) {
-    var progressMonitor = new RpcProgressMonitor(client, new SonarLintCancelMonitor(), configurationScopeId, analysisId);
+    long startTime, boolean shouldFetchServerIssues, TriggerType triggerType, SonarLintCancelMonitor cancelChecker) {
+    var progressMonitor = new RpcProgressMonitor(client, cancelChecker, configurationScopeId, analysisId);
     var ruleDetailsCache = new ConcurrentHashMap<String, RuleDetailsForAnalysis>();
     var rawIssues = new ArrayList<RawIssue>();
     var analysisTask = new AnalyzeCommand(configurationScopeId, () -> getAnalysisConfigForEngine(configurationScopeId, files, extraProperties, false, triggerType),
