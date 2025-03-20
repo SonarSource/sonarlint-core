@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.progress;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.api.progress.CanceledException;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -41,14 +40,11 @@ public class TaskManager {
 
   public void startTask(@Nullable String configurationScopeId, String title, @Nullable String message, boolean indeterminate, boolean cancellable,
     Consumer<ProgressNotifier> task) {
-    startTask(configurationScopeId, UUID.randomUUID(), title, message, indeterminate, cancellable, progressNotifier -> {
-      task.accept(progressNotifier);
-      return null;
-    });
+    startTask(configurationScopeId, UUID.randomUUID(), title, message, indeterminate, cancellable, task);
   }
 
-  public <T> T startTask(@Nullable String configurationScopeId, UUID taskId, String title, @Nullable String message, boolean indeterminate, boolean cancellable,
-                        Function<ProgressNotifier, T> task) {
+  public void startTask(@Nullable String configurationScopeId, UUID taskId, String title, @Nullable String message, boolean indeterminate, boolean cancellable,
+    Consumer<ProgressNotifier> task) {
     ProgressNotifier progressNotifier = new ClientProgressNotifier(client, taskId);
     try {
       client.startProgress(new StartProgressParams(taskId.toString(), configurationScopeId, title, message, indeterminate, cancellable)).get();
@@ -61,7 +57,7 @@ public class TaskManager {
       progressNotifier = new NoOpProgressNotifier();
     }
     try {
-      return task.apply(progressNotifier);
+      task.accept(progressNotifier);
     } finally {
       client.reportProgress(new ReportProgressParams(taskId.toString(), new ProgressEndNotification()));
     }
