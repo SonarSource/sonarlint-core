@@ -141,7 +141,7 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
       var analysisResults = getBean(AnalysisService.class)
         .scheduleAnalysis(params.getConfigurationScopeId(), params.getAnalysisId(), params.getFilesToAnalyze(), params.getExtraProperties(), params.getStartTime(),
           // consider this method as an automatic analysis. This will take exclusions into account
-          params.isShouldFetchServerIssues(), TriggerType.AUTO)
+          params.isShouldFetchServerIssues(), TriggerType.AUTO, cancelChecker)
         .join();
       return generateAnalyzeFilesResponse(analysisResults);
     }, configurationScopeId);
