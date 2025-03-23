@@ -70,8 +70,6 @@ public class NativeGitWrapper {
   }
 
   private boolean isCompatibleGitVersion(String gitVersionCommandOutput) {
-    // Due to the danger of argument injection on git blame the use of `--end-of-options` flag is necessary
-    // The flag is available only on git versions >= 2.24.0
     var gitVersion = whitespaceRegex
       .splitAsStream(gitVersionCommandOutput)
       .skip(2)
@@ -102,7 +100,7 @@ public class NativeGitWrapper {
 
   /**
    * Get the native Git executable by checking for the version of both `git` and `git.exe`. We cache this information
-   * to run these expensive processes more than once (or twice in case of Windows).
+   * to not run these expensive processes more than once (or twice in case of Windows).
    */
   public Optional<String> getNativeGitExecutable() {
     if (checkedForNativeGitExecutable) {

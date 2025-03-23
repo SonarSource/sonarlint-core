@@ -225,12 +225,12 @@ public class GitService {
   }
 
   SonarLintBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, Set<URI> fileUris, @Nullable UnaryOperator<String> fileContentProvider,
-    Predicate<Path> isEnabled, Instant thresholdDate) {
-    if (isEnabled.test(projectBaseDir)) {
+    Predicate<Path> isNativeBlameSupported, Instant thresholdDate) {
+    if (isNativeBlameSupported.test(projectBaseDir)) {
       LOG.debug("Using native git blame");
       return nativeGit.blameFromNativeCommand(projectBaseDir, fileUris, thresholdDate);
     } else {
-      LOG.debug("Falling back to JGit git blame");
+      LOG.debug("Falling back to JGit");
       return blameWithFilesGitCommand(projectBaseDir, projectBaseRelativeFilePaths, fileContentProvider);
     }
   }
