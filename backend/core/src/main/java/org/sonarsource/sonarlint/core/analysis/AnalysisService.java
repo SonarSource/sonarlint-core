@@ -697,7 +697,7 @@ public class AnalysisService {
     var progressMonitor = new RpcProgressMonitor(client, cancelChecker, configurationScopeId, analysisId);
     var ruleDetailsCache = new ConcurrentHashMap<String, RuleDetailsForAnalysis>();
     var rawIssues = new ArrayList<RawIssue>();
-    var analysisTask = new AnalyzeCommand(configurationScopeId, () -> getAnalysisConfigForEngine(configurationScopeId, files, extraProperties, false, triggerType),
+    var analysisTask = new AnalyzeCommand(configurationScopeId, triggerType, () -> getAnalysisConfigForEngine(configurationScopeId, files, extraProperties, false, triggerType),
       issue -> streamIssue(configurationScopeId, analysisId, ruleDetailsCache, rawIssues, issue), monitoringService.newTrace("AnalysisService", "analyze"), progressMonitor,
       inputFiles -> analysisStarted(configurationScopeId, analysisId, inputFiles), () -> analysisReadinessByConfigScopeId.getOrDefault(configurationScopeId, false));
     return schedule(configurationScopeId, analysisTask, analysisId, rawIssues, startTime, shouldFetchServerIssues);
@@ -747,7 +747,7 @@ public class AnalysisService {
     UUID analysisId) {
     var progressMonitor = new RpcProgressMonitor(client, new SonarLintCancelMonitor(), configurationScopeId, analysisId);
     var ruleDetailsCache = new ConcurrentHashMap<String, RuleDetailsForAnalysis>();
-    return new AnalyzeCommand(configurationScopeId, () -> getAnalysisConfigForEngine(configurationScopeId, files, Map.of(), hotspotsOnly, triggerType),
+    return new AnalyzeCommand(configurationScopeId, triggerType, () -> getAnalysisConfigForEngine(configurationScopeId, files, Map.of(), hotspotsOnly, triggerType),
       issue -> streamIssue(configurationScopeId, analysisId, ruleDetailsCache, rawIssues, issue), monitoringService.newTrace("AnalysisService", "analyze"), progressMonitor,
       inputFiles -> analysisStarted(configurationScopeId, analysisId, inputFiles), () -> analysisReadinessByConfigScopeId.getOrDefault(configurationScopeId, false));
   }

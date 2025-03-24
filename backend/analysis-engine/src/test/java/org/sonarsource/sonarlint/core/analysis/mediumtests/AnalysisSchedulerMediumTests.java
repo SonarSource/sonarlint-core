@@ -51,6 +51,7 @@ import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
+import org.sonarsource.sonarlint.core.analysis.api.TriggerType;
 import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
@@ -110,7 +111,7 @@ class AnalysisSchedulerMediumTests {
       .setBaseDir(baseDir)
       .build();
     List<Issue> issues = new ArrayList<>();
-    var command = new AnalyzeCommand(null, () -> analysisConfig, issues::add, null, progressMonitor, NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER);
+    var command = new AnalyzeCommand(null, TriggerType.FORCED, () -> analysisConfig, issues::add, null, progressMonitor, NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER);
     analysisScheduler.post(command);
     command.getResult().get();
     assertThat(issues).hasSize(1);
@@ -135,7 +136,8 @@ class AnalysisSchedulerMediumTests {
       .build();
     List<Issue> issues = new ArrayList<>();
     analysisScheduler.post(new RegisterModuleCommand(new ClientModuleInfo("moduleKey", aModuleFileSystem())));
-    var analyzeCommand = new AnalyzeCommand("moduleKey", () -> analysisConfig, issues::add, null, progressMonitor, NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER);
+    var analyzeCommand = new AnalyzeCommand("moduleKey", TriggerType.FORCED, () -> analysisConfig, issues::add, null, progressMonitor, NO_OP_ANALYSIS_STARTED_CONSUMER,
+      ANALYSIS_READY_SUPPLIER);
     analysisScheduler.post(analyzeCommand);
     analyzeCommand.getResult().get();
     assertThat(issues).hasSize(1);
@@ -147,7 +149,7 @@ class AnalysisSchedulerMediumTests {
 
   @Test
   void should_fail_the_future_if_the_analyze_command_execution_fails() {
-    var command = new AnalyzeCommand("moduleKey", () -> {
+    var command = new AnalyzeCommand("moduleKey", TriggerType.FORCED, () -> {
       throw new RuntimeException("Kaboom");
     }, issue -> {
     }, null, progressMonitor, NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER);
@@ -173,7 +175,8 @@ class AnalysisSchedulerMediumTests {
       .addActiveRules(trailingCommentRule())
       .setBaseDir(baseDir)
       .build();
-    var analyzeCommand = new AnalyzeCommand("moduleKey", () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor, inputFiles -> pause(300), ANALYSIS_READY_SUPPLIER);
+    var analyzeCommand = new AnalyzeCommand("moduleKey", TriggerType.FORCED, () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor, inputFiles -> pause(300),
+      ANALYSIS_READY_SUPPLIER);
     analysisScheduler.post(analyzeCommand);
 
     analysisScheduler.stop();
@@ -198,8 +201,10 @@ class AnalysisSchedulerMediumTests {
       .addActiveRules(trailingCommentRule())
       .setBaseDir(baseDir)
       .build();
-    var analyzeCommand = new AnalyzeCommand("moduleKey", () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor, inputFiles -> pause(300), ANALYSIS_READY_SUPPLIER);
-    var secondAnalyzeCommand = new AnalyzeCommand("moduleKey", () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor, NO_OP_ANALYSIS_STARTED_CONSUMER,
+    var analyzeCommand = new AnalyzeCommand("moduleKey", TriggerType.FORCED, () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor, inputFiles -> pause(300),
+      ANALYSIS_READY_SUPPLIER);
+    var secondAnalyzeCommand = new AnalyzeCommand("moduleKey", TriggerType.FORCED, () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor,
+      NO_OP_ANALYSIS_STARTED_CONSUMER,
       ANALYSIS_READY_SUPPLIER);
     analysisScheduler.post(analyzeCommand);
     analysisScheduler.post(secondAnalyzeCommand);
@@ -229,7 +234,7 @@ class AnalysisSchedulerMediumTests {
       .setBaseDir(baseDir)
       .build();
     var threadTermination = new AtomicReference<String>();
-    var analyzeCommand = new AnalyzeCommand("moduleKey", () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor, inputFiles -> {
+    var analyzeCommand = new AnalyzeCommand("moduleKey", TriggerType.FORCED, () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor, inputFiles -> {
       try {
         Thread.sleep(3000);
       } catch (InterruptedException e) {
