@@ -19,17 +19,20 @@
  */
 package org.sonarsource.sonarlint.core.analysis.command;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisConfiguration;
 import org.sonarsource.sonarlint.core.analysis.api.AnalysisResults;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
+import org.sonarsource.sonarlint.core.analysis.api.TriggerType;
 import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -42,6 +45,7 @@ public class AnalyzeCommand extends Command {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final String moduleKey;
+  private final TriggerType triggerType;
   private final Supplier<AnalysisConfiguration> configurationSupplier;
   private final Consumer<Issue> issueListener;
   @Nullable
@@ -51,9 +55,10 @@ public class AnalyzeCommand extends Command {
   private final Consumer<List<ClientInputFile>> analysisStarted;
   private final Supplier<Boolean> isReadySupplier;
 
-  public AnalyzeCommand(@Nullable String moduleKey, Supplier<AnalysisConfiguration> configurationSupplier, Consumer<Issue> issueListener,
+  public AnalyzeCommand(@Nullable String moduleKey, TriggerType triggerType, Supplier<AnalysisConfiguration> configurationSupplier, Consumer<Issue> issueListener,
     @Nullable Trace trace, ProgressMonitor progressMonitor, Consumer<List<ClientInputFile>> analysisStarted, Supplier<Boolean> isReadySupplier) {
     this.moduleKey = moduleKey;
+    this.triggerType = triggerType;
     this.configurationSupplier = configurationSupplier;
     this.issueListener = issueListener;
     this.trace = trace;
@@ -69,6 +74,10 @@ public class AnalyzeCommand extends Command {
 
   public String getModuleKey() {
     return moduleKey;
+  }
+
+  public TriggerType getTriggerType() {
+    return triggerType;
   }
 
   public CompletableFuture<AnalysisResults> getResult() {
@@ -156,6 +165,26 @@ public class AnalyzeCommand extends Command {
         throw e;
       }
     }
+  }
+
+  public AnalyzeCommand mergeWith(AnalyzeCommand otherNewerAnalyzeCommand) {
+    var analysisConfiguration = configurationSupplier.get();
+    var newerAnalysisConfiguration = otherNewerAnalyzeCommand.configurationSupplier.get();
+    var mergedInputFiles = new ArrayList<>(newerAnalysisConfiguration.inputFiles());
+    var newInputFileUris = newerAnalysisConfiguration.inputFiles().stream().map(ClientInputFile::uri).collect(Collectors.toSet());
+    for (ClientInputFile inputFile : analysisConfiguration.inputFiles()) {
+      if (!newInputFileUris.contains(inputFile.uri())) {
+        mergedInputFiles.add(inputFile);
+      }
+    }
+    var mergedAnalysisConfiguration = AnalysisConfiguration.builder()
+      .addActiveRules(newerAnalysisConfiguration.activeRules())
+      .setBaseDir(newerAnalysisConfiguration.baseDir())
+      .putAllExtraProperties(newerAnalysisConfiguration.extraProperties())
+      .addInputFiles(mergedInputFiles)
+      .build();
+    return new AnalyzeCommand(otherNewerAnalyzeCommand.moduleKey, otherNewerAnalyzeCommand.triggerType, () -> mergedAnalysisConfiguration, otherNewerAnalyzeCommand.issueListener,
+      otherNewerAnalyzeCommand.trace, otherNewerAnalyzeCommand.progressMonitor, otherNewerAnalyzeCommand.analysisStarted, otherNewerAnalyzeCommand.isReadySupplier);
   }
 
   @Override
