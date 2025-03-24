@@ -48,7 +48,8 @@ public class SecurityHotspotRaisedEventParser implements EventParser<SecurityHot
       payload.key,
       payload.projectKey,
       VulnerabilityProbability.valueOf(payload.vulnerabilityProbability),
-      HotspotReviewStatus.valueOf(payload.status),
+      // Will need to pass actual resolution once SONAR-24677 is fixed
+      HotspotReviewStatus.fromStatusAndResolution(payload.status, null),
       Instant.ofEpochMilli(payload.creationDate),
       payload.branch,
       adapt(payload.mainLocation),

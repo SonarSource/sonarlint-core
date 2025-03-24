@@ -1184,12 +1184,12 @@ class WebSocketMediumTests {
               "updateDate": 1685007187000,
               "status": "REVIEWED",
               "assignee": "assigneeEmail",
-              "invalidKey": "SAFE",
+              "resolution": "SAFE",
               "filePath": "/project/path/to/file"
             }
           }""");
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey").getStatus().isResolved()).isFalse());
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey").getStatus().isResolved()).isTrue());
     }
 
     @SonarLintTest
@@ -1219,8 +1219,8 @@ class WebSocketMediumTests {
               "updateDate": 1685007187000,
               "status": "REVIEWED",
               "assignee": "assigneeEmail",
-              "wrongKey": "SAFE",
-              "filePath": "/project/path/to/file"
+              "resolution": "SAFE",
+              "filePath": ""
             }
           }""");
 
@@ -1293,8 +1293,8 @@ class WebSocketMediumTests {
           {
             "event": "SecurityHotspotRaised",
             "data": {
-              "wrongKey": "TO_REVIEW",
-              "vulnerabilityProbability": "MEDIUM",
+              "status": "TO_REVIEW",
+              "vulnerabilityProbability": "MMMMMMM",
               "creationDate": 1685006550000,
               "mainLocation": {
                 "filePath": "src/main/java/org/example/Main.java",
