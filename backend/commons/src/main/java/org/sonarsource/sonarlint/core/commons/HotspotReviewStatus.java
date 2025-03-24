@@ -48,17 +48,16 @@ public enum HotspotReviewStatus {
   }
 
   public static HotspotReviewStatus fromStatusAndResolution(String status, @Nullable String resolution) {
-    if ("REVIEWED".equals(status) && resolution != null) {
-      switch (resolution) {
-        case "SAFE":
-          return HotspotReviewStatus.SAFE;
-        case "FIXED":
-          return HotspotReviewStatus.FIXED;
-        case "ACKNOWLEDGED":
-          return HotspotReviewStatus.ACKNOWLEDGED;
-        default:
-          return HotspotReviewStatus.TO_REVIEW;
+    if ("REVIEWED".equals(status)) {
+      if (resolution == null) {
+        return HotspotReviewStatus.SAFE;
       }
+      return switch (resolution) {
+        case "SAFE" -> HotspotReviewStatus.SAFE;
+        case "FIXED" -> HotspotReviewStatus.FIXED;
+        case "ACKNOWLEDGED" -> HotspotReviewStatus.ACKNOWLEDGED;
+        default -> HotspotReviewStatus.TO_REVIEW;
+      };
     }
     return HotspotReviewStatus.TO_REVIEW;
   }

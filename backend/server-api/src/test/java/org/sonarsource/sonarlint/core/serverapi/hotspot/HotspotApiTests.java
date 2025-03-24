@@ -288,7 +288,7 @@ class HotspotApiTests {
         tuple("hotspotKey2", "ruleKey2", "message2", Path.of("path2"), 5, 6, 7, 8, LocalDateTime.of(2020, 9, 22, 12, 46, 39).toInstant(ZoneOffset.UTC), HotspotReviewStatus.SAFE),
         tuple("hotspotKey3", "ruleKey3", "message3", Path.of("path3"), 9, 10, 11, 12, LocalDateTime.of(2020, 9, 23, 12, 46, 39).toInstant(ZoneOffset.UTC), HotspotReviewStatus.ACKNOWLEDGED),
         tuple("hotspotKey4", "ruleKey4", "message4", Path.of("path4"), 13, 14, 15, 16, LocalDateTime.of(2020, 9, 24, 12, 46, 39).toInstant(ZoneOffset.UTC), HotspotReviewStatus.FIXED),
-        tuple("hotspotKey5", "ruleKey5", "message5", Path.of("path5"), 17, 18, 19, 20, LocalDateTime.of(2020, 9, 25, 12, 46, 39).toInstant(ZoneOffset.UTC), HotspotReviewStatus.TO_REVIEW),
+        tuple("hotspotKey5", "ruleKey5", "message5", Path.of("path5"), 17, 18, 19, 20, LocalDateTime.of(2020, 9, 25, 12, 46, 39).toInstant(ZoneOffset.UTC), HotspotReviewStatus.SAFE),
         tuple("hotspotKey6", "ruleKey6", "message6", Path.of("path6"), 21, 22, 23, 24, LocalDateTime.of(2020, 9, 25, 12, 46, 39).toInstant(ZoneOffset.UTC), HotspotReviewStatus.TO_REVIEW));
   }
 
