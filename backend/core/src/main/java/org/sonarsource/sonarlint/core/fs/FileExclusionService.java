@@ -192,7 +192,7 @@ public class FileExclusionService {
   }
 
   public List<ClientFile> refineAnalysisScope(String configScopeId, List<URI> requestedFileUris, TriggerType triggerType, Path baseDir) {
-    if (triggerType.equals(TriggerType.FORCED)) {
+    if (!triggerType.shouldHonorExclusions()) {
       var filteredURIsNoFile = new ArrayList<URI>();
       var filesToAnalyze = requestedFileUris.stream().map(uri -> {
         var file = findFile(configScopeId, uri);

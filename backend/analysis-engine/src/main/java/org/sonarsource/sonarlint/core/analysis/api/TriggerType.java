@@ -20,5 +20,23 @@
 package org.sonarsource.sonarlint.core.analysis.api;
 
 public enum TriggerType {
-  AUTO, FORCED
+  AUTO(true, true),
+  FORCED(false, false),
+  FORCED_WITH_EXCLUSIONS(true, false);
+
+  private final boolean honorExclusions;
+  private final boolean canBeBatchedWithSameTriggerType;
+
+  TriggerType(boolean honorExclusions, boolean canBeBatchedWithSameTriggerType) {
+    this.honorExclusions = honorExclusions;
+    this.canBeBatchedWithSameTriggerType = canBeBatchedWithSameTriggerType;
+  }
+
+  public boolean shouldHonorExclusions() {
+    return honorExclusions;
+  }
+
+  public boolean canBeBatchedWithSameTriggerType() {
+    return canBeBatchedWithSameTriggerType;
+  }
 }
