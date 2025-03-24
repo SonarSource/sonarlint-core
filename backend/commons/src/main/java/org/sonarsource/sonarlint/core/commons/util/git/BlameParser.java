@@ -22,13 +22,11 @@ package org.sonarsource.sonarlint.core.commons.util.git;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
-import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.regex.Pattern;
 import org.sonar.scm.git.blame.BlameResult;
-import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class BlameParser {
@@ -38,13 +36,16 @@ public class BlameParser {
   private static final String COMMITTER_TIME = "committer-time ";
   // if this text change between different git versions it will break the implementation
   private static final String NOT_COMMITTED = "<not.committed.yet>";
+
   private BlameParser() {
     // Utility class
   }
 
-  public static SonarLintBlameResult parseBlameOutput(String blameOutput, String currentFilePath, Path projectBaseDir) throws IOException {
-    var blameResult = new BlameResult();
+  public static void parseBlameOutput(String blameOutput, String currentFilePath, BlameResult blameResult) {
     var numberOfLines = numberOfLinesInBlameOutput(blameOutput);
+    if (numberOfLines == 0) {
+      return;
+    }
     var currentFileBlame = new BlameResult.FileBlame(currentFilePath, numberOfLines);
     blameResult.getFileBlameByPath().put(currentFilePath, currentFileBlame);
     var fileSections = blameOutput.split(FILENAME);
@@ -68,11 +69,12 @@ public class BlameParser {
             currentFileBlame.getCommitDates()[currentLineNumber] = commitDate;
           }
         }
+      } catch (IOException e) {
+        LOG.warn("Failed to blame repository files", e);
+        return;
       }
       currentLineNumber++;
     }
-
-    return new SonarLintBlameResult(blameResult, projectBaseDir);
   }
 
   private static boolean shouldSkipSection(String fileSection, boolean lineNumberIsOff) {

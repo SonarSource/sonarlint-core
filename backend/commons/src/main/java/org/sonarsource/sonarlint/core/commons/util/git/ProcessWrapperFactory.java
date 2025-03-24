@@ -30,8 +30,6 @@ import java.util.Scanner;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.util.git.exceptions.GitRepoNotFoundException;
-import org.sonarsource.sonarlint.core.commons.util.git.exceptions.NoSuchPathException;
 
 import static java.lang.String.format;
 import static java.lang.String.join;
@@ -44,29 +42,27 @@ public class ProcessWrapperFactory {
     // nothing to do
   }
 
-  public ProcessWrapper create(@Nullable Path baseDir, Consumer<String> stdOutLineConsumer, String... command) {
-    return new ProcessWrapper(baseDir, stdOutLineConsumer, Map.of(), command);
+  public ProcessWrapper create(@Nullable Path baseDir, String... command) {
+    return new ProcessWrapper(baseDir, Map.of(), command);
   }
 
-  public ProcessWrapper create(@Nullable Path baseDir, Consumer<String> stdOutLineConsumer, Map<String, String> envVariables, String... command) {
-    return new ProcessWrapper(baseDir, stdOutLineConsumer, envVariables, command);
+  public ProcessWrapper create(@Nullable Path baseDir, Map<String, String> envVariables, String... command) {
+    return new ProcessWrapper(baseDir, envVariables, command);
   }
 
   static class ProcessWrapper {
 
     private final Path baseDir;
-    private final Consumer<String> stdOutLineConsumer;
     private final String[] command;
     private final Map<String, String> envVariables = new HashMap<>();
 
-    ProcessWrapper(@Nullable Path baseDir, Consumer<String> stdOutLineConsumer, Map<String, String> envVariables, String... command) {
+    ProcessWrapper(@Nullable Path baseDir, Map<String, String> envVariables, String... command) {
       this.baseDir = baseDir;
-      this.stdOutLineConsumer = stdOutLineConsumer;
       this.envVariables.putAll(envVariables);
       this.command = command;
     }
 
-    private static void processInputStream(InputStream inputStream, Consumer<String> stringConsumer) {
+    void processInputStream(InputStream inputStream, Consumer<String> stringConsumer) {
       try (var scanner = new Scanner(new InputStreamReader(inputStream, UTF_8))) {
         scanner.useDelimiter("\n");
         while (scanner.hasNext()) {
@@ -75,20 +71,29 @@ public class ProcessWrapperFactory {
       }
     }
 
-    private static boolean isNotAGitRepo(LinkedList<String> output) {
-      return outputContains(output, "not a git repository");
-    }
-
-    private static boolean noSuchPath(LinkedList<String> output) {
-      return outputContains(output, "no such path");
-    }
-
-    private static boolean outputContains(LinkedList<String> output, String text) {
-      return output.stream().anyMatch(line -> line.contains(text));
-    }
-
-    public void execute() throws IOException {
+    public ProcessExecutionResult execute() {
+      Process p;
       var output = new LinkedList<String>();
+      try {
+        p = createProcess();
+      } catch (IOException e) {
+        LOG.warn(format("Could not execute command: [%s]", join(" ", command)), e);
+        return new ProcessExecutionResult(-2, join(System.lineSeparator(), output));
+      }
+      try {
+        return runProcessAndGetOutput(p, output);
+      } catch (InterruptedException e) {
+        LOG.warn(format("Command [%s] interrupted", join(" ", command)), e);
+        Thread.currentThread().interrupt();
+      } catch (Exception e) {
+        LOG.warn(format("Command failed: [%s]", join(" ", command)), e);
+      } finally {
+        p.destroy();
+      }
+      return new ProcessExecutionResult(-1, join(System.lineSeparator(), output));
+    }
+
+    Process createProcess() throws IOException {
       var processBuilder = new ProcessBuilder()
         .command(command)
         .directory(baseDir != null ? baseDir.toFile() : null);
@@ -97,42 +102,23 @@ public class ProcessWrapperFactory {
       processBuilder.redirectOutput(ProcessBuilder.Redirect.PIPE);
       processBuilder.redirectError(ProcessBuilder.Redirect.PIPE);
 
-      var p = processBuilder.start();
-      try {
-        processInputStream(p.getInputStream(), line -> {
-          output.add(line);
-          stdOutLineConsumer.accept(line);
-        });
-
-        processInputStream(p.getErrorStream(), line -> {
-          if (!line.isBlank()) {
-            output.add(line);
-            LOG.debug(line);
-          }
-        });
-
-        int exit = p.waitFor();
-        if (exit != 0) {
-          if (isNotAGitRepo(output)) {
-            throw new GitRepoNotFoundException(getBaseDir());
-          }
-          if (noSuchPath(output)) {
-            throw new NoSuchPathException(getBaseDir());
-          }
-          var gitBlameOutput = join(System.lineSeparator(), output);
-          throw new IllegalStateException(format("Command execution exited with code: %d and error message: %s", exit, gitBlameOutput));
-        }
-      } catch (InterruptedException e) {
-        LOG.warn(format("Command [%s] interrupted", join(" ", command)), e);
-        Thread.currentThread().interrupt();
-      } finally {
-        p.destroy();
-      }
+      return processBuilder.start();
     }
 
-    private String getBaseDir() {
-      return baseDir != null ? baseDir.toString() : "null";
+    ProcessExecutionResult runProcessAndGetOutput(Process p, LinkedList<String> output) throws InterruptedException {
+      processInputStream(p.getInputStream(), output::add);
+      processInputStream(p.getErrorStream(), line -> {
+        if (!line.isBlank()) {
+          output.add(line);
+          LOG.debug(line);
+        }
+      });
+      int exit = p.waitFor();
+      var commandOutput = join(System.lineSeparator(), output);
+      return new ProcessExecutionResult(exit, join(System.lineSeparator(), commandOutput));
     }
   }
 
+  public record ProcessExecutionResult(int exitCode, String output) {
+  }
 }

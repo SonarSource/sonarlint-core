@@ -27,19 +27,15 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.SystemUtils;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.RawTextComparator;
@@ -53,27 +49,24 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.sonar.scm.git.blame.RepositoryBlameCommand;
 import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
 import org.sonarsource.sonarlint.core.commons.SonarLintGitIgnore;
-import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.util.git.exceptions.GitException;
 import org.sonarsource.sonarlint.core.commons.util.git.exceptions.GitRepoNotFoundException;
 
 import static java.util.Optional.ofNullable;
 import static org.eclipse.jgit.lib.Constants.GITIGNORE_FILENAME;
-import static org.sonarsource.sonarlint.core.commons.util.git.BlameParser.parseBlameOutput;
-import static org.sonarsource.sonarlint.core.commons.util.git.WinGitUtils.locateGitOnWindows;
 
-public class GitUtils {
+public class GitService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private static final String MINIMUM_REQUIRED_GIT_VERSION = "2.24.0";
-  private static final Pattern whitespaceRegex = Pattern.compile("\\s+");
-  private static final Pattern semanticVersionDelimiter = Pattern.compile("\\.");
 
-  // So we only have to make the expensive call once (or at most twice) to get the native Git executable!
-  private static boolean checkedForNativeGitExecutable = false;
-  private static String nativeGitExecutable = null;
+  private final NativeGitWrapper nativeGit;
 
-  private GitUtils() {
-    // Utility class
+  GitService(NativeGitWrapper nativeGit) {
+    this.nativeGit = nativeGit;
+  }
+
+  public static GitService create() {
+    return new GitService(new NativeGitWrapper());
   }
 
   public static SonarLintBlameResult blameWithFilesGitCommand(Path baseDir, Set<Path> gitRelativePath) {
@@ -93,25 +86,9 @@ public class GitUtils {
       return Stream.concat(uncommitted, untracked)
         .map(file -> baseDir.resolve(file).toUri())
         .toList();
-    } catch (GitAPIException | IllegalStateException e) {
+    } catch (GitAPIException | GitException e) {
       LOG.debug("Git repository access error: ", e);
       return List.of();
-    }
-  }
-
-  public static SonarLintBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, Set<URI> fileUris,
-    @Nullable UnaryOperator<String> fileContentProvider, Instant thresholdDate) {
-    return getBlameResult(projectBaseDir, projectBaseRelativeFilePaths, fileUris, fileContentProvider, GitUtils::checkIfEnabled, thresholdDate);
-  }
-
-  static SonarLintBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, Set<URI> fileUris, @Nullable UnaryOperator<String> fileContentProvider,
-    Predicate<Path> isEnabled, Instant thresholdDate) {
-    if (isEnabled.test(projectBaseDir)) {
-      LOG.debug("Using native git blame");
-      return blameFromNativeCommand(projectBaseDir, fileUris, thresholdDate);
-    } else {
-      LOG.debug("Falling back to JGit git blame");
-      return blameWithFilesGitCommand(projectBaseDir, projectBaseRelativeFilePaths, fileContentProvider);
     }
   }
 
@@ -139,92 +116,6 @@ public class GitUtils {
     } catch (GitAPIException e) {
       throw new IllegalStateException("Failed to blame repository files", e);
     }
-  }
-
-  /**
-   * Get the native Git executable by checking for the version of both `git` and `git.exe`. We cache this information
-   * to run these expensive processes more than once (or twice in case of Windows).
-   */
-  private static String getNativeGitExecutable() {
-    if (!checkedForNativeGitExecutable) {
-      try {
-        var executable = getGitExecutable();
-        var process = new ProcessBuilder(executable, "--version").start();
-        var exitCode = process.waitFor();
-        if (exitCode == 0) {
-          nativeGitExecutable = executable;
-        }
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      } catch (Exception e) {
-        LOG.debug("Checking for native Git executable failed", e);
-      }
-      checkedForNativeGitExecutable = true;
-    }
-    return nativeGitExecutable;
-  }
-
-  private static String getGitExecutable() throws IOException {
-    return SystemUtils.IS_OS_WINDOWS ? locateGitOnWindows() : "git";
-  }
-
-  private static String executeGitCommand(Path workingDir, String... command) throws IOException {
-    var commandResult = new LinkedList<String>();
-    new ProcessWrapperFactory()
-      .create(workingDir, commandResult::add, command)
-      .execute();
-    return String.join(System.lineSeparator(), commandResult);
-  }
-
-  public static SonarLintBlameResult blameFromNativeCommand(Path projectBaseDir, Set<URI> fileUris, Instant thresholdDate) {
-    var nativeExecutable = getNativeGitExecutable();
-    if (nativeExecutable != null) {
-      for (var fileUri : fileUris) {
-        try {
-          var filePath = Path.of(fileUri).toAbsolutePath().toString();
-          var filePathUnix = filePath.replace("\\", "/");
-          var blameHistoryWindow = "--since='" + thresholdDate + "'";
-          var command = new String[]{nativeExecutable, "blame", blameHistoryWindow, filePath, "--line-porcelain", "--encoding=UTF-8"};
-          return parseBlameOutput(executeGitCommand(projectBaseDir, command), filePathUnix, projectBaseDir);
-        } catch (IOException e) {
-          throw new IllegalStateException("Failed to blame repository files", e);
-        }
-      }
-    }
-    throw new IllegalStateException("There is no native Git available");
-  }
-
-  public static boolean checkIfEnabled(Path projectBaseDir) {
-    var nativeExecutable = getNativeGitExecutable();
-    if (nativeExecutable == null) {
-      return false;
-    }
-    try {
-      var output = executeGitCommand(projectBaseDir, nativeExecutable, "--version");
-      return output.contains("git version") && isCompatibleGitVersion(output);
-    } catch (IOException e) {
-      return false;
-    }
-  }
-
-  private static boolean isCompatibleGitVersion(String gitVersionCommandOutput) {
-    // Due to the danger of argument injection on git blame the use of `--end-of-options` flag is necessary
-    // The flag is available only on git versions >= 2.24.0
-    var gitVersion = whitespaceRegex
-      .splitAsStream(gitVersionCommandOutput)
-      .skip(2)
-      .findFirst()
-      .orElse("");
-
-    var formattedGitVersion = formatGitSemanticVersion(gitVersion);
-    return Version.create(formattedGitVersion).compareToIgnoreQualifier(Version.create(MINIMUM_REQUIRED_GIT_VERSION)) >= 0;
-  }
-
-  private static String formatGitSemanticVersion(String version) {
-    return semanticVersionDelimiter
-      .splitAsStream(version)
-      .takeWhile(NumberUtils::isCreatable)
-      .collect(Collectors.joining("."));
   }
 
   private static Path getRelativePath(Repository gitRepo, Path projectBaseDir) {
@@ -327,4 +218,21 @@ public class GitUtils {
       }
     }
   }
+
+  public SonarLintBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, Set<URI> fileUris,
+    @Nullable UnaryOperator<String> fileContentProvider, Instant thresholdDate) {
+    return getBlameResult(projectBaseDir, projectBaseRelativeFilePaths, fileUris, fileContentProvider, nativeGit::checkIfNativeGitEnabled, thresholdDate);
+  }
+
+  SonarLintBlameResult getBlameResult(Path projectBaseDir, Set<Path> projectBaseRelativeFilePaths, Set<URI> fileUris, @Nullable UnaryOperator<String> fileContentProvider,
+    Predicate<Path> isNativeBlameSupported, Instant thresholdDate) {
+    if (isNativeBlameSupported.test(projectBaseDir)) {
+      LOG.debug("Using native git blame");
+      return nativeGit.blameFromNativeCommand(projectBaseDir, fileUris, thresholdDate);
+    } else {
+      LOG.debug("Falling back to JGit");
+      return blameWithFilesGitCommand(projectBaseDir, projectBaseRelativeFilePaths, fileContentProvider);
+    }
+  }
+
 }
