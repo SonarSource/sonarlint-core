@@ -30,6 +30,9 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.connection.ServerConnection;
+import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
+import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
+import org.sonarsource.sonarlint.core.event.ConnectionCredentialsChangedEvent;
 import org.sonarsource.sonarlint.core.http.ConnectionAwareHttpClientProvider;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
@@ -45,6 +48,7 @@ import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
 import org.sonarsource.sonarlint.core.serverconnection.ServerVersionAndStatusChecker;
+import org.springframework.context.event.EventListener;
 
 public class ConnectionManager {
 
@@ -188,5 +192,20 @@ public class ConnectionManager {
         LOG.debug("Connection '{}' is invalid", connectionId);
         return Optional.empty();
       });
+  }
+
+  @EventListener
+  public void onConnectionRemoved(ConnectionConfigurationRemovedEvent event) {
+    connectionCache.remove(event.getRemovedConnectionId());
+  }
+
+  @EventListener
+  public void onConnectionUpdated(ConnectionConfigurationUpdatedEvent event) {
+    connectionCache.remove(event.updatedConnectionId());
+  }
+
+  @EventListener
+  public void onCredentialsChanged(ConnectionCredentialsChangedEvent event) {
+    connectionCache.remove(event.getConnectionId());
   }
 }

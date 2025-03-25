@@ -19,15 +19,5 @@
  */
 package org.sonarsource.sonarlint.core.event;
 
-public class ConnectionConfigurationUpdatedEvent {
-
-  private final String updatedConnectionId;
-
-  public ConnectionConfigurationUpdatedEvent(String updatedConnectionId) {
-    this.updatedConnectionId = updatedConnectionId;
-  }
-
-  public String getUpdatedConnectionId() {
-    return updatedConnectionId;
-  }
+public record ConnectionConfigurationUpdatedEvent(String updatedConnectionId) {
 }

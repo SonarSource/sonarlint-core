@@ -101,7 +101,7 @@ public class SonarProjectsCache {
   @EventListener
   public void connectionUpdated(ConnectionConfigurationUpdatedEvent e) {
     // If connection config was modified (url, credentials, ...) then the projects the user might be able to "see" could be different
-    evictAll(e.getUpdatedConnectionId());
+    evictAll(e.updatedConnectionId());
   }
 
   private void evictAll(String connectionId) {

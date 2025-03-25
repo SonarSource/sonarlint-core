@@ -128,7 +128,7 @@ public class WebSocketService {
     if (!shouldEnableWebSockets) {
       return;
     }
-    var updatedConnectionId = connectionConfigurationUpdatedEvent.getUpdatedConnectionId();
+    var updatedConnectionId = connectionConfigurationUpdatedEvent.updatedConnectionId();
     executorService.execute(() -> {
       if (didDisableNotifications(updatedConnectionId)) {
         webSocketsByRegion.forEach((region, webSocketManager) ->
