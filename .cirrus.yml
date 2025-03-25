@@ -103,7 +103,8 @@ test_linux_task:
   <<: *MAVEN_CACHE_DEFINITION
   script:
     - source cirrus-env QA
-    - printenv
+    - echo "hello world"
+    - export -p
     - PULL_REQUEST_SHA=$GIT_SHA1 regular_mvn_build_deploy_analyze -P-deploy-sonarsource,-release,-sign -Dcommercial -Dmaven.install.skip=false -Dmaven.deploy.skip=true -Dsonar.coverage.jacoco.xmlReportPaths=$CIRRUS_WORKING_DIR/report-aggregate/target/site/jacoco-aggregate/jacoco.xml -Dsonar.sca.debug=true -Dsonar.sca.mavenIgnoreWrapper=true
   cleanup_before_cache_script: cleanup_maven_repository
   always:
