@@ -141,7 +141,7 @@ public class ServerEventsService {
       return;
     }
     // URL might have changed, in doubt resubscribe
-    executorService.execute(() -> resubscribe(event.getUpdatedConnectionId()));
+    executorService.execute(() -> resubscribe(event.updatedConnectionId()));
   }
 
   @EventListener
