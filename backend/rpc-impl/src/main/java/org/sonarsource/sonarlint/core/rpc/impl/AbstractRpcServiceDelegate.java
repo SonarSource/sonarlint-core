@@ -74,6 +74,25 @@ abstract class AbstractRpcServiceDelegate {
     return requestFuture;
   }
 
+  protected <R> CompletableFuture<R> requestFutureAsync(Function<SonarLintCancelMonitor, CompletableFuture<R>> code, @Nullable String configScopeId) {
+    var cancelMonitor = new SonarLintCancelMonitor();
+    cancelMonitor.watchForShutdown(requestsExecutor);
+    // First we schedule the processing of the request on the sequential executor, to maintain ordering of notifications, requests, responses, and cancellations
+    // We can maybe cancel early
+    var sequentialFuture = CompletableFuture.runAsync(cancelMonitor::checkCanceled, requestAndNotificationsSequentialExecutor);
+    // Then requests are processed asynchronously to not block the processing of notifications, responses and cancellations
+    var requestFuture = sequentialFuture.thenComposeAsync(unused -> computeWithLogger(() -> {
+      cancelMonitor.checkCanceled();
+      return code.apply(cancelMonitor);
+    }, configScopeId), requestsExecutor);
+    requestFuture.whenComplete((result, error) -> {
+      if (error instanceof CancellationException) {
+        cancelMonitor.cancel();
+      }
+    });
+    return requestFuture;
+  }
+
   protected CompletableFuture<Void> runAsync(Consumer<SonarLintCancelMonitor> code, @Nullable String configScopeId) {
     var cancelMonitor = new SonarLintCancelMonitor();
     cancelMonitor.watchForShutdown(requestsExecutor);
