@@ -19,13 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.analysis;
 
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import org.jetbrains.annotations.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
@@ -47,10 +44,9 @@ public class BackendInputFile implements ClientInputFile {
     return clientFile.isTest();
   }
 
-  @Nullable
   @Override
   public Charset getCharset() {
-    return StandardCharsets.UTF_8;
+    return clientFile.getCharset();
   }
 
   @Override
@@ -60,8 +56,7 @@ public class BackendInputFile implements ClientInputFile {
 
   @Override
   public InputStream inputStream() {
-    var charset = getCharset();
-    return new ByteArrayInputStream(clientFile.getContent().getBytes(charset == null ? Charset.defaultCharset() : charset));
+    return clientFile.inputStream();
   }
 
   @Override

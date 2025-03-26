@@ -19,13 +19,21 @@
  */
 package org.sonarsource.sonarlint.core.fs;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import javax.annotation.Nullable;
 import org.apache.commons.compress.utils.FileNameUtils;
+import org.apache.commons.io.ByteOrderMark;
+import org.apache.commons.io.input.BOMInputStream;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 
 public class ClientFile {
@@ -112,12 +120,21 @@ public class ClientFile {
     if (fsPath == null) {
       throw new IllegalStateException("File " + uri + " is not dirty but has no OS Path defined");
     }
-    var charsetToUse = charset != null ? charset : Charset.defaultCharset();
+    var charsetToUse = getCharset();
     try {
+//      return charsetToUse.decode(ByteBuffer.wrap(Files.readAllBytes(fsPath))).toString();
       return Files.readString(fsPath, charsetToUse);
     } catch (IOException e) {
       throw new IllegalStateException("Unable to read file " + fsPath + "content with charset " + charsetToUse, e);
     }
+  }
+
+  public InputStream inputStream() {
+    return new ByteArrayInputStream(getContent().getBytes(getCharset()));
+  }
+
+  public Charset getCharset() {
+    return charset != null ? charset : Charset.defaultCharset();
   }
 
   public String getConfigScopeId() {
