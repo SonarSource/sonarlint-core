@@ -212,9 +212,9 @@ public class AnalysisSchedulerCache {
     }
   }
 
-  public void unregisterModule(String scopeId) {
-    var analysisScheduler = getAnalysisSchedulerIfStarted(scopeId);
-    if (analysisScheduler != null && configurationRepository.isLeafConfigScope(scopeId)) {
+  public void unregisterModule(String scopeId, @Nullable String connectionId) {
+    var analysisScheduler = connectionId == null ? getStandaloneSchedulerIfStarted() : getConnectedSchedulerIfStarted(connectionId);
+    if (analysisScheduler != null) {
       analysisScheduler.post(new UnregisterModuleCommand(scopeId));
     }
   }
