@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.analysis;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -33,7 +34,7 @@ import static java.util.function.Predicate.not;
 public class AnalysisFinishedEvent {
   private final UUID analysisId;
   private final String configurationScopeId;
-  private final long analysisDuration;
+  private final Duration analysisDuration;
   private final Map<URI, SonarLanguage> languagePerFile;
   private final boolean succeededForAllFiles;
   private final List<RawIssue> issues;
@@ -41,7 +42,7 @@ public class AnalysisFinishedEvent {
   private final Set<SonarLanguage> detectedLanguages;
   private final boolean shouldFetchServerIssues;
 
-  public AnalysisFinishedEvent(UUID analysisId, String configurationScopeId, long analysisDuration, Map<URI, SonarLanguage> languagePerFile, boolean succeededForAllFiles,
+  public AnalysisFinishedEvent(UUID analysisId, String configurationScopeId, Duration analysisDuration, Map<URI, SonarLanguage> languagePerFile, boolean succeededForAllFiles,
     List<RawIssue> issues, boolean shouldFetchServerIssues) {
     this.analysisId = analysisId;
     this.configurationScopeId = configurationScopeId;
@@ -62,7 +63,7 @@ public class AnalysisFinishedEvent {
     return configurationScopeId;
   }
 
-  public long getAnalysisDuration() {
+  public Duration getAnalysisDuration() {
     return analysisDuration;
   }
 

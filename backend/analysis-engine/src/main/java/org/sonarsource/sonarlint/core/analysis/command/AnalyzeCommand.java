@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.analysis.command;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -125,6 +126,7 @@ public class AnalyzeCommand extends Command {
   }
 
   private AnalysisResults doRunAnalysis(ModuleRegistry moduleRegistry, ProgressMonitor progressMonitor, AnalysisConfiguration configuration) {
+    var startTime = System.currentTimeMillis();
     analysisStarted.accept(configuration.inputFiles());
     var moduleContainer = moduleKey != null ? moduleRegistry.getContainerFor(moduleKey) : null;
     if (moduleContainer == null) {
@@ -146,6 +148,7 @@ public class AnalyzeCommand extends Command {
         trace.setData("failedFilesCount", result.failedAnalysisFiles().size());
         trace.finishSuccessfully();
       }
+      result.setDuration(Duration.ofMillis(System.currentTimeMillis() - startTime));
       return result;
     } catch (Throwable e) {
       originalException = e;
