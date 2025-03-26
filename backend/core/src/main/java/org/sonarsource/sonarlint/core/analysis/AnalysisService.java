@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.analysis;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -683,8 +684,7 @@ public class AnalysisService {
   public UUID scheduleForcedAnalysis(String configurationScopeId, List<URI> files, boolean hotspotsOnly) {
     var analysisId = UUID.randomUUID();
     var rawIssues = new ArrayList<RawIssue>();
-    schedule(configurationScopeId, getAnalyzeCommand(configurationScopeId, files, rawIssues, hotspotsOnly, TriggerType.FORCED, analysisId), analysisId, rawIssues,
-      System.currentTimeMillis(), false)
+    schedule(configurationScopeId, getAnalyzeCommand(configurationScopeId, files, rawIssues, hotspotsOnly, TriggerType.FORCED, analysisId), analysisId, rawIssues, false)
       .exceptionally(e -> {
         LOG.error("Error during analysis", e);
         return null;
@@ -693,14 +693,14 @@ public class AnalysisService {
   }
 
   public CompletableFuture<AnalysisResult> scheduleAnalysis(String configurationScopeId, UUID analysisId, List<URI> files, Map<String, String> extraProperties,
-    long startTime, boolean shouldFetchServerIssues, TriggerType triggerType, SonarLintCancelMonitor cancelChecker) {
+    boolean shouldFetchServerIssues, TriggerType triggerType, SonarLintCancelMonitor cancelChecker) {
     var progressMonitor = new RpcProgressMonitor(client, cancelChecker, configurationScopeId, analysisId);
     var ruleDetailsCache = new ConcurrentHashMap<String, RuleDetailsForAnalysis>();
     var rawIssues = new ArrayList<RawIssue>();
     var analysisTask = new AnalyzeCommand(configurationScopeId, triggerType, () -> getAnalysisConfigForEngine(configurationScopeId, files, extraProperties, false, triggerType),
       issue -> streamIssue(configurationScopeId, analysisId, ruleDetailsCache, rawIssues, issue), monitoringService.newTrace("AnalysisService", "analyze"), progressMonitor,
       inputFiles -> analysisStarted(configurationScopeId, analysisId, inputFiles), () -> analysisReadinessByConfigScopeId.getOrDefault(configurationScopeId, false));
-    return schedule(configurationScopeId, analysisTask, analysisId, rawIssues, startTime, shouldFetchServerIssues);
+    return schedule(configurationScopeId, analysisTask, analysisId, rawIssues, shouldFetchServerIssues);
   }
 
   private void scheduleAutomaticAnalysis(String configScopeId, List<URI> filesToAnalyze) {
@@ -708,7 +708,7 @@ public class AnalysisService {
       var rawIssues = new ArrayList<RawIssue>();
       var analysisId = UUID.randomUUID();
       var command = getAnalyzeCommand(configScopeId, filesToAnalyze, rawIssues, false, TriggerType.AUTO, analysisId);
-      schedule(configScopeId, command, analysisId, rawIssues, System.currentTimeMillis(), false)
+      schedule(configScopeId, command, analysisId, rawIssues, false)
         .exceptionally(exception -> {
           LOG.error("Error during automatic analysis", exception);
           return null;
@@ -720,7 +720,7 @@ public class AnalysisService {
     eventPublisher.publishEvent(new AnalysisStartedEvent(configurationScopeId, analysisId, inputFiles));
   }
 
-  private CompletableFuture<AnalysisResult> schedule(String configScopeId, AnalyzeCommand command, UUID analysisId, ArrayList<RawIssue> rawIssues, long startTime,
+  private CompletableFuture<AnalysisResult> schedule(String configScopeId, AnalyzeCommand command, UUID analysisId, ArrayList<RawIssue> rawIssues,
     boolean shouldFetchServerIssues) {
     schedulerCache.getOrCreateAnalysisScheduler(configScopeId).post(command);
     var result = command.getResult();
@@ -731,11 +731,10 @@ public class AnalysisService {
     });
     return result
       .thenApply(analysisResults -> {
-        var analysisDuration = System.currentTimeMillis() - startTime;
         var languagePerFile = analysisResults.languagePerFile().entrySet().stream().collect(HashMap<URI, SonarLanguage>::new,
           (map, entry) -> map.put(entry.getKey().uri(), entry.getValue()), HashMap::putAll);
-        logSummary(rawIssues, analysisDuration);
-        eventPublisher.publishEvent(new AnalysisFinishedEvent(analysisId, configScopeId, analysisDuration,
+        logSummary(rawIssues, analysisResults.getDuration());
+        eventPublisher.publishEvent(new AnalysisFinishedEvent(analysisId, configScopeId, analysisResults.getDuration(),
           languagePerFile, analysisResults.failedAnalysisFiles().isEmpty(), rawIssues, shouldFetchServerIssues));
         return new AnalysisResult(
           analysisResults.failedAnalysisFiles().stream().map(ClientInputFile::getClientObject).map(clientObj -> ((ClientFile) clientObj).getUri()).collect(Collectors.toSet()),
@@ -759,11 +758,11 @@ public class AnalysisService {
       .forEach(entry -> scheduleAutomaticAnalysis(entry.getKey(), entry.getValue()));
   }
 
-  private static void logSummary(List<RawIssue> rawIssues, long analysisDuration) {
+  private static void logSummary(List<RawIssue> rawIssues, Duration analysisDuration) {
     // ignore project-level issues for now
     var fileRawIssues = rawIssues.stream().filter(issue -> issue.getTextRange() != null).toList();
     var issuesCount = fileRawIssues.stream().filter(not(RawIssue::isSecurityHotspot)).count();
     var hotspotsCount = fileRawIssues.stream().filter(RawIssue::isSecurityHotspot).count();
-    LOG.info("Analysis detected {} and {} in {}ms", pluralize(issuesCount, "issue"), pluralize(hotspotsCount, "Security Hotspot"), analysisDuration);
+    LOG.info("Analysis detected {} and {} in {}ms", pluralize(issuesCount, "issue"), pluralize(hotspotsCount, "Security Hotspot"), analysisDuration.toMillis());
   }
 }
