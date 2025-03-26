@@ -701,7 +701,8 @@ public class AnalysisService {
     var analysisTask = new AnalyzeCommand(configurationScopeId, analysisId, triggerType,
       () -> getAnalysisConfigForEngine(configurationScopeId, files, extraProperties, false, triggerType),
       issue -> streamIssue(configurationScopeId, analysisId, ruleDetailsCache, rawIssues, issue), monitoringService.newTrace("AnalysisService", "analyze"), cancelChecker,
-      taskManager, inputFiles -> analysisStarted(configurationScopeId, analysisId, inputFiles), () -> analysisReadinessByConfigScopeId.getOrDefault(configurationScopeId, false));
+      taskManager, inputFiles -> analysisStarted(configurationScopeId, analysisId, inputFiles), () -> analysisReadinessByConfigScopeId.getOrDefault(configurationScopeId, false),
+      files, extraProperties);
     return schedule(configurationScopeId, analysisTask, analysisId, rawIssues, shouldFetchServerIssues);
   }
 
@@ -750,7 +751,7 @@ public class AnalysisService {
     return new AnalyzeCommand(configurationScopeId, analysisId, triggerType, () -> getAnalysisConfigForEngine(configurationScopeId, files, Map.of(), hotspotsOnly, triggerType),
       issue -> streamIssue(configurationScopeId, analysisId, ruleDetailsCache, rawIssues, issue), monitoringService.newTrace("AnalysisService", "analyze"),
       new SonarLintCancelMonitor(), taskManager, inputFiles -> analysisStarted(configurationScopeId, analysisId, inputFiles),
-      () -> analysisReadinessByConfigScopeId.getOrDefault(configurationScopeId, false));
+      () -> analysisReadinessByConfigScopeId.getOrDefault(configurationScopeId, false), files, Map.of());
   }
 
   private void reanalyseOpenFiles(Predicate<String> configScopeFilter) {
