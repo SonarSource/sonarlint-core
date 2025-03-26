@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.analysis.api;
 
+import java.time.Duration;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -30,6 +31,7 @@ import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 public class AnalysisResults {
   private final Set<ClientInputFile> failedAnalysisFiles = new LinkedHashSet<>();
   private final Map<ClientInputFile, SonarLanguage> languagePerFile = new LinkedHashMap<>();
+  private Duration duration = Duration.ZERO;
 
   public void addFailedAnalysisFile(ClientInputFile inputFile) {
     failedAnalysisFiles.add(inputFile);
@@ -53,5 +55,13 @@ public class AnalysisResults {
    */
   public Collection<ClientInputFile> failedAnalysisFiles() {
     return failedAnalysisFiles;
+  }
+
+  public Duration getDuration() {
+    return duration;
+  }
+
+  public void setDuration(Duration duration) {
+    this.duration = duration;
   }
 }

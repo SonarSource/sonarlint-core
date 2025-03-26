@@ -1,3 +1,9 @@
+# 10.18
+
+## Deprecation
+
+* Deprecate the `org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams` constructor, and replace it with a new one without the `startTime` parameter, that is no longer relevant.
+
 # 10.17
 
 ## New features

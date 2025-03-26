@@ -31,17 +31,24 @@ public class AnalyzeFilesAndTrackParams {
   private final List<URI> filesToAnalyze;
   private final Map<String, String> extraProperties;
   private final boolean shouldFetchServerIssues;
-  // this is determined by the client as other operations could occur before reaching the backend
-  private final long startTime;
+
+  /**
+   * @deprecated As analysis might not execute straight away, the startTime parameter is not relevant, it doesn't help measure the duration of the actual analysis.
+   * Use the other constructor instead.
+   */
+  @Deprecated(since = "10.18")
+  public AnalyzeFilesAndTrackParams(String configurationScopeId, UUID analysisId, List<URI> filesToAnalyze, Map<String, String> extraProperties, boolean shouldFetchServerIssues,
+    long startTime) {
+    this(configurationScopeId, analysisId, filesToAnalyze, extraProperties, shouldFetchServerIssues);
+  }
 
   public AnalyzeFilesAndTrackParams(String configurationScopeId, UUID analysisId, List<URI> filesToAnalyze, Map<String, String> extraProperties,
-    boolean shouldFetchServerIssues, long startTime) {
+    boolean shouldFetchServerIssues) {
     this.configurationScopeId = configurationScopeId;
     this.analysisId = analysisId;
     this.filesToAnalyze = filesToAnalyze;
     this.extraProperties = extraProperties;
     this.shouldFetchServerIssues = shouldFetchServerIssues;
-    this.startTime = startTime;
   }
 
   public String getConfigurationScopeId() {
@@ -58,10 +65,6 @@ public class AnalyzeFilesAndTrackParams {
 
   public Map<String, String> getExtraProperties() {
     return extraProperties;
-  }
-
-  public long getStartTime() {
-    return startTime;
   }
 
   public boolean isShouldFetchServerIssues() {
