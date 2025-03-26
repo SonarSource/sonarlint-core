@@ -111,6 +111,52 @@ class HotspotEventsMediumTests {
         .extracting(ServerHotspot::getKey)
         .containsOnly("AYhSN6mVrRF_krvNbHl1"));
     }
+
+    @SonarLintTest
+    void it_should_add_reviewed_hotspot_in_storage(SonarLintTestHarness harness) {
+      var server = harness.newFakeSonarQubeServer("10.0")
+        .withServerSentEventsEnabled()
+        .withProject("projectKey",
+          project -> project.withBranch("branchName"))
+        .start();
+      var backend = harness.newBackend()
+        .withExtraEnabledLanguagesInConnectedMode(JAVA)
+        .withServerSentEventsEnabled()
+        .withSonarQubeConnection("connectionId", server,
+          storage -> storage.withProject("projectKey", project -> project.withMainBranch("branchName")))
+        .withBoundConfigScope("configScope", "connectionId", "projectKey")
+        .start();
+
+      server.pushEvent("""
+        event: SecurityHotspotRaised
+        data: {\
+          "status": "REVIEWED",\
+          "resolution": "ACKNOWLEDGED",\
+          "vulnerabilityProbability": "MEDIUM",\
+          "creationDate": 1685006550000,\
+          "mainLocation": {\
+            "filePath": "file/path",\
+            "message": "Make sure that using this pseudorandom number generator is safe here.",\
+            "textRange": {\
+              "startLine": 12,\
+              "startLineOffset": 29,\
+              "endLine": 12,\
+              "endLineOffset": 36,\
+              "hash": "43b5c9175984c071f30b873fdce0a000"\
+            }\
+          },\
+          "ruleKey": "java:S2245",\
+          "key": "AYhSN6mVrRF_krvNbHl1",\
+          "projectKey": "projectKey",\
+          "branch": "branchName"\
+        }
+
+        """);
+
+      await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> assertThat(readHotspots(backend, "connectionId", "projectKey", "branchName", "file/path"))
+        .extracting(ServerHotspot::getKey, ServerHotspot::getStatus)
+        .containsExactly(tuple("AYhSN6mVrRF_krvNbHl1", HotspotReviewStatus.ACKNOWLEDGED)));
+    }
   }
 
   @Nested
