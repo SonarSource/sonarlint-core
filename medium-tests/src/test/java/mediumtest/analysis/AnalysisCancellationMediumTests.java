@@ -167,7 +167,8 @@ class AnalysisCancellationMediumTests {
   }
 
   @SonarLintTest
-  void it_should_cancel_automatic_analysis_when_canceling_task_via_request(SonarLintTestHarness harness, @TempDir Path baseDir) throws InterruptedException, ConfigScopeNotFoundException {
+  void it_should_cancel_automatic_analysis_when_canceling_task_via_request(SonarLintTestHarness harness, @TempDir Path baseDir)
+    throws InterruptedException, ConfigScopeNotFoundException {
     var filePath = createFile(baseDir, "pom.xml", "");
     var fileUri = filePath.toUri();
     var client = harness.newFakeClient()
@@ -193,5 +194,35 @@ class AnalysisCancellationMediumTests {
 
     await().atMost(3, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(cancelationFilePath).hasContent("CANCELED"));
+  }
+
+  @SonarLintTest
+  void should_cancel_previous_similar_analysis(SonarLintTestHarness harness, @TempDir Path baseDir) throws InterruptedException {
+    var filePath = createFile(baseDir, "pom.xml", "");
+    var fileUri = filePath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
+        null, filePath, null, null, true)))
+      .build();
+    var plugin = newSonarPlugin("xml")
+      .withSensor(WaitingCancellationSensor.class)
+      .generate(baseDir);
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPlugin(plugin)
+      .withEnabledLanguageInStandaloneMode(Language.XML)
+      .start(client);
+    var cancelationFilePath = baseDir.resolve("cancellation.result");
+    var future = backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri),
+        Map.of(CANCELLATION_FILE_PATH_PROPERTY_NAME, cancelationFilePath.toString()), false));
+    Thread.sleep(1000);
+    backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri),
+        Map.of(CANCELLATION_FILE_PATH_PROPERTY_NAME, cancelationFilePath.toString()), false));
+
+    await().atMost(10, TimeUnit.SECONDS)
+      .untilAsserted(() -> assertThat(cancelationFilePath).hasContent("CANCELED"));
+    assertThat(future).isCompletedExceptionally();
   }
 }

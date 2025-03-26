@@ -94,6 +94,12 @@ public class AnalysisScheduler {
       command.cancel();
       return;
     }
+    var currentCommand = executingCommand.get();
+    if (currentCommand != null && command.shouldCancel(currentCommand)) {
+      LOG.debug("Cancelling execution of similar analysis");
+      executingCommand.set(null);
+      currentCommand.cancel();
+    }
     analysisQueue.post(command);
   }
 
