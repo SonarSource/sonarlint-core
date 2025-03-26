@@ -39,4 +39,8 @@ public abstract class Command {
   public void cancel() {
     // most commands are not cancelable
   }
+
+  public boolean shouldCancel(Command executingCommand) {
+    return false;
+  }
 }

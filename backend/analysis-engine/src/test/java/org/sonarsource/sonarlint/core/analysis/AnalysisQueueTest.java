@@ -19,6 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.analysis;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -35,7 +37,7 @@ class AnalysisQueueTest {
   @Test
   void it_should_prioritize_register_module_commands_over_analyses() throws InterruptedException {
     var analysisQueue = new AnalysisQueue();
-    analysisQueue.post(new AnalyzeCommand(null, UUID.randomUUID(), null, null, null, null, null, null, null, () -> true));
+    analysisQueue.post(new AnalyzeCommand(null, UUID.randomUUID(), null, null, null, null, null, null, null, () -> true, List.of(), Map.of()));
     var registerModuleCommand = new RegisterModuleCommand(null);
     analysisQueue.post(registerModuleCommand);
 
