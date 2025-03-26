@@ -699,7 +699,8 @@ public class AnalysisService {
     var rawIssues = new ArrayList<RawIssue>();
     var analysisTask = new AnalyzeCommand(configurationScopeId, triggerType, () -> getAnalysisConfigForEngine(configurationScopeId, files, extraProperties, false, triggerType),
       issue -> streamIssue(configurationScopeId, analysisId, ruleDetailsCache, rawIssues, issue), monitoringService.newTrace("AnalysisService", "analyze"), progressMonitor,
-      inputFiles -> analysisStarted(configurationScopeId, analysisId, inputFiles), () -> analysisReadinessByConfigScopeId.getOrDefault(configurationScopeId, false));
+      inputFiles -> analysisStarted(configurationScopeId, analysisId, inputFiles), () -> analysisReadinessByConfigScopeId.getOrDefault(configurationScopeId, false),
+      files, extraProperties);
     return schedule(configurationScopeId, analysisTask, analysisId, rawIssues, startTime, shouldFetchServerIssues);
   }
 
@@ -749,7 +750,8 @@ public class AnalysisService {
     var ruleDetailsCache = new ConcurrentHashMap<String, RuleDetailsForAnalysis>();
     return new AnalyzeCommand(configurationScopeId, triggerType, () -> getAnalysisConfigForEngine(configurationScopeId, files, Map.of(), hotspotsOnly, triggerType),
       issue -> streamIssue(configurationScopeId, analysisId, ruleDetailsCache, rawIssues, issue), monitoringService.newTrace("AnalysisService", "analyze"), progressMonitor,
-      inputFiles -> analysisStarted(configurationScopeId, analysisId, inputFiles), () -> analysisReadinessByConfigScopeId.getOrDefault(configurationScopeId, false));
+      inputFiles -> analysisStarted(configurationScopeId, analysisId, inputFiles), () -> analysisReadinessByConfigScopeId.getOrDefault(configurationScopeId, false),
+      files, Map.of());
   }
 
   private void reanalyseOpenFiles(Predicate<String> configScopeFilter) {

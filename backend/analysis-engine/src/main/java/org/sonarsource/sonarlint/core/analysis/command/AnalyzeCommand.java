@@ -19,8 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.analysis.command;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -54,9 +56,12 @@ public class AnalyzeCommand extends Command {
   private final ProgressMonitor progressMonitor;
   private final Consumer<List<ClientInputFile>> analysisStarted;
   private final Supplier<Boolean> isReadySupplier;
+  private final List<URI> files;
+  private final Map<String, String> extraProperties;
 
   public AnalyzeCommand(@Nullable String moduleKey, TriggerType triggerType, Supplier<AnalysisConfiguration> configurationSupplier, Consumer<Issue> issueListener,
-    @Nullable Trace trace, ProgressMonitor progressMonitor, Consumer<List<ClientInputFile>> analysisStarted, Supplier<Boolean> isReadySupplier) {
+    @Nullable Trace trace, ProgressMonitor progressMonitor, Consumer<List<ClientInputFile>> analysisStarted, Supplier<Boolean> isReadySupplier,
+    List<URI> files, Map<String, String> extraProperties) {
     this.moduleKey = moduleKey;
     this.triggerType = triggerType;
     this.configurationSupplier = configurationSupplier;
@@ -65,6 +70,8 @@ public class AnalyzeCommand extends Command {
     this.progressMonitor = progressMonitor;
     this.analysisStarted = analysisStarted;
     this.isReadySupplier = isReadySupplier;
+    this.files = files;
+    this.extraProperties = extraProperties;
   }
 
   @Override
@@ -82,6 +89,14 @@ public class AnalyzeCommand extends Command {
 
   public CompletableFuture<AnalysisResults> getResult() {
     return result;
+  }
+
+  public List<URI> getFiles() {
+    return files;
+  }
+
+  public Map<String, String> getExtraProperties() {
+    return extraProperties;
   }
 
   @Override
@@ -184,7 +199,8 @@ public class AnalyzeCommand extends Command {
       .addInputFiles(mergedInputFiles)
       .build();
     return new AnalyzeCommand(otherNewerAnalyzeCommand.moduleKey, otherNewerAnalyzeCommand.triggerType, () -> mergedAnalysisConfiguration, otherNewerAnalyzeCommand.issueListener,
-      otherNewerAnalyzeCommand.trace, otherNewerAnalyzeCommand.progressMonitor, otherNewerAnalyzeCommand.analysisStarted, otherNewerAnalyzeCommand.isReadySupplier);
+      otherNewerAnalyzeCommand.trace, otherNewerAnalyzeCommand.progressMonitor, otherNewerAnalyzeCommand.analysisStarted, otherNewerAnalyzeCommand.isReadySupplier,
+      mergedInputFiles.stream().map(ClientInputFile::uri).toList(), newerAnalysisConfiguration.extraProperties());
   }
 
   @Override

@@ -48,9 +48,11 @@ public class WaitingCancellationSensor implements Sensor {
         throw new RuntimeException(e);
       }
     }
+    System.out.println("Context cancelled: " + sensorContext.isCancelled());
     if (sensorContext.isCancelled()) {
       try {
         Files.writeString(cancellationFilePath, "CANCELED");
+        System.out.println("Wrote to cancellation file: " + cancellationFilePath);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
