@@ -139,8 +139,8 @@ class AnalysisRpcServiceDelegate extends AbstractRpcServiceDelegate implements A
     var configurationScopeId = params.getConfigurationScopeId();
     return requestAsync(cancelChecker -> {
       var analysisResults = getBean(AnalysisService.class)
-        .scheduleAnalysis(params.getConfigurationScopeId(), params.getAnalysisId(), params.getFilesToAnalyze(), params.getExtraProperties(), params.getStartTime(),
-          params.isShouldFetchServerIssues(), TriggerType.FORCED_WITH_EXCLUSIONS, cancelChecker)
+        .scheduleAnalysis(params.getConfigurationScopeId(), params.getAnalysisId(), params.getFilesToAnalyze(), params.getExtraProperties(), params.isShouldFetchServerIssues(),
+          TriggerType.FORCED_WITH_EXCLUSIONS, cancelChecker)
         .join();
       return generateAnalyzeFilesResponse(analysisResults);
     }, configurationScopeId);

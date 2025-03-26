@@ -241,7 +241,7 @@ public class TelemetryService {
     var languagePerFile = event.getLanguagePerFile();
     if (languagePerFile.size() == 1 && event.succeededForAllFiles()) {
       var fileLanguage = languagePerFile.entrySet().iterator().next().getValue();
-      analysisDoneOnSingleLanguage(fileLanguage == null ? null : Language.valueOf(fileLanguage.name()), (int) event.getAnalysisDuration());
+      analysisDoneOnSingleLanguage(fileLanguage == null ? null : Language.valueOf(fileLanguage.name()), (int) event.getAnalysisDuration().toMillis());
     } else {
       analysisDoneOnMultipleFiles();
     }
@@ -254,8 +254,7 @@ public class TelemetryService {
       event.fixSuggestionId(),
       event.source(),
       event.snippetsCount(),
-      event.wasGeneratedFromIde())
-    );
+      event.wasGeneratedFromIde()));
   }
 
   @EventListener
