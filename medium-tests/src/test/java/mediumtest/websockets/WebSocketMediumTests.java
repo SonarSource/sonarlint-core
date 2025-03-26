@@ -29,6 +29,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -1250,7 +1251,8 @@ class WebSocketMediumTests {
           {
             "event": "SecurityHotspotRaised",
             "data": {
-              "status": "TO_REVIEW",
+              "status": "REVIEWED",
+              "resolution": "FIXED",
               "vulnerabilityProbability": "MEDIUM",
               "creationDate": 1685006550000,
               "mainLocation": {
@@ -1270,7 +1272,10 @@ class WebSocketMediumTests {
               "branch": "some-branch"
           }}""");
 
-      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(issueStorage.getHotspot("hotspotKey")).isNotNull());
+      await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
+        assertThat(issueStorage.getHotspot("hotspotKey")).isNotNull();
+        assertThat(issueStorage.getHotspot("hotspotKey").getStatus()).isEqualTo(HotspotReviewStatus.FIXED);
+      });
     }
 
     @SonarLintTest
