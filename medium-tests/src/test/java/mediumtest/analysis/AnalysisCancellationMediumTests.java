@@ -25,25 +25,39 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import mediumtest.analysis.sensor.WaitingCancellationSensor;
+import org.assertj.core.api.InstanceOfAssertFactories;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
+import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
+import utils.TestPlugin;
 
 import static mediumtest.analysis.sensor.WaitingCancellationSensor.CANCELLATION_FILE_PATH_PROPERTY_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode.RequestCancelled;
+import static org.sonarsource.sonarlint.core.analysis.AnalysisQueue.ANALYSIS_EXPIRATION_DELAY_PROPERTY_NAME;
 import static org.sonarsource.sonarlint.core.test.utils.plugins.SonarPluginBuilder.newSonarPlugin;
 import static utils.AnalysisUtils.createFile;
 
 class AnalysisCancellationMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
+  private static final String CONNECTION_ID = "connectionId";
+
+  @AfterEach
+  void init_property() {
+    System.clearProperty(ANALYSIS_EXPIRATION_DELAY_PROPERTY_NAME);
+  }
 
   @SonarLintTest
-  void it_should_analyze_file_on_open(SonarLintTestHarness harness, @TempDir Path baseDir) throws InterruptedException {
+  void it_should_cancel_progress_monitor_when_analysis_is_canceled(SonarLintTestHarness harness, @TempDir Path baseDir) throws InterruptedException {
     var filePath = createFile(baseDir, "pom.xml", "");
     var fileUri = filePath.toUri();
     var client = harness.newFakeClient()
@@ -69,5 +83,82 @@ class AnalysisCancellationMediumTests {
     assertThat(future.isCancelled()).isTrue();
     await().atMost(3, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(cancelationFilePath).hasContent("CANCELED"));
+  }
+
+  @SonarLintTest
+  void it_should_cancel_analysis_when_not_ready_for_a_while(SonarLintTestHarness harness, @TempDir Path baseDir) throws InterruptedException {
+    System.setProperty(ANALYSIS_EXPIRATION_DELAY_PROPERTY_NAME, "PT0S");
+    var filePath = createFile(baseDir, "pom.xml", "");
+    var fileUri = filePath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
+        null, filePath, null, null, true)))
+      .build();
+    var server = harness.newFakeSonarQubeServer()
+      .withPlugin(TestPlugin.XML)
+      .withProject("projectKey")
+      .start();
+    var backend = harness.newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage
+        .withPlugins(TestPlugin.XML)
+        .withProject("projectKey2", project -> project.withMainBranch("main")))
+      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, "projectKey")
+      .withBoundConfigScope("otherConfigScope", CONNECTION_ID, "projectKey2")
+      .withExtraEnabledLanguagesInConnectedMode(Language.XML)
+      .start(client);
+    // this first analysis will never be ready
+    var firstAnalysisFuture = backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), false, System.currentTimeMillis()));
+    Thread.sleep(500);
+
+    // trigger analysis queue cleanup by posting a new analysis
+    backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams("otherConfigScope", UUID.randomUUID(), List.of(fileUri), Map.of(), false, System.currentTimeMillis()));
+
+    assertThat(firstAnalysisFuture)
+      .failsWithin(2, TimeUnit.SECONDS)
+      .withThrowableThat()
+      .havingCause()
+      .isInstanceOf(ResponseErrorException.class)
+      .asInstanceOf(InstanceOfAssertFactories.type(ResponseErrorException.class))
+      .extracting(ResponseErrorException::getResponseError)
+      .extracting(ResponseError::getCode)
+      .isEqualTo(RequestCancelled.getValue());
+  }
+
+  @SonarLintTest
+  void it_should_cancel_pending_analyses_when_closing_a_configuration_scope(SonarLintTestHarness harness, @TempDir Path baseDir) throws InterruptedException {
+    System.setProperty(ANALYSIS_EXPIRATION_DELAY_PROPERTY_NAME, "PT0S");
+    var filePath = createFile(baseDir, "pom.xml", "");
+    var fileUri = filePath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
+        null, filePath, null, null, true)))
+      .build();
+    var server = harness.newFakeSonarQubeServer()
+      .withPlugin(TestPlugin.XML)
+      .withProject("projectKey")
+      .start();
+    var backend = harness.newBackend()
+      .withSonarQubeConnection(CONNECTION_ID, server)
+      .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, "projectKey")
+      .withExtraEnabledLanguagesInConnectedMode(Language.XML)
+      .start(client);
+
+    var future = backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri), Map.of(), false, System.currentTimeMillis()));
+    Thread.sleep(500);
+
+    backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(CONFIG_SCOPE_ID));
+
+    assertThat(future)
+      .failsWithin(2, TimeUnit.SECONDS)
+      .withThrowableThat()
+      .havingCause()
+      .isInstanceOf(ResponseErrorException.class)
+      .asInstanceOf(InstanceOfAssertFactories.type(ResponseErrorException.class))
+      .extracting(ResponseErrorException::getResponseError)
+      .extracting(ResponseError::getCode)
+      .isEqualTo(RequestCancelled.getValue());
   }
 }
