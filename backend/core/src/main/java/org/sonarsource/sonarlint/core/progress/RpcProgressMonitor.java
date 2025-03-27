@@ -45,6 +45,6 @@ public class RpcProgressMonitor extends ProgressMonitor {
 
   @Override
   public boolean isCanceled() {
-    return cancelMonitor.isCanceled();
+    return super.isCanceled() || cancelMonitor.isCanceled();
   }
 }

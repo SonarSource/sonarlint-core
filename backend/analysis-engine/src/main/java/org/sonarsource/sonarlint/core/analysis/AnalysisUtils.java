@@ -19,25 +19,23 @@
  */
 package org.sonarsource.sonarlint.core.analysis;
 
-import java.util.List;
-import java.util.Map;
-import org.junit.jupiter.api.Test;
+import java.util.Objects;
 import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
-import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
+import org.sonarsource.sonarlint.core.analysis.command.Command;
 
-import static org.assertj.core.api.Assertions.assertThat;
+public class AnalysisUtils {
 
-class AnalysisQueueTest {
+  private AnalysisUtils() {
+    // util
+  }
 
-  @Test
-  void it_should_prioritize_register_module_commands_over_analyses() throws InterruptedException {
-    var analysisQueue = new AnalysisQueue();
-    analysisQueue.post(new AnalyzeCommand(null, null, null, null, null, null, null, () -> true, List.of(), Map.of()));
-    var registerModuleCommand = new RegisterModuleCommand(null);
-    analysisQueue.post(registerModuleCommand);
-
-    var command = analysisQueue.takeNextCommand();
-
-    assertThat(command).isEqualTo(registerModuleCommand);
+  public static boolean isSimilarAnalysis(Command commandA, Command commandB) {
+    if (!(commandA instanceof AnalyzeCommand analyzeCommandA) || !(commandB instanceof AnalyzeCommand analyzeCommandB)) {
+      return false;
+    }
+    var triggerTypesMatch = analyzeCommandA.getTriggerType() == analyzeCommandB.getTriggerType();
+    var filesMatch = Objects.equals(analyzeCommandA.getFiles(), analyzeCommandB.getFiles());
+    var extraPropertiesMatch = Objects.equals(analyzeCommandA.getExtraProperties(), analyzeCommandB.getExtraProperties());
+    return triggerTypesMatch && filesMatch && extraPropertiesMatch;
   }
 }

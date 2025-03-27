@@ -28,6 +28,8 @@ import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.plugin.commons.LoadedPlugins;
 
+import static org.sonarsource.sonarlint.core.analysis.AnalysisUtils.isSimilarAnalysis;
+
 public class AnalysisScheduler {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private static final Runnable CANCELING_TERMINATION = () -> {
@@ -93,6 +95,12 @@ public class AnalysisScheduler {
       LOG.error("Analysis engine not started, ignoring command");
       command.cancel();
       return;
+    }
+    var currentCommand = executingCommand.get();
+    if (currentCommand != null && isSimilarAnalysis(currentCommand, command)) {
+      LOG.debug("Cancelling execution of similar analysis");
+      executingCommand.set(null);
+      currentCommand.cancel();
     }
     analysisQueue.post(command);
   }

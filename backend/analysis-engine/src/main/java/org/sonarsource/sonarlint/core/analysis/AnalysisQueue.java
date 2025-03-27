@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import org.sonarsource.sonarlint.core.analysis.api.TriggerType;
 import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.analysis.command.Command;
 import org.sonarsource.sonarlint.core.analysis.command.NotifyModuleEventCommand;
@@ -36,11 +37,15 @@ import org.sonarsource.sonarlint.core.analysis.command.UnregisterModuleCommand;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 import static java.util.Map.entry;
+import static org.sonarsource.sonarlint.core.analysis.AnalysisUtils.isSimilarAnalysis;
 
 public class AnalysisQueue {
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final PriorityQueue<Command> queue = new PriorityQueue<>(new CommandComparator());
 
   public synchronized void post(Command command) {
+    cancelAndUnscheduleSimilarAnalysisCommands(command);
+
     queue.add(command);
     notifyAll();
   }
@@ -69,6 +74,26 @@ public class AnalysisQueue {
 
   public synchronized void clearAllButAnalyses() {
     removeAll(command -> !(command instanceof AnalyzeCommand));
+  }
+
+  private void cancelAndUnscheduleSimilarAnalysisCommands(Command command) {
+    if (command instanceof AnalyzeCommand newAnalysis && newAnalysis.getTriggerType() == TriggerType.AUTO) {
+      List<AnalyzeCommand> analyzeCommandsToRemove = new ArrayList<>();
+
+      for (Command existingCommand : queue) {
+        if (existingCommand instanceof AnalyzeCommand existingAnalysis &&
+          existingAnalysis.getTriggerType() == TriggerType.AUTO &&
+          isSimilarAnalysis(newAnalysis, existingAnalysis)) {
+          analyzeCommandsToRemove.add(existingAnalysis);
+        }
+      }
+
+      if (!analyzeCommandsToRemove.isEmpty()) {
+        LOG.debug("Cancelling {} outdated automatic analysis commands", analyzeCommandsToRemove.size());
+        queue.removeAll(analyzeCommandsToRemove);
+        analyzeCommandsToRemove.forEach(AnalyzeCommand::cancel);
+      }
+    }
   }
 
   private Optional<Command> pollNextReadyCommand() {
@@ -146,7 +171,7 @@ public class AnalysisQueue {
       var commandRank = COMMAND_TYPES_ORDERED.get(command.getClass());
       var otherCommandRank = COMMAND_TYPES_ORDERED.get(otherCommand.getClass());
       return !Objects.equals(commandRank, otherCommandRank) ? (commandRank - otherCommandRank) :
-      // for same command types, respect insertion order
+        // for same command types, respect insertion order
         (int) (command.getSequenceNumber() - otherCommand.getSequenceNumber());
     }
   }
