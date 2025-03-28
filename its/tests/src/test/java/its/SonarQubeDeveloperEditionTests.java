@@ -495,7 +495,8 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
       } else {
         request.setParam("custom_key", "myrule")
           .setParam("markdown_description", "my_rule_description")
-          .setParam("template_key", javaRuleKey("S2253"));
+          .setParam("template_key", javaRuleKey("S2253"))
+          .setParam("type", "VULNERABILITY");
       }
 
       try (var response = adminWsClient.wsConnector().call(request)) {
@@ -517,8 +518,13 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
         assertThat(rawIssues).hasSize(3);
 
         var ruleDetails = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, javaRuleKey("myrule"), null)).get();
-        assertThat(ruleDetails.details().getDescription().getLeft().getHtmlContent()).contains("my_rule_description");
-        assertThat(ruleDetails.details().getName()).isEqualTo("myrule");
+        var details = ruleDetails.details();
+        assertThat(details.getDescription().getLeft().getHtmlContent()).contains("my_rule_description");
+        assertThat(details.getName()).isEqualTo("myrule");
+
+        if (!ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(10, 0)) {
+          assertThat(details.getType()).isEqualTo(RuleType.VULNERABILITY);
+        }
 
       } finally {
 

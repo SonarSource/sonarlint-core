@@ -150,7 +150,7 @@ public class RuleDetails {
         .collect(Collectors.groupingBy(DescriptionSection::getKey)),
       mergeImpacts(defaultImpacts, activeRuleFromStorage.getOverriddenImpacts()),
       serverRule.getSeverity(),
-      templateRuleDefFromPlugin.getType(),
+      serverRule.getType(),
       cleanCodeAttribute,
       serverRule.getHtmlNote(),
       Collections.emptyList(), templateRuleDefFromPlugin.getEducationPrincipleKeys(), templateRuleDefFromPlugin.getVulnerabilityProbability().orElse(null));
