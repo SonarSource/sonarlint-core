@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.client.utils;
 
+import java.io.File;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
@@ -67,13 +68,13 @@ public class ClientFileExclusions implements Predicate<String> {
   }
 
   private boolean testFileExclusions(Path path) {
-    return fileExclusions.contains(path.toString());
+    return fileExclusions.contains(path.toString().replace(File.separatorChar, '/'));
   }
 
   private boolean testDirectoryExclusions(Path path) {
     var p = path;
     while (p != null) {
-      if (directoryExclusions.contains(p.toString())) {
+      if (directoryExclusions.contains(p.toString().replace(File.separatorChar, '/'))) {
         return true;
       }
       p = p.getParent();
