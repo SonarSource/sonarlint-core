@@ -58,6 +58,7 @@ public class TelemetryLocalStorage {
   private int issueStatusChangedCount;
   private final Set<String> raisedIssuesRules;
   private final Set<String> quickFixesApplied;
+  private final Map<String, Integer> quickFixCountByRuleKey;
   private final Map<String, TelemetryHelpAndFeedbackCounter> helpAndFeedbackLinkClickedCount;
   private final Map<String, TelemetryFixSuggestionReceivedCounter> fixSuggestionReceivedCounter;
   private final Map<String, List<TelemetryFixSuggestionResolvedStatus>> fixSuggestionResolved;
@@ -77,6 +78,7 @@ public class TelemetryLocalStorage {
     issueStatusChangedRuleKeys = new HashSet<>();
     raisedIssuesRules = new HashSet<>();
     quickFixesApplied = new HashSet<>();
+    quickFixCountByRuleKey = new LinkedHashMap<>();
     helpAndFeedbackLinkClickedCount = new LinkedHashMap<>();
     fixSuggestionReceivedCounter = new LinkedHashMap<>();
     fixSuggestionResolved = new LinkedHashMap<>();
@@ -97,6 +99,12 @@ public class TelemetryLocalStorage {
 
   public void addQuickFixAppliedForRule(String ruleKey) {
     this.quickFixesApplied.add(ruleKey);
+    var currentCountForKey = this.quickFixCountByRuleKey.getOrDefault(ruleKey, 0);
+    this.quickFixCountByRuleKey.put(ruleKey, currentCountForKey + 1);
+  }
+
+  public Map<String, Integer> getQuickFixCountByRuleKey() {
+    return quickFixCountByRuleKey;
   }
 
   @Deprecated
@@ -188,6 +196,7 @@ public class TelemetryLocalStorage {
     issueStatusChangedCount = 0;
     raisedIssuesRules.clear();
     quickFixesApplied.clear();
+    quickFixCountByRuleKey.clear();
     helpAndFeedbackLinkClickedCount.clear();
     fixSuggestionReceivedCounter.clear();
     fixSuggestionResolved.clear();
