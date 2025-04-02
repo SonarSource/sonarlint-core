@@ -34,7 +34,7 @@ import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRuleAdapter;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.ActiveRulesAdapter;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.SonarLintModuleFileSystem;
 import org.sonarsource.sonarlint.core.commons.monitoring.Trace;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressIndicator;
 import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentContainer;
 
 public class ModuleContainer extends SpringComponentContainer {
@@ -62,8 +62,8 @@ public class ModuleContainer extends SpringComponentContainer {
     return isTransient;
   }
 
-  public AnalysisResults analyze(AnalysisConfiguration configuration, Consumer<Issue> issueListener, ProgressMonitor progress, @Nullable Trace trace) {
-    var analysisContainer = new AnalysisContainer(this, progress);
+  public AnalysisResults analyze(AnalysisConfiguration configuration, Consumer<Issue> issueListener, ProgressIndicator progressIndicator, @Nullable Trace trace) {
+    var analysisContainer = new AnalysisContainer(this, progressIndicator);
     analysisContainer.add(configuration);
     analysisContainer.add(new IssueListenerHolder(issueListener));
     analysisContainer.add(new ActiveRulesAdapter(configuration.activeRules().stream().map(ActiveRuleAdapter::new).toList()));

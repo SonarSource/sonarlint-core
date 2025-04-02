@@ -21,31 +21,26 @@ package org.sonarsource.sonarlint.core.progress;
 
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.commons.api.progress.CanceledException;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.TaskManager;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ProgressEndNotification;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.StartProgressParams;
 
-public class TaskManager {
+public class ClientAwareTaskManager extends TaskManager {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final SonarLintRpcClient client;
 
-  public TaskManager(SonarLintRpcClient client) {
+  public ClientAwareTaskManager(SonarLintRpcClient client) {
     this.client = client;
   }
 
-  public void startTask(@Nullable String configurationScopeId, String title, @Nullable String message, boolean indeterminate, boolean cancellable,
-    Consumer<ProgressNotifier> task) {
-    startTask(configurationScopeId, UUID.randomUUID(), title, message, indeterminate, cancellable, task);
-  }
-
-  public void startTask(@Nullable String configurationScopeId, UUID taskId, String title, @Nullable String message, boolean indeterminate, boolean cancellable,
-    Consumer<ProgressNotifier> task) {
-    ProgressNotifier progressNotifier = new ClientProgressNotifier(client, taskId);
+  @Override
+  protected ProgressMonitor startProgress(@Nullable String configurationScopeId, UUID taskId, String title, @Nullable String message, boolean indeterminate, boolean cancellable,
+    SonarLintCancelMonitor cancelMonitor) {
     try {
       client.startProgress(new StartProgressParams(taskId.toString(), configurationScopeId, title, message, indeterminate, cancellable)).get();
     } catch (InterruptedException e) {
@@ -54,12 +49,8 @@ public class TaskManager {
       throw new CanceledException();
     } catch (ExecutionException e) {
       LOG.error("The client was unable to start progress, cause:", e);
-      progressNotifier = new NoOpProgressNotifier();
+      return super.startProgress(configurationScopeId, taskId, title, message, indeterminate, cancellable, cancelMonitor);
     }
-    try {
-      task.accept(progressNotifier);
-    } finally {
-      client.reportProgress(new ReportProgressParams(taskId.toString(), new ProgressEndNotification()));
-    }
+    return new ClientAwareProgressMonitor(client, taskId, cancelMonitor);
   }
 }
