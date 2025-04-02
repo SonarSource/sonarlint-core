@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - RPC Protocol
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,14 +17,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.progress;
+@ParametersAreNonnullByDefault
+package org.sonarsource.sonarlint.core.rpc.protocol.backend.progress;
 
-import org.jetbrains.annotations.Nullable;
+import javax.annotation.ParametersAreNonnullByDefault;
 
-public class NoOpProgressNotifier implements ProgressNotifier {
-
-  @Override
-  public void notify(@Nullable String message, @Nullable Integer percentage) {
-    // no-op
-  }
-}

@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.analysis.sonarapi;
 
+import javax.annotation.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,7 +39,7 @@ import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpNewHighlighting
 import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpNewMeasure;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpNewSignificantCode;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpNewSymbolTable;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressIndicator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -65,12 +66,24 @@ class DefaultSensorContextTests {
   private SonarRuntime sqRuntime;
 
   private DefaultSensorContext ctx;
-  private ProgressMonitor progress;
+  private ProgressIndicator progressIndicator;
+  private boolean canceled;
 
   @BeforeEach
   void setUp() {
-    progress = new ProgressMonitor(null);
-    ctx = new DefaultSensorContext(module, settings, config, fs, activeRules, sensorStorage, sqRuntime, progress);
+    canceled = false;
+    progressIndicator = new ProgressIndicator() {
+      @Override
+      public void notifyProgress(@Nullable String message, @Nullable Integer percentage) {
+        // no-op
+      }
+
+      @Override
+      public boolean isCanceled() {
+        return canceled;
+      }
+    };
+    ctx = new DefaultSensorContext(module, settings, config, fs, activeRules, sensorStorage, sqRuntime, progressIndicator);
   }
 
   @Test
@@ -116,7 +129,9 @@ class DefaultSensorContextTests {
   @Test
   void testCancellation() {
     assertThat(ctx.isCancelled()).isFalse();
-    progress.cancel();
+
+    canceled = true;
+
     assertThat(ctx.isCancelled()).isTrue();
   }
 }

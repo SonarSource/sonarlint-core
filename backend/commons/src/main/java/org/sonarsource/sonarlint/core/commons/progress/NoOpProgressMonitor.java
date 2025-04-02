@@ -1,5 +1,5 @@
 /*
- * SonarLint Core - Implementation
+ * SonarLint Core - Commons
  * Copyright (C) 2016-2025 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
@@ -17,25 +17,29 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-package org.sonarsource.sonarlint.core.progress;
+package org.sonarsource.sonarlint.core.commons.progress;
 
-import java.util.UUID;
 import javax.annotation.Nullable;
-import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ProgressUpdateNotification;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 
-public class ClientProgressNotifier implements ProgressNotifier {
-  private final SonarLintRpcClient client;
-  private final UUID taskId;
-
-  public ClientProgressNotifier(SonarLintRpcClient client, UUID taskId) {
-    this.client = client;
-    this.taskId = taskId;
+public class NoOpProgressMonitor implements ProgressMonitor {
+  @Override
+  public void notifyProgress(@Nullable String message, @Nullable Integer percentage) {
+    // no-op
   }
 
   @Override
-  public void notify(@Nullable String message, @Nullable Integer percentage) {
-    client.reportProgress(new ReportProgressParams(taskId.toString(), new ProgressUpdateNotification(message, percentage)));
+  public boolean isCanceled() {
+    // no-op
+    return false;
+  }
+
+  @Override
+  public void complete() {
+    // no-op
+  }
+
+  @Override
+  public void cancel() {
+    // no-op
   }
 }

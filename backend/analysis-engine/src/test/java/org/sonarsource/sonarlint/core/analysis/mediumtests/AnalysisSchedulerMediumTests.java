@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -57,7 +58,8 @@ import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.TaskManager;
 import org.sonarsource.sonarlint.core.plugin.commons.PluginsLoader;
 import testutils.OnDiskTestClientInputFile;
 
@@ -73,10 +75,11 @@ class AnalysisSchedulerMediumTests {
   private static final Supplier<Boolean> ANALYSIS_READY_SUPPLIER = () -> true;
   private static final Consumer<Issue> NO_OP_ISSUE_LISTENER = issue -> {
   };
+  public static final TaskManager TASK_MANAGER = new TaskManager();
 
   private AnalysisScheduler analysisScheduler;
   private volatile boolean engineStopped = true;
-  private final ProgressMonitor progressMonitor = new ProgressMonitor(null);
+  private final SonarLintCancelMonitor progressMonitor = new SonarLintCancelMonitor();
 
   @BeforeEach
   void prepare(@TempDir Path workDir) throws IOException {
@@ -111,7 +114,8 @@ class AnalysisSchedulerMediumTests {
       .setBaseDir(baseDir)
       .build();
     List<Issue> issues = new ArrayList<>();
-    var command = new AnalyzeCommand(null, TriggerType.FORCED, () -> analysisConfig, issues::add, null, progressMonitor, NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER);
+    var command = new AnalyzeCommand(null, UUID.randomUUID(), TriggerType.FORCED, () -> analysisConfig, issues::add, null, progressMonitor, TASK_MANAGER,
+      NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER);
     analysisScheduler.post(command);
     command.getResult().get();
     assertThat(issues).hasSize(1);
@@ -136,10 +140,10 @@ class AnalysisSchedulerMediumTests {
       .build();
     List<Issue> issues = new ArrayList<>();
     analysisScheduler.post(new RegisterModuleCommand(new ClientModuleInfo("moduleKey", aModuleFileSystem())));
-    var analyzeCommand = new AnalyzeCommand("moduleKey", TriggerType.FORCED, () -> analysisConfig, issues::add, null, progressMonitor, NO_OP_ANALYSIS_STARTED_CONSUMER,
-      ANALYSIS_READY_SUPPLIER);
+    var analyzeCommand = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED, () -> analysisConfig, issues::add, null, progressMonitor, TASK_MANAGER,
+      NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER);
     analysisScheduler.post(analyzeCommand);
-    analyzeCommand.getResult().get();
+    analyzeCommand.getFutureResult().get();
     assertThat(issues).hasSize(1);
     assertThat(issues)
       .extracting("ruleKey", "message", "inputFile", "flows", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
@@ -149,13 +153,13 @@ class AnalysisSchedulerMediumTests {
 
   @Test
   void should_fail_the_future_if_the_analyze_command_execution_fails() {
-    var command = new AnalyzeCommand("moduleKey", TriggerType.FORCED, () -> {
+    var command = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED, () -> {
       throw new RuntimeException("Kaboom");
     }, issue -> {
-    }, null, progressMonitor, NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER);
+    }, null, progressMonitor, TASK_MANAGER, NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER);
     analysisScheduler.post(command);
 
-    assertThat(command.getResult()).failsWithin(300, TimeUnit.MILLISECONDS)
+    assertThat(command.getFutureResult()).failsWithin(300, TimeUnit.MILLISECONDS)
       .withThrowableOfType(ExecutionException.class)
       .havingCause()
       .isInstanceOf(RuntimeException.class)
@@ -175,15 +179,15 @@ class AnalysisSchedulerMediumTests {
       .addActiveRules(trailingCommentRule())
       .setBaseDir(baseDir)
       .build();
-    var analyzeCommand = new AnalyzeCommand("moduleKey", TriggerType.FORCED, () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor, inputFiles -> pause(300),
-      ANALYSIS_READY_SUPPLIER);
+    var analyzeCommand = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED, () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor, TASK_MANAGER,
+      inputFiles -> pause(300), ANALYSIS_READY_SUPPLIER);
     analysisScheduler.post(analyzeCommand);
 
     analysisScheduler.stop();
     engineStopped = true;
 
-    await().until(analyzeCommand.getResult()::isDone);
-    assertThat(analyzeCommand.getResult())
+    await().until(analyzeCommand.getFutureResult()::isDone);
+    assertThat(analyzeCommand.getFutureResult())
       .isCancelled();
     assertThat(progressMonitor.isCanceled()).isTrue();
   }
@@ -201,21 +205,20 @@ class AnalysisSchedulerMediumTests {
       .addActiveRules(trailingCommentRule())
       .setBaseDir(baseDir)
       .build();
-    var analyzeCommand = new AnalyzeCommand("moduleKey", TriggerType.FORCED, () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor, inputFiles -> pause(300),
-      ANALYSIS_READY_SUPPLIER);
-    var secondAnalyzeCommand = new AnalyzeCommand("moduleKey", TriggerType.FORCED, () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor,
-      NO_OP_ANALYSIS_STARTED_CONSUMER,
-      ANALYSIS_READY_SUPPLIER);
+    var analyzeCommand = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED, () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor, TASK_MANAGER,
+      inputFiles -> pause(300), ANALYSIS_READY_SUPPLIER);
+    var secondAnalyzeCommand = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED, () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor,
+      TASK_MANAGER, NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER);
     analysisScheduler.post(analyzeCommand);
     analysisScheduler.post(secondAnalyzeCommand);
 
     analysisScheduler.stop();
     engineStopped = true;
 
-    await().until(analyzeCommand.getResult()::isDone);
-    assertThat(analyzeCommand.getResult())
+    await().until(analyzeCommand.getFutureResult()::isDone);
+    assertThat(analyzeCommand.getFutureResult())
       .isCancelled();
-    assertThat(secondAnalyzeCommand.getResult())
+    assertThat(secondAnalyzeCommand.getFutureResult())
       .isCancelled();
     assertThat(progressMonitor.isCanceled()).isTrue();
   }
@@ -234,15 +237,16 @@ class AnalysisSchedulerMediumTests {
       .setBaseDir(baseDir)
       .build();
     var threadTermination = new AtomicReference<String>();
-    var analyzeCommand = new AnalyzeCommand("moduleKey", TriggerType.FORCED, () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor, inputFiles -> {
-      try {
-        Thread.sleep(3000);
-      } catch (InterruptedException e) {
-        threadTermination.set("INTERRUPTED");
-        return;
-      }
-      threadTermination.set("FINISHED");
-    }, ANALYSIS_READY_SUPPLIER);
+    var analyzeCommand = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED, () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor, TASK_MANAGER,
+      inputFiles -> {
+        try {
+          Thread.sleep(3000);
+        } catch (InterruptedException e) {
+          threadTermination.set("INTERRUPTED");
+          return;
+        }
+        threadTermination.set("FINISHED");
+      }, ANALYSIS_READY_SUPPLIER);
     analysisScheduler.post(analyzeCommand);
     // let the engine run the first command
     pause(200);
@@ -250,7 +254,7 @@ class AnalysisSchedulerMediumTests {
     analysisScheduler.stop();
     engineStopped = true;
 
-    await().until(analyzeCommand.getResult()::isDone);
+    await().until(analyzeCommand.getFutureResult()::isDone);
     assertThat(threadTermination).hasValue("INTERRUPTED");
   }
 
