@@ -23,6 +23,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.function.Consumer;
@@ -38,7 +39,9 @@ import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.monitoring.Trace;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressIndicator;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.TaskManager;
 
 import static org.sonarsource.sonarlint.core.commons.util.StringUtils.pluralize;
 
@@ -46,24 +49,28 @@ public class AnalyzeCommand extends Command {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final String moduleKey;
+  private final UUID analysisId;
   private final TriggerType triggerType;
   private final Supplier<AnalysisConfiguration> configurationSupplier;
   private final Consumer<Issue> issueListener;
   @Nullable
   private final Trace trace;
-  private final CompletableFuture<AnalysisResults> result = new CompletableFuture<>();
-  private final ProgressMonitor progressMonitor;
+  private final CompletableFuture<AnalysisResults> futureResult = new CompletableFuture<>();
+  private final SonarLintCancelMonitor cancelMonitor;
+  private final TaskManager taskManager;
   private final Consumer<List<ClientInputFile>> analysisStarted;
   private final Supplier<Boolean> isReadySupplier;
 
-  public AnalyzeCommand(@Nullable String moduleKey, TriggerType triggerType, Supplier<AnalysisConfiguration> configurationSupplier, Consumer<Issue> issueListener,
-    @Nullable Trace trace, ProgressMonitor progressMonitor, Consumer<List<ClientInputFile>> analysisStarted, Supplier<Boolean> isReadySupplier) {
+  public AnalyzeCommand(@Nullable String moduleKey, UUID analysisId, TriggerType triggerType, Supplier<AnalysisConfiguration> configurationSupplier, Consumer<Issue> issueListener,
+    @Nullable Trace trace, SonarLintCancelMonitor cancelMonitor, TaskManager taskManager, Consumer<List<ClientInputFile>> analysisStarted, Supplier<Boolean> isReadySupplier) {
     this.moduleKey = moduleKey;
+    this.analysisId = analysisId;
     this.triggerType = triggerType;
     this.configurationSupplier = configurationSupplier;
     this.issueListener = issueListener;
     this.trace = trace;
-    this.progressMonitor = progressMonitor;
+    this.cancelMonitor = cancelMonitor;
+    this.taskManager = taskManager;
     this.analysisStarted = analysisStarted;
     this.isReadySupplier = isReadySupplier;
   }
@@ -81,38 +88,38 @@ public class AnalyzeCommand extends Command {
     return triggerType;
   }
 
-  public CompletableFuture<AnalysisResults> getResult() {
-    return result;
+  public CompletableFuture<AnalysisResults> getFutureResult() {
+    return futureResult;
   }
 
   @Override
   public void execute(ModuleRegistry moduleRegistry) {
     try {
       var configuration = configurationSupplier.get();
-      progressMonitor.startTask("Analyzing " + pluralize(configuration.inputFiles().size(), "file"),
-        () -> execute(moduleRegistry, progressMonitor, configuration));
+      taskManager.runTask(moduleKey, analysisId, "Analyzing " + pluralize(configuration.inputFiles().size(), "file"), null, true, false,
+        indicator -> execute(moduleRegistry, indicator, configuration), cancelMonitor);
     } catch (Exception e) {
       handleAnalysisFailed(e);
     }
   }
 
-  void execute(ModuleRegistry moduleRegistry, ProgressMonitor progressMonitor, AnalysisConfiguration configuration) {
+  void execute(ModuleRegistry moduleRegistry, ProgressIndicator progressIndicator, AnalysisConfiguration configuration) {
     try {
-      doExecute(moduleRegistry, progressMonitor, configuration);
+      doExecute(moduleRegistry, progressIndicator, configuration);
     } catch (Exception e) {
       handleAnalysisFailed(e);
     }
   }
 
-  void doExecute(ModuleRegistry moduleRegistry, ProgressMonitor progressMonitor, AnalysisConfiguration analysisConfig) {
+  void doExecute(ModuleRegistry moduleRegistry, ProgressIndicator progressIndicator, AnalysisConfiguration analysisConfig) {
     if (analysisConfig.inputFiles().isEmpty()) {
       LOG.info("No file to analyze");
-      result.complete(new AnalysisResults());
+      futureResult.complete(new AnalysisResults());
       return;
     }
     try {
-      var analysisResults = doRunAnalysis(moduleRegistry, progressMonitor, analysisConfig);
-      result.complete(analysisResults);
+      var analysisResults = doRunAnalysis(moduleRegistry, progressIndicator, analysisConfig);
+      futureResult.complete(analysisResults);
     } catch (CompletionException e) {
       handleAnalysisFailed(e.getCause());
     } catch (Exception e) {
@@ -122,15 +129,15 @@ public class AnalyzeCommand extends Command {
 
   private void handleAnalysisFailed(Throwable throwable) {
     LOG.error("Error during analysis", throwable);
-    result.completeExceptionally(throwable);
+    futureResult.completeExceptionally(throwable);
   }
 
-  private AnalysisResults doRunAnalysis(ModuleRegistry moduleRegistry, ProgressMonitor progressMonitor, AnalysisConfiguration configuration) {
+  private AnalysisResults doRunAnalysis(ModuleRegistry moduleRegistry, ProgressIndicator progressIndicator, AnalysisConfiguration configuration) {
     var startTime = System.currentTimeMillis();
     analysisStarted.accept(configuration.inputFiles());
     var moduleContainer = moduleKey != null ? moduleRegistry.getContainerFor(moduleKey) : null;
     if (moduleContainer == null) {
-      // if not found, means we are outside of any module (e.g. single file analysis on VSCode)
+      // if not found, means we are outside any module (e.g. single file analysis on VSCode)
       moduleContainer = moduleRegistry.createTransientContainer(configuration.inputFiles());
     }
     Throwable originalException = null;
@@ -143,7 +150,7 @@ public class AnalyzeCommand extends Command {
         .toList());
     }
     try {
-      var result = moduleContainer.analyze(configuration, issueListener, progressMonitor, trace);
+      var result = moduleContainer.analyze(configuration, issueListener, progressIndicator, trace);
       if (trace != null) {
         trace.setData("failedFilesCount", result.failedAnalysisFiles().size());
         trace.finishSuccessfully();
@@ -186,13 +193,14 @@ public class AnalyzeCommand extends Command {
       .putAllExtraProperties(newerAnalysisConfiguration.extraProperties())
       .addInputFiles(mergedInputFiles)
       .build();
-    return new AnalyzeCommand(otherNewerAnalyzeCommand.moduleKey, otherNewerAnalyzeCommand.triggerType, () -> mergedAnalysisConfiguration, otherNewerAnalyzeCommand.issueListener,
-      otherNewerAnalyzeCommand.trace, otherNewerAnalyzeCommand.progressMonitor, otherNewerAnalyzeCommand.analysisStarted, otherNewerAnalyzeCommand.isReadySupplier);
+    return new AnalyzeCommand(otherNewerAnalyzeCommand.moduleKey, otherNewerAnalyzeCommand.analysisId, otherNewerAnalyzeCommand.triggerType, () -> mergedAnalysisConfiguration,
+      otherNewerAnalyzeCommand.issueListener, otherNewerAnalyzeCommand.trace, otherNewerAnalyzeCommand.cancelMonitor, otherNewerAnalyzeCommand.taskManager,
+      otherNewerAnalyzeCommand.analysisStarted, otherNewerAnalyzeCommand.isReadySupplier);
   }
 
   @Override
   public void cancel() {
-    progressMonitor.cancel();
-    result.cancel(true);
+    cancelMonitor.cancel();
+    futureResult.cancel(true);
   }
 }

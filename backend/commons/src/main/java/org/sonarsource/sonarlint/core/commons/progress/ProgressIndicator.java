@@ -19,28 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.commons.progress;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.sonarsource.sonarlint.core.commons.api.progress.CanceledException;
-import org.sonarsource.sonarlint.core.commons.api.progress.ClientProgressMonitor;
+import javax.annotation.Nullable;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-class ProgressMonitorTests {
-  private ProgressMonitor progress;
-  private ClientProgressMonitor monitor;
-
-  @BeforeEach
-  void setUp() {
-    monitor = mock(ClientProgressMonitor.class);
-    progress = new ProgressMonitor(monitor);
-  }
-
-  @Test
-  void testCancel() {
-    when(monitor.isCanceled()).thenReturn(true);
-    assertThrows(CanceledException.class, () -> progress.checkCancel());
-  }
+public interface ProgressIndicator {
+  void notifyProgress(@Nullable String message, @Nullable Integer percentage);
+  boolean isCanceled();
 }
