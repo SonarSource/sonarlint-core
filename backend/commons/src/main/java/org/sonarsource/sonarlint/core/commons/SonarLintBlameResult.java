@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.commons;
 
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Optional;
@@ -70,7 +71,7 @@ public class SonarLintBlameResult {
       if (isLineModified(dateForLine)) {
         return null;
       }
-      latestDate = isNull(latestDate) || latestDate.before(dateForLine) ? dateForLine : latestDate;
+      latestDate = isNull(latestDate) || latestDate.before(Date.from(dateForLine)) ? Date.from(dateForLine) : latestDate;
     }
     return latestDate;
   }
@@ -82,7 +83,7 @@ public class SonarLintBlameResult {
     }
   }
 
-  private static boolean isLineModified(@Nullable Date dateForLine) {
+  private static boolean isLineModified(@Nullable Instant dateForLine) {
     return dateForLine == null;
   }
 }

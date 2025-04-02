@@ -73,8 +73,11 @@
     <slf4j.version>2.0.17</slf4j.version>
     <logback.version>1.5.17</logback.version>
     <version.surefire.plugin>3.1.2</version.surefire.plugin>
-    <jgit.version>6.9.0.202403050737-r</jgit.version>
     <system.stubs.version>2.1.7</system.stubs.version>
+
+    <!-- JGit 7 rely on Java 17 and only used by the backend, JGit 6 relying on Java 11 for the Java clients -->
+    <jgit6.version>6.10.0.202406032230-r</jgit6.version>
+    <jgit7.version>7.2.0.202503040940-r</jgit7.version>
     <sentry.version>8.0.0</sentry.version>
 
     <!-- Not only used as a plug-in but also as a dependency for 'maven-shade-ext-bnd-transformer' -->

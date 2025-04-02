@@ -66,7 +66,7 @@ public class BlameParser {
           if (line.startsWith(COMMITTER_TIME) && !currentFileBlame.getAuthorEmails()[currentLineNumber].equals(NOT_COMMITTED)) {
             var committerTime = line.substring(COMMITTER_TIME.length());
             var commitDate = Date.from(Instant.ofEpochSecond(Long.parseLong(committerTime)).truncatedTo(ChronoUnit.SECONDS));
-            currentFileBlame.getCommitDates()[currentLineNumber] = commitDate;
+            currentFileBlame.getCommitDates()[currentLineNumber] = commitDate.toInstant();
           }
         }
       } catch (IOException e) {

@@ -33,7 +33,7 @@
     <dependency>
       <groupId>org.eclipse.jgit</groupId>
       <artifactId>org.eclipse.jgit</artifactId>
-      <version>${jgit.version}</version>
+      <version>${jgit6.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
