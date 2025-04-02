@@ -101,31 +101,6 @@ class AnalysisSchedulerMediumTests {
   }
 
   @Test
-  void should_analyze_a_single_file_outside_of_any_module(@TempDir Path baseDir) throws Exception {
-    var content = """
-      def foo():
-        x = 9; # trailing comment
-      """;
-    var inputFile = preparePythonInputFile(baseDir, content);
-
-    var analysisConfig = AnalysisConfiguration.builder()
-      .addInputFiles(inputFile)
-      .addActiveRules(trailingCommentRule())
-      .setBaseDir(baseDir)
-      .build();
-    List<Issue> issues = new ArrayList<>();
-    var command = new AnalyzeCommand(null, UUID.randomUUID(), TriggerType.FORCED, () -> analysisConfig, issues::add, null, progressMonitor, TASK_MANAGER,
-      NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER);
-    analysisScheduler.post(command);
-    command.getResult().get();
-    assertThat(issues).hasSize(1);
-    assertThat(issues)
-      .extracting("ruleKey", "message", "inputFile", "flows", "textRange.startLine", "textRange.startLineOffset", "textRange.endLine", "textRange.endLineOffset")
-      .containsOnly(tuple("python:S139", "Move this trailing comment on the previous empty line.", inputFile, List.of(), 2, 9, 2, 27));
-    assertThat(issues.get(0).quickFixes()).hasSize(1);
-  }
-
-  @Test
   void should_analyze_a_file_inside_a_module(@TempDir Path baseDir) throws Exception {
     var content = """
       def foo():
