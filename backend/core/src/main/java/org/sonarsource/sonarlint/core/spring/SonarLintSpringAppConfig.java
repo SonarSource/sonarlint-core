@@ -79,6 +79,7 @@ import org.sonarsource.sonarlint.core.plugin.PluginsRepository;
 import org.sonarsource.sonarlint.core.plugin.PluginsService;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsNotifierService;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
+import org.sonarsource.sonarlint.core.progress.ClientAwareTaskManager;
 import org.sonarsource.sonarlint.core.promotion.PromotionService;
 import org.sonarsource.sonarlint.core.remediation.aicodefix.AiCodeFixService;
 import org.sonarsource.sonarlint.core.reporting.FindingReportingService;
@@ -189,7 +190,8 @@ import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_S
   OpenFilesRepository.class,
   DogfoodEnvironmentDetectionService.class,
   MonitoringService.class,
-  AiCodeFixService.class
+  AiCodeFixService.class,
+  ClientAwareTaskManager.class,
 })
 public class SonarLintSpringAppConfig {
 

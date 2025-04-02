@@ -21,16 +21,18 @@ package org.sonarsource.sonarlint.core.analysis.container.analysis.sensor;
 
 import java.util.List;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.SensorDescriptor;
 import org.sonar.api.scanner.sensor.ProjectSensor;
+import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultSensorContext;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressIndicator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -40,6 +42,17 @@ import static org.mockito.Mockito.when;
 class SensorsExecutorTests {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
+  public static final DefaultSensorContext DEFAULT_SENSOR_CONTEXT = new DefaultSensorContext(null, null, null, null, null, null, null, new ProgressIndicator() {
+    @Override
+    public void notifyProgress(@Nullable String message, @Nullable Integer percentage) {
+      // no-op
+    }
+
+    @Override
+    public boolean isCanceled() {
+      return false;
+    }
+  });
 
   private static class MyClass {
     @Override
@@ -68,7 +81,7 @@ class SensorsExecutorTests {
   void testThrowingSensorShouldBeLogged() {
     var sensorOptimizer = mock(SensorOptimizer.class);
     when(sensorOptimizer.shouldExecute(any())).thenReturn(true);
-    var executor = new SensorsExecutor(null, sensorOptimizer, new ProgressMonitor(null), Optional.empty(), Optional.of(List.of(new ThrowingSensor())));
+    var executor = new SensorsExecutor(DEFAULT_SENSOR_CONTEXT, sensorOptimizer, Optional.empty(), Optional.of(List.of(new ThrowingSensor())));
 
     executor.execute();
 
@@ -84,7 +97,7 @@ class SensorsExecutorTests {
     var globalSensor = new GlobalSensor();
     var oldGlobalSensor = new OldGlobalSensor();
 
-    var executor = new SensorsExecutor(null, sensorOptimizer, new ProgressMonitor(null), Optional.empty(), Optional.of(List.of(globalSensor, regularSensor, oldGlobalSensor)));
+    var executor = new SensorsExecutor(DEFAULT_SENSOR_CONTEXT, sensorOptimizer, Optional.empty(), Optional.of(List.of(globalSensor, regularSensor, oldGlobalSensor)));
 
     executor.execute();
 

@@ -50,7 +50,7 @@ import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpNewHighlighting
 import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpNewMeasure;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpNewSignificantCode;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.noop.NoOpNewSymbolTable;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
+import org.sonarsource.sonarlint.core.commons.progress.ProgressIndicator;
 
 public class DefaultSensorContext implements SensorContext {
 
@@ -66,11 +66,11 @@ public class DefaultSensorContext implements SensorContext {
   private final SensorStorage sensorStorage;
   private final SonarLintInputProject project;
   private final SonarRuntime sqRuntime;
-  private final ProgressMonitor progress;
+  private final ProgressIndicator progressIndicator;
   private final Configuration config;
 
   public DefaultSensorContext(SonarLintInputProject project, Settings settings, Configuration config, FileSystem fs, ActiveRules activeRules, SensorStorage sensorStorage,
-    SonarRuntime sqRuntime, ProgressMonitor progress) {
+    SonarRuntime sqRuntime, ProgressIndicator progressIndicator) {
     this.project = project;
     this.settings = settings;
     this.config = config;
@@ -78,7 +78,7 @@ public class DefaultSensorContext implements SensorContext {
     this.activeRules = activeRules;
     this.sensorStorage = sensorStorage;
     this.sqRuntime = sqRuntime;
-    this.progress = progress;
+    this.progressIndicator = progressIndicator;
   }
 
   @Override
@@ -158,7 +158,7 @@ public class DefaultSensorContext implements SensorContext {
 
   @Override
   public boolean isCancelled() {
-    return progress.isCanceled();
+    return progressIndicator.isCanceled();
   }
 
   @Override

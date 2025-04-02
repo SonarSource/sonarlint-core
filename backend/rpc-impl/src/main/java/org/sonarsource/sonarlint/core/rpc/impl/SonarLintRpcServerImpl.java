@@ -61,6 +61,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotRpcSer
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.IssueRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.NewCodeRpcService;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.progress.TaskProgressRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.AiCodeFixRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.RulesRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService;
@@ -237,6 +238,11 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   }
 
   @Override
+  public TaskProgressRpcService getTaskProgressRpcService() {
+    return new TaskProgressRpcServiceDelegate(this);
+  }
+
+  @Override
   public CompletableFuture<Void> shutdown() {
     LOG.info("SonarLint backend shutting down, instance={}", this);
     var executor = Executors.newSingleThreadExecutor(r -> new Thread(r, "SonarLint Server shutdown"));
@@ -263,7 +269,7 @@ public class SonarLintRpcServerImpl implements SonarLintRpcServer {
   public void shutdownReaderAndWriter() {
     messageReaderExecutor.shutdownNow();
 
-    //shutdown writer and disconnect from client asynchronously to make sure the client gets the response
+    // shutdown writer and disconnect from client asynchronously to make sure the client gets the response
     var scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
     scheduledExecutorService.schedule(() -> {
       messageWriterExecutor.shutdownNow();

@@ -39,7 +39,6 @@ import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultSensorContext;
 import org.sonarsource.sonarlint.core.analysis.sonarapi.DefaultSensorDescriptor;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.monitoring.Trace;
-import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 
 /**
  * Execute Sensors.
@@ -49,17 +48,15 @@ public class SensorsExecutor {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final SensorOptimizer sensorOptimizer;
-  private final ProgressMonitor progress;
   private final List<ProjectSensor> sensors;
   private final DefaultSensorContext context;
   @Nullable
   private final Trace trace;
 
-  public SensorsExecutor(DefaultSensorContext context, SensorOptimizer sensorOptimizer, ProgressMonitor progress, Optional<Trace> trace, Optional<List<ProjectSensor>> sensors) {
+  public SensorsExecutor(DefaultSensorContext context, SensorOptimizer sensorOptimizer, Optional<Trace> trace, Optional<List<ProjectSensor>> sensors) {
     this.context = context;
     this.sensors = sensors.orElse(List.of());
     this.sensorOptimizer = sensorOptimizer;
-    this.progress = progress;
     this.trace = trace.orElse(null);
   }
 
@@ -84,7 +81,10 @@ public class SensorsExecutor {
 
   private void executeSensors(List<ProjectSensor> sensors) {
     for (var sensor : sort(sensors)) {
-      progress.checkCancel();
+      if (context.isCancelled()) {
+        LOG.debug("Analysis is canceled");
+        return;
+      }
       var descriptor = new DefaultSensorDescriptor();
       sensor.describe(descriptor);
       if (sensorOptimizer.shouldExecute(descriptor)) {
