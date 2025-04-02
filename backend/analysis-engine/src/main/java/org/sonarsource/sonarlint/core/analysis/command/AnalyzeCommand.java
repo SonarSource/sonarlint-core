@@ -19,8 +19,8 @@
  */
 package org.sonarsource.sonarlint.core.analysis.command;
 
-import java.time.Duration;
 import java.net.URI;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -205,5 +205,16 @@ public class AnalyzeCommand extends Command {
   public void cancel() {
     cancelMonitor.cancel();
     futureResult.cancel(true);
+  }
+
+  @Override
+  public boolean shouldCancel(Command executingCommand) {
+    if (!(executingCommand instanceof AnalyzeCommand analyzeCommand)) {
+      return false;
+    }
+    var triggerTypesMatch = getTriggerType() == analyzeCommand.getTriggerType();
+    var filesMatch = Objects.equals(getFiles(), analyzeCommand.getFiles());
+    var extraPropertiesMatch = Objects.equals(getExtraProperties(), analyzeCommand.getExtraProperties());
+    return triggerTypesMatch && filesMatch && extraPropertiesMatch;
   }
 }
