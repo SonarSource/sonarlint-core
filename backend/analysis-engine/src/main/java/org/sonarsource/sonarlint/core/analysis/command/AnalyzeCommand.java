@@ -61,7 +61,7 @@ public class AnalyzeCommand extends Command {
   private final Consumer<List<ClientInputFile>> analysisStarted;
   private final Supplier<Boolean> isReadySupplier;
 
-  public AnalyzeCommand(@Nullable String moduleKey, UUID analysisId, TriggerType triggerType, Supplier<AnalysisConfiguration> configurationSupplier, Consumer<Issue> issueListener,
+  public AnalyzeCommand(String moduleKey, UUID analysisId, TriggerType triggerType, Supplier<AnalysisConfiguration> configurationSupplier, Consumer<Issue> issueListener,
     @Nullable Trace trace, SonarLintCancelMonitor cancelMonitor, TaskManager taskManager, Consumer<List<ClientInputFile>> analysisStarted, Supplier<Boolean> isReadySupplier) {
     this.moduleKey = moduleKey;
     this.analysisId = analysisId;
@@ -135,12 +135,11 @@ public class AnalyzeCommand extends Command {
   private AnalysisResults doRunAnalysis(ModuleRegistry moduleRegistry, ProgressIndicator progressIndicator, AnalysisConfiguration configuration) {
     var startTime = System.currentTimeMillis();
     analysisStarted.accept(configuration.inputFiles());
-    var moduleContainer = moduleKey != null ? moduleRegistry.getContainerFor(moduleKey) : null;
+    var moduleContainer = moduleRegistry.getContainerFor(moduleKey);
     if (moduleContainer == null) {
-      // if not found, means we are outside any module (e.g. single file analysis on VSCode)
-      moduleContainer = moduleRegistry.createTransientContainer(configuration.inputFiles());
+      LOG.info("No module found for key '" + moduleKey + "', skipping analysis");
+      return new AnalysisResults();
     }
-    Throwable originalException = null;
     if (trace != null) {
       trace.setData("filesCount", configuration.inputFiles().size());
       trace.setData("languages", configuration.inputFiles().stream()
@@ -158,22 +157,10 @@ public class AnalyzeCommand extends Command {
       result.setDuration(Duration.ofMillis(System.currentTimeMillis() - startTime));
       return result;
     } catch (Throwable e) {
-      originalException = e;
       if (trace != null) {
         trace.finishExceptionally(e);
       }
       throw e;
-    } finally {
-      try {
-        if (moduleContainer.isTransient()) {
-          moduleContainer.stopComponents();
-        }
-      } catch (Exception e) {
-        if (originalException != null) {
-          e.addSuppressed(originalException);
-        }
-        throw e;
-      }
     }
   }
 
