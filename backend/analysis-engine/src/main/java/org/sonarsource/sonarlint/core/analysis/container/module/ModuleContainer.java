@@ -39,11 +39,8 @@ import org.sonarsource.sonarlint.core.plugin.commons.container.SpringComponentCo
 
 public class ModuleContainer extends SpringComponentContainer {
 
-  private final boolean isTransient;
-
-  public ModuleContainer(SpringComponentContainer parent, boolean isTransient) {
+  public ModuleContainer(SpringComponentContainer parent) {
     super(parent);
-    this.isTransient = isTransient;
   }
 
   @Override
@@ -56,10 +53,6 @@ public class ModuleContainer extends SpringComponentContainer {
 
       ModuleFileEventNotifier.class);
     getParent().getComponentByType(AnalysisExtensionInstaller.class).install(this, ContainerLifespan.MODULE);
-  }
-
-  public boolean isTransient() {
-    return isTransient;
   }
 
   public AnalysisResults analyze(AnalysisConfiguration configuration, Consumer<Issue> issueListener, ProgressIndicator progressIndicator, @Nullable Trace trace) {

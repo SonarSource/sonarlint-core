@@ -19,19 +19,16 @@
  */
 package org.sonarsource.sonarlint.core.analysis.api;
 
-import javax.annotation.CheckForNull;
-
 public class ClientModuleInfo {
-  private final Object key;
+  private final String key;
   private final ClientModuleFileSystem clientFileSystem;
 
-  public ClientModuleInfo(Object key, ClientModuleFileSystem clientFileSystem) {
+  public ClientModuleInfo(String key, ClientModuleFileSystem clientFileSystem) {
     this.key = key;
     this.clientFileSystem = clientFileSystem;
   }
 
-  @CheckForNull
-  public Object key() {
+  public String key() {
     return key;
   }
 
