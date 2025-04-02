@@ -24,10 +24,10 @@ import org.sonarsource.sonarlint.core.analysis.container.global.ModuleRegistry;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleFileEventNotifier;
 
 public class NotifyModuleEventCommand extends Command {
-  private final Object moduleKey;
+  private final String moduleKey;
   private final ClientModuleFileEvent event;
 
-  public NotifyModuleEventCommand(Object moduleKey, ClientModuleFileEvent event) {
+  public NotifyModuleEventCommand(String moduleKey, ClientModuleFileEvent event) {
     this.moduleKey = moduleKey;
     this.event = event;
   }
