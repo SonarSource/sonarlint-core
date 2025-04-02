@@ -24,6 +24,12 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class VersionTests {
+  @Test
+  void test_versioning_changes_handled_correctly() {
+    var newVersion = Version.create("2025.1.0.102418");
+    var oldVersion = Version.create("9.9.0.65466");
+    assertThat(newVersion).isGreaterThan(oldVersion);
+  }
 
   @Test
   void test_fields_of_snapshot_versions() {
