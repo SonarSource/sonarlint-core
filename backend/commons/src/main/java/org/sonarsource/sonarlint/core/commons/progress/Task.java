@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.commons.progress;
 
-public interface ProgressMonitor extends ProgressIndicator {
-  void complete();
-  void cancel();
+public interface Task {
+  void run(ProgressIndicator indicator);
 }

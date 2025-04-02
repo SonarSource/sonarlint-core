@@ -20,31 +20,43 @@
 package org.sonarsource.sonarlint.core.progress;
 
 import java.util.UUID;
+import org.jetbrains.annotations.Nullable;
 import org.sonarsource.sonarlint.core.commons.progress.ProgressMonitor;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ProgressEndNotification;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ProgressUpdateNotification;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.progress.ReportProgressParams;
 
-public class RpcProgressMonitor extends ProgressMonitor {
-  private final SonarLintCancelMonitor cancelMonitor;
-  private final String configurationScopeId;
-  private final TaskManager taskManager;
+public class ClientAwareProgressMonitor implements ProgressMonitor {
+  private final SonarLintRpcClient client;
   private final UUID taskId;
+  private final SonarLintCancelMonitor cancelMonitor;
+  private volatile boolean canceled;
 
-  public RpcProgressMonitor(SonarLintRpcClient client, SonarLintCancelMonitor cancelMonitor, String configurationScopeId, UUID taskId) {
-    super(null);
-    this.cancelMonitor = cancelMonitor;
-    this.configurationScopeId = configurationScopeId;
-    this.taskManager = new TaskManager(client);
+  public ClientAwareProgressMonitor(SonarLintRpcClient client, UUID taskId, SonarLintCancelMonitor cancelMonitor) {
+    this.client = client;
     this.taskId = taskId;
+    this.cancelMonitor = cancelMonitor;
   }
 
   @Override
-  public void startTask(String message, Runnable task) {
-    taskManager.startTask(configurationScopeId, taskId, message, null, true, false, notifier -> task.run());
+  public void notifyProgress(@Nullable String message, @Nullable Integer percentage) {
+    client.reportProgress(new ReportProgressParams(taskId.toString(), new ProgressUpdateNotification(message, percentage)));
   }
 
   @Override
   public boolean isCanceled() {
-    return cancelMonitor.isCanceled();
+    return canceled || cancelMonitor.isCanceled();
+  }
+
+  @Override
+  public void cancel() {
+    canceled = true;
+  }
+
+  @Override
+  public void complete() {
+    client.reportProgress(new ReportProgressParams(taskId.toString(), new ProgressEndNotification()));
   }
 }

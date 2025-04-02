@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.api.progress.CanceledException;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
+import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,7 +35,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class TaskManagerTest {
+class ClientAwareTaskManagerTest {
   @RegisterExtension
   private static final SonarLintLogTester logTester = new SonarLintLogTester();
 
@@ -42,12 +43,12 @@ class TaskManagerTest {
   void it_should_throw_when_interrupted() throws InterruptedException {
     var client = mock(SonarLintRpcClient.class);
     when(client.startProgress(any())).thenReturn(new CompletableFuture<>());
-    var taskManager = new TaskManager(client);
+    var taskManager = new ClientAwareTaskManager(client);
     var caughtException = new AtomicReference<Exception>();
     var thread = new Thread(() -> {
       try {
-        taskManager.startTask("configScopeId", UUID.randomUUID(), "Title", null, true, true, progressNotifier -> {
-        });
+        taskManager.runTask("configScopeId", UUID.randomUUID(), "Title", null, true, true, progressIndicator -> {
+        }, new SonarLintCancelMonitor());
       } catch (Exception e) {
         caughtException.set(e);
       }

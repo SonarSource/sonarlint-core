@@ -30,8 +30,11 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.progress.CancelTaskParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
@@ -42,6 +45,7 @@ import static mediumtest.analysis.sensor.WaitingCancellationSensor.CANCELLATION_
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode.RequestCancelled;
+import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.analysis.AnalysisQueue.ANALYSIS_EXPIRATION_DELAY_PROPERTY_NAME;
 import static org.sonarsource.sonarlint.core.test.utils.plugins.SonarPluginBuilder.newSonarPlugin;
 import static utils.AnalysisUtils.createFile;
@@ -57,7 +61,7 @@ class AnalysisCancellationMediumTests {
   }
 
   @SonarLintTest
-  void it_should_cancel_progress_monitor_when_analysis_is_canceled(SonarLintTestHarness harness, @TempDir Path baseDir) throws InterruptedException {
+  void it_should_cancel_progress_monitor_when_analysis_request_is_canceled(SonarLintTestHarness harness, @TempDir Path baseDir) throws InterruptedException {
     var filePath = createFile(baseDir, "pom.xml", "");
     var fileUri = filePath.toUri();
     var client = harness.newFakeClient()
@@ -160,5 +164,34 @@ class AnalysisCancellationMediumTests {
       .extracting(ResponseErrorException::getResponseError)
       .extracting(ResponseError::getCode)
       .isEqualTo(RequestCancelled.getValue());
+  }
+
+  @SonarLintTest
+  void it_should_cancel_automatic_analysis_when_canceling_task_via_request(SonarLintTestHarness harness, @TempDir Path baseDir) throws InterruptedException, ConfigScopeNotFoundException {
+    var filePath = createFile(baseDir, "pom.xml", "");
+    var fileUri = filePath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false,
+        null, filePath, null, null, true)))
+      .build();
+    var plugin = newSonarPlugin("xml")
+      .withSensor(WaitingCancellationSensor.class)
+      .generate(baseDir);
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPlugin(plugin)
+      .withEnabledLanguageInStandaloneMode(Language.XML)
+      .start(client);
+    var cancelationFilePath = baseDir.resolve("cancellation.result");
+    when(client.getInferredAnalysisProperties(CONFIG_SCOPE_ID, List.of(fileUri))).thenReturn(Map.of(CANCELLATION_FILE_PATH_PROPERTY_NAME, cancelationFilePath.toString()));
+    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
+    Thread.sleep(1000);
+    assertThat(client.getProgressReportsByTaskId().keySet()).hasSize(1);
+    var taskId = client.getProgressReportsByTaskId().keySet().iterator().next();
+
+    backend.getTaskProgressRpcService().cancelTask(new CancelTaskParams(taskId));
+
+    await().atMost(3, TimeUnit.SECONDS)
+      .untilAsserted(() -> assertThat(cancelationFilePath).hasContent("CANCELED"));
   }
 }
