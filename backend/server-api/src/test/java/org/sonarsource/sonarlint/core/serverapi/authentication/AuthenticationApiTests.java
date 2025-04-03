@@ -19,13 +19,13 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.authentication;
 
-import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
+import org.sonarsource.sonarlint.core.serverapi.MockWebServerResponseBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -64,7 +64,7 @@ class AuthenticationApiTests {
 
   @Test
   void test_connection_issue() {
-    mockServer.addResponse("/api/authentication/validate?format=json", new MockResponse().setResponseCode(500).setBody("Foo"));
+    mockServer.addResponse("/api/authentication/validate?format=json", MockWebServerResponseBuilder.newBuilder().setResponseCode(500).setBody("Foo").build());
 
     var validationResult = underTest.validate(new SonarLintCancelMonitor());
 

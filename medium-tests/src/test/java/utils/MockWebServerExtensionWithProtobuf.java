@@ -25,12 +25,12 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Iterator;
 import javax.annotation.Nullable;
-import mockwebserver3.MockResponse;
 import okio.Buffer;
 import org.sonarsource.sonarlint.core.commons.testutils.MockWebServerExtension;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.serverapi.EndpointParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApiHelper;
+import org.sonarsource.sonarlint.core.test.utils.server.MockWebServerResponseBuilder;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -39,7 +39,7 @@ public class MockWebServerExtensionWithProtobuf extends MockWebServerExtension {
   public void addProtobufResponse(String path, Message m) {
     try (var b = new Buffer()) {
       m.writeTo(b.outputStream());
-      responsesByPath.put(path, new MockResponse().setBody(b));
+      responsesByPath.put(path, MockWebServerResponseBuilder.newBuilder().setBody(b).build());
     } catch (IOException e) {
       fail(e);
     }
@@ -48,7 +48,7 @@ public class MockWebServerExtensionWithProtobuf extends MockWebServerExtension {
   public void addProtobufResponseDelimited(String path, Message... m) {
     try (var b = new Buffer()) {
       writeMessages(b.outputStream(), Arrays.asList(m).iterator());
-      responsesByPath.put(path, new MockResponse().setBody(b));
+      responsesByPath.put(path, MockWebServerResponseBuilder.newBuilder().setBody(b).build());
     }
   }
 

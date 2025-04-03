@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
-import mockwebserver3.MockResponse;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -41,6 +40,7 @@ import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
+import org.sonarsource.sonarlint.core.serverapi.MockWebServerResponseBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
@@ -62,14 +62,15 @@ class PushApiTests {
   @Test
   @Disabled("Settings will be supported later")
   void should_notify_setting_changed_event_for_simple_setting() {
-    var mockResponse = new MockResponse();
+    var mockResponse = MockWebServerResponseBuilder.newBuilder();
+
     mockResponse.setBody("event: SettingChanged\n" +
       "data: {" +
       "\"projects\": [\"projectKey1\", \"projectKey2\"]," +
       "\"key\": \"key1\"," +
       "\"value\": \"value1\"" +
       "}\n\n");
-    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse.build());
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);
@@ -82,14 +83,14 @@ class PushApiTests {
   @Test
   @Disabled("Settings will be supported later")
   void should_notify_setting_changed_event_for_multi_values_setting() {
-    var mockResponse = new MockResponse();
+    var mockResponse = MockWebServerResponseBuilder.newBuilder();
     mockResponse.setBody("event: SettingChanged\n" +
       "data: {" +
       "\"projects\": [\"projectKey1\", \"projectKey2\"]," +
       "\"key\": \"key1\"," +
       "\"values\": [\"value1\",\"value2\"]" +
       "}\n\n");
-    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse.build());
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);
@@ -102,7 +103,7 @@ class PushApiTests {
   @Test
   @Disabled("Settings will be supported later")
   void should_notify_setting_changed_event_for_field_values_setting() {
-    var mockResponse = new MockResponse();
+    var mockResponse = MockWebServerResponseBuilder.newBuilder();
     mockResponse.setBody("event: SettingChanged\n" +
       "data: {" +
       "\"projects\": [\"projectKey1\", \"projectKey2\"]," +
@@ -116,7 +117,7 @@ class PushApiTests {
       "\"key5\": \"value5\"" +
       "}]" +
       "}\n\n");
-    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse.build());
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);
@@ -130,7 +131,7 @@ class PushApiTests {
 
   @Test
   void should_notify_rule_set_changed_event_without_impacts() {
-    var mockResponse = new MockResponse();
+    var mockResponse = MockWebServerResponseBuilder.newBuilder();
     mockResponse.setBody("""
       event: RuleSetChanged
       data: {\
@@ -147,7 +148,7 @@ class PushApiTests {
       }
       
       """);
-    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse.build());
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);
@@ -167,7 +168,7 @@ class PushApiTests {
 
   @Test
   void should_notify_rule_set_changed_event() {
-    var mockResponse = new MockResponse();
+    var mockResponse = MockWebServerResponseBuilder.newBuilder();
     mockResponse.setBody("""
       event: RuleSetChanged
       data: {\
@@ -189,7 +190,7 @@ class PushApiTests {
       }
       
       """);
-    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse.build());
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);
@@ -209,14 +210,14 @@ class PushApiTests {
 
   @Test
   void should_not_notify_while_event_is_incomplete() {
-    var mockResponse = new MockResponse();
+    var mockResponse = MockWebServerResponseBuilder.newBuilder();
     mockResponse.setBody("""
       event: RuleSetChanged
       data: {\
         "projects": ["projectKey1", "projectKey2"],\
         "activatedRules":
       """);
-    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse.build());
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);
@@ -226,7 +227,7 @@ class PushApiTests {
 
   @Test
   void should_ignore_events_without_project_keys() {
-    var mockResponse = new MockResponse();
+    var mockResponse = MockWebServerResponseBuilder.newBuilder();
     mockResponse.setBody("""
       event: RuleSetChanged
       data: {\
@@ -242,7 +243,7 @@ class PushApiTests {
         }]\
       }
       """);
-    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse.build());
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);
@@ -252,13 +253,13 @@ class PushApiTests {
 
   @Test
   void should_ignore_unknown_events() {
-    var mockResponse = new MockResponse();
+    var mockResponse = MockWebServerResponseBuilder.newBuilder();
     mockResponse.setBody("""
       event: UnknownEvent
       data: "plop"
       
       """);
-    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse.build());
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);
@@ -268,13 +269,13 @@ class PushApiTests {
 
   @Test
   void should_ignore_ruleset_changed_events_with_invalid_json() {
-    var mockResponse = new MockResponse();
+    var mockResponse = MockWebServerResponseBuilder.newBuilder();
     mockResponse.setBody("""
       event: RuleSetChanged
       data: {]
       
       """);
-    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse.build());
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);
@@ -284,13 +285,13 @@ class PushApiTests {
 
   @Test
   void should_ignore_setting_changed_events_with_invalid_json() {
-    var mockResponse = new MockResponse();
+    var mockResponse = MockWebServerResponseBuilder.newBuilder();
     mockResponse.setBody("""
       event: SettingChanged
       data: {]
       
       """);
-    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse.build());
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);
@@ -300,7 +301,7 @@ class PushApiTests {
 
   @Test
   void should_ignore_invalid_setting_changed_events() {
-    var mockResponse = new MockResponse();
+    var mockResponse = MockWebServerResponseBuilder.newBuilder();
     mockResponse.setBody("""
       event: SettingChanged
       data: {\
@@ -312,7 +313,7 @@ class PushApiTests {
       }
       
       """);
-    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse);
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1,projectKey2&languages=java,py", mockResponse.build());
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1", "projectKey2")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);
@@ -322,7 +323,7 @@ class PushApiTests {
 
   @Test
   void should_notify_issue_changed_event_when_resolved_status_changed() {
-    var mockResponse = new MockResponse();
+    var mockResponse = MockWebServerResponseBuilder.newBuilder();
     mockResponse.setBody("""
       event: IssueChanged
       data: {\
@@ -336,7 +337,7 @@ class PushApiTests {
       }
       
       """);
-    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1&languages=java,py", mockResponse);
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1&languages=java,py", mockResponse.build());
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);
@@ -355,7 +356,7 @@ class PushApiTests {
 
   @Test
   void should_notify_issue_changed_event_when_severity_changed() {
-    var mockResponse = new MockResponse();
+    var mockResponse = MockWebServerResponseBuilder.newBuilder();
     mockResponse.setBody("""
       event: IssueChanged
       data: {\
@@ -368,7 +369,7 @@ class PushApiTests {
       }
       
       """);
-    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1&languages=java,py", mockResponse);
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1&languages=java,py", mockResponse.build());
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);
@@ -387,7 +388,7 @@ class PushApiTests {
 
   @Test
   void should_notify_issue_changed_event_when_type_changed() {
-    var mockResponse = new MockResponse();
+    var mockResponse = MockWebServerResponseBuilder.newBuilder();
     mockResponse.setBody("""
       event: IssueChanged
       data: {\
@@ -400,7 +401,7 @@ class PushApiTests {
       }
       
       """);
-    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1&languages=java,py", mockResponse);
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1&languages=java,py", mockResponse.build());
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);
@@ -419,7 +420,7 @@ class PushApiTests {
 
   @Test
   void should_not_notify_issue_changed_event_when_no_change_is_present() {
-    var mockResponse = new MockResponse();
+    var mockResponse = MockWebServerResponseBuilder.newBuilder();
     mockResponse.setBody("""
       event: IssueChangedEvent
       data: {\
@@ -431,7 +432,7 @@ class PushApiTests {
       }
       
       """);
-    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1&languages=java,py", mockResponse);
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1&languages=java,py", mockResponse.build());
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);
@@ -441,7 +442,7 @@ class PushApiTests {
 
   @Test
   void should_notify_taint_vulnerability_raised_event() {
-    var mockResponse = new MockResponse();
+    var mockResponse = MockWebServerResponseBuilder.newBuilder();
     mockResponse.setBody("""
       event: TaintVulnerabilityRaised
       data: {\
@@ -490,7 +491,7 @@ class PushApiTests {
       }
       
       """);
-    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey&languages=java,py", mockResponse);
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey&languages=java,py", mockResponse.build());
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);
@@ -513,7 +514,7 @@ class PushApiTests {
 
   @Test
   void should_notify_taint_vulnerability_raised_event_with_cct() {
-    var mockResponse = new MockResponse();
+    var mockResponse = MockWebServerResponseBuilder.newBuilder();
     mockResponse.setBody("""
       event: TaintVulnerabilityRaised
       data: {\
@@ -565,7 +566,7 @@ class PushApiTests {
       }
       
       """);
-    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey&languages=java,py", mockResponse);
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey&languages=java,py", mockResponse.build());
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);
@@ -577,7 +578,7 @@ class PushApiTests {
 
   @Test
   void should_notify_taint_vulnerability_closed_event() {
-    var mockResponse = new MockResponse();
+    var mockResponse = MockWebServerResponseBuilder.newBuilder();
     mockResponse.setBody("""
       event: TaintVulnerabilityClosed
       data: {\
@@ -586,7 +587,7 @@ class PushApiTests {
       }
       
       """);
-    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey&languages=java,py", mockResponse);
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey&languages=java,py", mockResponse.build());
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);
@@ -598,7 +599,7 @@ class PushApiTests {
 
   @Test
   void should_notify_issue_changed_event_when_software_impacts_changed() {
-    var mockResponse = new MockResponse();
+    var mockResponse = MockWebServerResponseBuilder.newBuilder();
     mockResponse.setBody("""
       event: IssueChanged
       data: {\
@@ -612,7 +613,7 @@ class PushApiTests {
       }
       
       """);
-    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1&languages=java,py", mockResponse);
+    mockServer.addResponse("/api/push/sonarlint_events?projectKeys=projectKey1&languages=java,py", mockResponse.build());
 
     List<SonarServerEvent> receivedEvents = new CopyOnWriteArrayList<>();
     underTest.subscribe(new LinkedHashSet<>(List.of("projectKey1")), new LinkedHashSet<>(List.of(SonarLanguage.JAVA, SonarLanguage.PYTHON)), receivedEvents::add);

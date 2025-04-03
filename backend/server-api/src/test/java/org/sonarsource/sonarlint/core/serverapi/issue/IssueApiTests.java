@@ -21,7 +21,6 @@ package org.sonarsource.sonarlint.core.serverapi.issue;
 
 import java.nio.file.Path;
 import java.util.Set;
-import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -29,6 +28,7 @@ import org.sonar.scanner.protocol.input.ScannerInput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
+import org.sonarsource.sonarlint.core.serverapi.MockWebServerResponseBuilder;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
@@ -75,7 +75,8 @@ class IssueApiTests {
 
   @Test
   void should_return_no_batch_issue_if_download_is_forbidden() {
-    mockServer.addResponse("/batch/issues?key=keyyy", new MockResponse().setResponseCode(403));
+
+    mockServer.addResponse("/batch/issues?key=keyyy", MockWebServerResponseBuilder.newBuilder().setResponseCode(403).build());
 
     var issues = underTest.downloadAllFromBatchIssues("keyyy", null, new SonarLintCancelMonitor());
 
@@ -84,7 +85,7 @@ class IssueApiTests {
 
   @Test
   void should_return_no_batch_issue_if_endpoint_is_not_found() {
-    mockServer.addResponse("/batch/issues?key=keyyy", new MockResponse().setResponseCode(404));
+    mockServer.addResponse("/batch/issues?key=keyyy", MockWebServerResponseBuilder.newBuilder().setResponseCode(404).build());
 
     var issues = underTest.downloadAllFromBatchIssues("keyyy", null, new SonarLintCancelMonitor());
 
@@ -93,7 +94,7 @@ class IssueApiTests {
 
   @Test
   void should_throw_an_error_if_batch_issue_download_fails() {
-    mockServer.addResponse("/batch/issues?key=keyyy", new MockResponse().setResponseCode(500));
+    mockServer.addResponse("/batch/issues?key=keyyy", MockWebServerResponseBuilder.newBuilder().setResponseCode(500).build());
 
     var throwable = catchThrowable(() -> underTest.downloadAllFromBatchIssues("keyyy", null, new SonarLintCancelMonitor()));
 
