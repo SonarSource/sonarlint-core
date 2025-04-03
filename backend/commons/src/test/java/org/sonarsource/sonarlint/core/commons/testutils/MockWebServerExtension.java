@@ -55,7 +55,9 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
         if (responsesByPath.containsKey(request.getPath())) {
           return responsesByPath.get(request.getPath());
         }
-        return new MockResponse().setResponseCode(404);
+        var mockResponse = new MockResponse.Builder();
+        mockResponse.setCode(404);
+        return mockResponse.build();
       }
     };
     server.setDispatcher(dispatcher);
@@ -72,15 +74,20 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
   }
 
   public void shutdown() {
-    try {
-      server.shutdown();
-    } catch (IOException e) {
-      throw new IllegalStateException("Cannot stop the mock web server", e);
+    if (server != null) {
+      try {
+        server.shutdown();
+      } catch (IOException e) {
+        throw new IllegalStateException("Cannot stop the mock web server", e);
+      }
     }
   }
 
   public void addStringResponse(String path, String body) {
-    responsesByPath.put(path, new MockResponse().setBody(body));
+    var mockResponse = new MockResponse.Builder();
+    var buffer = new Buffer().writeUtf8(body);
+    mockResponse.body(buffer);
+    responsesByPath.put(path, mockResponse.build());
   }
 
   public void removeResponse(String path) {
@@ -110,10 +117,14 @@ public class MockWebServerExtension implements BeforeEachCallback, AfterEachCall
 
   public void addResponseFromResource(String path, String responseResourcePath) {
     try (var b = new Buffer()) {
-      responsesByPath.put(path, new MockResponse().setBody(b.readFrom(requireNonNull(MockWebServerExtension.class.getResourceAsStream(responseResourcePath)))));
+      var buffer = b.readFrom(requireNonNull(MockWebServerExtension.class.getResourceAsStream(responseResourcePath)));
+      var mockResponse = new MockResponse.Builder();
+      mockResponse.body(buffer);
+      responsesByPath.put(path, mockResponse.build());
     } catch (IOException e) {
       fail(e);
     }
   }
+
 
 }

@@ -24,7 +24,6 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -47,6 +46,7 @@ import org.sonarsource.sonarlint.core.serverconnection.issues.FileLevelServerIss
 import org.sonarsource.sonarlint.core.serverconnection.issues.LineLevelServerIssue;
 import org.sonarsource.sonarlint.core.serverconnection.issues.RangeLevelServerIssue;
 import testutils.MockWebServerExtensionWithProtobuf;
+import testutils.MockWebServerResponseBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -356,7 +356,7 @@ class IssueDownloaderTests {
 
   @Test
   void test_fail_other_codes() {
-    mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, new MockResponse().setResponseCode(503));
+    mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, MockWebServerResponseBuilder.newBuilder().setResponseCode(503).build());
 
     var cancelMonitor = new SonarLintCancelMonitor();
     var thrown = assertThrows(ServerErrorException.class,
@@ -366,7 +366,7 @@ class IssueDownloaderTests {
 
   @Test
   void test_return_empty_if_404() {
-    mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, new MockResponse().setResponseCode(404));
+    mockServer.addResponse("/batch/issues?key=" + DUMMY_KEY, MockWebServerResponseBuilder.newBuilder().setResponseCode(404).build());
 
     var issues = underTest.downloadFromBatch(serverApi, DUMMY_KEY, null, new SonarLintCancelMonitor());
     assertThat(issues).isEmpty();
