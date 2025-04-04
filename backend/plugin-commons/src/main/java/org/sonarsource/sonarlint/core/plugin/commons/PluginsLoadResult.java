@@ -19,12 +19,10 @@
  */
 package org.sonarsource.sonarlint.core.plugin.commons;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.util.Map;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginRequirementsCheckResult;
 
-public class PluginsLoadResult implements Closeable {
+public class PluginsLoadResult {
   private final LoadedPlugins loadedPlugins;
   private final Map<String, PluginRequirementsCheckResult> pluginCheckResultByKeys;
 
@@ -39,10 +37,5 @@ public class PluginsLoadResult implements Closeable {
 
   public Map<String, PluginRequirementsCheckResult> getPluginCheckResultByKeys() {
     return pluginCheckResultByKeys;
-  }
-
-  @Override
-  public void close() throws IOException {
-    loadedPlugins.close();
   }
 }
