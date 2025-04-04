@@ -20,16 +20,22 @@
 package org.sonarsource.sonarlint.core.analysis;
 
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang3.SystemUtils;
 import org.sonarsource.sonarlint.core.commons.Version;
+import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.nodejs.InstalledNodeJs;
 import org.sonarsource.sonarlint.core.nodejs.NodeJsHelper;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.springframework.context.ApplicationEventPublisher;
+
+import static org.sonarsource.sonarlint.core.commons.api.SonarLanguage.Constants.JAVASCRIPT_PLUGIN_KEY;
 
 /**
  * Keep track of the Node.js executable to be used by analysis
@@ -38,6 +44,7 @@ public class NodeJsService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final ApplicationEventPublisher eventPublisher;
+  private final boolean isNodeJsNeeded;
   private volatile boolean nodeAutoDetected;
   @Nullable
   private InstalledNodeJs autoDetectedNodeJs;
@@ -49,9 +56,18 @@ public class NodeJsService {
 
   public NodeJsService(InitializeParams initializeParams, ApplicationEventPublisher eventPublisher) {
     var languageSpecificRequirements = initializeParams.getLanguageSpecificRequirements();
-    this.clientNodeJsPath = languageSpecificRequirements == null || languageSpecificRequirements.getJsTsRequirements() == null ?
-      null : languageSpecificRequirements.getJsTsRequirements().getClientNodeJsPath();
+    this.clientNodeJsPath = languageSpecificRequirements == null || languageSpecificRequirements.getJsTsRequirements() == null ? null
+      : languageSpecificRequirements.getJsTsRequirements().getClientNodeJsPath();
+    this.isNodeJsNeeded = isNodeJsNeeded(initializeParams);
     this.eventPublisher = eventPublisher;
+  }
+
+  private static boolean isNodeJsNeeded(InitializeParams initializeParams) {
+    // in theory all clients bundle SonarJS, so this should always return true
+    // in practice and to speed up tests, we will avoid looking up Node.js if SonarJS is not present
+    var languagesNeedingNodeJsInSonarJs = SonarLanguage.getLanguagesByPluginKey(JAVASCRIPT_PLUGIN_KEY).stream().map(l -> Language.valueOf(l.name())).collect(Collectors.toSet());
+    return !Collections.disjoint(initializeParams.getEnabledLanguagesInStandaloneMode(), languagesNeedingNodeJsInSonarJs)
+      || !Collections.disjoint(initializeParams.getExtraEnabledLanguagesInConnectedMode(), languagesNeedingNodeJsInSonarJs);
   }
 
   @CheckForNull
@@ -77,6 +93,11 @@ public class NodeJsService {
   @CheckForNull
   public InstalledNodeJs getAutoDetectedNodeJs() {
     if (!nodeAutoDetected) {
+      if (!isNodeJsNeeded) {
+        LOG.debug("Skip Node.js auto-detection as no plugins require it");
+        nodeAutoDetected = true;
+        return null;
+      }
       var helper = new NodeJsHelper();
       autoDetectedNodeJs = helper.autoDetect();
       nodeAutoDetected = true;
