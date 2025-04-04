@@ -141,7 +141,6 @@
           <!-- The dependencies we actually want to be shaded, without transitive ones! -->
           <artifactSet>
             <includes>
-              <include>${project.groupId}:sonarlint-commons</include>
               <include>${project.groupId}:sonarlint-java-client-dependencies</include>
               <include>${project.groupId}:sonarlint-java-client-utils</include>
               <include>${project.groupId}:sonarlint-rpc-java-client</include>
@@ -159,6 +158,7 @@
                 <include>org.eclipse.lsp4j.**</include>
                 <include>org.eclipse.jgit.**</include>
                 <include>org.slf4j.**</include>
+                <include>io.sentry.**</include>
               </includes>
             </relocation>
           </relocations>
