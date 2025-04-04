@@ -23,15 +23,16 @@ import org.sonarsource.sonarlint.core.commons.Version;
 
 public class VersionUtils {
 
-  private static final Version CURRENT_LTS = Version.create("9.9");
+  private static final Version CURRENT_LTS = Version.create("2025.1");
   private static final Version MINIMAL_SUPPORTED_VERSION = Version.create("9.9");
 
   private VersionUtils() {
   }
 
   /**
-   * Right now since minimal supported version is equal to current LTS (9.9) this method will always return false.
-   * But it's important to keep it for the future when next LTS will be released, and we will have a grace period again.
+   *  When the CURRENT_LTS matches the MINIMAL_SUPPORTED_VERSION, this method will always return false. If this is not
+   *  the case, it returns true. Therefore for every change in the LTS/LTA and minimal supported version the test at
+   *  {@link VersionUtilsTest#grace_period_should_be_true_if_connected_during_grace_period} has to be adjusted!
    */
   public static boolean isVersionSupportedDuringGracePeriod(Version currentVersion) {
     return currentVersion.compareTo(CURRENT_LTS) < 0 &&
