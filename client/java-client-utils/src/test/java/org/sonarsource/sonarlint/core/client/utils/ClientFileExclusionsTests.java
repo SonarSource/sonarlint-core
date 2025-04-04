@@ -24,6 +24,8 @@ import java.util.Collections;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -33,9 +35,22 @@ class ClientFileExclusionsTests {
   @BeforeEach
   void before() {
     Set<String> glob = Collections.singleton("**/*.js");
-    Set<String> files = Collections.singleton(new File("dir/file.java").getAbsolutePath());
-    Set<String> dir = Collections.singleton("src");
-    underTest = new ClientFileExclusions(files, dir, glob);
+
+    // Setup file exclusions with both separator styles
+    Set<String> files = Set.of(
+            new File("dir/file.java").getAbsolutePath(),
+            "dir/file-with-slash.java",
+            "other\\file-with-backslash.java"
+    );
+
+    // Setup directory exclusions with both separator styles
+    Set<String> dirs = Set.of(
+            "src",
+            "excluded/dir",
+            "another\\excluded\\dir"
+    );
+
+    underTest = new ClientFileExclusions(files, dirs, glob);
   }
 
   @Test
@@ -60,5 +75,35 @@ class ClientFileExclusionsTests {
   void should_exclude_with_dir() {
     assertThat(underTest.test(new File("dir/class2.java").getAbsolutePath())).isFalse();
     assertThat(underTest.test("src/class.java")).isTrue();
+  }
+
+  @Test
+  void should_handle_file_exclusions_with_different_separators() {
+    assertThat(underTest.test("dir/file-with-slash.java")).isTrue();
+    assertThat(underTest.test("other/file-with-backslash.java")).isTrue();
+
+    assertThat(underTest.test("different/dir/file-with-slash.java")).isFalse();
+    assertThat(underTest.test("other2/file-with-backslash.java")).isFalse();
+  }
+
+  @Test
+  void should_handle_directory_exclusions_with_different_separators() {
+    assertThat(underTest.test("excluded/dir/some-file.java")).isTrue();
+    assertThat(underTest.test("another/excluded/dir/some-file.java")).isTrue();
+
+    assertThat(underTest.test("different/excluded/some-file.java")).isFalse();
+    assertThat(underTest.test("another2\\excluded\\dir\\some-file.java")).isFalse();
+  }
+
+  @EnabledOnOs(OS.WINDOWS)
+  @Test
+  void testFileExclusionsWithBackslashes() {
+    assertThat(underTest.test("dir\\file-with-slash.java")).isTrue();
+  }
+
+  @EnabledOnOs(OS.WINDOWS)
+  @Test
+  void testDirectoryExclusionsWithBackslashes() {
+    assertThat(underTest.test("excluded\\dir\\some-file.java")).isTrue();
   }
 }
