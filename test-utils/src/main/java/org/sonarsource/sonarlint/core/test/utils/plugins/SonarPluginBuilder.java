@@ -61,24 +61,24 @@ public class SonarPluginBuilder {
 
   public Path generate(Path folder) {
     var pluginPath = folder.resolve("my.jar");
-    var pluginClass = new ByteBuddy()
+    try (var pluginClass = new ByteBuddy()
       .redefine(DefaultPlugin.class)
       .make();
-    var sensorType = new ByteBuddy()
-      .redefine(sensorClass)
-      .name(DefaultSensor.class.getName())
-      .make();
-    var rulesDefinitionType = new ByteBuddy()
-      .redefine(rulesDefinitionClass)
-      .name(DefaultRulesDefinition.class.getName())
-      .make();
-    try {
+      var sensorType = new ByteBuddy()
+        .redefine(sensorClass)
+        .name(DefaultSensor.class.getName())
+        .make();
+      var rulesDefinitionType = new ByteBuddy()
+        .redefine(rulesDefinitionClass)
+        .name(DefaultRulesDefinition.class.getName())
+        .make()) {
       pluginClass.toJar(pluginPath.toFile(), generateManifest());
       sensorType.inject(pluginPath.toFile());
       rulesDefinitionType.inject(pluginPath.toFile());
     } catch (IOException exception) {
       throw new IllegalStateException("Error when generating the plugin", exception);
     }
+
     return pluginPath;
   }
 

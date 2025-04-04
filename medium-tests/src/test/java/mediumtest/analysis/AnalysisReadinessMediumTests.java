@@ -25,7 +25,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
@@ -62,7 +61,6 @@ class AnalysisReadinessMediumTests {
   }
 
   @SonarLintTest
-  @Disabled
   void it_should_analyze_xml_file_in_connected_mode(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml",
       """

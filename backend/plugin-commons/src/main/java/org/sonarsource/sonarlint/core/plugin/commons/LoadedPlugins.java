@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.plugin.commons;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
@@ -27,7 +26,7 @@ import java.util.stream.Collectors;
 import org.sonar.api.Plugin;
 import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginInstancesLoader;
 
-public class LoadedPlugins implements Closeable {
+public class LoadedPlugins {
   private final Map<String, Plugin> pluginInstancesByKeys;
   private final PluginInstancesLoader pluginInstancesLoader;
   private final Set<String> additionalAllowedPlugins;
@@ -55,7 +54,6 @@ public class LoadedPlugins implements Closeable {
     return additionalAllowedPlugins;
   }
 
-  @Override
   public void close() throws IOException {
     // close plugins classloaders
     pluginInstancesByKeys.clear();

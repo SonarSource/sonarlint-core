@@ -148,6 +148,7 @@ class TelemetryMediumTests {
       .withSonarQubeConnection("connectionId", "http://localhost:12345", storage -> storage.withProject("projectKey", project -> project.withMainBranch("master")))
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withTelemetryEnabled(telemetryEndpointMock.baseUrl() + "/sonarlint-telemetry")
+      .withEnabledLanguageInStandaloneMode(Language.JS)
       .start(fakeClient);
 
     backend.getHotspotService().openHotspotInBrowser(new OpenHotspotInBrowserParams("scopeId", "ab12ef45"));
@@ -194,6 +195,7 @@ class TelemetryMediumTests {
 
     var backend = harness.newBackend()
       .withTelemetryEnabled(telemetryEndpointMock.baseUrl() + "/sonarlint-telemetry")
+      .withEnabledLanguageInStandaloneMode(Language.JS)
       .start(fakeClient);
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isTrue();
@@ -221,6 +223,7 @@ class TelemetryMediumTests {
 
     var backend = harness.newBackend()
       .withTelemetryEnabled(telemetryEndpointMock.baseUrl() + "/sonarlint-telemetry")
+      .withEnabledLanguageInStandaloneMode(Language.JS)
       .start(fakeClient);
 
     assertThat(backend.getTelemetryService().getStatus().get().isEnabled()).isTrue();

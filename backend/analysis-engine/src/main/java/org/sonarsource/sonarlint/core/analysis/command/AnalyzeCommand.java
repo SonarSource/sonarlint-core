@@ -19,9 +19,11 @@
  */
 package org.sonarsource.sonarlint.core.analysis.command;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -60,9 +62,12 @@ public class AnalyzeCommand extends Command {
   private final TaskManager taskManager;
   private final Consumer<List<ClientInputFile>> analysisStarted;
   private final Supplier<Boolean> isReadySupplier;
+  private final List<URI> files;
+  private final Map<String, String> extraProperties;
 
   public AnalyzeCommand(String moduleKey, UUID analysisId, TriggerType triggerType, Supplier<AnalysisConfiguration> configurationSupplier, Consumer<Issue> issueListener,
-    @Nullable Trace trace, SonarLintCancelMonitor cancelMonitor, TaskManager taskManager, Consumer<List<ClientInputFile>> analysisStarted, Supplier<Boolean> isReadySupplier) {
+    @Nullable Trace trace, SonarLintCancelMonitor cancelMonitor, TaskManager taskManager, Consumer<List<ClientInputFile>> analysisStarted, Supplier<Boolean> isReadySupplier,
+    List<URI> files, Map<String, String> extraProperties) {
     this.moduleKey = moduleKey;
     this.analysisId = analysisId;
     this.triggerType = triggerType;
@@ -73,6 +78,8 @@ public class AnalyzeCommand extends Command {
     this.taskManager = taskManager;
     this.analysisStarted = analysisStarted;
     this.isReadySupplier = isReadySupplier;
+    this.files = files;
+    this.extraProperties = extraProperties;
   }
 
   @Override
@@ -90,6 +97,14 @@ public class AnalyzeCommand extends Command {
 
   public CompletableFuture<AnalysisResults> getFutureResult() {
     return futureResult;
+  }
+
+  public List<URI> getFiles() {
+    return files;
+  }
+
+  public Map<String, String> getExtraProperties() {
+    return extraProperties;
   }
 
   @Override
@@ -182,12 +197,24 @@ public class AnalyzeCommand extends Command {
       .build();
     return new AnalyzeCommand(otherNewerAnalyzeCommand.moduleKey, otherNewerAnalyzeCommand.analysisId, otherNewerAnalyzeCommand.triggerType, () -> mergedAnalysisConfiguration,
       otherNewerAnalyzeCommand.issueListener, otherNewerAnalyzeCommand.trace, otherNewerAnalyzeCommand.cancelMonitor, otherNewerAnalyzeCommand.taskManager,
-      otherNewerAnalyzeCommand.analysisStarted, otherNewerAnalyzeCommand.isReadySupplier);
+      otherNewerAnalyzeCommand.analysisStarted, otherNewerAnalyzeCommand.isReadySupplier, mergedInputFiles.stream().map(ClientInputFile::uri).toList(),
+      newerAnalysisConfiguration.extraProperties());
   }
 
   @Override
   public void cancel() {
     cancelMonitor.cancel();
     futureResult.cancel(true);
+  }
+
+  @Override
+  public boolean shouldCancel(Command executingCommand) {
+    if (!(executingCommand instanceof AnalyzeCommand analyzeCommand)) {
+      return false;
+    }
+    var triggerTypesMatch = getTriggerType() == analyzeCommand.getTriggerType();
+    var filesMatch = Objects.equals(getFiles(), analyzeCommand.getFiles());
+    var extraPropertiesMatch = Objects.equals(getExtraProperties(), analyzeCommand.getExtraProperties());
+    return triggerTypesMatch && filesMatch && extraPropertiesMatch;
   }
 }

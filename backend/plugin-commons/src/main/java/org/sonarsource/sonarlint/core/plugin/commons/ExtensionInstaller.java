@@ -40,7 +40,7 @@ public class ExtensionInstaller {
     this.bootConfiguration = bootConfiguration;
   }
 
-  public ExtensionInstaller install(ExtensionContainer container, Map<String, Plugin> pluginInstancesByKey, BiPredicate<String, Object> extensionFilter) {
+  public void install(ExtensionContainer container, Map<String, Plugin> pluginInstancesByKey, BiPredicate<String, Object> extensionFilter) {
     for (Entry<String, Plugin> pluginInstanceEntry : pluginInstancesByKey.entrySet()) {
       var plugin = pluginInstanceEntry.getValue();
       var context = new PluginContextImpl.Builder()
@@ -55,7 +55,6 @@ public class ExtensionInstaller {
         LOG.error("Error loading components for plugin '{}'", pluginKey, t);
       }
     }
-    return this;
   }
 
   private static void loadExtensions(ExtensionContainer container, String pluginKey, Plugin.Context context, BiPredicate<String, Object> extensionFilter) {
