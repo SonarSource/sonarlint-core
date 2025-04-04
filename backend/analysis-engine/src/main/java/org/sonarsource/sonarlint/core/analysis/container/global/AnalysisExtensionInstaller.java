@@ -40,10 +40,9 @@ public class AnalysisExtensionInstaller extends ExtensionInstaller {
     this.loadedPlugins = loadedPlugins;
   }
 
-  public AnalysisExtensionInstaller install(ExtensionContainer container, ContainerLifespan lifespan) {
+  public void install(ExtensionContainer container, ContainerLifespan lifespan) {
     super.install(container, loadedPlugins.getAnalysisPluginInstancesByKeys(),
       (pluginKey, extension) -> lifespan.equals(getSonarLintSideLifespan(extension)) && onlySonarSourceSensor(pluginKey, extension));
-    return this;
   }
 
   private static ContainerLifespan getSonarLintSideLifespan(Object extension) {
