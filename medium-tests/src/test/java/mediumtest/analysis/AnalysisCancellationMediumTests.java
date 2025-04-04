@@ -20,6 +20,8 @@
 package mediumtest.analysis;
 
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -217,12 +219,14 @@ class AnalysisCancellationMediumTests {
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri),
         Map.of(CANCELLATION_FILE_PATH_PROPERTY_NAME, cancelationFilePath.toString()), false));
     Thread.sleep(1000);
-    backend.getAnalysisService()
+    var secondFuture = backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(fileUri),
         Map.of(CANCELLATION_FILE_PATH_PROPERTY_NAME, cancelationFilePath.toString()), false));
 
     await().atMost(10, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(cancelationFilePath).hasContent("CANCELED"));
     assertThat(future).isCompletedExceptionally();
+    // wait for the other future to complete so the scheduler can be stopped gracefully
+    assertThat(secondFuture).succeedsWithin(Duration.of(5, ChronoUnit.SECONDS));
   }
 }
