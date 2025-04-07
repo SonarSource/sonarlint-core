@@ -40,6 +40,11 @@
       <artifactId>slf4j-api</artifactId>
       <version>${slf4j.version}</version>
     </dependency>
+    <dependency>
+      <groupId>io.sentry</groupId>
+      <artifactId>sentry</artifactId>
+      <version>${sentry.version}</version>
+    </dependency>
   </dependencies>
 
   <build>
@@ -85,6 +90,7 @@
               <include>org.eclipse.lsp4j:org.eclipse.lsp4j.jsonrpc</include>
               <include>org.eclipse.jgit:org.eclipse.jgit</include>
               <include>org.slf4j:slf4j-api</include>
+              <include>io.sentry:sentry</include>
             </includes>
           </artifactSet>
 
@@ -98,6 +104,7 @@
                 <include>org.eclipse.lsp4j.**</include>
                 <include>org.eclipse.jgit.**</include>
                 <include>org.slf4j.**</include>
+                <include>io.sentry.**</include>
               </includes>
             </relocation>
           </relocations>
