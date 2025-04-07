@@ -98,16 +98,28 @@ public class AnalysisQueue {
   }
 
   private void cleanUpExpiredCommands(QueuedCommand nextQueuedCommand) {
-    removeAll(queuedCommand -> !queuedCommand.command.isReady() && queuedCommand.getQueuedTime().plus(analysisExpirationDelay).isBefore(Instant.now()));
+    var notReadyCommands = removeAll(queuedCommand -> !queuedCommand.command.isReady() && queuedCommand.getQueuedTime().plus(analysisExpirationDelay).isBefore(Instant.now()));
+    if (!notReadyCommands.isEmpty()) {
+      SonarLintLogger.get().debug("Canceling {} not ready analyses", notReadyCommands.size());
+    }
     if (nextQueuedCommand.command instanceof UnregisterModuleCommand unregisterCommand) {
-      removeAll(queuedCommand -> (queuedCommand.command instanceof AnalyzeCommand analyzeCommand && analyzeCommand.getModuleKey().equals(unregisterCommand.getModuleKey()))
-        || queuedCommand.command instanceof NotifyModuleEventCommand);
+      var expiredCommands = removeAll(
+        queuedCommand -> (queuedCommand.command instanceof AnalyzeCommand analyzeCommand && analyzeCommand.getModuleKey().equals(unregisterCommand.getModuleKey()))
+          || queuedCommand.command instanceof NotifyModuleEventCommand);
+      if (!expiredCommands.isEmpty()) {
+        SonarLintLogger.get().debug("Canceling {} analyses expired by module unregistration", expiredCommands.size());
+      }
     }
   }
 
   private Command batchAutomaticAnalyses(Command nextCommand) {
     if (nextCommand instanceof AnalyzeCommand analyzeCommand && analyzeCommand.getTriggerType().canBeBatchedWithSameTriggerType()) {
       var removedCommands = (List<AnalyzeCommand>) removeAll(otherQueuedCommand -> canBeBatched(analyzeCommand, otherQueuedCommand.command));
+      if (removedCommands.isEmpty()) {
+        return analyzeCommand;
+      }
+      analyzeCommand.cancel();
+      SonarLintLogger.get().debug("Batching {} analyses", removedCommands.size() + 1);
       return Stream.concat(Stream.of(analyzeCommand), removedCommands.stream())
         .sorted((c1, c2) -> (int) (c1.getSequenceNumber() - c2.getSequenceNumber()))
         .reduce(AnalyzeCommand::mergeWith)

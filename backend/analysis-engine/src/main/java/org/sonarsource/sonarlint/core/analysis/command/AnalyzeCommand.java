@@ -196,7 +196,7 @@ public class AnalyzeCommand extends Command {
       .addInputFiles(mergedInputFiles)
       .build();
     return new AnalyzeCommand(otherNewerAnalyzeCommand.moduleKey, otherNewerAnalyzeCommand.analysisId, otherNewerAnalyzeCommand.triggerType, () -> mergedAnalysisConfiguration,
-      otherNewerAnalyzeCommand.issueListener, otherNewerAnalyzeCommand.trace, otherNewerAnalyzeCommand.cancelMonitor, otherNewerAnalyzeCommand.taskManager,
+      otherNewerAnalyzeCommand.issueListener, otherNewerAnalyzeCommand.trace, new SonarLintCancelMonitor(), otherNewerAnalyzeCommand.taskManager,
       otherNewerAnalyzeCommand.analysisStarted, otherNewerAnalyzeCommand.isReadySupplier, mergedInputFiles.stream().map(ClientInputFile::uri).toList(),
       newerAnalysisConfiguration.extraProperties());
   }

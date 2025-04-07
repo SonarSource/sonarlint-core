@@ -22,6 +22,7 @@ package org.sonarsource.sonarlint.core.commons.progress;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class TaskManager {
   private static final ProgressMonitor NO_OP = new NoOpProgressMonitor();
@@ -40,6 +41,7 @@ public class TaskManager {
   }
 
   public void cancel(String taskId) {
+    SonarLintLogger.get().debug("Cancelling task from RPC request {}", taskId);
     var progressMonitor = progressMonitorsByTaskId.remove(taskId);
     if (progressMonitor != null) {
       progressMonitor.cancel();
