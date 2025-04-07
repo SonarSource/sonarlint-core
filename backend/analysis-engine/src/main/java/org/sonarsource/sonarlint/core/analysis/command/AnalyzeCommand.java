@@ -142,6 +142,7 @@ public class AnalyzeCommand extends Command {
       return;
     }
     try {
+      LOG.info("Starting analysis with configuration: {}", analysisConfig);
       var analysisResults = doRunAnalysis(moduleRegistry, progressIndicator, analysisConfig);
       futureResult.complete(analysisResults);
     } catch (CompletionException e) {
