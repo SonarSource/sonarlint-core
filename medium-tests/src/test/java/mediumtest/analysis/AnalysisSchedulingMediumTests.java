@@ -32,13 +32,14 @@ import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.rpc.client.ConfigScopeNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.progress.CancelTaskParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
+import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 import utils.TestPlugin;
@@ -47,12 +48,15 @@ import static mediumtest.analysis.sensor.WaitingCancellationSensor.CANCELLATION_
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode.RequestCancelled;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.analysis.AnalysisQueue.ANALYSIS_EXPIRATION_DELAY_PROPERTY_NAME;
 import static org.sonarsource.sonarlint.core.test.utils.plugins.SonarPluginBuilder.newSonarPlugin;
 import static utils.AnalysisUtils.createFile;
 
-class AnalysisCancellationMediumTests {
+class AnalysisSchedulingMediumTests {
 
   private static final String CONFIG_SCOPE_ID = "CONFIG_SCOPE_ID";
   private static final String CONNECTION_ID = "connectionId";
@@ -169,8 +173,7 @@ class AnalysisCancellationMediumTests {
   }
 
   @SonarLintTest
-  void it_should_cancel_automatic_analysis_when_canceling_task_via_request(SonarLintTestHarness harness, @TempDir Path baseDir)
-    throws InterruptedException, ConfigScopeNotFoundException {
+  void it_should_cancel_automatic_analysis_when_canceling_task_via_request(SonarLintTestHarness harness, @TempDir Path baseDir) throws InterruptedException {
     var filePath = createFile(baseDir, "pom.xml", "");
     var fileUri = filePath.toUri();
     var client = harness.newFakeClient()
@@ -186,10 +189,10 @@ class AnalysisCancellationMediumTests {
       .withEnabledLanguageInStandaloneMode(Language.XML)
       .start(client);
     var cancelationFilePath = baseDir.resolve("cancellation.result");
-    when(client.getInferredAnalysisProperties(CONFIG_SCOPE_ID, List.of(fileUri))).thenReturn(Map.of(CANCELLATION_FILE_PATH_PROPERTY_NAME, cancelationFilePath.toString()));
+    client.setInferredAnalysisProperties(CONFIG_SCOPE_ID, Map.of(CANCELLATION_FILE_PATH_PROPERTY_NAME, cancelationFilePath.toString()));
     backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, fileUri));
+    await().untilAsserted(() -> assertThat(client.getProgressReportsByTaskId().keySet()).hasSize(1));
     Thread.sleep(1000);
-    assertThat(client.getProgressReportsByTaskId().keySet()).hasSize(1);
     var taskId = client.getProgressReportsByTaskId().keySet().iterator().next();
 
     backend.getTaskProgressRpcService().cancelTask(new CancelTaskParams(taskId));
@@ -228,5 +231,60 @@ class AnalysisCancellationMediumTests {
     assertThat(future).isCompletedExceptionally();
     // wait for the other future to complete so the scheduler can be stopped gracefully
     assertThat(secondFuture).succeedsWithin(Duration.of(5, ChronoUnit.SECONDS));
+  }
+
+  @SonarLintTest
+  void should_batch_similar_analyses_into_a_single_one(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    final var OTHER_CONFIG_SCOPE_ID = CONFIG_SCOPE_ID + "2";
+    var firstFilePath = createFile(baseDir, "pom.xml", "");
+    var secondFilePath = createFile(baseDir, "pom2.xml", """
+      <!-- Generated file -->  <!--  Noncompliant  -->
+      <?xml version="1.0" encoding="UTF-8"?>
+      <firstNode>
+        content
+      </firstNode>
+      """);
+    var thirdFilePath = createFile(baseDir, "pom3.xml", """
+      <!-- TODO Drop this dependency -->
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>3.8.1</version>
+      </dependency>
+      """);
+    var firstFileUri = firstFilePath.toUri();
+    var secondFileUri = secondFilePath.toUri();
+    var thirdFileUri = thirdFilePath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(firstFileUri, baseDir.relativize(firstFilePath), CONFIG_SCOPE_ID, false,
+        null, firstFilePath, null, null, true)))
+      .withInitialFs(OTHER_CONFIG_SCOPE_ID, baseDir, List.of(
+        new ClientFileDto(secondFileUri, baseDir.relativize(secondFilePath), OTHER_CONFIG_SCOPE_ID, false,
+          null, secondFilePath, null, null, true),
+        new ClientFileDto(thirdFileUri, baseDir.relativize(thirdFilePath), OTHER_CONFIG_SCOPE_ID, false,
+          null, thirdFilePath, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withUnboundConfigScope(OTHER_CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .start(client);
+    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, firstFileUri));
+    backend.getFileService().didOpenFile(new DidOpenFileParams(OTHER_CONFIG_SCOPE_ID, secondFileUri));
+    backend.getFileService().didOpenFile(new DidOpenFileParams(OTHER_CONFIG_SCOPE_ID, thirdFileUri));
+
+    verify(client, timeout(1000).times(1)).raiseIssues(eq(OTHER_CONFIG_SCOPE_ID), any(), eq(false), any());
+    assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isEqualTo(Map.of(firstFileUri, List.of()));
+    var raisedIssuesPerFile = client.getRaisedIssuesForScopeId(OTHER_CONFIG_SCOPE_ID);
+    assertThat(raisedIssuesPerFile.get(secondFileUri))
+      .extracting(RaisedFindingDto::getRuleKey)
+      .containsExactly("xml:S1778");
+    assertThat(raisedIssuesPerFile.get(thirdFileUri))
+      .extracting(RaisedFindingDto::getRuleKey)
+      .containsExactly("xml:S1135");
+    assertThat(client.getProgressReportsByTaskId())
+      .values()
+      .extracting(SonarLintBackendFixture.FakeSonarLintRpcClient.ProgressReport::getConfigurationScopeId)
+      .containsOnly(CONFIG_SCOPE_ID, OTHER_CONFIG_SCOPE_ID);
   }
 }
