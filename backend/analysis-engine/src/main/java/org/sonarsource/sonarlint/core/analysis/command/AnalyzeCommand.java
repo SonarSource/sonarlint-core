@@ -57,7 +57,7 @@ public class AnalyzeCommand extends Command {
   private final Consumer<Issue> issueListener;
   @Nullable
   private final Trace trace;
-  private final CompletableFuture<AnalysisResults> futureResult = new CompletableFuture<>();
+  private final CompletableFuture<AnalysisResults> futureResult;
   private final SonarLintCancelMonitor cancelMonitor;
   private final TaskManager taskManager;
   private final Consumer<List<ClientInputFile>> analysisStarted;
@@ -68,6 +68,14 @@ public class AnalyzeCommand extends Command {
   public AnalyzeCommand(String moduleKey, UUID analysisId, TriggerType triggerType, Supplier<AnalysisConfiguration> configurationSupplier, Consumer<Issue> issueListener,
     @Nullable Trace trace, SonarLintCancelMonitor cancelMonitor, TaskManager taskManager, Consumer<List<ClientInputFile>> analysisStarted, Supplier<Boolean> isReadySupplier,
     List<URI> files, Map<String, String> extraProperties) {
+    this(moduleKey, analysisId, triggerType, configurationSupplier, issueListener, trace, cancelMonitor, taskManager, analysisStarted, isReadySupplier, files, extraProperties,
+      new CompletableFuture<>());
+
+  }
+
+  public AnalyzeCommand(String moduleKey, UUID analysisId, TriggerType triggerType, Supplier<AnalysisConfiguration> configurationSupplier, Consumer<Issue> issueListener,
+    @Nullable Trace trace, SonarLintCancelMonitor cancelMonitor, TaskManager taskManager, Consumer<List<ClientInputFile>> analysisStarted, Supplier<Boolean> isReadySupplier,
+    List<URI> files, Map<String, String> extraProperties, CompletableFuture<AnalysisResults> futureResult) {
     this.moduleKey = moduleKey;
     this.analysisId = analysisId;
     this.triggerType = triggerType;
@@ -80,6 +88,7 @@ public class AnalyzeCommand extends Command {
     this.isReadySupplier = isReadySupplier;
     this.files = files;
     this.extraProperties = extraProperties;
+    this.futureResult = futureResult;
   }
 
   @Override
@@ -195,10 +204,8 @@ public class AnalyzeCommand extends Command {
       .putAllExtraProperties(newerAnalysisConfiguration.extraProperties())
       .addInputFiles(mergedInputFiles)
       .build();
-    return new AnalyzeCommand(otherNewerAnalyzeCommand.moduleKey, otherNewerAnalyzeCommand.analysisId, otherNewerAnalyzeCommand.triggerType, () -> mergedAnalysisConfiguration,
-      otherNewerAnalyzeCommand.issueListener, otherNewerAnalyzeCommand.trace, otherNewerAnalyzeCommand.cancelMonitor, otherNewerAnalyzeCommand.taskManager,
-      otherNewerAnalyzeCommand.analysisStarted, otherNewerAnalyzeCommand.isReadySupplier, mergedInputFiles.stream().map(ClientInputFile::uri).toList(),
-      newerAnalysisConfiguration.extraProperties());
+    return new AnalyzeCommand(moduleKey, analysisId, triggerType, () -> mergedAnalysisConfiguration, issueListener, trace, new SonarLintCancelMonitor(), taskManager,
+      analysisStarted, isReadySupplier, mergedInputFiles.stream().map(ClientInputFile::uri).toList(), newerAnalysisConfiguration.extraProperties(), futureResult);
   }
 
   @Override
