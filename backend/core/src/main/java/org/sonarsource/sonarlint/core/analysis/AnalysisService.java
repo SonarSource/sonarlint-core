@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
@@ -688,7 +689,9 @@ public class AnalysisService {
     var rawIssues = new ArrayList<RawIssue>();
     schedule(configurationScopeId, getAnalyzeCommand(configurationScopeId, files, rawIssues, hotspotsOnly, TriggerType.FORCED, analysisId), analysisId, rawIssues, false)
       .exceptionally(e -> {
-        LOG.error("Error during analysis", e);
+        if (!(e instanceof CancellationException)) {
+          LOG.error("Error during analysis", e);
+        }
         return null;
       });
     return analysisId;
@@ -713,7 +716,9 @@ public class AnalysisService {
       var command = getAnalyzeCommand(configScopeId, filesToAnalyze, rawIssues, false, TriggerType.AUTO, analysisId);
       schedule(configScopeId, command, analysisId, rawIssues, false)
         .exceptionally(exception -> {
-          LOG.error("Error during automatic analysis", exception);
+          if (!(exception instanceof CancellationException)) {
+            LOG.error("Error during automatic analysis", exception);
+          }
           return null;
         });
     }
@@ -729,6 +734,9 @@ public class AnalysisService {
     var result = command.getFutureResult();
     result.exceptionally(exception -> {
       eventPublisher.publishEvent(new AnalysisFailedEvent(analysisId));
+      if (exception instanceof CancellationException) {
+        LOG.debug("Analysis canceled");
+      }
       LOG.error("Error during analysis", exception);
       return null;
     });
