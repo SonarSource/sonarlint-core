@@ -69,7 +69,7 @@ public class AnalysisScheduler {
       try {
         executingCommand.set(analysisQueue.takeNextCommand());
         if (termination.get() == CANCELING_TERMINATION) {
-          executingCommand.get().cancel();
+          executingCommand.getAndSet(null).cancel();
           break;
         }
         executingCommand.get().execute(globalAnalysisContainer.get().getModuleRegistry());
@@ -111,7 +111,7 @@ public class AnalysisScheduler {
       // already terminating
       return;
     }
-    var command = executingCommand.get();
+    var command = executingCommand.getAndSet(null);
     if (command != null) {
       command.cancel();
     }
