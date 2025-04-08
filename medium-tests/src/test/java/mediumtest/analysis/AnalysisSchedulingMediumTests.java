@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import mediumtest.analysis.sensor.WaitingCancellationSensor;
+import org.assertj.core.api.Condition;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
@@ -286,5 +287,51 @@ class AnalysisSchedulingMediumTests {
       .values()
       .extracting(SonarLintBackendFixture.FakeSonarLintRpcClient.ProgressReport::getConfigurationScopeId)
       .containsOnly(CONFIG_SCOPE_ID, OTHER_CONFIG_SCOPE_ID);
+  }
+
+  @SonarLintTest
+  void should_cancel_analyses_when_removing_a_config_scope(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    final var OTHER_CONFIG_SCOPE_ID = CONFIG_SCOPE_ID + "2";
+    var firstFilePath = createFile(baseDir, "pom.xml", "");
+    var secondFilePath = createFile(baseDir, "pom2.xml", """
+      <!-- Generated file -->  <!--  Noncompliant  -->
+      <?xml version="1.0" encoding="UTF-8"?>
+      <firstNode>
+        content
+      </firstNode>
+      """);
+    var thirdFilePath = createFile(baseDir, "pom3.xml", """
+      <!-- TODO Drop this dependency -->
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-lang3</artifactId>
+        <version>3.8.1</version>
+      </dependency>
+      """);
+    var firstFileUri = firstFilePath.toUri();
+    var secondFileUri = secondFilePath.toUri();
+    var thirdFileUri = thirdFilePath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(firstFileUri, baseDir.relativize(firstFilePath), CONFIG_SCOPE_ID, false,
+        null, firstFilePath, null, null, true)))
+      .withInitialFs(OTHER_CONFIG_SCOPE_ID, baseDir, List.of(
+        new ClientFileDto(secondFileUri, baseDir.relativize(secondFilePath), OTHER_CONFIG_SCOPE_ID, false,
+          null, secondFilePath, null, null, true),
+        new ClientFileDto(thirdFileUri, baseDir.relativize(thirdFilePath), OTHER_CONFIG_SCOPE_ID, false,
+          null, thirdFilePath, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withUnboundConfigScope(OTHER_CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .start(client);
+    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, firstFileUri));
+    backend.getFileService().didOpenFile(new DidOpenFileParams(OTHER_CONFIG_SCOPE_ID, secondFileUri));
+    backend.getFileService().didOpenFile(new DidOpenFileParams(OTHER_CONFIG_SCOPE_ID, thirdFileUri));
+    backend.getConfigurationService().didRemoveConfigurationScope(new DidRemoveConfigurationScopeParams(OTHER_CONFIG_SCOPE_ID));
+
+    await().untilAsserted(() -> assertThat(client.getProgressReportsByTaskId())
+      .hasValueSatisfying(new Condition<>(report -> CONFIG_SCOPE_ID.equals(report.getConfigurationScopeId()), "Report is for first config scope")));
+    await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Canceling 2 analyses expired by module unregistration"));
   }
 }
