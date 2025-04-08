@@ -688,7 +688,7 @@ public class AnalysisService {
   public UUID scheduleForcedAnalysis(String configurationScopeId, List<URI> files, boolean hotspotsOnly) {
     var analysisId = UUID.randomUUID();
     var rawIssues = new ArrayList<RawIssue>();
-    schedule(configurationScopeId, getAnalyzeCommand(configurationScopeId, files, rawIssues, hotspotsOnly, TriggerType.FORCED, analysisId), analysisId, rawIssues, false)
+    schedule(configurationScopeId, getAnalyzeCommand(configurationScopeId, files, rawIssues, hotspotsOnly, TriggerType.FORCED, analysisId), analysisId, rawIssues, true)
       .exceptionally(e -> {
         if (!(e instanceof CancellationException)) {
           LOG.error("Error during analysis", e);
@@ -715,7 +715,7 @@ public class AnalysisService {
       var rawIssues = new ArrayList<RawIssue>();
       var analysisId = UUID.randomUUID();
       var command = getAnalyzeCommand(configScopeId, filesToAnalyze, rawIssues, false, TriggerType.AUTO, analysisId);
-      schedule(configScopeId, command, analysisId, rawIssues, false)
+      schedule(configScopeId, command, analysisId, rawIssues, true)
         .exceptionally(exception -> {
           if (!(exception instanceof CancellationException) && !(exception instanceof CompletionException && exception.getCause() instanceof CancellationException)) {
             LOG.error("Error during automatic analysis", exception);
