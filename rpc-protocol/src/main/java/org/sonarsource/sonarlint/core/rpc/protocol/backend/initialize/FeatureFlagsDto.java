@@ -19,20 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
 
-import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Set;
 
 /**
+ * @deprecated use InitializeParams constructor that accepts Set<BackendCapability> directly
  * Optional features toggles of the backend. To ease transition or to accommodate different client needs.
  */
+@Deprecated(since = "10.19", forRemoval = true)
 public class FeatureFlagsDto {
 
-  private final Set<FeatureFlag> featureFlags = EnumSet.noneOf(FeatureFlag.class);
-
-  public FeatureFlagsDto(Collection<FeatureFlag> featureFlags) {
-    this.featureFlags.addAll(featureFlags);
-  }
+  private final Set<BackendCapability> backendCapabilities = EnumSet.noneOf(BackendCapability.class);
 
   /**
    * @deprecated call new constructor accepting enums
@@ -42,71 +39,56 @@ public class FeatureFlagsDto {
   public FeatureFlagsDto(boolean shouldManageSmartNotifications, boolean taintVulnerabilitiesEnabled, boolean shouldSynchronizeProjects, boolean shouldManageLocalServer,
     boolean enableSecurityHotspots, boolean shouldManageServerSentEvents, boolean enableDataflowBugDetection, boolean shouldManageFullSynchronization, boolean enableTelemetry,
     boolean canOpenFixSuggestion, boolean enableMonitoring) {
-    addIfTrue(shouldManageSmartNotifications, FeatureFlag.SHOULD_MANAGE_SMART_NOTIFICATIONS);
-    addIfTrue(taintVulnerabilitiesEnabled, FeatureFlag.TAINT_VULNERABILITIES_ENABLED);
-    addIfTrue(shouldSynchronizeProjects, FeatureFlag.SHOULD_SYNCHRONIZE_PROJECTS);
-    addIfTrue(shouldManageLocalServer, FeatureFlag.SHOULD_MANAGE_LOCAL_SERVER);
-    addIfTrue(enableSecurityHotspots, FeatureFlag.ENABLE_SECURITY_HOTSPOTS);
-    addIfTrue(shouldManageServerSentEvents, FeatureFlag.SHOULD_MANAGE_SERVER_SENT_EVENTS);
-    addIfTrue(enableDataflowBugDetection, FeatureFlag.ENABLE_DATAFLOW_BUG_DETECTION);
-    addIfTrue(shouldManageFullSynchronization, FeatureFlag.SHOULD_MANAGE_FULL_SYNCHRONIZATION);
-    addIfTrue(enableTelemetry, FeatureFlag.ENABLE_TELEMETRY);
-    addIfTrue(canOpenFixSuggestion, FeatureFlag.CAN_OPEN_FIX_SUGGESTION);
-    addIfTrue(enableMonitoring, FeatureFlag.ENABLE_MONITORING);
+    addIfTrue(shouldManageSmartNotifications, BackendCapability.SMART_NOTIFICATIONS);
+    addIfTrue(shouldSynchronizeProjects, BackendCapability.PROJECT_SYNCHRONIZATION);
+    addIfTrue(shouldManageLocalServer, BackendCapability.EMBEDDED_SERVER);
+    addIfTrue(enableSecurityHotspots, BackendCapability.SECURITY_HOTSPOTS);
+    addIfTrue(shouldManageServerSentEvents, BackendCapability.SERVER_SENT_EVENTS);
+    addIfTrue(enableDataflowBugDetection, BackendCapability.DATAFLOW_BUG_DETECTION);
+    addIfTrue(shouldManageFullSynchronization, BackendCapability.FULL_SYNCHRONIZATION);
+    addIfTrue(enableTelemetry, BackendCapability.TELEMETRY);
+    addIfTrue(enableMonitoring, BackendCapability.MONITORING);
   }
 
-  private void addIfTrue(boolean enabled, FeatureFlag featureFlag) {
+  private void addIfTrue(boolean enabled, BackendCapability backendCapability) {
     if (enabled) {
-      featureFlags.add(featureFlag);
+      backendCapabilities.add(backendCapability);
     }
   }
 
   public boolean shouldManageSmartNotifications() {
-    return featureFlags.contains(FeatureFlag.SHOULD_MANAGE_SMART_NOTIFICATIONS);
+    return backendCapabilities.contains(BackendCapability.SMART_NOTIFICATIONS);
   }
 
   public boolean shouldManageServerSentEvents() {
-    return featureFlags.contains(FeatureFlag.SHOULD_MANAGE_SERVER_SENT_EVENTS);
-  }
-
-  /**
-   * @deprecated not used anymore. It is the backend's responsibility to decide based on enabled languages
-   * @return
-   */
-  @Deprecated
-  public boolean areTaintVulnerabilitiesEnabled() {
-    return featureFlags.contains(FeatureFlag.TAINT_VULNERABILITIES_ENABLED);
+    return backendCapabilities.contains(BackendCapability.SERVER_SENT_EVENTS);
   }
 
   public boolean shouldSynchronizeProjects() {
-    return featureFlags.contains(FeatureFlag.SHOULD_SYNCHRONIZE_PROJECTS);
+    return backendCapabilities.contains(BackendCapability.PROJECT_SYNCHRONIZATION);
   }
 
   public boolean shouldManageLocalServer() {
-    return featureFlags.contains(FeatureFlag.SHOULD_MANAGE_LOCAL_SERVER);
+    return backendCapabilities.contains(BackendCapability.EMBEDDED_SERVER);
   }
 
-  public boolean isEnableSecurityHotspots() {
-    return featureFlags.contains(FeatureFlag.ENABLE_SECURITY_HOTSPOTS);
+  public boolean isEnablesSecurityHotspots() {
+    return backendCapabilities.contains(BackendCapability.SECURITY_HOTSPOTS);
   }
 
-  public boolean isEnableDataflowBugDetection() {
-    return featureFlags.contains(FeatureFlag.ENABLE_DATAFLOW_BUG_DETECTION);
+  public boolean isEnabledDataflowBugDetection() {
+    return backendCapabilities.contains(BackendCapability.DATAFLOW_BUG_DETECTION);
   }
 
   public boolean shouldManageFullSynchronization() {
-    return featureFlags.contains(FeatureFlag.SHOULD_MANAGE_FULL_SYNCHRONIZATION);
+    return backendCapabilities.contains(BackendCapability.FULL_SYNCHRONIZATION);
   }
 
-  public boolean isEnableTelemetry() {
-    return featureFlags.contains(FeatureFlag.ENABLE_TELEMETRY);
+  public boolean isEnabledTelemetry() {
+    return backendCapabilities.contains(BackendCapability.TELEMETRY);
   }
 
-  public boolean canOpenFixSuggestion() {
-    return featureFlags.contains(FeatureFlag.CAN_OPEN_FIX_SUGGESTION);
-  }
-
-  public boolean isEnableMonitoring() {
-    return featureFlags.contains(FeatureFlag.ENABLE_MONITORING);
+  public boolean isEnabledMonitoring() {
+    return backendCapabilities.contains(BackendCapability.MONITORING);
   }
 }

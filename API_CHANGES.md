@@ -2,11 +2,11 @@
 
 ## New features 
 
-* Add a new constructor to `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto` constructor to provide flags as an enum values list.
+* Add a new constructor to `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams` constructor to provide flags as an enum values list.
 
 ## Deprecation
 
-* Deprecate `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto` constructor. New constructor with enum collection should be used.
+* Deprecate `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto` class.
 
 # 10.17
 

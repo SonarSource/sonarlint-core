@@ -50,7 +50,7 @@ class EmbeddedServerMediumTests {
 
     assertThat(response)
       .extracting(HttpResponse::statusCode, HttpResponse::body)
-      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"\",\"needsToken\":true,\"capabilities\":{\"canOpenFixSuggestion\":false}}");
+      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"\",\"needsToken\":true,\"capabilities\":{\"canOpenFixSuggestion\":true}}");
     assertCspResponseHeader(response, embeddedServerPort);
   }
 
@@ -70,7 +70,7 @@ class EmbeddedServerMediumTests {
 
     assertThat(response)
       .extracting(HttpResponse::statusCode, HttpResponse::body)
-      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"\",\"needsToken\":true,\"capabilities\":{\"canOpenFixSuggestion\":false}}");
+      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"\",\"needsToken\":true,\"capabilities\":{\"canOpenFixSuggestion\":true}}");
     assertCspResponseHeader(response, embeddedServerPort);
   }
 
@@ -90,8 +90,7 @@ class EmbeddedServerMediumTests {
 
     assertThat(response)
       .extracting(HttpResponse::statusCode, HttpResponse::body)
-      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"WorkspaceTitle\",\"needsToken\":false,\"capabilities\":{\"canOpenFixSuggestion\":false}}");
-
+      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"WorkspaceTitle\",\"needsToken\":false,\"capabilities\":{\"canOpenFixSuggestion\":true}}");
     assertCspResponseHeader(response, embeddedServerPort);
   }
 

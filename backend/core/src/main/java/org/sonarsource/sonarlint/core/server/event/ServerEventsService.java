@@ -32,8 +32,8 @@ import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
-import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopeRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConfigurationScopesAddedWithBindingEvent;
@@ -46,6 +46,7 @@ import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
@@ -71,7 +72,7 @@ public class ServerEventsService {
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.connectionManager = connectionManager;
     this.languageSupportRepository = languageSupportRepository;
-    this.shouldManageServerSentEvents = initializeParams.getFeatureFlags().shouldManageServerSentEvents();
+    this.shouldManageServerSentEvents = initializeParams.getBackendCapabilities().contains(BackendCapability.SERVER_SENT_EVENTS);
     this.eventPublisher = eventPublisher;
   }
 
