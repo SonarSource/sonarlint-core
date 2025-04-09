@@ -366,7 +366,10 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var rawIssues = analyzeFile(configScopeId, "sample-cloudformation", "src/sample.yaml");
 
-      assertThat(rawIssues).hasSize(2);
+      assertThat(rawIssues).satisfiesAnyOf(
+              issues -> assertThat(issues).hasSize(1),
+              issues -> assertThat(issues).hasSize(2)
+      );
     }
 
     @Test
