@@ -21,6 +21,7 @@ package mediumtest;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
@@ -43,7 +44,7 @@ class InitializationMediumTests {
     var backend = harness.newBackend()
       .start();
     var telemetryInitDto = new TelemetryClientConstantAttributesDto("mediumTests", "mediumTests", "1.2.3", "4.5.6", emptyMap());
-    var featureFlags = new FeatureFlagsDto(false, false, false, false, false, false, false, false, false, false, false);
+    var featureFlags = new FeatureFlagsDto(List.of());
     var future = backend
       .initialize(new InitializeParams(new ClientConstantInfoDto("name", "productKey", 0), telemetryInitDto,
         HttpConfigurationDto.defaultConfig(), null, featureFlags,
