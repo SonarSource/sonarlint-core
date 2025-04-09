@@ -37,6 +37,7 @@ import org.sonarsource.sonarlint.core.commons.LocalOnlyIssueResolution;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.AddIssueCommentParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ChangeIssueStatusParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssuesForFileParams;
@@ -254,7 +255,7 @@ class IssuesStatusChangeMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .withFullSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
       .start(client);
     client.waitForSynchronization();
 
@@ -299,7 +300,7 @@ class IssuesStatusChangeMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .withFullSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
       .start(client);
     client.waitForSynchronization();
 
@@ -348,7 +349,7 @@ class IssuesStatusChangeMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .withFullSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
       .withTelemetryEnabled()
       .start(client);
     client.waitForSynchronization();

@@ -58,8 +58,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.Configur
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.JsTsRequirementsDto;
@@ -145,23 +145,13 @@ public class SonarLintBackendFixture {
     private final Set<Language> enabledLanguages = EnumSet.noneOf(Language.class);
     private final Set<Language> extraEnabledLanguagesInConnectedMode = EnumSet.noneOf(Language.class);
     private final Set<String> disabledPluginKeysForAnalysis = new HashSet<>();
-    private boolean startEmbeddedServer;
-    private boolean manageSmartNotifications;
-    private boolean areSecurityHotspotsEnabled;
-    private boolean synchronizeProjects;
-    private boolean shouldManageFullSynchronization;
-    private boolean taintVulnerabilitiesEnabled = true;
-    private boolean telemetryEnabled;
-    private boolean monitoringEnabled;
-    private boolean canOpenFixSuggestion;
-    private boolean manageServerSentEvents;
+    private final Set<BackendCapability> backendCapabilities = EnumSet.noneOf(BackendCapability.class);
     private String userAgent = USER_AGENT_FOR_TESTS;
     private String clientName = "SonarLint Backend Fixture";
 
     private final Map<String, StandaloneRuleConfigDto> standaloneConfigByKey = new HashMap<>();
     private final List<StorageFixture.StorageBuilder> storages = new ArrayList<>();
     private boolean isFocusOnNewCode;
-    private boolean enableDataflowBugDetection;
 
     @Nullable
     private String euRegionUri;
@@ -406,46 +396,13 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintBackendBuilder withSecurityHotspotsEnabled() {
-      this.areSecurityHotspotsEnabled = true;
-      return this;
-    }
-
-    public SonarLintBackendBuilder withDataflowBugDetectionEnabled() {
-      this.enableDataflowBugDetection = true;
-      return this;
-    }
-
-    /**
-     * Also used to enable Web Sockets
-     */
-    public SonarLintBackendBuilder withServerSentEventsEnabled() {
-      this.manageServerSentEvents = true;
+    public SonarLintBackendBuilder withBackendCapability(BackendCapability capability) {
+      this.backendCapabilities.add(capability);
       return this;
     }
 
     public SonarLintBackendBuilder withStandaloneRuleConfig(String ruleKey, boolean isActive, Map<String, String> params) {
       this.standaloneConfigByKey.put(ruleKey, new StandaloneRuleConfigDto(isActive, params));
-      return this;
-    }
-
-    public SonarLintBackendBuilder withEmbeddedServer() {
-      startEmbeddedServer = true;
-      return this;
-    }
-
-    public SonarLintBackendBuilder withProjectSynchronization() {
-      synchronizeProjects = true;
-      return this;
-    }
-
-    public SonarLintBackendBuilder withFullSynchronization() {
-      shouldManageFullSynchronization = true;
-      return this;
-    }
-
-    public SonarLintBackendBuilder withTaintVulnerabilitiesDisabled() {
-      taintVulnerabilitiesEnabled = false;
       return this;
     }
 
@@ -456,11 +413,6 @@ public class SonarLintBackendFixture {
 
     public SonarLintBackendBuilder withClientName(String clientName) {
       this.clientName = clientName;
-      return this;
-    }
-
-    public SonarLintBackendBuilder withSmartNotifications() {
-      manageSmartNotifications = true;
       return this;
     }
 
@@ -501,23 +453,13 @@ public class SonarLintBackendFixture {
     }
 
     public SonarLintBackendBuilder withTelemetryEnabled(String endpointUrl) {
-      this.telemetryEnabled = true;
+      this.backendCapabilities.add(BackendCapability.TELEMETRY);
       System.setProperty(PROPERTY_TELEMETRY_ENDPOINT, endpointUrl);
-      return this;
-    }
-
-    public SonarLintBackendBuilder withMonitoringEnabled() {
-      this.monitoringEnabled = true;
       return this;
     }
 
     public SonarLintBackendBuilder withAutomaticAnalysisEnabled(boolean enabled) {
       this.automaticAnalysisEnabled = enabled;
-      return this;
-    }
-
-    public SonarLintBackendBuilder withOpenFixSuggestion() {
-      this.canOpenFixSuggestion = true;
       return this;
     }
 
@@ -546,8 +488,6 @@ public class SonarLintBackendFixture {
         var telemetryInitDto = new TelemetryClientConstantAttributesDto("mediumTests", "mediumTests",
           "1.2.3", "4.5.6", emptyMap());
         var clientInfo = new ClientConstantInfoDto(clientName, userAgent, 0);
-        var featureFlags = new FeatureFlagsDto(manageSmartNotifications, taintVulnerabilitiesEnabled, synchronizeProjects, startEmbeddedServer, areSecurityHotspotsEnabled,
-          manageServerSentEvents, enableDataflowBugDetection, shouldManageFullSynchronization, telemetryEnabled, canOpenFixSuggestion, monitoringEnabled);
         
         // If more regions are added in the future, extend this by adding a new entry set and add the fields / methods above!
         var sonarCloudAlternativeEnvironment = new SonarCloudAlternativeEnvironmentDto(Map.of(
@@ -561,7 +501,7 @@ public class SonarLintBackendFixture {
         sonarLintBackend
           .initialize(new InitializeParams(clientInfo, telemetryInitDto, httpConfiguration,
             sonarCloudAlternativeEnvironment,
-            featureFlags,
+            backendCapabilities,
             storageRoot, workDir, embeddedPluginPaths, connectedModeEmbeddedPluginPathsByKey,
             enabledLanguages, extraEnabledLanguagesInConnectedMode, disabledPluginKeysForAnalysis, sonarQubeConnections, sonarCloudConnections, sonarlintUserHome.toString(),
             standaloneConfigByKey, isFocusOnNewCode, languageSpecificRequirements, automaticAnalysisEnabled, telemetryMigration))

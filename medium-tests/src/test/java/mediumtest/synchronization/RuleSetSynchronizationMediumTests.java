@@ -26,6 +26,7 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
@@ -53,7 +54,7 @@ class RuleSetSynchronizationMediumTests {
     var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
-      .withFullSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
       .start();
 
     addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");
@@ -78,7 +79,7 @@ class RuleSetSynchronizationMediumTests {
     var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
-      .withFullSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
       .start(client);
 
     addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");

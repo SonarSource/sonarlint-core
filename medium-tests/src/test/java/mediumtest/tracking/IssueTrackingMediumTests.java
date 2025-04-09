@@ -46,6 +46,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpd
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
@@ -223,7 +224,7 @@ class IssueTrackingMediumTests {
             .withNewCodeDefinition(
               Sonarlint.NewCodeDefinition.newBuilder().setMode(Sonarlint.NewCodeDefinitionMode.PREVIOUS_VERSION).setThresholdDate(Instant.now().toEpochMilli()).build())
             .withMainBranch(branchName)))
-      .withFullSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .start(client);
 
@@ -761,7 +762,7 @@ class IssueTrackingMediumTests {
       .withSonarCloudConnection(connectionId, orgKey, true, storage -> {
         storage.withProject(projectKey, project -> project.withMainBranch("main"));
       })
-      .withFullSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
       .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .withSonarQubeCloudEuRegionApiUri(server.baseUrl())
       .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)

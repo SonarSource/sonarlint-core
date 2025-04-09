@@ -57,6 +57,7 @@ import org.sonarsource.sonarlint.core.event.ConnectionCredentialsChangedEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -115,8 +116,8 @@ public class SynchronizationService {
     this.taskManager = taskManager;
     this.storageService = storageService;
     this.connectedModeEmbeddedPluginKeys = params.getConnectedModeEmbeddedPluginPathsByKey().keySet();
-    this.branchSpecificSynchronizationEnabled = params.getFeatureFlags().shouldSynchronizeProjects();
-    this.fullSynchronizationEnabled = params.getFeatureFlags().shouldManageFullSynchronization();
+    this.branchSpecificSynchronizationEnabled = params.getBackendCapabilities().contains(BackendCapability.PROJECT_SYNCHRONIZATION);
+    this.fullSynchronizationEnabled = params.getBackendCapabilities().contains(BackendCapability.FULL_SYNCHRONIZATION);
     this.taintSynchronizationService = taintSynchronizationService;
     this.issueSynchronizationService = issueSynchronizationService;
     this.hotspotSynchronizationService = hotspotSynchronizationService;

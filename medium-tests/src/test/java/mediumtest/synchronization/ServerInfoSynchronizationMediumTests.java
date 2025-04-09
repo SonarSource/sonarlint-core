@@ -25,6 +25,7 @@ import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.storage.ProtobufFileUtil;
@@ -48,7 +49,7 @@ class ServerInfoSynchronizationMediumTests {
     var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
-      .withFullSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
       .start();
 
     addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");
@@ -67,7 +68,7 @@ class ServerInfoSynchronizationMediumTests {
     var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
-      .withFullSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
       .start();
 
     addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");
@@ -89,7 +90,7 @@ class ServerInfoSynchronizationMediumTests {
       .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .withSonarQubeCloudEuRegionApiUri(server.baseUrl())
       .withSonarCloudConnection("connectionId", "test")
-      .withFullSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
       .start();
 
     addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");
@@ -108,7 +109,7 @@ class ServerInfoSynchronizationMediumTests {
     var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
-      .withFullSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
       .start();
 
     addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");
@@ -129,7 +130,7 @@ class ServerInfoSynchronizationMediumTests {
     var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
-      .withFullSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
       .start(client);
 
     addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");
@@ -149,7 +150,7 @@ class ServerInfoSynchronizationMediumTests {
     var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
-      .withFullSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
       .start(client);
 
     addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");

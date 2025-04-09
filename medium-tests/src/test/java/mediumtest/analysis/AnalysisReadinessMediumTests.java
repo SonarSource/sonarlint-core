@@ -29,6 +29,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
@@ -83,7 +84,7 @@ class AnalysisReadinessMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl())
       .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
-      .withFullSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
       .start(client);
 

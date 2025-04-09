@@ -87,6 +87,7 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.reporting.PreviouslyRaisedFindingsRepository;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SslConfigurationDto;
@@ -223,7 +224,7 @@ public class SonarLintSpringAppConfig {
 
   @Bean
   MonitoringInitializationParams provideMonitoringInitParams(InitializeParams params) {
-    return new MonitoringInitializationParams(params.getFeatureFlags().isEnableMonitoring(),
+    return new MonitoringInitializationParams(params.getBackendCapabilities().contains(BackendCapability.MONITORING),
       params.getTelemetryConstantAttributes().getProductKey(),
       params.getTelemetryConstantAttributes().getProductVersion(),
       params.getTelemetryConstantAttributes().getIdeVersion());

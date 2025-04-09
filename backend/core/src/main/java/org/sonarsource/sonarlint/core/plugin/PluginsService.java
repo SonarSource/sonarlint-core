@@ -44,6 +44,7 @@ import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginRequirementsC
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPlugin;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSpecificRequirements;
 import org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer;
@@ -78,7 +79,7 @@ public class PluginsService {
     this.storageService = storageService;
     this.embeddedPluginPaths = params.getEmbeddedPluginPaths();
     this.connectedModeEmbeddedPluginPathsByKey = params.getConnectedModeEmbeddedPluginPathsByKey();
-    this.enableDataflowBugDetection = params.getFeatureFlags().isEnableDataflowBugDetection();
+    this.enableDataflowBugDetection = params.getBackendCapabilities().contains(BackendCapability.DATAFLOW_BUG_DETECTION);
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.nodeJsService = nodeJsService;
     this.disabledPluginKeysForAnalysis = params.getDisabledPluginKeysForAnalysis();

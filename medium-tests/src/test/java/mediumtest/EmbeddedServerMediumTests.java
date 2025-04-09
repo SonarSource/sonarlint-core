@@ -27,6 +27,7 @@ import java.time.Duration;
 import java.util.List;
 import org.apache.commons.lang.RandomStringUtils;
 import org.eclipse.jetty.http.HttpStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
@@ -39,7 +40,7 @@ class EmbeddedServerMediumTests {
   @SonarLintTest
   void it_should_return_the_ide_name_and_empty_description_if_the_origin_is_not_trusted(SonarLintTestHarness harness) throws IOException, InterruptedException {
     var fakeClient = harness.newFakeClient().build();
-    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").start(fakeClient);
+    var backend = harness.newBackend().withBackendCapability(BackendCapability.EMBEDDED_SERVER).withClientName("ClientName").start(fakeClient);
 
     var embeddedServerPort = backend.getEmbeddedServerPort();
     var request = HttpRequest.newBuilder()
@@ -50,7 +51,7 @@ class EmbeddedServerMediumTests {
 
     assertThat(response)
       .extracting(HttpResponse::statusCode, HttpResponse::body)
-      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"\",\"needsToken\":true,\"capabilities\":{\"canOpenFixSuggestion\":false}}");
+      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"\",\"needsToken\":true,\"capabilities\":{\"canOpenFixSuggestion\":true}}");
     assertCspResponseHeader(response, embeddedServerPort);
   }
 
@@ -59,7 +60,7 @@ class EmbeddedServerMediumTests {
     var fakeClient = harness.newFakeClient().build();
     when(fakeClient.getClientLiveDescription()).thenReturn("WorkspaceTitle");
 
-    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").start(fakeClient);
+    var backend = harness.newBackend().withBackendCapability(BackendCapability.EMBEDDED_SERVER).withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").start(fakeClient);
 
     var embeddedServerPort = backend.getEmbeddedServerPort();
     var request = HttpRequest.newBuilder()
@@ -70,7 +71,7 @@ class EmbeddedServerMediumTests {
 
     assertThat(response)
       .extracting(HttpResponse::statusCode, HttpResponse::body)
-      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"\",\"needsToken\":true,\"capabilities\":{\"canOpenFixSuggestion\":false}}");
+      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"\",\"needsToken\":true,\"capabilities\":{\"canOpenFixSuggestion\":true}}");
     assertCspResponseHeader(response, embeddedServerPort);
   }
 
@@ -79,7 +80,7 @@ class EmbeddedServerMediumTests {
     var fakeClient = harness.newFakeClient().build();
     when(fakeClient.getClientLiveDescription()).thenReturn("WorkspaceTitle");
 
-    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").start(fakeClient);
+    var backend = harness.newBackend().withBackendCapability(BackendCapability.EMBEDDED_SERVER).withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").start(fakeClient);
 
     var embeddedServerPort = backend.getEmbeddedServerPort();
     var request = HttpRequest.newBuilder()
@@ -90,8 +91,7 @@ class EmbeddedServerMediumTests {
 
     assertThat(response)
       .extracting(HttpResponse::statusCode, HttpResponse::body)
-      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"WorkspaceTitle\",\"needsToken\":false,\"capabilities\":{\"canOpenFixSuggestion\":false}}");
-
+      .containsExactly(HttpStatus.OK_200, "{\"ideName\":\"ClientName\",\"description\":\"WorkspaceTitle\",\"needsToken\":false,\"capabilities\":{\"canOpenFixSuggestion\":true}}");
     assertCspResponseHeader(response, embeddedServerPort);
   }
 
@@ -105,7 +105,7 @@ class EmbeddedServerMediumTests {
     var fakeClient = harness.newFakeClient().build();
     when(fakeClient.getClientLiveDescription()).thenReturn("WorkspaceTitle");
 
-    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "http://sonar.my").start(fakeClient);
+    var backend = harness.newBackend().withBackendCapability(BackendCapability.EMBEDDED_SERVER).withClientName("ClientName").withSonarQubeConnection("connectionId", "http://sonar.my").start(fakeClient);
 
     var request = HttpRequest.newBuilder()
       .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
@@ -126,7 +126,7 @@ class EmbeddedServerMediumTests {
     var fakeClient = harness.newFakeClient().build();
     when(fakeClient.getClientLiveDescription()).thenReturn("WorkspaceTitle");
 
-    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").start(fakeClient);
+    var backend = harness.newBackend().withBackendCapability(BackendCapability.EMBEDDED_SERVER).withClientName("ClientName").withSonarQubeConnection("connectionId", "https://sonar.my").start(fakeClient);
 
     var embeddedServerPort = backend.getEmbeddedServerPort();
     var requestToken = HttpRequest.newBuilder()
@@ -149,7 +149,7 @@ class EmbeddedServerMediumTests {
   @SonarLintTest
   void it_should_rate_limit_origin_if_too_many_requests(SonarLintTestHarness harness) throws IOException, InterruptedException {
     var fakeClient = harness.newFakeClient().build();
-    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").start(fakeClient);
+    var backend = harness.newBackend().withBackendCapability(BackendCapability.EMBEDDED_SERVER).withClientName("ClientName").start(fakeClient);
 
     var embeddedServerPort = backend.getEmbeddedServerPort();
     var request = HttpRequest.newBuilder()
@@ -169,7 +169,7 @@ class EmbeddedServerMediumTests {
   @SonarLintTest
   void it_should_not_allow_request_if_origin_is_missing(SonarLintTestHarness harness) throws IOException, InterruptedException {
     var fakeClient = harness.newFakeClient().build();
-    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").start(fakeClient);
+    var backend = harness.newBackend().withBackendCapability(BackendCapability.EMBEDDED_SERVER).withClientName("ClientName").start(fakeClient);
 
     var embeddedServerPort = backend.getEmbeddedServerPort();
     var request = HttpRequest.newBuilder()
@@ -185,7 +185,7 @@ class EmbeddedServerMediumTests {
   @SonarLintTest
   void it_should_not_rate_limit_over_time(SonarLintTestHarness harness) throws IOException, InterruptedException {
     var fakeClient = harness.newFakeClient().build();
-    var backend = harness.newBackend().withEmbeddedServer().withClientName("ClientName").start(fakeClient);
+    var backend = harness.newBackend().withBackendCapability(BackendCapability.EMBEDDED_SERVER).withClientName("ClientName").start(fakeClient);
 
     var embeddedServerPort = backend.getEmbeddedServerPort();
     var request = HttpRequest.newBuilder()

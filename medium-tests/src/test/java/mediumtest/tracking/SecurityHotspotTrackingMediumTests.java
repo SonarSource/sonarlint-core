@@ -38,6 +38,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.Bindin
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.hotspot.RaisedHotspotDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
@@ -100,7 +101,7 @@ class SecurityHotspotTrackingMediumTests {
         storage -> storage.withPlugin(TestPlugin.JAVA).withProject(projectKey,
           project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
             .withMainBranch(branchName)))
-      .withSecurityHotspotsEnabled()
+      .withBackendCapability(BackendCapability.SECURITY_HOTSPOTS)
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .start(client);
     backend.getConfigurationService()
@@ -159,7 +160,7 @@ class SecurityHotspotTrackingMediumTests {
         storage -> storage.withPlugin(TestPlugin.JAVA).withProject(projectKey,
           project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
             .withMainBranch(branchName)))
-      .withSecurityHotspotsEnabled()
+      .withBackendCapability(BackendCapability.SECURITY_HOTSPOTS)
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .start(client);
     backend.getConfigurationService()
@@ -205,7 +206,7 @@ class SecurityHotspotTrackingMediumTests {
         storage -> storage.withPlugin(TestPlugin.JAVA).withProject(projectKey,
           project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule(ruleKey, "MINOR"))
             .withMainBranch(branchName)))
-      .withSecurityHotspotsEnabled()
+      .withBackendCapability(BackendCapability.SECURITY_HOTSPOTS)
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .start(client);

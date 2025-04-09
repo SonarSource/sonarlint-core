@@ -80,6 +80,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.ActiveRuleDt
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetGlobalConfigurationResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.NodeJsDetailsDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidChangeAnalysisReadinessParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.analysis.DidDetectSecretParams;
@@ -154,8 +155,8 @@ public class AnalysisService {
     this.monitoringService = monitoringService;
     this.taskManager = taskManager;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
-    this.hotspotEnabled = initializeParams.getFeatureFlags().isEnableSecurityHotspots();
-    this.isDataflowBugDetectionEnabled = initializeParams.getFeatureFlags().isEnableDataflowBugDetection();
+    this.hotspotEnabled = initializeParams.getBackendCapabilities().contains(BackendCapability.SECURITY_HOTSPOTS);
+    this.isDataflowBugDetectionEnabled = initializeParams.getBackendCapabilities().contains(BackendCapability.DATAFLOW_BUG_DETECTION);
     this.nodeJsService = nodeJsService;
     this.schedulerCache = schedulerCache;
     this.eventPublisher = eventPublisher;

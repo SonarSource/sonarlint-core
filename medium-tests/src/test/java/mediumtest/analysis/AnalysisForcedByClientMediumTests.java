@@ -35,6 +35,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFullP
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeOpenFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeVCSChangedFilesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
@@ -182,8 +183,8 @@ class AnalysisForcedByClientMediumTests {
         new ClientFileDto(fileBarUri, baseDir.relativize(fileBar), CONFIG_SCOPE_ID, false, null, fileBar, null, null, true)))
       .build();
     var backend = harness.newBackend()
-      .withFullSynchronization()
-      .withSecurityHotspotsEnabled()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(BackendCapability.SECURITY_HOTSPOTS)
       .withSonarQubeConnection(connectionId, serverWithHotspots)
       .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -240,8 +241,8 @@ class AnalysisForcedByClientMediumTests {
         new ClientFileDto(fileBarUri, baseDir.relativize(fileBar), CONFIG_SCOPE_ID, false, null, fileBar, null, null, true)))
       .build();
     var backend = harness.newBackend()
-      .withFullSynchronization()
-      .withSecurityHotspotsEnabled()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(BackendCapability.SECURITY_HOTSPOTS)
       .withSonarQubeConnection(connectionId, serverWithHotspots)
       .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
