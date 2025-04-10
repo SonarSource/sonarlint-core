@@ -37,4 +37,8 @@ public final class UnregisterModuleCommand extends Command {
     return moduleKey;
   }
 
+  @Override
+  public boolean shouldCancel(Command executingCommand) {
+    return executingCommand instanceof AnalyzeCommand analyzeCommand && analyzeCommand.getModuleKey().equals(moduleKey);
+  }
 }

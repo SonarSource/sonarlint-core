@@ -40,6 +40,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import static java.util.Map.entry;
 
 public class AnalysisQueue {
+  private static final SonarLintLogger LOG = SonarLintLogger.get();
   public static final String ANALYSIS_EXPIRATION_DELAY_PROPERTY_NAME = "sonarqube.ide.internal.analysis.expiration.delay";
   private static final Duration ANALYSIS_EXPIRATION_DEFAULT_DELAY = Duration.ofMinutes(1);
   private final Duration analysisExpirationDelay = getAnalysisExpirationDelay();
@@ -48,6 +49,7 @@ public class AnalysisQueue {
 
   public synchronized void post(Command command) {
     queue.add(new QueuedCommand(command));
+    LOG.debug("Posting command in analysis queue: {}, new size is {}", command, queue.size());
     notifyAll();
   }
 
@@ -65,8 +67,9 @@ public class AnalysisQueue {
     while (true) {
       var firstReadyCommand = pollNextReadyCommand();
       if (firstReadyCommand.isPresent()) {
-        var command = firstReadyCommand.get();
-        return tidyUp(command);
+        var queuedCommand = firstReadyCommand.get();
+        LOG.debug("Picked command from the queue: {}, {} remaining", queuedCommand.command, queue.size());
+        return tidyUp(queuedCommand);
       }
       // wait for a new command to come in
       wait();
@@ -86,6 +89,7 @@ public class AnalysisQueue {
         queue.addAll(commandsToKeep);
         return Optional.of(candidateCommand);
       }
+      LOG.debug("Not picking next command {}, is not ready", candidateCommand.command);
       commandsToKeep.add(candidateCommand);
     }
     queue.addAll(commandsToKeep);
@@ -100,14 +104,14 @@ public class AnalysisQueue {
   private void cleanUpExpiredCommands(QueuedCommand nextQueuedCommand) {
     var notReadyCommands = removeAll(queuedCommand -> !queuedCommand.command.isReady() && queuedCommand.getQueuedTime().plus(analysisExpirationDelay).isBefore(Instant.now()));
     if (!notReadyCommands.isEmpty()) {
-      SonarLintLogger.get().debug("Canceling {} not ready analyses", notReadyCommands.size());
+      LOG.debug("Canceling {} not ready analyses", notReadyCommands.size());
     }
     if (nextQueuedCommand.command instanceof UnregisterModuleCommand unregisterCommand) {
       var expiredCommands = removeAll(
         queuedCommand -> (queuedCommand.command instanceof AnalyzeCommand analyzeCommand && analyzeCommand.getModuleKey().equals(unregisterCommand.getModuleKey()))
           || queuedCommand.command instanceof NotifyModuleEventCommand);
       if (!expiredCommands.isEmpty()) {
-        SonarLintLogger.get().debug("Canceling {} analyses expired by module unregistration", expiredCommands.size());
+        LOG.debug("Canceling {} analyses expired by module unregistration", expiredCommands.size());
       }
     }
   }
@@ -118,7 +122,7 @@ public class AnalysisQueue {
       if (removedCommands.isEmpty()) {
         return analyzeCommand;
       }
-      SonarLintLogger.get().debug("Batching {} analyses", removedCommands.size() + 1);
+      LOG.debug("Batching {} analyses", removedCommands.size() + 1);
       return Stream.concat(Stream.of(analyzeCommand), removedCommands.stream())
         .sorted((c1, c2) -> (int) (c1.getSequenceNumber() - c2.getSequenceNumber()))
         .reduce(AnalyzeCommand::mergeWith)
@@ -191,10 +195,10 @@ public class AnalysisQueue {
     try {
       var analysisExpirationDelayFromSystemProperty = System.getProperty(ANALYSIS_EXPIRATION_DELAY_PROPERTY_NAME);
       var parsedDelay = Duration.parse(analysisExpirationDelayFromSystemProperty);
-      SonarLintLogger.get().debug("Overriding analysis expiration delay with value from system property: {}", parsedDelay);
+      LOG.debug("Overriding analysis expiration delay with value from system property: {}", parsedDelay);
       return parsedDelay;
     } catch (RuntimeException e) {
-      SonarLintLogger.get().debug("Using default analysis expiration delay: {}", ANALYSIS_EXPIRATION_DEFAULT_DELAY);
+      LOG.debug("Using default analysis expiration delay: {}", ANALYSIS_EXPIRATION_DEFAULT_DELAY);
       return ANALYSIS_EXPIRATION_DEFAULT_DELAY;
     }
   }
