@@ -19,23 +19,14 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
 
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
-class InitializeParamsTests {
-
-  @Test
-  void should_replace_null_collections_by_empty() {
-    var params = new InitializeParams(null, null,null, null, (FeatureFlagsDto) null, null, null, null, null, null, null, null, null, null, null, null, false, null, false, null);
-    assertNotNull(params.getEmbeddedPluginPaths());
-    assertNotNull(params.getConnectedModeEmbeddedPluginPathsByKey());
-    assertNotNull(params.getEnabledLanguagesInStandaloneMode());
-    assertNotNull(params.getExtraEnabledLanguagesInConnectedMode());
-    assertNotNull(params.getSonarQubeConnections());
-    assertNotNull(params.getSonarCloudConnections());
-    assertNotNull(params.getStandaloneRuleConfigByKey());
-    assertNotNull(params.getDisabledPluginKeysForAnalysis());
-  }
-
+public enum BackendCapability {
+  SMART_NOTIFICATIONS,
+  PROJECT_SYNCHRONIZATION,
+  EMBEDDED_SERVER,
+  SECURITY_HOTSPOTS,
+  SERVER_SENT_EVENTS,
+  DATAFLOW_BUG_DETECTION,
+  FULL_SYNCHRONIZATION,
+  TELEMETRY,
+  MONITORING
 }

@@ -59,6 +59,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddCo
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.ImpactDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
@@ -861,7 +862,7 @@ class AnalysisMediumTests {
       .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
       .withBoundConfigScope(configScope2, connectionId2, projectKey2)
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
-      .withFullSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
       .start(client);
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
       new ConfigurationScopeDto(configScope2, null, true, configScope2,
@@ -936,7 +937,7 @@ class AnalysisMediumTests {
       .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
       .withBoundConfigScope(configScope2, connectionId2, projectKey2)
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
-      .withFullSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
       .start(client);
     backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(
       new ConfigurationScopeDto(configScope2, null, true, configScope2,
@@ -1034,7 +1035,7 @@ class AnalysisMediumTests {
         storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "BLOCKER"))))
       .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
-      .withFullSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
       .start();
 
     var result = backend.getAnalysisService().shouldUseEnterpriseCSharpAnalyzer(new ShouldUseEnterpriseCSharpAnalyzerParams(CONFIG_SCOPE_ID)).join();
@@ -1054,7 +1055,7 @@ class AnalysisMediumTests {
           .withServerVersion("10.7"))
       .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
-      .withFullSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
       .start();
 
     var result = backend.getAnalysisService().shouldUseEnterpriseCSharpAnalyzer(new ShouldUseEnterpriseCSharpAnalyzerParams(CONFIG_SCOPE_ID)).join();

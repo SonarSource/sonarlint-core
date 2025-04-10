@@ -31,6 +31,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.SuggestFixChangeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.SuggestFixParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
@@ -653,7 +654,7 @@ public class AiCodeFixMediumTest {
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR"))))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
-      .withFullSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
       .start(fakeClient);
 
     await().untilAsserted(() -> assertThat(readAiCodeFixSettings(backend, "connectionId"))
@@ -689,7 +690,7 @@ public class AiCodeFixMediumTest {
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR"))))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
-      .withFullSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
       .start(fakeClient);
 
     await().untilAsserted(() -> assertThat(readAiCodeFixSettings(backend, "connectionId"))
@@ -726,7 +727,7 @@ public class AiCodeFixMediumTest {
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR"))))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
-      .withFullSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
       .start(fakeClient);
 
     await().untilAsserted(() -> assertThat(readAiCodeFixSettings(backend, "connectionId"))

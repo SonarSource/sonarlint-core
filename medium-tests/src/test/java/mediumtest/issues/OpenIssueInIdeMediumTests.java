@@ -38,6 +38,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.Bindin
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
@@ -85,7 +86,7 @@ class OpenIssueInIdeMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, fakeServerWithIssue)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
-      .withEmbeddedServer()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .withTelemetryEnabled()
       .start(fakeClient);
 
@@ -114,7 +115,7 @@ class OpenIssueInIdeMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(connectionId, fakeServerWithIssue)
       .withBoundConfigScope(configScopeId, connectionId, projectKey)
-      .withEmbeddedServer()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .start(fakeClient);
 
     var statusCode = executeOpenIssueRequest(backend, fakeServerWithIssue, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
@@ -148,7 +149,7 @@ class OpenIssueInIdeMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(connectionId, fakeServerWithIssue)
       .withBoundConfigScope(configScopeId, connectionId, projectKey)
-      .withEmbeddedServer()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .start(fakeClient);
 
     var statusCode = executeOpenIssueRequest(backend, fakeServerWithIssue, PR_ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, "1234");
@@ -183,7 +184,7 @@ class OpenIssueInIdeMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(connectionId, fakeServerWithIssue)
       .withBoundConfigScope(configScopeId, connectionId, projectKey)
-      .withEmbeddedServer()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .start(fakeClient);
 
     var statusCode = executeOpenIssueRequest(backend, fakeServerWithIssue, FILE_LEVEL_ISSUE_KEY, PROJECT_KEY, BRANCH_NAME);
@@ -214,7 +215,7 @@ class OpenIssueInIdeMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(CONNECTION_ID, fakeServerWithIssue)
       .withUnboundConfigScope(CONFIG_SCOPE_ID, SONAR_PROJECT_NAME)
-      .withEmbeddedServer()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .beforeInitialize(createdBackend -> {
         mockAssistCreatingConnection(createdBackend, fakeClient, fakeServerWithIssue, CONNECTION_ID);
         mockAssistBinding(createdBackend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
@@ -238,7 +239,7 @@ class OpenIssueInIdeMediumTests {
       // Both config scopes will match the Sonar project name
       .withUnboundConfigScope("configScopeA", SONAR_PROJECT_NAME + " 1")
       .withUnboundConfigScope("configScopeB", SONAR_PROJECT_NAME + " 2")
-      .withEmbeddedServer()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .beforeInitialize(createdBackend -> {
         mockAssistCreatingConnection(createdBackend, fakeClient, fakeServerWithIssue, CONNECTION_ID);
         mockAssistBinding(createdBackend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
@@ -262,7 +263,7 @@ class OpenIssueInIdeMediumTests {
       // Both config scopes will match the Sonar project name
       .withUnboundConfigScope("configScopeParent", SONAR_PROJECT_NAME)
       .withUnboundConfigScope("configScopeChild", SONAR_PROJECT_NAME, "configScopeParent")
-      .withEmbeddedServer()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .beforeInitialize(createdBackend -> {
         mockAssistCreatingConnection(createdBackend, fakeClient, fakeServerWithIssue, CONNECTION_ID);
         mockAssistBinding(createdBackend, fakeClient, "configScopeParent", CONNECTION_ID, PROJECT_KEY);
@@ -282,7 +283,7 @@ class OpenIssueInIdeMediumTests {
     var fakeServerWithIssue = fakeServerWithIssue(harness).start();
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIG_SCOPE_ID, SONAR_PROJECT_NAME)
-      .withEmbeddedServer()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .beforeInitialize(createdBackend -> {
         mockAssistCreatingConnection(createdBackend, fakeClient, fakeServerWithIssue, CONNECTION_ID);
         mockAssistBinding(createdBackend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
@@ -312,7 +313,7 @@ class OpenIssueInIdeMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeCloudEuRegionUri("https://sonar.my")
       .withUnboundConfigScope(CONFIG_SCOPE_ID, SONAR_PROJECT_NAME)
-      .withEmbeddedServer()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .beforeInitialize(createdBackend -> {
         mockAssistCreatingConnection(createdBackend, fakeClient, fakeServerWithIssue, CONNECTION_ID);
         mockAssistBinding(createdBackend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
@@ -342,7 +343,7 @@ class OpenIssueInIdeMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeCloudEuRegionUri("https://sonar.my")
       .withUnboundConfigScope(CONFIG_SCOPE_ID, SONAR_PROJECT_NAME)
-      .withEmbeddedServer()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .start(fakeClient);
 
     var statusCode = executeOpenSCIssueRequest(backend, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, "orgKey", "token-name", "token-value");
@@ -358,7 +359,7 @@ class OpenIssueInIdeMediumTests {
   @SonarLintTest
   void it_should_fail_request_when_issue_parameter_missing(SonarLintTestHarness harness) throws Exception {
     var backend = harness.newBackend()
-      .withEmbeddedServer()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .start();
     var fakeServerWithIssue = fakeServerWithIssue(harness).start();
 
@@ -370,7 +371,7 @@ class OpenIssueInIdeMediumTests {
   @SonarLintTest
   void it_should_fail_request_when_project_parameter_missing(SonarLintTestHarness harness) throws Exception {
     var backend = harness.newBackend()
-      .withEmbeddedServer()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .start();
     var fakeServerWithIssue = fakeServerWithIssue(harness).start();
 

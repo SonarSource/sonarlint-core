@@ -27,6 +27,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.GetMatchedSona
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.GetMatchedSonarProjectBranchResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -212,7 +213,7 @@ class SonarProjectBranchMediumTests {
         storage -> storage.withProject("projectKey",
           project -> project.withMainBranch("main").withNonMainBranch("myBranch")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withProjectSynchronization()
+      .withBackendCapability(BackendCapability.PROJECT_SYNCHRONIZATION)
       .start(client);
 
     // Wait for first sync

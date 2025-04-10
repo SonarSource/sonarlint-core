@@ -38,6 +38,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.Bindin
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
@@ -103,9 +104,8 @@ class OpenFixSuggestionInIdeMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeCloudEuRegionUri(scServer.baseUrl())
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
-      .withEmbeddedServer()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .withTelemetryEnabled()
-      .withOpenFixSuggestion()
       .start(fakeClient);
 
     assertThat(backend.telemetryFilePath())
@@ -132,8 +132,7 @@ class OpenFixSuggestionInIdeMediumTests {
       .withSonarQubeCloudEuRegionUri(scServer.baseUrl())
       .withSonarCloudConnection(CONNECTION_ID, ORG_KEY)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
-      .withEmbeddedServer()
-      .withOpenFixSuggestion()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .start(fakeClient);
 
     var statusCode = executeOpenFixSuggestionRequestWithoutToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
@@ -168,8 +167,7 @@ class OpenFixSuggestionInIdeMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeCloudEuRegionUri(scServer.baseUrl())
       .withUnboundConfigScope(CONFIG_SCOPE_ID, PROJECT_KEY)
-      .withEmbeddedServer()
-      .withOpenFixSuggestion()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .beforeInitialize(createdBackend -> {
         mockAssistCreatingConnection(createdBackend, fakeClient, CONNECTION_ID);
         mockAssistBinding(createdBackend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
@@ -194,8 +192,7 @@ class OpenFixSuggestionInIdeMediumTests {
       .withSonarQubeCloudEuRegionUri(scServer.baseUrl())
       .withUnboundConfigScope("configScopeA", PROJECT_KEY + " 1")
       .withUnboundConfigScope("configScopeB", PROJECT_KEY + " 2")
-      .withEmbeddedServer()
-      .withOpenFixSuggestion()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .beforeInitialize(createdBackend -> {
         mockAssistCreatingConnection(createdBackend, fakeClient, CONNECTION_ID);
         mockAssistBinding(createdBackend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
@@ -222,8 +219,7 @@ class OpenFixSuggestionInIdeMediumTests {
       .withSonarQubeCloudEuRegionUri(scServer.baseUrl())
       .withUnboundConfigScope("configScopeParent", PROJECT_KEY)
       .withUnboundConfigScope("configScopeChild", PROJECT_KEY, "configScopeParent")
-      .withEmbeddedServer()
-      .withOpenFixSuggestion()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .beforeInitialize(createdBackend -> {
         mockAssistCreatingConnection(createdBackend, fakeClient, CONNECTION_ID);
         mockAssistBinding(createdBackend, fakeClient, "configScopeParent", CONNECTION_ID, PROJECT_KEY);
@@ -248,8 +244,7 @@ class OpenFixSuggestionInIdeMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeCloudEuRegionUri(scServer.baseUrl())
       .withUnboundConfigScope(CONFIG_SCOPE_ID, PROJECT_KEY)
-      .withEmbeddedServer()
-      .withOpenFixSuggestion()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .beforeInitialize(createdBackend -> {
         mockAssistCreatingConnection(createdBackend, fakeClient, CONNECTION_ID);
         mockAssistBinding(createdBackend, fakeClient, CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY);
@@ -280,8 +275,7 @@ class OpenFixSuggestionInIdeMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeCloudEuRegionUri(scServer.baseUrl())
       .withUnboundConfigScope(CONFIG_SCOPE_ID, PROJECT_KEY)
-      .withEmbeddedServer()
-      .withOpenFixSuggestion()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .start(fakeClient);
 
     var statusCode = executeOpenFixSuggestionRequestWithToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, "orgKey", "token-name", "token-value");
@@ -297,8 +291,7 @@ class OpenFixSuggestionInIdeMediumTests {
   @SonarLintTest
   void it_should_fail_request_when_issue_parameter_missing(SonarLintTestHarness harness) throws Exception {
     var backend = harness.newBackend()
-      .withEmbeddedServer()
-      .withOpenFixSuggestion()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .start();
     var scServer = buildSonarCloudServer(harness).start();
 
@@ -308,21 +301,9 @@ class OpenFixSuggestionInIdeMediumTests {
   }
 
   @SonarLintTest
-  void it_should_fail_request_when_feature_not_enabled(SonarLintTestHarness harness) throws Exception {
-    var backend = harness.newBackend()
-      .withEmbeddedServer()
-      .start();
-    var scServer = buildSonarCloudServer(harness).start();
-
-    var statusCode = executeOpenFixSuggestionRequestWithoutToken(backend, scServer, FIX_PAYLOAD, ISSUE_KEY, PROJECT_KEY, BRANCH_NAME, ORG_KEY);
-
-    assertThat(statusCode).isEqualTo(400);
-  }
-
-  @SonarLintTest
   void it_should_fail_request_when_project_parameter_missing(SonarLintTestHarness harness) throws IOException, InterruptedException {
     var backend = harness.newBackend()
-      .withEmbeddedServer()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .start();
     var scServer = buildSonarCloudServer(harness).start();
 
@@ -339,8 +320,7 @@ class OpenFixSuggestionInIdeMediumTests {
       .withSonarQubeCloudEuRegionUri(scServer.baseUrl())
       .withSonarCloudConnection(CONNECTION_ID, ORG_KEY)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
-      .withEmbeddedServer()
-      .withOpenFixSuggestion()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .start(fakeClient);
     HttpRequest request = HttpRequest.newBuilder()
       .uri(URI.create(
@@ -366,8 +346,7 @@ class OpenFixSuggestionInIdeMediumTests {
       .withSonarQubeCloudEuRegionUri(scServer.baseUrl())
       .withSonarCloudConnection(CONNECTION_ID, ORG_KEY)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, PROJECT_KEY)
-      .withEmbeddedServer()
-      .withOpenFixSuggestion()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .start(fakeClient);
     HttpRequest request = HttpRequest.newBuilder()
       .uri(URI.create(

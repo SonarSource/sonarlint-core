@@ -26,6 +26,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisC
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -74,7 +75,7 @@ class RulesInConnectedModeMediumTests {
   @SonarLintTest
   void hotspot_rules_should_be_active_when_feature_flag_is_enabled(SonarLintTestHarness harness) throws Exception {
     var backend = harness.newBackend()
-      .withSecurityHotspotsEnabled()
+      .withBackendCapability(BackendCapability.SECURITY_HOTSPOTS)
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .withSonarQubeConnection(CONNECTION_ID,
         storage -> storage.withServerVersion("9.7").withProject(JAVA_MODULE_KEY, project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S4792", "INFO"))))

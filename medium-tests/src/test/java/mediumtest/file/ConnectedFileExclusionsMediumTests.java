@@ -33,6 +33,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.Bindin
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.FileStatusDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.GetFilesStatusParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Settings;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture;
@@ -97,8 +98,8 @@ class ConnectedFileExclusionsMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(MYSONAR, server)
       .withBoundConfigScope(CONFIG_SCOPE_ID, MYSONAR, PROJECT_KEY)
-      .withFullSynchronization()
-      .withProjectSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(BackendCapability.PROJECT_SYNCHRONIZATION)
       .start(fakeClient);
 
     verify(fakeClient, timeout(5000).times(1)).didSynchronizeConfigurationScopes(Set.of(CONFIG_SCOPE_ID));
@@ -211,8 +212,8 @@ class ConnectedFileExclusionsMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(MYSONAR, server)
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
-      .withFullSynchronization()
-      .withProjectSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(BackendCapability.PROJECT_SYNCHRONIZATION)
       .start(fakeClient);
     backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(CONFIG_SCOPE_ID, new BindingConfigurationDto(MYSONAR, PROJECT_KEY, true)));
 
@@ -242,8 +243,8 @@ class ConnectedFileExclusionsMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection(MYSONAR, server)
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
-      .withFullSynchronization()
-      .withProjectSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(BackendCapability.PROJECT_SYNCHRONIZATION)
       .start(fakeClient);
     mockSonarProjectSettings(server, Map.of("sonar.exclusions", "src/**"));
     forceSyncOfConfigScope(backend, fakeClient);

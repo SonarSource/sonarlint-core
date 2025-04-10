@@ -62,7 +62,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBranches;
 import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.usertoken.UserTokenService;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -99,10 +98,6 @@ class ShowFixSuggestionRequestHandlerTests {
     var pathTranslationService = mock(PathTranslationService.class);
     when(pathTranslationService.getOrComputePathTranslation(any())).thenReturn(Optional.of(filePathTranslation));
     var userTokenService = mock(UserTokenService.class);
-    featureFlagsDto = mock(FeatureFlagsDto.class);
-    when(featureFlagsDto.canOpenFixSuggestion()).thenReturn(true);
-    initializeParams = mock(InitializeParams.class);
-    when(initializeParams.getFeatureFlags()).thenReturn(featureFlagsDto);
     var sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
     eventPublisher = mock(ApplicationEventPublisher.class);
     var sonarProjectBranchesSynchronizationService = mock(SonarProjectBranchesSynchronizationService.class);
@@ -113,7 +108,7 @@ class ShowFixSuggestionRequestHandlerTests {
     var connectionConfiguration = mock(ConnectionConfigurationRepository.class);
     when(connectionConfiguration.hasConnectionWithOrigin(SonarCloudRegion.EU.getProductionUri().toString())).thenReturn(true);
 
-    showFixSuggestionRequestHandler = new ShowFixSuggestionRequestHandler(sonarLintRpcClient, eventPublisher, initializeParams,
+    showFixSuggestionRequestHandler = new ShowFixSuggestionRequestHandler(sonarLintRpcClient, eventPublisher,
       new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintRpcClient, connectionConfigurationRepository,
         configurationRepository, userTokenService, sonarCloudActiveEnvironment, connectionConfiguration), pathTranslationService,
       sonarCloudActiveEnvironment, sonarProjectBranchesSynchronizationService, clientFs);
@@ -155,8 +150,6 @@ class ShowFixSuggestionRequestHandlerTests {
 
   @Test
   void should_extract_query_from_sc_request_without_token() throws HttpException, IOException {
-    when(featureFlagsDto.canOpenFixSuggestion()).thenReturn(true);
-    when(initializeParams.getFeatureFlags()).thenReturn(featureFlagsDto);
     var request = new BasicClassicHttpRequest("POST", "/sonarlint/api/fix/show" +
       "?project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
       "&issue=AX2VL6pgAvx3iwyNtLyr&branch=branch" +
@@ -198,8 +191,6 @@ class ShowFixSuggestionRequestHandlerTests {
 
   @Test
   void should_extract_query_from_sc_request_with_token() throws HttpException, IOException {
-    when(featureFlagsDto.canOpenFixSuggestion()).thenReturn(true);
-    when(initializeParams.getFeatureFlags()).thenReturn(featureFlagsDto);
     var request = new BasicClassicHttpRequest("POST", "/sonarlint/api/fix/show" +
       "?project=org.sonarsource.sonarlint.core%3Asonarlint-core-parent" +
       "&issue=AX2VL6pgAvx3iwyNtLyr&tokenName=abc" +
