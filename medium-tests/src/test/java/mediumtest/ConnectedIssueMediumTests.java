@@ -31,6 +31,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.GetEffectiveIssueDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
@@ -91,8 +92,8 @@ class ConnectedIssueMediumTests {
       .withPlugin(TestPlugin.JAVA)
       .start();
     var backend = harness.newBackend()
-      .withFullSynchronization()
-      .withSecurityHotspotsEnabled()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(BackendCapability.SECURITY_HOTSPOTS)
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -180,7 +181,7 @@ class ConnectedIssueMediumTests {
       .withProject("projectKey")
       .start();
     var backend = harness.newBackend()
-      .withDataflowBugDetectionEnabled()
+      .withBackendCapability(BackendCapability.DATAFLOW_BUG_DETECTION)
       .withSonarQubeConnection("connectionId", server, storage -> storage
         .withPlugins(TestPlugin.PYTHON, TestPlugin.JAVA, TestPlugin.JAVA_SE, TestPlugin.DBD, TestPlugin.DBD_JAVA)
         .withProject("projectKey", project -> project.withRuleSet("java", ruleSet -> ruleSet
@@ -226,8 +227,8 @@ class ConnectedIssueMediumTests {
       .withPlugin(TestPlugin.JAVA)
       .start();
     var backend = harness.newBackend()
-      .withFullSynchronization()
-      .withSecurityHotspotsEnabled()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(BackendCapability.SECURITY_HOTSPOTS)
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -268,8 +269,8 @@ class ConnectedIssueMediumTests {
         new ClientFileDto(fileFooUri, baseDir.relativize(fileFoo), CONFIG_SCOPE_ID, false, null, fileFoo, null, null, true)))
       .build();
     var backend = harness.newBackend()
-      .withFullSynchronization()
-      .withSecurityHotspotsEnabled()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(BackendCapability.SECURITY_HOTSPOTS)
       .withSonarQubeConnection(connectionId, serverWithHotspots,
         storage -> storage.withServerVersion("10.4").withProject(projectKey,
           project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S2068", "BLOCKER"))))

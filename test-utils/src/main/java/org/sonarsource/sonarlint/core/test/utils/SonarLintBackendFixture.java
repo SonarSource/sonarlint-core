@@ -395,46 +395,13 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintBackendBuilder withSecurityHotspotsEnabled() {
-      this.backendCapabilities.add(BackendCapability.SECURITY_HOTSPOTS);
-      return this;
-    }
-
-    public SonarLintBackendBuilder withBackendCapabilities(BackendCapability capability) {
+    public SonarLintBackendBuilder withBackendCapability(BackendCapability capability) {
       this.backendCapabilities.add(capability);
-      return this;
-    }
-
-    public SonarLintBackendBuilder withDataflowBugDetectionEnabled() {
-      this.backendCapabilities.add(BackendCapability.DATAFLOW_BUG_DETECTION);
-      return this;
-    }
-
-    /**
-     * Also used to enable Web Sockets
-     */
-    public SonarLintBackendBuilder withServerSentEventsEnabled() {
-      this.backendCapabilities.add(BackendCapability.SERVER_SENT_EVENTS);
       return this;
     }
 
     public SonarLintBackendBuilder withStandaloneRuleConfig(String ruleKey, boolean isActive, Map<String, String> params) {
       this.standaloneConfigByKey.put(ruleKey, new StandaloneRuleConfigDto(isActive, params));
-      return this;
-    }
-
-    public SonarLintBackendBuilder withEmbeddedServer() {
-      this.backendCapabilities.add(BackendCapability.EMBEDDED_SERVER);
-      return this;
-    }
-
-    public SonarLintBackendBuilder withProjectSynchronization() {
-      this.backendCapabilities.add(BackendCapability.PROJECT_SYNCHRONIZATION);
-      return this;
-    }
-
-    public SonarLintBackendBuilder withFullSynchronization() {
-      this.backendCapabilities.add(BackendCapability.FULL_SYNCHRONIZATION);
       return this;
     }
 
@@ -445,11 +412,6 @@ public class SonarLintBackendFixture {
 
     public SonarLintBackendBuilder withClientName(String clientName) {
       this.clientName = clientName;
-      return this;
-    }
-
-    public SonarLintBackendBuilder withSmartNotifications() {
-      this.backendCapabilities.add(BackendCapability.SMART_NOTIFICATIONS);
       return this;
     }
 
@@ -492,11 +454,6 @@ public class SonarLintBackendFixture {
     public SonarLintBackendBuilder withTelemetryEnabled(String endpointUrl) {
       this.backendCapabilities.add(BackendCapability.TELEMETRY);
       System.setProperty(PROPERTY_TELEMETRY_ENDPOINT, endpointUrl);
-      return this;
-    }
-
-    public SonarLintBackendBuilder withMonitoringEnabled() {
-      this.backendCapabilities.add(BackendCapability.MONITORING);
       return this;
     }
 

@@ -30,6 +30,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogLevel;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
@@ -57,7 +58,7 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
     var backend = harness.newBackend()
       .withExtraEnabledLanguagesInConnectedMode(Language.ABAP)
       .withUnboundConfigScope("configScopeId")
-      .withEmbeddedServer()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .withTelemetryEnabled()
       .start(fakeClient);
 
@@ -80,7 +81,7 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
       .withExtraEnabledLanguagesInConnectedMode(Language.ABAP)
       .withSonarQubeConnection("connectionId", server, storage -> storage.withProject("projectKey"))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withEmbeddedServer()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .withTelemetryEnabled()
       .start(fakeClient);
 
@@ -101,7 +102,7 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
     var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.ABAP)
       .withUnboundConfigScope("configScopeId")
-      .withEmbeddedServer()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .withTelemetryEnabled()
       .start(fakeClient);
 
@@ -122,7 +123,7 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope("configScopeId")
-      .withEmbeddedServer()
+      .withBackendCapability(BackendCapability.EMBEDDED_SERVER)
       .withTelemetryEnabled()
       .start(fakeClient);
 

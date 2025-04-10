@@ -21,6 +21,7 @@ package mediumtest;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidChangeCredentialsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -53,7 +54,7 @@ class NotebookLanguageMediumTests {
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withEnabledLanguageInStandaloneMode(Language.JS)
       .withEnabledLanguageInStandaloneMode(Language.IPYTHON)
-      .withFullSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
       .start(fakeClient);
 
     backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams(CONNECTION_ID));

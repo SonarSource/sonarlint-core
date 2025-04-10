@@ -26,6 +26,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -54,7 +55,7 @@ class StandaloneNoPluginMediumTests {
       ))
       .build();
     var backend = harness.newBackend()
-      .withSecurityHotspotsEnabled()
+      .withBackendCapability(BackendCapability.SECURITY_HOTSPOTS)
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .start(client);
 
