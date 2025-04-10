@@ -400,6 +400,11 @@ public class SonarLintBackendFixture {
       return this;
     }
 
+    public SonarLintBackendBuilder withBackendCapabilities(BackendCapability capability) {
+      this.backendCapabilities.add(capability);
+      return this;
+    }
+
     public SonarLintBackendBuilder withDataflowBugDetectionEnabled() {
       this.backendCapabilities.add(BackendCapability.DATAFLOW_BUG_DETECTION);
       return this;
