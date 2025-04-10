@@ -7,5 +7,3 @@ Resources:
       Tags:
         - Key: "anycompany:cost-center" # Noncompliant
           Value: "Accounting"
-        - Key: "anycompany:EnvironmentType" # Noncompliant
-          Value: "PROD"
