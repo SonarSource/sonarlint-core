@@ -33,7 +33,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
-import mockwebserver3.MockResponse;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.AfterEach;
@@ -54,6 +53,7 @@ import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Issues;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
+import org.sonarsource.sonarlint.core.test.utils.server.MockWebServerResponseBuilder;
 import utils.MockWebServerExtensionWithProtobuf;
 import utils.TestPlugin;
 
@@ -464,7 +464,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
   }
 
   private void fakeServerWithWrongBody(String issueKey) {
-    mockWebServerExtension.addResponse(apiIssueSearchPath(issueKey, null), new MockResponse().setBody("wrong body"));
+    mockWebServerExtension.addResponse(apiIssueSearchPath(issueKey, null), MockWebServerResponseBuilder.newBuilder().setBody("wrong body").build());
   }
 
   private static String apiIssueSearchPath(String issueKey, @Nullable String orgKey) {

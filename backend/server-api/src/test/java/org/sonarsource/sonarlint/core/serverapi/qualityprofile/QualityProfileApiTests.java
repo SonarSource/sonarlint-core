@@ -19,12 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.qualityprofile;
 
-import mockwebserver3.MockResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.MockWebServerExtensionWithProtobuf;
+import org.sonarsource.sonarlint.core.serverapi.MockWebServerResponseBuilder;
 import org.sonarsource.sonarlint.core.serverapi.exception.ProjectNotFoundException;
 import org.sonarsource.sonarlint.core.serverapi.exception.ServerErrorException;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Qualityprofiles;
@@ -44,7 +44,8 @@ class QualityProfileApiTests {
   void should_throw_when_the_endpoint_is_not_found() {
     var underTest = new QualityProfileApi(mockServer.serverApiHelper());
 
-    mockServer.addResponse("/api/qualityprofiles/search.protobuf?project=projectKey", new MockResponse().setResponseCode(404));
+
+    mockServer.addResponse("/api/qualityprofiles/search.protobuf?project=projectKey", MockWebServerResponseBuilder.newBuilder().setResponseCode(404).build());
 
     var cancelMonitor = new SonarLintCancelMonitor();
     assertThrows(ProjectNotFoundException.class, () -> underTest.getQualityProfiles("projectKey", cancelMonitor));
@@ -54,7 +55,7 @@ class QualityProfileApiTests {
   void should_throw_when_a_server_error_occurs() {
     var underTest = new QualityProfileApi(mockServer.serverApiHelper());
 
-    mockServer.addResponse("/api/qualityprofiles/search.protobuf?project=projectKey", new MockResponse().setResponseCode(503));
+    mockServer.addResponse("/api/qualityprofiles/search.protobuf?project=projectKey", MockWebServerResponseBuilder.newBuilder().setResponseCode(503).build());
 
     var cancelMonitor = new SonarLintCancelMonitor();
     assertThrows(ServerErrorException.class, () -> underTest.getQualityProfiles("projectKey", cancelMonitor));

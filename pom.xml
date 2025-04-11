@@ -62,7 +62,7 @@
     <sonar-scanner-protocol.version>9.9.0.65466</sonar-scanner-protocol.version>
     <protobuf.version>4.28.2</protobuf.version>
     <gitRepositoryName>sonarlint-core</gitRepositoryName>
-    <okhttp.version>5.0.0-alpha.10</okhttp.version>
+    <okhttp.version>5.0.0-alpha.14</okhttp.version>
     <junit.jupiter.version>5.11.4</junit.jupiter.version>
     <artifactsToPublish>${project.groupId}:sonarlint-core:jar</artifactsToPublish>
     <jdk.min.version>11</jdk.min.version>
@@ -211,6 +211,12 @@
         <groupId>com.squareup.okhttp3</groupId>
         <artifactId>mockwebserver3</artifactId>
         <version>${okhttp.version}</version>
+      </dependency>
+      <!-- Kotlin Standard Library -->
+      <dependency>
+        <groupId>org.jetbrains.kotlin</groupId>
+        <artifactId>kotlin-stdlib</artifactId>
+        <version>1.8.0</version> <!-- Use a recent version -->
       </dependency>
       <dependency>
         <groupId>org.apache.httpcomponents.client5</groupId>
