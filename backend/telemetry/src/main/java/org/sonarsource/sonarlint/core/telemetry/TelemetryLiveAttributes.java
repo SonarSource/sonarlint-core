@@ -43,6 +43,18 @@ public class TelemetryLiveAttributes {
     return serverAttributes.usesSonarCloud();
   }
 
+  public int countSonarQubeServerBindings() {
+    return serverAttributes.sonarQubeServerBindingCount();
+  }
+
+  public int countSonarQubeCloudEUBindings() {
+    return serverAttributes.sonarQubeCloudEUBindingCount();
+  }
+
+  public int countSonarQubeCloudUSBindings() {
+    return serverAttributes.sonarQubeCloudUSBindingCount();
+  }
+
   public boolean isDevNotificationsDisabled() {
     return serverAttributes.devNotificationsDisabled();
   }

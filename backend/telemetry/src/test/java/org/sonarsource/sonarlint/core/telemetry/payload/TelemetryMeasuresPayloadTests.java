@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresDimension;
 import org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresPayload;
 import org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValue;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.sonarsource.sonarlint.core.telemetry.measures.payload.TelemetryMeasuresValueGranularity.DAILY;
@@ -62,6 +63,9 @@ class TelemetryMeasuresPayloadTests {
       "{\"key\":\"shared_connected_mode.imported\",\"value\":\"2\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"shared_connected_mode.auto\",\"value\":\"3\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"shared_connected_mode.exported\",\"value\":\"4\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"bindings.server_count\",\"value\":\"2\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"bindings.cloud_eu_count\",\"value\":\"0\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"bindings.cloud_us_count\",\"value\":\"0\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"help_and_feedback.doc_link\",\"value\":\"5\",\"type\":\"integer\",\"granularity\":\"daily\"" +
       "}]" +
       "}");
@@ -81,6 +85,10 @@ class TelemetryMeasuresPayloadTests {
     values.add(new TelemetryMeasuresValue("shared_connected_mode.imported", String.valueOf(2), INTEGER, DAILY));
     values.add(new TelemetryMeasuresValue("shared_connected_mode.auto", String.valueOf(3), INTEGER, DAILY));
     values.add(new TelemetryMeasuresValue("shared_connected_mode.exported", String.valueOf(4), INTEGER, DAILY));
+
+    values.add(new TelemetryMeasuresValue("bindings.server_count", String.valueOf(2), INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("bindings.cloud_eu_count", String.valueOf(0), INTEGER, DAILY));
+    values.add(new TelemetryMeasuresValue("bindings.cloud_us_count", String.valueOf(0), INTEGER, DAILY));
 
     values.add(new TelemetryMeasuresValue("help_and_feedback.doc_link", String.valueOf(5), INTEGER, DAILY));
 
