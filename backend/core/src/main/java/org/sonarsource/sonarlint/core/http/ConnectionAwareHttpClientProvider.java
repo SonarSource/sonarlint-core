@@ -19,8 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.http;
 
-import java.util.Optional;
-import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.GetCredentialsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
@@ -28,7 +26,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
 public class ConnectionAwareHttpClientProvider {
-  private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final SonarLintRpcClient client;
   private final HttpClientProvider httpClientProvider;
 
@@ -42,36 +39,37 @@ public class ConnectionAwareHttpClientProvider {
   }
 
   public HttpClient getHttpClient(String connectionId, boolean shouldUseBearer) {
-    var credentials = queryClientForConnectionCredentials(connectionId);
-    if (credentials.isEmpty()) {
-      // Fallback on client with no authentication
-      return httpClientProvider.getHttpClient();
-    }
-    return credentials.get().map(
-      tokenDto -> httpClientProvider.getHttpClientWithPreemptiveAuth(tokenDto.getToken(), shouldUseBearer),
-      userPass -> httpClientProvider.getHttpClientWithPreemptiveAuth(userPass.getUsername(), userPass.getPassword()));
+    return queryClientForConnectionCredentials(connectionId)
+      .map(
+        tokenDto -> httpClientProvider.getHttpClientWithPreemptiveAuth(tokenDto.getToken(), shouldUseBearer),
+        userPass -> httpClientProvider.getHttpClientWithPreemptiveAuth(userPass.getUsername(), userPass.getPassword()));
   }
 
   public WebSocketClient getWebSocketClient(String connectionId) {
     var credentials = queryClientForConnectionCredentials(connectionId);
-    if (credentials.isEmpty()) {
-      throw new IllegalStateException("No credentials for connection " + connectionId);
-    }
-    if (credentials.get().isRight()) {
+    if (credentials.isRight()) {
       // We are normally only supporting tokens for SonarCloud connections
       throw new IllegalStateException("Expected token for connection " + connectionId);
     }
-    return httpClientProvider.getWebSocketClient(credentials.get().getLeft().getToken());
+    return httpClientProvider.getWebSocketClient(credentials.getLeft().getToken());
   }
 
-  private Optional<Either<TokenDto, UsernamePasswordDto>> queryClientForConnectionCredentials(String connectionId) {
+  private Either<TokenDto, UsernamePasswordDto> queryClientForConnectionCredentials(String connectionId) {
     var response = client.getCredentials(new GetCredentialsParams(connectionId)).join();
     var credentials = response.getCredentials();
     if (credentials == null) {
-      LOG.debug("No credentials for connection '{}'", connectionId);
-      return Optional.empty();
-    } else {
-      return Optional.of(credentials);
+      throw new IllegalStateException("No credentials for connection " + connectionId);
     }
+    if (credentials.isLeft() && credentials.getLeft().getToken() == null) {
+      throw new IllegalStateException("No token for connection " + connectionId);
+    }
+    var right = credentials.getRight();
+    if (right.getUsername() == null) {
+      throw new IllegalStateException("No username for connection " + connectionId);
+    }
+    if (right.getPassword() == null) {
+      throw new IllegalStateException("No password for connection " + connectionId);
+    }
+    return credentials;
   }
 }
