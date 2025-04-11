@@ -22,11 +22,11 @@ package org.sonarsource.sonarlint.core.rpc.impl;
 import java.util.concurrent.CompletableFuture;
 import org.sonarsource.sonarlint.core.ConnectionService;
 import org.sonarsource.sonarlint.core.OrganizationsCache;
-import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidChangeCredentialsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.FuzzySearchUserOrganizationsParams;
@@ -73,19 +73,19 @@ class ConnectionRpcServiceDelegate extends AbstractRpcServiceDelegate implements
   @Override
   public CompletableFuture<ListUserOrganizationsResponse> listUserOrganizations(ListUserOrganizationsParams params) {
     return requestAsync(cancelMonitor -> new ListUserOrganizationsResponse(getBean(OrganizationsCache.class)
-      .listUserOrganizations(params.getCredentials(), SonarCloudRegion.valueOf(params.getRegion().name()), cancelMonitor)));
+      .listUserOrganizations(new TransientSonarCloudConnectionDto(null, params.getCredentials(), params.getRegion()), cancelMonitor)));
   }
 
   @Override
   public CompletableFuture<GetOrganizationResponse> getOrganization(GetOrganizationParams params) {
     return requestAsync(cancelMonitor -> new GetOrganizationResponse(getBean(OrganizationsCache.class)
-      .getOrganization(params.getCredentials(), params.getOrganizationKey(), SonarCloudRegion.valueOf(params.getRegion().name()), cancelMonitor)));
+      .getOrganization(new TransientSonarCloudConnectionDto(params.getOrganizationKey(), params.getCredentials(), params.getRegion()), cancelMonitor)));
   }
 
   @Override
   public CompletableFuture<FuzzySearchUserOrganizationsResponse> fuzzySearchUserOrganizations(FuzzySearchUserOrganizationsParams params) {
     return requestAsync(cancelMonitor -> new FuzzySearchUserOrganizationsResponse(getBean(OrganizationsCache.class)
-      .fuzzySearchOrganizations(params.getCredentials(), params.getSearchText(), SonarCloudRegion.valueOf(params.getRegion().name()), cancelMonitor)));
+      .fuzzySearchOrganizations(new TransientSonarCloudConnectionDto(null, params.getCredentials(), params.getRegion()), params.getSearchText(), cancelMonitor)));
   }
 
   @Override

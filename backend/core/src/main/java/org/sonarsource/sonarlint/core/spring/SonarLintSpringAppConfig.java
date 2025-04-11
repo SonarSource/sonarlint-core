@@ -30,7 +30,7 @@ import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingClueProvider;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
 import org.sonarsource.sonarlint.core.ConfigurationService;
-import org.sonarsource.sonarlint.core.ConnectionManager;
+import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.ConnectionService;
 import org.sonarsource.sonarlint.core.ConnectionSuggestionProvider;
 import org.sonarsource.sonarlint.core.OrganizationsCache;
@@ -128,7 +128,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   ConfigurationService.class,
   ConfigurationRepository.class,
   RulesService.class,
-  ConnectionManager.class,
+  SonarQubeClientManager.class,
   ConnectionConfigurationRepository.class,
   RulesRepository.class,
   RulesExtractionHelper.class,

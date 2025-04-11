@@ -32,7 +32,7 @@ import javax.annotation.Nullable;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
-import org.sonarsource.sonarlint.core.ConnectionManager;
+import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
@@ -43,12 +43,17 @@ import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.AssistBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.binding.NoBindingSuggestionFoundParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
 public class RequestHandlerBindingAssistant {
 
@@ -61,17 +66,17 @@ public class RequestHandlerBindingAssistant {
   private final ExecutorServiceShutdownWatchable<?> executorService;
   private final SonarCloudActiveEnvironment sonarCloudActiveEnvironment;
   private final ConnectionConfigurationRepository repository;
-  private final ConnectionManager connectionManager;
+  private final SonarQubeClientManager sonarQubeClientManager;
 
   public RequestHandlerBindingAssistant(BindingSuggestionProvider bindingSuggestionProvider, BindingCandidatesFinder bindingCandidatesFinder,
     SonarLintRpcClient client, ConnectionConfigurationRepository connectionConfigurationRepository, ConfigurationRepository configurationRepository,
-    SonarCloudActiveEnvironment sonarCloudActiveEnvironment, ConnectionConfigurationRepository repository, ConnectionManager connectionManager) {
+    SonarCloudActiveEnvironment sonarCloudActiveEnvironment, ConnectionConfigurationRepository repository, SonarQubeClientManager sonarQubeClientManager) {
     this.bindingSuggestionProvider = bindingSuggestionProvider;
     this.bindingCandidatesFinder = bindingCandidatesFinder;
     this.client = client;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.configurationRepository = configurationRepository;
-    this.connectionManager = connectionManager;
+    this.sonarQubeClientManager = sonarQubeClientManager;
     this.executorService = new ExecutorServiceShutdownWatchable<>(FailSafeExecutors.newSingleThreadExecutor("Show Issue or Hotspot Request Handler"));
     this.sonarCloudActiveEnvironment = sonarCloudActiveEnvironment;
     this.repository = repository;
@@ -226,7 +231,10 @@ public class RequestHandlerBindingAssistant {
     String tokenValue = connectionParams.getTokenValue();
     if (tokenName != null && tokenValue != null) {
       LOG.debug(String.format("Revoking token '%s'", tokenName));
-      connectionManager.getServerApi(getServerUrl(connectionParams), null, tokenValue)
+      var token = Either.<TokenDto, UsernamePasswordDto>forLeft(new TokenDto(tokenValue));
+      sonarQubeClientManager.getForTransientConnection(connectionParams.getConnectionParams().mapToEither(
+        sq -> new TransientSonarQubeConnectionDto(sq.getServerUrl(), token),
+        sc -> new TransientSonarCloudConnectionDto(sc.getOrganizationKey(), token, sc.getRegion())))
         .userTokens()
         .revoke(tokenName, cancelMonitor);
     }

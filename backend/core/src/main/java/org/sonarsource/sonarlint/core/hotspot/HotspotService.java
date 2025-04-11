@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.hotspot;
 import java.util.List;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
-import org.sonarsource.sonarlint.core.ConnectionManager;
+import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.HotspotReviewStatus;
@@ -61,20 +61,20 @@ public class HotspotService {
   private final ConfigurationRepository configurationRepository;
   private final ConnectionConfigurationRepository connectionRepository;
 
-  private final ConnectionManager connectionManager;
+  private final SonarQubeClientManager sonarQubeClientManager;
   private final TelemetryService telemetryService;
   private final SonarProjectBranchTrackingService branchTrackingService;
   private final FindingReportingService findingReportingService;
   private final StorageService storageService;
 
   public HotspotService(SonarLintRpcClient client, StorageService storageService, ConfigurationRepository configurationRepository,
-    ConnectionConfigurationRepository connectionRepository, ConnectionManager connectionManager, TelemetryService telemetryService,
+    ConnectionConfigurationRepository connectionRepository, SonarQubeClientManager sonarQubeClientManager, TelemetryService telemetryService,
     SonarProjectBranchTrackingService branchTrackingService, FindingReportingService findingReportingService) {
     this.client = client;
     this.storageService = storageService;
     this.configurationRepository = configurationRepository;
     this.connectionRepository = connectionRepository;
-    this.connectionManager = connectionManager;
+    this.sonarQubeClientManager = sonarQubeClientManager;
     this.telemetryService = telemetryService;
     this.branchTrackingService = branchTrackingService;
     this.findingReportingService = findingReportingService;
@@ -123,7 +123,7 @@ public class HotspotService {
   public CheckStatusChangePermittedResponse checkStatusChangePermitted(String connectionId, String hotspotKey, SonarLintCancelMonitor cancelMonitor) {
     // fixme add getConnectionByIdOrThrow
     var connection = connectionRepository.getConnectionById(connectionId);
-    var r = connectionManager.getConnectionOrThrow(connectionId)
+    var r = sonarQubeClientManager.getClientOrThrow(connectionId)
       .withClientApiAndReturn(serverApi -> serverApi.hotspot().show(hotspotKey, cancelMonitor));
     var allowedStatuses = HotspotReviewStatus.allowedStatusesOn(connection.getKind());
     // canChangeStatus is false when the 'Administer Hotspots' permission is missing
@@ -146,7 +146,7 @@ public class HotspotService {
       LOG.debug("No binding for config scope {}", configurationScopeId);
       return;
     }
-    connectionManager.withValidConnection(effectiveBindingOpt.get().connectionId(), serverApi -> {
+    sonarQubeClientManager.withActiveClient(effectiveBindingOpt.get().connectionId(), serverApi -> {
       serverApi.hotspot().changeStatus(hotspotKey, newStatus, cancelMonitor);
       saveStatusInStorage(effectiveBindingOpt.get(), hotspotKey, newStatus);
       telemetryService.hotspotStatusChanged();

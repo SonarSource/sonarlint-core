@@ -89,6 +89,11 @@ class ApacheHttpClientAdapter implements HttpClient {
   }
 
   @Override
+  public CompletableFuture<Response> getAsyncAnonymous(String url) {
+    return executeAsyncAnonymous(SimpleRequestBuilder.get(url).build());
+  }
+
+  @Override
   public CompletableFuture<Response> deleteAsync(String url, String contentType, String body) {
     var httpRequest = SimpleRequestBuilder
       .delete(url)
@@ -258,6 +263,14 @@ class ApacheHttpClientAdapter implements HttpClient {
           httpRequest.setHeader(AUTHORIZATION_HEADER, basic(usernameOrToken, Objects.requireNonNullElse(password, "")));
         }
       }
+      return new CompletableFutureWrappingFuture(httpRequest);
+    } catch (Exception e) {
+      throw new IllegalStateException("Unable to execute request: " + e.getMessage(), e);
+    }
+  }
+
+  private CompletableFuture<Response> executeAsyncAnonymous(SimpleHttpRequest httpRequest) {
+    try {
       return new CompletableFutureWrappingFuture(httpRequest);
     } catch (Exception e) {
       throw new IllegalStateException("Unable to execute request: " + e.getMessage(), e);

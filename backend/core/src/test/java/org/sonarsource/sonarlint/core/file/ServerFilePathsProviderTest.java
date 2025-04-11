@@ -30,29 +30,29 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
-import org.sonarsource.sonarlint.core.ConnectionManager;
+import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.connection.ServerConnection;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ComponentApi;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static testutils.TestUtils.mockServerApiProvider;
 
 class ServerFilePathsProviderTest {
   @RegisterExtension
@@ -63,10 +63,10 @@ class ServerFilePathsProviderTest {
   public static final String PROJECT_KEY = "projectKey";
 
   private Path cacheDirectory;
-  private final ConnectionManager connectionManager = mockServerApiProvider();
+  private final SonarQubeClientManager sonarQubeClientManager = mock(SonarQubeClientManager.class);
   private final ServerApi serverApi_A = mock(ServerApi.class);
   private final ServerApi serverApi_B = mock(ServerApi.class);
-  private final SonarLintCancelMonitor cancelMonitor =mock(SonarLintCancelMonitor.class);
+  private final SonarLintCancelMonitor cancelMonitor = mock(SonarLintCancelMonitor.class);
   private final ComponentApi componentApi_A = mock(ComponentApi.class);
   private final ComponentApi componentApi_B = mock(ComponentApi.class);
   private ServerFilePathsProvider underTest;
@@ -75,20 +75,17 @@ class ServerFilePathsProviderTest {
   void before(@TempDir Path storageDir) throws IOException {
     cacheDirectory = storageDir.resolve("cache");
     Files.createDirectories(cacheDirectory);
-
-    when(connectionManager.getServerApi(CONNECTION_A)).thenReturn(Optional.of(serverApi_A));
-    when(connectionManager.getServerApi(CONNECTION_B)).thenReturn(Optional.of(serverApi_B));
-    var serverConnectionA = new ServerConnection(CONNECTION_A, serverApi_A, null);
-    var serverConnectionB = new ServerConnection(CONNECTION_B, serverApi_B, null);
-    doReturn(Optional.of(serverConnectionA)).when(connectionManager).tryGetConnection(CONNECTION_A);
-    doReturn(Optional.of(serverConnectionB)).when(connectionManager).tryGetConnection(CONNECTION_B);
     when(serverApi_A.component()).thenReturn(componentApi_A);
     when(serverApi_B.component()).thenReturn(componentApi_B);
+    when(sonarQubeClientManager.withActiveClientAndReturn(eq(CONNECTION_A), any())).thenAnswer(
+      invocation -> Optional.ofNullable(((Function<ServerApi, Object>) invocation.getArguments()[1]).apply(serverApi_A)));
+    when(sonarQubeClientManager.withActiveClientAndReturn(eq(CONNECTION_B), any())).thenAnswer(
+      invocation -> Optional.ofNullable(((Function<ServerApi, Object>) invocation.getArguments()[1]).apply(serverApi_B)));
     mockServerFilePaths(componentApi_A, "pathA", "pathB");
     mockServerFilePaths(componentApi_B, "pathC", "pathD");
     var userPaths = mock(UserPaths.class);
     when(userPaths.getStorageRoot()).thenReturn(storageDir);
-    underTest = new ServerFilePathsProvider(connectionManager, userPaths);
+    underTest = new ServerFilePathsProvider(sonarQubeClientManager, userPaths);
 
     cacheDirectory = storageDir.resolve("cache");
   }
@@ -104,15 +101,6 @@ class ServerFilePathsProviderTest {
     new ServerFilePathsProvider(null, userPaths);
 
     assertThat(cacheDirectory.toFile()).doesNotExist();
-  }
-
-  @Test
-  void log_when_connection_not_exist() {
-    when(connectionManager.getServerApi(anyString())).thenReturn(Optional.empty());
-
-    underTest.getServerPaths(new Binding("conId", null), cancelMonitor);
-
-    assertThat(logTester.logs()).contains("Connection 'conId' does not exist");
   }
 
   @Test

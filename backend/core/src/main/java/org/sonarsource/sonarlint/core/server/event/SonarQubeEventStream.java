@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.server.event;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Consumer;
-import org.sonarsource.sonarlint.core.ConnectionManager;
+import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.serverapi.push.SonarServerEvent;
 import org.sonarsource.sonarlint.core.serverapi.stream.EventStream;
@@ -32,13 +32,13 @@ public class SonarQubeEventStream {
   private final Set<String> subscribedProjectKeys = new LinkedHashSet<>();
   private final Set<SonarLanguage> enabledLanguages;
   private final String connectionId;
-  private final ConnectionManager connectionManager;
+  private final SonarQubeClientManager sonarQubeClientManager;
   private final Consumer<SonarServerEvent> eventConsumer;
 
-  public SonarQubeEventStream(Set<SonarLanguage> enabledLanguages, String connectionId, ConnectionManager connectionManager, Consumer<SonarServerEvent> eventConsumer) {
+  public SonarQubeEventStream(Set<SonarLanguage> enabledLanguages, String connectionId, SonarQubeClientManager sonarQubeClientManager, Consumer<SonarServerEvent> eventConsumer) {
     this.enabledLanguages = enabledLanguages;
     this.connectionId = connectionId;
-    this.connectionManager = connectionManager;
+    this.sonarQubeClientManager = sonarQubeClientManager;
     this.eventConsumer = eventConsumer;
   }
 
@@ -67,8 +67,8 @@ public class SonarQubeEventStream {
 
   private void attemptSubscription(Set<String> projectKeys) {
     if (!enabledLanguages.isEmpty()) {
-      connectionManager.getServerApi(connectionId)
-        .ifPresent(serverApi -> eventStream = serverApi.push().subscribe(projectKeys, enabledLanguages, e -> notifyHandlers(e, eventConsumer)));
+      sonarQubeClientManager.withActiveClient(connectionId,
+        serverApi -> eventStream = serverApi.push().subscribe(projectKeys, enabledLanguages, e -> notifyHandlers(e, eventConsumer)));
     }
   }
 

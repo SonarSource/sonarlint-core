@@ -19,6 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.connection;
 
-public enum ConnectionState {
+public enum SonarQubeClientState {
   ACTIVE, INVALID_CREDENTIALS, MISSING_PERMISSION
 }

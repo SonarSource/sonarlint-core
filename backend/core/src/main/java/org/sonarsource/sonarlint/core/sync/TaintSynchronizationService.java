@@ -21,7 +21,7 @@ package org.sonarsource.sonarlint.core.sync;
 
 import java.util.LinkedHashSet;
 import java.util.stream.Collectors;
-import org.sonarsource.sonarlint.core.ConnectionManager;
+import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.branch.SonarProjectBranchTrackingService;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -47,22 +47,22 @@ public class TaintSynchronizationService {
   private final SonarProjectBranchTrackingService branchTrackingService;
   private final StorageService storageService;
   private final LanguageSupportRepository languageSupportRepository;
-  private final ConnectionManager connectionManager;
+  private final SonarQubeClientManager sonarQubeClientManager;
   private final ApplicationEventPublisher eventPublisher;
 
   public TaintSynchronizationService(ConfigurationRepository configurationRepository, SonarProjectBranchTrackingService branchTrackingService,
                                      StorageService storageService, LanguageSupportRepository languageSupportRepository,
-                                     ConnectionManager connectionManager, ApplicationEventPublisher eventPublisher) {
+                                     SonarQubeClientManager sonarQubeClientManager, ApplicationEventPublisher eventPublisher) {
     this.configurationRepository = configurationRepository;
     this.branchTrackingService = branchTrackingService;
     this.storageService = storageService;
     this.languageSupportRepository = languageSupportRepository;
-    this.connectionManager = connectionManager;
+    this.sonarQubeClientManager = sonarQubeClientManager;
     this.eventPublisher = eventPublisher;
   }
 
   public void synchronizeTaintVulnerabilities(String connectionId, String projectKey, SonarLintCancelMonitor cancelMonitor) {
-    connectionManager.withValidConnection(connectionId, serverApi -> {
+    sonarQubeClientManager.withActiveClient(connectionId, serverApi -> {
       var allScopes = configurationRepository.getBoundScopesToConnectionAndSonarProject(connectionId, projectKey);
       var allScopesByOptBranch = allScopes.stream()
         .collect(groupingBy(b -> branchTrackingService.awaitEffectiveSonarProjectBranch(b.getConfigScopeId())));

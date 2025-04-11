@@ -66,6 +66,12 @@ public class Either<L, R> {
     return lsp4jEither.map(mapLeft, mapRight);
   }
 
+  public <R1, R2> Either<R1, R2> mapToEither(
+    @NonNull Function<? super L, ? extends R1> mapLeft,
+    @NonNull Function<? super R, ? extends R2> mapRight) {
+    return isLeft() ? Either.forLeft(mapLeft.apply(getLeft())) : Either.forRight(mapRight.apply(getRight()));
+  }
+
   public org.eclipse.lsp4j.jsonrpc.messages.Either<L, R> getLsp4jEither() {
     return lsp4jEither;
   }

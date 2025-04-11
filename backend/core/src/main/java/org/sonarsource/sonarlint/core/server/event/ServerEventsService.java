@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.sonarsource.sonarlint.core.ConnectionManager;
+import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -59,7 +59,7 @@ public class ServerEventsService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final ConfigurationRepository configurationRepository;
   private final ConnectionConfigurationRepository connectionConfigurationRepository;
-  private final ConnectionManager connectionManager;
+  private final SonarQubeClientManager sonarQubeClientManager;
   private final LanguageSupportRepository languageSupportRepository;
   private final boolean shouldManageServerSentEvents;
   private final ApplicationEventPublisher eventPublisher;
@@ -67,10 +67,11 @@ public class ServerEventsService {
   private final ExecutorService executorService = FailSafeExecutors.newSingleThreadExecutor("sonarlint-server-sent-events-subscriber");
 
   public ServerEventsService(ConfigurationRepository configurationRepository, ConnectionConfigurationRepository connectionConfigurationRepository,
-    ConnectionManager connectionManager, LanguageSupportRepository languageSupportRepository, InitializeParams initializeParams, ApplicationEventPublisher eventPublisher) {
+    SonarQubeClientManager sonarQubeClientManager, LanguageSupportRepository languageSupportRepository, InitializeParams initializeParams,
+    ApplicationEventPublisher eventPublisher) {
     this.configurationRepository = configurationRepository;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
-    this.connectionManager = connectionManager;
+    this.sonarQubeClientManager = sonarQubeClientManager;
     this.languageSupportRepository = languageSupportRepository;
     this.shouldManageServerSentEvents = initializeParams.getBackendCapabilities().contains(SERVER_SENT_EVENTS);
     this.eventPublisher = eventPublisher;
@@ -179,7 +180,7 @@ public class ServerEventsService {
   }
 
   private SonarQubeEventStream openStream(String connectionId) {
-    return new SonarQubeEventStream(languageSupportRepository.getEnabledLanguagesInConnectedMode(), connectionId, connectionManager,
+    return new SonarQubeEventStream(languageSupportRepository.getEnabledLanguagesInConnectedMode(), connectionId, sonarQubeClientManager,
       e -> eventPublisher.publishEvent(new SonarServerEventReceivedEvent(connectionId, e)));
   }
 

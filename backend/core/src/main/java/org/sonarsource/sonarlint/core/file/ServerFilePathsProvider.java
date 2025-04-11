@@ -40,7 +40,7 @@ import java.util.UUID;
 import java.util.concurrent.CancellationException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.sonarsource.sonarlint.core.ConnectionManager;
+import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.UserPaths;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -50,13 +50,13 @@ import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 public class ServerFilePathsProvider {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
-  private final ConnectionManager connectionManager;
+  private final SonarQubeClientManager sonarQubeClientManager;
   private final Map<Binding, Path> cachedResponseFilePathByBinding = new HashMap<>();
   private final Path cacheDirectoryPath;
   private final Cache<Binding, List<Path>> temporaryInMemoryFilePathCacheByBinding;
 
-  public ServerFilePathsProvider(ConnectionManager connectionManager, UserPaths userPaths) {
-    this.connectionManager = connectionManager;
+  public ServerFilePathsProvider(SonarQubeClientManager sonarQubeClientManager, UserPaths userPaths) {
+    this.sonarQubeClientManager = sonarQubeClientManager;
     this.cacheDirectoryPath = userPaths.getStorageRoot().resolve("cache");
     this.temporaryInMemoryFilePathCacheByBinding = CacheBuilder.newBuilder()
       .expireAfterWrite(Duration.of(1, ChronoUnit.MINUTES))
@@ -98,16 +98,11 @@ public class ServerFilePathsProvider {
   }
 
   private Optional<List<Path>> fetchPathsFromServer(Binding binding, SonarLintCancelMonitor cancelMonitor) {
-    var connectionOpt = connectionManager.tryGetConnection(binding.connectionId());
-    if (connectionOpt.isEmpty()) {
-      LOG.debug("Connection '{}' does not exist", binding.connectionId());
-      return Optional.empty();
-    }
     try {
-      return connectionManager.withValidConnectionFlatMapOptionalAndReturn(binding.connectionId(), serverApi -> {
+      return sonarQubeClientManager.withActiveClientAndReturn(binding.connectionId(), serverApi -> {
         List<Path> paths = fetchPathsFromServer(serverApi, binding.sonarProjectKey(), cancelMonitor);
         cacheServerPaths(binding, paths);
-        return Optional.of(paths);
+        return paths;
       });
     } catch (CancellationException e) {
       throw e;

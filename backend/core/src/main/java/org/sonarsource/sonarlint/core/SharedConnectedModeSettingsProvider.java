@@ -69,7 +69,7 @@ public class SharedConnectedModeSettingsProvider {
 
         return format(SONARCLOUD_CONNECTED_MODE_CONFIG, organization, projectKey, region);
       } else {
-        return format(SONARQUBE_CONNECTED_MODE_CONFIG, connection.getEndpointParams().getBaseUrl(), projectKey);
+        return format(SONARQUBE_CONNECTED_MODE_CONFIG, connection.getUrl(), projectKey);
       }
     } else {
       LOG.warn("Request for generating shared Connected Mode configuration file content failed; Binding not yet available for '{}'", configScopeId);

@@ -36,7 +36,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.jetbrains.annotations.NotNull;
-import org.sonarsource.sonarlint.core.ConnectionManager;
+import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.analysis.RuleDetailsForAnalysis;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
@@ -83,7 +83,7 @@ public class RulesService {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   public static final String IN_EMBEDDED_RULES = "' in embedded rules";
-  private final ConnectionManager connectionManager;
+  private final SonarQubeClientManager sonarQubeClientManager;
   private final ConfigurationRepository configurationRepository;
   private final RulesRepository rulesRepository;
   private final StorageService storageService;
@@ -94,17 +94,17 @@ public class RulesService {
   private final SeverityModeService severityModeService;
 
   @Inject
-  public RulesService(ConnectionManager connectionManager, ConfigurationRepository configurationRepository, RulesRepository rulesRepository,
+  public RulesService(SonarQubeClientManager sonarQubeClientManager, ConfigurationRepository configurationRepository, RulesRepository rulesRepository,
                       StorageService storageService, InitializeParams params, ApplicationEventPublisher eventPublisher,
                       SeverityModeService severityModeService) {
-    this(connectionManager, configurationRepository, rulesRepository, storageService, eventPublisher,
+    this(sonarQubeClientManager, configurationRepository, rulesRepository, storageService, eventPublisher,
       params.getStandaloneRuleConfigByKey(), severityModeService);
   }
 
-  RulesService(ConnectionManager connectionManager, ConfigurationRepository configurationRepository, RulesRepository rulesRepository,
+  RulesService(SonarQubeClientManager sonarQubeClientManager, ConfigurationRepository configurationRepository, RulesRepository rulesRepository,
                StorageService storageService, ApplicationEventPublisher eventPublisher,
                @Nullable Map<String, StandaloneRuleConfigDto> standaloneRuleConfigByKey, SeverityModeService severityModeService) {
-    this.connectionManager = connectionManager;
+    this.sonarQubeClientManager = sonarQubeClientManager;
     this.configurationRepository = configurationRepository;
     this.rulesRepository = rulesRepository;
     this.storageService = storageService;
@@ -138,7 +138,7 @@ public class RulesService {
 
   public RuleDetails getActiveRuleForBinding(String ruleKey, Binding binding, SonarLintCancelMonitor cancelMonitor) {
     var connectionId = binding.connectionId();
-    connectionManager.getConnectionOrThrow(connectionId);
+    sonarQubeClientManager.getClientOrThrow(connectionId);
 
     var serverUsesStandardSeverityMode = !severityModeService.isMQRModeForConnection(connectionId);
 
@@ -167,7 +167,7 @@ public class RulesService {
   private RuleDetails hydrateDetailsWithServer(String connectionId, ServerActiveRule activeRuleFromStorage, boolean skipCleanCodeTaxonomy, SonarLintCancelMonitor cancelMonitor) {
     var ruleKey = activeRuleFromStorage.getRuleKey();
     var templateKey = activeRuleFromStorage.getTemplateKey();
-    var serverConnection = connectionManager.getConnectionOrThrow(connectionId);
+    var serverConnection = sonarQubeClientManager.getClientOrThrow(connectionId);
     if (StringUtils.isNotBlank(templateKey)) {
       var templateRule = rulesRepository.getRule(connectionId, templateKey);
       if (templateRule.isEmpty()) {

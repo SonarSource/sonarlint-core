@@ -24,9 +24,6 @@ import java.io.InputStream;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-/**
- * The client(IDE) is responsible to provide an HttpClient, configured with authentication, timeouts, proxy support, ...
- */
 public interface HttpClient {
 
   String JSON_CONTENT_TYPE = "application/json; charset=utf-8";
@@ -56,6 +53,8 @@ public interface HttpClient {
   Response get(String url);
 
   CompletableFuture<Response> getAsync(String url);
+
+  CompletableFuture<Response> getAsyncAnonymous(String url);
 
   AsyncRequest getEventStream(String url, HttpConnectionListener connectionListener, Consumer<String> messageConsumer);
 

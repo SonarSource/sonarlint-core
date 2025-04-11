@@ -225,7 +225,7 @@ public class PluginsService {
 
   public boolean shouldUseEnterpriseCSharpAnalyzer(String connectionId) {
     var connection = connectionConfigurationRepository.getConnectionById(connectionId);
-    var isSonarCloud = connection != null && connection.getEndpointParams().isSonarCloud();
+    var isSonarCloud = connection != null && connection.getKind() == ConnectionKind.SONARCLOUD;
     var connectionStorage = storageService.connection(connectionId);
     if (isSonarCloud) {
       return true;
