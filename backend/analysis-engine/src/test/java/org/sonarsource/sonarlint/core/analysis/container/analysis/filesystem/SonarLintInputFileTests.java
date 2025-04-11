@@ -22,7 +22,6 @@ package org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -32,7 +31,6 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.batch.fs.InputFile.Status;
-import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import testutils.FileUtils;
 import testutils.InMemoryTestClientInputFile;
 import testutils.OnDiskTestClientInputFile;
@@ -46,8 +44,8 @@ class SonarLintInputFileTests {
   void testGetters(@TempDir Path path) throws IOException {
     var filePath = path.resolve("foo.php");
     Files.write(filePath, "test string".getBytes(StandardCharsets.UTF_8));
-    ClientInputFile inputFile = new OnDiskTestClientInputFile(filePath, "file", false, StandardCharsets.UTF_8);
-    InputStream fileInputStream = Files.newInputStream(filePath);
+    var inputFile = new OnDiskTestClientInputFile(filePath, "file", false, StandardCharsets.UTF_8);
+    var fileInputStream = Files.newInputStream(filePath);
     var file = new SonarLintInputFile(inputFile, f -> new FileMetadata().readMetadata(fileInputStream, StandardCharsets.UTF_8, filePath.toUri(), null));
 
     assertThat(file.contents()).isEqualTo("test string");
@@ -66,12 +64,11 @@ class SonarLintInputFileTests {
     try (var reader = new BufferedReader(new InputStreamReader(stream))) {
       assertThat(reader.lines().collect(Collectors.joining())).isEqualTo("test string");
     }
-
   }
 
   @Test
   void checkValidPointer() {
-    ClientInputFile inputFile = new InMemoryTestClientInputFile("foo", "src/Foo.php", null, false, null);
+    var inputFile = new InMemoryTestClientInputFile("foo", "src/Foo.php", null, false, null);
     var metadata = new FileMetadata.Metadata(2, new int[] {0, 10}, 16);
     var file = new SonarLintInputFile(inputFile, f -> metadata);
     assertThat(file.newPointer(1, 0).line()).isEqualTo(1);
@@ -84,7 +81,7 @@ class SonarLintInputFileTests {
 
   @Test
   void selectLine() {
-    ClientInputFile inputFile = new InMemoryTestClientInputFile("foo", "src/Foo.php", null, false, null);
+    var inputFile = new InMemoryTestClientInputFile("foo", "src/Foo.php", null, false, null);
     var metadata = new FileMetadata().readMetadata(new ByteArrayInputStream("bla bla a\nabcde\n\nabc".getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8,
       URI.create("file://foo.php"), null);
     var file = new SonarLintInputFile(inputFile, f -> metadata);
@@ -103,7 +100,7 @@ class SonarLintInputFileTests {
 
   @Test
   void testRangeOverlap() {
-    ClientInputFile inputFile = new InMemoryTestClientInputFile("foo", "src/Foo.php", null, false, null);
+    var inputFile = new InMemoryTestClientInputFile("foo", "src/Foo.php", null, false, null);
     var metadata = new FileMetadata.Metadata(2, new int[] {0, 10}, 16);
     var file = new SonarLintInputFile(inputFile, f -> metadata);
 

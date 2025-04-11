@@ -22,6 +22,7 @@ package mediumtest.analysis;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -1064,6 +1065,68 @@ class AnalysisMediumTests {
     var result = backend.getAnalysisService().shouldUseEnterpriseCSharpAnalyzer(new ShouldUseEnterpriseCSharpAnalyzerParams(CONFIG_SCOPE_ID)).join();
 
     assertThat(result.shouldUseEnterpriseAnalyzer()).isTrue();
+  }
+
+  @SonarLintTest
+  void it_should_analyze_xml_file_in_non_ascii_directory(SonarLintTestHarness harness, @TempDir Path baseDir) throws IOException {
+    var directoryPath = baseDir.resolve("中文字符");
+    Files.createDirectory(directoryPath);
+    var filePath = createFile(directoryPath, "pom.xml",
+      """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project>
+          <modelVersion>4.0.0</modelVersion>
+          <groupId>com.foo</groupId>
+          <artifactId>bar</artifactId>
+          <version>${pom.version}</version>
+        </project>""");
+    var fileUri = filePath.toUri();
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .start(client);
+    var analysisId = UUID.randomUUID();
+
+    var result = backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), false, System.currentTimeMillis())).join();
+
+    assertThat(result.getFailedAnalysisFiles()).isEmpty();
+    var raisedIssueDto = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID);
+    assertThat(raisedIssueDto).isNotEmpty();
+  }
+
+  @SonarLintTest
+  void it_should_analyze_xml_file_in_non_ascii_directory_and_non_decoded_uri(SonarLintTestHarness harness, @TempDir Path baseDir) throws IOException {
+    var directoryPath = baseDir.resolve("中文字符");
+    Files.createDirectory(directoryPath);
+    var filePath = createFile(directoryPath, "pom.xml",
+      """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <project>
+          <modelVersion>4.0.0</modelVersion>
+          <groupId>com.foo</groupId>
+          <artifactId>bar</artifactId>
+          <version>${pom.version}</version>
+        </project>""");
+    var fileUri = URI.create(URLDecoder.decode(filePath.toUri().toString(), StandardCharsets.UTF_8));
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withUnboundConfigScope(CONFIG_SCOPE_ID)
+      .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .start(client);
+    var analysisId = UUID.randomUUID();
+
+    var result = backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), false, System.currentTimeMillis())).join();
+
+    assertThat(result.getFailedAnalysisFiles()).isEmpty();
+    var raisedIssueDto = awaitRaisedIssuesNotification(client, CONFIG_SCOPE_ID);
+    assertThat(raisedIssueDto).isNotEmpty();
   }
 
   private ClientInputFile prepareInputFile(String relativePath, String content, final boolean isTest, Charset encoding,

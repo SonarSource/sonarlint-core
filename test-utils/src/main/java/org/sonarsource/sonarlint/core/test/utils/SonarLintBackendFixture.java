@@ -24,6 +24,7 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.net.URI;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -586,12 +587,13 @@ public class SonarLintBackendFixture {
 
         @Override
         public void write(@NotNull byte[] b) throws IOException {
-          mem.append(new String(b));
-          flushIfNeeded();
+          var content = new String(b, StandardCharsets.UTF_8);
+          mem.append(content);
+          flushIfNeeded(content);
           super.write(b);
         }
 
-        private void flushIfNeeded() {
+        private void flushIfNeeded(String b) {
           int cr = mem.indexOf("\r\n");
           if (cr != -1 && nextContentSize < 0) {
             var contentLength = mem.substring(0, cr);
@@ -599,8 +601,15 @@ public class SonarLintBackendFixture {
             nextContentSize = Integer.parseInt(contentLength.substring("Content-Length: ".length()));
           }
           if (nextContentSize > 0 && mem.length() >= nextContentSize + 2) {
-            var content = mem.substring(2, nextContentSize + 2);
-            mem.replace(0, nextContentSize + 2, "");
+            var content = b.trim();
+            var bytes = mem.toString().getBytes(StandardCharsets.UTF_8);
+            var relevantBytes = new byte[nextContentSize];
+            System.arraycopy(bytes, 0, relevantBytes, 0, nextContentSize);
+            // Because of non-ASCII characters, a character might be longer than one byte, which makes Content-Length irrelevant
+            // As a workaround, we can directly extract the String from the byte array
+            var relevantString = new String(relevantBytes, StandardCharsets.UTF_8);
+
+            mem.replace(0, relevantString.length() + 2, "");
             nextContentSize = -1;
             System.out.println("--> " + content);
           }
@@ -614,7 +623,7 @@ public class SonarLintBackendFixture {
         public synchronized int read(byte[] b, int off, int len) throws IOException {
           int readLength = super.read(b, off, len);
           if (readLength > 0) {
-            System.out.println("<-- " + new String(b, off, readLength));
+            System.out.println("<-- " + new String(b, off, readLength, StandardCharsets.UTF_8));
           }
           return readLength;
         }
