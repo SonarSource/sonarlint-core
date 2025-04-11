@@ -24,7 +24,6 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -69,109 +68,19 @@ public class ConnectionManager {
     this.sonarCloudActiveEnvironment = sonarCloudActiveEnvironment;
   }
 
-  public Optional<ServerApi> getServerApiWithoutCredentials(String connectionId) {
-    var params = connectionRepository.getEndpointParams(connectionId);
-    if (params.isEmpty()) {
-      LOG.debug("Connection '{}' is gone", connectionId);
-      return Optional.empty();
-    }
-    return Optional.of(new ServerApi(params.get(), awareHttpClientProvider.getHttpClient()));
-  }
-
-  public Optional<ServerApi> getServerApi(String connectionId) {
-    var params = connectionRepository.getEndpointParams(connectionId);
-    if (params.isEmpty()) {
-      LOG.debug("Connection '{}' is gone", connectionId);
-      return Optional.empty();
-    }
-    var isBearerSupported = checkIfBearerIsSupported(params.get());
-    return Optional.of(new ServerApi(params.get(), awareHttpClientProvider.getHttpClient(connectionId, isBearerSupported)));
-  }
-
-  private boolean checkIfBearerIsSupported(EndpointParams params) {
-    if (params.isSonarCloud()) {
-      return true;
-    }
-    var httpClient = awareHttpClientProvider.getHttpClient();
-    var cancelMonitor = new SonarLintCancelMonitor();
-    var serverApi = new ServerApi(params, httpClient);
-    var status = serverApi.system().getStatus(cancelMonitor);
-    var serverChecker = new ServerVersionAndStatusChecker(serverApi);
-    return serverChecker.isSupportingBearer(status);
-  }
-
-  public ServerApi getServerApi(String baseUrl, @Nullable String organization, String token) {
-    var isSonarCloud = sonarCloudActiveEnvironment.isSonarQubeCloud(baseUrl);
-
-    var params = new EndpointParams(baseUrl, baseUrl, isSonarCloud, organization);
-    var isBearerSupported = checkIfBearerIsSupported(params);
-    return new ServerApi(params, httpClientProvider.getHttpClientWithPreemptiveAuth(token, isBearerSupported));
-  }
-
-  private ServerApi getServerApiOrThrow(String connectionId) {
-    var params = connectionRepository.getEndpointParams(connectionId);
-    if (params.isEmpty()) {
-      var error = new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND, "Connection '" + connectionId + "' is gone", connectionId);
-      throw new ResponseErrorException(error);
-    }
-    var isBearerSupported = checkIfBearerIsSupported(params.get());
-    return new ServerApi(params.get(), awareHttpClientProvider.getHttpClient(connectionId, isBearerSupported));
-  }
-
-  /**
-   * Used to do SonarCloud requests before knowing the organization
-   */
-  public ServerApi getForSonarCloudNoOrg(Either<TokenDto, UsernamePasswordDto> credentials, SonarCloudRegion region) {
-    var endpointParams = new EndpointParams(sonarCloudActiveEnvironment.getUri(region).toString(), sonarCloudActiveEnvironment.getApiUri(region).toString(), true, null);
-    var httpClient = getClientFor(endpointParams, credentials);
-    return new ServerApi(new ServerApiHelper(endpointParams, httpClient));
-  }
-
-  public ServerApi getForTransientConnection(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection) {
-    var endpointParams = transientConnection.map(
-      sq -> new EndpointParams(sq.getServerUrl(), null, false, null),
-      sc -> {
-        var region = SonarCloudRegion.valueOf(sc.getRegion().toString());
-        return new EndpointParams(sonarCloudActiveEnvironment.getUri(region).toString(), sonarCloudActiveEnvironment.getApiUri(region).toString(), true, sc.getOrganization());
-      });
-    var httpClient = getClientFor(endpointParams, transientConnection
-      .map(TransientSonarQubeConnectionDto::getCredentials, TransientSonarCloudConnectionDto::getCredentials));
-    return new ServerApi(new ServerApiHelper(endpointParams, httpClient));
-  }
-
-  private HttpClient getClientFor(EndpointParams params, Either<TokenDto, UsernamePasswordDto> credentials) {
-    return credentials.map(
-      tokenDto -> {
-        var isBearerSupported = checkIfBearerIsSupported(params);
-        return httpClientProvider.getHttpClientWithPreemptiveAuth(tokenDto.getToken(), isBearerSupported);
-      },
-      userPass -> httpClientProvider.getHttpClientWithPreemptiveAuth(userPass.getUsername(), userPass.getPassword()));
-  }
-
   /**
    * Throws ResponseErrorException if connection with provided ID is not found in ConnectionConfigurationRepository
    */
   public ServerConnection getConnectionOrThrow(String connectionId) {
     return connectionCache.computeIfAbsent(connectionId, connId -> {
-      var serverApi = getServerApiOrThrow(connId);
-      return new ServerConnection(connId, serverApi, client);
+      var params = connectionRepository.getEndpointParams(connectionId);
+      if (params.isEmpty()) {
+        var error = new ResponseError(SonarLintRpcErrorCode.CONNECTION_NOT_FOUND, "Connection '" + connectionId + "' is gone", connectionId);
+        throw new ResponseErrorException(error);
+      }
+      var isBearerSupported = checkIfBearerIsSupported(params.get());
+      return new ServerConnection(connId, new ServerApi(params.get(), awareHttpClientProvider.getHttpClient(connectionId, isBearerSupported)), client);
     });
-  }
-
-  /**
-   * Returns empty Optional if connection with provided ID is not found in ConnectionConfigurationRepository
-   */
-  public Optional<ServerConnection> tryGetConnection(String connectionId) {
-    return Optional.ofNullable(connectionCache.computeIfAbsent(connectionId, connId ->
-      getServerApi(connId).map(serverApi -> new ServerConnection(connId, serverApi, client)).orElse(null)));
-  }
-
-  /**
-   * Should be used for WebAPI requests without an authentication
-   */
-  public Optional<ServerConnection> tryGetConnectionWithoutCredentials(String connectionId) {
-    return getServerApiWithoutCredentials(connectionId)
-      .map(serverApi -> new ServerConnection(connectionId, serverApi, client, true));
   }
 
   public void withValidConnection(String connectionId, Consumer<ServerApi> serverApiConsumer) {
@@ -187,11 +96,64 @@ public class ConnectionManager {
   }
 
   private Optional<ServerConnection> getValidConnection(String connectionId) {
-    return tryGetConnection(connectionId).filter(ServerConnection::isValid)
-      .or(() -> {
-        LOG.debug("Connection '{}' is invalid", connectionId);
-        return Optional.empty();
+    return Optional.ofNullable(
+        connectionCache.computeIfAbsent(connectionId, connId -> {
+          var params = connectionRepository.getEndpointParams(connectionId);
+          if (params.isEmpty()) {
+            LOG.debug("Connection '{}' is gone", connectionId);
+            return null;
+          }
+          var isBearerSupported = checkIfBearerIsSupported(params.get());
+          return new ServerConnection(connId, new ServerApi(params.get(), awareHttpClientProvider.getHttpClient(connectionId, isBearerSupported)), client);
+        }))
+      .filter(connection -> {
+        var isValid = connection.isValid();
+        if (!isValid) {
+          LOG.debug("Connection '{}' is invalid", connectionId);
+        }
+        return isValid;
       });
+  }
+
+  public ServerApi getForTransientConnection(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection) {
+    var endpointParams = transientConnection.map(
+      sq -> new EndpointParams(sq.getServerUrl(), null, false, null),
+      sc -> {
+        var region = SonarCloudRegion.valueOf(sc.getRegion().toString());
+        return new EndpointParams(sonarCloudActiveEnvironment.getUri(region).toString(), sonarCloudActiveEnvironment.getApiUri(region).toString(), true, sc.getOrganization());
+      });
+    var httpClient = getClientFor(endpointParams, transientConnection
+      .map(TransientSonarQubeConnectionDto::getCredentials, TransientSonarCloudConnectionDto::getCredentials));
+    return new ServerApi(new ServerApiHelper(endpointParams, httpClient));
+  }
+
+  public ServerApi getServerApi(String baseUrl, String token) {
+    var isSonarCloud = sonarCloudActiveEnvironment.isSonarQubeCloud(baseUrl);
+
+    var params = new EndpointParams(baseUrl, null, isSonarCloud, null);
+    var isBearerSupported = checkIfBearerIsSupported(params);
+    return new ServerApi(params, httpClientProvider.getHttpClientWithPreemptiveAuth(token, isBearerSupported));
+  }
+
+  private HttpClient getClientFor(EndpointParams params, Either<TokenDto, UsernamePasswordDto> credentials) {
+    return credentials.map(
+      tokenDto -> {
+        var isBearerSupported = checkIfBearerIsSupported(params);
+        return httpClientProvider.getHttpClientWithPreemptiveAuth(tokenDto.getToken(), isBearerSupported);
+      },
+      userPass -> httpClientProvider.getHttpClientWithPreemptiveAuth(userPass.getUsername(), userPass.getPassword()));
+  }
+
+  private boolean checkIfBearerIsSupported(EndpointParams params) {
+    if (params.isSonarCloud()) {
+      return true;
+    }
+    var httpClient = awareHttpClientProvider.getHttpClient();
+    var cancelMonitor = new SonarLintCancelMonitor();
+    var serverApi = new ServerApi(params, httpClient);
+    var status = serverApi.system().getStatus(cancelMonitor);
+    var serverChecker = new ServerVersionAndStatusChecker(serverApi);
+    return serverChecker.isSupportingBearer(status);
   }
 
   @EventListener

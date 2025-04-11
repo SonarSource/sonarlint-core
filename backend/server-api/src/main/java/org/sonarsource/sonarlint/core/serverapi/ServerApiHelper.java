@@ -72,6 +72,14 @@ public class ServerApiHelper {
     return endpointParams.isSonarCloud();
   }
 
+  public HttpClient.Response getAnonymous(String path, SonarLintCancelMonitor cancelMonitor) {
+    var response = rawGetAnonymous(path, cancelMonitor);
+    if (!response.isSuccessful()) {
+      throw handleError(response);
+    }
+    return response;
+  }
+
   public HttpClient.Response get(String path, SonarLintCancelMonitor cancelMonitor) {
     var response = rawGet(path, cancelMonitor);
     if (!response.isSuccessful()) {
@@ -105,6 +113,13 @@ public class ServerApiHelper {
   }
 
   /**
+   * Execute GET without credentials and don't check response
+   */
+  public HttpClient.Response rawGetAnonymous(String relativePath, SonarLintCancelMonitor cancelMonitor) {
+    return rawGetUrlAnonymous(buildEndpointUrl(relativePath), cancelMonitor);
+  }
+
+  /**
    * Execute GET and don't check response
    */
   public HttpClient.Response rawGet(String relativePath, SonarLintCancelMonitor cancelMonitor) {
@@ -114,6 +129,12 @@ public class ServerApiHelper {
   private HttpClient.Response rawGetUrl(String url, SonarLintCancelMonitor cancelMonitor) {
     var startTime = Instant.now();
     var httpFuture = client.getAsync(url);
+    return processResponse("GET", cancelMonitor, httpFuture, startTime, url);
+  }
+
+  private HttpClient.Response rawGetUrlAnonymous(String url, SonarLintCancelMonitor cancelMonitor) {
+    var startTime = Instant.now();
+    var httpFuture = client.getAsyncAnonymous(url);
     return processResponse("GET", cancelMonitor, httpFuture, startTime, url);
   }
 

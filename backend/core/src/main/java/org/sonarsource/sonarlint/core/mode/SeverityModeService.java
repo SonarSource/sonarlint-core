@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.mode;
 
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.commons.ConnectionKind;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.serverconnection.StoredServerInfo;
@@ -41,8 +42,11 @@ public class SeverityModeService {
     if (connectionId == null) {
       return true;
     }
-    var isSonarCloud = connectionConfigurationRepository.getEndpointParams(connectionId).orElseThrow().isSonarCloud();
-    if (isSonarCloud) {
+    var connection = connectionConfigurationRepository.getConnectionById(connectionId);
+    if (connection == null) {
+      throw new IllegalArgumentException("Connection with id '" + connectionId + "' not found");
+    }
+    if (connection.getKind() == ConnectionKind.SONARCLOUD) {
       return true;
     }
     var optServerInfo = storageService.connection(connectionId).serverInfo().read();

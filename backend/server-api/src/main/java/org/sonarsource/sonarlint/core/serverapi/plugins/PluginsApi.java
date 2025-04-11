@@ -38,7 +38,7 @@ public class PluginsApi {
 
   public List<ServerPlugin> getInstalled(SonarLintCancelMonitor cancelMonitor) {
     return ServerApiHelper.processTimed(
-      () -> helper.get("/api/plugins/installed", cancelMonitor),
+      () -> helper.getAnonymous("/api/plugins/installed", cancelMonitor),
       response -> {
         var plugins = new Gson().fromJson(response.bodyAsString(), InstalledPluginsPayload.class);
         return Arrays.stream(plugins.plugins).map(PluginsApi::toInstalledPlugin).toList();
@@ -53,7 +53,7 @@ public class PluginsApi {
   public void getPlugin(String key, ServerApiHelper.IOConsumer<InputStream> pluginFileConsumer, SonarLintCancelMonitor cancelMonitor) {
     var url = "api/plugins/download?plugin=" + key;
     ServerApiHelper.consumeTimed(
-      () -> helper.get(url, cancelMonitor),
+      () -> helper.getAnonymous(url, cancelMonitor),
       response -> pluginFileConsumer.accept(response.bodyAsStream()),
       duration -> LOG.info("Downloaded '{}' in {}ms", key, duration));
   }

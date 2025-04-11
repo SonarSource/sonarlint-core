@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.CancellationException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.sonarsource.sonarlint.core.ConnectionManager;
@@ -98,23 +97,11 @@ public class ServerFilePathsProvider {
   }
 
   private Optional<List<Path>> fetchPathsFromServer(Binding binding, SonarLintCancelMonitor cancelMonitor) {
-    var connectionOpt = connectionManager.tryGetConnection(binding.connectionId());
-    if (connectionOpt.isEmpty()) {
-      LOG.debug("Connection '{}' does not exist", binding.connectionId());
-      return Optional.empty();
-    }
-    try {
-      return connectionManager.withValidConnectionFlatMapOptionalAndReturn(binding.connectionId(), serverApi -> {
-        List<Path> paths = fetchPathsFromServer(serverApi, binding.sonarProjectKey(), cancelMonitor);
-        cacheServerPaths(binding, paths);
-        return Optional.of(paths);
-      });
-    } catch (CancellationException e) {
-      throw e;
-    } catch (Exception e) {
-      LOG.debug("Error while getting server file paths for project '{}'", binding.sonarProjectKey(), e);
-      return Optional.empty();
-    }
+    return connectionManager.withValidConnectionAndReturn(binding.connectionId(), serverApi -> {
+      List<Path> paths = fetchPathsFromServer(serverApi, binding.sonarProjectKey(), cancelMonitor);
+      cacheServerPaths(binding, paths);
+      return paths;
+    });
   }
 
   private static List<Path> readServerPathsFromFile(Path responsePath) {

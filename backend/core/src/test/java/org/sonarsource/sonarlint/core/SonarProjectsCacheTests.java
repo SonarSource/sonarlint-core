@@ -21,25 +21,17 @@ package org.sonarsource.sonarlint.core;
 
 import java.util.List;
 import java.util.Optional;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.mockito.Mockito;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.connection.ServerConnection;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationRemovedEvent;
 import org.sonarsource.sonarlint.core.event.ConnectionConfigurationUpdatedEvent;
-import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static testutils.TestUtils.mockServerApiProvider;
 
@@ -86,19 +78,11 @@ class SonarProjectsCacheTests {
     }
   };
   private final ConnectionManager connectionManager = mockServerApiProvider();
-  private final ServerApi serverApi = mock(ServerApi.class, Mockito.RETURNS_DEEP_STUBS);
   private final SonarProjectsCache underTest = new SonarProjectsCache(connectionManager);
-
-  @BeforeEach
-  public void setup() {
-    doReturn(Optional.of(serverApi)).when(connectionManager).getServerApi(SQ_1);
-    var serverConnection = new ServerConnection(SQ_1, serverApi, null);
-    doReturn(Optional.of(serverConnection)).when(connectionManager).tryGetConnection(SQ_1);
-  }
 
   @Test
   void getSonarProject_should_query_server_once() {
-    when(serverApi.component().getProject(eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class)))
+    when(connectionManager.withValidConnectionAndReturn(eq(SQ_1), any()))
       .thenReturn(Optional.of(PROJECT_1))
       .thenThrow(new AssertionError("Should only be called once"));
 
@@ -113,13 +97,11 @@ class SonarProjectsCacheTests {
     assertThat(sonarProjectCall2).isPresent();
     assertThat(sonarProjectCall2.get().getKey()).isEqualTo(PROJECT_KEY_1);
     assertThat(sonarProjectCall2.get().getName()).isEqualTo(PROJECT_NAME_1);
-
-    verify(serverApi.component(), times(1)).getProject(eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class));
   }
 
   @Test
   void getSonarProject_should_cache_failure() {
-    when(serverApi.component().getProject(eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class)))
+    when(connectionManager.withValidConnectionAndReturn(eq(SQ_1), any()))
       .thenThrow(new RuntimeException("Unable to fetch project"))
       .thenReturn(Optional.of(PROJECT_1));
 
@@ -130,14 +112,13 @@ class SonarProjectsCacheTests {
     var sonarProjectCall2 = underTest.getSonarProject(SQ_1, PROJECT_KEY_1, new SonarLintCancelMonitor());
 
     assertThat(sonarProjectCall2).isEmpty();
-
-    verify(serverApi.component(), times(1)).getProject(eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class));
   }
 
   @Test
   void evict_cache_if_connection_removed_to_save_memory() {
-    when(serverApi.component().getProject(eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class)))
-      .thenReturn(Optional.of(PROJECT_1));
+    when(connectionManager.withValidConnectionAndReturn(eq(SQ_1), any()))
+      .thenReturn(Optional.of(PROJECT_1))
+      .thenThrow(new AssertionError("Should only be called once"));
 
     var sonarProjectCall1 = underTest.getSonarProject(SQ_1, PROJECT_KEY_1, new SonarLintCancelMonitor());
 
@@ -152,15 +133,14 @@ class SonarProjectsCacheTests {
     assertThat(sonarProjectCall2).isPresent();
     assertThat(sonarProjectCall2.get().getKey()).isEqualTo(PROJECT_KEY_1);
     assertThat(sonarProjectCall2.get().getName()).isEqualTo(PROJECT_NAME_1);
-
-    verify(serverApi.component(), times(2)).getProject(eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class));
   }
 
   @Test
   void evict_cache_if_connection_updated_to_refresh_on_next_get() {
-    when(serverApi.component().getProject(eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class)))
+    when(connectionManager.withValidConnectionAndReturn(eq(SQ_1), any()))
       .thenReturn(Optional.of(PROJECT_1))
-      .thenReturn(Optional.of(PROJECT_1_CHANGED));
+      .thenReturn(Optional.of(PROJECT_1_CHANGED))
+      .thenThrow(new AssertionError("Should only be called once"));
 
     var sonarProjectCall1 = underTest.getSonarProject(SQ_1, PROJECT_KEY_1, new SonarLintCancelMonitor());
 
@@ -175,14 +155,12 @@ class SonarProjectsCacheTests {
     assertThat(sonarProjectCall2).isPresent();
     assertThat(sonarProjectCall2.get().getKey()).isEqualTo(PROJECT_KEY_1);
     assertThat(sonarProjectCall2.get().getName()).isEqualTo(PROJECT_NAME_2);
-
-    verify(serverApi.component(), times(2)).getProject(eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class));
   }
 
   @Test
   void getTextSearchIndex_should_query_server_once() {
-    when(serverApi.component().getAllProjects(any()))
-      .thenReturn(List.of(PROJECT_1, PROJECT_2))
+    when(connectionManager.withValidConnectionAndReturn(eq(SQ_1), any()))
+      .thenReturn(Optional.of(List.of(PROJECT_1, PROJECT_2)))
       .thenThrow(new AssertionError("Should only be called once"));
 
     var searchIndex1 = underTest.getTextSearchIndex(SQ_1, new SonarLintCancelMonitor());
@@ -192,41 +170,36 @@ class SonarProjectsCacheTests {
     var searchIndex2 = underTest.getTextSearchIndex(SQ_1, new SonarLintCancelMonitor());
 
     assertThat(searchIndex2.size()).isEqualTo(2);
-
-    verify(serverApi.component(), times(1)).getAllProjects(any());
   }
 
   @Test
   void getTextSearchIndex_should_return_empty_index_if_no_projects() {
-    when(serverApi.component().getAllProjects(any()))
-      .thenReturn(List.of())
+    when(connectionManager.withValidConnectionAndReturn(eq(SQ_1), any()))
+      .thenReturn(Optional.of(List.of()))
       .thenThrow(new AssertionError("Should only be called once"));
 
     var searchIndex1 = underTest.getTextSearchIndex(SQ_1, new SonarLintCancelMonitor());
 
     assertThat(searchIndex1.isEmpty()).isTrue();
 
-    var searchIndex2 = underTest.getTextSearchIndex(SQ_1, new SonarLintCancelMonitor());
+    underTest.getTextSearchIndex(SQ_1, new SonarLintCancelMonitor());
 
     assertThat(searchIndex1.isEmpty()).isTrue();
-
-    verify(serverApi.component(), times(1)).getAllProjects(any());
   }
 
   @Test
   void getTextSearchIndex_should_cache_failure() {
-    when(serverApi.component().getAllProjects(any()))
+    when(connectionManager.withValidConnectionAndReturn(eq(SQ_1), any()))
       .thenThrow(new RuntimeException("Unable to fetch projects"))
-      .thenReturn(List.of(PROJECT_1, PROJECT_2));
+      .thenReturn(Optional.of(List.of(PROJECT_1, PROJECT_2)))
+      .thenThrow(new AssertionError("Should only be called once"));
 
     var searchIndex1 = underTest.getTextSearchIndex(SQ_1, new SonarLintCancelMonitor());
 
     assertThat(searchIndex1.isEmpty()).isTrue();
 
-    var searchIndex2 = underTest.getTextSearchIndex(SQ_1, new SonarLintCancelMonitor());
+    underTest.getTextSearchIndex(SQ_1, new SonarLintCancelMonitor());
 
     assertThat(searchIndex1.isEmpty()).isTrue();
-
-    verify(serverApi.component(), times(1)).getAllProjects(any());
   }
 }

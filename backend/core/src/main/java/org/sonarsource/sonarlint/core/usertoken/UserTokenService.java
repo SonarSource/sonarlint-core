@@ -36,7 +36,7 @@ public class UserTokenService {
 
   public void revokeToken(RevokeTokenParams params, SonarLintCancelMonitor cancelMonitor) {
     LOG.debug(String.format("Revoking token '%s'", params.getTokenName()));
-    connectionManager.getServerApi(params.getBaseUrl(), null, params.getTokenValue())
+    connectionManager.getServerApi(params.getBaseUrl(), params.getTokenValue())
       .userTokens()
       .revoke(params.getTokenName(), cancelMonitor);
   }

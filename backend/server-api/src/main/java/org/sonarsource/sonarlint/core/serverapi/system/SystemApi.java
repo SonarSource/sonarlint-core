@@ -35,7 +35,7 @@ public class SystemApi {
 
   public ServerStatusInfo getStatus(SonarLintCancelMonitor cancelMonitor) {
     return ServerApiHelper.processTimed(
-      () -> helper.get("api/system/status", cancelMonitor),
+      () -> helper.getAnonymous("api/system/status", cancelMonitor),
       response -> {
         var responseStr = response.bodyAsString();
         try {
