@@ -20,7 +20,7 @@
 package org.sonarsource.sonarlint.core.sync;
 
 import java.util.Optional;
-import org.sonarsource.sonarlint.core.ConnectionManager;
+import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -38,17 +38,17 @@ import static java.util.stream.Collectors.toSet;
 public class SonarProjectBranchesSynchronizationService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final StorageService storageService;
-  private final ConnectionManager connectionManager;
+  private final SonarQubeClientManager sonarQubeClientManager;
   private final ApplicationEventPublisher eventPublisher;
 
-  public SonarProjectBranchesSynchronizationService(StorageService storageService, ConnectionManager connectionManager, ApplicationEventPublisher eventPublisher) {
+  public SonarProjectBranchesSynchronizationService(StorageService storageService, SonarQubeClientManager sonarQubeClientManager, ApplicationEventPublisher eventPublisher) {
     this.storageService = storageService;
-    this.connectionManager = connectionManager;
+    this.sonarQubeClientManager = sonarQubeClientManager;
     this.eventPublisher = eventPublisher;
   }
 
   public void sync(String connectionId, String sonarProjectKey, SonarLintCancelMonitor cancelMonitor) {
-    connectionManager.withValidConnection(connectionId, serverApi -> {
+    sonarQubeClientManager.withActiveClient(connectionId, serverApi -> {
       var branchesStorage = storageService.connection(connectionId).project(sonarProjectKey).branches();
       Optional<ProjectBranches> oldBranches = Optional.empty();
       if (branchesStorage.exists()) {
@@ -77,7 +77,7 @@ public class SonarProjectBranchesSynchronizationService {
       var storedBranches = branchesStorage.read();
       return storedBranches.getMainBranchName();
     } else {
-      return connectionManager.withValidConnectionAndReturn(connectionId,
+      return sonarQubeClientManager.withActiveClientAndReturn(connectionId,
           serverApi -> getProjectBranches(serverApi, projectKey, cancelMonitor))
         .map(ProjectBranches::getMainBranchName).orElseThrow();
     }

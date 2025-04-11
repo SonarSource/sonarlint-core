@@ -42,7 +42,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
-import org.sonarsource.sonarlint.core.ConnectionManager;
+import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
@@ -105,7 +105,7 @@ class ShowFixSuggestionRequestHandlerTests {
 
     showFixSuggestionRequestHandler = new ShowFixSuggestionRequestHandler(sonarLintRpcClient, eventPublisher,
       new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintRpcClient, connectionConfigurationRepository, configurationRepository,
-        sonarCloudActiveEnvironment, connectionConfiguration, mock(ConnectionManager.class)),
+        sonarCloudActiveEnvironment, connectionConfiguration, mock(SonarQubeClientManager.class)),
       pathTranslationService, sonarCloudActiveEnvironment, sonarProjectBranchesSynchronizationService, clientFs);
   }
 

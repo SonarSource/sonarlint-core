@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
-import org.sonarsource.sonarlint.core.ConnectionManager;
+import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.ImpactSeverity;
 import org.sonarsource.sonarlint.core.commons.LocalOnlyIssue;
@@ -98,7 +98,7 @@ public class IssueService {
     ResolutionStatus.FALSE_POSITIVE, Transition.FALSE_POSITIVE);
 
   private final ConfigurationRepository configurationRepository;
-  private final ConnectionManager connectionManager;
+  private final SonarQubeClientManager sonarQubeClientManager;
   private final StorageService storageService;
   private final LocalOnlyIssueStorageService localOnlyIssueStorageService;
   private final LocalOnlyIssueRepository localOnlyIssueRepository;
@@ -109,12 +109,12 @@ public class IssueService {
   private final RulesService rulesService;
   private final TaintVulnerabilityTrackingService taintVulnerabilityTrackingService;
 
-  public IssueService(ConfigurationRepository configurationRepository, ConnectionManager connectionManager, StorageService storageService,
+  public IssueService(ConfigurationRepository configurationRepository, SonarQubeClientManager sonarQubeClientManager, StorageService storageService,
     LocalOnlyIssueStorageService localOnlyIssueStorageService, LocalOnlyIssueRepository localOnlyIssueRepository,
     ApplicationEventPublisher eventPublisher, FindingReportingService findingReportingService, SeverityModeService severityModeService,
     NewCodeService newCodeService, RulesService rulesService, TaintVulnerabilityTrackingService taintVulnerabilityTrackingService) {
     this.configurationRepository = configurationRepository;
-    this.connectionManager = connectionManager;
+    this.sonarQubeClientManager = sonarQubeClientManager;
     this.storageService = storageService;
     this.localOnlyIssueStorageService = localOnlyIssueStorageService;
     this.localOnlyIssueRepository = localOnlyIssueRepository;
@@ -128,7 +128,7 @@ public class IssueService {
 
   public void changeStatus(String configurationScopeId, String issueKey, ResolutionStatus newStatus, boolean isTaintIssue, SonarLintCancelMonitor cancelMonitor) {
     var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
-    var serverConnection = connectionManager.getConnectionOrThrow(binding.connectionId());
+    var serverConnection = sonarQubeClientManager.getClientOrThrow(binding.connectionId());
     var reviewStatus = transitionByResolutionStatus.get(newStatus);
     var projectServerIssueStore = storageService.binding(binding).findings();
     boolean isServerIssue = projectServerIssueStore.containsIssue(issueKey);
@@ -172,7 +172,7 @@ public class IssueService {
   public boolean checkAnticipatedStatusChangeSupported(String configScopeId) {
     var binding = configurationRepository.getEffectiveBindingOrThrow(configScopeId);
     var connectionId = binding.connectionId();
-    return connectionManager.getConnectionOrThrow(binding.connectionId())
+    return sonarQubeClientManager.getClientOrThrow(binding.connectionId())
       .withClientApiAndReturn(serverApi -> checkAnticipatedStatusChangeSupported(serverApi, connectionId));
   }
 
@@ -190,7 +190,7 @@ public class IssueService {
   }
 
   public CheckStatusChangePermittedResponse checkStatusChangePermitted(String connectionId, String issueKey, SonarLintCancelMonitor cancelMonitor) {
-    return connectionManager.getConnectionOrThrow(connectionId).withClientApiAndReturn(serverApi -> asUUID(issueKey)
+    return sonarQubeClientManager.getClientOrThrow(connectionId).withClientApiAndReturn(serverApi -> asUUID(issueKey)
       .flatMap(localOnlyIssueRepository::findByKey)
       .map(r -> {
         // For anticipated issues we currently don't get the information from SonarQube (as there is no web API
@@ -274,7 +274,7 @@ public class IssueService {
     var projectServerIssueStore = storageService.binding(binding).findings();
     boolean isServerIssue = projectServerIssueStore.containsIssue(issueId);
     if (isServerIssue) {
-      return connectionManager.getConnectionOrThrow(binding.connectionId())
+      return sonarQubeClientManager.getClientOrThrow(binding.connectionId())
         .withClientApiAndReturn(serverApi -> reopenServerIssue(serverApi, binding, issueId, projectServerIssueStore, isTaintIssue, cancelMonitor));
     } else {
       return reopenLocalIssue(issueId, configurationScopeId, cancelMonitor);
@@ -295,7 +295,7 @@ public class IssueService {
     var issuesForFile = localOnlyIssueStore.loadForFile(configurationScopeId, filePath);
     var issuesToSync = subtract(allIssues, issuesForFile);
     var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
-    connectionManager.getConnectionOrThrow(binding.connectionId())
+    sonarQubeClientManager.getClientOrThrow(binding.connectionId())
         .withClientApi(serverApi -> serverApi.issue().anticipatedTransitions(binding.sonarProjectKey(), issuesToSync, cancelMonitor));
   }
 
@@ -304,7 +304,7 @@ public class IssueService {
     var allIssues = localOnlyIssueStore.loadAll(configurationScopeId);
     var issuesToSync = allIssues.stream().filter(it -> !it.getId().equals(issueId)).toList();
     var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
-    connectionManager.getConnectionOrThrow(binding.connectionId())
+    sonarQubeClientManager.getClientOrThrow(binding.connectionId())
         .withClientApi(serverApi -> serverApi.issue().anticipatedTransitions(binding.sonarProjectKey(), issuesToSync, cancelMonitor));
   }
 
@@ -319,7 +319,7 @@ public class IssueService {
         var issuesToSync = localOnlyIssueStore.loadAll(configurationScopeId);
         issuesToSync.replaceAll(issue -> issue.getId().equals(issueId) ? commentedIssue : issue);
         var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
-        connectionManager.getConnectionOrThrow(binding.connectionId())
+        sonarQubeClientManager.getClientOrThrow(binding.connectionId())
             .withClientApi(serverApi -> serverApi.issue().anticipatedTransitions(binding.sonarProjectKey(), issuesToSync, cancelMonitor));
         localOnlyIssueStore.storeLocalOnlyIssue(configurationScopeId, commentedIssue);
       }
@@ -335,7 +335,7 @@ public class IssueService {
 
   private void addCommentOnServerIssue(String configurationScopeId, String issueKey, String comment, SonarLintCancelMonitor cancelMonitor) {
     var binding = configurationRepository.getEffectiveBindingOrThrow(configurationScopeId);
-    connectionManager.getConnectionOrThrow(binding.connectionId())
+    sonarQubeClientManager.getClientOrThrow(binding.connectionId())
       .withClientApi(serverApi -> serverApi.issue().addComment(issueKey, comment, cancelMonitor));
   }
 

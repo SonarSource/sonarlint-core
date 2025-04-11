@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.sync;
 import java.nio.file.Path;
 import java.util.LinkedHashSet;
 import java.util.stream.Collectors;
-import org.sonarsource.sonarlint.core.ConnectionManager;
+import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
@@ -41,12 +41,12 @@ public class HotspotSynchronizationService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final StorageService storageService;
   private final LanguageSupportRepository languageSupportRepository;
-  private final ConnectionManager connectionManager;
+  private final SonarQubeClientManager sonarQubeClientManager;
 
-  public HotspotSynchronizationService(StorageService storageService, LanguageSupportRepository languageSupportRepository, ConnectionManager connectionManager) {
+  public HotspotSynchronizationService(StorageService storageService, LanguageSupportRepository languageSupportRepository, SonarQubeClientManager sonarQubeClientManager) {
     this.storageService = storageService;
     this.languageSupportRepository = languageSupportRepository;
-    this.connectionManager = connectionManager;
+    this.sonarQubeClientManager = sonarQubeClientManager;
   }
 
   public void syncServerHotspotsForProject(ServerApi serverApi, String connectionId, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
@@ -69,7 +69,7 @@ public class HotspotSynchronizationService {
   }
 
   public void fetchProjectHotspots(Binding binding, String activeBranch, SonarLintCancelMonitor cancelMonitor) {
-    connectionManager.withValidConnection(binding.connectionId(), serverApi ->
+    sonarQubeClientManager.withActiveClient(binding.connectionId(), serverApi ->
       downloadAllServerHotspots(binding.connectionId(), serverApi, binding.sonarProjectKey(), activeBranch, cancelMonitor));
   }
 
@@ -83,7 +83,7 @@ public class HotspotSynchronizationService {
   }
 
   public void fetchFileHotspots(Binding binding, String activeBranch, Path serverFilePath, SonarLintCancelMonitor cancelMonitor) {
-    connectionManager.withValidConnection(binding.connectionId(), serverApi ->
+    sonarQubeClientManager.withActiveClient(binding.connectionId(), serverApi ->
       downloadAllServerHotspotsForFile(binding.connectionId(), serverApi, binding.sonarProjectKey(), serverFilePath, activeBranch, cancelMonitor));
   }
 

@@ -39,7 +39,7 @@ import org.apache.hc.core5.http.io.HttpRequestHandler;
 import org.apache.hc.core5.http.io.entity.StringEntity;
 import org.apache.hc.core5.http.protocol.HttpContext;
 import org.apache.hc.core5.net.URIBuilder;
-import org.sonarsource.sonarlint.core.ConnectionManager;
+import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -71,18 +71,18 @@ import static org.sonarsource.sonarlint.core.embedded.server.RequestHandlerUtils
 public class ShowIssueRequestHandler implements HttpRequestHandler {
 
   private final SonarLintRpcClient client;
-  private final ConnectionManager connectionManager;
+  private final SonarQubeClientManager sonarQubeClientManager;
   private final TelemetryService telemetryService;
   private final RequestHandlerBindingAssistant requestHandlerBindingAssistant;
   private final PathTranslationService pathTranslationService;
   private final SonarCloudActiveEnvironment sonarCloudActiveEnvironment;
   private final SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService;
 
-  public ShowIssueRequestHandler(SonarLintRpcClient client, ConnectionManager connectionManager, TelemetryService telemetryService,
+  public ShowIssueRequestHandler(SonarLintRpcClient client, SonarQubeClientManager sonarQubeClientManager, TelemetryService telemetryService,
     RequestHandlerBindingAssistant requestHandlerBindingAssistant, PathTranslationService pathTranslationService, SonarCloudActiveEnvironment sonarCloudActiveEnvironment,
     SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService) {
     this.client = client;
-    this.connectionManager = connectionManager;
+    this.sonarQubeClientManager = sonarQubeClientManager;
     this.telemetryService = telemetryService;
     this.requestHandlerBindingAssistant = requestHandlerBindingAssistant;
     this.pathTranslationService = pathTranslationService;
@@ -188,13 +188,13 @@ public class ShowIssueRequestHandler implements HttpRequestHandler {
 
   private Optional<IssueApi.ServerIssueDetails> tryFetchIssue(String connectionId, String issueKey, String projectKey, String branch, @Nullable String pullRequest,
     SonarLintCancelMonitor cancelMonitor) {
-    return connectionManager.withValidConnectionFlatMapOptionalAndReturn(connectionId,
+    return sonarQubeClientManager.withActiveClientFlatMapOptionalAndReturn(connectionId,
       serverApi -> serverApi.issue().fetchServerIssue(issueKey, projectKey, branch, pullRequest, cancelMonitor));
   }
 
   private Optional<String> tryFetchCodeSnippet(String connectionId, String fileKey, Common.TextRange textRange, String branch, @Nullable String pullRequest,
     SonarLintCancelMonitor cancelMonitor) {
-    return connectionManager.withValidConnectionFlatMapOptionalAndReturn(connectionId,
+    return sonarQubeClientManager.withActiveClientFlatMapOptionalAndReturn(connectionId,
       api -> api.issue().getCodeSnippet(fileKey, textRange, branch, pullRequest, cancelMonitor));
   }
 

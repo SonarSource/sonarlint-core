@@ -29,44 +29,38 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.InvalidTokenParam
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnauthorizedException;
 
-public class ServerConnection {
+public class SonarQubeClient {
 
   private static final Period WRONG_TOKEN_NOTIFICATION_INTERVAL = Period.ofDays(1);
   private final String connectionId;
   private final ServerApi serverApi;
   private final SonarLintRpcClient client;
-  private ConnectionState state = ConnectionState.ACTIVE;
+  private SonarQubeClientState state = SonarQubeClientState.ACTIVE;
   @Nullable
   private Instant lastNotificationTime;
-  private final boolean withoutCredentials;
 
-  public ServerConnection(String connectionId, ServerApi serverApi, SonarLintRpcClient client) {
-    this(connectionId, serverApi, client, false);
-  }
-
-  public ServerConnection(String connectionId, ServerApi serverApi, SonarLintRpcClient client, boolean withoutCredentials) {
+  public SonarQubeClient(String connectionId, ServerApi serverApi, SonarLintRpcClient client) {
     this.connectionId = connectionId;
     this.serverApi = serverApi;
     this.client = client;
-    this.withoutCredentials = withoutCredentials;
   }
 
   public boolean isSonarCloud() {
     return serverApi.isSonarCloud();
   }
 
-  public boolean isValid() {
-    return state == ConnectionState.ACTIVE;
+  public boolean isActive() {
+    return state == SonarQubeClientState.ACTIVE;
   }
 
   public <T> T withClientApiAndReturn(Function<ServerApi, T> serverApiConsumer) {
     try {
       var result = serverApiConsumer.apply(serverApi);
-      state = ConnectionState.ACTIVE;
+      state = SonarQubeClientState.ACTIVE;
       lastNotificationTime = null;
       return result;
     } catch (UnauthorizedException e) {
-      state = ConnectionState.INVALID_CREDENTIALS;
+      state = SonarQubeClientState.INVALID_CREDENTIALS;
       notifyClientAboutWrongTokenIfNeeded();
     }
     return null;
@@ -75,19 +69,16 @@ public class ServerConnection {
   public void withClientApi(Consumer<ServerApi> serverApiConsumer) {
     try {
       serverApiConsumer.accept(serverApi);
-      state = ConnectionState.ACTIVE;
+      state = SonarQubeClientState.ACTIVE;
       lastNotificationTime = null;
     } catch (UnauthorizedException e) {
-      state = ConnectionState.INVALID_CREDENTIALS;
+      state = SonarQubeClientState.INVALID_CREDENTIALS;
       notifyClientAboutWrongTokenIfNeeded();
     }
   }
 
   private boolean shouldNotifyAboutWrongToken() {
-    if (withoutCredentials) {
-      return false;
-    }
-    if (state != ConnectionState.INVALID_CREDENTIALS && state != ConnectionState.MISSING_PERMISSION) {
+    if (state != SonarQubeClientState.INVALID_CREDENTIALS && state != SonarQubeClientState.MISSING_PERMISSION) {
       return false;
     }
     if (lastNotificationTime == null) {

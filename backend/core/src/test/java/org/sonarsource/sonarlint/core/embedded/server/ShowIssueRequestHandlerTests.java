@@ -29,6 +29,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpException;
@@ -43,13 +44,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
-import org.sonarsource.sonarlint.core.ConnectionManager;
+import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
-import org.sonarsource.sonarlint.core.connection.ServerConnection;
 import org.sonarsource.sonarlint.core.file.FilePathTranslation;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
@@ -83,7 +83,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static testutils.TestUtils.mockServerApiProvider;
 
 class ShowIssueRequestHandlerTests {
 
@@ -112,16 +111,16 @@ class ShowIssueRequestHandlerTests {
     issueApi = mock(IssueApi.class);
     var serverApi = mock(ServerApi.class);
     when(serverApi.issue()).thenReturn(issueApi);
-    var connection = new ServerConnection("connectionId", serverApi, sonarLintRpcClient);
-    var serverApiProvider = mockServerApiProvider();
-    doReturn(Optional.of(connection)).when(serverApiProvider).tryGetConnection(any());
-    doReturn(connection).when(serverApiProvider).getConnectionOrThrow(any());
-    doReturn(Optional.of(serverApi)).when(serverApiProvider).getServerApi(any());
+    var connectionManager = mock(SonarQubeClientManager.class);
+    when(connectionManager.withActiveClientFlatMapOptionalAndReturn(any(), any())).thenAnswer(
+      invocation -> ((Function<ServerApi, Optional<Object>>) invocation.getArguments()[1]).apply(serverApi));
+    when(connectionManager.withActiveClientAndReturn(any(), any())).thenAnswer(
+      invocation -> Optional.ofNullable(((Function<ServerApi, Object>) invocation.getArguments()[1]).apply(serverApi)));
     branchesStorage = mock(ProjectBranchesStorage.class);
     var storageService = mock(StorageService.class);
     var sonarStorage = mock(SonarProjectStorage.class);
     var eventPublisher = mock(ApplicationEventPublisher.class);
-    var sonarProjectBranchesSynchronizationService = spy(new SonarProjectBranchesSynchronizationService(storageService, serverApiProvider, eventPublisher));
+    var sonarProjectBranchesSynchronizationService = spy(new SonarProjectBranchesSynchronizationService(storageService, connectionManager, eventPublisher));
     doReturn(new ProjectBranches(Set.of(), "main")).when(sonarProjectBranchesSynchronizationService).getProjectBranches(any(), any(),
       any());
     when(storageService.binding(any())).thenReturn(sonarStorage);
@@ -129,9 +128,9 @@ class ShowIssueRequestHandlerTests {
     var connectionConfiguration = mock(ConnectionConfigurationRepository.class);
     when(connectionConfiguration.hasConnectionWithOrigin(SonarCloudRegion.EU.getProductionUri().toString())).thenReturn(true);
 
-    showIssueRequestHandler = spy(new ShowIssueRequestHandler(sonarLintRpcClient, serverApiProvider, telemetryService,
-      new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintRpcClient, connectionConfigurationRepository, configurationRepository,
-        sonarCloudActiveEnvironment, connectionConfiguration, mock(ConnectionManager.class)),
+    showIssueRequestHandler = spy(new ShowIssueRequestHandler(
+      sonarLintRpcClient, connectionManager, telemetryService, new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintRpcClient,
+        connectionConfigurationRepository, configurationRepository, sonarCloudActiveEnvironment, connectionConfiguration, connectionManager),
       pathTranslationService, sonarCloudActiveEnvironment, sonarProjectBranchesSynchronizationService));
   }
 

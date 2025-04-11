@@ -24,7 +24,7 @@ import java.util.UUID;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
-import org.sonarsource.sonarlint.core.ConnectionManager;
+import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.event.FixSuggestionReceivedEvent;
@@ -56,19 +56,19 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.
 public class AiCodeFixService {
   private final ConnectionConfigurationRepository connectionRepository;
   private final ConfigurationRepository configurationRepository;
-  private final ConnectionManager connectionManager;
+  private final SonarQubeClientManager sonarQubeClientManager;
   private final PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository;
   private final ClientFileSystemService clientFileSystemService;
   private final StorageService storageService;
   private final ApplicationEventPublisher eventPublisher;
   private final TaintVulnerabilityTrackingService taintVulnerabilityTrackingService;
 
-  public AiCodeFixService(ConnectionConfigurationRepository connectionRepository, ConfigurationRepository configurationRepository, ConnectionManager connectionManager,
+  public AiCodeFixService(ConnectionConfigurationRepository connectionRepository, ConfigurationRepository configurationRepository, SonarQubeClientManager sonarQubeClientManager,
     PreviouslyRaisedFindingsRepository previouslyRaisedFindingsRepository, ClientFileSystemService clientFileSystemService, StorageService storageService,
     ApplicationEventPublisher eventPublisher, TaintVulnerabilityTrackingService taintVulnerabilityTrackingService) {
     this.connectionRepository = connectionRepository;
     this.configurationRepository = configurationRepository;
-    this.connectionManager = connectionManager;
+    this.sonarQubeClientManager = sonarQubeClientManager;
     this.previouslyRaisedFindingsRepository = previouslyRaisedFindingsRepository;
     this.clientFileSystemService = clientFileSystemService;
     this.storageService = storageService;
@@ -84,7 +84,7 @@ public class AiCodeFixService {
 
   public SuggestFixResponse suggestFix(String configurationScopeId, UUID issueId, SonarLintCancelMonitor cancelMonitor) {
     var sonarQubeCloudBinding = ensureBoundToSonarQubeCloud(configurationScopeId);
-    var connection = connectionManager.getConnectionOrThrow(sonarQubeCloudBinding.binding().connectionId());
+    var connection = sonarQubeClientManager.getClientOrThrow(sonarQubeCloudBinding.binding().connectionId());
     var responseBodyDto = connection.withClientApiAndReturn(serverApi -> {
       var issueOptional = previouslyRaisedFindingsRepository.findRaisedIssueById(issueId);
       if (issueOptional.isPresent()) {

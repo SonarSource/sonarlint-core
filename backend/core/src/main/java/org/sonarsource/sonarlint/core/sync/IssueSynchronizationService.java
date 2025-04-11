@@ -22,7 +22,7 @@ package org.sonarsource.sonarlint.core.sync;
 import java.nio.file.Path;
 import java.util.LinkedHashSet;
 import java.util.stream.Collectors;
-import org.sonarsource.sonarlint.core.ConnectionManager;
+import org.sonarsource.sonarlint.core.SonarQubeClientManager;
 import org.sonarsource.sonarlint.core.commons.Binding;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
@@ -38,13 +38,13 @@ public class IssueSynchronizationService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
   private final StorageService storageService;
   private final LanguageSupportRepository languageSupportRepository;
-  private final ConnectionManager connectionManager;
+  private final SonarQubeClientManager sonarQubeClientManager;
 
   public IssueSynchronizationService(StorageService storageService, LanguageSupportRepository languageSupportRepository,
-    ConnectionManager connectionManager) {
+    SonarQubeClientManager sonarQubeClientManager) {
     this.storageService = storageService;
     this.languageSupportRepository = languageSupportRepository;
-    this.connectionManager = connectionManager;
+    this.sonarQubeClientManager = sonarQubeClientManager;
   }
 
   public void syncServerIssuesForProject(ServerApi serverApi, String connectionId, String projectKey, String branchName, SonarLintCancelMonitor cancelMonitor) {
@@ -61,7 +61,7 @@ public class IssueSynchronizationService {
   }
 
   public void fetchProjectIssues(Binding binding, String activeBranch, SonarLintCancelMonitor cancelMonitor) {
-    connectionManager.withValidConnection(binding.connectionId(), serverApi ->
+    sonarQubeClientManager.withActiveClient(binding.connectionId(), serverApi ->
       downloadServerIssuesForProject(binding.connectionId(), serverApi, binding.sonarProjectKey(), activeBranch, cancelMonitor));
   }
 
@@ -74,7 +74,7 @@ public class IssueSynchronizationService {
   }
 
   public void fetchFileIssues(Binding binding, Path serverFileRelativePath, String activeBranch, SonarLintCancelMonitor cancelMonitor) {
-    connectionManager.withValidConnection(binding.connectionId(), serverApi ->
+    sonarQubeClientManager.withActiveClient(binding.connectionId(), serverApi ->
       downloadServerIssuesForFile(binding.connectionId(), serverApi, binding.sonarProjectKey(), serverFileRelativePath, activeBranch, cancelMonitor));
   }
 

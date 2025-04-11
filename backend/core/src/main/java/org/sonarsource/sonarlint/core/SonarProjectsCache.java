@@ -41,7 +41,7 @@ import static org.sonarsource.sonarlint.core.commons.log.SonarLintLogger.singleP
 public class SonarProjectsCache {
 
   private static final SonarLintLogger LOG = SonarLintLogger.get();
-  private final ConnectionManager connectionManager;
+  private final SonarQubeClientManager sonarQubeClientManager;
 
   private final Cache<String, TextSearchIndex<ServerProject>> textSearchIndexCacheByConnectionId = CacheBuilder.newBuilder()
     .expireAfterWrite(1, TimeUnit.HOURS)
@@ -50,6 +50,10 @@ public class SonarProjectsCache {
   private final Cache<SonarProjectKey, Optional<ServerProject>> singleProjectsCache = CacheBuilder.newBuilder()
     .expireAfterWrite(1, TimeUnit.HOURS)
     .build();
+
+  public SonarProjectsCache(SonarQubeClientManager sonarQubeClientManager) {
+    this.sonarQubeClientManager = sonarQubeClientManager;
+  }
 
   public List<SonarProjectDto> fuzzySearchProjects(String connectionId, String searchText, SonarLintCancelMonitor cancelMonitor) {
     return getTextSearchIndex(connectionId, cancelMonitor).search(searchText)
@@ -89,10 +93,6 @@ public class SonarProjectsCache {
     }
   }
 
-  public SonarProjectsCache(ConnectionManager connectionManager) {
-    this.connectionManager = connectionManager;
-  }
-
   @EventListener
   public void connectionRemoved(ConnectionConfigurationRemovedEvent e) {
     evictAll(e.getRemovedConnectionId());
@@ -115,7 +115,7 @@ public class SonarProjectsCache {
       return singleProjectsCache.get(new SonarProjectKey(connectionId, sonarProjectKey), () -> {
         LOG.debug("Query project '{}' on connection '{}'...", sonarProjectKey, connectionId);
         try {
-          return connectionManager.withValidConnectionAndReturn(connectionId,
+          return sonarQubeClientManager.withActiveClientAndReturn(connectionId,
             s -> s.component().getProject(sonarProjectKey, cancelMonitor)).orElse(Optional.empty());
         } catch (Exception e) {
           LOG.error("Error while querying project '{}' from connection '{}'", sonarProjectKey, connectionId, e);
@@ -133,7 +133,7 @@ public class SonarProjectsCache {
         LOG.debug("Load projects from connection '{}'...", connectionId);
         List<ServerProject> projects;
         try {
-          projects = connectionManager.withValidConnectionAndReturn(connectionId,
+          projects = sonarQubeClientManager.withActiveClientAndReturn(connectionId,
               s -> s.component().getAllProjects(cancelMonitor))
             .orElse(List.of());
         } catch (Exception e) {
