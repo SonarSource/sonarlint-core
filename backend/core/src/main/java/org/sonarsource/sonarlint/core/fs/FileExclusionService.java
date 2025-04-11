@@ -20,6 +20,8 @@
 package org.sonarsource.sonarlint.core.fs;
 
 import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -44,6 +46,7 @@ import org.sonarsource.sonarlint.core.analysis.sonarapi.MapSettings;
 import org.sonarsource.sonarlint.core.commons.SmartCancelableLoadingCache;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
+import org.sonarsource.sonarlint.core.commons.util.FileUtils;
 import org.sonarsource.sonarlint.core.event.BindingConfigChangedEvent;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.file.WindowsShortcutUtils;
@@ -259,7 +262,7 @@ public class FileExclusionService {
         // symbolic links or Windows shortcuts should be near zero and this is less error-prone than excluding the
         try {
           var uri = file.getUri();
-          if (Files.isSymbolicLink(Path.of(uri))) {
+          if (Files.isSymbolicLink(FileUtils.getFilePathFromUri(uri))) {
             filteredURIsFromSymbolicLink.add(uri);
             return false;
           } else if (WindowsShortcutUtils.isWindowsShortcut(uri)) {

@@ -19,7 +19,6 @@
  */
 package org.sonarsource.sonarlint.core.analysis.api;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.Charset;
@@ -32,17 +31,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ClientInputFileTests {
 
   @Test
-  void testDefaults(@TempDir Path tempDir) throws IOException {
+  void testDefaults(@TempDir Path tempDir) {
     var path = tempDir.resolve("Foo.java");
-    ClientInputFile underTest = new ClientInputFile() {
-
+    var underTest = new ClientInputFile() {
       @Override
       public boolean isTest() {
         return false;
       }
 
       @Override
-      public InputStream inputStream() throws IOException {
+      public InputStream inputStream() {
         return null;
       }
 
@@ -67,7 +65,7 @@ class ClientInputFileTests {
       }
 
       @Override
-      public String contents() throws IOException {
+      public String contents() {
         return null;
       }
 

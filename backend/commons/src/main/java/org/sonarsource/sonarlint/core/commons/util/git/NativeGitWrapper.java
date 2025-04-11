@@ -33,6 +33,7 @@ import org.sonar.scm.git.blame.BlameResult;
 import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
 import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
+import org.sonarsource.sonarlint.core.commons.util.FileUtils;
 
 import static java.lang.String.format;
 import static org.sonarsource.sonarlint.core.commons.util.git.BlameParser.parseBlameOutput;
@@ -56,7 +57,7 @@ public class NativeGitWrapper {
     var blameResult = new BlameResult();
     getNativeGitExecutable().ifPresent(gitExecutable -> {
       for (var fileUri : fileUris) {
-        var filePath = Path.of(fileUri).toAbsolutePath().toString();
+        var filePath = FileUtils.getFilePathFromUri(fileUri).toAbsolutePath().toString();
         var filePathUnix = filePath.replace("\\", "/");
         var yearAgo = Instant.now().minus(blameHistoryWindow);
         var thresholdDate = thresholdDateFromNewCodeDefinition.isAfter(yearAgo) ? yearAgo : thresholdDateFromNewCodeDefinition;
@@ -69,7 +70,7 @@ public class NativeGitWrapper {
     return new SonarLintBlameResult(blameResult, projectBaseDir);
   }
 
-  private boolean isCompatibleGitVersion(String gitVersionCommandOutput) {
+  private static boolean isCompatibleGitVersion(String gitVersionCommandOutput) {
     var gitVersion = whitespaceRegex
       .splitAsStream(gitVersionCommandOutput)
       .skip(2)
