@@ -23,10 +23,14 @@ import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CompletionException;
+import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Rules;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
@@ -40,6 +44,9 @@ import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.Mockito.when;
 import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBody;
 
 class AuthenticationMediumTests {
@@ -127,12 +134,113 @@ class AuthenticationMediumTests {
       .withHeader("Authorization", equalTo("Bearer myToken")));
   }
 
+  @SonarLintTest
+  void it_should_fail_the_request_if_credentials_are_not_returned_by_the_client(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient().build();
+    when(fakeClient.getCredentials("connectionId")).thenReturn(null);
+    var backend = harness.newBackend()
+      .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
+        projectStorage -> projectStorage.withRuleSet(SonarLanguage.PYTHON.getSonarLanguageKey(),
+          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
+      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
+      .start(fakeClient);
+
+    var throwable = catchThrowable(() -> getEffectiveRuleDetails(backend, "scopeId", "python:S139"));
+
+    assertThat(throwable)
+      .isInstanceOf(CompletionException.class)
+      .cause()
+      .isInstanceOf(ResponseErrorException.class)
+      .hasMessage("Internal error.");
+  }
+
+  @SonarLintTest
+  void it_should_fail_the_request_if_dto_is_not_returned_by_the_client(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient().build();
+    when(fakeClient.getCredentials("connectionId")).thenReturn(Either.forRight(null));
+    var backend = harness.newBackend()
+      .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
+        projectStorage -> projectStorage.withRuleSet(SonarLanguage.PYTHON.getSonarLanguageKey(),
+          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
+      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
+      .start(fakeClient);
+
+    var throwable = catchThrowable(() -> getEffectiveRuleDetails(backend, "scopeId", "python:S139"));
+
+    assertThat(throwable)
+      .isInstanceOf(CompletionException.class)
+      .cause()
+      .isInstanceOf(ResponseErrorException.class)
+      .hasMessage("Internal error.");
+  }
+
+  @SonarLintTest
+  void it_should_fail_the_request_if_token_is_not_returned_by_the_client(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient().build();
+    when(fakeClient.getCredentials("connectionId")).thenReturn(Either.forLeft(new TokenDto(null)));
+    var backend = harness.newBackend()
+      .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
+        projectStorage -> projectStorage.withRuleSet(SonarLanguage.PYTHON.getSonarLanguageKey(),
+          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
+      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
+      .start(fakeClient);
+
+    var throwable = catchThrowable(() -> getEffectiveRuleDetails(backend, "scopeId", "python:S139"));
+
+    assertThat(throwable)
+      .isInstanceOf(CompletionException.class)
+      .cause()
+      .isInstanceOf(ResponseErrorException.class)
+      .hasMessage("Internal error.");
+  }
+
+  @SonarLintTest
+  void it_should_fail_the_request_if_username_is_not_returned_by_the_client(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient().build();
+    when(fakeClient.getCredentials("connectionId")).thenReturn(Either.forRight(new UsernamePasswordDto(null, "pass")));
+    var backend = harness.newBackend()
+      .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
+        projectStorage -> projectStorage.withRuleSet(SonarLanguage.PYTHON.getSonarLanguageKey(),
+          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
+      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
+      .start(fakeClient);
+
+    var throwable = catchThrowable(() -> getEffectiveRuleDetails(backend, "scopeId", "python:S139"));
+
+    assertThat(throwable)
+      .isInstanceOf(CompletionException.class)
+      .cause()
+      .isInstanceOf(ResponseErrorException.class)
+      .hasMessage("Internal error.");
+  }
+
+  @SonarLintTest
+  void it_should_fail_the_request_if_password_is_not_returned_by_the_client(SonarLintTestHarness harness) {
+    var fakeClient = harness.newFakeClient().build();
+    when(fakeClient.getCredentials("connectionId")).thenReturn(Either.forRight(new UsernamePasswordDto("user", null)));
+    var backend = harness.newBackend()
+      .withSonarQubeConnection("connectionId", sonarqubeMock.baseUrl(), storage -> storage.withProject("projectKey",
+        projectStorage -> projectStorage.withRuleSet(SonarLanguage.PYTHON.getSonarLanguageKey(),
+          ruleSet -> ruleSet.withActiveRule("python:S139", "INFO", Map.of("legalTrailingCommentPattern", "blah")))))
+      .withBoundConfigScope("scopeId", "connectionId", "projectKey")
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
+      .start(fakeClient);
+
+    var throwable = catchThrowable(() -> getEffectiveRuleDetails(backend, "scopeId", "python:S139"));
+
+    assertThat(throwable)
+      .isInstanceOf(CompletionException.class)
+      .cause()
+      .isInstanceOf(ResponseErrorException.class)
+      .hasMessage("Internal error.");
+  }
+
   private void getEffectiveRuleDetails(SonarLintTestRpcServer backend, String configScopeId, String ruleKey) {
-    try {
-      backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, ruleKey, null)).get().details();
-    } catch (InterruptedException | ExecutionException e) {
-      throw new RuntimeException(e);
-    }
+      backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams(configScopeId, ruleKey, null)).join().details();
   }
 
 }

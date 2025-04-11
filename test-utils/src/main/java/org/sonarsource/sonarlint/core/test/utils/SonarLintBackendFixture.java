@@ -814,7 +814,7 @@ public class SonarLintBackendFixture {
 
     @Override
     public Either<TokenDto, UsernamePasswordDto> getCredentials(String connectionId) {
-      return credentialsByConnectionId.get(connectionId);
+      return credentialsByConnectionId.getOrDefault(connectionId, Either.forLeft(new TokenDto("token")));
     }
 
     @Override
