@@ -23,6 +23,8 @@ import com.google.gson.annotations.SerializedName;
 
 public class TelemetryMeasuresValue {
 
+  private static final String KEY_PATTERN = "^([a-z_][a-z0-9_]{1,126}\\.)[a-z_][a-z0-9_]{1,126}$";
+
   @SerializedName("key")
   private final String key;
 
@@ -36,9 +38,22 @@ public class TelemetryMeasuresValue {
   private final TelemetryMeasuresValueGranularity granularity;
 
   public TelemetryMeasuresValue(String key, String value, TelemetryMeasuresValueType type, TelemetryMeasuresValueGranularity granularity) {
-    this.key = key;
+    this.key = validateKey(key);
     this.value = value;
     this.type = type;
     this.granularity = granularity;
+  }
+
+  /*
+   * From the telemetry measures specification:
+   *  - Entire key: ^([a-z_][a-z0-9_]{1,126}\.)[a-z_][a-z0-9_]{1,126}$
+   *  - Group name: ^[a-z_][a-z0-9_]{1,126}\.$
+   *  - Measure name: ^[a-z_][a-z0-9_]{1,126}$
+   */
+  private static String validateKey(String maybeKey) throws IllegalArgumentException {
+    if (maybeKey.matches(KEY_PATTERN)) {
+      return maybeKey;
+    }
+    throw new IllegalArgumentException("Invalid measure key: " + maybeKey);
   }
 }

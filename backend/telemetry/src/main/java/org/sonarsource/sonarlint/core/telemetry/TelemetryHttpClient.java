@@ -166,14 +166,17 @@ public class TelemetryHttpClient {
       ))
       .forEach(values::add);
 
-    data.getQuickFixCountByRuleKey().entrySet().stream()
-      .map(e -> {
-        var ruleKey = e.getKey();
-        var ruleRepoAndId = ruleKey.split(":");
-        var measureKey = String.format("quick_fix.applied_count.%s.%s", ruleRepoAndId[0], ruleRepoAndId[1]);
-        return new TelemetryMeasuresValue(measureKey, String.valueOf(e.getValue()), INTEGER, DAILY);
-      })
-      .forEach(values::add);
+    var allQuickFixCount = data.getQuickFixCountByRuleKey().values().stream()
+      .mapToInt(Integer::intValue)
+      .sum();
+    if (allQuickFixCount > 0) {
+      values.add(new TelemetryMeasuresValue(
+        "quick_fix.applied_count",
+        Integer.toString(allQuickFixCount),
+        INTEGER,
+        DAILY
+      ));
+    }
 
     return new TelemetryMeasuresPayload(UUID.randomUUID().toString(), platform, data.installTime(), product, TelemetryMeasuresDimension.INSTALLATION, values);
   }
