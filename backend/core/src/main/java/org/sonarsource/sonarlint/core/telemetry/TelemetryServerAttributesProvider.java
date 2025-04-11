@@ -20,15 +20,18 @@
 package org.sonarsource.sonarlint.core.telemetry;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
 import javax.annotation.CheckForNull;
+import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.analysis.NodeJsService;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
+import org.sonarsource.sonarlint.core.repository.connection.SonarQubeConnectionConfiguration;
 import org.sonarsource.sonarlint.core.repository.rules.RulesRepository;
 import org.sonarsource.sonarlint.core.rules.RulesService;
 
@@ -57,6 +60,12 @@ public class TelemetryServerAttributesProvider {
 
     var usesSonarCloud = allBindings.stream().anyMatch(isSonarCloudConnectionConfiguration());
 
+    var sonarQubeServerBindingCount = countSonarQubeServerBindings(allBindings);
+
+    var sonarQubeCloudEUBindingCount = countSonarQubeCloudBindings(allBindings, SonarCloudRegion.EU);
+
+    var sonarQubeCloudUSBindingCount = countSonarQubeCloudBindings(allBindings, SonarCloudRegion.US);
+
     var devNotificationsDisabled = allBindings.stream().anyMatch(this::hasDisableNotifications);
 
     List<String> nonDefaultEnabledRules = new ArrayList<>();
@@ -78,8 +87,25 @@ public class TelemetryServerAttributesProvider {
 
     var nodeJsVersion = getNodeJsVersion();
 
-    return new TelemetryServerAttributes(usesConnectedMode, usesSonarCloud, devNotificationsDisabled, nonDefaultEnabledRules,
+    return new TelemetryServerAttributes(usesConnectedMode, usesSonarCloud, sonarQubeServerBindingCount,
+      sonarQubeCloudEUBindingCount, sonarQubeCloudUSBindingCount, devNotificationsDisabled, nonDefaultEnabledRules,
       defaultDisabledRules, nodeJsVersion);
+  }
+
+  private int countSonarQubeCloudBindings(Collection<BoundScope> allBindings, SonarCloudRegion region) {
+    return (int) allBindings.stream()
+      .filter(binding -> {
+        if (connectionConfigurationRepository.getConnectionById(binding.getConnectionId()) instanceof SonarCloudConnectionConfiguration scBinding) {
+          return region.equals(scBinding.getRegion());
+        }
+        return false;
+      }).count();
+  }
+
+  private int countSonarQubeServerBindings(Collection<BoundScope> allBindings) {
+    return (int) allBindings.stream()
+      .filter(binding -> connectionConfigurationRepository.getConnectionById(binding.getConnectionId()) instanceof SonarQubeConnectionConfiguration)
+      .count();
   }
 
   @CheckForNull

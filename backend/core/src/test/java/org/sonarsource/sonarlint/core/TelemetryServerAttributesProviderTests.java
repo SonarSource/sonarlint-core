@@ -59,6 +59,9 @@ class TelemetryServerAttributesProviderTests {
     var telemetryLiveAttributes = underTest.getTelemetryServerLiveAttributes();
     assertThat(telemetryLiveAttributes.usesConnectedMode()).isTrue();
     assertThat(telemetryLiveAttributes.usesSonarCloud()).isTrue();
+    assertThat(telemetryLiveAttributes.sonarQubeServerBindingCount()).isZero();
+    assertThat(telemetryLiveAttributes.sonarQubeCloudEUBindingCount()).isEqualTo(1);
+    assertThat(telemetryLiveAttributes.sonarQubeCloudUSBindingCount()).isZero();
     assertThat(telemetryLiveAttributes.devNotificationsDisabled()).isFalse();
     assertThat(telemetryLiveAttributes.nonDefaultEnabledRules()).isEmpty();
     assertThat(telemetryLiveAttributes.defaultDisabledRules()).isEmpty();
@@ -85,6 +88,9 @@ class TelemetryServerAttributesProviderTests {
     var telemetryLiveAttributes = underTest.getTelemetryServerLiveAttributes();
     assertThat(telemetryLiveAttributes.usesConnectedMode()).isTrue();
     assertThat(telemetryLiveAttributes.usesSonarCloud()).isFalse();
+    assertThat(telemetryLiveAttributes.sonarQubeServerBindingCount()).isEqualTo(2);
+    assertThat(telemetryLiveAttributes.sonarQubeCloudEUBindingCount()).isZero();
+    assertThat(telemetryLiveAttributes.sonarQubeCloudUSBindingCount()).isZero();
     assertThat(telemetryLiveAttributes.devNotificationsDisabled()).isTrue();
     assertThat(telemetryLiveAttributes.nonDefaultEnabledRules()).isEmpty();
     assertThat(telemetryLiveAttributes.defaultDisabledRules()).isEmpty();
@@ -115,6 +121,9 @@ class TelemetryServerAttributesProviderTests {
     assertThat(telemetryLiveAttributes.nonDefaultEnabledRules()).containsExactly("ruleKey_2");
     assertThat(telemetryLiveAttributes.defaultDisabledRules()).containsExactly("ruleKey_3");
     assertThat(telemetryLiveAttributes.usesConnectedMode()).isFalse();
+    assertThat(telemetryLiveAttributes.sonarQubeServerBindingCount()).isZero();
+    assertThat(telemetryLiveAttributes.sonarQubeCloudEUBindingCount()).isZero();
+    assertThat(telemetryLiveAttributes.sonarQubeCloudUSBindingCount()).isZero();
     assertThat(telemetryLiveAttributes.usesSonarCloud()).isFalse();
     assertThat(telemetryLiveAttributes.devNotificationsDisabled()).isFalse();
   }

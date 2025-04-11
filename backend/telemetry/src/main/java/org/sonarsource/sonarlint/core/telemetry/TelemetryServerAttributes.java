@@ -31,7 +31,8 @@ import javax.annotation.Nullable;
  * @param nodeVersion              Node.js version used by analyzers (detected or configured by the user).
  *                                 Empty if no node present/detected/configured
  */
-public record TelemetryServerAttributes(boolean usesConnectedMode, boolean usesSonarCloud, boolean devNotificationsDisabled,
+public record TelemetryServerAttributes(boolean usesConnectedMode, boolean usesSonarCloud, int sonarQubeServerBindingCount,
+                                        int sonarQubeCloudEUBindingCount, int sonarQubeCloudUSBindingCount, boolean devNotificationsDisabled,
                                         List<String> nonDefaultEnabledRules, List<String> defaultDisabledRules,
                                         @Nullable String nodeVersion) {
 }
