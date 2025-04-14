@@ -24,10 +24,10 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import org.jetbrains.annotations.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
+import org.sonarsource.sonarlint.core.commons.util.FileUtils;
 import org.sonarsource.sonarlint.core.fs.ClientFile;
 
 public class BackendInputFile implements ClientInputFile {
@@ -39,7 +39,7 @@ public class BackendInputFile implements ClientInputFile {
 
   @Override
   public String getPath() {
-    return Path.of(clientFile.getUri()).toAbsolutePath().toString();
+    return FileUtils.getFilePathFromUri(clientFile.getUri()).toAbsolutePath().toString();
   }
 
   @Override
