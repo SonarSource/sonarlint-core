@@ -434,19 +434,20 @@ class TelemetryMediumTests {
   @SonarLintTest
   void it_should_add_issue_uuid_when_ai_fixable(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml", """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <project>
-      <modelVersion>4.0.0</modelVersion>
-      <groupId>com.foo</groupId>
-      <artifactId>bar</artifactId>
-      <version>${pom.version}</version>
-    </project>""");
+      <?xml version="1.0" encoding="UTF-8"?>
+      <project>
+        <modelVersion>4.0.0</modelVersion>
+        <groupId>com.foo</groupId>
+        <artifactId>bar</artifactId>
+        <version>${pom.version}</version>
+      </project>""");
     var fileUri = filePath.toUri();
     var fakeClient = harness.newFakeClient()
       .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
       .build();
-    var server = harness.newFakeSonarCloudServer("organizationKey")
-      .withProject("projectKey")
+    var server = harness.newFakeSonarCloudServer()
+      .withOrganization("organizationKey", organization -> organization
+        .withProject("projectKey"))
       .start();
     var backend = harness.newBackend()
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)

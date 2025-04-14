@@ -40,7 +40,8 @@ public class OrganizationApi {
   }
 
   public List<ServerOrganization> listUserOrganizations(SonarLintCancelMonitor cancelMonitor) {
-    return fetchUserOrganizations(cancelMonitor);
+    var url = "api/organizations/search.protobuf?member=true";
+    return getPaginatedOrganizations(url, cancelMonitor);
   }
 
   public Optional<ServerOrganization> searchOrganization(String organizationKey, SonarLintCancelMonitor cancelMonitor) {
@@ -58,11 +59,6 @@ public class OrganizationApi {
       LOG.error("Error while fetching the organization", e);
       throw new UnexpectedBodyException(e);
     }
-  }
-
-  private List<ServerOrganization> fetchUserOrganizations(SonarLintCancelMonitor cancelMonitor) {
-    var url = "api/organizations/search.protobuf?member=true";
-    return getPaginatedOrganizations(url, cancelMonitor);
   }
 
   private List<ServerOrganization> getPaginatedOrganizations(String url, SonarLintCancelMonitor cancelMonitor) {

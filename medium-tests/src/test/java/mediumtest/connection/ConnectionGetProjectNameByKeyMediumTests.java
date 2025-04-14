@@ -56,7 +56,7 @@ class ConnectionGetProjectNameByKeyMediumTests {
 
   @SonarLintTest
   void it_should_return_null_if_no_projects_in_sonarcloud_organization(SonarLintTestHarness harness) {
-    var server = harness.newFakeSonarCloudServer("myOrg").start();
+    var server = harness.newFakeSonarCloudServer().start();
     var backend = harness.newBackend()
       .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .start();
@@ -89,10 +89,11 @@ class ConnectionGetProjectNameByKeyMediumTests {
 
   @SonarLintTest
   void it_should_find_project_names_if_available_on_sonarcloud(SonarLintTestHarness harness) {
-    var server = harness.newFakeSonarCloudServer("myOrg")
-      .withProject("projectKey1", project -> project.withName("MyProject1"))
-      .withProject("projectKey2", project -> project.withName("MyProject2"))
-      .withProject("projectKey3", project -> project.withName("MyProject3"))
+    var server = harness.newFakeSonarCloudServer()
+      .withOrganization("myOrg", organization -> organization
+        .withProject("projectKey1", project -> project.withName("MyProject1"))
+        .withProject("projectKey2", project -> project.withName("MyProject2"))
+        .withProject("projectKey3", project -> project.withName("MyProject3")))
       .start();
     var backend = harness.newBackend()
       .withSonarQubeCloudEuRegionUri(server.baseUrl())

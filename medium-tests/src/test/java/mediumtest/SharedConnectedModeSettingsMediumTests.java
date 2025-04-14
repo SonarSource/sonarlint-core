@@ -58,7 +58,7 @@ class SharedConnectedModeSettingsMediumTests {
           "region": "EU"
       }""", organizationKey, projectKey);
 
-    var server = harness.newFakeSonarCloudServer(organizationKey).start();
+    var server = harness.newFakeSonarCloudServer().start();
 
     var backend = harness.newBackend()
       .withSonarQubeCloudEuRegionUri(server.baseUrl())
@@ -90,7 +90,7 @@ class SharedConnectedModeSettingsMediumTests {
           "region": "US"
       }""", organizationKey, projectKey);
 
-    var server = harness.newFakeSonarCloudServer(organizationKey).start();
+    var server = harness.newFakeSonarCloudServer().start();
 
     var backend = harness.newBackend()
       .withSonarQubeCloudEuRegionUri(server.baseUrl())

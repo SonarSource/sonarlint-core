@@ -746,12 +746,13 @@ class IssueTrackingMediumTests {
     var orgKey = "myOrganization";
     var connectionId = "connectionId";
     var projectKey = "projectKey";
-    var server = harness.newFakeSonarCloudServer(orgKey)
-      .withProject(projectKey, project -> project
-        .withFile("server/path/prefix/pom.xml")
-        .withQualityProfile("qp"))
-      .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("xml")
-        .withActiveRule("xml:S3421", rule -> rule.withSeverity(IssueSeverity.MAJOR)))
+    var server = harness.newFakeSonarCloudServer()
+      .withOrganization(orgKey, organization -> organization
+        .withProject(projectKey, project -> project
+          .withFile("server/path/prefix/pom.xml")
+          .withQualityProfile("qp"))
+        .withQualityProfile("qp", qualityProfile -> qualityProfile.withLanguage("xml")
+          .withActiveRule("xml:S3421", rule -> rule.withSeverity(IssueSeverity.MAJOR))))
       .start();
     var client = harness.newFakeClient()
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))

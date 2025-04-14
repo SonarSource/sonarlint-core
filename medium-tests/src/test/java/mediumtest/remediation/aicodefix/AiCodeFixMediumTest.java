@@ -25,6 +25,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
@@ -146,12 +147,14 @@ public class AiCodeFixMediumTest {
   void it_should_fail_if_the_file_is_unknown(SonarLintTestHarness harness, @TempDir Path baseDir) throws InterruptedException {
     var filePath = createFile(baseDir, "pom.xml", XML_SOURCE_CODE_WITH_ISSUE);
     var fileUri = filePath.toUri();
-    var server = harness.newFakeSonarCloudServer("organizationKey")
-      .withProject("projectKey",
-        project -> project.withBranch("branchName")
-          .withAiCodeFixSuggestion(suggestion -> suggestion.withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
+    var server = harness.newFakeSonarCloudServer()
+      .withOrganization("organizationKey", organization -> organization
+        .withProject("projectKey", project -> project
+          .withBranch("branchName")
+          .withAiCodeFixSuggestion(suggestion -> suggestion
+            .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
             .withExplanation("This is the explanation")
-            .withChange(0, 0, "This is the new code")))
+            .withChange(0, 0, "This is the new code"))))
       .start();
     var fakeClient = harness.newFakeClient()
       .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
@@ -189,13 +192,14 @@ public class AiCodeFixMediumTest {
       "{}";
     var filePath = createFile(baseDir, "Fubar.java", sourceCode);
     var fileUri = filePath.toUri();
-    var server = harness.newFakeSonarCloudServer("organizationKey")
-      .withProject("projectKey",
-        project -> project.withBranch("branchName")
+    var server = harness.newFakeSonarCloudServer()
+      .withOrganization("organizationKey", organization -> organization
+        .withProject("projectKey", project -> project
+          .withBranch("branchName")
           .withAiCodeFixSuggestion(suggestion -> suggestion
             .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
             .withExplanation("This is the explanation")
-            .withChange(0, 0, "This is the new code")))
+            .withChange(0, 0, "This is the new code"))))
       .start();
     var fakeClient = harness.newFakeClient()
       .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
@@ -229,13 +233,14 @@ public class AiCodeFixMediumTest {
       "{}";
     var filePath = createFile(baseDir, "Fubar.java", sourceCode);
     var fileUri = filePath.toUri();
-    var server = harness.newFakeSonarCloudServer("organizationKey")
-      .withProject("projectKey",
-        project -> project.withBranch("branchName")
+    var server = harness.newFakeSonarCloudServer()
+      .withOrganization("organizationKey", organization -> organization
+        .withProject("projectKey", project -> project
+          .withBranch("branchName")
           .withAiCodeFixSuggestion(suggestion -> suggestion
             .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
             .withExplanation("This is the explanation")
-            .withChange(0, 0, "This is the new code")))
+            .withChange(0, 0, "This is the new code"))))
       .start();
     var fakeClient = harness.newFakeClient()
       .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
@@ -269,13 +274,15 @@ public class AiCodeFixMediumTest {
       "{}";
     var filePath = createFile(baseDir, "Fubar.java", sourceCode);
     var fileUri = filePath.toUri();
-    var server = harness.newFakeSonarCloudServer("organizationKey")
-      .withProject("projectKey",
-        project -> project.withBranch("branchName")
-          .withAiCodeFixSuggestion(suggestion -> suggestion
-            .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
-            .withExplanation("This is the explanation")
-            .withChange(0, 0, "This is the new code")))
+    var server = harness.newFakeSonarCloudServer()
+      .withOrganization("organizationKey", organization -> organization
+        .withProject("projectKey",
+          project -> project
+            .withBranch("branchName")
+            .withAiCodeFixSuggestion(suggestion -> suggestion
+              .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
+              .withExplanation("This is the explanation")
+              .withChange(0, 0, "This is the new code"))))
       .start();
     var fakeClient = harness.newFakeClient()
       .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
@@ -309,13 +316,15 @@ public class AiCodeFixMediumTest {
       "{}";
     var filePath = createFile(baseDir, "Fubar.java", sourceCode);
     var fileUri = filePath.toUri();
-    var server = harness.newFakeSonarCloudServer("organizationKey")
-      .withProject("projectKey",
-        project -> project.withBranch("branchName")
-          .withAiCodeFixSuggestion(suggestion -> suggestion
-            .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
-            .withExplanation("This is the explanation")
-            .withChange(0, 0, "This is the new code")))
+    var server = harness.newFakeSonarCloudServer()
+      .withOrganization("organizationKey", organization -> organization
+        .withProject("projectKey",
+          project -> project
+            .withBranch("branchName")
+            .withAiCodeFixSuggestion(suggestion -> suggestion
+              .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
+              .withExplanation("This is the explanation")
+              .withChange(0, 0, "This is the new code"))))
       .start();
     var fakeClient = harness.newFakeClient()
       .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
@@ -386,13 +395,15 @@ public class AiCodeFixMediumTest {
   void it_should_mark_the_issue_as_not_fixable_if_rule_not_supported(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml", XML_SOURCE_CODE_WITH_ISSUE);
     var fileUri = filePath.toUri();
-    var server = harness.newFakeSonarCloudServer("organizationKey")
-      .withProject("projectKey",
-        project -> project.withBranch("branchName")
-          .withAiCodeFixSuggestion(suggestion -> suggestion
-            .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
-            .withExplanation("This is the explanation")
-            .withChange(0, 0, "This is the new code")))
+    var server = harness.newFakeSonarCloudServer()
+      .withOrganization("organizationKey", organization -> organization
+        .withProject("projectKey",
+          project -> project
+            .withBranch("branchName")
+            .withAiCodeFixSuggestion(suggestion -> suggestion
+              .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
+              .withExplanation("This is the explanation")
+              .withChange(0, 0, "This is the new code"))))
       .start();
     var fakeClient = harness.newFakeClient()
       .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
@@ -418,13 +429,15 @@ public class AiCodeFixMediumTest {
   void it_should_mark_the_issue_as_fixable_if_supported(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml", XML_SOURCE_CODE_WITH_ISSUE);
     var fileUri = filePath.toUri();
-    var server = harness.newFakeSonarCloudServer("organizationKey")
-      .withProject("projectKey",
-        project -> project.withBranch("branchName")
-          .withAiCodeFixSuggestion(suggestion -> suggestion
-            .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
-            .withExplanation("This is the explanation")
-            .withChange(0, 0, "This is the new code")))
+    var server = harness.newFakeSonarCloudServer()
+      .withOrganization("organizationKey", organization -> organization
+        .withProject("projectKey",
+          project -> project
+            .withBranch("branchName")
+            .withAiCodeFixSuggestion(suggestion -> suggestion
+              .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
+              .withExplanation("This is the explanation")
+              .withChange(0, 0, "This is the new code"))))
       .start();
     var fakeClient = harness.newFakeClient()
       .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
@@ -450,13 +463,15 @@ public class AiCodeFixMediumTest {
   void it_should_return_the_suggestion_from_sonarqube_cloud_for_an_issue(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml", XML_SOURCE_CODE_WITH_ISSUE);
     var fileUri = filePath.toUri();
-    var server = harness.newFakeSonarCloudServer("organizationKey")
-      .withProject("projectKey",
-        project -> project.withBranch("branchName")
-          .withAiCodeFixSuggestion(suggestion -> suggestion
-            .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
-            .withExplanation("This is the explanation")
-            .withChange(0, 0, "This is the new code")))
+    var server = harness.newFakeSonarCloudServer()
+      .withOrganization("organizationKey", organization -> organization
+        .withProject("projectKey",
+          project -> project
+            .withBranch("branchName")
+            .withAiCodeFixSuggestion(suggestion -> suggestion
+              .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
+              .withExplanation("This is the explanation")
+              .withChange(0, 0, "This is the new code"))))
       .start();
     var fakeClient = harness.newFakeClient()
       .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
@@ -493,13 +508,15 @@ public class AiCodeFixMediumTest {
   void it_should_return_the_suggestion_from_sonarqube_cloud_for_a_taint_issue(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "File.java", "source");
     var fileUri = filePath.toUri();
-    var server = harness.newFakeSonarCloudServer("organizationKey")
-      .withProject("projectKey",
-        project -> project.withBranch("branchName")
-          .withAiCodeFixSuggestion(suggestion -> suggestion
-            .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
-            .withExplanation("This is the explanation")
-            .withChange(0, 0, "This is the new code")))
+    var server = harness.newFakeSonarCloudServer()
+      .withOrganization("organizationKey", organization -> organization
+        .withProject("projectKey",
+          project -> project
+            .withBranch("branchName")
+            .withAiCodeFixSuggestion(suggestion -> suggestion
+              .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
+              .withExplanation("This is the explanation")
+              .withChange(0, 0, "This is the new code"))))
       .start();
     var fakeClient = harness.newFakeClient()
       .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
@@ -540,13 +557,15 @@ public class AiCodeFixMediumTest {
   void it_should_fail_if_the_taint_issue_is_not_fixable_because_rule_is_not_supported(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "File.java", "source");
     var fileUri = filePath.toUri();
-    var server = harness.newFakeSonarCloudServer("organizationKey")
-      .withProject("projectKey",
-        project -> project.withBranch("branchName")
-          .withAiCodeFixSuggestion(suggestion -> suggestion
-            .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
-            .withExplanation("This is the explanation")
-            .withChange(0, 0, "This is the new code")))
+    var server = harness.newFakeSonarCloudServer()
+      .withOrganization("organizationKey", organization -> organization
+        .withProject("projectKey",
+          project -> project
+            .withBranch("branchName")
+            .withAiCodeFixSuggestion(suggestion -> suggestion
+              .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
+              .withExplanation("This is the explanation")
+              .withChange(0, 0, "This is the new code"))))
       .start();
     var fakeClient = harness.newFakeClient()
       .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
@@ -586,13 +605,15 @@ public class AiCodeFixMediumTest {
   void it_should_fail_if_the_taint_issue_is_not_fixable_because_file_was_removed(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "File.java", "source");
     var fileUri = filePath.toUri();
-    var server = harness.newFakeSonarCloudServer("organizationKey")
-      .withProject("projectKey",
-        project -> project.withBranch("branchName")
-          .withAiCodeFixSuggestion(suggestion -> suggestion
-            .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
-            .withExplanation("This is the explanation")
-            .withChange(0, 0, "This is the new code")))
+    var server = harness.newFakeSonarCloudServer()
+      .withOrganization("organizationKey", organization -> organization
+        .withProject("projectKey",
+          project -> project
+            .withBranch("branchName")
+            .withAiCodeFixSuggestion(suggestion -> suggestion
+              .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
+              .withExplanation("This is the explanation")
+              .withChange(0, 0, "This is the new code"))))
       .start();
     var fakeClient = harness.newFakeClient()
       .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
@@ -632,16 +653,19 @@ public class AiCodeFixMediumTest {
   void it_should_synchronize_the_ai_codefix_settings_from_the_server_when_disabled(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml", XML_SOURCE_CODE_WITH_ISSUE);
     var fileUri = filePath.toUri();
-    var server = harness.newFakeSonarCloudServer("organizationKey")
-      .withAiCodeFixFeature(feature -> feature.withSupportedRules(Set.of("xml:S3421"))
-        .organizationEligible(true)
-        .disabled())
-      .withProject("projectKey",
-        project -> project.withBranch("branchName")
-          .withAiCodeFixSuggestion(suggestion -> suggestion
-            .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
-            .withExplanation("This is the explanation")
-            .withChange(0, 0, "This is the new code")))
+    var server = harness.newFakeSonarCloudServer()
+      .withAiCodeFixSupportedRules(Set.of("xml:S3421"))
+      .withOrganization("organizationKey", organization -> organization
+        .withAiCodeFixFeature(feature -> feature
+          .organizationEligible(true)
+          .disabled())
+        .withProject("projectKey",
+          project -> project
+            .withBranch("branchName")
+            .withAiCodeFixSuggestion(suggestion -> suggestion
+              .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
+              .withExplanation("This is the explanation")
+              .withChange(0, 0, "This is the new code"))))
       .start();
     var fakeClient = harness.newFakeClient()
       .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
@@ -668,16 +692,19 @@ public class AiCodeFixMediumTest {
   void it_should_synchronize_the_ai_codefix_settings_from_the_server_when_enabled_for_some_projects(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml", XML_SOURCE_CODE_WITH_ISSUE);
     var fileUri = filePath.toUri();
-    var server = harness.newFakeSonarCloudServer("organizationKey")
-      .withAiCodeFixFeature(feature -> feature.withSupportedRules(Set.of("xml:S3421"))
-        .organizationEligible(true)
-        .enabledForProjects("projectKey"))
-      .withProject("projectKey",
-        project -> project.withBranch("branchName")
-          .withAiCodeFixSuggestion(suggestion -> suggestion
-            .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
-            .withExplanation("This is the explanation")
-            .withChange(0, 0, "This is the new code")))
+    var server = harness.newFakeSonarCloudServer()
+      .withAiCodeFixSupportedRules(Set.of("xml:S3421"))
+      .withOrganization("organizationKey", organization -> organization
+        .withAiCodeFixFeature(feature -> feature
+          .organizationEligible(true)
+          .enabledForProjects("projectKey"))
+        .withProject("projectKey",
+          project -> project
+            .withBranch("branchName")
+            .withAiCodeFixSuggestion(suggestion -> suggestion
+              .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
+              .withExplanation("This is the explanation")
+              .withChange(0, 0, "This is the new code"))))
       .start();
     var fakeClient = harness.newFakeClient()
       .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
@@ -705,16 +732,19 @@ public class AiCodeFixMediumTest {
   void it_should_synchronize_the_ai_codefix_settings_from_the_server_when_enabled_for_all_projects(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml", XML_SOURCE_CODE_WITH_ISSUE);
     var fileUri = filePath.toUri();
-    var server = harness.newFakeSonarCloudServer("organizationKey")
-      .withAiCodeFixFeature(feature -> feature.withSupportedRules(Set.of("xml:S3421"))
-        .organizationEligible(true)
-        .enabledForAllProjects())
-      .withProject("projectKey",
-        project -> project.withBranch("branchName")
-          .withAiCodeFixSuggestion(suggestion -> suggestion
-            .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
-            .withExplanation("This is the explanation")
-            .withChange(0, 0, "This is the new code")))
+    var server = harness.newFakeSonarCloudServer()
+      .withAiCodeFixSupportedRules(Set.of("xml:S3421"))
+      .withOrganization("organizationKey", organization -> organization
+        .withAiCodeFixFeature(feature -> feature
+          .organizationEligible(true)
+          .enabledForAllProjects())
+        .withProject("projectKey",
+          project -> project
+            .withBranch("branchName")
+            .withAiCodeFixSuggestion(suggestion -> suggestion
+              .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
+              .withExplanation("This is the explanation")
+              .withChange(0, 0, "This is the new code"))))
       .start();
     var fakeClient = harness.newFakeClient()
       .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
@@ -741,13 +771,15 @@ public class AiCodeFixMediumTest {
   void it_should_register_telemetry(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml", XML_SOURCE_CODE_WITH_ISSUE);
     var fileUri = filePath.toUri();
-    var server = harness.newFakeSonarCloudServer("organizationKey")
-      .withProject("projectKey",
-        project -> project.withBranch("branchName")
-          .withAiCodeFixSuggestion(suggestion -> suggestion
-            .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
-            .withExplanation("This is the explanation")
-            .withChange(0, 0, "This is the new code")))
+    var server = harness.newFakeSonarCloudServer()
+      .withOrganization("organizationKey", organization -> organization
+        .withProject("projectKey",
+          project -> project
+            .withBranch("branchName")
+            .withAiCodeFixSuggestion(suggestion -> suggestion
+              .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
+              .withExplanation("This is the explanation")
+              .withChange(0, 0, "This is the new code"))))
       .start();
     var fakeClient = harness.newFakeClient()
       .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
@@ -775,11 +807,52 @@ public class AiCodeFixMediumTest {
         "\"fixSuggestionReceivedCounter\":{\"e51b7bbd-72bc-4008-a4f1-d75583f3dc98\":{\"aiSuggestionsSource\":\"SONARCLOUD\",\"snippetsCount\":1,\"wasGeneratedFromIde\":true}}");
   }
 
+  @SonarLintTest
+  void it_should_skip_synchronization_if_user_not_a_member_of_the_organization(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "pom.xml", XML_SOURCE_CODE_WITH_ISSUE);
+    var fileUri = filePath.toUri();
+    var server = harness.newFakeSonarCloudServer()
+      .withAiCodeFixSupportedRules(Set.of("xml:S3421"))
+      .withOrganization("organizationKey", organization -> organization
+        .withCurrentUserMember(false)
+        .withAiCodeFixFeature(feature -> feature
+          .organizationEligible(true)
+          .enabledForAllProjects())
+        .withProject("projectKey",
+          project -> project
+            .withBranch("branchName")
+            .withAiCodeFixSuggestion(suggestion -> suggestion
+              .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
+              .withExplanation("This is the explanation")
+              .withChange(0, 0, "This is the new code"))))
+      .start();
+    var fakeClient = harness.newFakeClient()
+      .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
+      .withSonarQubeCloudEuRegionApiUri(server.baseUrl())
+      .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
+        .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR"))))
+      .withBoundConfigScope("configScope", "connectionId", "projectKey")
+      .withFullSynchronization()
+      .start(fakeClient);
+
+    await().during(1, TimeUnit.SECONDS)
+      .untilAsserted(() -> assertThat(getAiCodeFixStorageFilePath(backend, "connectionId"))
+        .doesNotExist());
+  }
+
   private Sonarlint.AiCodeFixSettings readAiCodeFixSettings(SonarLintTestRpcServer backend, String connectionId) {
-    var path = backend.getStorageRoot().resolve(encodeForFs(connectionId)).resolve("ai_codefix.pb");
+    var path = getAiCodeFixStorageFilePath(backend, connectionId);
     if (path.toFile().exists()) {
       return ProtobufFileUtil.readFile(path, Sonarlint.AiCodeFixSettings.parser());
     }
     return null;
+  }
+
+  private static Path getAiCodeFixStorageFilePath(SonarLintTestRpcServer backend, String connectionId) {
+    return backend.getStorageRoot().resolve(encodeForFs(connectionId)).resolve("ai_codefix.pb");
   }
 }

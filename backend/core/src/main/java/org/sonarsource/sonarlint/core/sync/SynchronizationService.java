@@ -62,6 +62,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeCon
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
 import org.sonarsource.sonarlint.core.serverapi.exception.ForbiddenException;
 import org.sonarsource.sonarlint.core.serverapi.exception.UnauthorizedException;
+import org.sonarsource.sonarlint.core.serverapi.organization.ServerOrganization;
 import org.sonarsource.sonarlint.core.serverconnection.AiCodeFixSettingsSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.LocalStorageSynchronizer;
 import org.sonarsource.sonarlint.core.serverconnection.OrganizationSynchronizer;
@@ -315,7 +316,8 @@ public class SynchronizationService {
       if (summary.anyPluginSynchronized()) {
         applicationEventPublisher.publishEvent(new PluginsSynchronizedEvent(connectionId));
       }
-      aiCodeFixSynchronizer.synchronize(serverApi, cancelMonitor);
+      var userOrganizations = serverApi.isSonarCloud() ? serverApi.organization().listUserOrganizations(cancelMonitor) : List.<ServerOrganization>of();
+      aiCodeFixSynchronizer.synchronize(serverApi, userOrganizations, cancelMonitor);
       scopesToSync = scopesToSync.stream()
         .filter(boundScope -> shouldSynchronizeBinding(new Binding(connectionId, boundScope.getSonarProjectKey()))).toList();
       var scopesPerProjectKey = scopesToSync.stream()

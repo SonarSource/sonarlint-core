@@ -426,12 +426,12 @@ class OpenIssueInIdeMediumTests {
     }).when(fakeClient).assistCreatingConnection(any(), any());
   }
 
-  private static ServerFixture.ServerBuilder fakeServerWithIssue(SonarLintTestHarness harness) {
+  private static ServerFixture.AbstractServerBuilder fakeServerWithIssue(SonarLintTestHarness harness) {
     return harness.newFakeSonarQubeServer("10.2")
       .withProject(PROJECT_KEY,
         project -> {
           project.withProjectName(SONAR_PROJECT_NAME).withPullRequest("1234",
-            pullRequest -> (ServerFixture.ServerBuilder.ServerProjectBuilder.ServerProjectPullRequestBuilder) pullRequest
+            pullRequest -> (ServerFixture.AbstractServerBuilder.ServerProjectBuilder.ServerProjectPullRequestBuilder) pullRequest
               .withIssue(PR_ISSUE_KEY, RULE_KEY, "msg", "author", "file/path", "OPEN", "", ISSUE_INTRODUCTION_DATE,
                 new TextRange(1, 0, 3, 4))
               .withSourceFile("projectKey:file/path", sourceFile -> sourceFile.withCode("source\ncode\nfile\nfive\nlines")));

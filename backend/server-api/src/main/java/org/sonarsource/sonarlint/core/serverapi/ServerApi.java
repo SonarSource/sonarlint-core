@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.serverapi;
 
+import java.util.Optional;
 import org.sonarsource.sonarlint.core.http.HttpClient;
 import org.sonarsource.sonarlint.core.serverapi.authentication.AuthenticationApi;
 import org.sonarsource.sonarlint.core.serverapi.branches.ProjectBranchesApi;
@@ -119,5 +120,9 @@ public class ServerApi {
 
   public boolean isSonarCloud() {
     return helper.isSonarCloud();
+  }
+
+  public Optional<String> getOrganizationKey() {
+    return helper.getOrganizationKey();
   }
 }

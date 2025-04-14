@@ -55,8 +55,9 @@ class RuleDetailsMediumTests {
   @SonarLintTest
   void it_should_return_details_from_server_when_sonarcloud(SonarLintTestHarness harness) {
     var server = harness.newFakeSonarCloudServer()
-      .withProject("projectKey",
-        project -> project.withBranch("branchName"))
+      .withOrganization("orgKey", organization -> organization
+        .withProject("projectKey",
+          project -> project.withBranch("branchName")))
       .start();
     var backend = harness.newBackend()
       .withSonarQubeCloudEuRegionUri(server.baseUrl())
@@ -76,8 +77,9 @@ class RuleDetailsMediumTests {
   @SonarLintTest
   void it_should_return_details_from_the_embedded_ipython_rules_when_connected(SonarLintTestHarness harness) {
     var server = harness.newFakeSonarCloudServer()
-      .withProject("projectKey",
-        project -> project.withBranch("branchName"))
+      .withOrganization("orgKey", organization -> organization
+        .withProject("projectKey",
+          project -> project.withBranch("branchName")))
       .start();
     var backend = harness.newBackend()
       .withSonarQubeCloudEuRegionUri(server.baseUrl())

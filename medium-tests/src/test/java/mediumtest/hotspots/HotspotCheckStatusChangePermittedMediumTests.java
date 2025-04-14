@@ -51,7 +51,11 @@ class HotspotCheckStatusChangePermittedMediumTests {
 
   @SonarLintTest
   void it_should_return_3_statuses_for_sonarcloud(SonarLintTestHarness harness) {
-    var server = harness.newFakeSonarCloudServer().withProject("projectKey", project -> project.withDefaultBranch(branch -> branch.withHotspot("hotspotKey"))).start();
+    var server = harness.newFakeSonarCloudServer()
+      .withOrganization("orgKey", organization -> organization
+        .withProject("projectKey", project -> project
+          .withDefaultBranch(branch -> branch.withHotspot("hotspotKey"))))
+      .start();
     var backend = harness.newBackend()
       .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .withSonarCloudConnection("connectionId", "orgKey")

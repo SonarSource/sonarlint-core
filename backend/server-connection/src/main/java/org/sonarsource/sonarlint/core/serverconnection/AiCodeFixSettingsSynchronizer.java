@@ -19,10 +19,12 @@
  */
 package org.sonarsource.sonarlint.core.serverconnection;
 
+import java.util.List;
 import java.util.Set;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.organization.ServerOrganization;
 
 public class AiCodeFixSettingsSynchronizer {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -35,8 +37,8 @@ public class AiCodeFixSettingsSynchronizer {
     this.organizationSynchronizer = organizationSynchronizer;
   }
 
-  public void synchronize(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
-    if (serverApi.isSonarCloud()) {
+  public void synchronize(ServerApi serverApi, List<ServerOrganization> userOrganizations, SonarLintCancelMonitor cancelMonitor) {
+    if (serverApi.isSonarCloud() && userBelongsToOrganization(serverApi, userOrganizations)) {
       try {
         var supportedRules = serverApi.fixSuggestions().getSupportedRules(cancelMonitor);
         var organization = organizationSynchronizer.readOrSynchronizeOrganization(serverApi, cancelMonitor);
@@ -48,5 +50,9 @@ public class AiCodeFixSettingsSynchronizer {
         LOG.error("Error synchronizing AI CodeFix settings", e);
       }
     }
+  }
+
+  private static boolean userBelongsToOrganization(ServerApi serverApi, List<ServerOrganization> userOrganizations) {
+    return serverApi.getOrganizationKey().filter(orgKey -> userOrganizations.stream().anyMatch(org -> org.getKey().equals(orgKey))).isPresent();
   }
 }

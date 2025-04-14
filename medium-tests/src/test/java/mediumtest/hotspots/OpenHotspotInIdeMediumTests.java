@@ -274,7 +274,7 @@ class OpenHotspotInIdeMediumTests {
     }).when(fakeClient).assistCreatingConnection(any(), any());
   }
 
-  private static ServerFixture.ServerBuilder buildServerWithHotspot(SonarLintTestHarness harness) {
+  private static ServerFixture.AbstractServerBuilder buildServerWithHotspot(SonarLintTestHarness harness) {
     return harness.newFakeSonarQubeServer("1.2.3")
       .withProject(PROJECT_KEY,
         project -> project.withProjectName(SONAR_PROJECT_NAME).withDefaultBranch(branch -> branch.withHotspot("key",
