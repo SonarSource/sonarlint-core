@@ -41,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -61,6 +62,7 @@ import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
+import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Components;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Hotspots;
@@ -92,36 +94,28 @@ import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBo
 import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBodyDelimited;
 
 public class ServerFixture {
-  public static ServerBuilder newSonarQubeServer() {
+  public static SonarQubeServerBuilder newSonarQubeServer() {
     return newSonarQubeServer((Consumer<Server>) null);
   }
 
-  public static ServerBuilder newSonarQubeServer(@Nullable Consumer<Server> onStart) {
+  public static SonarQubeServerBuilder newSonarQubeServer(@Nullable Consumer<Server> onStart) {
     return newSonarQubeServer(onStart, "99.9");
   }
 
-  public static ServerBuilder newSonarQubeServer(String version) {
+  public static SonarQubeServerBuilder newSonarQubeServer(String version) {
     return newSonarQubeServer(null, version);
   }
 
-  public static ServerBuilder newSonarQubeServer(@Nullable Consumer<Server> onStart, String version) {
-    return new ServerBuilder(onStart, ServerKind.SONARQUBE, null, version);
+  public static SonarQubeServerBuilder newSonarQubeServer(@Nullable Consumer<Server> onStart, String version) {
+    return new SonarQubeServerBuilder(onStart, ServerKind.SONARQUBE, version);
   }
 
-  public static ServerBuilder newSonarCloudServer() {
-    return newSonarCloudServer((Consumer<Server>) null);
+  public static SonarQubeCloudBuilder newSonarCloudServer() {
+    return newSonarCloudServer(null);
   }
 
-  public static ServerBuilder newSonarCloudServer(@Nullable Consumer<Server> onStart) {
-    return newSonarCloudServer(onStart, "myOrganization");
-  }
-
-  public static ServerBuilder newSonarCloudServer(String organization) {
-    return newSonarCloudServer(null, organization);
-  }
-
-  public static ServerBuilder newSonarCloudServer(@Nullable Consumer<Server> onStart, String organization) {
-    return new ServerBuilder(onStart, ServerKind.SONARCLOUD, organization, "0.0.0");
+  public static SonarQubeCloudBuilder newSonarCloudServer(@Nullable Consumer<Server> onStart) {
+    return new SonarQubeCloudBuilder(onStart, ServerKind.SONARCLOUD, "0.0.0");
   }
 
   private enum ServerKind {
@@ -132,89 +126,55 @@ public class ServerFixture {
     UP, DOWN
   }
 
-  public static class ServerBuilder {
+  public abstract static class AbstractServerBuilder<T extends AbstractServerBuilder<T>> {
     private final Consumer<Server> onStart;
     private final ServerKind serverKind;
-    @Nullable
-    private final String organizationKey;
     private String version;
-    private final Map<String, ServerProjectBuilder> projectByProjectKey = new HashMap<>();
-    private final Map<String, ServerQualityProfileBuilder> qualityProfilesByKey = new HashMap<>();
+    protected final Map<String, SonarQubeCloudBuilder.SonarQubeCloudOrganizationBuilder> organizationsByKey = new HashMap<>();
+    protected final Map<String, ServerProjectBuilder> projectByProjectKey = new HashMap<>();
+    protected final Map<String, ServerQualityProfileBuilder> qualityProfilesByKey = new HashMap<>();
     private final Map<String, ServerPluginBuilder> pluginsByKey = new HashMap<>();
     private ServerStatus serverStatus = ServerStatus.UP;
     private final List<String> tokensRegistered = new ArrayList<>();
     private ResponseCodesBuilder responseCodes = new ResponseCodesBuilder();
-    private AiCodeFixFeatureBuilder aiCodeFixFeature = new AiCodeFixFeatureBuilder();
-    private boolean serverSentEventsEnabled;
+    protected boolean serverSentEventsEnabled;
+    protected Set<String> aiCodeFixSupportedRules = Set.of();
 
-    public ServerBuilder(@Nullable Consumer<Server> onStart, ServerKind serverKind, @Nullable String organizationKey, @Nullable String version) {
+    protected AbstractServerBuilder(@Nullable Consumer<Server> onStart, ServerKind serverKind, @Nullable String version) {
       this.onStart = onStart;
       this.serverKind = serverKind;
-      this.organizationKey = organizationKey;
       this.version = version;
     }
 
-    public ServerBuilder withStatus(ServerStatus status) {
+    public T withStatus(ServerStatus status) {
       serverStatus = status;
-      return this;
+      return (T) this;
     }
 
-    public ServerBuilder withProject(String projectKey) {
-      return withProject(projectKey, UnaryOperator.identity());
-    }
-
-    public ServerBuilder withToken(String tokenName) {
+    public T withToken(String tokenName) {
       tokensRegistered.add(tokenName);
-      return this;
+      return (T) this;
     }
 
-    public ServerBuilder withProject(String projectKey, UnaryOperator<ServerProjectBuilder> projectBuilder) {
-      var builder = new ServerProjectBuilder();
-      this.projectByProjectKey.put(projectKey, projectBuilder.apply(builder));
-      return this;
-    }
-
-    public ServerBuilder withQualityProfile(String qualityProfileKey, UnaryOperator<ServerQualityProfileBuilder> qualityProfileBuilder) {
-      var builder = new ServerQualityProfileBuilder();
-      this.qualityProfilesByKey.put(qualityProfileKey, qualityProfileBuilder.apply(builder));
-      return this;
-    }
-
-    public ServerBuilder withPlugin(Plugin testPlugin) {
+    public T withPlugin(Plugin testPlugin) {
       return withPlugin(testPlugin.getPluginKey(), plugin -> plugin.withJarPath(testPlugin.getPath()).withHash(testPlugin.getHash()));
     }
 
-    public ServerBuilder withPlugin(String pluginKey, UnaryOperator<ServerPluginBuilder> pluginBuilder) {
+    public T withPlugin(String pluginKey, UnaryOperator<ServerPluginBuilder> pluginBuilder) {
       var builder = new ServerPluginBuilder();
       this.pluginsByKey.put(pluginKey, pluginBuilder.apply(builder));
-      return this;
+      return (T) this;
     }
 
-    public ServerBuilder withVersion(String version) {
-      this.version = version;
-      return this;
-    }
-
-    public ServerBuilder withAiCodeFixFeature(UnaryOperator<AiCodeFixFeatureBuilder> aiCodeFixBuilder) {
-      this.aiCodeFixFeature = new AiCodeFixFeatureBuilder();
-      aiCodeFixBuilder.apply(aiCodeFixFeature);
-      return this;
-    }
-
-    public ServerBuilder withServerSentEventsEnabled() {
-      this.serverSentEventsEnabled = true;
-      return this;
-    }
-
-    public ServerBuilder withResponseCodes(UnaryOperator<ResponseCodesBuilder> responseCodes) {
+    public T withResponseCodes(UnaryOperator<ResponseCodesBuilder> responseCodes) {
       this.responseCodes = new ResponseCodesBuilder();
       responseCodes.apply(this.responseCodes);
-      return this;
+      return (T) this;
     }
 
     public Server start() {
-      var server = new Server(serverKind, serverStatus, organizationKey, version, projectByProjectKey, pluginsByKey, qualityProfilesByKey,
-        tokensRegistered, responseCodes.build(), aiCodeFixFeature, serverSentEventsEnabled);
+      var server = new Server(serverKind, serverStatus, version, organizationsByKey, projectByProjectKey, pluginsByKey, qualityProfilesByKey, tokensRegistered,
+        responseCodes.build(), aiCodeFixSupportedRules, serverSentEventsEnabled);
       server.start();
       if (onStart != null) {
         onStart.accept(server);
@@ -244,15 +204,9 @@ public class ServerFixture {
     }
 
     public static class AiCodeFixFeatureBuilder {
-      private Set<String> supportedRules = Set.of();
       private boolean organizationEligible = true;
       private AiCodeFixFeatureEnablement enablement = AiCodeFixFeatureEnablement.DISABLED;
       private List<String> enabledProjectKeys;
-
-      public AiCodeFixFeatureBuilder withSupportedRules(Set<String> supportedRules) {
-        this.supportedRules = supportedRules;
-        return this;
-      }
 
       public AiCodeFixFeatureBuilder organizationEligible(boolean organizationEligible) {
         this.organizationEligible = organizationEligible;
@@ -277,7 +231,7 @@ public class ServerFixture {
       }
 
       public AiCodeFixFeature build() {
-        return new AiCodeFixFeature(supportedRules, enablement);
+        return new AiCodeFixFeature(enablement);
       }
     }
 
@@ -306,13 +260,14 @@ public class ServerFixture {
       }
     }
 
-    public record AiCodeFixFeature(Set<String> rules, AiCodeFixFeatureEnablement enablement) {
+    public record AiCodeFixFeature(AiCodeFixFeatureEnablement enablement) {
     }
 
     public record ResponseCodes(int statusCode, int issueTransitionStatusCode, int addCommentStatusCode) {
     }
 
     public static class ServerProjectBuilder {
+      private String organizationKey;
       private final Map<String, ServerProjectBranchBuilder> branchesByName = new HashMap<>();
       private String mainBranchName = "main";
       private final Map<String, ServerProjectPullRequestBuilder> pullRequestsByName = new HashMap<>();
@@ -323,7 +278,12 @@ public class ServerFixture {
       private AiCodeFixSuggestionBuilder aiCodeFixSuggestion;
 
       private ServerProjectBuilder() {
-        branchesByName.put(mainBranchName, new ServerProjectBranchBuilder());
+        this(null);
+      }
+
+      private ServerProjectBuilder(@Nullable String organizationKey) {
+        this.organizationKey = organizationKey;
+        this.branchesByName.put(mainBranchName, new ServerProjectBranchBuilder());
       }
 
       public ServerProjectBuilder withMainBranch(String branchName) {
@@ -629,8 +589,13 @@ public class ServerFixture {
     }
 
     public static class ServerQualityProfileBuilder {
+      private final String organizationKey;
       private String languageKey = "lang";
       private final Map<String, ServerActiveRuleBuilder> activeRulesByKey = new HashMap<>();
+
+      public ServerQualityProfileBuilder(@Nullable String organizationKey) {
+        this.organizationKey = organizationKey;
+      }
 
       public ServerQualityProfileBuilder withLanguage(String languageKey) {
         this.languageKey = languageKey;
@@ -655,6 +620,102 @@ public class ServerFixture {
 
   }
 
+  public static class SonarQubeServerBuilder extends AbstractServerBuilder<SonarQubeServerBuilder> {
+
+    public SonarQubeServerBuilder(@org.jetbrains.annotations.Nullable Consumer<Server> onStart, ServerKind serverKind, @Nullable String version) {
+      super(onStart, serverKind, version);
+    }
+
+    public SonarQubeServerBuilder withProject(String projectKey) {
+      return withProject(projectKey, UnaryOperator.identity());
+    }
+
+    public SonarQubeServerBuilder withProject(String projectKey, UnaryOperator<ServerProjectBuilder> projectBuilder) {
+      var builder = new ServerProjectBuilder();
+      this.projectByProjectKey.put(projectKey, projectBuilder.apply(builder));
+      return this;
+    }
+
+    public SonarQubeServerBuilder withQualityProfile(String qualityProfileKey, UnaryOperator<ServerQualityProfileBuilder> qualityProfileBuilder) {
+      var builder = new ServerQualityProfileBuilder(null);
+      this.qualityProfilesByKey.put(qualityProfileKey, qualityProfileBuilder.apply(builder));
+      return this;
+    }
+
+    public SonarQubeServerBuilder withServerSentEventsEnabled() {
+      this.serverSentEventsEnabled = true;
+      return this;
+    }
+  }
+
+  public static class SonarQubeCloudBuilder extends AbstractServerBuilder<SonarQubeCloudBuilder> {
+
+    public SonarQubeCloudBuilder(@org.jetbrains.annotations.Nullable Consumer<Server> onStart, ServerKind serverKind, @Nullable String version) {
+      super(onStart, serverKind, version);
+    }
+
+    public SonarQubeCloudBuilder withOrganization(String organizationKey) {
+      return withOrganization(organizationKey, UnaryOperator.identity());
+    }
+
+    public SonarQubeCloudBuilder withOrganization(String organizationKey, UnaryOperator<SonarQubeCloudOrganizationBuilder> organizationBuilder) {
+      var builder = new SonarQubeCloudOrganizationBuilder(organizationKey, qualityProfilesByKey, projectByProjectKey);
+      this.organizationsByKey.put(organizationKey, organizationBuilder.apply(builder));
+      return this;
+    }
+
+    public SonarQubeCloudBuilder withAiCodeFixSupportedRules(Set<String> supportedRules) {
+      this.aiCodeFixSupportedRules = supportedRules;
+      return this;
+    }
+
+    public static class SonarQubeCloudOrganizationBuilder {
+      private final String organizationKey;
+      private final Map<String, ServerQualityProfileBuilder> qualityProfilesByKey;
+      private final Map<String, ServerProjectBuilder> projectByProjectKey;
+      public String name = "OrgName";
+      public String description = "OrgDescription";
+      private final String id = UUID.randomUUID().toString();
+      private final UUID uuidV4 = UUID.randomUUID();
+      private AbstractServerBuilder.AiCodeFixFeatureBuilder aiCodeFixFeature = new AiCodeFixFeatureBuilder();
+      private boolean isCurrentUserMember = true;
+
+      public SonarQubeCloudOrganizationBuilder(String organizationKey, Map<String, ServerQualityProfileBuilder> qualityProfilesByKey,
+        Map<String, ServerProjectBuilder> projectByProjectKey) {
+        this.organizationKey = organizationKey;
+        this.qualityProfilesByKey = qualityProfilesByKey;
+        this.projectByProjectKey = projectByProjectKey;
+      }
+
+      public SonarQubeCloudOrganizationBuilder withQualityProfile(String qualityProfileKey, UnaryOperator<ServerQualityProfileBuilder> qualityProfileBuilder) {
+        var builder = new ServerQualityProfileBuilder(organizationKey);
+        this.qualityProfilesByKey.put(qualityProfileKey, qualityProfileBuilder.apply(builder));
+        return this;
+      }
+
+      public SonarQubeCloudOrganizationBuilder withProject(String projectKey) {
+        return withProject(projectKey, UnaryOperator.identity());
+      }
+
+      public SonarQubeCloudOrganizationBuilder withProject(String projectKey, UnaryOperator<ServerProjectBuilder> projectBuilder) {
+        var builder = new ServerProjectBuilder(organizationKey);
+        this.projectByProjectKey.put(projectKey, projectBuilder.apply(builder));
+        return this;
+      }
+
+      public SonarQubeCloudOrganizationBuilder withAiCodeFixFeature(UnaryOperator<AiCodeFixFeatureBuilder> aiCodeFixBuilder) {
+        this.aiCodeFixFeature = new AiCodeFixFeatureBuilder();
+        aiCodeFixBuilder.apply(aiCodeFixFeature);
+        return this;
+      }
+
+      public SonarQubeCloudOrganizationBuilder withCurrentUserMember(boolean isCurrentUserMember) {
+        this.isCurrentUserMember = isCurrentUserMember;
+        return this;
+      }
+    }
+  }
+
   public static class Server {
 
     private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ").withZone(ZoneId.from(ZoneOffset.UTC));
@@ -664,44 +725,33 @@ public class ServerFixture {
     private final ServerKind serverKind;
     private final ServerStatus serverStatus;
     @Nullable
-    private final String organizationKey;
-    @Nullable
-    private final String organizationId;
-    @Nullable
-    private final UUID organizationUuidV4;
-    @Nullable
     private final Version version;
-    private final Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey;
-    private final Map<String, ServerBuilder.ServerPluginBuilder> pluginsByKey;
-    private final Map<String, ServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey;
+    private final Map<String, SonarQubeCloudBuilder.SonarQubeCloudOrganizationBuilder> organizationsByKey;
+    private final Map<String, AbstractServerBuilder.ServerProjectBuilder> projectsByProjectKey;
+    private final Map<String, AbstractServerBuilder.ServerPluginBuilder> pluginsByKey;
+    private final Map<String, AbstractServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey;
     private final List<String> tokensRegistered;
-    private final ServerBuilder.ResponseCodes responseCodes;
-    private final ServerBuilder.AiCodeFixFeatureBuilder aiCodeFixFeature;
+    private final AbstractServerBuilder.ResponseCodes responseCodes;
+    private final Set<String> aiCodeFixSupportedRules;
     private final boolean serverSentEventsEnabled;
     private SSEServer sseServer;
 
-    public Server(ServerKind serverKind, ServerStatus serverStatus, @Nullable String organizationKey, @Nullable String version,
-      Map<String, ServerBuilder.ServerProjectBuilder> projectsByProjectKey, Map<String, ServerBuilder.ServerPluginBuilder> pluginsByKey,
-      Map<String, ServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey, List<String> tokensRegistered, ServerBuilder.ResponseCodes responseCodes,
-      ServerBuilder.AiCodeFixFeatureBuilder aiCodeFixFeature, boolean serverSentEventsEnabled) {
+    public Server(ServerKind serverKind, ServerStatus serverStatus, @Nullable String version,
+      Map<String, SonarQubeCloudBuilder.SonarQubeCloudOrganizationBuilder> organizationsByKey, Map<String, AbstractServerBuilder.ServerProjectBuilder> projectsByProjectKey,
+      Map<String, AbstractServerBuilder.ServerPluginBuilder> pluginsByKey, Map<String, AbstractServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey,
+      List<String> tokensRegistered, AbstractServerBuilder.ResponseCodes responseCodes, Set<String> aiCodeFixSupportedRules,
+      boolean serverSentEventsEnabled) {
       this.serverKind = serverKind;
       this.serverStatus = serverStatus;
-      this.organizationKey = organizationKey;
       this.version = version != null ? Version.create(version) : null;
+      this.organizationsByKey = organizationsByKey;
       this.projectsByProjectKey = projectsByProjectKey;
       this.pluginsByKey = pluginsByKey;
       this.qualityProfilesByKey = qualityProfilesByKey;
       this.tokensRegistered = tokensRegistered;
       this.responseCodes = responseCodes;
-      this.aiCodeFixFeature = aiCodeFixFeature;
+      this.aiCodeFixSupportedRules = aiCodeFixSupportedRules;
       this.serverSentEventsEnabled = serverSentEventsEnabled;
-      if (organizationKey != null) {
-        this.organizationId = organizationKey;
-        this.organizationUuidV4 = UUID.randomUUID();
-      } else {
-        this.organizationId = null;
-        this.organizationUuidV4 = null;
-      }
     }
 
     public void start() {
@@ -790,8 +840,8 @@ public class ServerFixture {
     private void registerQualityProfilesApiResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> {
         var urlBuilder = new StringBuilder("/api/qualityprofiles/search.protobuf?project=" + projectKey);
-        if (organizationKey != null) {
-          urlBuilder.append("&organization=").append(organizationKey);
+        if (project.organizationKey != null) {
+          urlBuilder.append("&organization=").append(project.organizationKey);
         }
         mockServer.stubFor(get(urlBuilder.toString())
           .willReturn(aResponse().withStatus(responseCodes.statusCode).withResponseBody(protobufBody(Qualityprofiles.SearchWsResponse.newBuilder().addAllProfiles(
@@ -814,8 +864,8 @@ public class ServerFixture {
     private void registerRulesApiResponses() {
       qualityProfilesByKey.forEach((qualityProfileKey, qualityProfile) -> {
         var url = "/api/rules/search.protobuf?qprofile=" + qualityProfileKey;
-        if (serverKind == ServerKind.SONARCLOUD) {
-          url += "&organization=" + organizationKey;
+        if (qualityProfile.organizationKey != null) {
+          url += "&organization=" + qualityProfile.organizationKey;
         }
         url += "&activation=true&f=templateKey,actives&types=CODE_SMELL,BUG,VULNERABILITY,SECURITY_HOTSPOT&s=key&ps=500&p=1";
         mockServer.stubFor(get(url)
@@ -833,23 +883,25 @@ public class ServerFixture {
       });
       var taintActiveRulesByKey = qualityProfilesByKey.values().stream().flatMap(qp -> qp.activeRulesByKey.entrySet().stream())
         .filter(entry -> TAINT_REPOS_BY_LANGUAGE.containsValue(entry.getKey())).collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
-      var url = "/api/rules/search.protobuf?repositories=roslyn.sonaranalyzer.security.cs,javasecurity,jssecurity,phpsecurity,pythonsecurity,tssecurity";
-      if (serverKind == ServerKind.SONARCLOUD) {
-        url += "&organization=" + organizationKey;
-      }
-      url += "&f=repo&s=key&ps=500&p=1";
-      mockServer.stubFor(get(url)
-        .willReturn(aResponse().withStatus(responseCodes.statusCode).withResponseBody(protobufBody(Rules.SearchResponse.newBuilder()
-          .addAllRules(taintActiveRulesByKey.entrySet().stream().map(entry -> Rules.Rule.newBuilder()
-            .setKey(entry.getKey())
-            .setSeverity(entry.getValue().issueSeverity.name())
-            .build()).toList())
-          .setActives(Rules.Actives.newBuilder()
-            .putAllActives(taintActiveRulesByKey.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> Rules.ActiveList.newBuilder()
-              .addActiveList(Rules.Active.newBuilder().setSeverity(entry.getValue().issueSeverity.name()).build()).build())))
-            .build())
-          .setPaging(Common.Paging.newBuilder().setTotal(taintActiveRulesByKey.size()).build())
-          .build()))));
+      qualityProfilesByKey.values().stream().map(qp -> qp.organizationKey).collect(Collectors.toSet()).forEach(organizationKey -> {
+        var url = "/api/rules/search.protobuf?repositories=roslyn.sonaranalyzer.security.cs,javasecurity,jssecurity,phpsecurity,pythonsecurity,tssecurity";
+        if (organizationKey != null) {
+          url += "&organization=" + organizationKey;
+        }
+        url += "&f=repo&s=key&ps=500&p=1";
+        mockServer.stubFor(get(url)
+          .willReturn(aResponse().withStatus(responseCodes.statusCode).withResponseBody(protobufBody(Rules.SearchResponse.newBuilder()
+            .addAllRules(taintActiveRulesByKey.entrySet().stream().map(entry -> Rules.Rule.newBuilder()
+              .setKey(entry.getKey())
+              .setSeverity(entry.getValue().issueSeverity.name())
+              .build()).toList())
+            .setActives(Rules.Actives.newBuilder()
+              .putAllActives(taintActiveRulesByKey.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> Rules.ActiveList.newBuilder()
+                .addActiveList(Rules.Active.newBuilder().setSeverity(entry.getValue().issueSeverity.name()).build()).build())))
+              .build())
+            .setPaging(Common.Paging.newBuilder().setTotal(taintActiveRulesByKey.size()).build())
+            .build()))));
+      });
 
       var activeRules = qualityProfilesByKey.values().stream().flatMap(qp -> qp.activeRulesByKey.entrySet().stream()).toList();
       activeRules.forEach(entry -> {
@@ -898,7 +950,7 @@ public class ServerFixture {
     private void registerApiHotspotSearchResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> project.branchesByName.forEach((branchName, branch) -> {
         var messagesPerFilePath = branch.hotspots.stream()
-          .collect(groupingBy(ServerBuilder.ServerProjectBuilder.ServerProjectBranchBuilder.ServerHotspot::getFilePath,
+          .collect(groupingBy(AbstractServerBuilder.ServerProjectBuilder.ServerProjectBranchBuilder.ServerHotspot::getFilePath,
             mapping(hotspot -> {
               var builder = Hotspots.SearchWsResponse.Hotspot.newBuilder()
                 .setKey(hotspot.hotspotKey)
@@ -1010,9 +1062,10 @@ public class ServerFixture {
     }
 
     @NotNull
-    private static Map<String, List<Issues.Issue>> getIssuesPerFilePath(String projectKey, ServerBuilder.ServerProjectBuilder.ServerProjectBranchBuilder pullRequestOrBranch) {
+    private static Map<String, List<Issues.Issue>> getIssuesPerFilePath(String projectKey,
+      AbstractServerBuilder.ServerProjectBuilder.ServerProjectBranchBuilder pullRequestOrBranch) {
       return Stream.concat(pullRequestOrBranch.issues.stream(), pullRequestOrBranch.taintIssues.stream())
-        .collect(groupingBy(ServerBuilder.ServerProjectBuilder.ServerProjectBranchBuilder.ServerIssue::getFilePath,
+        .collect(groupingBy(AbstractServerBuilder.ServerProjectBuilder.ServerProjectBranchBuilder.ServerIssue::getFilePath,
           mapping(issue -> Issues.Issue.newBuilder()
             .setKey(issue.issueKey)
             .setComponent(projectKey + ":" + issue.filePath)
@@ -1209,7 +1262,7 @@ public class ServerFixture {
         var response = aResponse().withResponseBody(protobufBodyDelimited(messages));
         mockServer.stubFor(get(
           urlMatching("\\Q/api/issues/pull_taint?projectKey=" + projectKey + branchParameter + "\\E(&languages=.*)?(\\Q&changedSince=" + timestamp.getQueryTimestamp() + "\\E)?"))
-          .willReturn(response));
+            .willReturn(response));
       }));
     }
 
@@ -1266,17 +1319,30 @@ public class ServerFixture {
     }
 
     private void registerComponentsSearchApiResponses() {
-      var url = "/api/components/search.protobuf?qualifiers=TRK";
-      if (serverKind == ServerKind.SONARCLOUD) {
-        url += "&organization=" + organizationKey;
+      var projectsByOrganizationKey = projectsByProjectKey.entrySet().stream()
+        .collect(groupingBy(e -> Optional.ofNullable(e.getValue().organizationKey), HashMap::new, toList()));
+      if (projectsByOrganizationKey.isEmpty()) {
+        projectsByOrganizationKey.put(Optional.empty(), List.of());
       }
-      url += "&ps=500&p=1";
-      mockServer.stubFor(get(url)
-        .willReturn(aResponse().withResponseBody(protobufBody(Components.SearchWsResponse.newBuilder()
-          .addAllComponents(projectsByProjectKey.entrySet().stream().map(entry -> Components.Component.newBuilder().setKey(entry.getKey()).setName(entry.getValue().name).build())
-            .toList())
-          .setPaging(Common.Paging.newBuilder().setTotal(projectsByProjectKey.size()).build())
-          .build()))));
+      organizationsByKey.forEach((organizationKey, organization) -> {
+        if (!projectsByOrganizationKey.containsKey(Optional.of(organizationKey))) {
+          projectsByOrganizationKey.put(Optional.of(organizationKey), List.of());
+        }
+      });
+      projectsByOrganizationKey
+        .forEach((organizationKey, projects) -> {
+          var url = "/api/components/search.protobuf?qualifiers=TRK";
+          if (organizationKey.isPresent()) {
+            url += "&organization=" + organizationKey.get();
+          }
+          url += "&ps=500&p=1";
+          mockServer.stubFor(get(url)
+            .willReturn(aResponse().withResponseBody(protobufBody(Components.SearchWsResponse.newBuilder()
+              .addAllComponents(projects.stream().map(entry -> Components.Component.newBuilder().setKey(entry.getKey()).setName(entry.getValue().name).build())
+                .toList())
+              .setPaging(Common.Paging.newBuilder().setTotal(projectsByProjectKey.size()).build())
+              .build()))));
+        });
     }
 
     private void registerComponentsShowApiResponses() {
@@ -1294,8 +1360,8 @@ public class ServerFixture {
     private void registerComponentsTreeApiResponses() {
       projectsByProjectKey.forEach((projectKey, project) -> {
         var url = "/api/components/tree.protobuf?qualifiers=FIL,UTS&component=" + projectKey;
-        if (serverKind == ServerKind.SONARCLOUD) {
-          url += "&organization=" + organizationKey;
+        if (project.organizationKey != null) {
+          url += "&organization=" + project.organizationKey;
         }
         url += "&ps=500&p=1";
         mockServer.stubFor(get(url)
@@ -1344,20 +1410,35 @@ public class ServerFixture {
         }
       });
 
-      if (serverKind == ServerKind.SONARCLOUD) {
-        var feature = aiCodeFixFeature.build();
-        mockServer.stubFor(get("/fix-suggestions/supported-rules")
-          .willReturn(jsonResponse("{\"rules\": [" + String.join(", ", feature.rules.stream().map(rule -> "\"" + rule + "\"").toList()) + "]}", responseCodes.statusCode)));
-        var enabledProjectKeys = aiCodeFixFeature.enabledProjectKeys == null ? null : ("[" + String.join(", ", aiCodeFixFeature.enabledProjectKeys) + "]");
-        mockServer.stubFor(get("/fix-suggestions/organization-configs/" + organizationId)
-          .willReturn(jsonResponse("{\"enablement\": \"" + aiCodeFixFeature.enablement.name() + "\", \"organizationEligible\": " + aiCodeFixFeature.organizationEligible
-            + ",  \"enabledProjectKeys\": " + enabledProjectKeys + "}", responseCodes.statusCode)));
-      }
+      mockServer.stubFor(get("/fix-suggestions/supported-rules")
+        .willReturn(jsonResponse("{\"rules\": [" + String.join(", ", aiCodeFixSupportedRules.stream().map(rule -> "\"" + rule + "\"").toList()) + "]}", responseCodes.statusCode)));
+      organizationsByKey.forEach((organizationKey, organization) -> {
+        var enabledProjectKeys = organization.aiCodeFixFeature.enabledProjectKeys == null ? null
+          : ("[" + String.join(", ", organization.aiCodeFixFeature.enabledProjectKeys) + "]");
+        mockServer.stubFor(get("/fix-suggestions/organization-configs/" + organization.id)
+          .willReturn(jsonResponse(
+            "{\"enablement\": \"" + organization.aiCodeFixFeature.enablement.name() + "\", \"organizationEligible\": " + organization.aiCodeFixFeature.organizationEligible
+              + ",  \"enabledProjectKeys\": " + enabledProjectKeys + "}",
+            responseCodes.statusCode)));
+      });
     }
 
     private void registerOrganizationApiResponses() {
-      mockServer.stubFor(get("/organizations/organizations?organizationKey=" + organizationKey + "&excludeEligibility=true")
-        .willReturn(jsonResponse("[{\"id\": \"" + organizationId + "\", \"uuidV4\": \"" + organizationUuidV4 + "\"}]", responseCodes.statusCode)));
+      organizationsByKey
+        .forEach((organizationKey, organization) -> mockServer.stubFor(get("/organizations/organizations?organizationKey=" + organizationKey + "&excludeEligibility=true")
+          .willReturn(jsonResponse("[{\"id\": \"" + organization.id + "\", \"uuidV4\": \"" + organization.uuidV4 + "\"}]", responseCodes.statusCode))));
+      mockServer.stubFor(get("/api/organizations/search.protobuf?member=true&ps=500&p=1")
+        .willReturn(aResponse().withStatus(responseCodes.statusCode).withResponseBody(protobufBody(Organizations.SearchWsResponse.newBuilder()
+          .addAllOrganizations(organizationsByKey.entrySet().stream()
+            .filter(e -> e.getValue().isCurrentUserMember)
+            .map(e -> Organizations.Organization.newBuilder()
+              .setKey(e.getKey())
+              .setName(e.getValue().name)
+              .setDescription(e.getValue().description)
+              .build())
+            .toList())
+          .setPaging(Common.Paging.newBuilder().setTotal(organizationsByKey.size()).build())
+          .build()))));
     }
 
     private void registerPushApiResponses() {

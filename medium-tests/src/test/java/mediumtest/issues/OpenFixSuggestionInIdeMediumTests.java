@@ -118,7 +118,8 @@ class OpenFixSuggestionInIdeMediumTests {
     await().atMost(2, TimeUnit.SECONDS)
       .untilAsserted(() -> assertThat(backend.telemetryFilePath())
         .content().asBase64Decoded().asString()
-        .contains("\"fixSuggestionReceivedCounter\":{\"eb93b2b4-f7b0-4b5c-9460-50893968c264\":{\"aiSuggestionsSource\":\"SONARCLOUD\",\"snippetsCount\":1,\"wasGeneratedFromIde\":false}}"));
+        .contains(
+          "\"fixSuggestionReceivedCounter\":{\"eb93b2b4-f7b0-4b5c-9460-50893968c264\":{\"aiSuggestionsSource\":\"SONARCLOUD\",\"snippetsCount\":1,\"wasGeneratedFromIde\":false}}"));
   }
 
   @SonarLintTest
@@ -214,7 +215,8 @@ class OpenFixSuggestionInIdeMediumTests {
   void it_should_assist_binding_if_multiple_suggestions_but_scopes_are_parent_and_child(SonarLintTestHarness harness, @TempDir Path baseDir) throws Exception {
     var inputFile = createFile(baseDir, "Main.java", "");
     var fakeClient = harness.newFakeClient()
-      .withInitialFs("configScopeParent", List.of(new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), "configScopeParent", false, null, inputFile, null, null, true)))
+      .withInitialFs("configScopeParent",
+        List.of(new ClientFileDto(inputFile.toUri(), baseDir.relativize(inputFile), "configScopeParent", false, null, inputFile, null, null, true)))
       .withInitialFs("configScopeChild", List.of())
       .build();
     var scServer = buildSonarCloudServer(harness).start();
@@ -345,8 +347,7 @@ class OpenFixSuggestionInIdeMediumTests {
     HttpRequest request = HttpRequest.newBuilder()
       .uri(URI.create(
         "http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/fix/show?server=" + scServer.baseUrl() + "&issue=" + ISSUE_KEY +
-          "&project=" + PROJECT_KEY + "&branch=" + BRANCH_NAME + "&organizationKey=" + ORG_KEY
-      ))
+          "&project=" + PROJECT_KEY + "&branch=" + BRANCH_NAME + "&organizationKey=" + ORG_KEY))
       .POST(HttpRequest.BodyPublishers.ofString(FIX_PAYLOAD)).build();
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -372,8 +373,7 @@ class OpenFixSuggestionInIdeMediumTests {
     HttpRequest request = HttpRequest.newBuilder()
       .uri(URI.create(
         "http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/fix/show?server=" + scServer.baseUrl() + "&issue=" + ISSUE_KEY +
-          "&project=" + PROJECT_KEY + "&branch=" + BRANCH_NAME + "&organizationKey=" + ORG_KEY
-      ))
+          "&project=" + PROJECT_KEY + "&branch=" + BRANCH_NAME + "&organizationKey=" + ORG_KEY))
       .header("Origin", "malicious")
       .POST(HttpRequest.BodyPublishers.ofString(FIX_PAYLOAD)).build();
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
@@ -389,7 +389,8 @@ class OpenFixSuggestionInIdeMediumTests {
       .containsAnyOf("The origin 'malicious' is not trusted, this could be a malicious request");
   }
 
-  private Object executeOpenFixSuggestionRequestWithToken(SonarLintTestRpcServer backend, ServerFixture.Server scServer, String payload, String issueKey, String projectKey, String branchName, String orgKey,
+  private Object executeOpenFixSuggestionRequestWithToken(SonarLintTestRpcServer backend, ServerFixture.Server scServer, String payload, String issueKey, String projectKey,
+    String branchName, String orgKey,
     String tokenName, String tokenValue) throws IOException, InterruptedException {
     HttpRequest request = openFixSuggestionRequest(backend, scServer, payload, "&issue=" + issueKey, "&project=" + projectKey, "&branch=" + branchName,
       "&organizationKey=" + orgKey, "&tokenName=" + tokenName, "&tokenValue=" + tokenValue);
@@ -397,7 +398,8 @@ class OpenFixSuggestionInIdeMediumTests {
     return response.statusCode();
   }
 
-  private Object executeOpenFixSuggestionRequestWithoutToken(SonarLintTestRpcServer backend, ServerFixture.Server scServer, String payload, String issueKey, String projectKey, String branchName, String orgKey) throws IOException, InterruptedException {
+  private Object executeOpenFixSuggestionRequestWithoutToken(SonarLintTestRpcServer backend, ServerFixture.Server scServer, String payload, String issueKey, String projectKey,
+    String branchName, String orgKey) throws IOException, InterruptedException {
     HttpRequest request = openFixSuggestionRequest(backend, scServer, payload, "&issue=" + issueKey, "&project=" + projectKey, "&branch=" + branchName,
       "&organizationKey=" + orgKey);
     var response = java.net.http.HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
@@ -430,8 +432,8 @@ class OpenFixSuggestionInIdeMediumTests {
     }).when(fakeClient).assistCreatingConnection(any(), any());
   }
 
-  private static ServerFixture.ServerBuilder buildSonarCloudServer(SonarLintTestHarness harness) {
-    return harness.newFakeSonarCloudServer(ORG_KEY)
-      .withProject(PROJECT_KEY, project -> project.withBranch(BRANCH_NAME));
+  private static ServerFixture.SonarQubeCloudBuilder buildSonarCloudServer(SonarLintTestHarness harness) {
+    return harness.newFakeSonarCloudServer()
+      .withOrganization(ORG_KEY, organization -> organization.withProject(PROJECT_KEY, project -> project.withBranch(BRANCH_NAME)));
   }
 }

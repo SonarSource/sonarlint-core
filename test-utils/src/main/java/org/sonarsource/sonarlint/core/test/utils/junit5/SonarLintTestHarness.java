@@ -75,19 +75,15 @@ public class SonarLintTestHarness extends TypeBasedParameterResolver<SonarLintTe
     return SonarLintBackendFixture.newFakeClient();
   }
 
-  public ServerFixture.ServerBuilder newFakeSonarQubeServer() {
+  public ServerFixture.SonarQubeServerBuilder newFakeSonarQubeServer() {
     return ServerFixture.newSonarQubeServer(servers::add);
   }
 
-  public ServerFixture.ServerBuilder newFakeSonarQubeServer(String version) {
+  public ServerFixture.SonarQubeServerBuilder newFakeSonarQubeServer(String version) {
     return ServerFixture.newSonarQubeServer(servers::add, version);
   }
 
-  public ServerFixture.ServerBuilder newFakeSonarCloudServer() {
+  public ServerFixture.SonarQubeCloudBuilder newFakeSonarCloudServer() {
     return ServerFixture.newSonarCloudServer(servers::add);
-  }
-
-  public ServerFixture.ServerBuilder newFakeSonarCloudServer(String organizationKey) {
-    return ServerFixture.newSonarCloudServer(servers::add, organizationKey);
   }
 }

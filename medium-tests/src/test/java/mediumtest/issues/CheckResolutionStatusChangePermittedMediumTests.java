@@ -243,15 +243,15 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(
         new ClientFileDto(fileUri, baseDir.relativize(filePath), CONFIG_SCOPE_ID, false, null, filePath, null, null, true)))
       .build();
-    var server = harness.newFakeSonarCloudServer("org")
-      .withQualityProfile("qpKey", qualityProfile -> qualityProfile
-        .withLanguage("xml").withActiveRule("xml:S3421", activeRule -> activeRule
-          .withSeverity(IssueSeverity.BLOCKER)
-        ))
-      .withProject(projectKey,
-        project -> project
-          .withQualityProfile("qpKey")
-          .withBranch(branchName))
+    var server = harness.newFakeSonarCloudServer()
+      .withOrganization("org", organization -> organization
+        .withQualityProfile("qpKey", qualityProfile -> qualityProfile
+          .withLanguage("xml").withActiveRule("xml:S3421", activeRule -> activeRule
+            .withSeverity(IssueSeverity.BLOCKER)))
+        .withProject(projectKey,
+          project -> project
+            .withQualityProfile("qpKey")
+            .withBranch(branchName)))
       .withPlugin(TestPlugin.XML)
       .start();
     var backend = harness.newBackend()
@@ -300,8 +300,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
     var server = harness.newFakeSonarQubeServer("10.1")
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile
         .withLanguage("xml").withActiveRule("xml:S3421", activeRule -> activeRule
-          .withSeverity(IssueSeverity.BLOCKER)
-        ))
+          .withSeverity(IssueSeverity.BLOCKER)))
       .withProject(projectKey,
         project -> project
           .withQualityProfile("qpKey")
@@ -360,16 +359,14 @@ class CheckResolutionStatusChangePermittedMediumTests {
     var server = harness.newFakeSonarQubeServer("10.2")
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile
         .withLanguage("xml").withActiveRule("xml:S3421", activeRule -> activeRule
-        .withSeverity(IssueSeverity.MAJOR)
-      ))
+          .withSeverity(IssueSeverity.MAJOR)))
       .withProject(projectKey,
         project -> project
           .withQualityProfile("qpKey")
           .withBranch(branchName,
             branch -> branch.withIssue(serverIssueKey, "xml:S3421", "message",
               "author", baseDir.relativize(filePath).toString(), "1356c67d7ad1638d816bfb822dd2c25d", Constants.Severity.MAJOR, RuleType.CODE_SMELL,
-              "OPEN", null, introductionDate, new TextRange(1, 1, 1, 1))
-          ))
+              "OPEN", null, introductionDate, new TextRange(1, 1, 1, 1))))
       .withPlugin(TestPlugin.XML)
       .start();
     var backend = harness.newBackend()
@@ -418,8 +415,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
     var server = harness.newFakeSonarQubeServer("10.4")
       .withQualityProfile("qpKey", qualityProfile -> qualityProfile
         .withLanguage("xml").withActiveRule("xml:S3421", activeRule -> activeRule
-          .withSeverity(IssueSeverity.MAJOR)
-        ))
+          .withSeverity(IssueSeverity.MAJOR)))
       .withProject(projectKey,
         project -> project
           .withQualityProfile("qpKey")

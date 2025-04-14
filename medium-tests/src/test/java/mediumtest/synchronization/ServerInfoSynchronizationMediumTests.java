@@ -80,8 +80,14 @@ class ServerInfoSynchronizationMediumTests {
 
   @SonarLintTest
   void it_should_synchronize_with_sonarcloud_and_mode_should_be_missing(SonarLintTestHarness harness) {
+    var server = harness.newFakeSonarCloudServer()
+      .withOrganization("test", organization -> organization
+        .withProject("projectKey", project -> project.withBranch("main")))
+      .start();
     var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
+      .withSonarQubeCloudEuRegionUri(server.baseUrl())
+      .withSonarQubeCloudEuRegionApiUri(server.baseUrl())
       .withSonarCloudConnection("connectionId", "test")
       .withFullSynchronization()
       .start();
