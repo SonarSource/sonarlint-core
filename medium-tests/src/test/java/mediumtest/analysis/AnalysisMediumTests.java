@@ -55,6 +55,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.DidChangePat
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.GetAnalysisConfigParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.ShouldUseEnterpriseCSharpAnalyzerParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidRemoveConfigurationScopeParams;
@@ -244,6 +245,56 @@ class AnalysisMediumTests {
     assertThat(result.getFailedAnalysisFiles()).isEmpty();
     await().untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID)).isNotEmpty());
     var raisedIssueDto = client.getRaisedIssuesForScopeId(CONFIG_SCOPE_ID).get(fileUri).get(0);
+    assertThat(raisedIssueDto.getSeverityMode().isRight()).isTrue();
+    assertThat(raisedIssueDto.getSeverityMode().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.CONVENTIONAL);
+    assertThat(raisedIssueDto.getSeverityMode().getRight().getImpacts())
+      .extracting(ImpactDto::getSoftwareQuality, ImpactDto::getImpactSeverity)
+      .containsExactly(tuple(SoftwareQuality.MAINTAINABILITY, ImpactSeverity.LOW));
+    assertThat(raisedIssueDto.getRuleKey()).isEqualTo("xml:S3421");
+  }
+
+  @SonarLintTest
+  void it_should_analyze_xml_file_after_binding(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var xmlFileContent = """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <project>
+        <modelVersion>4.0.0</modelVersion>
+        <groupId>com.foo</groupId>
+        <artifactId>bar</artifactId>
+        <version>${pom.version}</version>
+      </project>""";
+    var firstFilePath = createFile(baseDir, "pom.xml", xmlFileContent);
+    var firstFileUri = firstFilePath.toUri();
+    var secondFilePath = createFile(baseDir, "pom.xml", xmlFileContent);
+    var secondFileUri = secondFilePath.toUri();
+    final var OTHER_CONFIG_SCOPE_ID = CONFIG_SCOPE_ID + "2";
+    var client = harness.newFakeClient()
+      .withInitialFs(CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(firstFileUri, baseDir.relativize(firstFilePath), CONFIG_SCOPE_ID, false, null, firstFilePath, null, null, true)))
+      .withInitialFs(OTHER_CONFIG_SCOPE_ID, baseDir, List.of(new ClientFileDto(secondFileUri, baseDir.relativize(secondFilePath), OTHER_CONFIG_SCOPE_ID, false, null, secondFilePath, null, null, true)))
+      .build();
+    var server = harness.newFakeSonarQubeServer()
+      .withProject("projectKey")
+      .start();
+    var backend = harness.newBackend()
+      .withSonarQubeConnection("connectionId", server,
+        storage -> storage.withPlugin(TestPlugin.XML).withProject("projectKey",
+          project -> project.withMainBranch("main").withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "BLOCKER"))))
+      .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
+      .withExtraEnabledLanguagesInConnectedMode(Language.XML)
+      .start(client);
+    backend.getFileService().didOpenFile(new DidOpenFileParams(CONFIG_SCOPE_ID, firstFileUri));
+    await().untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(CONFIG_SCOPE_ID)).isNotEmpty());
+    client.cleanRaisedIssues();
+
+    backend.getConfigurationService().didAddConfigurationScopes(new DidAddConfigurationScopesParams(List.of(new ConfigurationScopeDto(OTHER_CONFIG_SCOPE_ID, null, true, "Name", null))));
+    backend.getConfigurationService().didUpdateBinding(new DidUpdateBindingParams(OTHER_CONFIG_SCOPE_ID, new BindingConfigurationDto("connectionId", "projectKey", true)));
+
+    var result = backend.getAnalysisService()
+      .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(OTHER_CONFIG_SCOPE_ID, UUID.randomUUID(), List.of(secondFileUri), Map.of(), false)).join();
+
+    assertThat(result.getFailedAnalysisFiles()).isEmpty();
+    await().untilAsserted(() -> assertThat(client.getRaisedIssuesForScopeIdAsList(OTHER_CONFIG_SCOPE_ID)).isNotEmpty());
+    var raisedIssueDto = client.getRaisedIssuesForScopeId(OTHER_CONFIG_SCOPE_ID).get(secondFileUri).get(0);
     assertThat(raisedIssueDto.getSeverityMode().isRight()).isTrue();
     assertThat(raisedIssueDto.getSeverityMode().getRight().getCleanCodeAttribute()).isEqualTo(CleanCodeAttribute.CONVENTIONAL);
     assertThat(raisedIssueDto.getSeverityMode().getRight().getImpacts())
