@@ -98,7 +98,7 @@ class TelemetryHttpClientTests {
     await().untilAsserted(() -> {
       assertTelemetryUploaded(true);
       assertThat(logTester.logs(Level.INFO)).anyMatch(l -> l.matches("Sending telemetry payload."));
-      assertThat(logTester.logs(Level.INFO)).anyMatch(l -> l.contains("{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\""+ PLATFORM +"\",\"architecture\":\""+ ARCHITECTURE +"\""));
+      assertThat(logTester.logs(Level.INFO)).anyMatch(l -> l.contains("{\"days_since_installation\":0,\"days_of_use\":1,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\""+ PLATFORM +"\",\"architecture\":\""+ ARCHITECTURE +"\""));
     });
   }
 
@@ -111,18 +111,26 @@ class TelemetryHttpClientTests {
     telemetryLocalStorage.helpAndFeedbackLinkClicked("docs");
     telemetryLocalStorage.addQuickFixAppliedForRule("java:S107");
     telemetryLocalStorage.addQuickFixAppliedForRule("python:S107");
+    telemetryLocalStorage.incrementNewlyFoundIssues();
     spy.upload(telemetryLocalStorage, getTelemetryLiveAttributesDto());
 
     telemetryMock.verify(postRequestedFor(urlEqualTo("/"))
       .withRequestBody(
         equalToJson(
-          "{\"days_since_installation\":0,\"days_of_use\":0,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"" + PLATFORM + "\",\"architecture\":\""+ ARCHITECTURE + "\",\"additionalKey\" : \"additionalValue\",\"help_and_feedback\":{\"count_by_link\":{\"docs\":1}}}",
+          "{\"days_since_installation\":0,\"days_of_use\":1,\"sonarlint_version\":\"version\",\"sonarlint_product\":\"product\",\"ide_version\":\"ideversion\",\"platform\":\"" + PLATFORM + "\",\"architecture\":\""+ ARCHITECTURE + "\",\"additionalKey\" : \"additionalValue\",\"help_and_feedback\":{\"count_by_link\":{\"docs\":1}}}",
           true, true)));
 
     telemetryMock.verify(postRequestedFor(urlEqualTo("/metrics"))
       .withRequestBody(
         equalToJson(
-          "{\"sonarlint_product\":\"product\",\"os\":\"" + PLATFORM + "\",\"dimension\":\"installation\",\"metric_values\": [{\"key\":\"shared_connected_mode.manual\",\"value\":\"0\",\"type\":\"integer\",\"granularity\":\"daily\"},{\"key\":\"help_and_feedback.docs\",\"value\":\"1\",\"type\":\"integer\",\"granularity\":\"daily\"},{\"key\":\"quick_fix.applied_count\",\"value\":\"2\",\"type\":\"integer\",\"granularity\":\"daily\"}]}",
+          String.format("""
+          {"sonarlint_product":"product","os":"%s","dimension":"installation", "metric_values": [
+            {"key":"shared_connected_mode.manual","value":"0","type":"integer","granularity":"daily"},
+            {"key":"help_and_feedback.docs","value":"1","type":"integer","granularity":"daily"},
+            {"key":"quick_fix.applied_count","value":"2","type":"integer","granularity":"daily"},
+            {"key":"ide_issues.found","value":"1","type":"integer","granularity":"daily"}
+          ]}
+          """, PLATFORM),
           true, true)));
   }
 

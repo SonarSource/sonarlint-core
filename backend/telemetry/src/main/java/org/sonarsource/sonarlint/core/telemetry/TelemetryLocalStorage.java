@@ -69,6 +69,7 @@ public class TelemetryLocalStorage {
   private int importedAddedBindingsCount;
   private int autoAddedBindingsCount;
   private int exportedConnectedModeCount;
+  private int newIssueFoundCount;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -98,6 +99,7 @@ public class TelemetryLocalStorage {
   }
 
   public void addQuickFixAppliedForRule(String ruleKey) {
+    markSonarLintAsUsedToday();
     this.quickFixesApplied.add(ruleKey);
     var currentCountForKey = this.quickFixCountByRuleKey.getOrDefault(ruleKey, 0);
     this.quickFixCountByRuleKey.put(ruleKey, currentCountForKey + 1);
@@ -117,7 +119,7 @@ public class TelemetryLocalStorage {
     return installDate;
   }
 
-  OffsetDateTime installTime() {
+  public OffsetDateTime installTime() {
     return installTime;
   }
 
@@ -206,6 +208,7 @@ public class TelemetryLocalStorage {
     importedAddedBindingsCount = 0;
     autoAddedBindingsCount = 0;
     exportedConnectedModeCount = 0;
+    newIssueFoundCount = 0;
   }
 
   long numUseDays() {
@@ -441,4 +444,12 @@ public class TelemetryLocalStorage {
     return exportedConnectedModeCount;
   }
 
+  public void incrementNewlyFoundIssues() {
+    markSonarLintAsUsedToday();
+    newIssueFoundCount++;
+  }
+
+  public int getNewIssueFoundCount() {
+    return newIssueFoundCount;
+  }
 }

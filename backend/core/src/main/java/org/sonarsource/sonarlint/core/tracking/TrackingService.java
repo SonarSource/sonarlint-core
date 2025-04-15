@@ -58,6 +58,7 @@ import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
 import org.sonarsource.sonarlint.core.serverconnection.issues.ServerIssue;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.FindingsSynchronizationService;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.tracking.matching.IssueMatcher;
 import org.sonarsource.sonarlint.core.tracking.matching.LocalOnlyIssueMatchingAttributesMapper;
 import org.sonarsource.sonarlint.core.tracking.matching.MatchingSession;
@@ -83,11 +84,12 @@ public class TrackingService {
   private final LocalOnlyIssueStorageService localOnlyIssueStorageService;
   private final FindingsSynchronizationService findingsSynchronizationService;
   private final NewCodeService newCodeService;
+  private final TelemetryService telemetryService;
 
   public TrackingService(SonarLintRpcClient client, ConfigurationRepository configurationRepository, SonarProjectBranchTrackingService branchTrackingService,
     PathTranslationService pathTranslationService, FindingReportingService reportingService, KnownFindingsStorageService knownFindingsStorageService, StorageService storageService,
     LocalOnlyIssueRepository localOnlyIssueRepository, LocalOnlyIssueStorageService localOnlyIssueStorageService, FindingsSynchronizationService findingsSynchronizationService,
-    NewCodeService newCodeService) {
+    NewCodeService newCodeService, TelemetryService telemetryService) {
     this.client = client;
     this.configurationRepository = configurationRepository;
     this.branchTrackingService = branchTrackingService;
@@ -99,6 +101,7 @@ public class TrackingService {
     this.localOnlyIssueStorageService = localOnlyIssueStorageService;
     this.findingsSynchronizationService = findingsSynchronizationService;
     this.newCodeService = newCodeService;
+    this.telemetryService = telemetryService;
   }
 
   @EventListener
@@ -270,7 +273,7 @@ public class TrackingService {
       .collect(toMap(Function.identity(), relativePath -> knownFindingsStore.loadSecurityHotspotsForFile(configurationScopeId, relativePath)));
     var introductionDateProvider = getIntroductionDateProvider(configurationScopeId, fileRelativePaths, fileUris, fileContentProvider);
     var previousFindings = new KnownFindings(issuesByRelativePath, hotspotsByRelativePath);
-    return new MatchingSession(previousFindings, introductionDateProvider);
+    return new MatchingSession(previousFindings, introductionDateProvider, telemetryService);
   }
 
   private IntroductionDateProvider getIntroductionDateProvider(String configurationScopeId, Set<Path> fileRelativePaths, Set<URI> fileUris,
