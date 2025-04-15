@@ -28,7 +28,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.monitoring.MonitoringService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
@@ -42,6 +41,7 @@ import utils.TestPlugin;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.MONITORING;
 import static org.sonarsource.sonarlint.core.test.utils.plugins.SonarPluginBuilder.newSonarPlugin;
 import static utils.AnalysisUtils.analyzeFileAndGetIssues;
 import static utils.AnalysisUtils.createFile;
@@ -77,7 +77,7 @@ class MonitoringMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PHP)
-      .withBackendCapability(BackendCapability.MONITORING)
+      .withBackendCapability(MONITORING)
       .start(client);
 
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
@@ -108,7 +108,7 @@ class MonitoringMediumTests {
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPlugin(throwingPluginPath)
       .withEnabledLanguageInStandaloneMode(Language.PHP)
-      .withBackendCapability(BackendCapability.MONITORING)
+      .withBackendCapability(MONITORING)
       .start(client);
 
     var analysisId = UUID.randomUUID();

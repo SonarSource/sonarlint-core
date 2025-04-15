@@ -57,7 +57,6 @@ import org.sonarsource.sonarlint.core.event.ConnectionCredentialsChangedEvent;
 import org.sonarsource.sonarlint.core.languages.LanguageSupportRepository;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.sync.DidSynchronizeConfigurationScopeParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -78,6 +77,8 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toCollection;
 import static java.util.stream.Collectors.toSet;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.PROJECT_SYNCHRONIZATION;
 
 public class SynchronizationService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -116,8 +117,8 @@ public class SynchronizationService {
     this.taskManager = taskManager;
     this.storageService = storageService;
     this.connectedModeEmbeddedPluginKeys = params.getConnectedModeEmbeddedPluginPathsByKey().keySet();
-    this.branchSpecificSynchronizationEnabled = params.getBackendCapabilities().contains(BackendCapability.PROJECT_SYNCHRONIZATION);
-    this.fullSynchronizationEnabled = params.getBackendCapabilities().contains(BackendCapability.FULL_SYNCHRONIZATION);
+    this.branchSpecificSynchronizationEnabled = params.getBackendCapabilities().contains(PROJECT_SYNCHRONIZATION);
+    this.fullSynchronizationEnabled = params.getBackendCapabilities().contains(FULL_SYNCHRONIZATION);
     this.taintSynchronizationService = taintSynchronizationService;
     this.issueSynchronizationService = issueSynchronizationService;
     this.hotspotSynchronizationService = hotspotSynchronizationService;

@@ -31,6 +31,16 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.Son
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.StandaloneRuleConfigDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.DATAFLOW_BUG_DETECTION;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.EMBEDDED_SERVER;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.MONITORING;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.PROJECT_SYNCHRONIZATION;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SECURITY_HOTSPOTS;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SERVER_SENT_EVENTS;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SMART_NOTIFICATIONS;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.TELEMETRY;
+
 public class InitializeParams {
   private final ClientConstantInfoDto clientConstantInfo;
   private final TelemetryClientConstantAttributesDto telemetryConstantAttributes;
@@ -231,15 +241,15 @@ public class InitializeParams {
     if (featureFlags == null) {
       return capabilities;
     }
-    addIfTrue(capabilities, featureFlags.shouldManageSmartNotifications(), BackendCapability.SMART_NOTIFICATIONS);
-    addIfTrue(capabilities, featureFlags.shouldSynchronizeProjects(), BackendCapability.PROJECT_SYNCHRONIZATION);
-    addIfTrue(capabilities, featureFlags.shouldManageLocalServer(), BackendCapability.EMBEDDED_SERVER);
-    addIfTrue(capabilities, featureFlags.isEnablesSecurityHotspots(), BackendCapability.SECURITY_HOTSPOTS);
-    addIfTrue(capabilities, featureFlags.shouldManageServerSentEvents(), BackendCapability.SERVER_SENT_EVENTS);
-    addIfTrue(capabilities, featureFlags.isEnabledDataflowBugDetection(), BackendCapability.DATAFLOW_BUG_DETECTION);
-    addIfTrue(capabilities, featureFlags.shouldManageFullSynchronization(), BackendCapability.FULL_SYNCHRONIZATION);
-    addIfTrue(capabilities, featureFlags.isEnabledTelemetry(), BackendCapability.TELEMETRY);
-    addIfTrue(capabilities, featureFlags.isEnabledMonitoring(), BackendCapability.MONITORING);
+    addIfTrue(capabilities, featureFlags.shouldManageSmartNotifications(), SMART_NOTIFICATIONS);
+    addIfTrue(capabilities, featureFlags.shouldSynchronizeProjects(), PROJECT_SYNCHRONIZATION);
+    addIfTrue(capabilities, featureFlags.shouldManageLocalServer(), EMBEDDED_SERVER);
+    addIfTrue(capabilities, featureFlags.isEnablesSecurityHotspots(), SECURITY_HOTSPOTS);
+    addIfTrue(capabilities, featureFlags.shouldManageServerSentEvents(), SERVER_SENT_EVENTS);
+    addIfTrue(capabilities, featureFlags.isEnabledDataflowBugDetection(), DATAFLOW_BUG_DETECTION);
+    addIfTrue(capabilities, featureFlags.shouldManageFullSynchronization(), FULL_SYNCHRONIZATION);
+    addIfTrue(capabilities, featureFlags.isEnabledTelemetry(), TELEMETRY);
+    addIfTrue(capabilities, featureFlags.isEnabledMonitoring(), MONITORING);
     return capabilities;
   }
 

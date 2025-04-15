@@ -29,7 +29,6 @@ import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.GetEffectiveIssueDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.TaintVulnerabilityDto;
@@ -41,6 +40,7 @@ import utils.TestPlugin;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerTaintIssueFixtures.aServerTaintIssue;
 
 class TaintVulnerabilitiesMediumTests {
@@ -82,7 +82,7 @@ class TaintVulnerabilitiesMediumTests {
               .withType(RuleType.VULNERABILITY)
               .withIntroductionDate(introductionDate)))))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start();
 
     await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(listAllTaintVulnerabilities(backend, "configScopeId"))
@@ -114,7 +114,7 @@ class TaintVulnerabilitiesMediumTests {
           project -> project.withMainBranch("main",
             branch -> branch.withTaintIssue(fakeTaintBuilder))))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
 
     client.waitForSynchronization();
@@ -147,7 +147,7 @@ class TaintVulnerabilitiesMediumTests {
         storage -> storage.withProject("projectKey",
           project -> project.withMainBranch("main")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start();
     await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertThat(listAllTaintVulnerabilities(backend, "configScopeId")).isNotEmpty());
     // switch server to simulate a new dataset. Not ideal, should be handled differently

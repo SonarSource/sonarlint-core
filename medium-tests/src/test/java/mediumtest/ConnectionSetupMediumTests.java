@@ -33,7 +33,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.check.Chec
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
@@ -45,6 +44,7 @@ import org.sonarsource.sonarlint.core.test.utils.server.ServerFixture;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.EMBEDDED_SERVER;
 
 class ConnectionSetupMediumTests {
 
@@ -54,7 +54,7 @@ class ConnectionSetupMediumTests {
     ServerFixture.Server scServer = harness.newFakeSonarCloudServer()
       .start();
 
-    var backend = harness.newBackend().withBackendCapability(BackendCapability.EMBEDDED_SERVER).withClientName("ClientName").withSonarCloudConnection("connectionId").start(fakeClient);
+    var backend = harness.newBackend().withBackendCapability(EMBEDDED_SERVER).withClientName("ClientName").withSonarCloudConnection("connectionId").start(fakeClient);
 
     var futureResponse = backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(scServer.baseUrl()));
 
@@ -78,7 +78,7 @@ class ConnectionSetupMediumTests {
   void it_should_open_the_sonarlint_auth_url_for_sonarqube_9_7_plus(SonarLintTestHarness harness) throws IOException, InterruptedException {
     var fakeClient = harness.newFakeClient().build();
     var server = harness.newFakeSonarQubeServer("9.9").start();
-    var backend = harness.newBackend().withBackendCapability(BackendCapability.EMBEDDED_SERVER).withClientName("ClientName").withSonarQubeConnection("connectionId", server).start(fakeClient);
+    var backend = harness.newBackend().withBackendCapability(EMBEDDED_SERVER).withClientName("ClientName").withSonarQubeConnection("connectionId", server).start(fakeClient);
 
     var futureResponse = backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl()));
 
@@ -102,7 +102,7 @@ class ConnectionSetupMediumTests {
   void it_should_reject_tokens_from_missing_origin(SonarLintTestHarness harness) throws IOException, InterruptedException {
     var fakeClient = harness.newFakeClient().build();
     var server = harness.newFakeSonarQubeServer("9.9").start();
-    var backend = harness.newBackend().withBackendCapability(BackendCapability.EMBEDDED_SERVER).withClientName("ClientName").withSonarQubeConnection("connectionId", server).start(fakeClient);
+    var backend = harness.newBackend().withBackendCapability(EMBEDDED_SERVER).withClientName("ClientName").withSonarQubeConnection("connectionId", server).start(fakeClient);
 
     backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl()));
 
@@ -120,7 +120,7 @@ class ConnectionSetupMediumTests {
   void it_should_reject_tokens_from_unexpected_origin(SonarLintTestHarness harness) throws IOException, InterruptedException {
     var fakeClient = harness.newFakeClient().build();
     var server = harness.newFakeSonarQubeServer("9.9").start();
-    var backend = harness.newBackend().withBackendCapability(BackendCapability.EMBEDDED_SERVER).withClientName("ClientName").withSonarQubeConnection("connectionId", server).start(fakeClient);
+    var backend = harness.newBackend().withBackendCapability(EMBEDDED_SERVER).withClientName("ClientName").withSonarQubeConnection("connectionId", server).start(fakeClient);
 
     backend.getConnectionService().helpGenerateUserToken(new HelpGenerateUserTokenParams(server.baseUrl()));
 
@@ -153,7 +153,7 @@ class ConnectionSetupMediumTests {
   @SonarLintTest
   void it_should_reject_incoming_user_token_with_wrong_http_method(SonarLintTestHarness harness) throws IOException, InterruptedException {
     var fakeClient = harness.newFakeClient().build();
-    var backend = harness.newBackend().withBackendCapability(BackendCapability.EMBEDDED_SERVER).start(fakeClient);
+    var backend = harness.newBackend().withBackendCapability(EMBEDDED_SERVER).start(fakeClient);
 
     var request = HttpRequest.newBuilder()
       .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))
@@ -166,7 +166,7 @@ class ConnectionSetupMediumTests {
   @SonarLintTest
   void it_should_reject_incoming_user_token_with_wrong_body(SonarLintTestHarness harness) throws IOException, InterruptedException {
     var fakeClient = harness.newFakeClient().build();
-    var backend = harness.newBackend().withBackendCapability(BackendCapability.EMBEDDED_SERVER).start(fakeClient);
+    var backend = harness.newBackend().withBackendCapability(EMBEDDED_SERVER).start(fakeClient);
 
     var request = HttpRequest.newBuilder()
       .uri(URI.create("http://localhost:" + backend.getEmbeddedServerPort() + "/sonarlint/api/token"))

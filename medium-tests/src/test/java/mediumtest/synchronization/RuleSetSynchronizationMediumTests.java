@@ -26,7 +26,6 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
@@ -41,6 +40,7 @@ import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.LIST;
 import static org.awaitility.Awaitility.waitAtMost;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 
 class RuleSetSynchronizationMediumTests {
@@ -54,7 +54,7 @@ class RuleSetSynchronizationMediumTests {
     var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start();
 
     addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");
@@ -79,7 +79,7 @@ class RuleSetSynchronizationMediumTests {
     var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
 
     addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");

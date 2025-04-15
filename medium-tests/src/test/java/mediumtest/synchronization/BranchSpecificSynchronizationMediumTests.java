@@ -28,7 +28,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.GetMatchedSona
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.newcode.GetNewCodeDefinitionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.log.LogParams;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.FakeSonarLintRpcClient.ProgressReport;
@@ -45,6 +44,7 @@ import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
 
 class BranchSpecificSynchronizationMediumTests {
 
@@ -62,7 +62,7 @@ class BranchSpecificSynchronizationMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
@@ -91,7 +91,7 @@ class BranchSpecificSynchronizationMediumTests {
 
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
 
     backend.getConfigurationService().didAddConfigurationScopes(
@@ -129,7 +129,7 @@ class BranchSpecificSynchronizationMediumTests {
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withBoundConfigScope("configScopeId2", "connectionId", "projectKey2")
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(fakeClient);
 
     fakeClient.waitForSynchronization();
@@ -160,7 +160,7 @@ class BranchSpecificSynchronizationMediumTests {
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withBoundConfigScope("configScopeId2", "connectionId", "projectKey2")
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(fakeClient);
     fakeClient.waitForSynchronization();
 
@@ -181,7 +181,7 @@ class BranchSpecificSynchronizationMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(fakeClient);
     fakeClient.waitForSynchronization();
     reset(fakeClient);

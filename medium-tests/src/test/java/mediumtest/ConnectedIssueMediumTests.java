@@ -31,7 +31,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.GetEffectiveIssueDetailsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute;
@@ -47,6 +46,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.DATAFLOW_BUG_DETECTION;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SECURITY_HOTSPOTS;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static utils.AnalysisUtils.analyzeFileAndGetIssues;
 import static utils.AnalysisUtils.createFile;
@@ -92,7 +94,7 @@ class ConnectedIssueMediumTests {
       .withPlugin(TestPlugin.JAVA)
       .start();
     var backend = harness.newBackend()
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION, BackendCapability.SECURITY_HOTSPOTS)
+      .withBackendCapability(FULL_SYNCHRONIZATION, SECURITY_HOTSPOTS)
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -180,7 +182,7 @@ class ConnectedIssueMediumTests {
       .withProject("projectKey")
       .start();
     var backend = harness.newBackend()
-      .withBackendCapability(BackendCapability.DATAFLOW_BUG_DETECTION)
+      .withBackendCapability(DATAFLOW_BUG_DETECTION)
       .withSonarQubeConnection("connectionId", server, storage -> storage
         .withPlugins(TestPlugin.PYTHON, TestPlugin.JAVA, TestPlugin.JAVA_SE, TestPlugin.DBD, TestPlugin.DBD_JAVA)
         .withProject("projectKey", project -> project.withRuleSet("java", ruleSet -> ruleSet
@@ -226,7 +228,7 @@ class ConnectedIssueMediumTests {
       .withPlugin(TestPlugin.JAVA)
       .start();
     var backend = harness.newBackend()
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION, BackendCapability.SECURITY_HOTSPOTS)
+      .withBackendCapability(FULL_SYNCHRONIZATION, SECURITY_HOTSPOTS)
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -267,7 +269,7 @@ class ConnectedIssueMediumTests {
         new ClientFileDto(fileFooUri, baseDir.relativize(fileFoo), CONFIG_SCOPE_ID, false, null, fileFoo, null, null, true)))
       .build();
     var backend = harness.newBackend()
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION, BackendCapability.SECURITY_HOTSPOTS)
+      .withBackendCapability(FULL_SYNCHRONIZATION, SECURITY_HOTSPOTS)
       .withSonarQubeConnection(connectionId, serverWithHotspots,
         storage -> storage.withServerVersion("10.4").withProject(projectKey,
           project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S2068", "BLOCKER"))))

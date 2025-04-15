@@ -29,7 +29,6 @@ import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.ConfigurationScopeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.scope.DidAddConfigurationScopesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidOpenFileParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
@@ -44,6 +43,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
 import static utils.AnalysisUtils.getPublishedIssues;
 
 class AnalysisReadinessMediumTests {
@@ -84,7 +84,7 @@ class AnalysisReadinessMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl())
       .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
       .start(client);
 

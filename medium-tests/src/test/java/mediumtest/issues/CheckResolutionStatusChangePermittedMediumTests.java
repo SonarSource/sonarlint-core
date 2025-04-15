@@ -44,7 +44,6 @@ import org.sonar.scanner.protocol.Constants;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.CheckStatusChangePermittedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ResolutionStatus;
@@ -62,6 +61,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
 import static utils.AnalysisUtils.createFile;
 import static utils.AnalysisUtils.waitForAnalysisReady;
 import static utils.AnalysisUtils.waitForRaisedIssues;
@@ -259,7 +259,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .withSonarCloudConnection(CONNECTION_ID, server.baseUrl())
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
     client.waitForSynchronization();
     waitForAnalysisReady(client, CONFIG_SCOPE_ID);
@@ -312,7 +312,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
     client.waitForSynchronization();
     waitForAnalysisReady(client, CONFIG_SCOPE_ID);
@@ -374,7 +374,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
     client.waitForSynchronization();
 
@@ -427,7 +427,7 @@ class CheckResolutionStatusChangePermittedMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
     client.waitForSynchronization();
     waitForAnalysisReady(client, CONFIG_SCOPE_ID);

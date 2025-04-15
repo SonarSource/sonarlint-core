@@ -25,7 +25,6 @@ import java.util.Map;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint;
 import org.sonarsource.sonarlint.core.serverconnection.proto.Sonarlint.PluginReferences.PluginReference;
@@ -43,6 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.InstanceOfAssertFactories.MAP;
 import static org.awaitility.Awaitility.waitAtMost;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.ServerStatus.DOWN;
 import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.ServerStatus.UP;
@@ -61,7 +61,7 @@ class PluginSynchronizationMediumTests {
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start();
 
     waitAtMost(20, SECONDS).untilAsserted(() -> {
@@ -86,7 +86,7 @@ class PluginSynchronizationMediumTests {
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
@@ -106,7 +106,7 @@ class PluginSynchronizationMediumTests {
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server, storage -> storage.withPlugin(TestPlugin.JAVA))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
@@ -131,7 +131,7 @@ class PluginSynchronizationMediumTests {
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server, storage -> storage.withPlugin(TestPlugin.JAVA.getPluginKey(), TestPlugin.JAVA.getPath(), "differentHash"))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> assertThat(getPluginReferencesFilePath(backend))
@@ -152,7 +152,7 @@ class PluginSynchronizationMediumTests {
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
@@ -174,7 +174,7 @@ class PluginSynchronizationMediumTests {
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
@@ -195,7 +195,7 @@ class PluginSynchronizationMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
@@ -216,7 +216,7 @@ class PluginSynchronizationMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
@@ -241,7 +241,7 @@ class PluginSynchronizationMediumTests {
       .withExtraEnabledLanguagesInConnectedMode(Language.TS)
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
@@ -265,7 +265,7 @@ class PluginSynchronizationMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
@@ -287,7 +287,7 @@ class PluginSynchronizationMediumTests {
       .withSonarQubeConnection("connectionId", server, storage -> storage.withPlugin(TestPlugin.JAVA))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withEnabledLanguageInStandaloneMode(Language.PHP)
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {

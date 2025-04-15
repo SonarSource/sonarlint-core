@@ -44,7 +44,6 @@ import org.sonarsource.sonarlint.core.plugin.commons.loading.PluginRequirementsC
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPlugin;
 import org.sonarsource.sonarlint.core.plugin.skipped.SkippedPluginsRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.LanguageSpecificRequirements;
 import org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer;
@@ -52,6 +51,7 @@ import org.sonarsource.sonarlint.core.serverconnection.StoredPlugin;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.springframework.context.event.EventListener;
 
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.DATAFLOW_BUG_DETECTION;
 import static org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer.CUSTOM_SECRETS_MIN_SQ_VERSION;
 import static org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer.ENTERPRISE_IAC_MIN_SQ_VERSION;
 
@@ -79,7 +79,7 @@ public class PluginsService {
     this.storageService = storageService;
     this.embeddedPluginPaths = params.getEmbeddedPluginPaths();
     this.connectedModeEmbeddedPluginPathsByKey = params.getConnectedModeEmbeddedPluginPathsByKey();
-    this.enableDataflowBugDetection = params.getBackendCapabilities().contains(BackendCapability.DATAFLOW_BUG_DETECTION);
+    this.enableDataflowBugDetection = params.getBackendCapabilities().contains(DATAFLOW_BUG_DETECTION);
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.nodeJsService = nodeJsService;
     this.disabledPluginKeysForAnalysis = params.getDisabledPluginKeysForAnalysis();

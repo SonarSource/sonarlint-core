@@ -32,7 +32,6 @@ import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.file.DidUpdateFileSystemParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.SuggestFixChangeDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.remediation.aicodefix.SuggestFixParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.tracking.ListAllParams;
@@ -53,6 +52,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.
 import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.CONNECTION_NOT_FOUND;
 import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.FILE_NOT_FOUND;
 import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.ISSUE_NOT_FOUND;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerTaintIssueFixtures.aServerTaintIssue;
 import static utils.AnalysisUtils.analyzeFileAndGetIssue;
@@ -678,7 +678,7 @@ public class AiCodeFixMediumTest {
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR"))))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(fakeClient);
 
     await().untilAsserted(() -> assertThat(readAiCodeFixSettings(backend, "connectionId"))
@@ -717,7 +717,7 @@ public class AiCodeFixMediumTest {
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR"))))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(fakeClient);
 
     await().untilAsserted(() -> assertThat(readAiCodeFixSettings(backend, "connectionId"))
@@ -757,7 +757,7 @@ public class AiCodeFixMediumTest {
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR"))))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(fakeClient);
 
     await().untilAsserted(() -> assertThat(readAiCodeFixSettings(backend, "connectionId"))
@@ -837,7 +837,7 @@ public class AiCodeFixMediumTest {
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR"))))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(fakeClient);
 
     await().during(1, TimeUnit.SECONDS)

@@ -112,6 +112,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.TELEMETRY;
 import static org.sonarsource.sonarlint.core.telemetry.TelemetrySpringConfig.PROPERTY_TELEMETRY_ENDPOINT;
 import static org.sonarsource.sonarlint.core.test.utils.storage.StorageFixture.newStorage;
 
@@ -397,8 +398,8 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintBackendBuilder withBackendCapability(BackendCapability... capability) {
-      this.backendCapabilities.addAll(Arrays.asList(capability));
+    public SonarLintBackendBuilder withBackendCapability(BackendCapability... capabilities) {
+      this.backendCapabilities.addAll(Arrays.asList(capabilities));
       return this;
     }
 
@@ -454,7 +455,7 @@ public class SonarLintBackendFixture {
     }
 
     public SonarLintBackendBuilder withTelemetryEnabled(String endpointUrl) {
-      this.backendCapabilities.add(BackendCapability.TELEMETRY);
+      this.backendCapabilities.add(TELEMETRY);
       System.setProperty(PROPERTY_TELEMETRY_ENDPOINT, endpointUrl);
       return this;
     }

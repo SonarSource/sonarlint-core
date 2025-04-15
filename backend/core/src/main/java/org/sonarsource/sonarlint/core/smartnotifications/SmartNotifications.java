@@ -43,7 +43,6 @@ import org.sonarsource.sonarlint.core.repository.connection.AbstractConnectionCo
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.smartnotification.ShowSmartNotificationParams;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
@@ -53,6 +52,8 @@ import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.websocket.WebSocketService;
 import org.sonarsource.sonarlint.core.websocket.events.SmartNotificationEvent;
 import org.springframework.context.event.EventListener;
+
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SMART_NOTIFICATIONS;
 
 public class SmartNotifications {
 
@@ -82,7 +83,7 @@ public class SmartNotifications {
 
   @PostConstruct
   public void initialize() {
-    if (!params.getBackendCapabilities().contains(BackendCapability.SMART_NOTIFICATIONS)) {
+    if (!params.getBackendCapabilities().contains(SMART_NOTIFICATIONS)) {
       return;
     }
     smartNotificationsPolling = new ExecutorServiceShutdownWatchable<>(FailSafeExecutors.newSingleThreadScheduledExecutor("Smart Notifications Polling"));

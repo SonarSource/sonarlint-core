@@ -27,7 +27,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.GetMatchedSona
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.branch.GetMatchedSonarProjectBranchResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.BindingConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.config.binding.DidUpdateBindingParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.test.utils.SonarLintTestRpcServer;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -42,6 +41,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.PROJECT_SYNCHRONIZATION;
 
 class SonarProjectBranchMediumTests {
 
@@ -213,7 +213,7 @@ class SonarProjectBranchMediumTests {
         storage -> storage.withProject("projectKey",
           project -> project.withMainBranch("main").withNonMainBranch("myBranch")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withBackendCapability(BackendCapability.PROJECT_SYNCHRONIZATION)
+      .withBackendCapability(PROJECT_SYNCHRONIZATION)
       .start(client);
 
     // Wait for first sync

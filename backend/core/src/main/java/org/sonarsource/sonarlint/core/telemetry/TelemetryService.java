@@ -37,7 +37,6 @@ import org.sonarsource.sonarlint.core.event.FixSuggestionReceivedEvent;
 import org.sonarsource.sonarlint.core.event.LocalOnlyIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.event.ServerIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.GetStatusResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
@@ -49,6 +48,7 @@ import org.springframework.context.event.EventListener;
 
 import static java.util.Optional.ofNullable;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.TELEMETRY;
 
 public class TelemetryService {
 
@@ -63,7 +63,7 @@ public class TelemetryService {
 
   public TelemetryService(InitializeParams initializeParams, SonarLintRpcClient sonarlintClient,
     TelemetryServerAttributesProvider telemetryServerAttributesProvider, TelemetryManager telemetryManager) {
-    this.isTelemetryFeatureEnabled = initializeParams.getBackendCapabilities().contains(BackendCapability.TELEMETRY);
+    this.isTelemetryFeatureEnabled = initializeParams.getBackendCapabilities().contains(TELEMETRY);
     this.client = sonarlintClient;
     this.telemetryServerAttributesProvider = telemetryServerAttributesProvider;
     this.telemetryManager = telemetryManager;

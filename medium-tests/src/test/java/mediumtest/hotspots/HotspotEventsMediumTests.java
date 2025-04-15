@@ -39,7 +39,6 @@ import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.hotspot.HotspotStatus;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.ServerHotspot;
@@ -55,6 +54,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SECURITY_HOTSPOTS;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SERVER_SENT_EVENTS;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerSecurityHotspotFixture.aServerHotspot;
 import static utils.AnalysisUtils.analyzeFileAndGetHotspots;
@@ -77,7 +79,7 @@ class HotspotEventsMediumTests {
         .start();
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withBackendCapability(BackendCapability.SERVER_SENT_EVENTS)
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", server,
           storage -> storage.withProject("projectKey", project -> project.withMainBranch("branchName")))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -122,7 +124,7 @@ class HotspotEventsMediumTests {
         .start();
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withBackendCapability(BackendCapability.SERVER_SENT_EVENTS)
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", server,
           storage -> storage.withProject("projectKey", project -> project.withMainBranch("branchName")))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -171,7 +173,7 @@ class HotspotEventsMediumTests {
         .start();
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withBackendCapability(BackendCapability.SERVER_SENT_EVENTS)
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", server,
           storage -> storage.withProject("projectKey", project -> project.withMainBranch("branchName", branch -> branch.withHotspot(aServerHotspot("hotspotKey")))))
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
@@ -245,7 +247,7 @@ class HotspotEventsMediumTests {
         .start();
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withBackendCapability(BackendCapability.SECURITY_HOTSPOTS, BackendCapability.SERVER_SENT_EVENTS, BackendCapability.FULL_SYNCHRONIZATION)
+        .withBackendCapability(SECURITY_HOTSPOTS, SERVER_SENT_EVENTS, FULL_SYNCHRONIZATION)
         .withSonarQubeConnection(connectionId, serverWithHotspots)
         .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
         .start(client);
@@ -286,7 +288,7 @@ class HotspotEventsMediumTests {
         .start();
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withBackendCapability(BackendCapability.SERVER_SENT_EVENTS)
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", server,
           storage -> storage.withProject("projectKey",
             project -> project.withMainBranch("branchName", branch -> branch.withHotspot(aServerHotspot("AYhSN6mVrRF_krvNbHl1").withStatus(HotspotReviewStatus.TO_REVIEW)))))
@@ -344,7 +346,7 @@ class HotspotEventsMediumTests {
       // initialize backend with pre-filled storage with matching hotspot and active rule
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withBackendCapability(BackendCapability.SERVER_SENT_EVENTS, BackendCapability.SECURITY_HOTSPOTS)
+        .withBackendCapability(SERVER_SENT_EVENTS, SECURITY_HOTSPOTS)
         .withSonarQubeConnection(connectionId, server,
           storage -> storage.withProject(projectKey,
               project -> project
@@ -404,7 +406,7 @@ class HotspotEventsMediumTests {
         .start();
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withBackendCapability(BackendCapability.SERVER_SENT_EVENTS)
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", server,
           storage -> storage.withProject("projectKey",
             project -> project.withMainBranch("branchName", branch -> branch.withHotspot(aServerHotspot("AYhSN6mVrRF_krvNbHl1").withAssignee("previousAssignee")))))
@@ -473,7 +475,7 @@ class HotspotEventsMediumTests {
         .start();
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withBackendCapability(BackendCapability.SECURITY_HOTSPOTS, BackendCapability.SERVER_SENT_EVENTS, BackendCapability.FULL_SYNCHRONIZATION)
+        .withBackendCapability(SECURITY_HOTSPOTS, SERVER_SENT_EVENTS, FULL_SYNCHRONIZATION)
         .withSonarQubeConnection(connectionId, serverWithHotspots)
         .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
         .start(client);

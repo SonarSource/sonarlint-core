@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
@@ -36,6 +35,8 @@ import utils.TestPlugin;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SECURITY_HOTSPOTS;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static utils.AnalysisUtils.createFile;
 
@@ -67,7 +68,7 @@ class ConnectedHotspotMediumTests {
       .withPlugin(TestPlugin.JAVA)
       .start();
     var backend = harness.newBackend()
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION, BackendCapability.SECURITY_HOTSPOTS)
+      .withBackendCapability(FULL_SYNCHRONIZATION, SECURITY_HOTSPOTS)
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)

@@ -37,7 +37,6 @@ import org.sonarsource.sonarlint.core.commons.LocalOnlyIssueResolution;
 import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.analysis.AnalyzeFilesAndTrackParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.AddIssueCommentParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ChangeIssueStatusParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.issue.ReopenAllIssuesForFileParams;
@@ -58,6 +57,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.waitAtMost;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
 import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.ServerStatus.DOWN;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerIssueFixtures.aServerIssue;
 import static utils.AnalysisUtils.createFile;
@@ -255,7 +255,7 @@ class IssuesStatusChangeMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
     client.waitForSynchronization();
 
@@ -300,7 +300,7 @@ class IssuesStatusChangeMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
     client.waitForSynchronization();
 
@@ -349,7 +349,7 @@ class IssuesStatusChangeMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIGURATION_SCOPE_ID, CONNECTION_ID, "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .withTelemetryEnabled()
       .start(client);
     client.waitForSynchronization();

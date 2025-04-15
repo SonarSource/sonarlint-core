@@ -46,12 +46,12 @@ import org.sonarsource.sonarlint.core.repository.config.BindingConfiguration;
 import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
 import static java.util.Objects.requireNonNull;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SERVER_SENT_EVENTS;
 
 public class WebSocketService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -66,7 +66,7 @@ public class WebSocketService {
     ApplicationEventPublisher eventPublisher) {
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.configurationRepository = configurationRepository;
-    this.shouldEnableWebSockets = params.getBackendCapabilities().contains(BackendCapability.SERVER_SENT_EVENTS);
+    this.shouldEnableWebSockets = params.getBackendCapabilities().contains(SERVER_SENT_EVENTS);
     this.webSocketsByRegion = Map.of(
       SonarCloudRegion.US,
       new WebSocketManager(eventPublisher, connectionAwareHttpClientProvider, configurationRepository, sonarCloudActiveEnvironment.getWebSocketsEndpointUri(SonarCloudRegion.US)),
