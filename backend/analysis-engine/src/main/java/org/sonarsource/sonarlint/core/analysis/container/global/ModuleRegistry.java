@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleFileSystem;
 import org.sonarsource.sonarlint.core.analysis.api.ClientModuleInfo;
 import org.sonarsource.sonarlint.core.analysis.container.module.ModuleContainer;
@@ -47,10 +48,17 @@ public class ModuleRegistry {
 
   private ModuleContainer createContainer(Object moduleKey, @Nullable ClientModuleFileSystem clientFileSystem) {
     LOG.debug("Creating container for module '" + moduleKey + "'");
-    var moduleContainer = new ModuleContainer(parent);
+    var moduleContainer = new ModuleContainer(parent, false);
     if (clientFileSystem != null) {
       moduleContainer.add(clientFileSystem);
     }
+    moduleContainer.startComponents();
+    return moduleContainer;
+  }
+  public ModuleContainer createTransientContainer(Iterable<ClientInputFile> filesToAnalyze) {
+    LOG.debug("Creating transient module container");
+    var moduleContainer = new ModuleContainer(parent, true);
+    moduleContainer.add(new TransientModuleFileSystem(filesToAnalyze));
     moduleContainer.startComponents();
     return moduleContainer;
   }

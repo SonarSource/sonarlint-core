@@ -162,9 +162,10 @@ public class AnalyzeCommand extends Command {
     analysisStarted.accept(configuration.inputFiles());
     var moduleContainer = moduleRegistry.getContainerFor(moduleKey);
     if (moduleContainer == null) {
-      LOG.info("No module found for key '" + moduleKey + "', skipping analysis");
-      return new AnalysisResults();
+      // if not found, means we are outside any module (e.g. single file analysis on VSCode)
+      moduleContainer = moduleRegistry.createTransientContainer(configuration.inputFiles());
     }
+    Throwable originalException = null;
     if (trace != null) {
       trace.setData("filesCount", configuration.inputFiles().size());
       trace.setData("languages", configuration.inputFiles().stream()
@@ -182,10 +183,22 @@ public class AnalyzeCommand extends Command {
       result.setDuration(Duration.ofMillis(System.currentTimeMillis() - startTime));
       return result;
     } catch (Throwable e) {
+      originalException = e;
       if (trace != null) {
         trace.finishExceptionally(e);
       }
       throw e;
+    } finally {
+      try {
+        if (moduleContainer.isTransient()) {
+          moduleContainer.stopComponents();
+        }
+      } catch (Exception e) {
+        if (originalException != null) {
+          e.addSuppressed(originalException);
+        }
+        throw e;
+      }
     }
   }
 
