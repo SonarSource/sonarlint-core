@@ -118,8 +118,7 @@ class ConnectionSyncMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage.withPlugin(TestPlugin.JAVA))
       .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, "projectKey")
       .withEnabledLanguageInStandaloneMode(JAVA)
-      .withBackendCapability(BackendCapability.PROJECT_SYNCHRONIZATION)
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(BackendCapability.PROJECT_SYNCHRONIZATION, BackendCapability.FULL_SYNCHRONIZATION)
       .start(client);
     await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Error while checking if soon unsupported"));
 
@@ -148,8 +147,7 @@ class ConnectionSyncMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage.withPlugin(TestPlugin.JAVA).withProject("projectKey"))
       .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, "projectKey")
       .withEnabledLanguageInStandaloneMode(JAVA)
-      .withBackendCapability(BackendCapability.PROJECT_SYNCHRONIZATION)
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(BackendCapability.PROJECT_SYNCHRONIZATION, BackendCapability.FULL_SYNCHRONIZATION)
       .start(client);
 
     await().untilAsserted(() -> assertThat(client.getLogMessages()).contains("Error during synchronization"));
@@ -172,8 +170,7 @@ class ConnectionSyncMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage.withPlugin(TestPlugin.JAVA).withProject("projectKey"))
       .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, "projectKey")
       .withEnabledLanguageInStandaloneMode(JAVA)
-      .withBackendCapability(BackendCapability.PROJECT_SYNCHRONIZATION)
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(BackendCapability.PROJECT_SYNCHRONIZATION, BackendCapability.FULL_SYNCHRONIZATION)
       .start(client);
     await().untilAsserted(() -> assertThat(client.getConnectionIdsWithInvalidToken(CONNECTION_ID)).isEqualTo(1));
     backend.getConnectionService().didUpdateConnections(new DidUpdateConnectionsParams(List.of(), List.of()));
@@ -200,8 +197,7 @@ class ConnectionSyncMediumTests {
       .withSonarQubeConnection(CONNECTION_ID, server, storage -> storage.withPlugin(TestPlugin.JAVA).withProject("projectKey"))
       .withBoundConfigScope(SCOPE_ID, CONNECTION_ID, "projectKey")
       .withEnabledLanguageInStandaloneMode(JAVA)
-      .withBackendCapability(BackendCapability.PROJECT_SYNCHRONIZATION)
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+      .withBackendCapability(BackendCapability.PROJECT_SYNCHRONIZATION, BackendCapability.FULL_SYNCHRONIZATION)
       .start(client);
     await().untilAsserted(() -> assertThat(client.getConnectionIdsWithInvalidToken(CONNECTION_ID)).isEqualTo(1));
     backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams(CONNECTION_ID));

@@ -67,8 +67,7 @@ class ConnectedHotspotMediumTests {
       .withPlugin(TestPlugin.JAVA)
       .start();
     var backend = harness.newBackend()
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
-      .withBackendCapability(BackendCapability.SECURITY_HOTSPOTS)
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION, BackendCapability.SECURITY_HOTSPOTS)
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)

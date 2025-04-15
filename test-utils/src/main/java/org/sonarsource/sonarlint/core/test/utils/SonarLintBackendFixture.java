@@ -29,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -396,8 +397,8 @@ public class SonarLintBackendFixture {
       return this;
     }
 
-    public SonarLintBackendBuilder withBackendCapability(BackendCapability capability) {
-      this.backendCapabilities.add(capability);
+    public SonarLintBackendBuilder withBackendCapability(BackendCapability... capability) {
+      this.backendCapabilities.addAll(Arrays.asList(capability));
       return this;
     }
 

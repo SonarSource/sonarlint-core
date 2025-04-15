@@ -837,7 +837,7 @@ public class AiCodeFixMediumTest {
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR"))))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
-      .withFullSynchronization()
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
       .start(fakeClient);
 
     await().during(1, TimeUnit.SECONDS)

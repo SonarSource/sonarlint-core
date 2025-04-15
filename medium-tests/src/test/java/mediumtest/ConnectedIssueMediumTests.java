@@ -92,8 +92,7 @@ class ConnectedIssueMediumTests {
       .withPlugin(TestPlugin.JAVA)
       .start();
     var backend = harness.newBackend()
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
-      .withBackendCapability(BackendCapability.SECURITY_HOTSPOTS)
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION, BackendCapability.SECURITY_HOTSPOTS)
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -227,8 +226,7 @@ class ConnectedIssueMediumTests {
       .withPlugin(TestPlugin.JAVA)
       .start();
     var backend = harness.newBackend()
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
-      .withBackendCapability(BackendCapability.SECURITY_HOTSPOTS)
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION, BackendCapability.SECURITY_HOTSPOTS)
       .withSonarQubeConnection(CONNECTION_ID, server)
       .withBoundConfigScope(CONFIG_SCOPE_ID, CONNECTION_ID, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -269,8 +267,7 @@ class ConnectedIssueMediumTests {
         new ClientFileDto(fileFooUri, baseDir.relativize(fileFoo), CONFIG_SCOPE_ID, false, null, fileFoo, null, null, true)))
       .build();
     var backend = harness.newBackend()
-      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
-      .withBackendCapability(BackendCapability.SECURITY_HOTSPOTS)
+      .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION, BackendCapability.SECURITY_HOTSPOTS)
       .withSonarQubeConnection(connectionId, serverWithHotspots,
         storage -> storage.withServerVersion("10.4").withProject(projectKey,
           project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S2068", "BLOCKER"))))

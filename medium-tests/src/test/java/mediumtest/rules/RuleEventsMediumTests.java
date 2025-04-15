@@ -269,8 +269,7 @@ class RuleEventsMediumTests {
         .start();
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withBackendCapability(BackendCapability.SERVER_SENT_EVENTS)
-        .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+        .withBackendCapability(BackendCapability.SERVER_SENT_EVENTS, BackendCapability.FULL_SYNCHRONIZATION)
         .withSonarQubeConnection(connectionId, server)
         .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
         .start(client);
@@ -445,9 +444,7 @@ class RuleEventsMediumTests {
         .start();
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withBackendCapability(BackendCapability.SERVER_SENT_EVENTS)
-        .withBackendCapability(BackendCapability.SECURITY_HOTSPOTS)
-        .withBackendCapability(BackendCapability.FULL_SYNCHRONIZATION)
+        .withBackendCapability(BackendCapability.SERVER_SENT_EVENTS, BackendCapability.SECURITY_HOTSPOTS, BackendCapability.FULL_SYNCHRONIZATION)
         .withSonarQubeConnection(connectionId, server)
         .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
         .start(client);

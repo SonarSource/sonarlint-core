@@ -286,8 +286,7 @@ class SmartNotificationsMediumTests {
       .withSonarQubeCloudEuRegionWebSocketUri(webSocketServer.getUrl())
       .withSonarCloudConnectionAndNotifications(CONNECTION_ID, "myOrg", storage -> storage.withProject(PROJECT_KEY, project -> project.withLastSmartNotificationPoll(STORED_DATE)))
       .withBoundConfigScope("scopeId", CONNECTION_ID, PROJECT_KEY)
-      .withBackendCapability(BackendCapability.SMART_NOTIFICATIONS)
-      .withBackendCapability(BackendCapability.SERVER_SENT_EVENTS)
+      .withBackendCapability(BackendCapability.SMART_NOTIFICATIONS, BackendCapability.SERVER_SENT_EVENTS)
       .start(fakeClient);
 
     await().atMost(2, SECONDS).until(() -> webSocketServer.getConnections().size() == 1);
