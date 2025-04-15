@@ -37,6 +37,7 @@ import org.sonarsource.sonarlint.core.tracking.TextRangeUtils;
 import org.sonarsource.sonarlint.core.tracking.TrackedIssue;
 
 public class MatchingSession {
+  private boolean finished;
   private final Map<Path, List<KnownFinding>> remainingUnmatchedIssuesPerFile;
   private final Map<Path, List<KnownFinding>> remainingUnmatchedSecurityHotspotsPerFile;
   private final IntroductionDateProvider introductionDateProvider;
@@ -46,6 +47,7 @@ public class MatchingSession {
   private final TelemetryService telemetryService;
 
   public MatchingSession(KnownFindings previousFindings, IntroductionDateProvider introductionDateProvider, TelemetryService telemetryService) {
+    this.finished = false;
     this.remainingUnmatchedIssuesPerFile = previousFindings.getIssuesPerFile().entrySet().stream().map(entry -> Map.entry(entry.getKey(), new ArrayList<>(entry.getValue())))
       .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     this.remainingUnmatchedSecurityHotspotsPerFile = previousFindings.getSecurityHotspotsPerFile().entrySet().stream()
@@ -55,6 +57,7 @@ public class MatchingSession {
   }
 
   public TrackedIssue matchWithKnownFinding(Path relativePath, RawIssue rawIssue) {
+    throwIfAlreadyFinished();
     if (rawIssue.isSecurityHotspot()) {
       return matchWithKnownSecurityHotspot(relativePath, rawIssue);
     } else {
@@ -63,6 +66,7 @@ public class MatchingSession {
   }
 
   public TrackedIssue matchWithKnownSecurityHotspot(Path relativePath, RawIssue newSecurityHotspot) {
+    throwIfAlreadyFinished();
     var trackedSecurityHotspot = matchWithKnownFinding(relativePath, remainingUnmatchedSecurityHotspotsPerFile, newSecurityHotspot);
     securityHotspotsPerFile.computeIfAbsent(relativePath, f -> new ArrayList<>()).add(trackedSecurityHotspot);
     relativePathsInvolved.add(relativePath);
@@ -113,5 +117,17 @@ public class MatchingSession {
 
   public Set<Path> getRelativePathsInvolved() {
     return relativePathsInvolved;
+  }
+
+  public void finish() {
+    this.finished = true;
+    // Previously known issues that are not matched at end of analysis are considered fixed
+    remainingUnmatchedIssuesPerFile.values().stream().flatMap(List::stream).forEach(unused -> telemetryService.issueFixed());
+  }
+
+  private void throwIfAlreadyFinished() {
+    if (finished) {
+      throw new IllegalStateException("Matching session is already finished");
+    }
   }
 }

@@ -69,7 +69,8 @@ public class TelemetryLocalStorage {
   private int importedAddedBindingsCount;
   private int autoAddedBindingsCount;
   private int exportedConnectedModeCount;
-  private int newIssueFoundCount;
+  private int newIssuesFoundCount;
+  private int issuesFixedCount;
 
   TelemetryLocalStorage() {
     enabled = true;
@@ -208,7 +209,8 @@ public class TelemetryLocalStorage {
     importedAddedBindingsCount = 0;
     autoAddedBindingsCount = 0;
     exportedConnectedModeCount = 0;
-    newIssueFoundCount = 0;
+    newIssuesFoundCount = 0;
+    issuesFixedCount = 0;
   }
 
   long numUseDays() {
@@ -446,10 +448,19 @@ public class TelemetryLocalStorage {
 
   public void incrementNewlyFoundIssues() {
     markSonarLintAsUsedToday();
-    newIssueFoundCount++;
+    newIssuesFoundCount++;
   }
 
-  public int getNewIssueFoundCount() {
-    return newIssueFoundCount;
+  public int getNewIssuesFoundCount() {
+    return newIssuesFoundCount;
+  }
+
+  public void incrementIssuesFixed() {
+    markSonarLintAsUsedToday();
+    issuesFixedCount++;
+  }
+
+  public int getIssuesFixedCount() {
+    return issuesFixedCount;
   }
 }
