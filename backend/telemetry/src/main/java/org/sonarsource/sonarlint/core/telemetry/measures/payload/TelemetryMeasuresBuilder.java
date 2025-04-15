@@ -97,9 +97,13 @@ public class TelemetryMeasuresBuilder {
   }
 
   private void addIssuesMeasures(List<TelemetryMeasuresValue> values) {
-    var newIssuesFound = storage.getNewIssueFoundCount();
+    var newIssuesFound = storage.getNewIssuesFoundCount();
     if (newIssuesFound > 0) {
       values.add(new TelemetryMeasuresValue("ide_issues.found", Integer.toString(newIssuesFound), INTEGER, DAILY));
+    }
+    var issuesFixed = storage.getIssuesFixedCount();
+    if (issuesFixed > 0) {
+      values.add(new TelemetryMeasuresValue("ide_issues.fixed", Integer.toString(issuesFixed), INTEGER, DAILY));
     }
   }
 }

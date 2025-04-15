@@ -178,6 +178,7 @@ public class TrackingService {
         return Map.entry(ideRelativePath, matches);
       }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
+    matchingSession.finish();
     issuesToReport.forEach((clientRelativePath, trackedIssues) -> storeTrackedIssues(knownFindingsStore, configurationScopeId, clientRelativePath, trackedIssues));
     hotspotsToReport.forEach((clientRelativePath, trackedHotspots) -> storeTrackedSecurityHotspots(knownFindingsStore, configurationScopeId, clientRelativePath, trackedHotspots));
     return new MatchingResult(issuesToReport, hotspotsToReport);

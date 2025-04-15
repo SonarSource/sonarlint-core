@@ -231,6 +231,10 @@ public class TelemetryService {
     updateTelemetry(TelemetryLocalStorage::incrementNewlyFoundIssues);
   }
 
+  public void issueFixed() {
+    updateTelemetry(TelemetryLocalStorage::incrementIssuesFixed);
+  }
+
   @EventListener
   public void onServerIssueStatusChanged(ServerIssueStatusChangedEvent event) {
     issueStatusChanged(event.getFinding().getRuleKey());

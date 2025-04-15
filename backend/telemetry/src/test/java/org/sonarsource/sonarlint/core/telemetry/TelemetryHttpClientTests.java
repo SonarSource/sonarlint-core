@@ -112,6 +112,8 @@ class TelemetryHttpClientTests {
     telemetryLocalStorage.addQuickFixAppliedForRule("java:S107");
     telemetryLocalStorage.addQuickFixAppliedForRule("python:S107");
     telemetryLocalStorage.incrementNewlyFoundIssues();
+    telemetryLocalStorage.incrementIssuesFixed();
+    telemetryLocalStorage.incrementIssuesFixed();
     spy.upload(telemetryLocalStorage, getTelemetryLiveAttributesDto());
 
     telemetryMock.verify(postRequestedFor(urlEqualTo("/"))
@@ -128,7 +130,8 @@ class TelemetryHttpClientTests {
             {"key":"shared_connected_mode.manual","value":"0","type":"integer","granularity":"daily"},
             {"key":"help_and_feedback.docs","value":"1","type":"integer","granularity":"daily"},
             {"key":"quick_fix.applied_count","value":"2","type":"integer","granularity":"daily"},
-            {"key":"ide_issues.found","value":"1","type":"integer","granularity":"daily"}
+            {"key":"ide_issues.found","value":"1","type":"integer","granularity":"daily"},
+            {"key":"ide_issues.fixed","value":"2","type":"integer","granularity":"daily"}
           ]}
           """, PLATFORM),
           true, true)));
