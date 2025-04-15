@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.analysis.RawIssue;
 import org.sonarsource.sonarlint.core.commons.KnownFinding;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.tracking.IntroductionDateProvider;
 import org.sonarsource.sonarlint.core.tracking.IssueMapper;
 import org.sonarsource.sonarlint.core.tracking.KnownFindings;
@@ -42,13 +43,15 @@ public class MatchingSession {
   private final ConcurrentHashMap<Path, List<TrackedIssue>> issuesPerFile = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<Path, List<TrackedIssue>> securityHotspotsPerFile = new ConcurrentHashMap<>();
   private final Set<Path> relativePathsInvolved = new HashSet<>();
+  private final TelemetryService telemetryService;
 
-  public MatchingSession(KnownFindings previousFindings, IntroductionDateProvider introductionDateProvider) {
+  public MatchingSession(KnownFindings previousFindings, IntroductionDateProvider introductionDateProvider, TelemetryService telemetryService) {
     this.remainingUnmatchedIssuesPerFile = previousFindings.getIssuesPerFile().entrySet().stream().map(entry -> Map.entry(entry.getKey(), new ArrayList<>(entry.getValue())))
       .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     this.remainingUnmatchedSecurityHotspotsPerFile = previousFindings.getSecurityHotspotsPerFile().entrySet().stream()
       .map(entry -> Map.entry(entry.getKey(), new ArrayList<>(entry.getValue()))).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     this.introductionDateProvider = introductionDateProvider;
+    this.telemetryService = telemetryService;
   }
 
   public TrackedIssue matchWithKnownFinding(Path relativePath, RawIssue rawIssue) {
@@ -95,6 +98,7 @@ public class MatchingSession {
   }
 
   private TrackedIssue newlyKnownIssue(Path relativePath, RawIssue rawFinding) {
+    telemetryService.newIssueFound();
     var introductionDate = introductionDateProvider.determineIntroductionDate(relativePath, rawFinding.getLineNumbers());
     return IssueMapper.toTrackedIssue(rawFinding, introductionDate);
   }
