@@ -364,7 +364,7 @@ class AnalysisMediumTests {
     backend.getAnalysisService()
       .analyzeFilesAndTrack(new AnalyzeFilesAndTrackParams(CONFIG_SCOPE_ID, analysisId, List.of(fileUri), Map.of(), false, System.currentTimeMillis())).join();
 
-    verify(client).startProgress(refEq(new StartProgressParams(analysisId.toString(), CONFIG_SCOPE_ID, "Analyzing 1 file", null, true, false)));
+    verify(client).startProgress(refEq(new StartProgressParams(analysisId.toString(), CONFIG_SCOPE_ID, "Analyzing 1 file", null, true, true)));
     var reportProgressCaptor = ArgumentCaptor.forClass(ReportProgressParams.class);
     verify(client, timeout(500)).reportProgress(reportProgressCaptor.capture());
     assertThat(reportProgressCaptor.getValue())
