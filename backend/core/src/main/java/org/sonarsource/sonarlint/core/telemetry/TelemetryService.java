@@ -42,6 +42,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.GetStatusResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedFindingDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.issue.RaisedIssueDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingTriggeredParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
@@ -163,6 +164,10 @@ public class TelemetryService {
 
   public void helpAndFeedbackLinkClicked(HelpAndFeedbackClickedParams params) {
     updateTelemetry(localStorage -> localStorage.helpAndFeedbackLinkClicked(params.getItemId()));
+  }
+
+  public void analysisReportingTriggered(AnalysisReportingTriggeredParams params) {
+    updateTelemetry(localStorage -> localStorage.analysisReportingTriggered(params.getAnalysisTypeId()));
   }
 
   public void fixSuggestionResolved(FixSuggestionResolvedParams params) {
