@@ -166,6 +166,16 @@ public class TelemetryHttpClient {
       ))
       .forEach(values::add);
 
+    data.getAnalysisReportingCount().entrySet().stream()
+      .filter(e -> e.getValue().getAnalysisReportingCount() > 0)
+      .map(e -> new TelemetryMeasuresValue(
+        "analysis_reporting." + e.getKey().toLowerCase(Locale.ROOT),
+        String.valueOf(e.getValue().getAnalysisReportingCount()),
+        INTEGER,
+        DAILY
+      ))
+      .forEach(values::add);
+
     var allQuickFixCount = data.getQuickFixCountByRuleKey().values().stream()
       .mapToInt(Integer::intValue)
       .sum();
