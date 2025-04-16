@@ -120,7 +120,7 @@ public class AnalyzeCommand extends Command {
   public void execute(ModuleRegistry moduleRegistry) {
     try {
       var configuration = configurationSupplier.get();
-      taskManager.runTask(moduleKey, analysisId, "Analyzing " + pluralize(configuration.inputFiles().size(), "file"), null, true, false,
+      taskManager.runTask(moduleKey, analysisId, "Analyzing " + pluralize(configuration.inputFiles().size(), "file"), null, true, true,
         indicator -> execute(moduleRegistry, indicator, configuration), cancelMonitor);
     } catch (Exception e) {
       handleAnalysisFailed(e);
