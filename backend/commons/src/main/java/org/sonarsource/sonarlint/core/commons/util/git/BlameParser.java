@@ -52,7 +52,7 @@ public class BlameParser {
     var currentLineNumber = 0;
 
     // because of the way we split the blame output, the last snippet should be skipped
-    for (int i = 0; i < lineBlameSnippets.length - 1; i++) {
+    for (var i = 0; i < lineBlameSnippets.length - 1; i++) {
       var fileSection = lineBlameSnippets[i];
 
       try (var reader = new BufferedReader(new StringReader(fileSection))) {
