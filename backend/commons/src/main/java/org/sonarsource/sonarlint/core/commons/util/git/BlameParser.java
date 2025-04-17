@@ -48,13 +48,12 @@ public class BlameParser {
     }
     var currentFileBlame = new BlameResult.FileBlame(currentFilePath, numberOfLines);
     blameResult.getFileBlameByPath().put(currentFilePath, currentFileBlame);
-    var fileSections = blameOutput.split(FILENAME);
+    var lineBlameSnippets = blameOutput.split(FILENAME);
     var currentLineNumber = 0;
 
-    for (var fileSection : fileSections) {
-      if (shouldSkipSection(fileSection, currentLineNumber >= numberOfLines)) {
-        continue;
-      }
+    // because of the way we split the blame output, the last snippet should be skipped
+    for (var i = 0; i < lineBlameSnippets.length - 1; i++) {
+      var fileSection = lineBlameSnippets[i];
 
       try (var reader = new BufferedReader(new StringReader(fileSection))) {
         String line;
@@ -75,17 +74,6 @@ public class BlameParser {
       }
       currentLineNumber++;
     }
-  }
-
-  private static boolean shouldSkipSection(String fileSection, boolean lineNumberIsOff) {
-    if (fileSection.isBlank()) {
-      return true;
-    }
-    if (lineNumberIsOff) {
-      LOG.warn("Number of blame output sections is higher than expected number of lines. Section content: {}", fileSection);
-      return true;
-    }
-    return false;
   }
 
   public static int numberOfLinesInBlameOutput(String blameOutput) {
