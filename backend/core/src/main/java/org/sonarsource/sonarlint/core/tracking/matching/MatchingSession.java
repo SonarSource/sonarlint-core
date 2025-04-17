@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.analysis.RawIssue;
 import org.sonarsource.sonarlint.core.commons.KnownFinding;
+import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.sonarsource.sonarlint.core.tracking.IntroductionDateProvider;
 import org.sonarsource.sonarlint.core.tracking.IssueMapper;
 import org.sonarsource.sonarlint.core.tracking.KnownFindings;
@@ -36,22 +37,27 @@ import org.sonarsource.sonarlint.core.tracking.TextRangeUtils;
 import org.sonarsource.sonarlint.core.tracking.TrackedIssue;
 
 public class MatchingSession {
+  private boolean finished;
   private final Map<Path, List<KnownFinding>> remainingUnmatchedIssuesPerFile;
   private final Map<Path, List<KnownFinding>> remainingUnmatchedSecurityHotspotsPerFile;
   private final IntroductionDateProvider introductionDateProvider;
   private final ConcurrentHashMap<Path, List<TrackedIssue>> issuesPerFile = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<Path, List<TrackedIssue>> securityHotspotsPerFile = new ConcurrentHashMap<>();
   private final Set<Path> relativePathsInvolved = new HashSet<>();
+  private final TelemetryService telemetryService;
 
-  public MatchingSession(KnownFindings previousFindings, IntroductionDateProvider introductionDateProvider) {
+  public MatchingSession(KnownFindings previousFindings, IntroductionDateProvider introductionDateProvider, TelemetryService telemetryService) {
+    this.finished = false;
     this.remainingUnmatchedIssuesPerFile = previousFindings.getIssuesPerFile().entrySet().stream().map(entry -> Map.entry(entry.getKey(), new ArrayList<>(entry.getValue())))
       .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     this.remainingUnmatchedSecurityHotspotsPerFile = previousFindings.getSecurityHotspotsPerFile().entrySet().stream()
       .map(entry -> Map.entry(entry.getKey(), new ArrayList<>(entry.getValue()))).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     this.introductionDateProvider = introductionDateProvider;
+    this.telemetryService = telemetryService;
   }
 
   public TrackedIssue matchWithKnownFinding(Path relativePath, RawIssue rawIssue) {
+    throwIfAlreadyFinished();
     if (rawIssue.isSecurityHotspot()) {
       return matchWithKnownSecurityHotspot(relativePath, rawIssue);
     } else {
@@ -60,6 +66,7 @@ public class MatchingSession {
   }
 
   public TrackedIssue matchWithKnownSecurityHotspot(Path relativePath, RawIssue newSecurityHotspot) {
+    throwIfAlreadyFinished();
     var trackedSecurityHotspot = matchWithKnownFinding(relativePath, remainingUnmatchedSecurityHotspotsPerFile, newSecurityHotspot);
     securityHotspotsPerFile.computeIfAbsent(relativePath, f -> new ArrayList<>()).add(trackedSecurityHotspot);
     relativePathsInvolved.add(relativePath);
@@ -95,6 +102,7 @@ public class MatchingSession {
   }
 
   private TrackedIssue newlyKnownIssue(Path relativePath, RawIssue rawFinding) {
+    telemetryService.newIssueFound();
     var introductionDate = introductionDateProvider.determineIntroductionDate(relativePath, rawFinding.getLineNumbers());
     return IssueMapper.toTrackedIssue(rawFinding, introductionDate);
   }
@@ -109,5 +117,17 @@ public class MatchingSession {
 
   public Set<Path> getRelativePathsInvolved() {
     return relativePathsInvolved;
+  }
+
+  public void finish() {
+    this.finished = true;
+    // Previously known issues that are not matched at end of analysis are considered fixed
+    remainingUnmatchedIssuesPerFile.values().stream().flatMap(List::stream).forEach(unused -> telemetryService.issueFixed());
+  }
+
+  private void throwIfAlreadyFinished() {
+    if (finished) {
+      throw new IllegalStateException("Matching session is already finished");
+    }
   }
 }

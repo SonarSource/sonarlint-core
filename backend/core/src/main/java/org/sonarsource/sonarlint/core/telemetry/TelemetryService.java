@@ -227,6 +227,14 @@ public class TelemetryService {
     updateTelemetry(TelemetryLocalStorage::incrementExportedConnectedModeCount);
   }
 
+  public void newIssueFound() {
+    updateTelemetry(TelemetryLocalStorage::incrementNewlyFoundIssues);
+  }
+
+  public void issueFixed() {
+    updateTelemetry(TelemetryLocalStorage::incrementIssuesFixed);
+  }
+
   @EventListener
   public void onServerIssueStatusChanged(ServerIssueStatusChangedEvent event) {
     issueStatusChanged(event.getFinding().getRuleKey());
