@@ -106,6 +106,8 @@ import static org.apache.commons.lang3.StringUtils.trimToNull;
 import static org.sonarsource.sonarlint.core.analysis.container.analysis.filesystem.LanguageDetection.sanitizeExtension;
 import static org.sonarsource.sonarlint.core.commons.util.StringUtils.pluralize;
 import static org.sonarsource.sonarlint.core.commons.util.git.GitService.getVSCChangedFiles;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.DATAFLOW_BUG_DETECTION;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SECURITY_HOTSPOTS;
 
 public class AnalysisService {
 
@@ -154,8 +156,8 @@ public class AnalysisService {
     this.monitoringService = monitoringService;
     this.taskManager = taskManager;
     this.connectionConfigurationRepository = connectionConfigurationRepository;
-    this.hotspotEnabled = initializeParams.getFeatureFlags().isEnableSecurityHotspots();
-    this.isDataflowBugDetectionEnabled = initializeParams.getFeatureFlags().isEnableDataflowBugDetection();
+    this.hotspotEnabled = initializeParams.getBackendCapabilities().contains(SECURITY_HOTSPOTS);
+    this.isDataflowBugDetectionEnabled = initializeParams.getBackendCapabilities().contains(DATAFLOW_BUG_DETECTION);
     this.nodeJsService = nodeJsService;
     this.schedulerCache = schedulerCache;
     this.eventPublisher = eventPublisher;

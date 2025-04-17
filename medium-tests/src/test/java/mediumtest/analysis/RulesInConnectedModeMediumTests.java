@@ -33,6 +33,7 @@ import utils.TestPlugin;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SECURITY_HOTSPOTS;
 
 class RulesInConnectedModeMediumTests {
 
@@ -74,7 +75,7 @@ class RulesInConnectedModeMediumTests {
   @SonarLintTest
   void hotspot_rules_should_be_active_when_feature_flag_is_enabled(SonarLintTestHarness harness) throws Exception {
     var backend = harness.newBackend()
-      .withSecurityHotspotsEnabled()
+      .withBackendCapability(SECURITY_HOTSPOTS)
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .withSonarQubeConnection(CONNECTION_ID,
         storage -> storage.withServerVersion("9.7").withProject(JAVA_MODULE_KEY, project -> project.withRuleSet("java", ruleSet -> ruleSet.withActiveRule("java:S4792", "INFO"))))

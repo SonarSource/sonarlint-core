@@ -116,6 +116,7 @@ import org.springframework.scheduling.support.TaskUtils;
 
 import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_PASSWORD;
 import static org.sonarsource.sonarlint.core.http.ssl.CertificateStore.DEFAULT_STORE_TYPE;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.MONITORING;
 
 @Configuration
 // Can't use classpath scanning in OSGi, so waiting to move out of process, we have to declare our beans manually
@@ -223,7 +224,7 @@ public class SonarLintSpringAppConfig {
 
   @Bean
   MonitoringInitializationParams provideMonitoringInitParams(InitializeParams params) {
-    return new MonitoringInitializationParams(params.getFeatureFlags().isEnableMonitoring(),
+    return new MonitoringInitializationParams(params.getBackendCapabilities().contains(MONITORING),
       params.getTelemetryConstantAttributes().getProductKey(),
       params.getTelemetryConstantAttributes().getProductVersion(),
       params.getTelemetryConstantAttributes().getIdeVersion());

@@ -52,6 +52,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.
 import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.CONNECTION_NOT_FOUND;
 import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.FILE_NOT_FOUND;
 import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.ISSUE_NOT_FOUND;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerTaintIssueFixtures.aServerTaintIssue;
 import static utils.AnalysisUtils.analyzeFileAndGetIssue;
@@ -677,7 +678,7 @@ public class AiCodeFixMediumTest {
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR"))))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
-      .withFullSynchronization()
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(fakeClient);
 
     await().untilAsserted(() -> assertThat(readAiCodeFixSettings(backend, "connectionId"))
@@ -716,7 +717,7 @@ public class AiCodeFixMediumTest {
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR"))))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
-      .withFullSynchronization()
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(fakeClient);
 
     await().untilAsserted(() -> assertThat(readAiCodeFixSettings(backend, "connectionId"))
@@ -756,7 +757,7 @@ public class AiCodeFixMediumTest {
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR"))))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
-      .withFullSynchronization()
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(fakeClient);
 
     await().untilAsserted(() -> assertThat(readAiCodeFixSettings(backend, "connectionId"))
@@ -836,7 +837,7 @@ public class AiCodeFixMediumTest {
       .withSonarCloudConnection("connectionId", "organizationKey", true, storage -> storage
         .withProject("projectKey", project -> project.withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR"))))
       .withBoundConfigScope("configScope", "connectionId", "projectKey")
-      .withFullSynchronization()
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(fakeClient);
 
     await().during(1, TimeUnit.SECONDS)

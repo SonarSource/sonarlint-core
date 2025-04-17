@@ -54,6 +54,8 @@ import static mediumtest.websockets.WebSocketMediumTests.WebSocketPayloadBuilder
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SERVER_SENT_EVENTS;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SMART_NOTIFICATIONS;
 import static org.sonarsource.sonarlint.core.test.utils.SonarLintBackendFixture.USER_AGENT_FOR_TESTS;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerIssueFixtures.aServerIssue;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerSecurityHotspotFixture.aServerHotspot;
@@ -670,7 +672,7 @@ class WebSocketMediumTests {
         .withToken("connectionId", "token")
         .build();
       newBackendWithWebSockets(harness)
-        .withSmartNotifications()
+        .withBackendCapability(SMART_NOTIFICATIONS)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .start(client);
@@ -693,7 +695,7 @@ class WebSocketMediumTests {
         .withToken("connectionId", "token")
         .build();
       newBackendWithWebSockets(harness)
-        .withSmartNotifications()
+        .withBackendCapability(SMART_NOTIFICATIONS)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .start(client);
@@ -716,7 +718,7 @@ class WebSocketMediumTests {
         .withToken("connectionId", "token")
         .build();
       newBackendWithWebSockets(harness)
-        .withSmartNotifications()
+        .withBackendCapability(SMART_NOTIFICATIONS)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .start(client);
@@ -756,7 +758,7 @@ class WebSocketMediumTests {
         .withToken("connectionId", "token")
         .build();
       newBackendWithWebSockets(harness)
-        .withSmartNotifications()
+        .withBackendCapability(SMART_NOTIFICATIONS)
         .withSonarCloudConnectionAndNotifications("connectionId", "orgKey", null)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .start(client);
@@ -1490,7 +1492,7 @@ class WebSocketMediumTests {
 
   public SonarLintBackendFixture.SonarLintBackendBuilder newBackendWithWebSockets(SonarLintTestHarness harness) {
     return harness.newBackend()
-      .withServerSentEventsEnabled()
+      .withBackendCapability(SERVER_SENT_EVENTS)
       .withSonarQubeCloudEuRegionWebSocketUri(webSocketServerEU.getUrl())
       .withSonarQubeCloudUsRegionWebSocketUri(webSocketServerUS.getUrl());
   }

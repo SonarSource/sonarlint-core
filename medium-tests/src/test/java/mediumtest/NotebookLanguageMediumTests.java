@@ -28,6 +28,7 @@ import utils.TestPlugin;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
 import static org.sonarsource.sonarlint.core.test.utils.server.ServerFixture.newSonarQubeServer;
 
 class NotebookLanguageMediumTests {
@@ -53,7 +54,7 @@ class NotebookLanguageMediumTests {
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withEnabledLanguageInStandaloneMode(Language.JS)
       .withEnabledLanguageInStandaloneMode(Language.IPYTHON)
-      .withFullSynchronization()
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(fakeClient);
 
     backend.getConnectionService().didChangeCredentials(new DidChangeCredentialsParams(CONNECTION_ID));

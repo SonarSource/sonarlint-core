@@ -42,6 +42,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.EMBEDDED_SERVER;
 
 class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
   @RegisterExtension
@@ -57,7 +58,7 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
     var backend = harness.newBackend()
       .withExtraEnabledLanguagesInConnectedMode(Language.ABAP)
       .withUnboundConfigScope("configScopeId")
-      .withEmbeddedServer()
+      .withBackendCapability(EMBEDDED_SERVER)
       .withTelemetryEnabled()
       .start(fakeClient);
 
@@ -82,7 +83,7 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
       .withExtraEnabledLanguagesInConnectedMode(Language.ABAP)
       .withSonarQubeConnection("connectionId", server, storage -> storage.withProject("projectKey", project -> project.withRuleSet("abap", ruleSet -> ruleSet.withActiveRule("abap:S100", "MAJOR")).withMainBranch("main")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withEmbeddedServer()
+      .withBackendCapability(EMBEDDED_SERVER)
       .withTelemetryEnabled()
       .start(fakeClient);
 
@@ -103,7 +104,7 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
     var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.ABAP)
       .withUnboundConfigScope("configScopeId")
-      .withEmbeddedServer()
+      .withBackendCapability(EMBEDDED_SERVER)
       .withTelemetryEnabled()
       .start(fakeClient);
 
@@ -124,7 +125,7 @@ class ExtraEnabledLanguagesInConnectedModePromotionMediumTests {
       .build();
     var backend = harness.newBackend()
       .withUnboundConfigScope("configScopeId")
-      .withEmbeddedServer()
+      .withBackendCapability(EMBEDDED_SERVER)
       .withTelemetryEnabled()
       .start(fakeClient);
 

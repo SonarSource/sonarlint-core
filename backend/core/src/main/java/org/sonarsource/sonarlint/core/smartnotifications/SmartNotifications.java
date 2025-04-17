@@ -53,6 +53,8 @@ import org.sonarsource.sonarlint.core.websocket.WebSocketService;
 import org.sonarsource.sonarlint.core.websocket.events.SmartNotificationEvent;
 import org.springframework.context.event.EventListener;
 
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SMART_NOTIFICATIONS;
+
 public class SmartNotifications {
 
   private final SonarLintLogger logger = SonarLintLogger.get();
@@ -81,7 +83,7 @@ public class SmartNotifications {
 
   @PostConstruct
   public void initialize() {
-    if (!params.getFeatureFlags().shouldManageSmartNotifications()) {
+    if (!params.getBackendCapabilities().contains(SMART_NOTIFICATIONS)) {
       return;
     }
     smartNotificationsPolling = new ExecutorServiceShutdownWatchable<>(FailSafeExecutors.newSingleThreadScheduledExecutor("Smart Notifications Polling"));

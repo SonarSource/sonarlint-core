@@ -46,6 +46,7 @@ import utils.TestPlugin;
 import static org.apache.commons.lang3.StringUtils.abbreviate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SECURITY_HOTSPOTS;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute.CONVENTIONAL;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute.FORMATTED;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.CleanCodeAttribute.MODULAR;
@@ -473,7 +474,7 @@ class EffectiveRulesMediumTests {
       .withSonarQubeConnection("connectionId", mockWebServerExtension.endpointParams().getBaseUrl())
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
-      .withSecurityHotspotsEnabled()
+      .withBackendCapability(SECURITY_HOTSPOTS)
       .start();
 
     var details = getEffectiveRuleDetails(backend, "scopeId", "python:S4784");

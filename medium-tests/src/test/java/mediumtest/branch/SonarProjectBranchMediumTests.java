@@ -41,6 +41,7 @@ import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.PROJECT_SYNCHRONIZATION;
 
 class SonarProjectBranchMediumTests {
 
@@ -212,7 +213,7 @@ class SonarProjectBranchMediumTests {
         storage -> storage.withProject("projectKey",
           project -> project.withMainBranch("main").withNonMainBranch("myBranch")))
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withProjectSynchronization()
+      .withBackendCapability(PROJECT_SYNCHRONIZATION)
       .start(client);
 
     // Wait for first sync

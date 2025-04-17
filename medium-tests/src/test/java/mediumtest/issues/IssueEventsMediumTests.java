@@ -53,6 +53,8 @@ import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SERVER_SENT_EVENTS;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JS;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerIssueFixtures.aServerIssue;
@@ -79,7 +81,7 @@ class IssueEventsMediumTests {
         .start();
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", server,
           storage -> storage.withProject(projectKey, project -> project.withMainBranch("branchName", branch -> branch.withIssue(aServerIssue("key1").open()))))
         .withBoundConfigScope("configScope", "connectionId", projectKey)
@@ -113,7 +115,7 @@ class IssueEventsMediumTests {
         .start();
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", server,
           storage -> storage.withProject(projectKey,
             project -> project.withMainBranch("branchName",
@@ -150,7 +152,7 @@ class IssueEventsMediumTests {
         .start();
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", server,
           storage -> storage.withProject(projectKey, project -> project.withMainBranch("branchName", branch -> branch.withIssue(aServerIssue("key1")))))
         .withBoundConfigScope("configScope", "connectionId", projectKey)
@@ -185,7 +187,7 @@ class IssueEventsMediumTests {
         .start();
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", server,
           storage -> storage.withProject(projectKey,
             project -> project.withMainBranch("branchName",
@@ -221,7 +223,7 @@ class IssueEventsMediumTests {
         .start();
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", server,
           storage -> storage.withProject("projectKey",
             project -> project.withMainBranch("branchName", branch -> branch.withIssue(aServerIssue("key1").withSeverity(IssueSeverity.INFO)))))
@@ -255,7 +257,7 @@ class IssueEventsMediumTests {
         .start();
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", server,
           storage -> storage.withProject("projectKey",
             project -> project.withMainBranch("branchName", branch -> branch.withIssue(aServerIssue("key1").withType(RuleType.VULNERABILITY)))))
@@ -311,8 +313,7 @@ class IssueEventsMediumTests {
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
-        .withFullSynchronization()
+        .withBackendCapability(SERVER_SENT_EVENTS, FULL_SYNCHRONIZATION)
         .withSonarQubeConnection(connectionId, serverWithIssues)
         .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
         .start(client);
@@ -376,8 +377,7 @@ class IssueEventsMediumTests {
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
-        .withFullSynchronization()
+        .withBackendCapability(SERVER_SENT_EVENTS, FULL_SYNCHRONIZATION)
         .withSonarQubeConnection(connectionId, serverWithIssues)
         .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
         .start(client);
@@ -437,8 +437,7 @@ class IssueEventsMediumTests {
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
-        .withFullSynchronization()
+        .withBackendCapability(SERVER_SENT_EVENTS, FULL_SYNCHRONIZATION)
         .withSonarQubeConnection(connectionId, serverWithIssues)
         .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
         .start(client);
@@ -504,8 +503,7 @@ class IssueEventsMediumTests {
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
-        .withFullSynchronization()
+        .withBackendCapability(SERVER_SENT_EVENTS, FULL_SYNCHRONIZATION)
         .withSonarQubeConnection(connectionId, serverWithIssues)
         .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
         .start(client);

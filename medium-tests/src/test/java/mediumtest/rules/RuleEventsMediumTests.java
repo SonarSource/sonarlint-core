@@ -46,6 +46,9 @@ import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SECURITY_HOTSPOTS;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SERVER_SENT_EVENTS;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 import static utils.AnalysisUtils.analyzeFileAndGetIssues;
@@ -70,7 +73,7 @@ class RuleEventsMediumTests {
       when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", server)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .start();
@@ -111,7 +114,7 @@ class RuleEventsMediumTests {
       when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", server)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .start();
@@ -164,7 +167,7 @@ class RuleEventsMediumTests {
       when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", server, storage -> storage.withProject("projectKey",
           project -> project.withRuleSet("java",
             ruleSet -> ruleSet.withActiveRule("java:S0000", "INFO"))))
@@ -206,7 +209,7 @@ class RuleEventsMediumTests {
       when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", server, storage -> storage.withProject("projectKey",
           project -> project.withRuleSet("java",
             ruleSet -> ruleSet.withActiveRule("java:S0000", "INFO"))))
@@ -268,8 +271,7 @@ class RuleEventsMediumTests {
         .start();
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
-        .withFullSynchronization()
+        .withBackendCapability(SERVER_SENT_EVENTS, FULL_SYNCHRONIZATION)
         .withSonarQubeConnection(connectionId, server)
         .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
         .start(client);
@@ -313,7 +315,7 @@ class RuleEventsMediumTests {
       when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", server, storage -> storage.withProject("projectKey",
           project -> project.withRuleSet("java",
             ruleSet -> ruleSet.withActiveRule("java:S0000", "INFO"))))
@@ -355,7 +357,7 @@ class RuleEventsMediumTests {
       when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", server, storage -> storage.withProject("projectKey",
           project -> project.withRuleSet("java",
             ruleSet -> ruleSet.withActiveRule("java:S0000", "INFO").withActiveRule("java:S0001", "INFO"))))
@@ -388,7 +390,7 @@ class RuleEventsMediumTests {
       when(client.matchSonarProjectBranch(eq("configScope"), any(), any(), any())).thenReturn("branchName");
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", server, storage -> storage.withProject("projectKey",
           project -> project.withRuleSet("java",
             ruleSet -> ruleSet.withActiveRule("java:S0000", "INFO"))))
@@ -444,9 +446,7 @@ class RuleEventsMediumTests {
         .start();
       var backend = harness.newBackend()
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
-        .withSecurityHotspotsEnabled()
-        .withFullSynchronization()
+        .withBackendCapability(SERVER_SENT_EVENTS, SECURITY_HOTSPOTS, FULL_SYNCHRONIZATION)
         .withSonarQubeConnection(connectionId, server)
         .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
         .start(client);

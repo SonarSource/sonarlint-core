@@ -80,6 +80,7 @@ import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commitAtDate;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRepository;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
 import static org.sonarsource.sonarlint.core.test.utils.ProtobufUtils.protobufBody;
 import static org.sonarsource.sonarlint.core.test.utils.plugins.SonarPluginBuilder.newSonarPlugin;
 import static org.sonarsource.sonarlint.core.test.utils.storage.ServerIssueFixtures.aServerIssue;
@@ -223,7 +224,7 @@ class IssueTrackingMediumTests {
             .withNewCodeDefinition(
               Sonarlint.NewCodeDefinition.newBuilder().setMode(Sonarlint.NewCodeDefinitionMode.PREVIOUS_VERSION).setThresholdDate(Instant.now().toEpochMilli()).build())
             .withMainBranch(branchName)))
-      .withFullSynchronization()
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.JAVA)
       .start(client);
 
@@ -761,7 +762,7 @@ class IssueTrackingMediumTests {
       .withSonarCloudConnection(connectionId, orgKey, true, storage -> {
         storage.withProject(projectKey, project -> project.withMainBranch("main"));
       })
-      .withFullSynchronization()
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .withSonarQubeCloudEuRegionUri(server.baseUrl())
       .withSonarQubeCloudEuRegionApiUri(server.baseUrl())
       .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)

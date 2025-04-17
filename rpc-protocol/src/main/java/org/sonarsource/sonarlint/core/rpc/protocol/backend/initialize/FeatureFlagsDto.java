@@ -19,87 +19,86 @@
  */
 package org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize;
 
+import java.util.EnumSet;
+import java.util.Set;
+
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.DATAFLOW_BUG_DETECTION;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.EMBEDDED_SERVER;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.MONITORING;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.PROJECT_SYNCHRONIZATION;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SECURITY_HOTSPOTS;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SERVER_SENT_EVENTS;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SMART_NOTIFICATIONS;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.TELEMETRY;
+
 /**
+ * @deprecated use InitializeParams constructor that accepts Set<BackendCapability> directly
  * Optional features toggles of the backend. To ease transition or to accommodate different client needs.
  */
+@Deprecated(since = "10.19", forRemoval = true)
 public class FeatureFlagsDto {
 
-  private final boolean shouldManageSmartNotifications;
-  @Deprecated
-  // not controllable anymore, it is the backend's responsibility to decide
-  private final boolean taintVulnerabilitiesEnabled;
-  private final boolean shouldSynchronizeProjects;
-  private final boolean shouldManageLocalServer;
-  private final boolean enableSecurityHotspots;
-  private final boolean shouldManageServerSentEvents;
-  private final boolean enableDataflowBugDetection;
-  private final boolean shouldManageFullSynchronization;
-  private final boolean enableTelemetry;
-  private final boolean canOpenFixSuggestion;
-  private final boolean enableMonitoring;
+  private final Set<BackendCapability> backendCapabilities = EnumSet.noneOf(BackendCapability.class);
 
+  /**
+   * @deprecated call new constructor accepting enums
+   *
+   */
+  @Deprecated(since = "10.19")
   public FeatureFlagsDto(boolean shouldManageSmartNotifications, boolean taintVulnerabilitiesEnabled, boolean shouldSynchronizeProjects, boolean shouldManageLocalServer,
     boolean enableSecurityHotspots, boolean shouldManageServerSentEvents, boolean enableDataflowBugDetection, boolean shouldManageFullSynchronization, boolean enableTelemetry,
     boolean canOpenFixSuggestion, boolean enableMonitoring) {
-    this.shouldManageSmartNotifications = shouldManageSmartNotifications;
-    this.taintVulnerabilitiesEnabled = taintVulnerabilitiesEnabled;
-    this.shouldSynchronizeProjects = shouldSynchronizeProjects;
-    this.shouldManageLocalServer = shouldManageLocalServer;
-    this.enableSecurityHotspots = enableSecurityHotspots;
-    this.shouldManageServerSentEvents = shouldManageServerSentEvents;
-    this.enableDataflowBugDetection = enableDataflowBugDetection;
-    this.shouldManageFullSynchronization = shouldManageFullSynchronization;
-    this.enableTelemetry = enableTelemetry;
-    this.canOpenFixSuggestion = canOpenFixSuggestion;
-    this.enableMonitoring = enableMonitoring;
+    addIfTrue(shouldManageSmartNotifications, SMART_NOTIFICATIONS);
+    addIfTrue(shouldSynchronizeProjects, PROJECT_SYNCHRONIZATION);
+    addIfTrue(shouldManageLocalServer, EMBEDDED_SERVER);
+    addIfTrue(enableSecurityHotspots, SECURITY_HOTSPOTS);
+    addIfTrue(shouldManageServerSentEvents, SERVER_SENT_EVENTS);
+    addIfTrue(enableDataflowBugDetection, DATAFLOW_BUG_DETECTION);
+    addIfTrue(shouldManageFullSynchronization, FULL_SYNCHRONIZATION);
+    addIfTrue(enableTelemetry, TELEMETRY);
+    addIfTrue(enableMonitoring, MONITORING);
+  }
+
+  private void addIfTrue(boolean enabled, BackendCapability backendCapability) {
+    if (enabled) {
+      backendCapabilities.add(backendCapability);
+    }
   }
 
   public boolean shouldManageSmartNotifications() {
-    return shouldManageSmartNotifications;
+    return backendCapabilities.contains(SMART_NOTIFICATIONS);
   }
 
   public boolean shouldManageServerSentEvents() {
-    return shouldManageServerSentEvents;
-  }
-
-  /**
-   * @deprecated not used anymore. It is the backend's responsibility to decide based on enabled languages
-   * @return
-   */
-  @Deprecated
-  public boolean areTaintVulnerabilitiesEnabled() {
-    return taintVulnerabilitiesEnabled;
+    return backendCapabilities.contains(SERVER_SENT_EVENTS);
   }
 
   public boolean shouldSynchronizeProjects() {
-    return shouldSynchronizeProjects;
+    return backendCapabilities.contains(PROJECT_SYNCHRONIZATION);
   }
 
   public boolean shouldManageLocalServer() {
-    return shouldManageLocalServer;
+    return backendCapabilities.contains(EMBEDDED_SERVER);
   }
 
-  public boolean isEnableSecurityHotspots() {
-    return enableSecurityHotspots;
+  public boolean isEnablesSecurityHotspots() {
+    return backendCapabilities.contains(SECURITY_HOTSPOTS);
   }
 
-  public boolean isEnableDataflowBugDetection() {
-    return enableDataflowBugDetection;
+  public boolean isEnabledDataflowBugDetection() {
+    return backendCapabilities.contains(DATAFLOW_BUG_DETECTION);
   }
 
   public boolean shouldManageFullSynchronization() {
-    return shouldManageFullSynchronization;
+    return backendCapabilities.contains(FULL_SYNCHRONIZATION);
   }
 
-  public boolean isEnableTelemetry() {
-    return enableTelemetry;
+  public boolean isEnabledTelemetry() {
+    return backendCapabilities.contains(TELEMETRY);
   }
 
-  public boolean canOpenFixSuggestion() {
-    return canOpenFixSuggestion;
-  }
-
-  public boolean isEnableMonitoring() {
-    return enableMonitoring;
+  public boolean isEnabledMonitoring() {
+    return backendCapabilities.contains(MONITORING);
   }
 }

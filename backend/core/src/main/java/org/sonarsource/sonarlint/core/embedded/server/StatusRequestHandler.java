@@ -43,13 +43,11 @@ public class StatusRequestHandler implements HttpRequestHandler {
   private final SonarLintRpcClient client;
   private final ConnectionConfigurationRepository repository;
   private final ClientConstantInfoDto clientInfo;
-  private final boolean canOpenFixSuggestion;
 
   public StatusRequestHandler(SonarLintRpcClient client, ConnectionConfigurationRepository repository, InitializeParams params) {
     this.client = client;
     this.repository = repository;
     this.clientInfo = params.getClientConstantInfo();
-    this.canOpenFixSuggestion = params.getFeatureFlags().canOpenFixSuggestion();
   }
 
   @Override
@@ -65,7 +63,7 @@ public class StatusRequestHandler implements HttpRequestHandler {
       .orElse(false);
 
     var description = getDescription(trustedServer);
-    var capabilities = new CapabilitiesResponse(canOpenFixSuggestion);
+    var capabilities = new CapabilitiesResponse(true);
     // We need a token when the requesting server is not a trusted one (in order to automatically create a connection).
     response.setEntity(new StringEntity(new Gson().toJson(new StatusResponse(clientInfo.getName(), description, !trustedServer, capabilities)), ContentType.APPLICATION_JSON));
 
@@ -87,5 +85,4 @@ public class StatusRequestHandler implements HttpRequestHandler {
                                 @Expose CapabilitiesResponse capabilities) { }
 
   private record CapabilitiesResponse(@Expose boolean canOpenFixSuggestion) { }
-
 }

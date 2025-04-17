@@ -50,6 +50,8 @@ import static org.mockito.Mockito.verify;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRepository;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.modifyFile;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SECURITY_HOTSPOTS;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static utils.AnalysisUtils.createFile;
 
@@ -182,8 +184,7 @@ class AnalysisForcedByClientMediumTests {
         new ClientFileDto(fileBarUri, baseDir.relativize(fileBar), CONFIG_SCOPE_ID, false, null, fileBar, null, null, true)))
       .build();
     var backend = harness.newBackend()
-      .withFullSynchronization()
-      .withSecurityHotspotsEnabled()
+      .withBackendCapability(FULL_SYNCHRONIZATION, SECURITY_HOTSPOTS)
       .withSonarQubeConnection(connectionId, serverWithHotspots)
       .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)
@@ -240,8 +241,8 @@ class AnalysisForcedByClientMediumTests {
         new ClientFileDto(fileBarUri, baseDir.relativize(fileBar), CONFIG_SCOPE_ID, false, null, fileBar, null, null, true)))
       .build();
     var backend = harness.newBackend()
-      .withFullSynchronization()
-      .withSecurityHotspotsEnabled()
+      .withBackendCapability(FULL_SYNCHRONIZATION)
+      .withBackendCapability(SECURITY_HOTSPOTS)
       .withSonarQubeConnection(connectionId, serverWithHotspots)
       .withBoundConfigScope(CONFIG_SCOPE_ID, connectionId, projectKey)
       .withExtraEnabledLanguagesInConnectedMode(JAVA)

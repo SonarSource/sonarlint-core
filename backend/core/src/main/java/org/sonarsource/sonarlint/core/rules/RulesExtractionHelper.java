@@ -27,6 +27,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Initialize
 import org.sonarsource.sonarlint.core.rule.extractor.RulesDefinitionExtractor;
 import org.sonarsource.sonarlint.core.rule.extractor.SonarLintRuleDefinition;
 
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SECURITY_HOTSPOTS;
+
 public class RulesExtractionHelper {
 
   private final SonarLintLogger logger = SonarLintLogger.get();
@@ -39,7 +41,7 @@ public class RulesExtractionHelper {
   public RulesExtractionHelper(PluginsService pluginsService, LanguageSupportRepository languageSupportRepository, InitializeParams params) {
     this.pluginsService = pluginsService;
     this.languageSupportRepository = languageSupportRepository;
-    this.enableSecurityHotspots = params.getFeatureFlags().isEnableSecurityHotspots();
+    this.enableSecurityHotspots = params.getBackendCapabilities().contains(SECURITY_HOTSPOTS);
   }
 
   public List<SonarLintRuleDefinition> extractEmbeddedRules() {

@@ -44,6 +44,7 @@ import static org.mockito.Mockito.after;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
 
 class BranchSpecificSynchronizationMediumTests {
 
@@ -61,7 +62,7 @@ class BranchSpecificSynchronizationMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withFullSynchronization()
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
 
     waitAtMost(3, SECONDS).untilAsserted(() -> {
@@ -90,7 +91,7 @@ class BranchSpecificSynchronizationMediumTests {
 
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
-      .withFullSynchronization()
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
 
     backend.getConfigurationService().didAddConfigurationScopes(
@@ -128,7 +129,7 @@ class BranchSpecificSynchronizationMediumTests {
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withBoundConfigScope("configScopeId2", "connectionId", "projectKey2")
-      .withFullSynchronization()
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(fakeClient);
 
     fakeClient.waitForSynchronization();
@@ -159,7 +160,7 @@ class BranchSpecificSynchronizationMediumTests {
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
       .withBoundConfigScope("configScopeId2", "connectionId", "projectKey2")
-      .withFullSynchronization()
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(fakeClient);
     fakeClient.waitForSynchronization();
 
@@ -180,7 +181,7 @@ class BranchSpecificSynchronizationMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server)
       .withBoundConfigScope("configScopeId", "connectionId", "projectKey")
-      .withFullSynchronization()
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(fakeClient);
     fakeClient.waitForSynchronization();
     reset(fakeClient);

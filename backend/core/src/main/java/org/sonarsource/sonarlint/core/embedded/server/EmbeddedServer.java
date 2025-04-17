@@ -34,6 +34,8 @@ import org.apache.hc.core5.io.CloseMode;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.EMBEDDED_SERVER;
+
 public class EmbeddedServer {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
@@ -53,7 +55,7 @@ public class EmbeddedServer {
 
   public EmbeddedServer(InitializeParams params, StatusRequestHandler statusRequestHandler, GeneratedUserTokenHandler generatedUserTokenHandler,
     ShowHotspotRequestHandler showHotspotRequestHandler, ShowIssueRequestHandler showIssueRequestHandler, ShowFixSuggestionRequestHandler showFixSuggestionRequestHandler) {
-    this.enabled = params.getFeatureFlags().shouldManageLocalServer();
+    this.enabled = params.getBackendCapabilities().contains(EMBEDDED_SERVER);
     this.statusRequestHandler = statusRequestHandler;
     this.generatedUserTokenHandler = generatedUserTokenHandler;
     this.showHotspotRequestHandler = showHotspotRequestHandler;

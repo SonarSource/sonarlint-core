@@ -43,6 +43,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
 import static utils.AnalysisUtils.getPublishedIssues;
 
 class AnalysisReadinessMediumTests {
@@ -83,7 +84,7 @@ class AnalysisReadinessMediumTests {
     var backend = harness.newBackend()
       .withSonarQubeConnection("connectionId", server.baseUrl())
       .withBoundConfigScope(CONFIG_SCOPE_ID, "connectionId", "projectKey")
-      .withFullSynchronization()
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .withExtraEnabledLanguagesInConnectedMode(Language.XML)
       .start(client);
 

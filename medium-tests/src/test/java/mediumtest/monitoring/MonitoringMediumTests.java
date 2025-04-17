@@ -41,6 +41,7 @@ import utils.TestPlugin;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.MONITORING;
 import static org.sonarsource.sonarlint.core.test.utils.plugins.SonarPluginBuilder.newSonarPlugin;
 import static utils.AnalysisUtils.analyzeFileAndGetIssues;
 import static utils.AnalysisUtils.createFile;
@@ -76,7 +77,7 @@ class MonitoringMediumTests {
     var backend = harness.newBackend()
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PHP)
-      .withMonitoringEnabled()
+      .withBackendCapability(MONITORING)
       .start(client);
 
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
@@ -107,7 +108,7 @@ class MonitoringMediumTests {
       .withUnboundConfigScope(CONFIGURATION_SCOPE_ID)
       .withStandaloneEmbeddedPlugin(throwingPluginPath)
       .withEnabledLanguageInStandaloneMode(Language.PHP)
-      .withMonitoringEnabled()
+      .withBackendCapability(MONITORING)
       .start(client);
 
     var analysisId = UUID.randomUUID();

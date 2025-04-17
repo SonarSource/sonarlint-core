@@ -40,6 +40,7 @@ import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.LIST;
 import static org.awaitility.Awaitility.waitAtMost;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
 import static org.sonarsource.sonarlint.core.serverconnection.storage.ProjectStoragePaths.encodeForFs;
 
 class RuleSetSynchronizationMediumTests {
@@ -53,7 +54,7 @@ class RuleSetSynchronizationMediumTests {
     var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
-      .withFullSynchronization()
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start();
 
     addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");
@@ -78,7 +79,7 @@ class RuleSetSynchronizationMediumTests {
     var backend = harness.newBackend()
       .withEnabledLanguageInStandaloneMode(Language.JAVA)
       .withSonarQubeConnection("connectionId", server)
-      .withFullSynchronization()
+      .withBackendCapability(FULL_SYNCHRONIZATION)
       .start(client);
 
     addConfigurationScope(backend, "configScopeId", "connectionId", "projectKey");

@@ -32,6 +32,7 @@ import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SECURITY_HOTSPOTS;
 import static utils.AnalysisUtils.createFile;
 
 class StandaloneNoPluginMediumTests {
@@ -54,7 +55,7 @@ class StandaloneNoPluginMediumTests {
       ))
       .build();
     var backend = harness.newBackend()
-      .withSecurityHotspotsEnabled()
+      .withBackendCapability(SECURITY_HOTSPOTS)
       .withUnboundConfigScope(CONFIG_SCOPE_ID)
       .start(client);
 

@@ -51,6 +51,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 
 import static java.util.Objects.requireNonNull;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SERVER_SENT_EVENTS;
 
 public class WebSocketService {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -65,7 +66,7 @@ public class WebSocketService {
     ApplicationEventPublisher eventPublisher) {
     this.connectionConfigurationRepository = connectionConfigurationRepository;
     this.configurationRepository = configurationRepository;
-    this.shouldEnableWebSockets = params.getFeatureFlags().shouldManageServerSentEvents();
+    this.shouldEnableWebSockets = params.getBackendCapabilities().contains(SERVER_SENT_EVENTS);
     this.webSocketsByRegion = Map.of(
       SonarCloudRegion.US,
       new WebSocketManager(eventPublisher, connectionAwareHttpClientProvider, configurationRepository, sonarCloudActiveEnvironment.getWebSocketsEndpointUri(SonarCloudRegion.US)),

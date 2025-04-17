@@ -49,7 +49,6 @@ import org.sonarsource.sonarlint.core.event.FixSuggestionReceivedEvent;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.fs.ClientFileSystemService;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchProjectBranchParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.AssistCreatingConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.connection.SonarCloudConnectionParams;
@@ -62,10 +61,8 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.fix.ShowFixSuggestionP
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
-import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionReceivedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 import org.springframework.context.ApplicationEventPublisher;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
@@ -79,7 +76,6 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
 
   private final SonarLintRpcClient client;
   private final ApplicationEventPublisher eventPublisher;
-  private final boolean canOpenFixSuggestion;
   private final RequestHandlerBindingAssistant requestHandlerBindingAssistant;
   private final PathTranslationService pathTranslationService;
   private final SonarCloudActiveEnvironment sonarCloudActiveEnvironment;
@@ -87,12 +83,11 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
   private final ClientFileSystemService clientFs;
 
   public ShowFixSuggestionRequestHandler(SonarLintRpcClient client, ApplicationEventPublisher eventPublisher,
-    InitializeParams params, RequestHandlerBindingAssistant requestHandlerBindingAssistant,
+    RequestHandlerBindingAssistant requestHandlerBindingAssistant,
     PathTranslationService pathTranslationService, SonarCloudActiveEnvironment sonarCloudActiveEnvironment,
     SonarProjectBranchesSynchronizationService sonarProjectBranchesSynchronizationService, ClientFileSystemService clientFs) {
     this.client = client;
     this.eventPublisher = eventPublisher;
-    this.canOpenFixSuggestion = params.getFeatureFlags().canOpenFixSuggestion();
     this.requestHandlerBindingAssistant = requestHandlerBindingAssistant;
     this.pathTranslationService = pathTranslationService;
     this.sonarCloudActiveEnvironment = sonarCloudActiveEnvironment;
@@ -106,7 +101,7 @@ public class ShowFixSuggestionRequestHandler implements HttpRequestHandler {
     var origin = originHeader != null ? originHeader.getValue() : null;
     var showFixSuggestionQuery = extractQuery(request, origin);
 
-    if (origin == null || !canOpenFixSuggestion || !Method.POST.isSame(request.getMethod()) || !showFixSuggestionQuery.isValid()) {
+    if (origin == null || !Method.POST.isSame(request.getMethod()) || !showFixSuggestionQuery.isValid()) {
       response.setCode(HttpStatus.SC_BAD_REQUEST);
       return;
     }

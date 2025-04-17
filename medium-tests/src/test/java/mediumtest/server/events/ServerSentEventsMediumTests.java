@@ -73,6 +73,8 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.FULL_SYNCHRONIZATION;
+import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.SERVER_SENT_EVENTS;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JS;
 
@@ -101,7 +103,7 @@ class ServerSentEventsMediumTests {
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withUnboundConfigScope("configScope")
         .start();
@@ -118,7 +120,7 @@ class ServerSentEventsMediumTests {
         .withSonarQubeCloudEuRegionUri(sonarServerMock.baseUrl())
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarCloudConnection("connectionId")
         .withUnboundConfigScope("configScope")
         .start();
@@ -133,7 +135,7 @@ class ServerSentEventsMediumTests {
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .start();
@@ -156,7 +158,7 @@ class ServerSentEventsMediumTests {
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .start();
@@ -172,7 +174,7 @@ class ServerSentEventsMediumTests {
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope1", "connectionId", "projectKey1")
         .withBoundConfigScope("configScope2", "connectionId", "projectKey2")
@@ -199,7 +201,7 @@ class ServerSentEventsMediumTests {
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .start();
 
@@ -215,7 +217,7 @@ class ServerSentEventsMediumTests {
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .start(client);
       var projectKey = "projectKey";
@@ -240,7 +242,7 @@ class ServerSentEventsMediumTests {
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .start();
 
@@ -255,7 +257,7 @@ class ServerSentEventsMediumTests {
         .withSonarQubeCloudEuRegionUri(sonarServerMock.baseUrl())
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarCloudConnection("connectionId")
         .start();
 
@@ -278,7 +280,7 @@ class ServerSentEventsMediumTests {
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withUnboundConfigScope("configScope")
         .start();
@@ -294,7 +296,7 @@ class ServerSentEventsMediumTests {
         .withSonarQubeCloudEuRegionUri(sonarServerMock.baseUrl())
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarCloudConnection("connectionId")
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .start();
@@ -309,7 +311,7 @@ class ServerSentEventsMediumTests {
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .start();
@@ -325,7 +327,7 @@ class ServerSentEventsMediumTests {
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope1", "connectionId", "projectKey")
         .withBoundConfigScope("configScope2", "connectionId", "projectKey")
@@ -344,7 +346,7 @@ class ServerSentEventsMediumTests {
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope1", "connectionId", "projectKey1")
         .withBoundConfigScope("configScope2", "connectionId", "projectKey2")
@@ -372,7 +374,7 @@ class ServerSentEventsMediumTests {
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .start();
@@ -392,7 +394,7 @@ class ServerSentEventsMediumTests {
         .withSonarQubeCloudEuRegionUri(sonarServerMock.baseUrl())
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarCloudConnection("connectionId")
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .start();
@@ -407,7 +409,7 @@ class ServerSentEventsMediumTests {
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .start();
 
@@ -429,7 +431,7 @@ class ServerSentEventsMediumTests {
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withUnboundConfigScope("configScope")
         .start();
 
@@ -444,7 +446,7 @@ class ServerSentEventsMediumTests {
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .start();
 
@@ -460,7 +462,7 @@ class ServerSentEventsMediumTests {
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .start();
 
@@ -481,7 +483,7 @@ class ServerSentEventsMediumTests {
         .withSonarQubeCloudEuRegionUri(sonarServerMock.baseUrl())
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarCloudConnection("connectionId")
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .start();
@@ -496,7 +498,7 @@ class ServerSentEventsMediumTests {
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .start();
@@ -516,7 +518,7 @@ class ServerSentEventsMediumTests {
       var backend = harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarQubeConnection("connectionId", sonarServerMock.baseUrl())
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .start();
@@ -537,7 +539,7 @@ class ServerSentEventsMediumTests {
         .withSonarQubeCloudEuRegionUri(sonarServerMock.baseUrl())
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
+        .withBackendCapability(SERVER_SENT_EVENTS)
         .withSonarCloudConnection("connectionId")
         .withBoundConfigScope("configScope", "connectionId", "projectKey")
         .start();
@@ -569,8 +571,7 @@ class ServerSentEventsMediumTests {
       harness.newBackend()
         .withEnabledLanguageInStandaloneMode(JS)
         .withExtraEnabledLanguagesInConnectedMode(JAVA)
-        .withServerSentEventsEnabled()
-        .withFullSynchronization()
+        .withBackendCapability(SERVER_SENT_EVENTS, FULL_SYNCHRONIZATION)
         .withSonarQubeConnection("connectionId", serverWithTaintIssues)
         .withBoundConfigScope("configScope", "connectionId", projectKey)
         .start(fakeClient);
