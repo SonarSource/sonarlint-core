@@ -109,6 +109,7 @@ class TelemetryHttpClientTests {
       .willReturn(aResponse()));
     var telemetryLocalStorage = new TelemetryLocalStorage();
     telemetryLocalStorage.helpAndFeedbackLinkClicked("docs");
+    telemetryLocalStorage.analysisReportingTriggered("pre_commit");
     telemetryLocalStorage.addQuickFixAppliedForRule("java:S107");
     telemetryLocalStorage.addQuickFixAppliedForRule("python:S107");
     spy.upload(telemetryLocalStorage, getTelemetryLiveAttributesDto());
@@ -122,7 +123,7 @@ class TelemetryHttpClientTests {
     telemetryMock.verify(postRequestedFor(urlEqualTo("/metrics"))
       .withRequestBody(
         equalToJson(
-          "{\"sonarlint_product\":\"product\",\"os\":\"" + PLATFORM + "\",\"dimension\":\"installation\",\"metric_values\": [{\"key\":\"shared_connected_mode.manual\",\"value\":\"0\",\"type\":\"integer\",\"granularity\":\"daily\"},{\"key\":\"help_and_feedback.docs\",\"value\":\"1\",\"type\":\"integer\",\"granularity\":\"daily\"},{\"key\":\"quick_fix.applied_count\",\"value\":\"2\",\"type\":\"integer\",\"granularity\":\"daily\"}]}",
+          "{\"sonarlint_product\":\"product\",\"os\":\"" + PLATFORM + "\",\"dimension\":\"installation\",\"metric_values\": [{\"key\":\"shared_connected_mode.manual\",\"value\":\"0\",\"type\":\"integer\",\"granularity\":\"daily\"},{\"key\":\"help_and_feedback.docs\",\"value\":\"1\",\"type\":\"integer\",\"granularity\":\"daily\"},{\"key\":\"analysis_reporting.pre_commit\",\"value\":\"1\",\"type\":\"integer\",\"granularity\":\"daily\"},{\"key\":\"quick_fix.applied_count\",\"value\":\"2\",\"type\":\"integer\",\"granularity\":\"daily\"}]}",
           true, true)));
   }
 
