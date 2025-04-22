@@ -29,13 +29,9 @@ import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.check.CheckSmartNotificationsSupportedParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarQubeConnectionDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.validate.ValidateConnectionParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Either;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.SonarCloudRegion;
-import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTest;
 import org.sonarsource.sonarlint.core.test.utils.junit5.SonarLintTestHarness;
@@ -187,18 +183,5 @@ class ConnectionSetupMediumTests {
 
     assertThat(connectionResponse.isSuccess()).isFalse();
     assertThat(connectionResponse.getMessage()).contains("notexists");
-  }
-
-  @SonarLintTest
-  void it_should_always_support_notifications(SonarLintTestHarness harness) throws ExecutionException, InterruptedException {
-    var fakeClient = harness.newFakeClient().build();
-    var backend = harness.newBackend().start(fakeClient);
-
-    var connectionResponse = backend.getConnectionService()
-      .checkSmartNotificationsSupported(new CheckSmartNotificationsSupportedParams(
-        new TransientSonarCloudConnectionDto("https://sonarcloud.io", Either.forLeft(new TokenDto("foo")), SonarCloudRegion.EU)))
-      .get();
-
-    assertThat(connectionResponse.isSuccess()).isTrue();
   }
 }

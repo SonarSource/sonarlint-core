@@ -27,8 +27,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.check.CheckSmartNotificationsSupportedParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.check.CheckSmartNotificationsSupportedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidChangeCredentialsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.FuzzySearchUserOrganizationsParams;
@@ -93,15 +91,6 @@ public interface ConnectionRpcService {
    */
   @JsonRequest
   CompletableFuture<ValidateConnectionResponse> validateConnection(ValidateConnectionParams params);
-
-  /**
-   * Check that smart notifications are supported by the server by sending a GET request to /api/developers/search_events?projects=&from=
-   * It is successfully when response code is >= 200 and < 300
-   * @deprecated the smart notifications are always supported on SQC and the versions of SQS we support. This will always return true
-   */
-  @Deprecated(since = "10.16")
-  @JsonRequest
-  CompletableFuture<CheckSmartNotificationsSupportedResponse> checkSmartNotificationsSupported(CheckSmartNotificationsSupportedParams params);
 
   @JsonRequest
   CompletableFuture<ListUserOrganizationsResponse> listUserOrganizations(ListUserOrganizationsParams params);

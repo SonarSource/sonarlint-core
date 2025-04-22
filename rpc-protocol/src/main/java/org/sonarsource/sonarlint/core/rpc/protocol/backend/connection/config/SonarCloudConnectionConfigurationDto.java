@@ -31,11 +31,6 @@ public class SonarCloudConnectionConfigurationDto {
   private final SonarCloudRegion region;
   private final boolean disableNotifications;
 
-  @Deprecated(since = "10.14")
-  public SonarCloudConnectionConfigurationDto(String connectionId, String organization, boolean disableNotifications) {
-    this(connectionId, organization, SonarCloudRegion.EU, disableNotifications);
-  }
-
   public SonarCloudConnectionConfigurationDto(String connectionId, String organization, SonarCloudRegion region, boolean disableNotifications) {
     this.connectionId = connectionId;
     this.organization = organization;

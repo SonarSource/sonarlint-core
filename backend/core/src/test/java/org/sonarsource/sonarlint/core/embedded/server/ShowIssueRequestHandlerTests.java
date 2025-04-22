@@ -43,6 +43,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
+import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
@@ -70,7 +71,6 @@ import org.sonarsource.sonarlint.core.serverconnection.SonarProjectStorage;
 import org.sonarsource.sonarlint.core.storage.StorageService;
 import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
-import org.sonarsource.sonarlint.core.usertoken.UserTokenService;
 import org.springframework.context.ApplicationEventPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -96,6 +96,7 @@ class ShowIssueRequestHandlerTests {
   private ProjectBranchesStorage branchesStorage;
   private IssueApi issueApi;
   private TelemetryService telemetryService;
+
   @BeforeEach
   void setup() {
     connectionConfigurationRepository = mock(ConnectionConfigurationRepository.class);
@@ -106,7 +107,6 @@ class ShowIssueRequestHandlerTests {
     var filePathTranslation = mock(FilePathTranslation.class);
     var pathTranslationService = mock(PathTranslationService.class);
     when(pathTranslationService.getOrComputePathTranslation(any())).thenReturn(Optional.of(filePathTranslation));
-    var userTokenService = mock(UserTokenService.class);
     var sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
     telemetryService = mock(TelemetryService.class);
     issueApi = mock(IssueApi.class);
@@ -130,9 +130,9 @@ class ShowIssueRequestHandlerTests {
     when(connectionConfiguration.hasConnectionWithOrigin(SonarCloudRegion.EU.getProductionUri().toString())).thenReturn(true);
 
     showIssueRequestHandler = spy(new ShowIssueRequestHandler(sonarLintRpcClient, serverApiProvider, telemetryService,
-      new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintRpcClient,
-        connectionConfigurationRepository, configurationRepository, userTokenService,
-        sonarCloudActiveEnvironment, connectionConfiguration), pathTranslationService, sonarCloudActiveEnvironment, sonarProjectBranchesSynchronizationService));
+      new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintRpcClient, connectionConfigurationRepository, configurationRepository,
+        sonarCloudActiveEnvironment, connectionConfiguration, mock(ConnectionManager.class)),
+      pathTranslationService, sonarCloudActiveEnvironment, sonarProjectBranchesSynchronizationService));
   }
 
   @Test
@@ -330,16 +330,16 @@ class ShowIssueRequestHandlerTests {
       SonarCloudRegion.US, false).isValid()).isFalse();
     assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "", "value", null,
       SonarCloudRegion.US, false).isValid()).isFalse();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "name", "value", null
-      , SonarCloudRegion.US, false).isValid()).isTrue();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery("serverUrl", "project", "issue", "branch", "pullRequest", "name", "value", null, SonarCloudRegion.US, false).isValid())
+      .isTrue();
   }
 
   @Test
   void should_validate_issue_query_for_sc() {
     assertThat(new ShowIssueRequestHandler.ShowIssueQuery(null, "project", "issue", "branch", "pullRequest", "name", "value",
       "organizationKey", SonarCloudRegion.US, true).isValid()).isTrue();
-    assertThat(new ShowIssueRequestHandler.ShowIssueQuery(null, "project", "issue", "", "pullRequest", "name", "value", "organizationKey"
-      , SonarCloudRegion.US, true).isValid()).isTrue();
+    assertThat(new ShowIssueRequestHandler.ShowIssueQuery(null, "project", "issue", "", "pullRequest", "name", "value", "organizationKey", SonarCloudRegion.US, true).isValid())
+      .isTrue();
     assertThat(new ShowIssueRequestHandler.ShowIssueQuery(null, "project", "issue", null, "pullRequest", "name", "value",
       "organizationKey", SonarCloudRegion.US, true).isValid()).isTrue();
 
@@ -366,9 +366,9 @@ class ShowIssueRequestHandlerTests {
     var context = mock(HttpContext.class);
 
     when(connectionConfigurationRepository.findByOrganization(any())).thenReturn(List.of(
-      new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "name", "organizationKey", SonarCloudRegion.EU, false)));
-    when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope"
-      , "connectionId", "projectKey")));
+      new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "name", "organizationKey", SonarCloudRegion.EU,
+        false)));
+    when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope", "connectionId", "projectKey")));
     when(sonarLintRpcClient.matchProjectBranch(any())).thenReturn(CompletableFuture.completedFuture(new MatchProjectBranchResponse(false)));
 
     showIssueRequestHandler.handle(request, response, context);
@@ -395,9 +395,9 @@ class ShowIssueRequestHandlerTests {
     var context = mock(HttpContext.class);
 
     when(connectionConfigurationRepository.findByOrganization(any())).thenReturn(List.of(
-      new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "name", "organizationKey", SonarCloudRegion.EU, false)));
-    when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope"
-      , "connectionId", "projectKey")));
+      new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "name", "organizationKey", SonarCloudRegion.EU,
+        false)));
+    when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope", "connectionId", "projectKey")));
     when(sonarLintRpcClient.matchProjectBranch(any())).thenReturn(CompletableFuture.completedFuture(new MatchProjectBranchResponse(true)));
     when(branchesStorage.exists()).thenReturn(true);
     when(branchesStorage.read()).thenReturn(new ProjectBranches(Set.of(), "main"));
@@ -425,9 +425,9 @@ class ShowIssueRequestHandlerTests {
     var context = mock(HttpContext.class);
 
     when(connectionConfigurationRepository.findByOrganization(any())).thenReturn(List.of(
-      new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "name", "organizationKey", SonarCloudRegion.EU, false)));
-    when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope"
-      , "connectionId", "projectKey")));
+      new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "name", "organizationKey", SonarCloudRegion.EU,
+        false)));
+    when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope", "connectionId", "projectKey")));
     when(sonarLintRpcClient.matchProjectBranch(any())).thenReturn(CompletableFuture.completedFuture(new MatchProjectBranchResponse(true)));
     when(branchesStorage.exists()).thenReturn(false);
     var serverIssueDetails = mock(IssueApi.ServerIssueDetails.class);

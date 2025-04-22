@@ -42,6 +42,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.ArgumentCaptor;
 import org.sonarsource.sonarlint.core.BindingCandidatesFinder;
 import org.sonarsource.sonarlint.core.BindingSuggestionProvider;
+import org.sonarsource.sonarlint.core.ConnectionManager;
 import org.sonarsource.sonarlint.core.SonarCloudActiveEnvironment;
 import org.sonarsource.sonarlint.core.SonarCloudRegion;
 import org.sonarsource.sonarlint.core.commons.BoundScope;
@@ -55,14 +56,11 @@ import org.sonarsource.sonarlint.core.repository.config.ConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.ConnectionConfigurationRepository;
 import org.sonarsource.sonarlint.core.repository.connection.SonarCloudConnectionConfiguration;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.branch.MatchProjectBranchResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.MessageType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.message.ShowMessageParams;
 import org.sonarsource.sonarlint.core.serverconnection.ProjectBranches;
 import org.sonarsource.sonarlint.core.sync.SonarProjectBranchesSynchronizationService;
-import org.sonarsource.sonarlint.core.usertoken.UserTokenService;
 import org.springframework.context.ApplicationEventPublisher;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -80,8 +78,6 @@ class ShowFixSuggestionRequestHandlerTests {
   private ConnectionConfigurationRepository connectionConfigurationRepository;
   private ConfigurationRepository configurationRepository;
   private SonarLintRpcClient sonarLintRpcClient;
-  private FeatureFlagsDto featureFlagsDto;
-  private InitializeParams initializeParams;
   private ShowFixSuggestionRequestHandler showFixSuggestionRequestHandler;
   private ApplicationEventPublisher eventPublisher;
   private ClientFile clientFile;
@@ -97,7 +93,6 @@ class ShowFixSuggestionRequestHandlerTests {
     filePathTranslation = mock(FilePathTranslation.class);
     var pathTranslationService = mock(PathTranslationService.class);
     when(pathTranslationService.getOrComputePathTranslation(any())).thenReturn(Optional.of(filePathTranslation));
-    var userTokenService = mock(UserTokenService.class);
     var sonarCloudActiveEnvironment = SonarCloudActiveEnvironment.prod();
     eventPublisher = mock(ApplicationEventPublisher.class);
     var sonarProjectBranchesSynchronizationService = mock(SonarProjectBranchesSynchronizationService.class);
@@ -109,9 +104,9 @@ class ShowFixSuggestionRequestHandlerTests {
     when(connectionConfiguration.hasConnectionWithOrigin(SonarCloudRegion.EU.getProductionUri().toString())).thenReturn(true);
 
     showFixSuggestionRequestHandler = new ShowFixSuggestionRequestHandler(sonarLintRpcClient, eventPublisher,
-      new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintRpcClient, connectionConfigurationRepository,
-        configurationRepository, userTokenService, sonarCloudActiveEnvironment, connectionConfiguration), pathTranslationService,
-      sonarCloudActiveEnvironment, sonarProjectBranchesSynchronizationService, clientFs);
+      new RequestHandlerBindingAssistant(bindingSuggestionProvider, bindingCandidatesFinder, sonarLintRpcClient, connectionConfigurationRepository, configurationRepository,
+        sonarCloudActiveEnvironment, connectionConfiguration, mock(ConnectionManager.class)),
+      pathTranslationService, sonarCloudActiveEnvironment, sonarProjectBranchesSynchronizationService, clientFs);
   }
 
   @Test
@@ -234,8 +229,9 @@ class ShowFixSuggestionRequestHandlerTests {
   void should_validate_fix_suggestion_query_for_sc() {
     assertThat(new ShowFixSuggestionRequestHandler.ShowFixSuggestionQuery(null, "project", "issue", "branch", "name", "value",
       "organizationKey", true, generateFixSuggestionPayload()).isValid()).isTrue();
-    assertThat(new ShowFixSuggestionRequestHandler.ShowFixSuggestionQuery(null, "project", "issue", "branch", "name", "value", null, true
-      , generateFixSuggestionPayload()).isValid()).isFalse();
+    assertThat(
+      new ShowFixSuggestionRequestHandler.ShowFixSuggestionQuery(null, "project", "issue", "branch", "name", "value", null, true, generateFixSuggestionPayload()).isValid())
+        .isFalse();
   }
 
   @Test
@@ -266,7 +262,8 @@ class ShowFixSuggestionRequestHandlerTests {
     var context = mock(HttpContext.class);
 
     when(connectionConfigurationRepository.findByOrganization(any())).thenReturn(List.of(
-      new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "name", "organizationKey", SonarCloudRegion.EU, false)));
+      new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "name", "organizationKey", SonarCloudRegion.EU,
+        false)));
     when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope", "connectionId", "projectKey")));
     when(sonarLintRpcClient.matchProjectBranch(any())).thenReturn(CompletableFuture.completedFuture(new MatchProjectBranchResponse(false)));
 
@@ -311,7 +308,8 @@ class ShowFixSuggestionRequestHandlerTests {
     when(clientFile.getUri()).thenReturn(URI.create("file:///src/main/java/Main.java"));
     when(filePathTranslation.serverToIdePath(any())).thenReturn(Path.of("src/main/java/Main.java"));
     when(connectionConfigurationRepository.findByOrganization(any())).thenReturn(List.of(
-      new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "name", "organizationKey", SonarCloudRegion.EU, false)));
+      new SonarCloudConnectionConfiguration(SonarCloudRegion.EU.getProductionUri(), SonarCloudRegion.EU.getApiProductionUri(), "name", "organizationKey", SonarCloudRegion.EU,
+        false)));
     when(configurationRepository.getBoundScopesToConnectionAndSonarProject(any(), any())).thenReturn(List.of(new BoundScope("configScope", "connectionId", "projectKey")));
     when(sonarLintRpcClient.matchProjectBranch(any())).thenReturn(CompletableFuture.completedFuture(new MatchProjectBranchResponse(true)));
 
@@ -357,13 +355,10 @@ class ShowFixSuggestionRequestHandlerTests {
         List.of(new ShowFixSuggestionRequestHandler.ChangesPayload(
           new ShowFixSuggestionRequestHandler.TextRangePayload(0, 1),
           "before",
-          "after"
-        )),
-        "path"
-      ),
+          "after")),
+        "path"),
       "suggestionId",
-      "explanation"
-    );
+      "explanation");
   }
 
 }

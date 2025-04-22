@@ -1,5 +1,17 @@
 # 10.20
 
+## Breaking changes
+
+* Remove `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.UserTokenRpcService` and `org.sonarsource.sonarlint.core.rpc.impl.SonarLintRpcServerImpl.getUserTokenService`. They were not useful anymore.
+* Remove the `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams` deprecated constructor. Use the other one.
+* Remove the `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService#checkSmartNotificationsSupported` method and associated parameter and response. They were not useful anymore.
+* Remove the `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.common.TransientSonarCloudConnectionDto` deprecated constructor. Use the other one.
+* Remove the `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarCloudConnectionConfigurationDto` deprecated constructor. Use the other one.
+* Remove the `org.sonarsource.sonarlint.core.rpc.protocol.backend.rules.GetEffectiveRuleDetailsParams` deprecated constructor. Use the other one.
+* Remove the `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.SonarCloudAlternativeEnvironmentDto` deprecated constructors. Use the other one.
+* Remove the `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.ClientConstantInfoDto` deprecated constructor and the `getPid` getter. They were not useful anymore.
+* Remove the `org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.GetOrganizationParams` deprecated constructor. Use the other one.
+
 ## New features
 
 * Add a new constructor to `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams` constructor to provide flags as an enum values list.

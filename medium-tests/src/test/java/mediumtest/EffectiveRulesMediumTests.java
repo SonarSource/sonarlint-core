@@ -123,7 +123,7 @@ class EffectiveRulesMediumTests {
       .withStandaloneEmbeddedPluginAndEnabledLanguage(TestPlugin.PYTHON)
       .start();
 
-    var futureResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:SXXXX"));
+    var futureResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:SXXXX", null));
 
     assertThat(futureResponse).failsWithin(1, TimeUnit.SECONDS)
       .withThrowableOfType(ExecutionException.class)
@@ -235,7 +235,7 @@ class EffectiveRulesMediumTests {
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .start();
 
-    var futureResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:S139"));
+    var futureResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:S139", null));
 
     assertThat(futureResponse).failsWithin(1, TimeUnit.SECONDS)
       .withThrowableOfType(ExecutionException.class)
@@ -252,7 +252,7 @@ class EffectiveRulesMediumTests {
       .withBoundConfigScope("scopeId", "connectionId", "projectKey")
       .start();
 
-    var futureResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:S139"));
+    var futureResponse = backend.getRulesService().getEffectiveRuleDetails(new GetEffectiveRuleDetailsParams("scopeId", "python:S139", null));
 
     assertThat(futureResponse).failsWithin(3, TimeUnit.SECONDS)
       .withThrowableOfType(ExecutionException.class)
