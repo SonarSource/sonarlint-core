@@ -27,15 +27,6 @@ public class HelpGenerateUserTokenParams {
     this.serverUrl = serverUrl;
   }
 
-  /**
-   *
-   * @deprecated isSonarCloud param not used anymore since both SonarCloud and minimal supported SonarQube (9.9) supports automatic token generation
-   */
-  @Deprecated(since = "10.3")
-  public HelpGenerateUserTokenParams(String serverUrl, boolean isSonarCloud) {
-    this.serverUrl = serverUrl;
-  }
-
   public String getServerUrl() {
     return serverUrl;
   }

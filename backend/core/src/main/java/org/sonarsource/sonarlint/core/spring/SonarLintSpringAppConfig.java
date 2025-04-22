@@ -105,7 +105,6 @@ import org.sonarsource.sonarlint.core.tracking.KnownFindingsStorageService;
 import org.sonarsource.sonarlint.core.tracking.LocalOnlyIssueRepository;
 import org.sonarsource.sonarlint.core.tracking.TaintVulnerabilityTrackingService;
 import org.sonarsource.sonarlint.core.tracking.TrackingService;
-import org.sonarsource.sonarlint.core.usertoken.UserTokenService;
 import org.sonarsource.sonarlint.core.websocket.WebSocketService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -165,7 +164,6 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.Bac
   StorageService.class,
   SeverityModeService.class,
   NewCodeService.class,
-  UserTokenService.class,
   RequestHandlerBindingAssistant.class,
   TaintVulnerabilityTrackingService.class,
   SonarProjectBranchesSynchronizationService.class,

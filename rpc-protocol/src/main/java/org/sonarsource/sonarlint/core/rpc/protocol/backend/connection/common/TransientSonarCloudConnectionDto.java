@@ -36,11 +36,6 @@ public class TransientSonarCloudConnectionDto {
   private final Either<TokenDto, UsernamePasswordDto> credentials;
   private final SonarCloudRegion region;
 
-  @Deprecated(since = "10.14")
-  public TransientSonarCloudConnectionDto(@Nullable String organization, Either<TokenDto, UsernamePasswordDto> credentials) {
-    this(organization, credentials, SonarCloudRegion.EU);
-  }
-
   public TransientSonarCloudConnectionDto(@Nullable String organization, Either<TokenDto, UsernamePasswordDto> credentials, SonarCloudRegion region) {
     this.organization = organization;
     this.credentials = credentials;

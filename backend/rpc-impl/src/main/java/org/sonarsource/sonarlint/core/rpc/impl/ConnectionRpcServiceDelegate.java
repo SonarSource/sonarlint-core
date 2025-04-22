@@ -27,8 +27,6 @@ import org.sonarsource.sonarlint.core.SonarProjectsCache;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.ConnectionRpcService;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.HelpGenerateUserTokenResponse;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.check.CheckSmartNotificationsSupportedParams;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.check.CheckSmartNotificationsSupportedResponse;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidChangeCredentialsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.DidUpdateConnectionsParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.org.FuzzySearchUserOrganizationsParams;
@@ -70,11 +68,6 @@ class ConnectionRpcServiceDelegate extends AbstractRpcServiceDelegate implements
   @Override
   public CompletableFuture<ValidateConnectionResponse> validateConnection(ValidateConnectionParams params) {
     return requestAsync(cancelMonitor -> getBean(ConnectionService.class).validateConnection(params.getTransientConnection(), cancelMonitor));
-  }
-
-  @Override
-  public CompletableFuture<CheckSmartNotificationsSupportedResponse> checkSmartNotificationsSupported(CheckSmartNotificationsSupportedParams params) {
-    return requestAsync(cancelMonitor -> new CheckSmartNotificationsSupportedResponse(true));
   }
 
   @Override

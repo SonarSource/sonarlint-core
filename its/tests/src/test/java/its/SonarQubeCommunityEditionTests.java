@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -34,18 +33,15 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarqube.ws.client.WsClient;
 import org.sonarqube.ws.client.users.CreateRequest;
-import org.sonarqube.ws.client.usertokens.GenerateRequest;
 import org.sonarsource.sonarlint.core.rpc.client.ClientJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.client.ConnectionNotFoundException;
 import org.sonarsource.sonarlint.core.rpc.client.SonarLintRpcClientDelegate;
 import org.sonarsource.sonarlint.core.rpc.impl.BackendJsonRpcLauncher;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcServer;
-import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.auth.RevokeTokenParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.connection.config.SonarQubeConnectionConfigurationDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.FeatureFlagsDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.HttpConfigurationDto;
@@ -56,7 +52,6 @@ import org.sonarsource.sonarlint.core.rpc.protocol.common.TokenDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.UsernamePasswordDto;
 
 import static java.util.Collections.emptySet;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.JAVA;
 
 class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
@@ -115,26 +110,6 @@ class SonarQubeCommunityEditionTests extends AbstractConnectedTests {
   static void stopBackend() throws ExecutionException, InterruptedException {
     serverLauncher.getServer().shutdown().get();
   }
-
-  @Test
-  void test_revoke_token() {
-    var tokenName = "testTokenForRevoking";
-
-    var testToken = adminWsClient.userTokens()
-      .generate(new GenerateRequest().setName(tokenName));
-    assertThat(testToken.getName()).isEqualTo(tokenName);
-
-    // Using the credentials we used throughout the test, we want to remove the additional token!
-    assertThat(backend
-      .getUserTokenService()
-      .revokeToken(new RevokeTokenParams(ORCHESTRATOR.getServer().getUrl(), testToken.getName(), testToken.getToken())))
-      .succeedsWithin(Duration.ofSeconds(10));
-
-    var searchResult = adminWsClient.userTokens().search(new org.sonarqube.ws.client.usertokens.SearchRequest().setLogin(testToken.getLogin()));
-    assertThat(searchResult.getUserTokensCount()).isZero();
-  }
-
-  // TODO Possibly add tests for a method which will replace SonarLintEngine.getPluginDetails()
 
   private static SonarLintRpcClientDelegate newDummySonarLintClient() {
     return new MockSonarLintRpcClientDelegate() {

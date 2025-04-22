@@ -74,7 +74,7 @@ import static org.sonarsource.sonarlint.core.rpc.protocol.common.Language.COBOL;
 class StandaloneTests {
   public static final TelemetryClientConstantAttributesDto IT_TELEMETRY_ATTRIBUTES = new TelemetryClientConstantAttributesDto("SonarLint ITs", "SonarLint ITs",
     "1.2.3", "4.5.6", Collections.emptyMap());
-  public static final ClientConstantInfoDto IT_CLIENT_INFO = new ClientConstantInfoDto("clientName", "integrationTests", 0);
+  public static final ClientConstantInfoDto IT_CLIENT_INFO = new ClientConstantInfoDto("clientName", "integrationTests");
   private static final String CONFIG_SCOPE_ID = "my-ide-project-name";
   @TempDir
   private File baseDir;

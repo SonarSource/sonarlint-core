@@ -33,11 +33,6 @@ public class GetOrganizationParams {
   private final String organizationKey;
   private final SonarCloudRegion region;
 
-  @Deprecated(since = "10.14")
-  public GetOrganizationParams(Either<TokenDto, UsernamePasswordDto> credentials, String organizationKey) {
-    this(credentials, organizationKey, SonarCloudRegion.EU);
-  }
-
   public GetOrganizationParams(Either<TokenDto, UsernamePasswordDto> credentials, String organizationKey, SonarCloudRegion region) {
     this.credentials = credentials;
     this.organizationKey = organizationKey;

@@ -31,16 +31,6 @@ public class GetEffectiveRuleDetailsParams {
   @Nullable
   private final String contextKey;
 
-  /**
-   * @param configurationScopeId the configuration scope id (see spec/glossary.adoc for more details)
-   * @param ruleKey the key of the rule
-   * @deprecated use {@link GetEffectiveRuleDetailsParams}
-   */
-  @Deprecated(since = "8.13", forRemoval = true)
-  public GetEffectiveRuleDetailsParams(String configurationScopeId, String ruleKey) {
-    this(configurationScopeId, ruleKey, null);
-  }
-
   public GetEffectiveRuleDetailsParams(String configurationScopeId, String ruleKey, @Nullable String contextKey) {
     this.configurationScopeId = requireNonNull(configurationScopeId);
     this.ruleKey = requireNonNull(ruleKey);

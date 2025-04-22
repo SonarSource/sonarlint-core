@@ -35,20 +35,9 @@ public class ClientConstantInfoDto {
    */
   private final String userAgent;
 
-  private final long pid;
-
   public ClientConstantInfoDto(String name, String userAgent) {
-    this(name, userAgent, 0);
-  }
-
-  /**
-   * @deprecated the pid parameter is not needed anymore and determined by the backend directly. Use the constructor without the pid parameter
-   */
-  @Deprecated(since = "10.2")
-  public ClientConstantInfoDto(String name, String userAgent, long pid) {
     this.name = name;
     this.userAgent = userAgent;
-    this.pid = pid;
   }
 
   public String getName() {
@@ -57,13 +46,5 @@ public class ClientConstantInfoDto {
 
   public String getUserAgent() {
     return userAgent;
-  }
-
-  /**
-   * @deprecated the pid info is not needed anymore and determined by the backend directly. This method is not used
-   */
-  @Deprecated(since = "10.2")
-  public long getPid() {
-    return pid;
   }
 }

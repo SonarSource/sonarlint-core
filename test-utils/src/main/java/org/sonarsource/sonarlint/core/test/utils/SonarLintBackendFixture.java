@@ -489,7 +489,7 @@ public class SonarLintBackendFixture {
         beforeInitializeCallbacks.forEach(callback -> callback.accept(sonarLintBackend));
         var telemetryInitDto = new TelemetryClientConstantAttributesDto("mediumTests", "mediumTests",
           "1.2.3", "4.5.6", emptyMap());
-        var clientInfo = new ClientConstantInfoDto(clientName, userAgent, 0);
+        var clientInfo = new ClientConstantInfoDto(clientName, userAgent);
         
         // If more regions are added in the future, extend this by adding a new entry set and add the fields / methods above!
         var sonarCloudAlternativeEnvironment = new SonarCloudAlternativeEnvironmentDto(Map.of(
