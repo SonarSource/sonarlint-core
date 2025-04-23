@@ -46,6 +46,7 @@ import org.sonarsource.sonarlint.core.commons.SonarLintBlameResult;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.util.git.GitService;
 import org.sonarsource.sonarlint.core.commons.util.git.exceptions.GitException;
+import org.sonarsource.sonarlint.core.event.MatchingSessionEndedEvent;
 import org.sonarsource.sonarlint.core.file.PathTranslationService;
 import org.sonarsource.sonarlint.core.local.only.LocalOnlyIssueStorageService;
 import org.sonarsource.sonarlint.core.newcode.NewCodeService;
@@ -178,9 +179,9 @@ public class TrackingService {
         return Map.entry(ideRelativePath, matches);
       }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
-    matchingSession.finish();
     issuesToReport.forEach((clientRelativePath, trackedIssues) -> storeTrackedIssues(knownFindingsStore, configurationScopeId, clientRelativePath, trackedIssues));
     hotspotsToReport.forEach((clientRelativePath, trackedHotspots) -> storeTrackedSecurityHotspots(knownFindingsStore, configurationScopeId, clientRelativePath, trackedHotspots));
+    eventPublisher.publishEvent(new MatchingSessionEndedEvent(matchingSession.countNewIssues(), matchingSession.countRemainingUnmatchedIssues()));
     return new MatchingResult(issuesToReport, hotspotsToReport);
   }
 
@@ -274,7 +275,7 @@ public class TrackingService {
       .collect(toMap(Function.identity(), relativePath -> knownFindingsStore.loadSecurityHotspotsForFile(configurationScopeId, relativePath)));
     var introductionDateProvider = getIntroductionDateProvider(configurationScopeId, fileRelativePaths, fileUris, fileContentProvider);
     var previousFindings = new KnownFindings(issuesByRelativePath, hotspotsByRelativePath);
-    return new MatchingSession(previousFindings, introductionDateProvider, eventPublisher);
+    return new MatchingSession(previousFindings, introductionDateProvider);
   }
 
   private IntroductionDateProvider getIntroductionDateProvider(String configurationScopeId, Set<Path> fileRelativePaths, Set<URI> fileUris,
@@ -317,13 +318,7 @@ public class TrackingService {
       .orElse(Instant.now());
   }
 
-  private static class MatchingResult {
-    public final Map<Path, List<TrackedIssue>> issuesToReport;
-    public final Map<Path, List<TrackedIssue>> hotspotsToReport;
-
-    public MatchingResult(Map<Path, List<TrackedIssue>> issuesToReport, Map<Path, List<TrackedIssue>> hotspotsToReport) {
-      this.issuesToReport = issuesToReport;
-      this.hotspotsToReport = hotspotsToReport;
-    }
+  private record MatchingResult(Map<Path, List<TrackedIssue>> issuesToReport,
+                                       Map<Path, List<TrackedIssue>> hotspotsToReport) {
   }
 }
