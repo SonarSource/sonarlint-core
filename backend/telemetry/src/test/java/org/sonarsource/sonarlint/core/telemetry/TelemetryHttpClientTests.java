@@ -111,9 +111,8 @@ class TelemetryHttpClientTests {
     telemetryLocalStorage.helpAndFeedbackLinkClicked("docs");
     telemetryLocalStorage.addQuickFixAppliedForRule("java:S107");
     telemetryLocalStorage.addQuickFixAppliedForRule("python:S107");
-    telemetryLocalStorage.incrementNewlyFoundIssues();
-    telemetryLocalStorage.incrementIssuesFixed();
-    telemetryLocalStorage.incrementIssuesFixed();
+    telemetryLocalStorage.addNewlyFoundIssues(1);
+    telemetryLocalStorage.addFixedIssues(2);
     spy.upload(telemetryLocalStorage, getTelemetryLiveAttributesDto());
 
     telemetryMock.verify(postRequestedFor(urlEqualTo("/"))

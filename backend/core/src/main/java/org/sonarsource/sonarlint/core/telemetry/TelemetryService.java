@@ -35,6 +35,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.util.FailSafeExecutors;
 import org.sonarsource.sonarlint.core.event.FixSuggestionReceivedEvent;
 import org.sonarsource.sonarlint.core.event.LocalOnlyIssueStatusChangedEvent;
+import org.sonarsource.sonarlint.core.event.MatchingSessionEndedEvent;
 import org.sonarsource.sonarlint.core.event.ServerIssueStatusChangedEvent;
 import org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcClient;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
@@ -227,12 +228,12 @@ public class TelemetryService {
     updateTelemetry(TelemetryLocalStorage::incrementExportedConnectedModeCount);
   }
 
-  public void newIssueFound() {
-    updateTelemetry(TelemetryLocalStorage::incrementNewlyFoundIssues);
-  }
-
-  public void issueFixed() {
-    updateTelemetry(TelemetryLocalStorage::incrementIssuesFixed);
+  @EventListener
+  public void onMatchingSessionEnded(MatchingSessionEndedEvent event) {
+    updateTelemetry(telemetryLocalStorage -> {
+      telemetryLocalStorage.addNewlyFoundIssues(event.newIssuesFound());
+      telemetryLocalStorage.addFixedIssues(event.issuesFixed());
+    });
   }
 
   @EventListener

@@ -29,12 +29,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.sonarsource.sonarlint.core.analysis.RawIssue;
 import org.sonarsource.sonarlint.core.commons.KnownFinding;
-import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
+import org.sonarsource.sonarlint.core.event.MatchingSessionEndedEvent;
 import org.sonarsource.sonarlint.core.tracking.IntroductionDateProvider;
 import org.sonarsource.sonarlint.core.tracking.IssueMapper;
 import org.sonarsource.sonarlint.core.tracking.KnownFindings;
 import org.sonarsource.sonarlint.core.tracking.TextRangeUtils;
 import org.sonarsource.sonarlint.core.tracking.TrackedIssue;
+import org.springframework.context.ApplicationEventPublisher;
 
 public class MatchingSession {
   private boolean finished;
@@ -44,16 +45,17 @@ public class MatchingSession {
   private final ConcurrentHashMap<Path, List<TrackedIssue>> issuesPerFile = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<Path, List<TrackedIssue>> securityHotspotsPerFile = new ConcurrentHashMap<>();
   private final Set<Path> relativePathsInvolved = new HashSet<>();
-  private final TelemetryService telemetryService;
+  private final ApplicationEventPublisher eventPublisher;
+  private long newIssuesFound = 0;
 
-  public MatchingSession(KnownFindings previousFindings, IntroductionDateProvider introductionDateProvider, TelemetryService telemetryService) {
+  public MatchingSession(KnownFindings previousFindings, IntroductionDateProvider introductionDateProvider, ApplicationEventPublisher eventPublisher) {
     this.finished = false;
     this.remainingUnmatchedIssuesPerFile = previousFindings.getIssuesPerFile().entrySet().stream().map(entry -> Map.entry(entry.getKey(), new ArrayList<>(entry.getValue())))
       .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     this.remainingUnmatchedSecurityHotspotsPerFile = previousFindings.getSecurityHotspotsPerFile().entrySet().stream()
       .map(entry -> Map.entry(entry.getKey(), new ArrayList<>(entry.getValue()))).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     this.introductionDateProvider = introductionDateProvider;
-    this.telemetryService = telemetryService;
+    this.eventPublisher = eventPublisher;
   }
 
   public TrackedIssue matchWithKnownFinding(Path relativePath, RawIssue rawIssue) {
@@ -102,7 +104,7 @@ public class MatchingSession {
   }
 
   private TrackedIssue newlyKnownIssue(Path relativePath, RawIssue rawFinding) {
-    telemetryService.newIssueFound();
+    newIssuesFound ++;
     var introductionDate = introductionDateProvider.determineIntroductionDate(relativePath, rawFinding.getLineNumbers());
     return IssueMapper.toTrackedIssue(rawFinding, introductionDate);
   }
@@ -122,7 +124,8 @@ public class MatchingSession {
   public void finish() {
     this.finished = true;
     // Previously known issues that are not matched at end of analysis are considered fixed
-    remainingUnmatchedIssuesPerFile.values().stream().flatMap(List::stream).forEach(unused -> telemetryService.issueFixed());
+    var issuesFixed = remainingUnmatchedIssuesPerFile.values().stream().mapToLong(List::size).sum();
+    eventPublisher.publishEvent(new MatchingSessionEndedEvent(newIssuesFound, issuesFixed));
   }
 
   private void throwIfAlreadyFinished() {
