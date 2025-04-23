@@ -42,6 +42,7 @@ public class MatchingSession {
   private final ConcurrentHashMap<Path, List<TrackedIssue>> issuesPerFile = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<Path, List<TrackedIssue>> securityHotspotsPerFile = new ConcurrentHashMap<>();
   private final Set<Path> relativePathsInvolved = new HashSet<>();
+  private long newIssuesFound = 0;
 
   public MatchingSession(KnownFindings previousFindings, IntroductionDateProvider introductionDateProvider) {
     this.remainingUnmatchedIssuesPerFile = previousFindings.getIssuesPerFile().entrySet().stream().map(entry -> Map.entry(entry.getKey(), new ArrayList<>(entry.getValue())))
@@ -95,6 +96,7 @@ public class MatchingSession {
   }
 
   private TrackedIssue newlyKnownIssue(Path relativePath, RawIssue rawFinding) {
+    newIssuesFound ++;
     var introductionDate = introductionDateProvider.determineIntroductionDate(relativePath, rawFinding.getLineNumbers());
     return IssueMapper.toTrackedIssue(rawFinding, introductionDate);
   }
@@ -109,5 +111,13 @@ public class MatchingSession {
 
   public Set<Path> getRelativePathsInvolved() {
     return relativePathsInvolved;
+  }
+
+  public long countNewIssues() {
+    return newIssuesFound;
+  }
+
+  public long countRemainingUnmatchedIssues() {
+    return remainingUnmatchedIssuesPerFile.values().stream().mapToLong(List::size).sum();
   }
 }
