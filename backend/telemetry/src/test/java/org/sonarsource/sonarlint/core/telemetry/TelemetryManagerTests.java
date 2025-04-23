@@ -48,6 +48,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingType.PRE_COMMIT_ANALYSIS_TYPE;
 
 class TelemetryManagerTests {
   private static final int DEFAULT_NOTIF_CLICKED = 5;
@@ -57,7 +58,6 @@ class TelemetryManagerTests {
 
   private static final String FOO_EVENT = "foo_event";
   private static final String SUGGEST_FEATURE = "suggestFeature";
-  private static final String PRE_COMMIT_ANALYSIS = "trigger_count_pre_commit";
 
   private TelemetryHttpClient client;
   private TelemetryManager telemetryManager;
@@ -207,8 +207,8 @@ class TelemetryManagerTests {
     assertThat(reloaded.notifications().get(FOO_EVENT).getDevNotificationsCount()).isEqualTo(data.notifications().get(FOO_EVENT).getDevNotificationsCount());
     assertThat(reloaded.getHelpAndFeedbackLinkClickedCounter().get(SUGGEST_FEATURE).getHelpAndFeedbackLinkClickedCount())
       .isEqualTo(data.getHelpAndFeedbackLinkClickedCounter().get(SUGGEST_FEATURE).getHelpAndFeedbackLinkClickedCount());
-    assertThat(reloaded.getAnalysisReportingCount().get(PRE_COMMIT_ANALYSIS).getAnalysisReportingCount())
-      .isEqualTo(data.getAnalysisReportingCount().get(PRE_COMMIT_ANALYSIS).getAnalysisReportingCount());
+    assertThat(reloaded.getAnalysisReportingCountersByType().get(PRE_COMMIT_ANALYSIS_TYPE).getAnalysisReportingCount())
+      .isEqualTo(data.getAnalysisReportingCountersByType().get(PRE_COMMIT_ANALYSIS_TYPE).getAnalysisReportingCount());
   }
 
   @Test
@@ -232,7 +232,7 @@ class TelemetryManagerTests {
       data.setNumUseDays(5);
       data.notifications().put(FOO_EVENT, new TelemetryNotificationsCounter(DEFAULT_NOTIF_COUNT, DEFAULT_NOTIF_CLICKED));
       data.getHelpAndFeedbackLinkClickedCounter().put(SUGGEST_FEATURE, new TelemetryHelpAndFeedbackCounter(DEFAULT_HELP_AND_FEEDBACK_COUNT));
-      data.getAnalysisReportingCount().put(PRE_COMMIT_ANALYSIS, new TelemetryAnalysisReportingCounter(DEFAULT_ANALYSIS_REPORTING_COUNT));
+      data.getAnalysisReportingCountersByType().put(PRE_COMMIT_ANALYSIS_TYPE, new TelemetryAnalysisReportingCounter(DEFAULT_ANALYSIS_REPORTING_COUNT));
     });
 
     telemetryManager.uploadAndClearTelemetry(telemetryPayload);
@@ -250,7 +250,7 @@ class TelemetryManagerTests {
     assertThat(reloaded.getFixSuggestionResolved()).isEmpty();
     assertThat(reloaded.openHotspotInBrowserCount()).isZero();
     assertThat(reloaded.getHelpAndFeedbackLinkClickedCounter()).isEmpty();
-    assertThat(reloaded.getAnalysisReportingCount()).isEmpty();
+    assertThat(reloaded.getAnalysisReportingCountersByType()).isEmpty();
   }
 
   private void createAndSaveSampleData(TelemetryLocalStorageManager storage) {
@@ -262,7 +262,7 @@ class TelemetryManagerTests {
       data.setNumUseDays(5);
       data.notifications().put(FOO_EVENT, new TelemetryNotificationsCounter(DEFAULT_NOTIF_COUNT, DEFAULT_NOTIF_CLICKED));
       data.getHelpAndFeedbackLinkClickedCounter().put(SUGGEST_FEATURE, new TelemetryHelpAndFeedbackCounter(DEFAULT_HELP_AND_FEEDBACK_COUNT));
-      data.getAnalysisReportingCount().put(PRE_COMMIT_ANALYSIS, new TelemetryAnalysisReportingCounter(DEFAULT_ANALYSIS_REPORTING_COUNT));
+      data.getAnalysisReportingCountersByType().put(PRE_COMMIT_ANALYSIS_TYPE, new TelemetryAnalysisReportingCounter(DEFAULT_ANALYSIS_REPORTING_COUNT));
     });
   }
 

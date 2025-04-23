@@ -167,7 +167,7 @@ public class TelemetryService {
   }
 
   public void analysisReportingTriggered(AnalysisReportingTriggeredParams params) {
-    updateTelemetry(localStorage -> localStorage.analysisReportingTriggered(params.getAnalysisTypeId()));
+    updateTelemetry(localStorage -> localStorage.analysisReportingTriggered(params.getAnalysisType()));
   }
 
   public void fixSuggestionResolved(FixSuggestionResolvedParams params) {

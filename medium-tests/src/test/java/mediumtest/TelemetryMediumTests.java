@@ -43,6 +43,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddQuickFixA
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AddReportedRulesParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisDoneOnSingleLanguageParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingTriggeredParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificationsClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
@@ -355,9 +356,9 @@ class TelemetryMediumTests {
   void it_should_record_anaysisReportingTriggered(SonarLintTestHarness harness) {
     var backend = setupClientAndBackend(harness);
 
-    backend.getTelemetryService().analysisReportingTriggered(new AnalysisReportingTriggeredParams("analysisTypeId"));
+    backend.getTelemetryService().analysisReportingTriggered(new AnalysisReportingTriggeredParams(AnalysisReportingType.ALL_FILES_ANALYSIS_TYPE));
     await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains(
-      "\"analysisReportingCount\":{\"analysisTypeId\":{\"analysisReportingCount\":1}}"));
+      "\"analysisReportingCountersByType\":{\"ALL_FILES_ANALYSIS_TYPE\":{\"analysisReportingCount\":1}}"));
   }
 
   @SonarLintTest

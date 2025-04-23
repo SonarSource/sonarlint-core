@@ -50,6 +50,8 @@ public class TelemetryMeasuresBuilder {
 
     addHelpAndFeedbackMeasures(values);
 
+    addAnalysisReportingMeasures(values);
+
     addQuickFixMeasures(values);
 
     addIssuesMeasures(values);
@@ -76,6 +78,18 @@ public class TelemetryMeasuresBuilder {
       .map(e -> new TelemetryMeasuresValue(
         "help_and_feedback." + e.getKey().toLowerCase(Locale.ROOT),
         String.valueOf(e.getValue().getHelpAndFeedbackLinkClickedCount()),
+        INTEGER,
+        DAILY
+      ))
+      .forEach(values::add);
+  }
+
+  private void addAnalysisReportingMeasures(List<TelemetryMeasuresValue> values) {
+    storage.getAnalysisReportingCountersByType().entrySet().stream()
+      .filter(e -> e.getValue().getAnalysisReportingCount() > 0)
+      .map(e -> new TelemetryMeasuresValue(
+        "analysis_reporting." + e.getKey().getId(),
+        String.valueOf(e.getValue().getAnalysisReportingCount()),
         INTEGER,
         DAILY
       ))
