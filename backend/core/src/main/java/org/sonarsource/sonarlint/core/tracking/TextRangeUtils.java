@@ -115,7 +115,7 @@ public class TextRangeUtils {
     for (int i = startLine + 1; i < endLine; i++) {
       contentBuilder.append(contentLines.get(i)).append(System.lineSeparator());
     }
-    var endLineContent = contentLines.get(endLine);
+    var endLineContent = endLine < contentLines.size() ? contentLines.get(endLine) : "";
     var endLineOffset = Math.min(textRange.getEndLineOffset(), endLineContent.length());
     contentBuilder.append(endLineContent, 0, endLineOffset);
     return contentBuilder.toString();

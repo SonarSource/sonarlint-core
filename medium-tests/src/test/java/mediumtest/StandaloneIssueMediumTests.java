@@ -282,7 +282,12 @@ class StandaloneIssueMediumTests {
 
     var issues = analyzeFileAndGetIssues(inputFile.toUri(), client, backend, CONFIGURATION_SCOPE_ID);
 
-    assertThat(issues).extracting(RaisedIssueDto::getRuleKey, i -> i.getTextRange().getStartLine()).contains(tuple("php:S1172", 2));
+    assertThat(issues)
+      .extracting(RaisedIssueDto::getRuleKey, i -> i.getTextRange().getStartLine())
+      .containsOnly(
+        tuple("php:S1172", 2),
+        tuple("php:S1808", 2),
+        tuple("php:S1780", 6));
   }
 
   @SonarLintTest
