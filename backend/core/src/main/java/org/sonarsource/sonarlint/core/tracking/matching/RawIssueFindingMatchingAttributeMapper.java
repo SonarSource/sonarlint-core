@@ -21,9 +21,6 @@ package org.sonarsource.sonarlint.core.tracking.matching;
 
 import java.util.Optional;
 import org.sonarsource.sonarlint.core.analysis.RawIssue;
-import org.sonarsource.sonarlint.core.commons.LineWithHash;
-import org.sonarsource.sonarlint.core.commons.api.TextRangeWithHash;
-import org.sonarsource.sonarlint.core.tracking.TextRangeUtils;
 
 public class RawIssueFindingMatchingAttributeMapper implements MatchingAttributesMapper<RawIssue> {
 
@@ -34,23 +31,17 @@ public class RawIssueFindingMatchingAttributeMapper implements MatchingAttribute
 
   @Override
   public Optional<Integer> getLine(RawIssue issue) {
-    var textRange = issue.getTextRange();
-    if (textRange == null) {
-      return Optional.empty();
-    }
-    return Optional.of(textRange.getStartLine());
+    return issue.getLine();
   }
 
   @Override
   public Optional<String> getTextRangeHash(RawIssue issue) {
-    return Optional.ofNullable(TextRangeUtils.getTextRangeWithHash(issue.getTextRange(), issue.getClientInputFile()))
-      .map(TextRangeWithHash::getHash);
+    return issue.getTextRangeHash();
   }
 
   @Override
   public Optional<String> getLineHash(RawIssue issue) {
-    return Optional.ofNullable(TextRangeUtils.getLineWithHash(issue.getTextRange(), issue.getClientInputFile()))
-      .map(LineWithHash::getHash);
+    return issue.getLineHash();
   }
 
   @Override

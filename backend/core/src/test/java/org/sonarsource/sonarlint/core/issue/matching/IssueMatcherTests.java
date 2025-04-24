@@ -29,8 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class IssueMatcherTests {
 
-
-  private final IssueMatcher<FakeIssueType, FakeIssueType> underTest = new IssueMatcher<>(new FakeIssueMatchingAttributeMapper(), new FakeIssueMatchingAttributeMapper());
+  private IssueMatcher<FakeIssueType, FakeIssueType> underTest;
 
   private static class FakeIssueType {
     private String ruleKey = "dummy rule key";
@@ -109,8 +108,9 @@ class IssueMatcherTests {
   void should_not_match_issues_with_different_rule_key() {
     var issueForRuleA = new FakeIssueType().setRuleKey("ruleA");
     var issueForRuleB = new FakeIssueType().setRuleKey("ruleB");
+    underTest = new IssueMatcher<>(new FakeIssueMatchingAttributeMapper(), List.of(issueForRuleB));
 
-    var result = underTest.match(List.of(issueForRuleA), List.of(issueForRuleB));
+    var result = underTest.matchWith(new FakeIssueMatchingAttributeMapper(), List.of(issueForRuleA));
 
     assertThat(result.getMatchedLefts()).isEmpty();
   }
@@ -123,8 +123,9 @@ class IssueMatcherTests {
     var differentTextRangeHash = new FakeIssueType().setLine(7).setTextRangeHash("different range hash");
     var differentBoth = new FakeIssueType().setLine(8).setTextRangeHash("different range hash");
     var same = new FakeIssueType().setLine(7).setTextRangeHash("same range hash");
+    underTest = new IssueMatcher<>(new FakeIssueMatchingAttributeMapper(), List.of(baseIssue));
 
-    var result = underTest.match(List.of(differentLine, differentTextRangeHash, differentBoth, same), List.of(baseIssue));
+    var result = underTest.matchWith(new FakeIssueMatchingAttributeMapper(), List.of(differentLine, differentTextRangeHash, differentBoth, same));
 
     assertThat(result.getMatchedLefts()).hasSize(1);
     assertThat(result.getMatch(same)).isEqualTo(baseIssue);
@@ -138,8 +139,9 @@ class IssueMatcherTests {
     var differentLineHash = new FakeIssueType().setLine(7).setLineHash("different line hash");
     var differentBoth = new FakeIssueType().setLine(8).setLineHash("different line hash");
     var same = new FakeIssueType().setLine(7).setLineHash("same line hash");
+    underTest = new IssueMatcher<>(new FakeIssueMatchingAttributeMapper(), List.of(baseIssue));
 
-    var result = underTest.match(List.of(differentLine, differentLineHash, differentBoth, same), List.of(baseIssue));
+    var result = underTest.matchWith(new FakeIssueMatchingAttributeMapper(), List.of(differentLine, differentLineHash, differentBoth, same));
 
     assertThat(result.getMatchedLefts()).hasSize(1);
     assertThat(result.getMatch(same)).isEqualTo(baseIssue);
@@ -148,13 +150,13 @@ class IssueMatcherTests {
   @Test
   void should_match_by_line_and_message_even_if_different_hash() {
     var baseIssue = new FakeIssueType().setLine(7).setMessage("same message").setTextRangeHash("different range hash");
-
     var differentLine = new FakeIssueType().setLine(8).setMessage("same message");
     var differentMessage = new FakeIssueType().setLine(7).setMessage("different message");
     var differentBoth = new FakeIssueType().setLine(8).setMessage("different message");
     var same = new FakeIssueType().setLine(7).setMessage("same message");
+    underTest = new IssueMatcher<>(new FakeIssueMatchingAttributeMapper(), List.of(baseIssue));
 
-    var result = underTest.match(List.of(differentLine, differentMessage, differentBoth, same), List.of(baseIssue));
+    var result = underTest.matchWith(new FakeIssueMatchingAttributeMapper(), List.of(differentLine, differentMessage, differentBoth, same));
 
     assertThat(result.getMatchedLefts()).hasSize(1);
     assertThat(result.getMatch(same)).isEqualTo(baseIssue);
@@ -163,10 +165,10 @@ class IssueMatcherTests {
   @Test
   void should_match_by_text_range_hash_even_if_no_line_number_before() {
     var baseIssueWithNoLine = new FakeIssueType().setTextRangeHash("same range hash");
-
     var differentLine = new FakeIssueType().setLine(8).setTextRangeHash("same range hash");
+    underTest = new IssueMatcher<>(new FakeIssueMatchingAttributeMapper(), List.of(baseIssueWithNoLine));
 
-    var result = underTest.match(List.of(differentLine), List.of(baseIssueWithNoLine));
+    var result = underTest.matchWith(new FakeIssueMatchingAttributeMapper(), List.of(differentLine));
 
     assertThat(result.getMatchedLefts()).hasSize(1);
     assertThat(result.getMatch(differentLine)).isEqualTo(baseIssueWithNoLine);
@@ -175,10 +177,10 @@ class IssueMatcherTests {
   @Test
   void should_match_by_text_range_hash_even_if_different_line_number() {
     var baseIssue = new FakeIssueType().setLine(7).setTextRangeHash("same range hash");
-
     var differentLine = new FakeIssueType().setLine(8).setTextRangeHash("same range hash");
+    underTest = new IssueMatcher<>(new FakeIssueMatchingAttributeMapper(), List.of(baseIssue));
 
-    var result = underTest.match(List.of(differentLine), List.of(baseIssue));
+    var result = underTest.matchWith(new FakeIssueMatchingAttributeMapper(), List.of(differentLine));
 
     assertThat(result.getMatchedLefts()).hasSize(1);
     assertThat(result.getMatch(differentLine)).isEqualTo(baseIssue);
@@ -187,10 +189,10 @@ class IssueMatcherTests {
   @Test
   void should_match_by_line_hash_even_if_no_line_number_before() {
     var baseIssueWithNoLine = new FakeIssueType().setLineHash("same line hash");
-
     var differentLine = new FakeIssueType().setLine(8).setLineHash("same line hash");
+    underTest = new IssueMatcher<>(new FakeIssueMatchingAttributeMapper(), List.of(baseIssueWithNoLine));
 
-    var result = underTest.match(List.of(differentLine), List.of(baseIssueWithNoLine));
+    var result = underTest.matchWith(new FakeIssueMatchingAttributeMapper(), List.of(differentLine));
 
     assertThat(result.getMatchedLefts()).hasSize(1);
     assertThat(result.getMatch(differentLine)).isEqualTo(baseIssueWithNoLine);
@@ -199,10 +201,10 @@ class IssueMatcherTests {
   @Test
   void should_match_by_line_hash_even_if_different_line_number() {
     var baseIssue = new FakeIssueType().setLine(7).setLineHash("same line hash");
-
     var differentLine = new FakeIssueType().setLine(8).setLineHash("same line hash");
+    underTest = new IssueMatcher<>(new FakeIssueMatchingAttributeMapper(), List.of(baseIssue));
 
-    var result = underTest.match(List.of(differentLine), List.of(baseIssue));
+    var result = underTest.matchWith(new FakeIssueMatchingAttributeMapper(), List.of(differentLine));
 
     assertThat(result.getMatchedLefts()).hasSize(1);
     assertThat(result.getMatch(differentLine)).isEqualTo(baseIssue);
@@ -211,10 +213,10 @@ class IssueMatcherTests {
   @Test
   void should_match_by_serverKey_even_if_no_line_number_before() {
     var baseIssueWithNoLine = new FakeIssueType().setServerKey("same key");
-
     var differentLine = new FakeIssueType().setLine(8).setServerKey("same key");
+    underTest = new IssueMatcher<>(new FakeIssueMatchingAttributeMapper(), List.of(baseIssueWithNoLine));
 
-    var result = underTest.match(List.of(differentLine), List.of(baseIssueWithNoLine));
+    var result = underTest.matchWith(new FakeIssueMatchingAttributeMapper(), List.of(differentLine));
 
     assertThat(result.getMatchedLefts()).hasSize(1);
     assertThat(result.getMatch(differentLine)).isEqualTo(baseIssueWithNoLine);
@@ -223,14 +225,13 @@ class IssueMatcherTests {
   @Test
   void should_match_by_serverKey_even_if_different_line_number() {
     var baseIssue = new FakeIssueType().setLine(7).setServerKey("same key");
-
     var differentLine = new FakeIssueType().setLine(8).setServerKey("same key");
+    underTest = new IssueMatcher<>(new FakeIssueMatchingAttributeMapper(), List.of(baseIssue));
 
-    var result = underTest.match(List.of(differentLine), List.of(baseIssue));
+    var result = underTest.matchWith(new FakeIssueMatchingAttributeMapper(), List.of(differentLine));
 
     assertThat(result.getMatchedLefts()).hasSize(1);
     assertThat(result.getMatch(differentLine)).isEqualTo(baseIssue);
   }
-
 
 }

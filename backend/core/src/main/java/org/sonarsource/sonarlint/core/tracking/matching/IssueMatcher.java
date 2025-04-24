@@ -35,81 +35,78 @@ import javax.annotation.Nullable;
  */
 public class IssueMatcher<LEFT, RIGHT> {
 
-  private final MatchingAttributesMapper<LEFT> leftMapper;
-  private final MatchingAttributesMapper<RIGHT> rightMapper;
-
-  public IssueMatcher(MatchingAttributesMapper<LEFT> leftMapper, MatchingAttributesMapper<RIGHT> rightMapper) {
-    this.leftMapper = leftMapper;
-    this.rightMapper = rightMapper;
-  }
-
-  public MatchingResult<LEFT, RIGHT> match(Collection<LEFT> leftIssues, Collection<RIGHT> rightIssues) {
-    var result = new MatchingResult<>(leftIssues, rightIssues);
-
+  private static final List<MatchingCriterionFactory> MATCHING_CRITERIA = List.of(
     // 1. match issues with same server issue key
-    match(result, ServerIssueSearchKey::new);
-
+    ServerIssueMatchingCriterion::new,
     // 2. match issues with same rule, same line and same text range hash, but not necessarily with same message
-    match(result, LineAndTextRangeHashKey::new);
-
+    LineAndTextRangeHashMatchingCriterion::new,
     // 3. match issues with same rule, same message and same text range hash
-    match(result, TextRangeHashAndMessageKey::new);
-
+    TextRangeHashAndMessageMatchingCriterion::new,
     // 4. match issues with same rule, same line and same message
-    match(result, LineAndMessageKey::new);
-
+    LineAndMessageMatchingCriterion::new,
     // 5. match issues with same rule and same text range hash but different line and different message.
     // See SONAR-2812
-    match(result, TextRangeHashKey::new);
-
+    TextRangeHashMatchingCriterion::new,
     // 6. match issues with same rule, same line and same line hash
-    match(result, LineAndLineHashKey::new);
-
+    LineAndLineHashMatchingCriterion::new,
     // 7. match issues with same rule and same line hash
-    match(result, LineHashKey::new);
+    LineHashMatchingCriterion::new);
+
+  private final Map<MatchingCriterionFactory, Map<MatchingCriterion, List<RIGHT>>> rightIssuesByCriterion = new HashMap<>();
+
+  public IssueMatcher(MatchingAttributesMapper<RIGHT> rightMapper, Collection<RIGHT> rightIssues) {
+    for (var matchingCriterion : MATCHING_CRITERIA) {
+      var issuesByCriterion = new HashMap<MatchingCriterion, List<RIGHT>>();
+      for (RIGHT right : rightIssues) {
+        var criterionAppliedToIssue = matchingCriterion.build(right, rightMapper);
+        issuesByCriterion.computeIfAbsent(criterionAppliedToIssue, k -> new ArrayList<>()).add(right);
+      }
+      rightIssuesByCriterion.put(matchingCriterion, issuesByCriterion);
+    }
+  }
+
+  public MatchingResult<LEFT, RIGHT> matchWith(MatchingAttributesMapper<LEFT> leftMapper, Collection<LEFT> leftIssues) {
+    var result = new MatchingResult<LEFT, RIGHT>(leftIssues);
+
+    for (var matchingCriterion : MATCHING_CRITERIA) {
+      if (result.isComplete()) {
+        break;
+      }
+      matchWithCriterion(result, leftMapper, matchingCriterion);
+    }
 
     return result;
   }
 
-  private void match(MatchingResult<LEFT, RIGHT> result, SearchKeyFactory keyFactory) {
-    if (result.isComplete()) {
-      return;
-    }
-
-    Map<SearchKey, List<RIGHT>> rightSearch = new HashMap<>();
-    for (RIGHT right : result.getUnmatchedRights()) {
-      var searchKey = keyFactory.buildKey(right, rightMapper);
-      rightSearch.computeIfAbsent(searchKey, k -> new ArrayList<>()).add(right);
-    }
-
+  private void matchWithCriterion(MatchingResult<LEFT, RIGHT> result, MatchingAttributesMapper<LEFT> leftMapper, MatchingCriterionFactory criterionFactory) {
     for (LEFT left : result.getUnmatchedLefts()) {
-      var leftKey = keyFactory.buildKey(left, leftMapper);
-      Collection<RIGHT> rightsCandidates = rightSearch.get(leftKey);
+      var leftKey = criterionFactory.build(left, leftMapper);
+      var rightsCandidates = rightIssuesByCriterion.get(criterionFactory).get(leftKey);
       if (rightsCandidates != null && !rightsCandidates.isEmpty()) {
         // TODO taking the first one. Could be improved if there are more than 2 issues on the same line.
         // Message could be checked to take the best one.
         var match = rightsCandidates.iterator().next();
-        result.match(left, match);
-        rightSearch.get(leftKey).remove(match);
+        result.recordMatch(left, match);
+        MATCHING_CRITERIA.forEach(criterion -> rightIssuesByCriterion.get(criterion).remove(criterion.build(left, leftMapper)));
       }
     }
   }
 
-  private interface SearchKey {
+  private interface MatchingCriterion {
   }
 
-  private interface SearchKeyFactory {
-    <G> SearchKey buildKey(G issue, MatchingAttributesMapper<G> mapper);
+  private interface MatchingCriterionFactory {
+    <G> MatchingCriterion build(G issue, MatchingAttributesMapper<G> mapper);
   }
 
-  private static class LineAndTextRangeHashKey implements SearchKey {
+  private static class LineAndTextRangeHashMatchingCriterion implements MatchingCriterion {
     private final String ruleKey;
     @Nullable
     private final String textRangeHash;
     @Nullable
     private final Integer line;
 
-    <G> LineAndTextRangeHashKey(G issue, MatchingAttributesMapper<G> mapper) {
+    <G> LineAndTextRangeHashMatchingCriterion(G issue, MatchingAttributesMapper<G> mapper) {
       this.ruleKey = mapper.getRuleKey(issue);
       this.line = mapper.getLine(issue).orElse(null);
       this.textRangeHash = mapper.getTextRangeHash(issue).orElse(null);
@@ -118,7 +115,7 @@ public class IssueMatcher<LEFT, RIGHT> {
     // note: the design of the enclosing caller ensures that 'o' is of the correct class and not null
     @Override
     public boolean equals(Object o) {
-      var that = (LineAndTextRangeHashKey) o;
+      var that = (LineAndTextRangeHashMatchingCriterion) o;
       // start with most discriminant field
       return Objects.equals(line, that.line)
         && Objects.equals(textRangeHash, that.textRangeHash)
@@ -134,13 +131,13 @@ public class IssueMatcher<LEFT, RIGHT> {
     }
   }
 
-  private static class LineAndLineHashKey implements SearchKey {
+  private static class LineAndLineHashMatchingCriterion implements MatchingCriterion {
     private final String ruleKey;
     @Nullable
     private final Integer line;
     private final String lineHash;
 
-    <G> LineAndLineHashKey(G issue, MatchingAttributesMapper<G> mapper) {
+    <G> LineAndLineHashMatchingCriterion(G issue, MatchingAttributesMapper<G> mapper) {
       this.ruleKey = mapper.getRuleKey(issue);
       this.line = mapper.getLine(issue).orElse(null);
       this.lineHash = mapper.getLineHash(issue).orElse("");
@@ -149,7 +146,7 @@ public class IssueMatcher<LEFT, RIGHT> {
     // note: the design of the enclosing caller ensures that 'o' is of the correct class and not null
     @Override
     public boolean equals(Object o) {
-      var that = (LineAndLineHashKey) o;
+      var that = (LineAndLineHashMatchingCriterion) o;
       // start with most discriminant field
       return Objects.equals(line, that.line)
         && Objects.equals(lineHash, that.lineHash)
@@ -165,11 +162,11 @@ public class IssueMatcher<LEFT, RIGHT> {
     }
   }
 
-  private static class LineHashKey implements SearchKey {
+  private static class LineHashMatchingCriterion implements MatchingCriterion {
     private final String ruleKey;
     private final String lineHash;
 
-    <G> LineHashKey(G issue, MatchingAttributesMapper<G> mapper) {
+    <G> LineHashMatchingCriterion(G issue, MatchingAttributesMapper<G> mapper) {
       this.ruleKey = mapper.getRuleKey(issue);
       this.lineHash = mapper.getLineHash(issue).orElse("");
     }
@@ -177,7 +174,7 @@ public class IssueMatcher<LEFT, RIGHT> {
     // note: the design of the enclosing caller ensures that 'o' is of the correct class and not null
     @Override
     public boolean equals(Object o) {
-      var that = (LineHashKey) o;
+      var that = (LineHashMatchingCriterion) o;
       // start with most discriminant field
       return Objects.equals(lineHash, that.lineHash)
         && ruleKey.equals(that.ruleKey);
@@ -191,12 +188,12 @@ public class IssueMatcher<LEFT, RIGHT> {
     }
   }
 
-  private static class TextRangeHashAndMessageKey implements SearchKey {
+  private static class TextRangeHashAndMessageMatchingCriterion implements MatchingCriterion {
     private final String ruleKey;
     private final String message;
     private final String textRangeHash;
 
-    <G> TextRangeHashAndMessageKey(G issue, MatchingAttributesMapper<G> mapper) {
+    <G> TextRangeHashAndMessageMatchingCriterion(G issue, MatchingAttributesMapper<G> mapper) {
       this.ruleKey = mapper.getRuleKey(issue);
       this.message = mapper.getMessage(issue);
       this.textRangeHash = mapper.getTextRangeHash(issue).orElse(null);
@@ -205,7 +202,7 @@ public class IssueMatcher<LEFT, RIGHT> {
     // note: the design of the enclosing caller ensures that 'o' is of the correct class and not null
     @Override
     public boolean equals(Object o) {
-      var that = (TextRangeHashAndMessageKey) o;
+      var that = (TextRangeHashAndMessageMatchingCriterion) o;
       // start with most discriminant field
       return Objects.equals(textRangeHash, that.textRangeHash)
         && message.equals(that.message)
@@ -221,13 +218,13 @@ public class IssueMatcher<LEFT, RIGHT> {
     }
   }
 
-  private static class LineAndMessageKey implements SearchKey {
+  private static class LineAndMessageMatchingCriterion implements MatchingCriterion {
     private final String ruleKey;
     private final String message;
     @Nullable
     private final Integer line;
 
-    <G> LineAndMessageKey(G issue, MatchingAttributesMapper<G> mapper) {
+    <G> LineAndMessageMatchingCriterion(G issue, MatchingAttributesMapper<G> mapper) {
       this.ruleKey = mapper.getRuleKey(issue);
       this.message = mapper.getMessage(issue);
       this.line = mapper.getLine(issue).orElse(null);
@@ -236,7 +233,7 @@ public class IssueMatcher<LEFT, RIGHT> {
     // note: the design of the enclosing caller ensures that 'o' is of the correct class and not null
     @Override
     public boolean equals(Object o) {
-      var that = (LineAndMessageKey) o;
+      var that = (LineAndMessageMatchingCriterion) o;
       // start with most discriminant field
       return Objects.equals(line, that.line)
         && message.equals(that.message)
@@ -252,11 +249,11 @@ public class IssueMatcher<LEFT, RIGHT> {
     }
   }
 
-  private static class TextRangeHashKey implements SearchKey {
+  private static class TextRangeHashMatchingCriterion implements MatchingCriterion {
     private final String ruleKey;
     private final String textRangeHash;
 
-    <G> TextRangeHashKey(G issue, MatchingAttributesMapper<G> mapper) {
+    <G> TextRangeHashMatchingCriterion(G issue, MatchingAttributesMapper<G> mapper) {
       this.ruleKey = mapper.getRuleKey(issue);
       this.textRangeHash = mapper.getTextRangeHash(issue).orElse("");
     }
@@ -264,7 +261,7 @@ public class IssueMatcher<LEFT, RIGHT> {
     // note: the design of the enclosing caller ensures that 'o' is of the correct class and not null
     @Override
     public boolean equals(Object o) {
-      var that = (TextRangeHashKey) o;
+      var that = (TextRangeHashMatchingCriterion) o;
       // start with most discriminant field
       return Objects.equals(textRangeHash, that.textRangeHash)
         && ruleKey.equals(that.ruleKey);
@@ -278,18 +275,18 @@ public class IssueMatcher<LEFT, RIGHT> {
     }
   }
 
-  private static class ServerIssueSearchKey implements SearchKey {
+  private static class ServerIssueMatchingCriterion implements MatchingCriterion {
     @Nullable
     private final String serverIssueKey;
 
-    <G> ServerIssueSearchKey(G issue, MatchingAttributesMapper<G> mapper) {
+    <G> ServerIssueMatchingCriterion(G issue, MatchingAttributesMapper<G> mapper) {
       serverIssueKey = mapper.getServerIssueKey(issue).orElse(null);
     }
 
     // note: the design of the enclosing caller ensures that 'o' is of the correct class and not null
     @Override
     public boolean equals(Object o) {
-      var that = (ServerIssueSearchKey) o;
+      var that = (ServerIssueMatchingCriterion) o;
       return that != null && !isBlank(serverIssueKey) && !isBlank(that.serverIssueKey) && serverIssueKey.equals(that.serverIssueKey);
     }
 
