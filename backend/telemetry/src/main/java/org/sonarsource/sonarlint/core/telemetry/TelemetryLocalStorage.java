@@ -34,6 +34,7 @@ import java.util.UUID;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AiSuggestionSource;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
 
 import static java.time.temporal.ChronoUnit.DAYS;
@@ -60,6 +61,7 @@ public class TelemetryLocalStorage {
   private final Set<String> quickFixesApplied;
   private final Map<String, Integer> quickFixCountByRuleKey;
   private final Map<String, TelemetryHelpAndFeedbackCounter> helpAndFeedbackLinkClickedCount;
+  private final Map<AnalysisReportingType, TelemetryAnalysisReportingCounter> analysisReportingCountersByType;
   private final Map<String, TelemetryFixSuggestionReceivedCounter> fixSuggestionReceivedCounter;
   private final Map<String, List<TelemetryFixSuggestionResolvedStatus>> fixSuggestionResolved;
   private final Set<UUID> issuesUuidAiFixableSeen;
@@ -82,6 +84,7 @@ public class TelemetryLocalStorage {
     quickFixesApplied = new HashSet<>();
     quickFixCountByRuleKey = new LinkedHashMap<>();
     helpAndFeedbackLinkClickedCount = new LinkedHashMap<>();
+    analysisReportingCountersByType = new LinkedHashMap<>();
     fixSuggestionReceivedCounter = new LinkedHashMap<>();
     fixSuggestionResolved = new LinkedHashMap<>();
     issuesUuidAiFixableSeen = new HashSet<>();
@@ -149,6 +152,10 @@ public class TelemetryLocalStorage {
     return helpAndFeedbackLinkClickedCount;
   }
 
+  public Map<AnalysisReportingType, TelemetryAnalysisReportingCounter> getAnalysisReportingCountersByType() {
+    return analysisReportingCountersByType;
+  }
+
   public Map<String, TelemetryFixSuggestionReceivedCounter> getFixSuggestionReceivedCounter() {
     return fixSuggestionReceivedCounter;
   }
@@ -201,6 +208,7 @@ public class TelemetryLocalStorage {
     quickFixesApplied.clear();
     quickFixCountByRuleKey.clear();
     helpAndFeedbackLinkClickedCount.clear();
+    analysisReportingCountersByType.clear();
     fixSuggestionReceivedCounter.clear();
     fixSuggestionResolved.clear();
     issuesUuidAiFixableSeen.clear();
@@ -374,6 +382,10 @@ public class TelemetryLocalStorage {
 
   public void helpAndFeedbackLinkClicked(String itemId) {
     this.helpAndFeedbackLinkClickedCount.computeIfAbsent(itemId, k -> new TelemetryHelpAndFeedbackCounter()).incrementHelpAndFeedbackLinkClickedCount();
+  }
+
+  public void analysisReportingTriggered(AnalysisReportingType analysisType) {
+    this.analysisReportingCountersByType.computeIfAbsent(analysisType, k -> new TelemetryAnalysisReportingCounter()).incrementAnalysisReportingCount();
   }
 
   public void incrementHotspotStatusChangedCount() {

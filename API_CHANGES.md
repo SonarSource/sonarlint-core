@@ -15,6 +15,9 @@
 ## New features
 
 * Add a new constructor to `org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams` constructor to provide flags as an enum values list.
+* Add `analysisReportingTriggered` method to `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService`
+  * It is used to report usage of analysis features such as the analysis of VCS changed files, all project files or for the pre-commit analysis
+  * Should not be implemented unless necessary
 
 ## Deprecation
 

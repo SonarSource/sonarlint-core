@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.http.HttpClientProvider;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.InitializeParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.TelemetryClientConstantAttributesDto;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisReportingType;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -109,6 +110,7 @@ class TelemetryHttpClientTests {
       .willReturn(aResponse()));
     var telemetryLocalStorage = new TelemetryLocalStorage();
     telemetryLocalStorage.helpAndFeedbackLinkClicked("docs");
+    telemetryLocalStorage.analysisReportingTriggered(AnalysisReportingType.PRE_COMMIT_ANALYSIS_TYPE);
     telemetryLocalStorage.addQuickFixAppliedForRule("java:S107");
     telemetryLocalStorage.addQuickFixAppliedForRule("python:S107");
     telemetryLocalStorage.addNewlyFoundIssues(1);
@@ -128,6 +130,7 @@ class TelemetryHttpClientTests {
           {"sonarlint_product":"product","os":"%s","dimension":"installation", "metric_values": [
             {"key":"shared_connected_mode.manual","value":"0","type":"integer","granularity":"daily"},
             {"key":"help_and_feedback.docs","value":"1","type":"integer","granularity":"daily"},
+            {"key":"analysis_reporting.trigger_count_pre_commit","value":"1","type":"integer","granularity":"daily"},
             {"key":"quick_fix.applied_count","value":"2","type":"integer","granularity":"daily"},
             {"key":"ide_issues.found","value":"1","type":"integer","granularity":"daily"},
             {"key":"ide_issues.fixed","value":"2","type":"integer","granularity":"daily"}

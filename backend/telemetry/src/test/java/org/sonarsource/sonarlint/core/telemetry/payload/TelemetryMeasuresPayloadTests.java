@@ -66,7 +66,8 @@ class TelemetryMeasuresPayloadTests {
       "{\"key\":\"bindings.server_count\",\"value\":\"2\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"bindings.cloud_eu_count\",\"value\":\"0\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
       "{\"key\":\"bindings.cloud_us_count\",\"value\":\"0\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
-      "{\"key\":\"help_and_feedback.doc_link\",\"value\":\"5\",\"type\":\"integer\",\"granularity\":\"daily\"" +
+      "{\"key\":\"help_and_feedback.doc_link\",\"value\":\"5\",\"type\":\"integer\",\"granularity\":\"daily\"}," +
+      "{\"key\":\"analysis_reporting.trigger_count_vcs_changed_files\",\"value\":\"7\",\"type\":\"integer\",\"granularity\":\"daily\"" +
       "}]" +
       "}");
 
@@ -92,6 +93,8 @@ class TelemetryMeasuresPayloadTests {
 
     values.add(new TelemetryMeasuresValue("help_and_feedback.doc_link", String.valueOf(5), INTEGER, DAILY));
 
+    values.add(new TelemetryMeasuresValue("analysis_reporting.trigger_count_vcs_changed_files", String.valueOf(7), INTEGER, DAILY));
+
     return values;
   }
 
@@ -101,7 +104,8 @@ class TelemetryMeasuresPayloadTests {
       .contains(tuple("shared_connected_mode.imported", "2", INTEGER, DAILY))
       .contains(tuple("shared_connected_mode.auto", "3", INTEGER, DAILY))
       .contains(tuple("shared_connected_mode.exported", "4", INTEGER, DAILY))
-      .contains(tuple("help_and_feedback.doc_link", "5", INTEGER, DAILY));
+      .contains(tuple("help_and_feedback.doc_link", "5", INTEGER, DAILY))
+      .contains(tuple("analysis_reporting.trigger_count_vcs_changed_files", "7", INTEGER, DAILY));
   }
 
 }
