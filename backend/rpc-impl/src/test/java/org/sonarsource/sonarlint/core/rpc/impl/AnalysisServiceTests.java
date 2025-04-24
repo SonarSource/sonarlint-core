@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.rpc.impl;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -46,7 +47,7 @@ import static org.mockito.Mockito.when;
 class AnalysisServiceTests {
 
   @Test
-  void it_should_convert_issue_flaws_and_quick_fixes_to_raw_issue_dto() {
+  void it_should_convert_issue_flaws_and_quick_fixes_to_raw_issue_dto() throws IOException {
     var issueLocation = mock(IssueLocation.class);
     var inputComponent = mock(SonarLintInputFile.class);
     when(inputComponent.isFile()).thenReturn(true);
@@ -56,6 +57,7 @@ class AnalysisServiceTests {
       new DefaultTextPointer(3, 4)));
     when(issueLocation.inputComponent()).thenReturn(inputComponent);
     var clientInputFile = mock(ClientInputFile.class);
+    when(clientInputFile.contents()).thenReturn("content");
 
     var issue = new Issue(new ActiveRuleAdapter(new ActiveRule("repo:ruleKey", "languageKey")),
       "primary message", Map.of(),

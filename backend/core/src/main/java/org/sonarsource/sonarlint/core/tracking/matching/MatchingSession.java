@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.tracking.matching;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,9 @@ import org.sonarsource.sonarlint.core.tracking.TrackedIssue;
 public class MatchingSession {
   private final Map<Path, List<KnownFinding>> remainingUnmatchedIssuesPerFile;
   private final Map<Path, List<KnownFinding>> remainingUnmatchedSecurityHotspotsPerFile;
+  private final Map<Path, IssueMatcher<RawIssue, KnownFinding>> issueMatchersByFile = new HashMap<>();
+  private final Map<Path, IssueMatcher<RawIssue, KnownFinding>> hotspotMatchersByFile = new HashMap<>();
+
   private final IntroductionDateProvider introductionDateProvider;
   private final ConcurrentHashMap<Path, List<TrackedIssue>> issuesPerFile = new ConcurrentHashMap<>();
   private final ConcurrentHashMap<Path, List<TrackedIssue>> securityHotspotsPerFile = new ConcurrentHashMap<>();
@@ -49,6 +53,8 @@ public class MatchingSession {
       .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     this.remainingUnmatchedSecurityHotspotsPerFile = previousFindings.getSecurityHotspotsPerFile().entrySet().stream()
       .map(entry -> Map.entry(entry.getKey(), new ArrayList<>(entry.getValue()))).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    remainingUnmatchedIssuesPerFile.forEach((path, issues) -> issueMatchersByFile.put(path, new IssueMatcher<>(new KnownIssueMatchingAttributesMapper(), issues)));
+    remainingUnmatchedSecurityHotspotsPerFile.forEach((path, hotspots) -> hotspotMatchersByFile.put(path, new IssueMatcher<>(new KnownIssueMatchingAttributesMapper(), hotspots)));
     this.introductionDateProvider = introductionDateProvider;
   }
 
@@ -61,26 +67,37 @@ public class MatchingSession {
   }
 
   public TrackedIssue matchWithKnownSecurityHotspot(Path relativePath, RawIssue newSecurityHotspot) {
-    var trackedSecurityHotspot = matchWithKnownFinding(relativePath, remainingUnmatchedSecurityHotspotsPerFile, newSecurityHotspot);
+    var hotspotMatcher = hotspotMatchersByFile.get(relativePath);
+    if (hotspotMatcher == null) {
+      throw new IllegalStateException("No hotspot matcher found for " + relativePath);
+    }
+    var trackedSecurityHotspot = matchWithKnownFinding(relativePath, hotspotMatcher, remainingUnmatchedSecurityHotspotsPerFile, newSecurityHotspot);
     securityHotspotsPerFile.computeIfAbsent(relativePath, f -> new ArrayList<>()).add(trackedSecurityHotspot);
     relativePathsInvolved.add(relativePath);
     return trackedSecurityHotspot;
   }
 
   private TrackedIssue matchWithKnownIssue(Path relativePath, RawIssue rawIssue) {
-    var trackedIssue = matchWithKnownFinding(relativePath, remainingUnmatchedIssuesPerFile, rawIssue);
+    var issueMatcher = issueMatchersByFile.get(relativePath);
+    if (issueMatcher == null) {
+      throw new IllegalStateException("No issue matcher found for " + relativePath);
+    }
+
+    var trackedIssue = matchWithKnownFinding(relativePath, issueMatcher, remainingUnmatchedIssuesPerFile, rawIssue);
     issuesPerFile.computeIfAbsent(relativePath, f -> new ArrayList<>()).add(trackedIssue);
     relativePathsInvolved.add(relativePath);
     return trackedIssue;
   }
 
-  private TrackedIssue matchWithKnownFinding(Path relativePath, Map<Path, List<KnownFinding>> remainingUnmatchedKnownFindingsPerFile, RawIssue newFinding) {
-    var remainingUnmatchedKnownFindings = remainingUnmatchedKnownFindingsPerFile.getOrDefault(relativePath, new ArrayList<>());
-    var localIssueMatcher = new IssueMatcher<>(new RawIssueFindingMatchingAttributeMapper(), new KnownIssueMatchingAttributesMapper());
-    var localMatchingResult = localIssueMatcher.match(List.of(newFinding), remainingUnmatchedKnownFindings);
+  private TrackedIssue matchWithKnownFinding(Path relativePath, IssueMatcher<RawIssue, KnownFinding> issueMatcher,
+    Map<Path, List<KnownFinding>> remainingUnmatchedKnownFindingsPerFile, RawIssue newFinding) {
+    var remainingUnmatchedKnownFindings = remainingUnmatchedKnownFindingsPerFile.get(relativePath);
+    var localMatchingResult = issueMatcher.matchWith(new RawIssueFindingMatchingAttributeMapper(), List.of(newFinding));
     return localMatchingResult.getMatchOpt(newFinding)
       .map(knownFinding -> {
-        remainingUnmatchedKnownFindings.remove(knownFinding);
+        if (remainingUnmatchedKnownFindings != null) {
+          remainingUnmatchedKnownFindings.remove(knownFinding);
+        }
         return updateKnownFindingWithRawIssueData(knownFinding, newFinding);
       })
       .orElseGet(() -> newlyKnownIssue(relativePath, newFinding));

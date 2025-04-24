@@ -39,19 +39,16 @@ public class MatchingResult<LEFT, RIGHT> {
    * Matched issues -> a left issue is associated to a right issue
    */
   private final IdentityHashMap<LEFT, RIGHT> leftToRight = new IdentityHashMap<>();
-  private final IdentityHashMap<RIGHT, LEFT> rightToLeft = new IdentityHashMap<>();
 
   private final Collection<LEFT> lefts;
-  private final Collection<RIGHT> rights;
 
-  public MatchingResult(Collection<LEFT> leftIssues, Collection<RIGHT> rightIssues) {
+  public MatchingResult(Collection<LEFT> leftIssues) {
     this.lefts = leftIssues;
-    this.rights = rightIssues;
   }
 
   /**
    * Returns an Iterable to be traversed when matching issues. That means
-   * that the traversal does not fail if method {@link #match(LEFT, RIGHT)}
+   * that the traversal does not fail if method {@link #recordMatch(LEFT, RIGHT)}
    * is called.
    */
   public Iterable<LEFT> getUnmatchedLefts() {
@@ -68,22 +65,8 @@ public class MatchingResult<LEFT, RIGHT> {
     return leftToRight;
   }
 
-  /**
-   * The right issues that are not matched by a left issue.
-   */
-  public Iterable<RIGHT> getUnmatchedRights() {
-    List<RIGHT> result = new ArrayList<>();
-    for (RIGHT right : rights) {
-      if (!rightToLeft.containsKey(right)) {
-        result.add(right);
-      }
-    }
-    return result;
-  }
-
-  void match(LEFT left, RIGHT right) {
+  void recordMatch(LEFT left, RIGHT right) {
     leftToRight.put(left, right);
-    rightToLeft.put(right, left);
   }
 
   boolean isComplete() {

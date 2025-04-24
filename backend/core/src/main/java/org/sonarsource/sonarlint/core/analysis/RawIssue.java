@@ -31,6 +31,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.IntStream;
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import org.sonarsource.sonarlint.core.analysis.api.ClientInputFile;
 import org.sonarsource.sonarlint.core.analysis.api.Flow;
 import org.sonarsource.sonarlint.core.analysis.api.Issue;
@@ -42,18 +43,27 @@ import org.sonarsource.sonarlint.core.commons.RuleType;
 import org.sonarsource.sonarlint.core.commons.SoftwareQuality;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
+import org.sonarsource.sonarlint.core.tracking.TextRangeUtils;
 
 public class RawIssue {
 
   private final Issue issue;
   private final RuleDetailsForAnalysis activeRule;
   private final Map<SoftwareQuality, ImpactSeverity> impacts = new EnumMap<>(SoftwareQuality.class);
+  @Nullable
+  private final String textRangeHash;
+  @Nullable
+  private final String lineHash;
 
   public RawIssue(Issue issue, RuleDetailsForAnalysis activeRule) {
     this.issue = issue;
     this.activeRule = activeRule;
     this.impacts.putAll(activeRule.getImpacts());
     this.impacts.putAll(issue.getOverriddenImpacts());
+    var textRangeWithHash = TextRangeUtils.getTextRangeWithHash(getTextRange(), getClientInputFile());
+    this.textRangeHash = textRangeWithHash == null ? null : textRangeWithHash.getHash();
+    var lineWithHash = TextRangeUtils.getLineWithHash(issue.getTextRange(), getClientInputFile());
+    this.lineHash = lineWithHash == null ? null : lineWithHash.getHash();
   }
 
   public IssueSeverity getSeverity() {
@@ -149,5 +159,17 @@ public class RawIssue {
         .forEach(intStream -> intStream.forEach(lineNumbers::add)));
 
     return lineNumbers;
+  }
+
+  public Optional<Integer> getLine() {
+    return Optional.ofNullable(issue.getStartLine());
+  }
+
+  public Optional<String> getTextRangeHash() {
+    return Optional.ofNullable(textRangeHash);
+  }
+
+  public Optional<String> getLineHash() {
+    return Optional.ofNullable(lineHash);
   }
 }

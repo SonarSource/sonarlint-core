@@ -200,10 +200,10 @@ public class TrackingService {
 
   private List<TrackedIssue> matchWithServerIssues(Path serverRelativePath, List<ServerIssue<?>> serverIssues,
     List<LocalOnlyIssue> localOnlyIssues, Collection<TrackedIssue> trackedIssues) {
-    var serverIssueMatcher = new IssueMatcher<>(new TrackedIssueFindingMatchingAttributeMapper(), new ServerIssueMatchingAttributesMapper());
-    var serverMatchingResult = serverIssueMatcher.match(trackedIssues, serverIssues);
-    var localIssueMatcher = new IssueMatcher<>(new TrackedIssueFindingMatchingAttributeMapper(), new LocalOnlyIssueMatchingAttributesMapper());
-    var localMatchingResult = localIssueMatcher.match(trackedIssues, localOnlyIssues);
+    var serverIssueMatcher = new IssueMatcher<TrackedIssue, ServerIssue<?>>(new ServerIssueMatchingAttributesMapper(), serverIssues);
+    var serverMatchingResult = serverIssueMatcher.matchWith(new TrackedIssueFindingMatchingAttributeMapper(), trackedIssues);
+    var localIssueMatcher = new IssueMatcher<TrackedIssue, LocalOnlyIssue>(new LocalOnlyIssueMatchingAttributesMapper(), localOnlyIssues);
+    var localMatchingResult = localIssueMatcher.matchWith(new TrackedIssueFindingMatchingAttributeMapper(), trackedIssues);
     var matches = trackedIssues.stream().map(trackedIssue -> {
       var matchToServer = serverMatchingResult.getMatch(trackedIssue);
       if (matchToServer != null) {
@@ -222,8 +222,8 @@ public class TrackingService {
   }
 
   private static List<TrackedIssue> matchWithServerHotspots(Collection<ServerHotspot> serverHotspots, Collection<TrackedIssue> trackedIssues) {
-    var serverIssueMatcher = new IssueMatcher<>(new TrackedIssueFindingMatchingAttributeMapper(), new ServerHotspotMatchingAttributesMapper());
-    var serverMatchingResult = serverIssueMatcher.match(trackedIssues, serverHotspots);
+    var serverIssueMatcher = new IssueMatcher<TrackedIssue, ServerHotspot>(new ServerHotspotMatchingAttributesMapper(), serverHotspots);
+    var serverMatchingResult = serverIssueMatcher.matchWith(new TrackedIssueFindingMatchingAttributeMapper(), trackedIssues);
     return trackedIssues.stream().map(trackedIssue -> {
       var matchToServer = serverMatchingResult.getMatch(trackedIssue);
       if (matchToServer != null) {
