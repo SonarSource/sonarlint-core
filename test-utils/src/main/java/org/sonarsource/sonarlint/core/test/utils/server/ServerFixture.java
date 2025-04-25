@@ -1369,7 +1369,8 @@ public class ServerFixture {
             .setKey(entry.getKey())
             .setName(entry.getValue().name)
             .setIsAiCodeFixEnabled(project.aiCodeFixEnabled)
-            .build()).findFirst().get();
+            .build())
+          .findFirst().get();
         mockServer.stubFor(get(url)
           .willReturn(aResponse().withResponseBody(protobufBody(Components.ShowWsResponse.newBuilder()
             .setComponent(projectComponent)
@@ -1420,7 +1421,7 @@ public class ServerFixture {
       projectsByProjectKey.forEach((projectKey, project) -> {
         try {
           if (project.aiCodeFixSuggestion != null) {
-            mockServer.stubFor(post("/fix-suggestions/ai-suggestions")
+            mockServer.stubFor(post(serverKind == ServerKind.SONARCLOUD ? "/fix-suggestions/ai-suggestions" : "/api/v2/fix-suggestions/ai-suggestions")
               .willReturn(jsonResponse(
                 new ObjectMapper().setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY).writeValueAsString(project.aiCodeFixSuggestion.build()),
                 responseCodes.statusCode)));
