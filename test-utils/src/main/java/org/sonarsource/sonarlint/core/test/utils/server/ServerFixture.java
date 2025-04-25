@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -139,6 +140,7 @@ public class ServerFixture {
     private ResponseCodesBuilder responseCodes = new ResponseCodesBuilder();
     protected boolean serverSentEventsEnabled;
     protected Set<String> aiCodeFixSupportedRules = Set.of();
+    protected Set<String> features = new HashSet<>();
 
     protected AbstractServerBuilder(@Nullable Consumer<Server> onStart, ServerKind serverKind, @Nullable String version) {
       this.onStart = onStart;
@@ -166,6 +168,11 @@ public class ServerFixture {
       return (T) this;
     }
 
+    public T withAiCodeFixSupportedRules(Set<String> supportedRules) {
+      this.aiCodeFixSupportedRules = supportedRules;
+      return (T) this;
+    }
+
     public T withResponseCodes(UnaryOperator<ResponseCodesBuilder> responseCodes) {
       this.responseCodes = new ResponseCodesBuilder();
       responseCodes.apply(this.responseCodes);
@@ -174,7 +181,7 @@ public class ServerFixture {
 
     public Server start() {
       var server = new Server(serverKind, serverStatus, version, organizationsByKey, projectByProjectKey, pluginsByKey, qualityProfilesByKey, tokensRegistered,
-        responseCodes.build(), aiCodeFixSupportedRules, serverSentEventsEnabled);
+        responseCodes.build(), aiCodeFixSupportedRules, serverSentEventsEnabled, features);
       server.start();
       if (onStart != null) {
         onStart.accept(server);
@@ -276,6 +283,7 @@ public class ServerFixture {
       private String name = "MyProject";
       private String projectName;
       private AiCodeFixSuggestionBuilder aiCodeFixSuggestion;
+      private boolean aiCodeFixEnabled;
 
       private ServerProjectBuilder() {
         this(null);
@@ -340,6 +348,11 @@ public class ServerFixture {
       public ServerProjectBuilder withAiCodeFixSuggestion(UnaryOperator<AiCodeFixSuggestionBuilder> aiCodeFixSuggestionBuilder) {
         this.aiCodeFixSuggestion = new AiCodeFixSuggestionBuilder();
         aiCodeFixSuggestionBuilder.apply(aiCodeFixSuggestion);
+        return this;
+      }
+
+      public ServerProjectBuilder withAiCodeFixEnabled(boolean enabled) {
+        this.aiCodeFixEnabled = enabled;
         return this;
       }
 
@@ -646,6 +659,11 @@ public class ServerFixture {
       this.serverSentEventsEnabled = true;
       return this;
     }
+
+    public SonarQubeServerBuilder withFeature(String featureName) {
+      this.features.add(featureName);
+      return this;
+    }
   }
 
   public static class SonarQubeCloudBuilder extends AbstractServerBuilder<SonarQubeCloudBuilder> {
@@ -661,11 +679,6 @@ public class ServerFixture {
     public SonarQubeCloudBuilder withOrganization(String organizationKey, UnaryOperator<SonarQubeCloudOrganizationBuilder> organizationBuilder) {
       var builder = new SonarQubeCloudOrganizationBuilder(organizationKey, qualityProfilesByKey, projectByProjectKey);
       this.organizationsByKey.put(organizationKey, organizationBuilder.apply(builder));
-      return this;
-    }
-
-    public SonarQubeCloudBuilder withAiCodeFixSupportedRules(Set<String> supportedRules) {
-      this.aiCodeFixSupportedRules = supportedRules;
       return this;
     }
 
@@ -734,13 +747,14 @@ public class ServerFixture {
     private final AbstractServerBuilder.ResponseCodes responseCodes;
     private final Set<String> aiCodeFixSupportedRules;
     private final boolean serverSentEventsEnabled;
+    private final Set<String> features;
     private SSEServer sseServer;
 
     public Server(ServerKind serverKind, ServerStatus serverStatus, @Nullable String version,
       Map<String, SonarQubeCloudBuilder.SonarQubeCloudOrganizationBuilder> organizationsByKey, Map<String, AbstractServerBuilder.ServerProjectBuilder> projectsByProjectKey,
       Map<String, AbstractServerBuilder.ServerPluginBuilder> pluginsByKey, Map<String, AbstractServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey,
       List<String> tokensRegistered, AbstractServerBuilder.ResponseCodes responseCodes, Set<String> aiCodeFixSupportedRules,
-      boolean serverSentEventsEnabled) {
+      boolean serverSentEventsEnabled, Set<String> features) {
       this.serverKind = serverKind;
       this.serverStatus = serverStatus;
       this.version = version != null ? Version.create(version) : null;
@@ -752,6 +766,7 @@ public class ServerFixture {
       this.responseCodes = responseCodes;
       this.aiCodeFixSupportedRules = aiCodeFixSupportedRules;
       this.serverSentEventsEnabled = serverSentEventsEnabled;
+      this.features = features;
     }
 
     public void start() {
@@ -782,6 +797,7 @@ public class ServerFixture {
         registerFixSuggestionsApiResponses();
         registerOrganizationApiResponses();
         registerPushApiResponses();
+        registerFeaturesApiResponses();
       }
     }
 
@@ -1349,7 +1365,11 @@ public class ServerFixture {
       projectsByProjectKey.forEach((projectKey, project) -> {
         var url = "/api/components/show.protobuf?component=" + projectKey;
         var projectComponent = projectsByProjectKey.entrySet().stream().filter(e -> e.getKey().equals(projectKey))
-          .map(entry -> Components.Component.newBuilder().setKey(entry.getKey()).setName(entry.getValue().name).build()).findFirst().get();
+          .map(entry -> Components.Component.newBuilder()
+            .setKey(entry.getKey())
+            .setName(entry.getValue().name)
+            .setIsAiCodeFixEnabled(project.aiCodeFixEnabled)
+            .build()).findFirst().get();
         mockServer.stubFor(get(url)
           .willReturn(aResponse().withResponseBody(protobufBody(Components.ShowWsResponse.newBuilder()
             .setComponent(projectComponent)
@@ -1410,7 +1430,7 @@ public class ServerFixture {
         }
       });
 
-      mockServer.stubFor(get("/fix-suggestions/supported-rules")
+      mockServer.stubFor(get(serverKind == ServerKind.SONARCLOUD ? "/fix-suggestions/supported-rules" : "/api/v2/fix-suggestions/supported-rules")
         .willReturn(jsonResponse("{\"rules\": [" + String.join(", ", aiCodeFixSupportedRules.stream().map(rule -> "\"" + rule + "\"").toList()) + "]}", responseCodes.statusCode)));
       organizationsByKey.forEach((organizationKey, organization) -> {
         var enabledProjectKeys = organization.aiCodeFixFeature.enabledProjectKeys == null ? null
@@ -1452,6 +1472,13 @@ public class ServerFixture {
         .willReturn(aResponse()
           .withStatus(302)
           .withHeader("Location", sseServer.getUrl())));
+    }
+
+    private void registerFeaturesApiResponses() {
+      mockServer.stubFor(get("/api/features/list")
+        .willReturn(jsonResponse(
+          "[" + String.join(", ", features.stream().map(feature -> "\"" + feature + "\"").toList()) + "]",
+          responseCodes.statusCode)));
     }
 
     public void pushEvent(String eventPayload) {

@@ -21,13 +21,17 @@ package org.sonarsource.sonarlint.core.serverconnection;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
 import org.sonarsource.sonarlint.core.serverapi.ServerApi;
+import org.sonarsource.sonarlint.core.serverapi.component.ServerProject;
 import org.sonarsource.sonarlint.core.serverapi.organization.ServerOrganization;
 
 public class AiCodeFixSettingsSynchronizer {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
+  public static final Version MIN_SQS_VERSION_SUPPORTING_AI_CODEFIX = Version.create("2025.3");
 
   private final ConnectionStorage storage;
   private final OrganizationSynchronizer organizationSynchronizer;
@@ -37,8 +41,17 @@ public class AiCodeFixSettingsSynchronizer {
     this.organizationSynchronizer = organizationSynchronizer;
   }
 
-  public void synchronize(ServerApi serverApi, List<ServerOrganization> userOrganizations, SonarLintCancelMonitor cancelMonitor) {
-    if (serverApi.isSonarCloud() && userBelongsToOrganization(serverApi, userOrganizations)) {
+  public void synchronize(ServerApi serverApi, Version serverVersion, Set<String> projectKeys, SonarLintCancelMonitor cancelMonitor) {
+    if (serverApi.isSonarCloud()) {
+      synchronizeForSonarQubeCloud(serverApi, cancelMonitor);
+    } else {
+      synchronizeForSonarQubeServer(serverApi, serverVersion, projectKeys, cancelMonitor);
+    }
+  }
+
+  private void synchronizeForSonarQubeCloud(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
+    var userOrganizations = serverApi.isSonarCloud() ? serverApi.organization().listUserOrganizations(cancelMonitor) : List.<ServerOrganization>of();
+    if (userBelongsToOrganization(serverApi, userOrganizations)) {
       try {
         var supportedRules = serverApi.fixSuggestions().getSupportedRules(cancelMonitor);
         var organization = organizationSynchronizer.readOrSynchronizeOrganization(serverApi, cancelMonitor);
@@ -47,8 +60,21 @@ public class AiCodeFixSettingsSynchronizer {
         storage.aiCodeFix().store(new AiCodeFixSettings(supportedRules.rules(), organizationConfig.organizationEligible(),
           AiCodeFixFeatureEnablement.valueOf(organizationConfig.enablement().name()), enabledProjectKeys == null ? Set.of() : enabledProjectKeys));
       } catch (Exception e) {
-        LOG.error("Error synchronizing AI CodeFix settings", e);
+        LOG.error("Error synchronizing AI CodeFix settings for SonarQube Cloud", e);
       }
+    }
+  }
+
+  private void synchronizeForSonarQubeServer(ServerApi serverApi, Version serverVersion, Set<String> projectKeys, SonarLintCancelMonitor cancelMonitor) {
+    try {
+      if (serverVersion.satisfiesMinRequirement(MIN_SQS_VERSION_SUPPORTING_AI_CODEFIX) && serverApi.features().list(cancelMonitor).contains("fix-suggestions")) {
+        var supportedRules = serverApi.fixSuggestions().getSupportedRules(cancelMonitor);
+        var enabledProjectKeys = projectKeys.stream()
+          .filter(projectKey -> serverApi.component().getProject(projectKey, cancelMonitor).filter(ServerProject::isAiCodeFixEnabled).isPresent()).collect(Collectors.toSet());
+        storage.aiCodeFix().store(new AiCodeFixSettings(supportedRules.rules(), true, AiCodeFixFeatureEnablement.ENABLED_FOR_SOME_PROJECTS, enabledProjectKeys));
+      }
+    } catch (Exception e) {
+      LOG.error("Error synchronizing AI CodeFix settings for SonarQube Server", e);
     }
   }
 

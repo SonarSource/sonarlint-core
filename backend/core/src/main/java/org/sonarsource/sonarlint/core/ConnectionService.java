@@ -180,7 +180,7 @@ public class ConnectionService {
   public List<SonarProjectDto> getAllProjects(Either<TransientSonarQubeConnectionDto, TransientSonarCloudConnectionDto> transientConnection, SonarLintCancelMonitor cancelMonitor) {
     var serverApi = sonarQubeClientManager.getForTransientConnection(transientConnection);
     return serverApi.component().getAllProjects(cancelMonitor)
-      .stream().map(serverProject -> new SonarProjectDto(serverProject.getKey(), serverProject.getName()))
+      .stream().map(serverProject -> new SonarProjectDto(serverProject.key(), serverProject.name()))
       .toList();
   }
 
@@ -189,7 +189,7 @@ public class ConnectionService {
     var serverApi = sonarQubeClientManager.getForTransientConnection(transientConnection);
     var projectNamesByKey = new HashMap<String, String>();
     projectKeys.forEach(key -> {
-      var projectName = serverApi.component().getProject(key, cancelMonitor).map(ServerProject::getName).orElse(null);
+      var projectName = serverApi.component().getProject(key, cancelMonitor).map(ServerProject::name).orElse(null);
       projectNamesByKey.put(key, projectName);
     });
     return projectNamesByKey;

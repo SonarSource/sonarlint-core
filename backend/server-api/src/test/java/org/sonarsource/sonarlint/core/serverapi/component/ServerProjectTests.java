@@ -19,22 +19,17 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.component;
 
-public class DefaultRemoteProject implements ServerProject {
-  private final String key;
-  private final String name;
+import org.junit.jupiter.api.Test;
 
-  public DefaultRemoteProject(String key, String name) {
-    this.key = key;
-    this.name = name;
+import static org.assertj.core.api.Assertions.assertThat;
+
+class ServerProjectTests {
+  @Test
+  void testGetters() {
+    ServerProject project = new ServerProject("key", "name", false);
+
+    assertThat(project.key()).isEqualTo("key");
+    assertThat(project.name()).isEqualTo("name");
   }
 
-  @Override
-  public String getKey() {
-    return key;
-  }
-
-  @Override
-  public String getName() {
-    return name;
-  }
 }

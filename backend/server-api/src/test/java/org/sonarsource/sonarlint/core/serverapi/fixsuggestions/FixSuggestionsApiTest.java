@@ -105,8 +105,23 @@ class FixSuggestionsApiTest {
     }
 
     @Test
-    void it_should_return_the_list_of_supported_rules() {
+    void it_should_return_the_list_of_supported_rules_for_sonarqube_cloud() {
       mockServer.addStringResponse("/fix-suggestions/supported-rules", """
+        {
+          "rules": ["repo:rule1", "repo:rule2"]
+        }
+        """);
+      underTest = new FixSuggestionsApi(mockServer.serverApiHelper("orgKey"));
+
+      var response = underTest.getSupportedRules(new SonarLintCancelMonitor());
+
+      assertThat(response)
+        .isEqualTo(new SupportedRulesResponseDto(Set.of("repo:rule1", "repo:rule2")));
+    }
+
+    @Test
+    void it_should_return_the_list_of_supported_rules_for_sonarqube_server() {
+      mockServer.addStringResponse("/api/v2/fix-suggestions/supported-rules", """
         {
           "rules": ["repo:rule1", "repo:rule2"]
         }

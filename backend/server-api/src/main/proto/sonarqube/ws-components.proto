@@ -50,4 +50,5 @@ message ShowWsResponse {
 message Component {
   optional string key = 2;
   optional string name = 6;
+  optional bool isAiCodeFixEnabled = 23;
 }

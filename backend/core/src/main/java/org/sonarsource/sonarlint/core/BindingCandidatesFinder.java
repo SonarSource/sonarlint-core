@@ -104,7 +104,7 @@ public class BindingCandidatesFinder {
     }
     TextSearchIndex<ServerProject> index = new TextSearchIndex<>(SPLIT_PATTERN);
     var p = sonarProjectOpt.get();
-    index.index(p, p.getKey() + " " + p.getName());
+    index.index(p, p.key() + " " + p.name());
     var searchResult = index.search(configScopeName);
     return !searchResult.isEmpty();
   }

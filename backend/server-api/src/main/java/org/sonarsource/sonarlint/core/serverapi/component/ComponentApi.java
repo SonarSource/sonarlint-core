@@ -59,7 +59,7 @@ public class ComponentApi {
   }
 
   public Optional<ServerProject> getProject(String projectKey, SonarLintCancelMonitor cancelMonitor) {
-    return fetchComponent(projectKey, cancelMonitor).map(component -> new DefaultRemoteProject(component.getKey(), component.getName()));
+    return fetchComponent(projectKey, cancelMonitor).map(component -> new ServerProject(component.key(), component.name(), component.isAiCodeFixEnabled()));
   }
 
   public List<ServerProject> getAllProjects(SonarLintCancelMonitor cancelMonitor) {
@@ -68,7 +68,7 @@ public class ComponentApi {
       Components.SearchWsResponse::parseFrom,
       r -> r.getPaging().getTotal(),
       Components.SearchWsResponse::getComponentsList,
-      project -> serverProjects.add(new DefaultRemoteProject(project.getKey(), project.getName())),
+      project -> serverProjects.add(new ServerProject(project.getKey(), project.getName(), project.getIsAiCodeFixEnabled())),
       true,
       cancelMonitor);
     return serverProjects;
@@ -85,7 +85,7 @@ public class ComponentApi {
   private Optional<Component> fetchComponent(String componentKey, SonarLintCancelMonitor cancelMonitor) {
     return fetchComponent(componentKey, response -> {
       var wsComponent = response.getComponent();
-      return new Component(wsComponent.getKey(), wsComponent.getName());
+      return new Component(wsComponent.getKey(), wsComponent.getName(), wsComponent.getIsAiCodeFixEnabled());
     }, cancelMonitor);
   }
 
