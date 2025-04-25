@@ -23,6 +23,7 @@ import com.google.common.collect.Maps;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -48,14 +49,15 @@ public class LocalStorageSynchronizer {
     this.serverInfoSynchronizer = serverInfoSynchronizer;
   }
 
-  public PluginSynchronizationSummary synchronizeServerInfosAndPlugins(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
+  public Summary synchronizeServerInfosAndPlugins(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
     serverInfoSynchronizer.synchronize(serverApi, cancelMonitor);
     var version = storage.serverInfo().read().orElseThrow().getVersion();
     // On SonarQube server 10.4+ and SonarQube Cloud, we need to use the server's text analyzer
     // to support commercial rules (SQC and SQS 10.8+ DE+) and custom secrets (SQS 10.4+ EE+)
     var useSecretsFromServer = serverApi.isSonarCloud() || version.compareToIgnoreQualifier(CUSTOM_SECRETS_MIN_SQ_VERSION) >= 0;
     var usesIaCEnterprise = serverApi.isSonarCloud() || version.compareToIgnoreQualifier(PluginsSynchronizer.ENTERPRISE_IAC_MIN_SQ_VERSION) >= 0;
-    return pluginsSynchronizer.synchronize(serverApi, useSecretsFromServer, usesIaCEnterprise, cancelMonitor);
+    var pluginSynchronizationSummary = pluginsSynchronizer.synchronize(serverApi, useSecretsFromServer, usesIaCEnterprise, cancelMonitor);
+    return new Summary(version, pluginSynchronizationSummary.anyPluginSynchronized());
   }
 
   private static AnalyzerSettingsUpdateSummary diffAnalyzerConfiguration(AnalyzerConfiguration original, AnalyzerConfiguration updated) {
@@ -134,5 +136,8 @@ public class LocalStorageSynchronizer {
 
   private static boolean outdatedSchema(int currentSchemaVersion) {
     return currentSchemaVersion < AnalyzerConfiguration.CURRENT_SCHEMA_VERSION;
+  }
+
+  public record Summary(Version version, boolean anyPluginSynchronized) {
   }
 }

@@ -165,7 +165,7 @@ public class BindingSuggestionProvider {
       for (var connectionId : bindingClueWithConnections.getConnectionIds()) {
         sonarProjectsCache
           .getSonarProject(connectionId, sonarProjectKey, cancelMonitor)
-          .ifPresent(serverProject -> suggestions.add(new BindingSuggestionDto(connectionId, sonarProjectKey, serverProject.getName(),
+          .ifPresent(serverProject -> suggestions.add(new BindingSuggestionDto(connectionId, sonarProjectKey, serverProject.name(),
             bindingClueWithConnections.getBindingClue().isFromSharedConfiguration())));
       }
     }
@@ -202,7 +202,7 @@ public class BindingSuggestionProvider {
           break;
         }
         bestScore = serverProjectScoreEntry.getValue();
-        suggestions.add(new BindingSuggestionDto(connectionId, serverProjectScoreEntry.getKey().getKey(), serverProjectScoreEntry.getKey().getName(), false));
+        suggestions.add(new BindingSuggestionDto(connectionId, serverProjectScoreEntry.getKey().key(), serverProjectScoreEntry.getKey().name(), false));
       }
       LOG.debug("Best score = {}", String.format(Locale.ENGLISH, "%,.2f", bestScore));
     }

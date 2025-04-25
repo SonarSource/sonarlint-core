@@ -50,8 +50,9 @@ public class FixSuggestionsApi {
   }
 
   public SupportedRulesResponseDto getSupportedRules(SonarLintCancelMonitor cancelMonitor) {
-
-    try (var response = helper.apiGet("/fix-suggestions/supported-rules", cancelMonitor)) {
+    try (
+      var response = helper.isSonarCloud() ? helper.apiGet("/fix-suggestions/supported-rules", cancelMonitor)
+        : helper.get("/api/v2/fix-suggestions/supported-rules", cancelMonitor)) {
       return new Gson().fromJson(response.bodyAsString(), SupportedRulesResponseDto.class);
     } catch (Exception e) {
       LOG.error("Error while fetching the list of AI CodeFix supported rules", e);

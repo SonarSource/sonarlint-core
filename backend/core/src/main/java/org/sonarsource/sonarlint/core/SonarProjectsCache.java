@@ -60,9 +60,9 @@ public class SonarProjectsCache {
       .entrySet()
       .stream()
       .sorted(Comparator.comparing(Map.Entry<ServerProject, Double>::getValue).reversed()
-        .thenComparing(Comparator.comparing(e -> e.getKey().getName(), String.CASE_INSENSITIVE_ORDER)))
+        .thenComparing(Comparator.comparing(e -> e.getKey().name(), String.CASE_INSENSITIVE_ORDER)))
       .limit(10)
-      .map(e -> new SonarProjectDto(e.getKey().getKey(), e.getKey().getName()))
+      .map(e -> new SonarProjectDto(e.getKey().key(), e.getKey().name()))
       .toList();
   }
 
@@ -146,7 +146,7 @@ public class SonarProjectsCache {
         } else {
           LOG.debug("Creating index for {} {}", projects.size(), singlePlural(projects.size(), "project"));
           var index = new TextSearchIndex<ServerProject>();
-          projects.forEach(p -> index.index(p, p.getKey() + " " + p.getName()));
+          projects.forEach(p -> index.index(p, p.key() + " " + p.name()));
           return index;
         }
       });

@@ -396,17 +396,7 @@ class BindingSuggestionProviderTests {
   }
 
   private static ServerProject serverProject(String projectKey, String name) {
-    return new ServerProject() {
-      @Override
-      public String getKey() {
-        return projectKey;
-      }
-
-      @Override
-      public String getName() {
-        return name;
-      }
-    };
+    return new ServerProject(projectKey, name, false);
   }
 
 }

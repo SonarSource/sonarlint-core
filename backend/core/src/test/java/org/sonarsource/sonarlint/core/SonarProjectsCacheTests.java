@@ -50,39 +50,9 @@ class SonarProjectsCacheTests {
   public static final String PROJECT_KEY_2 = "projectKey2";
   public static final String PROJECT_NAME_1 = "Project 1";
   public static final String PROJECT_NAME_2 = "Project 2";
-  public static final ServerProject PROJECT_1 = new ServerProject() {
-    @Override
-    public String getKey() {
-      return PROJECT_KEY_1;
-    }
-
-    @Override
-    public String getName() {
-      return PROJECT_NAME_1;
-    }
-  };
-  public static final ServerProject PROJECT_1_CHANGED = new ServerProject() {
-    @Override
-    public String getKey() {
-      return PROJECT_KEY_1;
-    }
-
-    @Override
-    public String getName() {
-      return PROJECT_NAME_2;
-    }
-  };
-  public static final ServerProject PROJECT_2 = new ServerProject() {
-    @Override
-    public String getKey() {
-      return PROJECT_KEY_2;
-    }
-
-    @Override
-    public String getName() {
-      return PROJECT_NAME_2;
-    }
-  };
+  public static final ServerProject PROJECT_1 = new ServerProject(PROJECT_KEY_1, PROJECT_NAME_1, false);
+  public static final ServerProject PROJECT_1_CHANGED = new ServerProject(PROJECT_KEY_1, PROJECT_NAME_2, false);
+  public static final ServerProject PROJECT_2 = new ServerProject(PROJECT_KEY_2, PROJECT_NAME_2, false);
   private final ServerApi serverApi = mock(ServerApi.class, Mockito.RETURNS_DEEP_STUBS);
   private final SonarQubeClientManager sonarQubeClientManager = mock(SonarQubeClientManager.class);
   private final SonarProjectsCache underTest = new SonarProjectsCache(sonarQubeClientManager);
@@ -102,14 +72,14 @@ class SonarProjectsCacheTests {
     var sonarProjectCall1 = underTest.getSonarProject(SQ_1, PROJECT_KEY_1, new SonarLintCancelMonitor());
 
     assertThat(sonarProjectCall1).isPresent();
-    assertThat(sonarProjectCall1.get().getKey()).isEqualTo(PROJECT_KEY_1);
-    assertThat(sonarProjectCall1.get().getName()).isEqualTo(PROJECT_NAME_1);
+    assertThat(sonarProjectCall1.get().key()).isEqualTo(PROJECT_KEY_1);
+    assertThat(sonarProjectCall1.get().name()).isEqualTo(PROJECT_NAME_1);
 
     var sonarProjectCall2 = underTest.getSonarProject(SQ_1, PROJECT_KEY_1, new SonarLintCancelMonitor());
 
     assertThat(sonarProjectCall2).isPresent();
-    assertThat(sonarProjectCall2.get().getKey()).isEqualTo(PROJECT_KEY_1);
-    assertThat(sonarProjectCall2.get().getName()).isEqualTo(PROJECT_NAME_1);
+    assertThat(sonarProjectCall2.get().key()).isEqualTo(PROJECT_KEY_1);
+    assertThat(sonarProjectCall2.get().name()).isEqualTo(PROJECT_NAME_1);
     verify(serverApi.component(), times(1)).getProject(eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class));
   }
 
@@ -137,16 +107,16 @@ class SonarProjectsCacheTests {
     var sonarProjectCall1 = underTest.getSonarProject(SQ_1, PROJECT_KEY_1, new SonarLintCancelMonitor());
 
     assertThat(sonarProjectCall1).isPresent();
-    assertThat(sonarProjectCall1.get().getKey()).isEqualTo(PROJECT_KEY_1);
-    assertThat(sonarProjectCall1.get().getName()).isEqualTo(PROJECT_NAME_1);
+    assertThat(sonarProjectCall1.get().key()).isEqualTo(PROJECT_KEY_1);
+    assertThat(sonarProjectCall1.get().name()).isEqualTo(PROJECT_NAME_1);
 
     underTest.connectionRemoved(new ConnectionConfigurationRemovedEvent(SQ_1));
 
     var sonarProjectCall2 = underTest.getSonarProject(SQ_1, PROJECT_KEY_1, new SonarLintCancelMonitor());
 
     assertThat(sonarProjectCall2).isPresent();
-    assertThat(sonarProjectCall2.get().getKey()).isEqualTo(PROJECT_KEY_1);
-    assertThat(sonarProjectCall2.get().getName()).isEqualTo(PROJECT_NAME_1);
+    assertThat(sonarProjectCall2.get().key()).isEqualTo(PROJECT_KEY_1);
+    assertThat(sonarProjectCall2.get().name()).isEqualTo(PROJECT_NAME_1);
     verify(serverApi.component(), times(2)).getProject(eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class));
   }
 
@@ -159,16 +129,16 @@ class SonarProjectsCacheTests {
     var sonarProjectCall1 = underTest.getSonarProject(SQ_1, PROJECT_KEY_1, new SonarLintCancelMonitor());
 
     assertThat(sonarProjectCall1).isPresent();
-    assertThat(sonarProjectCall1.get().getKey()).isEqualTo(PROJECT_KEY_1);
-    assertThat(sonarProjectCall1.get().getName()).isEqualTo(PROJECT_NAME_1);
+    assertThat(sonarProjectCall1.get().key()).isEqualTo(PROJECT_KEY_1);
+    assertThat(sonarProjectCall1.get().name()).isEqualTo(PROJECT_NAME_1);
 
     underTest.connectionUpdated(new ConnectionConfigurationUpdatedEvent(SQ_1));
 
     var sonarProjectCall2 = underTest.getSonarProject(SQ_1, PROJECT_KEY_1, new SonarLintCancelMonitor());
 
     assertThat(sonarProjectCall2).isPresent();
-    assertThat(sonarProjectCall2.get().getKey()).isEqualTo(PROJECT_KEY_1);
-    assertThat(sonarProjectCall2.get().getName()).isEqualTo(PROJECT_NAME_2);
+    assertThat(sonarProjectCall2.get().key()).isEqualTo(PROJECT_KEY_1);
+    assertThat(sonarProjectCall2.get().name()).isEqualTo(PROJECT_NAME_2);
     verify(serverApi.component(), times(2)).getProject(eq(PROJECT_KEY_1), any(SonarLintCancelMonitor.class));
   }
 

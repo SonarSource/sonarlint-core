@@ -19,10 +19,5 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.component;
 
-public interface ServerProject {
-
-  String getKey();
-
-  String getName();
-
+public record ServerProject(String key, String name, boolean isAiCodeFixEnabled) {
 }
