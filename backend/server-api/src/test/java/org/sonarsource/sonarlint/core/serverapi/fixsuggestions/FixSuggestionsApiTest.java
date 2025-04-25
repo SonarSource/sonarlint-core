@@ -66,8 +66,33 @@ class FixSuggestionsApiTest {
     }
 
     @Test
-    void it_should_return_the_generated_suggestion() {
+    void it_should_return_the_generated_suggestion_for_sonarqube_cloud() {
       mockServer.addStringResponse("/fix-suggestions/ai-suggestions", """
+        {
+          "id": "9d4e18f6-f79f-41ad-a480-1c96bd58d58f",
+          "explanation": "This is the way",
+          "changes": [
+            {
+              "startLine": 0,
+              "endLine": 0,
+              "newCode": "This is the new code"
+            }
+          ]
+        }
+        """);
+      underTest = new FixSuggestionsApi(mockServer.serverApiHelper("orgKey"));
+
+      var response = underTest.getAiSuggestion(new AiSuggestionRequestBodyDto("orgKey", "projectKey", new AiSuggestionRequestBodyDto.Issue("message", 0, 0, "rule:key", "source")),
+        new SonarLintCancelMonitor());
+
+      assertThat(response)
+        .isEqualTo(new AiSuggestionResponseBodyDto(UUID.fromString("9d4e18f6-f79f-41ad-a480-1c96bd58d58f"), "This is the way",
+          List.of(new AiSuggestionResponseBodyDto.ChangeDto(0, 0, "This is the new code"))));
+    }
+
+    @Test
+    void it_should_return_the_generated_suggestion_for_sonarqube_server() {
+      mockServer.addStringResponse("/api/v2/fix-suggestions/ai-suggestions", """
         {
           "id": "9d4e18f6-f79f-41ad-a480-1c96bd58d58f",
           "explanation": "This is the way",

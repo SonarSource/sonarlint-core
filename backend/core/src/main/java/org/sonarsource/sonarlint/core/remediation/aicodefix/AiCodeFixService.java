@@ -21,6 +21,7 @@ package org.sonarsource.sonarlint.core.remediation.aicodefix;
 
 import java.util.Optional;
 import java.util.UUID;
+import javax.annotation.Nullable;
 import org.eclipse.lsp4j.jsonrpc.ResponseErrorException;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseError;
 import org.eclipse.lsp4j.jsonrpc.messages.ResponseErrorCode;
@@ -48,7 +49,6 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import static java.util.Objects.requireNonNull;
 import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.CONFIG_SCOPE_NOT_BOUND;
-import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.CONNECTION_KIND_NOT_SUPPORTED;
 import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.CONNECTION_NOT_FOUND;
 import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.FILE_NOT_FOUND;
 import static org.sonarsource.sonarlint.core.rpc.protocol.SonarLintRpcErrorCode.ISSUE_NOT_FOUND;
@@ -102,13 +102,13 @@ public class AiCodeFixService {
   }
 
   private AiSuggestionResponseBodyDto generateResponseBodyForIssue(ServerApi serverApi, RaisedIssue raisedIssue, UUID issueId,
-    SonarQubeCloudBinding sonarQubeCloudBinding, SonarLintCancelMonitor cancelMonitor) {
-    var aiCodeFixFeature = getFeature(storageService, sonarQubeCloudBinding.binding());
+    BindingWithOrg bindingWithOrg, SonarLintCancelMonitor cancelMonitor) {
+    var aiCodeFixFeature = getFeature(storageService, bindingWithOrg.binding());
     if (!aiCodeFixFeature.map(feature -> feature.isFixable(raisedIssue)).orElse(false)) {
       throw new ResponseErrorException(new ResponseError(ResponseErrorCode.InvalidParams, "The provided issue cannot be fixed", issueId));
     }
 
-    var fixResponseDto = serverApi.fixSuggestions().getAiSuggestion(toDto(sonarQubeCloudBinding.organizationKey, sonarQubeCloudBinding.binding().sonarProjectKey(), raisedIssue),
+    var fixResponseDto = serverApi.fixSuggestions().getAiSuggestion(toDto(bindingWithOrg.organizationKey, bindingWithOrg.binding().sonarProjectKey(), raisedIssue),
       cancelMonitor);
 
     eventPublisher.publishEvent(new FixSuggestionReceivedEvent(
@@ -122,14 +122,14 @@ public class AiCodeFixService {
   }
 
   private AiSuggestionResponseBodyDto generateResponseBodyForTaint(ServerApi serverApi, TaintVulnerabilityDto taint,
-    String configScopeId, SonarQubeCloudBinding sonarQubeCloudBinding, SonarLintCancelMonitor cancelMonitor) {
-    var aiCodeFixFeature = getFeature(storageService, sonarQubeCloudBinding.binding());
+    String configScopeId, BindingWithOrg bindingWithOrg, SonarLintCancelMonitor cancelMonitor) {
+    var aiCodeFixFeature = getFeature(storageService, bindingWithOrg.binding());
     if (!aiCodeFixFeature.map(feature -> feature.isFixable(taint)).orElse(false)) {
       throw new ResponseErrorException(new ResponseError(ResponseErrorCode.InvalidParams, "The provided taint cannot be fixed", taint.getId()));
     }
 
     var fixResponseDto = serverApi.fixSuggestions().getAiSuggestion(
-      toDto(sonarQubeCloudBinding.organizationKey, sonarQubeCloudBinding.binding().sonarProjectKey(), taint, configScopeId),
+      toDto(bindingWithOrg.organizationKey, bindingWithOrg.binding().sonarProjectKey(), taint, configScopeId),
       cancelMonitor);
 
     eventPublisher.publishEvent(new FixSuggestionReceivedEvent(
@@ -147,7 +147,7 @@ public class AiCodeFixService {
       responseBodyDto.changes().stream().map(change -> new SuggestFixChangeDto(change.startLine(), change.endLine(), change.newCode())).toList());
   }
 
-  private SonarQubeCloudBinding ensureBoundToSonarQubeCloud(String configurationScopeId) {
+  private BindingWithOrg ensureBoundToSonarQubeCloud(String configurationScopeId) {
     var effectiveBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
     if (effectiveBinding.isEmpty()) {
       throw new ResponseErrorException(new ResponseError(CONFIG_SCOPE_NOT_BOUND, "The provided configuration scope is not bound", configurationScopeId));
@@ -157,13 +157,13 @@ public class AiCodeFixService {
     if (connection == null) {
       throw new ResponseErrorException(new ResponseError(CONNECTION_NOT_FOUND, "The provided configuration scope is bound to an unknown connection", configurationScopeId));
     }
-    if (!(connection instanceof SonarCloudConnectionConfiguration sonarCloudConnection)) {
-      throw new ResponseErrorException(new ResponseError(CONNECTION_KIND_NOT_SUPPORTED, "The provided configuration scope is not bound to SonarQube Cloud", null));
+    if ((connection instanceof SonarCloudConnectionConfiguration sonarCloudConnection)) {
+      return new BindingWithOrg(sonarCloudConnection.getOrganization(), binding);
     }
-    return new SonarQubeCloudBinding(sonarCloudConnection.getOrganization(), binding);
+    return new BindingWithOrg(null, binding);
   }
 
-  private AiSuggestionRequestBodyDto toDto(String organizationKey, String projectKey, RaisedIssue raisedIssue) {
+  private AiSuggestionRequestBodyDto toDto(@Nullable String organizationKey, String projectKey, RaisedIssue raisedIssue) {
     // this is not perfect, the file content might have changed since the issue was detected
     var clientFile = clientFileSystemService.getClientFile(raisedIssue.fileUri());
     if (clientFile == null) {
@@ -177,7 +177,7 @@ public class AiCodeFixService {
         clientFile.getContent()));
   }
 
-  private AiSuggestionRequestBodyDto toDto(String organizationKey, String projectKey, TaintVulnerabilityDto taint, String configScopeId) {
+  private AiSuggestionRequestBodyDto toDto(@Nullable String organizationKey, String projectKey, TaintVulnerabilityDto taint, String configScopeId) {
     ClientFile clientFile = null;
     var baseDir = clientFileSystemService.getBaseDir(configScopeId);
     if (baseDir != null) {
@@ -190,10 +190,9 @@ public class AiCodeFixService {
     // the text range presence was checked earlier
     var textRange = requireNonNull(taint.getTextRange());
     return new AiSuggestionRequestBodyDto(organizationKey, projectKey,
-      new AiSuggestionRequestBodyDto.Issue(taint.getMessage(), textRange.getStartLine(), textRange.getEndLine(), taint.getRuleKey(),
-        clientFile.getContent()));
+      new AiSuggestionRequestBodyDto.Issue(taint.getMessage(), textRange.getStartLine(), textRange.getEndLine(), taint.getRuleKey(), clientFile.getContent()));
   }
 
-  private record SonarQubeCloudBinding(String organizationKey, Binding binding) {
+  private record BindingWithOrg(@Nullable String organizationKey, Binding binding) {
   }
 }

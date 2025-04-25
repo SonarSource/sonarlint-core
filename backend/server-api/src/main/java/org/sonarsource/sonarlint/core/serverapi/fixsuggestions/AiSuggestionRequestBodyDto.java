@@ -19,7 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.serverapi.fixsuggestions;
 
-public record AiSuggestionRequestBodyDto(String organizationKey, String projectKey, Issue issue) {
+import javax.annotation.Nullable;
+
+public record AiSuggestionRequestBodyDto(@Nullable String organizationKey, String projectKey, Issue issue) {
   public record Issue(String message, Integer startLine, Integer endLine, String ruleKey, String sourceCode) {
   }
 }
