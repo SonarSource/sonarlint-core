@@ -26,7 +26,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
-import java.util.Date;
 import org.apache.commons.io.FilenameUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -71,8 +70,8 @@ public class GitUtils {
     return new File(git.getRepository().getDirectory().getParent(), Constants.GITIGNORE_FILENAME);
   }
 
-  public static Date commit(Git git, String... paths) throws GitAPIException {
-    return commitObject(git, paths).getCommitterIdent().getWhen();
+  public static Instant commit(Git git, String... paths) throws GitAPIException {
+    return commitObject(git, paths).getCommitterIdent().getWhenAsInstant();
   }
 
   public static RevCommit commitObject(Git git, String... paths) throws GitAPIException {
@@ -86,7 +85,7 @@ public class GitUtils {
     return git.commit().setCommitter("joe", "email@email.com").setMessage("msg").call();
   }
 
-  public static Date commitAtDate(Git git, Instant commitDate, String... paths) throws GitAPIException {
+  public static Instant commitAtDate(Git git, Instant commitDate, String... paths) throws GitAPIException {
     if (paths.length > 0) {
       var add = git.add();
       for (String p : paths) {
@@ -94,10 +93,12 @@ public class GitUtils {
       }
       add.call();
     }
-    var commitTimestamp = commitDate.toEpochMilli();
-    var commit = git.commit().setCommitter(new PersonIdent("joe", "email@email.com", commitTimestamp, SystemReader.getInstance()
-      .getTimezone(commitTimestamp))).setMessage("msg").call();
-    return commit.getCommitterIdent().getWhen();
+
+    var commit = git.commit()
+      .setCommitter(new PersonIdent("joe", "email@email.com", commitDate, SystemReader.getInstance().getTimeZoneAt(commitDate)))
+      .setMessage("msg")
+      .call();
+    return commit.getCommitterIdent().getWhenAsInstant();
   }
 
   public static void createFile(Path worktree, String relativePath, String... lines) throws IOException {

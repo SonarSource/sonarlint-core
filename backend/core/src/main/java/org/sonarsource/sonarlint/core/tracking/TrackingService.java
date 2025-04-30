@@ -23,7 +23,6 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -313,9 +312,7 @@ public class TrackingService {
     if (sonarLintBlameResult.isEmpty()) {
       return Instant.now();
     }
-    return sonarLintBlameResult.getLatestChangeDateForLinesInFile(path, lineNumbers)
-      .map(Date::toInstant)
-      .orElse(Instant.now());
+    return sonarLintBlameResult.getLatestChangeDateForLinesInFile(path, lineNumbers).orElse(Instant.now());
   }
 
   private record MatchingResult(Map<Path, List<TrackedIssue>> issuesToReport,
