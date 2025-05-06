@@ -272,7 +272,7 @@ class IssueTrackingMediumTests {
 
     var issue = analyzeFileAndGetIssue(backend, client, fileUri);
 
-    assertThat(issue.getIntroductionDate()).isEqualTo(commitDate.toInstant());
+    assertThat(issue.getIntroductionDate()).isEqualTo(commitDate);
   }
 
   @SonarLintTest
@@ -814,7 +814,7 @@ class IssueTrackingMediumTests {
     assertThat(secondRaisedIntermediateIssuesByFile).containsOnlyKeys(fileUri);
     assertThat(secondRaisedIntermediateIssuesByFile.get(fileUri))
       .extracting(RaisedIssueDto::getPrimaryMessage, RaisedFindingDto::getIntroductionDate, RaisedFindingDto::isOnNewCode, f -> f.getSeverityMode().isRight())
-      .containsExactly(tuple("Issue 1", introductionDate, true, true), tuple("Issue 2", commitDate.toInstant(), true, true));
+      .containsExactly(tuple("Issue 1", introductionDate, true, true), tuple("Issue 2", commitDate, true, true));
     ArgumentCaptor<Map<URI, List<RaisedIssueDto>>> finalIssuesByFileArgumentCaptor = ArgumentCaptor.forClass(Map.class);
     verify(client).raiseIssues(eq(CONFIG_SCOPE_ID), finalIssuesByFileArgumentCaptor.capture(), eq(false), any());
     var finalIssuesByFile = finalIssuesByFileArgumentCaptor.getValue();

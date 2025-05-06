@@ -21,6 +21,8 @@ package org.sonarsource.sonarlint.core.commons;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -38,6 +40,7 @@ import static org.eclipse.jgit.util.FileUtils.RECURSIVE;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.appendFile;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commit;
+import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.commitAtDate;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createFile;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.createRepository;
 import static org.sonarsource.sonarlint.core.commons.testutils.GitUtils.modifyFile;
@@ -98,6 +101,24 @@ class SonarLintBlameResultTest {
 
     results = blameWithFilesGitCommand(projectDir, Set.of(Path.of("fileA")));
     assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(1, 2, 3))).isEmpty();
+  }
+
+  @Test
+  void it_should_return_latest_change_date() throws IOException, GitAPIException {
+    createFile(projectDir, "fileA", "line1", "line2", "line3");
+    var now = Instant.now();
+    var c1 = commitAtDate(git, now.minus(1, ChronoUnit.DAYS), "fileA");
+
+    var results = blameWithFilesGitCommand(projectDir, Set.of(Path.of("fileA")));
+    assertThat(results.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(1, 2, 3))).isPresent().contains(c1);
+    modifyFile(projectDir.resolve("fileA"), "line1", "line2", "new line3");
+    commitAtDate(git, now, "fileA");
+
+    results = blameWithFilesGitCommand(projectDir, Set.of(Path.of("fileA")));
+    var result = results.getLatestChangeDateForLinesInFile(Path.of("fileA"), List.of(1, 2, 3));
+
+    assertThat(result).isPresent();
+    assertThat(ChronoUnit.MINUTES.between(result.get(), now)).isZero();
   }
 
   @Test

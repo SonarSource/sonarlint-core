@@ -20,8 +20,8 @@
 package org.sonarsource.sonarlint.core.commons;
 
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Optional;
 import javax.annotation.Nullable;
 import org.apache.commons.io.FilenameUtils;
@@ -44,7 +44,7 @@ public class SonarLintBlameResult {
    * @param lineNumbers Line numbers for which to check the latest change date. Numbering starts from `1`!
    * @return The latest changed date or an empty optional if the date couldn't be determined or any of the lines is modified
    */
-  public Optional<Date> getLatestChangeDateForLinesInFile(Path projectDirRelativeFilePath, Collection<Integer> lineNumbers) {
+  public Optional<Instant> getLatestChangeDateForLinesInFile(Path projectDirRelativeFilePath, Collection<Integer> lineNumbers) {
     validateLineNumbersArgument(lineNumbers);
     var fileBlameByPath = blameResult.getFileBlameByPath();
 
@@ -60,8 +60,8 @@ public class SonarLintBlameResult {
     return blameResult.getFileBlameByPath().isEmpty();
   }
 
-  private static Date getTheLatestChange(BlameResult.FileBlame blameForFile, Collection<Integer> lineNumbers) {
-    Date latestDate = null;
+  private static Instant getTheLatestChange(BlameResult.FileBlame blameForFile, Collection<Integer> lineNumbers) {
+    Instant latestDate = null;
     for (var lineNumber : lineNumbers) {
       if (lineNumber > blameForFile.lines()) {
         continue;
@@ -70,7 +70,7 @@ public class SonarLintBlameResult {
       if (isLineModified(dateForLine)) {
         return null;
       }
-      latestDate = isNull(latestDate) || latestDate.before(dateForLine) ? dateForLine : latestDate;
+      latestDate = isNull(latestDate) || latestDate.isBefore(dateForLine) ? dateForLine : latestDate;
     }
     return latestDate;
   }
@@ -82,7 +82,7 @@ public class SonarLintBlameResult {
     }
   }
 
-  private static boolean isLineModified(@Nullable Date dateForLine) {
+  private static boolean isLineModified(@Nullable Instant dateForLine) {
     return dateForLine == null;
   }
 }

@@ -45,7 +45,7 @@ public class SonarLintServerCli implements Callable<Integer> {
       var rpcLauncher = new BackendJsonRpcLauncher(inputStream, originalStdOut);
       var rpcServer = rpcLauncher.getServer();
       inputStream.onExit().thenRun(() -> {
-        if (!rpcServer.isReaderShutdown()){
+        if (!rpcServer.isReaderShutdown()) {
           System.err.println("Input stream has closed, exiting...");
           rpcServer.shutdown();
         }
