@@ -64,12 +64,14 @@ public class AnalysisScheduler {
   }
 
   private void executeQueuedCommands() {
-    while (termination.get() == null) {
+    if (termination.get() == null) {
       SonarLintLogger.get().setTarget(logOutput);
+    }
+    while (termination.get() == null) {
       try {
         executingCommand.set(analysisQueue.takeNextCommand());
         if (termination.get() == CANCELING_TERMINATION) {
-          executingCommand.getAndSet(null).cancel();
+          executingCommand.get().cancel();
           break;
         }
         executingCommand.get().execute(globalAnalysisContainer.get().getModuleRegistry());
@@ -78,6 +80,8 @@ public class AnalysisScheduler {
         if (termination.get() != CANCELING_TERMINATION) {
           LOG.error("Analysis engine interrupted", e);
         }
+      } catch (Exception e) {
+        LOG.debug("Analysis command failed", e);
       }
     }
     termination.get().run();
