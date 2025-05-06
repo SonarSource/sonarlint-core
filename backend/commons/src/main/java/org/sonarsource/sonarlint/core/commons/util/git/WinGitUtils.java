@@ -19,7 +19,9 @@
  */
 package org.sonarsource.sonarlint.core.commons.util.git;
 
+import java.util.Arrays;
 import java.util.Optional;
+import java.util.function.Supplier;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogger;
 
 public class WinGitUtils {
@@ -30,19 +32,28 @@ public class WinGitUtils {
   }
 
   public static Optional<String> locateGitOnWindows() {
+    return locateGitOnWindows(WinGitUtils::callWhereTool);
+  }
+
+  static Optional<String> locateGitOnWindows(Supplier<ProcessWrapperFactory.ProcessExecutionResult> gitExeLocationSupplier) {
     // Windows will search current directory in addition to the PATH variable, which is unsecure.
     // To avoid it we use where.exe to find git binary only in PATH.
-    LOG.debug("Looking for git command in the PATH using where.exe (Windows)");
-    var result = new ProcessWrapperFactory()
-      .create(null, "C:\\Windows\\System32\\where.exe", "$PATH:git.exe")
-      .execute();
+    var result = gitExeLocationSupplier.get();
 
-    if (result.exitCode() == 0) {
-      var out = result.output().trim();
+    var output = result.output();
+    if (result.exitCode() == 0 && output.contains("git.exe")) {
+      var out = Arrays.stream(output.split(System.lineSeparator())).map(String::trim).findFirst();
       LOG.debug("Found git.exe at {}", out);
-      return Optional.of(out);
+      return out;
     }
     LOG.debug("git.exe not found in PATH. PATH value was: " + System.getProperty("PATH"));
     return Optional.empty();
+  }
+
+  private static ProcessWrapperFactory.ProcessExecutionResult callWhereTool() {
+    LOG.debug("Looking for git command in the PATH using where.exe (Windows)");
+    return new ProcessWrapperFactory()
+      .create(null, "C:\\Windows\\System32\\where.exe", "$PATH:git.exe")
+      .execute();
   }
 }
