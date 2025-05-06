@@ -83,16 +83,16 @@ public class AiCodeFixService {
   }
 
   public SuggestFixResponse suggestFix(String configurationScopeId, UUID issueId, SonarLintCancelMonitor cancelMonitor) {
-    var sonarQubeCloudBinding = ensureBoundToSonarQubeCloud(configurationScopeId);
-    var connection = sonarQubeClientManager.getClientOrThrow(sonarQubeCloudBinding.binding().connectionId());
+    var bindingWithOrg = ensureBound(configurationScopeId);
+    var connection = sonarQubeClientManager.getClientOrThrow(bindingWithOrg.binding().connectionId());
     var responseBodyDto = connection.withClientApiAndReturn(serverApi -> {
       var issueOptional = previouslyRaisedFindingsRepository.findRaisedIssueById(issueId);
       if (issueOptional.isPresent()) {
-        return generateResponseBodyForIssue(serverApi, issueOptional.get(), issueId, sonarQubeCloudBinding, cancelMonitor);
+        return generateResponseBodyForIssue(serverApi, issueOptional.get(), issueId, bindingWithOrg, cancelMonitor);
       } else {
         var taintOptional = taintVulnerabilityTrackingService.getTaintVulnerability(configurationScopeId, issueId, cancelMonitor);
         if (taintOptional.isPresent()) {
-          return generateResponseBodyForTaint(serverApi, taintOptional.get(), configurationScopeId, sonarQubeCloudBinding, cancelMonitor);
+          return generateResponseBodyForTaint(serverApi, taintOptional.get(), configurationScopeId, bindingWithOrg, cancelMonitor);
         } else {
           throw new ResponseErrorException(new ResponseError(ISSUE_NOT_FOUND, "The provided issue or taint does not exist", issueId));
         }
@@ -113,7 +113,7 @@ public class AiCodeFixService {
 
     eventPublisher.publishEvent(new FixSuggestionReceivedEvent(
       fixResponseDto.id().toString(),
-      AiSuggestionSource.SONARCLOUD,
+      serverApi.isSonarCloud() ? AiSuggestionSource.SONARCLOUD : AiSuggestionSource.SONARQUBE,
       fixResponseDto.changes().size(),
       // As of today, this is always true since suggestFix is only called by the clients
       true));
@@ -134,7 +134,7 @@ public class AiCodeFixService {
 
     eventPublisher.publishEvent(new FixSuggestionReceivedEvent(
       fixResponseDto.id().toString(),
-      AiSuggestionSource.SONARCLOUD,
+      serverApi.isSonarCloud() ? AiSuggestionSource.SONARCLOUD : AiSuggestionSource.SONARQUBE,
       fixResponseDto.changes().size(),
       // As of today, this is always true since suggestFix is only called by the clients
       true));
@@ -147,7 +147,7 @@ public class AiCodeFixService {
       responseBodyDto.changes().stream().map(change -> new SuggestFixChangeDto(change.startLine(), change.endLine(), change.newCode())).toList());
   }
 
-  private BindingWithOrg ensureBoundToSonarQubeCloud(String configurationScopeId) {
+  private BindingWithOrg ensureBound(String configurationScopeId) {
     var effectiveBinding = configurationRepository.getEffectiveBinding(configurationScopeId);
     if (effectiveBinding.isEmpty()) {
       throw new ResponseErrorException(new ResponseError(CONFIG_SCOPE_NOT_BOUND, "The provided configuration scope is not bound", configurationScopeId));

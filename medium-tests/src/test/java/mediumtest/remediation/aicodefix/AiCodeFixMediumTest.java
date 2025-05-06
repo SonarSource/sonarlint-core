@@ -843,7 +843,7 @@ public class AiCodeFixMediumTest {
   }
 
   @SonarLintTest
-  void it_should_register_telemetry(SonarLintTestHarness harness, @TempDir Path baseDir) {
+  void it_should_register_telemetry_for_sonarqube_cloud(SonarLintTestHarness harness, @TempDir Path baseDir) {
     var filePath = createFile(baseDir, "pom.xml", XML_SOURCE_CODE_WITH_ISSUE);
     var fileUri = filePath.toUri();
     var server = harness.newFakeSonarCloudServer()
@@ -880,6 +880,43 @@ public class AiCodeFixMediumTest {
       .content().asBase64Decoded().asString()
       .contains(
         "\"fixSuggestionReceivedCounter\":{\"e51b7bbd-72bc-4008-a4f1-d75583f3dc98\":{\"aiSuggestionsSource\":\"SONARCLOUD\",\"snippetsCount\":1,\"wasGeneratedFromIde\":true}}");
+  }
+
+  @SonarLintTest
+  void it_should_register_telemetry_for_sonarqube_server(SonarLintTestHarness harness, @TempDir Path baseDir) {
+    var filePath = createFile(baseDir, "pom.xml", XML_SOURCE_CODE_WITH_ISSUE);
+    var fileUri = filePath.toUri();
+    var server = harness.newFakeSonarQubeServer()
+      .withProject("projectKey",
+        project -> project
+          .withBranch("branchName")
+          .withAiCodeFixSuggestion(suggestion -> suggestion
+            .withId(UUID.fromString("e51b7bbd-72bc-4008-a4f1-d75583f3dc98"))
+            .withExplanation("This is the explanation")
+            .withChange(0, 0, "This is the new code")))
+      .start();
+    var fakeClient = harness.newFakeClient()
+      .withInitialFs("configScope", baseDir, List.of(new ClientFileDto(fileUri, baseDir.relativize(filePath), "configScope", false, null, filePath, null, null, true)))
+      .build();
+    var backend = harness.newBackend()
+      .withConnectedEmbeddedPluginAndEnabledLanguage(TestPlugin.XML)
+      .withSonarQubeConnection("connectionId", server, storage -> storage
+        .withProject("projectKey", project -> project.withMainBranch("main").withRuleSet("xml", ruleSet -> ruleSet.withActiveRule("xml:S3421", "MAJOR")))
+        .withAiCodeFixSettings(aiCodeFix -> aiCodeFix
+          .withSupportedRules(Set.of("xml:S3421"))
+          .organizationEligible(true)
+          .enabledForProjects("projectKey")))
+      .withBoundConfigScope("configScope", "connectionId", "projectKey")
+      .withTelemetryEnabled()
+      .start(fakeClient);
+    var issue = analyzeFileAndGetIssue(fileUri, fakeClient, backend, "configScope");
+
+    backend.getAiCodeFixRpcService().suggestFix(new SuggestFixParams("configScope", issue.getId())).join();
+
+    assertThat(backend.telemetryFilePath())
+      .content().asBase64Decoded().asString()
+      .contains(
+        "\"fixSuggestionReceivedCounter\":{\"e51b7bbd-72bc-4008-a4f1-d75583f3dc98\":{\"aiSuggestionsSource\":\"SONARQUBE\",\"snippetsCount\":1,\"wasGeneratedFromIde\":true}}");
   }
 
   @SonarLintTest
