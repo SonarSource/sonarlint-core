@@ -38,7 +38,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.jgit.util.FileUtils.RECURSIVE;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.Mockito.doReturn;
@@ -155,4 +155,15 @@ class NativeGitWrapperTests {
     assertThat(ChronoUnit.MINUTES.between(line3Date, fourMonthsAgo)).isZero();
   }
 
+  @Test
+  void it_should_not_blame_file_on_git_command_error() {
+    assumeTrue(new NativeGitWrapper().getNativeGitExecutable().isPresent());
+    var fileAStr = "fileA";
+    var fileA = projectDirPath.resolve(fileAStr);
+
+    var blameResult = underTest.blameFromNativeCommand(projectDirPath, Set.of(fileA.toUri()), Instant.now());
+
+    assertThat(logTester.logs()).contains("Command failed with code: 128 and output fatal: no such path 'fileA' in HEAD");
+    assertThat(blameResult.isEmpty()).isTrue();
+  }
 }
