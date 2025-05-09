@@ -64,14 +64,12 @@ public class AnalysisScheduler {
   }
 
   private void executeQueuedCommands() {
-    if (termination.get() == null) {
-      SonarLintLogger.get().setTarget(logOutput);
-    }
+    SonarLintLogger.get().setTarget(logOutput);
     while (termination.get() == null) {
       try {
-        executingCommand.set(analysisQueue.takeNextCommand());
+        var command = analysisQueue.takeNextCommand();
+        executingCommand.set(command);
         if (termination.get() == CANCELING_TERMINATION) {
-          executingCommand.get().cancel();
           break;
         }
         executingCommand.get().execute(globalAnalysisContainer.get().getModuleRegistry());
@@ -88,6 +86,8 @@ public class AnalysisScheduler {
   }
 
   public void post(Command command) {
+    LOG.debug("Post: " + Thread.currentThread().getName() + " " + Thread.currentThread().getId());
+    LOG.debug("Posting command from Scheduler: " + command);
     if (termination.get() != null) {
       LOG.error("Analysis engine stopping, ignoring command");
       command.cancel();
@@ -101,9 +101,9 @@ public class AnalysisScheduler {
     var currentCommand = executingCommand.get();
     if (currentCommand != null && command.shouldCancel(currentCommand)) {
       LOG.debug("Cancelling execution of executing command");
-      executingCommand.set(null);
       currentCommand.cancel();
     }
+    LOG.debug("Posting command from Scheduler to queue: " + command);
     analysisQueue.post(command);
   }
 

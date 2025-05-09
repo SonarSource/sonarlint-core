@@ -41,6 +41,7 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
 import org.sonar.api.batch.fs.InputFile;
@@ -55,6 +56,7 @@ import org.sonarsource.sonarlint.core.analysis.api.Issue;
 import org.sonarsource.sonarlint.core.analysis.api.TriggerType;
 import org.sonarsource.sonarlint.core.analysis.command.AnalyzeCommand;
 import org.sonarsource.sonarlint.core.analysis.command.RegisterModuleCommand;
+import org.sonarsource.sonarlint.core.commons.LogTestStartAndEnd;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.LogOutput;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
@@ -67,9 +69,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.awaitility.Awaitility.await;
 
+@ExtendWith(LogTestStartAndEnd.class)
 class AnalysisSchedulerMediumTests {
   @RegisterExtension
-  private static final SonarLintLogTester logTester = new SonarLintLogTester();
+  private static final SonarLintLogTester logTester = new SonarLintLogTester(true);
   private static final Consumer<List<ClientInputFile>> NO_OP_ANALYSIS_STARTED_CONSUMER = inputFiles -> {
   };
   private static final Supplier<Boolean> ANALYSIS_READY_SUPPLIER = () -> true;
@@ -142,7 +145,7 @@ class AnalysisSchedulerMediumTests {
   }
 
   @Test
-  void should_cancel_progress_monitor_of_executing_analyze_command_when_stopping(@TempDir Path baseDir) throws IOException {
+  void should_cancel_progress_monitor_of_executing_analyze_command_when_stopping(@TempDir Path baseDir) throws IOException, InterruptedException {
     var content = """
       def foo():
         x = 9; # trailing comment
@@ -157,7 +160,8 @@ class AnalysisSchedulerMediumTests {
     var analyzeCommand = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED, () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor, TASK_MANAGER,
       inputFiles -> pause(300), ANALYSIS_READY_SUPPLIER, List.of(), Map.of());
     analysisScheduler.post(analyzeCommand);
-
+    // let the engine run the first command
+    Thread.sleep(100);
     analysisScheduler.stop();
     engineStopped = true;
 
@@ -168,7 +172,7 @@ class AnalysisSchedulerMediumTests {
   }
 
   @Test
-  void should_cancel_pending_commands_when_stopping(@TempDir Path baseDir) throws IOException {
+  void should_cancel_pending_commands_when_stopping(@TempDir Path baseDir) throws IOException, InterruptedException {
     var content = """
       def foo():
         x = 9; # trailing comment
@@ -186,6 +190,8 @@ class AnalysisSchedulerMediumTests {
       TASK_MANAGER, NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER, List.of(), Map.of());
     analysisScheduler.post(analyzeCommand);
     analysisScheduler.post(secondAnalyzeCommand);
+    // let the engine run the first command
+    Thread.sleep(100);
 
     analysisScheduler.stop();
     engineStopped = true;
