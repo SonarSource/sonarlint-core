@@ -199,6 +199,44 @@ class AnalysisSchedulerMediumTests {
   }
 
   @Test
+  void should_not_fail_next_analysis_on_exception_from_command(@TempDir Path baseDir) throws IOException {
+    Supplier<Boolean> throwingSupplier = () -> {
+      throw new RuntimeException("Kaboom");
+    };
+    var content = """
+      def foo():
+        x = 9; # trailing comment
+      """;
+    var inputFile = preparePythonInputFile(baseDir, content);
+
+    var analysisConfig = AnalysisConfiguration.builder()
+      .addInputFiles(inputFile)
+      .addActiveRules(trailingCommentRule())
+      .setBaseDir(baseDir)
+      .build();
+    var issues1 = new ArrayList<>();
+    var issues2 = new ArrayList<>();
+    var analyzeCommand1 = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED,
+      () -> analysisConfig, issues1::add, null, progressMonitor, TASK_MANAGER,
+      NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER, List.of(), Map.of());
+    var throwingCommand = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED,
+      () -> analysisConfig, NO_OP_ISSUE_LISTENER, null, progressMonitor, TASK_MANAGER,
+      NO_OP_ANALYSIS_STARTED_CONSUMER, throwingSupplier, List.of(), Map.of());
+    var analyzeCommand2 = new AnalyzeCommand("moduleKey", UUID.randomUUID(), TriggerType.FORCED,
+      () -> analysisConfig, issues2::add, null, progressMonitor, TASK_MANAGER,
+      NO_OP_ANALYSIS_STARTED_CONSUMER, ANALYSIS_READY_SUPPLIER, List.of(), Map.of());
+
+    analysisScheduler.post(analyzeCommand1);
+    analysisScheduler.post(throwingCommand);
+    analysisScheduler.post(analyzeCommand2);
+
+    await().untilAsserted(() -> assertThat(logTester.logs()).contains("Analysis command failed"));
+    await().atMost(3, TimeUnit.SECONDS)
+      .until(() -> analyzeCommand2.getFutureResult().isDone());
+    assertThat(issues2).hasSize(1);
+  }
+
+  @Test
   void should_interrupt_executing_thread_when_stopping(@TempDir Path baseDir) throws IOException {
     var content = """
       def foo():
