@@ -101,7 +101,6 @@ public class AnalysisScheduler {
     var currentCommand = executingCommand.get();
     if (currentCommand != null && command.shouldCancel(currentCommand)) {
       LOG.debug("Cancelling execution of executing command");
-      executingCommand.set(null);
       currentCommand.cancel();
     }
     analysisQueue.post(command);
