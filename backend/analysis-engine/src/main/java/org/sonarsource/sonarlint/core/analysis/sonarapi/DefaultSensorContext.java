@@ -19,6 +19,7 @@
  */
 package org.sonarsource.sonarlint.core.analysis.sonarapi;
 
+import java.io.InputStream;
 import java.io.Serializable;
 import org.sonar.api.SonarRuntime;
 import org.sonar.api.batch.fs.FileSystem;
@@ -218,5 +219,11 @@ public class DefaultSensorContext implements SensorContext {
   @Override
   public void addTelemetryProperty(String key, String value) {
     // PLUGINAPI-95 NO OP
+  }
+
+  @Override
+  public void addAnalysisData(String s, String s1, InputStream inputStream) {
+    // PLUGINAPI-117 analysis data storage
+    // NO OP
   }
 }
