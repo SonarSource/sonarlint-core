@@ -128,6 +128,7 @@ public class ConnectionService {
 
   private void addConnection(AbstractConnectionConfiguration connectionConfiguration) {
     repository.addOrReplace(connectionConfiguration);
+    LOG.debug("Connection '{}' added", connectionConfiguration.getConnectionId());
     applicationEventPublisher.publishEvent(new ConnectionConfigurationAddedEvent(connectionConfiguration.getConnectionId(), connectionConfiguration.getKind()));
   }
 
@@ -136,6 +137,7 @@ public class ConnectionService {
     if (removed == null) {
       LOG.debug("Attempt to remove connection '{}' that was not registered. Possibly a race condition?", removedConnectionId);
     } else {
+      LOG.debug("Connection '{}' removed", removedConnectionId);
       applicationEventPublisher.publishEvent(new ConnectionConfigurationRemovedEvent(removedConnectionId));
     }
   }
@@ -147,6 +149,7 @@ public class ConnectionService {
       LOG.debug("Attempt to update connection '{}' that was not registered. Possibly a race condition?", connectionId);
       applicationEventPublisher.publishEvent(new ConnectionConfigurationAddedEvent(connectionConfiguration.getConnectionId(), connectionConfiguration.getKind()));
     } else {
+      LOG.debug("Connection '{}' updated", previous.getConnectionId());
       applicationEventPublisher.publishEvent(new ConnectionConfigurationUpdatedEvent(connectionConfiguration.getConnectionId()));
     }
   }
