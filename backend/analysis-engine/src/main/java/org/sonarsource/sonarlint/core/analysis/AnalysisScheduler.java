@@ -64,8 +64,8 @@ public class AnalysisScheduler {
   }
 
   private void executeQueuedCommands() {
-    SonarLintLogger.get().setTarget(logOutput);
     while (termination.get() == null) {
+      SonarLintLogger.get().setTarget(logOutput);
       try {
         var command = analysisQueue.takeNextCommand();
         executingCommand.set(command);
