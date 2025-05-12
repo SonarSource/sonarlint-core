@@ -47,4 +47,13 @@ public class BindingConfigurationDto {
   public boolean isBindingSuggestionDisabled() {
     return bindingSuggestionDisabled;
   }
+
+  @Override
+  public String toString() {
+    return "BindingConfigurationDto{" +
+      "connectionId='" + connectionId + '\'' +
+      ", sonarProjectKey='" + sonarProjectKey + '\'' +
+      ", bindingSuggestionDisabled=" + bindingSuggestionDisabled +
+      '}';
+  }
 }

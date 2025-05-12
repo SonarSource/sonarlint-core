@@ -59,6 +59,7 @@ public class ConfigurationService {
       if (previous != null) {
         LOG.error("Duplicate configuration scope registered: {}", addedDto.getId());
       } else {
+        LOG.debug("Added configuration scope '{}'", configScopeInReferential.getId());
         addedIds.add(new ConfigurationScopeWithBinding(configScopeInReferential, bindingConfigInReferential));
       }
     }
@@ -83,11 +84,13 @@ public class ConfigurationService {
     if (removed == null) {
       LOG.debug("Attempt to remove configuration scope '{}' that was not registered", removedId);
     } else {
+      LOG.debug("Removed configuration scope '{}'", removedId);
       applicationEventPublisher.publishEvent(new ConfigurationScopeRemovedEvent(removed.scope(), removed.bindingConfiguration()));
     }
   }
 
   public void didUpdateBinding(String configScopeId, BindingConfigurationDto updatedBinding) {
+    LOG.debug("Did update binding for configuration scope '{}', new binding: '{}'", configScopeId, updatedBinding);
     var boundEvent = bind(configScopeId, updatedBinding);
     if (boundEvent != null) {
       applicationEventPublisher.publishEvent(boundEvent);
