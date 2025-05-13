@@ -38,7 +38,15 @@ import org.sonarsource.sonarlint.core.serverapi.plugins.ServerPlugin;
 public class PluginsSynchronizer {
   public static final Version CUSTOM_SECRETS_MIN_SQ_VERSION = Version.create("10.4");
   public static final Version ENTERPRISE_IAC_MIN_SQ_VERSION = Version.create("2025.1");
+  public static final Version ENTERPRISE_GO_MIN_SQ_VERSION = Version.create("2025.2");
   public static final String CSHARP_ENTERPRISE_PLUGIN_ID = "csharpenterprise";
+  public static final String GO_ENTERPRISE_PLUGIN_ID = "goenterprise";
+  private static final Set<String> FORCE_SYNCHRONIZED_ANALYZERS = Set.of(
+    // SLCORE-1179 Force synchronize "C# Enterprise" after repackaging (SQS 10.8+)
+    CSHARP_ENTERPRISE_PLUGIN_ID,
+    // SLCORE-1337 Force synchronize "Go Enterprise" before proper repackaging (SQS 2025.2)
+    GO_ENTERPRISE_PLUGIN_ID
+  );
   private static final SonarLintLogger LOG = SonarLintLogger.get();
 
   private final Set<String> sonarSourceDisabledPluginKeys;
@@ -51,14 +59,19 @@ public class PluginsSynchronizer {
     this.embeddedPluginKeys = embeddedPluginKeys;
   }
 
-  public PluginSynchronizationSummary synchronize(ServerApi serverApi, boolean useSecretsFromServer, boolean usesIaCEnterprise, SonarLintCancelMonitor cancelMonitor) {
+  public PluginSynchronizationSummary synchronize(ServerApi serverApi, Version serverVersion, SonarLintCancelMonitor cancelMonitor) {
+    var qwirks = VersionSynchronizationQwirks.forServerAndVersion(serverApi, serverVersion);
     var embeddedPluginKeysCopy = new HashSet<>(embeddedPluginKeys);
-    if (usesIaCEnterprise) {
+    if (qwirks.usesIaCEnterprise) {
       embeddedPluginKeysCopy.remove(SonarLanguage.TERRAFORM.getPluginKey());
       embeddedPluginKeys = embeddedPluginKeysCopy;
     }
-    if (useSecretsFromServer) {
+    if (qwirks.useSecretsFromServer) {
       embeddedPluginKeysCopy.remove(SonarLanguage.SECRETS.getPluginKey());
+      embeddedPluginKeys = embeddedPluginKeysCopy;
+    }
+    if (qwirks.forceSyncGoEnterprise) {
+      embeddedPluginKeysCopy.remove(SonarLanguage.GO.getPluginKey());
       embeddedPluginKeys = embeddedPluginKeysCopy;
     }
 
@@ -107,8 +120,7 @@ public class PluginsSynchronizer {
       return Optional.of(DownloadSkipReason.UP_TO_DATE);
     }
     if (!serverPlugin.isSonarLintSupported() &&
-      // CSharp Enterprise is allowed even though it is not sonarLintSupported
-      !CSHARP_ENTERPRISE_PLUGIN_ID.equals(serverPlugin.getKey())) {
+      !isForceSynchronized(serverPlugin.getKey())) {
       LOG.debug("[SYNC] Code analyzer '{}' does not support SonarLint. Skip downloading it.", serverPlugin.getKey());
       return Optional.of(DownloadSkipReason.NOT_SONARLINT_SUPPORTED);
     }
@@ -117,6 +129,10 @@ public class PluginsSynchronizer {
       return Optional.of(DownloadSkipReason.LANGUAGE_NOT_ENABLED);
     }
     return Optional.empty();
+  }
+
+  private static boolean isForceSynchronized(String pluginKey) {
+    return FORCE_SYNCHRONIZED_ANALYZERS.contains(pluginKey);
   }
 
   private static boolean upToDate(ServerPlugin serverPlugin, Map<String, StoredPlugin> storedPluginsByKey) {
@@ -141,5 +157,19 @@ public class PluginsSynchronizer {
 
   private enum DownloadSkipReason {
     EMBEDDED, UP_TO_DATE, NOT_SONARLINT_SUPPORTED, LANGUAGE_NOT_ENABLED
+  }
+
+  private record VersionSynchronizationQwirks(boolean useSecretsFromServer, boolean usesIaCEnterprise, boolean  forceSyncGoEnterprise) {
+    private static VersionSynchronizationQwirks forServerAndVersion(ServerApi serverApi, Version version) {
+      return new VersionSynchronizationQwirks(
+        // On SonarQube server 10.4+ and SonarQube Cloud, we need to use the server's text analyzer
+        // to support commercial rules (SQC and SQS 10.8+ DE+) and custom secrets (SQS 10.4+ EE+)
+        serverApi.isSonarCloud() || version.satisfiesMinRequirement(CUSTOM_SECRETS_MIN_SQ_VERSION),
+        serverApi.isSonarCloud() || version.satisfiesMinRequirement(ENTERPRISE_IAC_MIN_SQ_VERSION),
+        // On SonarQube server 2025.2+ and SonarQube Cloud, we need to use the server's Go analyzer
+        // to support Enterprise rules
+        serverApi.isSonarCloud() || version.satisfiesMinRequirement(ENTERPRISE_GO_MIN_SQ_VERSION)
+      );
+    }
   }
 }

@@ -80,6 +80,7 @@ public class PluginsLoader {
     allowedPluginsIds.add("textenterprise");
     allowedPluginsIds.add("omnisharp");
     allowedPluginsIds.add("iacenterprise");
+    allowedPluginsIds.add("goenterprise");
     allowedPluginsIds.addAll(maybeDbdAllowedPlugins(configuration.enableDataflowBugDetection));
     return Collections.unmodifiableSet(allowedPluginsIds);
   }

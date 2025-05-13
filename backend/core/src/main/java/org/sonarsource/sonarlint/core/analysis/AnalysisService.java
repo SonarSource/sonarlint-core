@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -320,6 +321,7 @@ public class AnalysisService {
         var ruleSet = e.getValue();
 
         LOG.debug("  * {}: {} active rules", languageKey, ruleSet.getRules().size());
+        var missingRuleOrTemplateDefinitions = new LinkedHashSet<>();
         for (ServerActiveRule possiblyDeprecatedActiveRuleFromStorage : ruleSet.getRules()) {
           var activeRuleFromStorage = tryConvertDeprecatedKeys(binding.connectionId(), possiblyDeprecatedActiveRuleFromStorage);
           SonarLintRuleDefinition ruleOrTemplateDefinition;
@@ -333,13 +335,16 @@ public class AnalysisService {
           } else {
             ruleOrTemplateDefinition = rulesRepository.getRule(binding.connectionId(), activeRuleFromStorage.getRuleKey()).orElse(null);
             if (ruleOrTemplateDefinition == null) {
-              LOG.debug("Rule {} is enabled on the server, but not available in SonarLint", activeRuleFromStorage.getRuleKey());
+              missingRuleOrTemplateDefinitions.add(activeRuleFromStorage.getRuleKey());
               continue;
             }
           }
           if (shouldIncludeRuleForAnalysis(binding.connectionId(), ruleOrTemplateDefinition, hotspotsOnly)) {
             result.add(buildActiveRuleDto(ruleOrTemplateDefinition, activeRuleFromStorage));
           }
+        }
+        if (!missingRuleOrTemplateDefinitions.isEmpty()) {
+          LOG.debug("The following rules are enabled on the server, but not available in SonarLint: {}", missingRuleOrTemplateDefinitions);
         }
       });
     if (languageSupportRepository.getEnabledLanguagesInConnectedMode().contains(SonarLanguage.IPYTHON)) {
