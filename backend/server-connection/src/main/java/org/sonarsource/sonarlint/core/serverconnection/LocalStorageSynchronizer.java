@@ -32,7 +32,6 @@ import org.sonarsource.sonarlint.core.serverapi.qualityprofile.QualityProfile;
 import org.sonarsource.sonarlint.core.serverconnection.storage.StorageException;
 
 import static java.util.stream.Collectors.toSet;
-import static org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer.CUSTOM_SECRETS_MIN_SQ_VERSION;
 
 public class LocalStorageSynchronizer {
   private static final SonarLintLogger LOG = SonarLintLogger.get();
@@ -52,11 +51,7 @@ public class LocalStorageSynchronizer {
   public Summary synchronizeServerInfosAndPlugins(ServerApi serverApi, SonarLintCancelMonitor cancelMonitor) {
     serverInfoSynchronizer.synchronize(serverApi, cancelMonitor);
     var version = storage.serverInfo().read().orElseThrow().getVersion();
-    // On SonarQube server 10.4+ and SonarQube Cloud, we need to use the server's text analyzer
-    // to support commercial rules (SQC and SQS 10.8+ DE+) and custom secrets (SQS 10.4+ EE+)
-    var useSecretsFromServer = serverApi.isSonarCloud() || version.compareToIgnoreQualifier(CUSTOM_SECRETS_MIN_SQ_VERSION) >= 0;
-    var usesIaCEnterprise = serverApi.isSonarCloud() || version.compareToIgnoreQualifier(PluginsSynchronizer.ENTERPRISE_IAC_MIN_SQ_VERSION) >= 0;
-    var pluginSynchronizationSummary = pluginsSynchronizer.synchronize(serverApi, useSecretsFromServer, usesIaCEnterprise, cancelMonitor);
+    var pluginSynchronizationSummary = pluginsSynchronizer.synchronize(serverApi, version, cancelMonitor);
     return new Summary(version, pluginSynchronizationSummary.anyPluginSynchronized());
   }
 
