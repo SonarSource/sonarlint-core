@@ -54,6 +54,7 @@ import org.springframework.context.event.EventListener;
 import static org.sonarsource.sonarlint.core.rpc.protocol.backend.initialize.BackendCapability.DATAFLOW_BUG_DETECTION;
 import static org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer.CUSTOM_SECRETS_MIN_SQ_VERSION;
 import static org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer.ENTERPRISE_IAC_MIN_SQ_VERSION;
+import static org.sonarsource.sonarlint.core.serverconnection.PluginsSynchronizer.ENTERPRISE_GO_MIN_SQ_VERSION;
 
 public class PluginsService {
   private static final Version REPACKAGED_DOTNET_ANALYZER_MIN_SQ_VERSION = Version.create("10.8");
@@ -177,6 +178,9 @@ public class PluginsService {
       // if iacenterprise is there on the server, download both, iac and iacenterprise
       embeddedPlugins.remove(SonarLanguage.AZURERESOURCEMANAGER.getPluginKey());
     }
+    if (supportsGoEnterprise(connectionId)) {
+      embeddedPlugins.remove(SonarLanguage.GO.getPluginKey());
+    }
     return embeddedPlugins;
   }
 
@@ -186,6 +190,10 @@ public class PluginsService {
 
   public boolean supportsCustomSecrets(String connectionId) {
     return isSonarQubeCloudOrVersionHigherThan(CUSTOM_SECRETS_MIN_SQ_VERSION, connectionId);
+  }
+
+  public boolean supportsGoEnterprise(String connectionId) {
+    return isSonarQubeCloudOrVersionHigherThan(ENTERPRISE_GO_MIN_SQ_VERSION, connectionId);
   }
 
   private boolean isSonarQubeCloudOrVersionHigherThan(Version version, String connectionId) {
@@ -226,10 +234,10 @@ public class PluginsService {
   public boolean shouldUseEnterpriseCSharpAnalyzer(String connectionId) {
     var connection = connectionConfigurationRepository.getConnectionById(connectionId);
     var isSonarCloud = connection != null && connection.getKind() == ConnectionKind.SONARCLOUD;
-    var connectionStorage = storageService.connection(connectionId);
     if (isSonarCloud) {
       return true;
     } else {
+      var connectionStorage = storageService.connection(connectionId);
       var serverInfo = connectionStorage.serverInfo().read();
       if (serverInfo.isEmpty()) {
         return false;

@@ -8,5 +8,10 @@
       <key>S1763</key>
       <priority>MAJOR</priority>
     </rule>
+    <rule>
+      <repositoryKey>go</repositoryKey>
+      <key>S5542</key>
+      <priority>CRITICAL</priority>
+    </rule>
   </rules>
 </profile>
