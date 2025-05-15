@@ -56,6 +56,8 @@ public class TelemetryMeasuresBuilder {
 
     addIssuesMeasures(values);
 
+    addToolsMeasures(values);
+
     return new TelemetryMeasuresPayload(UUID.randomUUID().toString(), platform, storage.installTime(), product, TelemetryMeasuresDimension.INSTALLATION, values);
   }
 
@@ -119,5 +121,13 @@ public class TelemetryMeasuresBuilder {
     if (issuesFixed > 0) {
       values.add(new TelemetryMeasuresValue("ide_issues.fixed", Long.toString(issuesFixed), INTEGER, DAILY));
     }
+  }
+
+  private void addToolsMeasures(ArrayList<TelemetryMeasuresValue> values) {
+    var calledToolsByName = storage.getCalledToolsByName();
+    calledToolsByName.forEach((key, toolCallCounter) -> {
+      values.add(new TelemetryMeasuresValue("tools." + key + "_success_count", Integer.toString(toolCallCounter.getSuccess()), INTEGER, DAILY));
+      values.add(new TelemetryMeasuresValue("tools." + key + "_error_count", Integer.toString(toolCallCounter.getError()), INTEGER, DAILY));
+    });
   }
 }

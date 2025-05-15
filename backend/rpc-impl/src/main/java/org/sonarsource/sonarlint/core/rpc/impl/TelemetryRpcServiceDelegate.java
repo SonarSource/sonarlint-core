@@ -29,6 +29,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisRepo
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificationsClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToolCalledParams;
 import org.sonarsource.sonarlint.core.telemetry.TelemetryService;
 
 class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements TelemetryRpcService {
@@ -90,6 +91,11 @@ class TelemetryRpcServiceDelegate extends AbstractRpcServiceDelegate implements 
   @Override
   public void helpAndFeedbackLinkClicked(HelpAndFeedbackClickedParams params) {
     notify(() -> getBean(TelemetryService.class).helpAndFeedbackLinkClicked(params));
+  }
+
+  @Override
+  public void toolCalled(ToolCalledParams params) {
+    notify(() -> getBean(TelemetryService.class).toolCalled(params));
   }
 
   @Override

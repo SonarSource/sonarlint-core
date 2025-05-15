@@ -25,6 +25,7 @@ import java.time.OffsetDateTime;
 import java.time.OffsetTime;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -64,6 +65,7 @@ public class TelemetryLocalStorage {
   private final Map<AnalysisReportingType, TelemetryAnalysisReportingCounter> analysisReportingCountersByType;
   private final Map<String, TelemetryFixSuggestionReceivedCounter> fixSuggestionReceivedCounter;
   private final Map<String, List<TelemetryFixSuggestionResolvedStatus>> fixSuggestionResolved;
+  private final Map<String, ToolCallCounter> calledToolsByName;
   private final Set<UUID> issuesUuidAiFixableSeen;
   private boolean isFocusOnNewCode;
   private int codeFocusChangedCount;
@@ -88,6 +90,7 @@ public class TelemetryLocalStorage {
     fixSuggestionReceivedCounter = new LinkedHashMap<>();
     fixSuggestionResolved = new LinkedHashMap<>();
     issuesUuidAiFixableSeen = new HashSet<>();
+    calledToolsByName = new HashMap<>();
   }
 
   public Collection<String> getRaisedIssuesRules() {
@@ -219,6 +222,7 @@ public class TelemetryLocalStorage {
     exportedConnectedModeCount = 0;
     newIssuesFoundCount = 0;
     issuesFixedCount = 0;
+    calledToolsByName.clear();
   }
 
   long numUseDays() {
@@ -474,5 +478,14 @@ public class TelemetryLocalStorage {
 
   public long getIssuesFixedCount() {
     return issuesFixedCount;
+  }
+
+  public void incrementToolCalledCount(String toolName, boolean succeeded) {
+    markSonarLintAsUsedToday();
+    calledToolsByName.computeIfAbsent(toolName, k -> new ToolCallCounter()).incrementCount(succeeded);
+  }
+
+  public Map<String, ToolCallCounter> getCalledToolsByName() {
+    return calledToolsByName;
   }
 }

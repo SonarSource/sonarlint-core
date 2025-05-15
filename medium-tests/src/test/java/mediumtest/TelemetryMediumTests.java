@@ -49,6 +49,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestio
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionStatus;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.TelemetryClientLiveAttributesResponse;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToolCalledParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.ClientFileDto;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.Language;
 import org.sonarsource.sonarlint.core.telemetry.InternalDebug;
@@ -393,6 +394,17 @@ class TelemetryMediumTests {
 
     backend.getTelemetryService().taintVulnerabilitiesInvestigatedRemotely();
     await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"taintVulnerabilitiesInvestigatedRemotelyCount\":1"));
+  }
+
+  @SonarLintTest
+  void it_should_record_toolCalled(SonarLintTestHarness harness) {
+    var backend = setupClientAndBackend(harness);
+
+    backend.getTelemetryService().toolCalled(new ToolCalledParams("tool_name", true));
+    backend.getTelemetryService().toolCalled(new ToolCalledParams("tool_name", true));
+    backend.getTelemetryService().toolCalled(new ToolCalledParams("tool_name", false));
+
+    await().untilAsserted(() -> assertThat(backend.telemetryFilePath()).content().asBase64Decoded().asString().contains("\"calledToolsByName\":{\"tool_name\":{\"success\":2,\"error\":1}}"));
   }
 
   @SonarLintTest
