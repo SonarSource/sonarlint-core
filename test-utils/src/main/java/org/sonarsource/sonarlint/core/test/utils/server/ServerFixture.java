@@ -62,6 +62,7 @@ import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.VulnerabilityProbability;
 import org.sonarsource.sonarlint.core.commons.api.TextRange;
 import org.sonarsource.sonarlint.core.rpc.protocol.common.IssueSeverity;
+import org.sonarsource.sonarlint.core.serverapi.UrlUtils;
 import org.sonarsource.sonarlint.core.serverapi.hotspot.HotspotApi;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarcloud.ws.Organizations;
 import org.sonarsource.sonarlint.core.serverapi.proto.sonarqube.ws.Common;
@@ -141,6 +142,7 @@ public class ServerFixture {
     protected boolean serverSentEventsEnabled;
     protected Set<String> aiCodeFixSupportedRules = Set.of();
     protected Set<String> features = new HashSet<>();
+    private final List<SmartNotifications> smartNotifications = new ArrayList<>();
 
     protected AbstractServerBuilder(@Nullable Consumer<Server> onStart, ServerKind serverKind, @Nullable String version) {
       this.onStart = onStart;
@@ -179,9 +181,16 @@ public class ServerFixture {
       return (T) this;
     }
 
+    public T withSmartNotifications(List<String> projects, List<String> dates, String events) {
+      this.smartNotifications.add(new SmartNotifications(projects, dates, events));
+      return (T) this;
+    }
+
+    record SmartNotifications (List<String> projects, List<String> dates, String events) {}
+
     public Server start() {
       var server = new Server(serverKind, serverStatus, version, organizationsByKey, projectByProjectKey, pluginsByKey, qualityProfilesByKey, tokensRegistered,
-        responseCodes.build(), aiCodeFixSupportedRules, serverSentEventsEnabled, features);
+        responseCodes.build(), aiCodeFixSupportedRules, serverSentEventsEnabled, features, smartNotifications);
       server.start();
       if (onStart != null) {
         onStart.accept(server);
@@ -745,6 +754,7 @@ public class ServerFixture {
     private final Map<String, AbstractServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey;
     private final List<String> tokensRegistered;
     private final AbstractServerBuilder.ResponseCodes responseCodes;
+    private final List<AbstractServerBuilder.SmartNotifications> smartNotifications;
     private final Set<String> aiCodeFixSupportedRules;
     private final boolean serverSentEventsEnabled;
     private final Set<String> features;
@@ -754,7 +764,7 @@ public class ServerFixture {
       Map<String, SonarQubeCloudBuilder.SonarQubeCloudOrganizationBuilder> organizationsByKey, Map<String, AbstractServerBuilder.ServerProjectBuilder> projectsByProjectKey,
       Map<String, AbstractServerBuilder.ServerPluginBuilder> pluginsByKey, Map<String, AbstractServerBuilder.ServerQualityProfileBuilder> qualityProfilesByKey,
       List<String> tokensRegistered, AbstractServerBuilder.ResponseCodes responseCodes, Set<String> aiCodeFixSupportedRules,
-      boolean serverSentEventsEnabled, Set<String> features) {
+      boolean serverSentEventsEnabled, Set<String> features, List<AbstractServerBuilder.SmartNotifications> smartNotifications) {
       this.serverKind = serverKind;
       this.serverStatus = serverStatus;
       this.version = version != null ? Version.create(version) : null;
@@ -767,6 +777,7 @@ public class ServerFixture {
       this.aiCodeFixSupportedRules = aiCodeFixSupportedRules;
       this.serverSentEventsEnabled = serverSentEventsEnabled;
       this.features = features;
+      this.smartNotifications = smartNotifications;
     }
 
     public void start() {
@@ -1305,6 +1316,12 @@ public class ServerFixture {
 
     private void registerDevelopersApiResponses() {
       mockServer.stubFor(get("/api/developers/search_events?projects=&from=").willReturn(aResponse().withStatus(responseCodes.statusCode)));
+      smartNotifications.forEach(sn -> {
+        var projects = sn.projects.stream().map(UrlUtils::urlEncode).collect(Collectors.joining(","));
+        var dates = sn.dates.stream().map(UrlUtils::urlEncode).collect(Collectors.joining(","));
+        mockServer.stubFor(get("/api/developers/search_events?projects=" + projects + "&from=" + dates)
+          .willReturn(aResponse().withBody(sn.events).withStatus(responseCodes.statusCode)));
+      });
     }
 
     private void registerMeasuresApiResponses() {

@@ -20,6 +20,7 @@
 package org.sonarsource.sonarlint.core.test.utils.storage;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -83,6 +84,7 @@ public class ProjectStorageFixture {
     private final Map<String, String> projectSettings = new HashMap<>();
     private ZonedDateTime lastSmartNotificationPoll;
     private Sonarlint.NewCodeDefinition newCodeDefinition;
+    private boolean shouldThrowOnReadLastEvenPollingTime = false;
 
     public ProjectStorageBuilder(String projectKey) {
       this.projectKey = projectKey;
@@ -127,8 +129,19 @@ public class ProjectStorageFixture {
       return this;
     }
 
-    public void withLastSmartNotificationPoll(ZonedDateTime dateTime) {
+    public ProjectStorageBuilder withLastSmartNotificationPoll(ZonedDateTime dateTime) {
       this.lastSmartNotificationPoll = dateTime;
+      return this;
+    }
+
+    /**
+     * It writes an illegal content to the last_event_polling.pb file,
+     * that leads to StorageException being thrown on the file read.
+     * It emulates the situation when this file is not accessible during sync.
+     */
+    public ProjectStorageBuilder shouldThrowOnReadLastEvenPollingTime() {
+      this.shouldThrowOnReadLastEvenPollingTime = true;
+      return this;
     }
 
     ProjectStorage create(Path projectsRootPath) {
@@ -155,7 +168,13 @@ public class ProjectStorageFixture {
     }
 
     private void createSmartNotificationPoll(Path projectFolder) {
-      if (lastSmartNotificationPoll != null) {
+      if (shouldThrowOnReadLastEvenPollingTime) {
+        try {
+          FileUtils.write(projectFolder.resolve("last_event_polling.pb").toFile(), "illegal content", StandardCharsets.UTF_8);
+        } catch (IOException e) {
+          throw new IllegalStateException("Unable to create the last smart notification poll file", e);
+        }
+      } else if (lastSmartNotificationPoll != null) {
         var lastPoll = Sonarlint.LastEventPolling.newBuilder()
           .setLastEventPolling(lastSmartNotificationPoll.toInstant().toEpochMilli())
           .build();
