@@ -114,6 +114,8 @@ class TelemetryHttpClientTests {
     telemetryLocalStorage.addQuickFixAppliedForRule("java:S107");
     telemetryLocalStorage.addQuickFixAppliedForRule("python:S107");
     telemetryLocalStorage.addNewlyFoundIssues(1);
+    telemetryLocalStorage.incrementToolCalledCount("tool_name", true);
+    telemetryLocalStorage.incrementToolCalledCount("tool_name", false);
     telemetryLocalStorage.addFixedIssues(2);
     spy.upload(telemetryLocalStorage, getTelemetryLiveAttributesDto());
 
@@ -133,7 +135,9 @@ class TelemetryHttpClientTests {
             {"key":"analysis_reporting.trigger_count_pre_commit","value":"1","type":"integer","granularity":"daily"},
             {"key":"quick_fix.applied_count","value":"2","type":"integer","granularity":"daily"},
             {"key":"ide_issues.found","value":"1","type":"integer","granularity":"daily"},
-            {"key":"ide_issues.fixed","value":"2","type":"integer","granularity":"daily"}
+            {"key":"ide_issues.fixed","value":"2","type":"integer","granularity":"daily"},
+            {"key":"tools.tool_name_success_count","value":"1","type":"integer","granularity":"daily"},
+            {"key":"tools.tool_name_error_count","value":"1","type":"integer","granularity":"daily"}
           ]}
           """, PLATFORM),
           true, true)));

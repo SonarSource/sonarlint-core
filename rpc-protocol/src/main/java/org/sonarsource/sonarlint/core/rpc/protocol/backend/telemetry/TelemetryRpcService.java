@@ -31,6 +31,7 @@ import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.AnalysisRepo
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.DevNotificationsClickedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.FixSuggestionResolvedParams;
 import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.HelpAndFeedbackClickedParams;
+import org.sonarsource.sonarlint.core.rpc.protocol.client.telemetry.ToolCalledParams;
 
 @JsonSegment("telemetry")
 public interface TelemetryRpcService {
@@ -82,6 +83,9 @@ public interface TelemetryRpcService {
 
   @JsonNotification
   void helpAndFeedbackLinkClicked(HelpAndFeedbackClickedParams params);
+
+  @JsonNotification
+  void toolCalled(ToolCalledParams params);
 
   /**
    * Should be used to track the usage of specific types of analysis

@@ -1,3 +1,9 @@
+# 10.22
+
+## New features
+
+* Add a new `org.sonarsource.sonarlint.core.rpc.protocol.backend.telemetry.TelemetryRpcService.toolCalled` method.
+
 # 10.20
 
 ## Breaking changes
