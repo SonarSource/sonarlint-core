@@ -24,6 +24,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.sonarsource.sonarlint.core.commons.Version;
 import org.sonarsource.sonarlint.core.commons.api.SonarLanguage;
 import org.sonarsource.sonarlint.core.commons.log.SonarLintLogTester;
 import org.sonarsource.sonarlint.core.commons.progress.SonarLintCancelMonitor;
@@ -53,7 +54,7 @@ class PluginsSynchronizerTests {
       "]}");
 
     underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), new ConnectionStorage(dest, dest, "connectionId"), Set.of("text"));
-    underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), false, false, new SonarLintCancelMonitor());
+    underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("10.3"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-text-plugin-1.2.3.4.jar")).doesNotExist();
@@ -64,7 +65,7 @@ class PluginsSynchronizerTests {
    * alongside `sonar-text-enterprise` because it is now supporting SonarLint!
    */
   @Test
-  void should_not_synchronize_sonar_text_post_103(@TempDir Path dest) {
+  void should_synchronize_sonar_text_post_103(@TempDir Path dest) {
     mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": [" +
       "{\"key\": \"text\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-text-plugin-2.3.4.5.jar\", \"sonarLintSupported\": true}," +
       "{\"key\": \"textenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-text-enterprise-plugin-5.6.7.8.jar\", \"sonarLintSupported\": true}" +
@@ -73,11 +74,56 @@ class PluginsSynchronizerTests {
     mockServer.addStringResponse("/api/plugins/download?plugin=textenterprise", "content-textenterprise");
 
     underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS), new ConnectionStorage(dest, dest, "connectionId"), Set.of("text"));
-    underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), true, false, new SonarLintCancelMonitor());
+    underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("10.4"), new SonarLintCancelMonitor());
 
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-text-plugin-2.3.4.5.jar")).exists();
     assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-text-enterprise-plugin-5.6.7.8.jar")).exists();
   }
 
+  /**
+   * Emulating SonarQube 2025.2 `sonar-go` is embedded but `sonar-go-enterprise` will be downloaded
+   */
+  @Test
+  void should_synchronize_sonar_go_enterprise_in_2025_2(@TempDir Path dest) {
+    mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": [" +
+      "{\"key\": \"text\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-text-plugin-2.3.4.5.jar\", \"sonarLintSupported\": true}," +
+      "{\"key\": \"textenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-text-enterprise-plugin-5.6.7.8.jar\", \"sonarLintSupported\": true}," +
+      "{\"key\": \"goenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-go-enterprise-plugin-1.2.3.4.jar\", \"sonarLintSupported\": false}" +
+      "]}");
+    mockServer.addStringResponse("/api/plugins/download?plugin=text", "content-text");
+    mockServer.addStringResponse("/api/plugins/download?plugin=textenterprise", "content-textenterprise");
+    mockServer.addStringResponse("/api/plugins/download?plugin=goenterprise", "content-goenterprise");
+
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS, SonarLanguage.GO), new ConnectionStorage(dest, dest, "connectionId"), Set.of("text", "go"));
+    underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
+
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-text-plugin-2.3.4.5.jar")).exists();
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-text-enterprise-plugin-5.6.7.8.jar")).exists();
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-go-enterprise-plugin-1.2.3.4.jar")).exists();
+  }
+
+  /**
+   * Emulating SonarQube 2025.3 where `sonar-go` is embedded but the `sonar-go` from the server will be downloaded
+   */
+  @Test
+  void should_synchronize_sonar_go_in_2025_3(@TempDir Path dest) {
+    mockServer.addStringResponse("/api/plugins/installed", "{\"plugins\": [" +
+      "{\"key\": \"text\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-text-plugin-2.3.4.5.jar\", \"sonarLintSupported\": true}," +
+      "{\"key\": \"textenterprise\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-text-enterprise-plugin-5.6.7.8.jar\", \"sonarLintSupported\": true}," +
+      "{\"key\": \"go\", \"hash\": \"de5308f43260d357acc97712ce4c5475\", \"filename\": \"sonar-go-plugin-1.2.3.4.jar\", \"sonarLintSupported\": true}" +
+      "]}");
+    mockServer.addStringResponse("/api/plugins/download?plugin=text", "content-text");
+    mockServer.addStringResponse("/api/plugins/download?plugin=textenterprise", "content-textenterprise");
+    mockServer.addStringResponse("/api/plugins/download?plugin=go", "content-go");
+
+    underTest = new PluginsSynchronizer(Set.of(SonarLanguage.SECRETS, SonarLanguage.GO), new ConnectionStorage(dest, dest, "connectionId"), Set.of("text", "go"));
+    underTest.synchronize(new ServerApi(mockServer.serverApiHelper()), Version.create("2025.2"), new SonarLintCancelMonitor());
+
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/plugin_references.pb")).exists();
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-text-plugin-2.3.4.5.jar")).exists();
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-text-enterprise-plugin-5.6.7.8.jar")).exists();
+    assertThat(dest.resolve("636f6e6e656374696f6e4964/plugins/sonar-go-plugin-1.2.3.4.jar")).exists();
+  }
 }

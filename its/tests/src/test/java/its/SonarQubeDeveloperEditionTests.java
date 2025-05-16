@@ -349,7 +349,9 @@ class SonarQubeDeveloperEditionTests extends AbstractConnectedTests {
 
       var rawIssues = analyzeFile(configScopeId, "sample-go", "src/sample.go");
 
-      assertThat(rawIssues).hasSize(1);
+      // S5542 was introduced with Go Enterprise in 2025.2
+      var expectedIssues = ORCHESTRATOR.getServer().version().isGreaterThanOrEquals(2025, 2) ? 2 : 1;
+      assertThat(rawIssues).hasSize(expectedIssues);
     }
 
     @Test
